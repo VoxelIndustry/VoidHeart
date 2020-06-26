@@ -1,0 +1,19 @@
+{
+  "__comment": "Items",
+  "item.voidheart.void_heart": "Heart of %s",
+  "item.voidheart.void_heart.empty": "Void Heart",
+  "item.voidheart.void_heart_piece": "Piece of %s Heart",
+  "item.voidheart.void_heart_piece.empty": "Piece of Void Heart",
+  "item.voidheart.void_amalgam": "Raw Void Amalgam",
+  "__comment": "Lore",
+  "voidheart.void_amalgam.lore": "Eat me... Eaaaaat meee!",
+  "voidheart.void_amalgam.lore2": "I must become one with your Heart",
+  "voidheart.void_heart.lore": "Please... Let me return to the Void.",
+  "voidheart.void_heart_piece.lore": "Eat me to go to %2$s%1$s%3$s Heart",
+  "voidheart.void_heart_piece.pocket.lore": "Linked to §b%s§r Pocket",
+  "voidheart.void_heart_piece.pocket.lore2": "At §6%s§r",
+  "voidheart.void_heart_piece.external.lore": "Linked to outside §2%s§r",
+  "__comment": "guide",
+  "voidheart.no_portal_at_pos": "The target pos is not a portal",
+  "voidheart.link_successful": "%1sSuccessfully linked portals"
+}

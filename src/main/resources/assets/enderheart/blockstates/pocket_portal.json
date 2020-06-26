@@ -1,0 +1,29 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "voidheart:block/pocket_portal",
+      "x": 270,
+      "y": 270
+    },
+    "facing=down": {
+      "model": "voidheart:block/pocket_portal",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/pocket_portal"
+    },
+    "facing=south": {
+      "model": "voidheart:block/pocket_portal",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "voidheart:block/pocket_portal",
+      "y": 90
+    },
+    "facing=west": {
+      "model": "voidheart:block/pocket_portal",
+      "y": 270
+    }
+  }
+}
