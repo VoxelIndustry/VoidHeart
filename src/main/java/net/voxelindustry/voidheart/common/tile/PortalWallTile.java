@@ -47,6 +47,9 @@ public class PortalWallTile extends BlockEntity
                 direction,
                 getAdjacentDirection(direction));
 
+        if (portalPoints.getLeft().equals(getPos()) && portalPoints.getRight().equals(getPos()))
+            return;
+
         System.out.println(portalPoints.getLeft() + " << >> " + portalPoints.getRight());
 
         BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos -> world.setBlockState(pos, Blocks.LAPIS_BLOCK.getDefaultState()));

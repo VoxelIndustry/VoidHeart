@@ -3,14 +3,15 @@ package net.voxelindustry.voidheart.common.tile;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.function.Predicate;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static net.minecraft.util.math.Direction.Axis.X;
+import static net.minecraft.util.math.Direction.Axis.Y;
+import static net.minecraft.util.math.Direction.*;
 
 public class PortalFormer
 {
@@ -62,19 +63,23 @@ public class PortalFormer
         )
         {
             Direction toMove;
-            if (direction.getAxis().isHorizontal())
-                toMove = Direction.UP;
-            else if (perpendicular.getAxis() == Axis.X)
-                toMove = Direction.SOUTH;
+            if (perpendicular.getAxis() == Y)
+                toMove = direction.getAxis() == X ? SOUTH : EAST;
+            else if (direction.getAxis().isHorizontal())
+                toMove = UP;
+            else if (perpendicular.getAxis() == X)
+                toMove = SOUTH;
             else
-                toMove = Direction.EAST;
+                toMove = EAST;
 
             originWidth.move(toMove);
             offsetWidth.move(toMove);
         }
-        if (direction.getAxis().isHorizontal())
+        if (perpendicular.getAxis() == Y)
+            maxInvertedAxis = direction.getAxis() == X ? originWidth.getZ() - 1 : originWidth.getX() - 1;
+        else if (direction.getAxis().isHorizontal())
             maxInvertedAxis = originWidth.getY() - 1;
-        else if (perpendicular.getAxis() == Axis.X)
+        else if (perpendicular.getAxis() == X)
             maxInvertedAxis = originWidth.getZ() - 1;
         else
             maxInvertedAxis = originWidth.getX() - 1;
@@ -90,19 +95,23 @@ public class PortalFormer
         )
         {
             Direction toMove;
-            if (direction.getAxis().isHorizontal())
-                toMove = Direction.DOWN;
-            else if (perpendicular.getAxis() == Axis.X)
-                toMove = Direction.NORTH;
+            if (perpendicular.getAxis() == Y)
+                toMove = direction.getAxis() == X ? NORTH : WEST;
+            else if (direction.getAxis().isHorizontal())
+                toMove = DOWN;
+            else if (perpendicular.getAxis() == X)
+                toMove = NORTH;
             else
-                toMove = Direction.WEST;
+                toMove = WEST;
 
             originWidth.move(toMove);
             offsetWidth.move(toMove);
         }
-        if (direction.getAxis().isHorizontal())
+        if (perpendicular.getAxis() == Y)
+            minInvertedAxis = direction.getAxis() == X ? originWidth.getZ() + 1 : originWidth.getX() + 1;
+        else if (direction.getAxis().isHorizontal())
             minInvertedAxis = originWidth.getY() + 1;
-        else if (perpendicular.getAxis() == Axis.X)
+        else if (perpendicular.getAxis() == X)
             minInvertedAxis = originWidth.getZ() + 1;
         else
             minInvertedAxis = originWidth.getX() + 1;
@@ -110,7 +119,28 @@ public class PortalFormer
         if (!isLineValid(originWidth, offsetWidth, borderChecker))
             return Pair.of(origin, origin);
 
-        if (direction.getAxis().isHorizontal())
+        if (perpendicular.getAxis() == Y)
+        {
+            if (direction.getAxis() == X)
+            {
+                int minX = min(originWidth.getX(), offsetWidth.getX());
+                int maxX = max(originWidth.getX(), offsetWidth.getX());
+
+                int minY = min(originWidth.getY(), offsetWidth.getY());
+                int maxY = max(originWidth.getY(), offsetWidth.getY());
+                return Pair.of(new BlockPos(minX, minY, minInvertedAxis), new BlockPos(maxX, maxY, maxInvertedAxis));
+            }
+            else
+            {
+                int minY = min(originWidth.getY(), offsetWidth.getY());
+                int maxY = max(originWidth.getY(), offsetWidth.getY());
+
+                int minZ = min(originWidth.getZ(), offsetWidth.getZ());
+                int maxZ = max(originWidth.getZ(), offsetWidth.getZ());
+                return Pair.of(new BlockPos(minInvertedAxis, minY, minZ), new BlockPos(maxInvertedAxis, maxY, maxZ));
+            }
+        }
+        else if (direction.getAxis().isHorizontal())
         {
             int minX = min(originWidth.getX(), offsetWidth.getX());
             int maxX = max(originWidth.getX(), offsetWidth.getX());
@@ -119,7 +149,7 @@ public class PortalFormer
             int maxZ = max(originWidth.getZ(), offsetWidth.getZ());
             return Pair.of(new BlockPos(minX, minInvertedAxis, minZ), new BlockPos(maxX, maxInvertedAxis, maxZ));
         }
-        else if (direction.getAxis() == Axis.X)
+        else if (perpendicular.getAxis() == X)
         {
             int minX = min(originWidth.getX(), offsetWidth.getX());
             int maxX = max(originWidth.getX(), offsetWidth.getX());
@@ -142,34 +172,5 @@ public class PortalFormer
     private static boolean isLineValid(BlockPos from, BlockPos to, Predicate<BlockPos> checker)
     {
         return BlockPos.stream(from, to).allMatch(checker);
-    }
-
-    private static Direction rotateX(Direction direction, Direction perpendicular)
-    {
-        Direction[] adjacentDirection = getAdjacentDirection(perpendicular);
-
-        int index = ArrayUtils.indexOf(adjacentDirection, direction);
-        if (index == adjacentDirection.length - 1)
-            return adjacentDirection[0];
-        return adjacentDirection[index + 1];
-    }
-
-    private static Direction rotateXCCW(Direction direction, Direction perpendicular)
-    {
-        Direction[] adjacentDirection = getAdjacentDirection(perpendicular);
-
-        int index = ArrayUtils.indexOf(adjacentDirection, direction);
-        if (index == 0)
-            return adjacentDirection[adjacentDirection.length - 1];
-        return adjacentDirection[index - 1];
-    }
-
-    private static Direction[] getAdjacentDirection(Direction facing)
-    {
-        if (facing.getAxis() == Axis.X)
-            return new Direction[]{Direction.NORTH, Direction.UP, Direction.SOUTH, Direction.DOWN};
-        else if (facing.getAxis() == Axis.Z)
-            return new Direction[]{Direction.WEST, Direction.UP, Direction.EAST, Direction.DOWN};
-        return new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     }
 }

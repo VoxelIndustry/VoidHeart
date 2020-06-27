@@ -237,6 +237,26 @@ public class PortalFormerTest
         assertThat(area.getValue()).isEqualTo(new BlockPos(2, 3, 0));
     }
 
+    @Test
+    void tryFloodFill_givenHorizontalRectangularGoodPortal_thenShouldFlood()
+    {
+        String[] map = new String[]{
+                "XXXX",
+                "X__X",
+                "X__X",
+                "X__X",
+                "XXXX"};
+
+        Pair<BlockPos, BlockPos> area = PortalFormer.tryFloodFill(new BlockPos(3, 1, 3),
+                16,
+                pos -> mapBorderCheckerHorizontal(pos, map),
+                pos -> mapEmptyCheckerHorizontal(pos, map),
+                Direction.UP, Direction.EAST, Direction.WEST);
+
+        assertThat(area.getKey()).isEqualTo(new BlockPos(1, 1, 1));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(2, 1, 3));
+    }
+
     private boolean mapBorderChecker(BlockPos pos, String[] map)
     {
         if (map[0].length() <= pos.getX())
@@ -255,5 +275,25 @@ public class PortalFormerTest
             return true;
 
         return map[map.length - pos.getY() - 1].charAt(pos.getX()) == '_';
+    }
+
+    private boolean mapBorderCheckerHorizontal(BlockPos pos, String[] map)
+    {
+        if (map[0].length() <= pos.getX())
+            return false;
+        if (map.length <= pos.getZ())
+            return false;
+
+        return map[map.length - pos.getZ() - 1].charAt(pos.getX()) == 'X';
+    }
+
+    private boolean mapEmptyCheckerHorizontal(BlockPos pos, String[] map)
+    {
+        if (map[0].length() <= pos.getX())
+            return true;
+        if (map.length <= pos.getZ())
+            return true;
+
+        return map[map.length - pos.getZ() - 1].charAt(pos.getX()) == '_';
     }
 }
