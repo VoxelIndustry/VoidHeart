@@ -7,8 +7,8 @@ import net.minecraft.item.Item.Settings;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
-import net.voxelindustry.voidheart.common.block.PocketPortalBlock;
 import net.voxelindustry.voidheart.common.block.PortalWallBlock;
+import net.voxelindustry.voidheart.common.block.VoidPortalBlock;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -21,7 +21,7 @@ public class VoidHeartBlocks
     {
         Settings itemGroup = new Item.Settings().group(VoidHeart.ITEMGROUP);
 
-        registerBlock(POCKET_PORTAL = new PocketPortalBlock(), itemGroup, new Identifier(MODID, "pocket_portal"));
+        registerBlock(POCKET_PORTAL = new VoidPortalBlock(), itemGroup, new Identifier(MODID, "pocket_portal"));
         registerBlock(PORTAL_WALL = new PortalWallBlock(), itemGroup, new Identifier(MODID, "portal_wall"));
     }
 

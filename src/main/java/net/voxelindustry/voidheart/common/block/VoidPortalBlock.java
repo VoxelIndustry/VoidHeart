@@ -30,7 +30,7 @@ import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.tile.PocketPortalTile;
 
-public class PocketPortalBlock extends Block implements BlockEntityProvider
+public class VoidPortalBlock extends Block implements BlockEntityProvider
 {
     private static final VoxelShape TELEPORT_NORTH = Block.createCuboidShape(0, 0, 0, 16, 16, 1);
     private static final VoxelShape TELEPORT_SOUTH = Block.createCuboidShape(0, 0, 15, 16, 16, 16);
@@ -39,7 +39,7 @@ public class PocketPortalBlock extends Block implements BlockEntityProvider
     private static final VoxelShape TELEPORT_UP    = Block.createCuboidShape(0, 15, 0, 16, 16, 16);
     private static final VoxelShape TELEPORT_DOWN  = Block.createCuboidShape(0, 0, 0, 16, 1, 16);
 
-    public PocketPortalBlock()
+    public VoidPortalBlock()
     {
         super(Settings.of(Material.PORTAL)
                 .noCollision()

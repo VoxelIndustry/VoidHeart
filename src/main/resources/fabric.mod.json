@@ -20,7 +20,7 @@
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "voidheart.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.8.8",
