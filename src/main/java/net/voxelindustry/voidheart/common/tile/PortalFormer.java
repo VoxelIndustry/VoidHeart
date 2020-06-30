@@ -6,6 +6,7 @@ import net.minecraft.util.math.Direction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -15,6 +16,33 @@ import static net.minecraft.util.math.Direction.*;
 
 public class PortalFormer
 {
+    public static Stream<BlockPos> streamBorders(Pair<BlockPos, BlockPos> area)
+    {
+        return BlockPos.stream(area.getLeft(), area.getRight()).filter(pos ->
+                (pos.getX() == area.getLeft().getX() || pos.getX() == area.getRight().getX() &&
+                        pos.getY() == area.getLeft().getY() || pos.getY() == area.getRight().getY())
+                        || (pos.getX() == area.getLeft().getX() || pos.getX() == area.getRight().getX() &&
+                        pos.getZ() == area.getLeft().getZ() || pos.getZ() == area.getRight().getZ())
+                        || (pos.getZ() == area.getLeft().getZ() || pos.getZ() == area.getRight().getZ() &&
+                        pos.getY() == area.getLeft().getY() || pos.getY() == area.getRight().getY())
+        );
+    }
+
+    public static Pair<BlockPos, BlockPos> includeBorders(Pair<BlockPos, BlockPos> area)
+    {
+        BlockPos min = new BlockPos(
+                min(area.getLeft().getX(), area.getRight().getX()) - (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
+                min(area.getLeft().getY(), area.getRight().getY()) - (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
+                min(area.getLeft().getZ(), area.getRight().getZ() - (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
+
+        BlockPos max = new BlockPos(
+                max(area.getLeft().getX(), area.getRight().getX()) + (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
+                max(area.getLeft().getY(), area.getRight().getY()) + (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
+                max(area.getLeft().getZ(), area.getRight().getZ() + (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
+
+        return Pair.of(min, max);
+    }
+
     public static Pair<BlockPos, BlockPos> tryFloodFill(BlockPos origin,
                                                         int maxLength,
                                                         Predicate<BlockPos> borderChecker,
