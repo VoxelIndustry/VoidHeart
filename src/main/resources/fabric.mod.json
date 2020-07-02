@@ -17,6 +17,9 @@
   "entrypoints": {
     "main": [
       "net.voxelindustry.voidheart.VoidHeart"
+    ],
+    "client": [
+      "net.voxelindustry.voidheart.VoidHeartClient"
     ]
   },
   "mixins": [

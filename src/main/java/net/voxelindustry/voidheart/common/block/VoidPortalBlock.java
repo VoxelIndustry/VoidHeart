@@ -4,6 +4,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemPlacementContext;
@@ -23,12 +24,9 @@ import net.voxelindustry.voidheart.common.tile.VoidPortalTile;
 
 public class VoidPortalBlock extends Block implements BlockEntityProvider
 {
-    private static final VoxelShape TELEPORT_NORTH = Block.createCuboidShape(0, 0, 0, 16, 16, 1);
-    private static final VoxelShape TELEPORT_SOUTH = Block.createCuboidShape(0, 0, 15, 16, 16, 16);
-    private static final VoxelShape TELEPORT_WEST  = Block.createCuboidShape(0, 0, 0, 1, 16, 16);
-    private static final VoxelShape TELEPORT_EAST  = Block.createCuboidShape(15, 0, 0, 16, 16, 16);
-    private static final VoxelShape TELEPORT_UP    = Block.createCuboidShape(0, 15, 0, 16, 16, 16);
-    private static final VoxelShape TELEPORT_DOWN  = Block.createCuboidShape(0, 0, 0, 16, 1, 16);
+    protected static final VoxelShape X_SHAPE = Block.createCuboidShape(0, 0, 6, 16, 16.0D, 10);
+    protected static final VoxelShape Y_SHAPE = Block.createCuboidShape(0, 6, 0, 16, 10, 16);
+    protected static final VoxelShape Z_SHAPE = Block.createCuboidShape(6, 0, 0, 10, 16, 16);
 
     public VoidPortalBlock()
     {
@@ -42,13 +40,30 @@ public class VoidPortalBlock extends Block implements BlockEntityProvider
                 .with(Properties.FACING, Direction.NORTH));
     }
 
+    @Override
+    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context)
+    {
+        switch (state.get(Properties.FACING))
+        {
+            case UP:
+            case DOWN:
+                return Y_SHAPE;
+            case NORTH:
+            case SOUTH:
+                return X_SHAPE;
+            case EAST:
+            case WEST:
+            default:
+                return Z_SHAPE;
+        }
+    }
 
     @Override
     public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity collider)
     {
         if (!world.isClient() && collider.canUsePortals()
                 && VoxelShapes.matchesAnywhere(
-                VoxelShapes.cuboid(collider.getBoundingBox().offset(-pos.getX(), -pos.getY(), -pos.getZ())), getTeleportShape(state), BooleanBiFunction.AND))
+                VoxelShapes.cuboid(collider.getBoundingBox().offset(-pos.getX(), -pos.getY(), -pos.getZ())), getOutlineShape(state, world, pos, null), BooleanBiFunction.AND))
         {
             VoidPortalTile tile = (VoidPortalTile) world.getBlockEntity(pos);
 
@@ -56,27 +71,6 @@ public class VoidPortalBlock extends Block implements BlockEntityProvider
                 return;
 
             tile.teleport(collider);
-        }
-    }
-
-    private VoxelShape getTeleportShape(BlockState state)
-    {
-        switch (state.get(Properties.FACING))
-        {
-            case NORTH:
-                return TELEPORT_NORTH;
-            case SOUTH:
-                return TELEPORT_SOUTH;
-            case WEST:
-                return TELEPORT_WEST;
-            case EAST:
-                return TELEPORT_EAST;
-            case UP:
-                return TELEPORT_UP;
-            case DOWN:
-                return TELEPORT_DOWN;
-            default:
-                return VoxelShapes.fullCube();
         }
     }
 

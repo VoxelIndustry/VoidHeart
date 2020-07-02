@@ -27,7 +27,6 @@ public class PortalWallBlock extends Block implements BlockEntityProvider
     public PortalWallBlock()
     {
         super(Settings.of(Material.STONE)
-                .noCollision()
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE));
 

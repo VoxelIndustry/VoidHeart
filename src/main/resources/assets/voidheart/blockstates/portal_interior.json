@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "voidheart:block/portal_interior_ud"
+    },
+    "facing=down": {
+      "model": "voidheart:block/portal_interior_ud"
+    },
+    "facing=north": {
+      "model": "voidheart:block/portal_interior_ns"
+    },
+    "facing=south": {
+      "model": "voidheart:block/portal_interior_ns"
+    },
+    "facing=east": {
+      "model": "voidheart:block/portal_interior_ew"
+    },
+    "facing=west": {
+      "model": "voidheart:block/portal_interior_ew"
+    }
+  }
+}
