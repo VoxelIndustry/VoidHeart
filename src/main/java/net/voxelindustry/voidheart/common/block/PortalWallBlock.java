@@ -62,13 +62,13 @@ public class PortalWallBlock extends Block implements BlockEntityProvider
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved)
     {
-        super.onStateReplaced(state, world, pos, newState, moved);
-
         if (!state.isOf(newState.getBlock()))
         {
             PortalWallTile tile = (PortalWallTile) world.getBlockEntity(pos);
-            tile.breakLink();
+            if (tile != null)
+                tile.breakTile(BlockPos.ORIGIN);
         }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override

@@ -32,9 +32,9 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalWallTile extends BlockEntity
 {
-    private final List<BlockPos> adjacentPos = new ArrayList<>();
-
-    private List<BlockPos> linkedCores = new ArrayList<>();
+    private final List<BlockPos> linkedFrames    = new ArrayList<>();
+    private final List<BlockPos> linkedInteriors = new ArrayList<>();
+    private       List<BlockPos> linkedCores     = new ArrayList<>();
 
     @Getter
     private boolean isCore;
@@ -142,8 +142,34 @@ public class PortalWallTile extends BlockEntity
     /**
      * Cut link and notify potential linked portal
      */
-    public void breakLink()
+    public void breakTile(BlockPos eventSource)
     {
+        if (isCore())
+        {
+            isCore = false;
+            linkedFrames.forEach(pos ->
+            {
+                if (pos.equals(eventSource))
+                    return;
+
+                PortalWallTile wall = (PortalWallTile) getWorld().getBlockEntity(pos);
+                if (wall != null)
+                    wall.removeCore(this);
+            });
+
+            linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
+        }
+        else
+            linkedCores.forEach(pos ->
+            {
+                if (pos.equals(eventSource))
+                    return;
+
+                PortalWallTile wall = (PortalWallTile) getWorld().getBlockEntity(pos);
+                if (wall != null)
+                    wall.removeFrame(this);
+            });
+
         if (world.isClient() || linkedWorld == null)
         {
             cutLinkFromPortal();
@@ -190,8 +216,6 @@ public class PortalWallTile extends BlockEntity
 
         Pair<BlockPos, BlockPos> borderPoints = PortalFormer.includeBorders(portalPoints);
 
-        System.out.println("Interior: " + portalPoints);
-        System.out.println("Exterior: " + borderPoints);
         world.setBlockState(getPos(), getCachedState().with(Properties.FACING, direction));
         PortalFormer.streamBorders(borderPoints).forEach(pos ->
         {
@@ -202,6 +226,7 @@ public class PortalWallTile extends BlockEntity
                 return;
 
             wall.addCore(this);
+            linkedFrames.add(pos.toImmutable());
         });
 
         Direction facing = getFacing();
@@ -211,7 +236,11 @@ public class PortalWallTile extends BlockEntity
 
             VoidPortalTile portal = (VoidPortalTile) world.getBlockEntity(pos);
             portal.setCore(getPos());
+
+            linkedInteriors.add(pos.toImmutable());
         });
+
+        isCore = true;
 
         return true;
     }
@@ -233,6 +262,17 @@ public class PortalWallTile extends BlockEntity
     private void addCore(PortalWallTile wall)
     {
         linkedCores.add(wall.getPos());
+    }
+
+    private void removeCore(PortalWallTile wall)
+    {
+        linkedCores.remove(wall.getPos());
+    }
+
+    private void removeFrame(PortalWallTile wall)
+    {
+        linkedFrames.remove(wall);
+        breakTile(wall.getPos());
     }
 
     private Direction[] getAdjacentDirection(Direction facing)
@@ -274,10 +314,18 @@ public class PortalWallTile extends BlockEntity
             linkedFacing = Direction.byId(tag.getByte("linkedFacing"));
         }
 
-        int adjacentCount = tag.getInt("adjacentCount");
-        for (int index = 0; index < adjacentCount; index++)
+        isCore = tag.getBoolean("isCore");
+
+        int count = tag.getInt("linkedFramesCount");
+        for (int index = 0; index < count; index++)
         {
-            adjacentPos.add(BlockPos.fromLong(tag.getLong("adjacent" + index)));
+            linkedFrames.add(BlockPos.fromLong(tag.getLong("linkedFrame" + index)));
+        }
+
+        count = tag.getInt("linkedInteriorsCount");
+        for (int index = 0; index < count; index++)
+        {
+            linkedInteriors.add(BlockPos.fromLong(tag.getLong("linkedInterior" + index)));
         }
     }
 
@@ -291,12 +339,23 @@ public class PortalWallTile extends BlockEntity
             tag.putByte("linkedFacing", (byte) linkedFacing.getId());
         }
 
-        tag.putInt("adjacentPos", adjacentPos.size());
+        isCore = tag.getBoolean("isCore");
+
+        tag.putInt("linkedFramesCount", linkedFrames.size());
 
         int index = 0;
-        for (BlockPos adjacent : adjacentPos)
+        for (BlockPos frame : linkedFrames)
         {
-            tag.putLong("adjacent" + index, adjacent.asLong());
+            tag.putLong("linkedFrame" + index, frame.asLong());
+            index++;
+        }
+
+        tag.putInt("linkedInteriorsCount", linkedInteriors.size());
+
+        index = 0;
+        for (BlockPos interior : linkedInteriors)
+        {
+            tag.putLong("linkedInterior" + index, interior.asLong());
             index++;
         }
 

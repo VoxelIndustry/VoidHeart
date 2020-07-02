@@ -8,6 +8,8 @@ import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
@@ -21,6 +23,10 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.tile.VoidPortalTile;
+
+import java.util.List;
+
+import static java.util.Collections.emptyList;
 
 public class VoidPortalBlock extends Block implements BlockEntityProvider
 {
@@ -38,6 +44,12 @@ public class VoidPortalBlock extends Block implements BlockEntityProvider
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.FACING, Direction.NORTH));
+    }
+
+    @Override
+    public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
+    {
+        return emptyList();
     }
 
     @Override
