@@ -27,6 +27,7 @@ public class VoidHeartBlocks
 
     public static Block VOIDSTONE;
     public static Block VOIDSTONE_BRICKS;
+    public static Block ELDRITCH_VOIDSTONE;
 
     public static void registerBlocks()
     {
@@ -44,6 +45,11 @@ public class VoidHeartBlocks
                 .of(Material.STONE, MaterialColor.BLACK)
                 .sounds(BlockSoundGroup.STONE)
                 .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");
+
+        registerBlock(ELDRITCH_VOIDSTONE = new Block(FabricBlockSettings
+                .of(Material.STONE, MaterialColor.BLACK)
+                .sounds(BlockSoundGroup.STONE)
+                .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
 
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");

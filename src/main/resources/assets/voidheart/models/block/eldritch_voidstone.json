@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "voidheart:block/eldritch_voidstone_top",
+    "side": "voidheart:block/eldritch_voidstone"
+  }
+}
