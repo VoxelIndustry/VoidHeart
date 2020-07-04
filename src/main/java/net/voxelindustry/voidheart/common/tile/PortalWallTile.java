@@ -33,8 +33,11 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalWallTile extends BlockEntity
 {
+    @Getter
     private final List<BlockPos> linkedFrames    = new ArrayList<>();
+    @Getter
     private final List<BlockPos> linkedInteriors = new ArrayList<>();
+    @Getter
     private final List<BlockPos> linkedCores     = new ArrayList<>();
 
     @Getter
@@ -113,6 +116,7 @@ public class PortalWallTile extends BlockEntity
             {
                 tag.putLong("pocketPos", getPos().asLong());
                 tag.putByte("pocketFacing", (byte) getFacing().ordinal());
+                player.sendMessage(new TranslatableText(MODID + ".link_started_pocket"), true);
             }
             else
                 return false;
@@ -164,6 +168,7 @@ public class PortalWallTile extends BlockEntity
             tag.putLong("externalPos", getPos().asLong());
             tag.putString("externalDimension", getWorld().getRegistryKey().getValue().toString());
             tag.putByte("externalFacing", (byte) getFacing().ordinal());
+            player.sendMessage(new TranslatableText(MODID + ".link_started_outside"), true);
             return true;
         }
         return false;
@@ -226,6 +231,8 @@ public class PortalWallTile extends BlockEntity
         setLinkedWorld(null);
         setLinkedFacing(null);
         setLinkedPos(null);
+
+        linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
     }
 
     private PortalWallTile getLinkedPortal()
@@ -236,7 +243,9 @@ public class PortalWallTile extends BlockEntity
     private void linkPortal()
     {
         Direction facing = getFacing();
-        BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos ->
+
+        Pair<BlockPos, BlockPos> interiorPoints = PortalFormer.excludeBorders(portalPoints);
+        BlockPos.stream(interiorPoints.getLeft(), interiorPoints.getRight()).forEach(pos ->
         {
             world.setBlockState(pos, VoidHeartBlocks.POCKET_PORTAL.getDefaultState().with(Properties.FACING, facing));
 
@@ -259,10 +268,10 @@ public class PortalWallTile extends BlockEntity
     {
         switch (getFacing().getAxis())
         {
-            case X:
+            case Z:
             case Y:
                 return portalPoints.getRight().getX() - portalPoints.getLeft().getX();
-            case Z:
+            case X:
             default:
                 return portalPoints.getRight().getZ() - portalPoints.getLeft().getZ();
         }
@@ -289,7 +298,7 @@ public class PortalWallTile extends BlockEntity
         center.setY(center.getY() / 2);
         center.setZ(center.getZ() / 2);
         if (getFacing().getAxis() != Axis.Y)
-            center.setY(0);
+            center.setY(1);
 
         center.move(getFacing());
         return Vec3d.ofCenter(center.add(portalPoints.getLeft()));
@@ -308,10 +317,8 @@ public class PortalWallTile extends BlockEntity
         if (portalPoints.getLeft().equals(getPos()) && portalPoints.getRight().equals(getPos()))
             return false;
 
-        Pair<BlockPos, BlockPos> borderPoints = PortalFormer.includeBorders(portalPoints);
-
         world.setBlockState(getPos(), getCachedState().with(Properties.FACING, direction));
-        PortalFormer.streamBorders(borderPoints).forEach(pos ->
+        BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos ->
         {
             PortalWallTile wall = (PortalWallTile) world.getBlockEntity(pos);
 

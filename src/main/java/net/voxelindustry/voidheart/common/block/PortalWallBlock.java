@@ -10,6 +10,7 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -37,10 +38,17 @@ public class PortalWallBlock extends Block implements BlockEntityProvider
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
-        if (player.isSneaking())
-            return ActionResult.PASS;
-
         PortalWallTile tile = (PortalWallTile) world.getBlockEntity(pos);
+        if (player.isSneaking())
+        {
+            if (!world.isClient())
+            {
+                player.sendMessage(new LiteralText("FRAMES: " + tile.getLinkedFrames()), false);
+                player.sendMessage(new LiteralText("CORES: " + tile.getLinkedCores()), false);
+            }
+            return ActionResult.PASS;
+        }
+
 
         if (tile == null)
             return ActionResult.PASS;

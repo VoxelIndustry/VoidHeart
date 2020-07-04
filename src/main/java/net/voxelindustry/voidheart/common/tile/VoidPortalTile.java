@@ -75,7 +75,11 @@ public class VoidPortalTile extends BlockEntity
         {
             if (corePos == null)
                 return null;
-            core = (PortalWallTile) getWorld().getBlockEntity(corePos);
+            BlockEntity tile = getWorld().getBlockEntity(corePos);
+
+            if (!(tile instanceof PortalWallTile))
+                return null;
+            core = (PortalWallTile) tile;
         }
         return core;
     }

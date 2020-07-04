@@ -28,17 +28,17 @@ public class PortalFormer
         );
     }
 
-    public static Pair<BlockPos, BlockPos> includeBorders(Pair<BlockPos, BlockPos> area)
+    public static Pair<BlockPos, BlockPos> excludeBorders(Pair<BlockPos, BlockPos> area)
     {
         BlockPos min = new BlockPos(
-                min(area.getLeft().getX(), area.getRight().getX()) - (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
-                min(area.getLeft().getY(), area.getRight().getY()) - (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
-                min(area.getLeft().getZ(), area.getRight().getZ() - (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
+                min(area.getLeft().getX(), area.getRight().getX()) + (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
+                min(area.getLeft().getY(), area.getRight().getY()) + (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
+                min(area.getLeft().getZ(), area.getRight().getZ() + (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
 
         BlockPos max = new BlockPos(
-                max(area.getLeft().getX(), area.getRight().getX()) + (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
-                max(area.getLeft().getY(), area.getRight().getY()) + (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
-                max(area.getLeft().getZ(), area.getRight().getZ() + (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
+                max(area.getLeft().getX(), area.getRight().getX()) - (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
+                max(area.getLeft().getY(), area.getRight().getY()) - (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
+                max(area.getLeft().getZ(), area.getRight().getZ() - (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
 
         return Pair.of(min, max);
     }
@@ -146,6 +146,11 @@ public class PortalFormer
 
         if (!isLineValid(originWidth, offsetWidth, borderChecker))
             return Pair.of(origin, origin);
+
+        originWidth.move(direction.getOpposite());
+        offsetWidth.move(direction);
+        minInvertedAxis--;
+        maxInvertedAxis++;
 
         if (perpendicular.getAxis() == Y)
         {
