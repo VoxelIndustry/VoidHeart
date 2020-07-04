@@ -26,5 +26,8 @@
   "voidheart.void_heart_piece.external.lore": "Linked to outside §2%s§r",
   "__comment": "guide",
   "voidheart.no_portal_at_pos": "The target pos is not a portal",
+  "voidheart.portal_shape_differ": "The target portal is not of the same shape",
+  "voidheart.link_started_pocket": "%1sStarted Link. Now hit a portal outside your Pocket",
+  "voidheart.link_started_outside": "%1sStarted Link. Now hit a portal in your Pocket",
   "voidheart.link_successful": "%1sSuccessfully linked portals"
 }

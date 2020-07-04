@@ -1,9 +1,12 @@
 package net.voxelindustry.voidheart.common.tile;
 
+import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -35,12 +38,35 @@ public class VoidPortalTile extends BlockEntity
 
     public void teleport(Entity collider)
     {
+        if (corePos == null)
+            return;
 
+        PortalWallTile core = getCore();
+
+        if (core.getLinkedWorld() != null)
+        {
+            ServerWorld destination = world.getServer().getWorld(core.getLinkedWorldKey());
+
+            PortalWallTile linkedPortal = (PortalWallTile) getWorld().getServer().getWorld(core.getLinkedWorldKey()).getBlockEntity(core.getLinkedPos());
+
+            // If pos become invalid.
+            // Almost impossible but we need to prevent the world to end corrupted by a player stuck inside the portal.
+            if (linkedPortal == null)
+                return;
+
+            FabricDimensions.teleport(collider, destination,
+                    (entity, newWorld, direction, offsetX, offsetY) ->
+                    {
+                        int yaw = (core.getFacing().getHorizontal() - core.getLinkedFacing().getOpposite().getHorizontal()) * 90;
+                        return new BlockPattern.TeleportTarget(linkedPortal.getPortalMiddlePos(), collider.getVelocity(), yaw);
+                    });
+        }
     }
 
     public void setCore(BlockPos pos)
     {
         corePos = pos;
+        markDirty();
     }
 
     public PortalWallTile getCore()

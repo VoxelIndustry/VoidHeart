@@ -13,6 +13,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
@@ -34,7 +35,10 @@ public class PortalWallTile extends BlockEntity
 {
     private final List<BlockPos> linkedFrames    = new ArrayList<>();
     private final List<BlockPos> linkedInteriors = new ArrayList<>();
-    private       List<BlockPos> linkedCores     = new ArrayList<>();
+    private final List<BlockPos> linkedCores     = new ArrayList<>();
+
+    @Getter
+    private Pair<BlockPos, BlockPos> portalPoints;
 
     @Getter
     private boolean isCore;
@@ -78,19 +82,32 @@ public class PortalWallTile extends BlockEntity
 
                 if (linkedPortal instanceof PortalWallTile)
                 {
+                    if (!areShapeEquals(((PortalWallTile) linkedPortal)))
+                    {
+                        player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
+                        return false;
+                    }
+
                     Direction externalFacing = Direction.byId(tag.getByte("externalFacing"));
-                    setLinkedPos(externalPos.offset(externalFacing));
+                    setLinkedPos(externalPos);
                     setLinkedWorld(externalDimension.getValue());
                     setLinkedFacing(externalFacing);
+                    linkPortal();
+
                     voidPiece.decrement(1);
 
-                    ((PortalWallTile) linkedPortal).setLinkedPos(getPos().offset(getFacing()));
+                    ((PortalWallTile) linkedPortal).setLinkedPos(getPos());
                     ((PortalWallTile) linkedPortal).setLinkedWorld(VoidHeart.VOID_WORLD_KEY.getValue());
                     ((PortalWallTile) linkedPortal).setLinkedFacing(getFacing());
+                    ((PortalWallTile) linkedPortal).linkPortal();
+
                     player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
                 }
                 else
+                {
                     player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos"), true);
+                    return false;
+                }
             }
             else if (!tag.contains("pocketPos"))
             {
@@ -114,19 +131,32 @@ public class PortalWallTile extends BlockEntity
 
             if (linkedPortal instanceof PortalWallTile)
             {
+                if (!areShapeEquals(((PortalWallTile) linkedPortal)))
+                {
+                    player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
+                    return false;
+                }
+
                 Direction pocketFacing = Direction.byId(tag.getByte("pocketFacing"));
-                setLinkedPos(pocketPos.offset(pocketFacing));
+                setLinkedPos(pocketPos);
                 setLinkedWorld(VoidHeart.VOID_WORLD_KEY.getValue());
                 setLinkedFacing(pocketFacing);
+                linkPortal();
+
                 voidPiece.decrement(1);
 
-                ((PortalWallTile) linkedPortal).setLinkedPos(getPos().offset(getFacing()));
+                ((PortalWallTile) linkedPortal).setLinkedPos(getPos());
                 ((PortalWallTile) linkedPortal).setLinkedWorld(getWorld().getRegistryKey().getValue());
                 ((PortalWallTile) linkedPortal).setLinkedFacing(getFacing());
+                ((PortalWallTile) linkedPortal).linkPortal();
+
                 player.sendMessage(new TranslatableText(MODID + ".link_successful", "§3"), true);
             }
             else
+            {
                 player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos"), true);
+                return false;
+            }
             return true;
         }
         else if (!tag.contains("externalPos"))
@@ -144,6 +174,8 @@ public class PortalWallTile extends BlockEntity
      */
     public void breakTile(BlockPos eventSource)
     {
+        markDirty();
+
         if (isCore())
         {
             isCore = false;
@@ -201,7 +233,69 @@ public class PortalWallTile extends BlockEntity
         return (PortalWallTile) getWorld().getServer().getWorld(getLinkedWorldKey()).getBlockEntity(getLinkedPos());
     }
 
-    public boolean tryForm(Direction direction)
+    private void linkPortal()
+    {
+        Direction facing = getFacing();
+        BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos ->
+        {
+            world.setBlockState(pos, VoidHeartBlocks.POCKET_PORTAL.getDefaultState().with(Properties.FACING, facing));
+
+            VoidPortalTile portal = (VoidPortalTile) world.getBlockEntity(pos);
+            portal.setCore(getPos());
+
+            linkedInteriors.add(pos.toImmutable());
+        });
+    }
+
+    private boolean areShapeEquals(PortalWallTile otherPortal)
+    {
+        if (portalPoints == null || otherPortal.portalPoints == null)
+            return false;
+
+        return getWidth() == otherPortal.getWidth() && getHeight() == otherPortal.getHeight();
+    }
+
+    public int getWidth()
+    {
+        switch (getFacing().getAxis())
+        {
+            case X:
+            case Y:
+                return portalPoints.getRight().getX() - portalPoints.getLeft().getX();
+            case Z:
+            default:
+                return portalPoints.getRight().getZ() - portalPoints.getLeft().getZ();
+        }
+    }
+
+    public int getHeight()
+    {
+        switch (getFacing().getAxis())
+        {
+            case X:
+            case Z:
+                return portalPoints.getRight().getY() - portalPoints.getLeft().getY();
+            case Y:
+            default:
+                return portalPoints.getRight().getZ() - portalPoints.getLeft().getZ();
+        }
+    }
+
+    public Vec3d getPortalMiddlePos()
+    {
+        BlockPos.Mutable center = portalPoints.getRight().subtract(portalPoints.getLeft()).mutableCopy();
+
+        center.setX(center.getX() / 2);
+        center.setY(center.getY() / 2);
+        center.setZ(center.getZ() / 2);
+        if (getFacing().getAxis() != Axis.Y)
+            center.setY(0);
+
+        center.move(getFacing());
+        return Vec3d.ofCenter(center.add(portalPoints.getLeft()));
+    }
+
+    private boolean tryForm(Direction direction)
     {
         Pair<BlockPos, BlockPos> portalPoints = PortalFormer.tryFloodFill(
                 getPos(),
@@ -229,18 +323,10 @@ public class PortalWallTile extends BlockEntity
             linkedFrames.add(pos.toImmutable());
         });
 
-        Direction facing = getFacing();
-        BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos ->
-        {
-            world.setBlockState(pos, VoidHeartBlocks.POCKET_PORTAL.getDefaultState().with(Properties.FACING, facing));
-
-            VoidPortalTile portal = (VoidPortalTile) world.getBlockEntity(pos);
-            portal.setCore(getPos());
-
-            linkedInteriors.add(pos.toImmutable());
-        });
-
         isCore = true;
+        this.portalPoints = portalPoints;
+
+        markDirty();
 
         return true;
     }
@@ -262,6 +348,7 @@ public class PortalWallTile extends BlockEntity
     private void addCore(PortalWallTile wall)
     {
         linkedCores.add(wall.getPos());
+        markDirty();
     }
 
     private void removeCore(PortalWallTile wall)
@@ -316,6 +403,10 @@ public class PortalWallTile extends BlockEntity
 
         isCore = tag.getBoolean("isCore");
 
+        if (tag.contains("portalPointFrom"))
+            portalPoints = Pair.of(BlockPos.fromLong(tag.getLong("portalPointFrom")),
+                    BlockPos.fromLong(tag.getLong("portalPointTo")));
+
         int count = tag.getInt("linkedFramesCount");
         for (int index = 0; index < count; index++)
         {
@@ -326,6 +417,12 @@ public class PortalWallTile extends BlockEntity
         for (int index = 0; index < count; index++)
         {
             linkedInteriors.add(BlockPos.fromLong(tag.getLong("linkedInterior" + index)));
+        }
+
+        count = tag.getInt("linkedCoreCount");
+        for (int index = 0; index < count; index++)
+        {
+            linkedCores.add(BlockPos.fromLong(tag.getLong("linkedCore" + index)));
         }
     }
 
@@ -339,7 +436,13 @@ public class PortalWallTile extends BlockEntity
             tag.putByte("linkedFacing", (byte) linkedFacing.getId());
         }
 
-        isCore = tag.getBoolean("isCore");
+        tag.putBoolean("isCore", isCore);
+
+        if (portalPoints != null)
+        {
+            tag.putLong("portalPointFrom", portalPoints.getLeft().asLong());
+            tag.putLong("portalPointTo", portalPoints.getRight().asLong());
+        }
 
         tag.putInt("linkedFramesCount", linkedFrames.size());
 
@@ -356,6 +459,15 @@ public class PortalWallTile extends BlockEntity
         for (BlockPos interior : linkedInteriors)
         {
             tag.putLong("linkedInterior" + index, interior.asLong());
+            index++;
+        }
+
+        tag.putInt("linkedCoreCount", linkedCores.size());
+
+        index = 0;
+        for (BlockPos core : linkedCores)
+        {
+            tag.putLong("linkedCore" + index, core.asLong());
             index++;
         }
 
