@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -99,8 +100,8 @@ public class VoidPocketState extends PersistentState
 
         voidWorld.setBlockState(pos, Blocks.END_STONE.getDefaultState());
 
-        placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 16, 16, 16, Blocks.GLASS.getDefaultState());
-        placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 18, 18, 18, Blocks.BEDROCK.getDefaultState());
+        placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 16, 16, 16, VoidHeartBlocks.VOIDSTONE.getDefaultState());
+        placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 18, 18, 18, VoidHeartBlocks.POCKET_WALL.getDefaultState());
     }
 
     private void placeBlockEmptyVolume(ServerWorld voidWorld, BlockPos center, int width, int height, int length, BlockState state)

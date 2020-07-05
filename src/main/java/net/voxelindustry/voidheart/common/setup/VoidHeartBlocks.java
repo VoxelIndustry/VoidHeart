@@ -16,6 +16,8 @@ import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
 import net.voxelindustry.voidheart.common.block.PortalWallBlock;
+import net.voxelindustry.voidheart.common.block.VoidAltarBlock;
+import net.voxelindustry.voidheart.common.block.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.block.VoidPortalBlock;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -25,9 +27,13 @@ public class VoidHeartBlocks
     public static Block POCKET_PORTAL;
     public static Block PORTAL_WALL;
 
+    public static Block POCKET_WALL;
     public static Block VOIDSTONE;
     public static Block VOIDSTONE_BRICKS;
     public static Block ELDRITCH_VOIDSTONE;
+
+    public static Block VOID_ALTAR;
+    public static Block VOID_PILLAR;
 
     public static void registerBlocks()
     {
@@ -35,6 +41,15 @@ public class VoidHeartBlocks
 
         registerBlock(POCKET_PORTAL = new VoidPortalBlock(), itemGroup, "portal_interior");
         registerBlock(PORTAL_WALL = new PortalWallBlock(), itemGroup, "portal_wall");
+
+        registerBlock(VOID_ALTAR = new VoidAltarBlock(), itemGroup, "void_altar");
+        registerBlock(VOID_PILLAR = new VoidPillarBlock(), itemGroup, "void_pillar");
+
+        registerBlock(POCKET_WALL = new Block(FabricBlockSettings
+                .of(Material.STONE)
+                .strength(-1.0F, 3600000.0F)
+                .dropsNothing()
+                .allowsSpawning((state, world, pos, type) -> false)), itemGroup, "pocket_wall");
 
         registerBlock(VOIDSTONE = new Block(FabricBlockSettings
                 .of(Material.STONE, MaterialColor.BLACK)

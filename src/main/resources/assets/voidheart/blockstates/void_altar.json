@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=true": {
+      "model": "voidheart:block/void_altar_active"
+    },
+    "lit=false": {
+      "model": "voidheart:block/void_altar"
+    }
+  }
+}

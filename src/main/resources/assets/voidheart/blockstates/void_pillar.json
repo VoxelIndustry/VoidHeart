@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=true": {
+      "model": "voidheart:block/void_pillar_active"
+    },
+    "lit=false": {
+      "model": "voidheart:block/void_pillar"
+    }
+  }
+}
