@@ -33,12 +33,12 @@ public class PortalFormer
         BlockPos min = new BlockPos(
                 min(area.getLeft().getX(), area.getRight().getX()) + (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
                 min(area.getLeft().getY(), area.getRight().getY()) + (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
-                min(area.getLeft().getZ(), area.getRight().getZ() + (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
+                min(area.getLeft().getZ(), area.getRight().getZ()) + (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0));
 
         BlockPos max = new BlockPos(
                 max(area.getLeft().getX(), area.getRight().getX()) - (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
                 max(area.getLeft().getY(), area.getRight().getY()) - (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
-                max(area.getLeft().getZ(), area.getRight().getZ() - (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0)));
+                max(area.getLeft().getZ(), area.getRight().getZ()) - (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0));
 
         return Pair.of(min, max);
     }

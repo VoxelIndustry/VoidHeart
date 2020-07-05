@@ -43,8 +43,7 @@ public class PortalWallBlock extends Block implements BlockEntityProvider
         {
             if (!world.isClient())
             {
-                player.sendMessage(new LiteralText("FRAMES: " + tile.getLinkedFrames()), false);
-                player.sendMessage(new LiteralText("CORES: " + tile.getLinkedCores()), false);
+                player.sendMessage(new LiteralText("POINTS: " + tile.getPortalPoints()), false);
             }
             return ActionResult.PASS;
         }

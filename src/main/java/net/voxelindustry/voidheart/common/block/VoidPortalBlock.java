@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.block;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -47,6 +49,13 @@ public class VoidPortalBlock extends Block implements BlockEntityProvider
     }
 
     @Override
+    @Environment(EnvType.CLIENT)
+    public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state)
+    {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
     public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
     {
         return emptyList();
@@ -73,7 +82,10 @@ public class VoidPortalBlock extends Block implements BlockEntityProvider
     @Override
     public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity collider)
     {
-        if (!world.isClient() && collider.canUsePortals()
+        if (collider.hasVehicle() || collider.hasPassengers() || !collider.canUsePortals())
+            return;
+
+        if (!world.isClient()
                 && VoxelShapes.matchesAnywhere(
                 VoxelShapes.cuboid(collider.getBoundingBox().offset(-pos.getX(), -pos.getY(), -pos.getZ())), getOutlineShape(state, world, pos, null), BooleanBiFunction.AND))
         {

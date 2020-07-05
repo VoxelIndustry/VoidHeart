@@ -292,9 +292,18 @@ public class PortalWallTile extends BlockEntity
 
     public Vec3d getPortalMiddlePos()
     {
+        float y;
+
+        if (getFacing().getAxis() != Axis.Y)
+            y = 1;
+        else if (getFacing() == Direction.UP)
+            y = 0;
+        else // DOWN
+            y = -1;
+
         Vec3d center = new Vec3d(
                 (portalPoints.getRight().getX() - portalPoints.getLeft().getX()) / 2F,
-                getFacing().getAxis() != Axis.Y ? 1 : (portalPoints.getRight().getY() - portalPoints.getLeft().getY()) / 2F,
+                y,
                 (portalPoints.getRight().getZ() - portalPoints.getLeft().getZ()) / 2F
         );
 
