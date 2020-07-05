@@ -292,16 +292,18 @@ public class PortalWallTile extends BlockEntity
 
     public Vec3d getPortalMiddlePos()
     {
-        BlockPos.Mutable center = portalPoints.getRight().subtract(portalPoints.getLeft()).mutableCopy();
+        Vec3d center = new Vec3d(
+                (portalPoints.getRight().getX() - portalPoints.getLeft().getX()) / 2F,
+                getFacing().getAxis() != Axis.Y ? 1 : (portalPoints.getRight().getY() - portalPoints.getLeft().getY()) / 2F,
+                (portalPoints.getRight().getZ() - portalPoints.getLeft().getZ()) / 2F
+        );
 
-        center.setX(center.getX() / 2);
-        center.setY(center.getY() / 2);
-        center.setZ(center.getZ() / 2);
-        if (getFacing().getAxis() != Axis.Y)
-            center.setY(1);
-
-        center.move(getFacing());
-        return Vec3d.ofCenter(center.add(portalPoints.getLeft()));
+        Direction facing = getFacing();
+        center = center.add(
+                facing.getOffsetX() + 0.5F + portalPoints.getLeft().getX(),
+                facing.getOffsetY() + portalPoints.getLeft().getY(),
+                facing.getOffsetZ() + 0.5F + portalPoints.getLeft().getZ());
+        return center;
     }
 
     private boolean tryForm(Direction direction)
