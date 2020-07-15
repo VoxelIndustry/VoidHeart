@@ -32,8 +32,10 @@ dependencies {
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
+    modImplementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
+
     modApi "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:${project.cardinal_version}"
-    modImplementation "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-world:${project.cardinal_version}"
+    modImplementation "io.github.onyxstudios:Cardinal-Components-API:${project.cardinal_version}"
 
     modImplementation "io.github.prospector:modmenu:${project.modmenu_version}"
     modCompile "me.shedaniel:RoughlyEnoughItems:${project.rei_version}"
@@ -42,6 +44,7 @@ dependencies {
     modRuntime "me.shedaniel.cloth:config-2:2.14.1"
 
     compileOnly 'org.projectlombok:lombok:1.18.12'
+    annotationProcessor 'org.projectlombok:lombok:1.18.12'
 
     testCompile('org.junit.jupiter:junit-jupiter-api:5.6.1')
     testCompile('org.mockito:mockito-core:3.3.3')

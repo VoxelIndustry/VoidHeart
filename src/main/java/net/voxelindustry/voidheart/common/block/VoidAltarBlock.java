@@ -7,17 +7,20 @@ import net.minecraft.block.Material;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.voidheart.common.tile.VoidAltarTile;
 
 public class VoidAltarBlock extends Block implements BlockEntityProvider
@@ -50,13 +53,43 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
     {
         world.setBlockState(pos, state.with(Properties.LIT, !state.get(Properties.LIT)));
 
+        VoidAltarTile altar = (VoidAltarTile) world.getBlockEntity(pos);
+
+        if (altar == null)
+            return ActionResult.SUCCESS;
+
+        if (altar.getStack().isEmpty())
+        {
+            altar.setStack(player, ItemUtils.copyWithSize(player.getStackInHand(hand), 1));
+
+            if (!player.isCreative())
+                player.getStackInHand(hand).decrement(1);
+        }
+        else
+        {
+            if (player.getStackInHand(hand).isEmpty())
+                player.setStackInHand(hand, altar.getStack());
+            else
+                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), altar.getStack());
+            altar.setStack(player, ItemStack.EMPTY);
+        }
+
         return ActionResult.SUCCESS;
     }
 
     @Override
-    public boolean hasSidedTransparency(BlockState state)
+    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved)
     {
-        return true;
+        if (!state.isOf(newState.getBlock()))
+        {
+            VoidAltarTile tile = (VoidAltarTile) world.getBlockEntity(pos);
+            if (tile != null)
+            {
+                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
+                tile.dropAteItems();
+            }
+        }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override

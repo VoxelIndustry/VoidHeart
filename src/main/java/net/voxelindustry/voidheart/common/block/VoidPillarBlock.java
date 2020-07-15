@@ -7,25 +7,28 @@ import net.minecraft.block.Material;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.voidheart.common.tile.VoidPillarTile;
 
 public class VoidPillarBlock extends Block implements BlockEntityProvider
 {
     private static final VoxelShape SHAPE = VoxelShapes.union(
             createCuboidShape(1, 0, 1, 15, 4, 15),
-            createCuboidShape(4, 4, 4, 11, 12, 11),
-            createCuboidShape(3, 12, 3, 12, 16, 12)
+            createCuboidShape(4, 4, 4, 12, 12, 12),
+            createCuboidShape(3, 12, 3, 13, 16, 13)
     );
 
     public VoidPillarBlock()
@@ -49,7 +52,40 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
     {
         world.setBlockState(pos, state.with(Properties.LIT, !state.get(Properties.LIT)));
 
+        VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
+
+        if (pillar == null)
+            return ActionResult.SUCCESS;
+
+        if (pillar.getStack().isEmpty())
+        {
+            pillar.setStack(ItemUtils.copyWithSize(player.getStackInHand(hand), 1));
+
+            if (!player.isCreative())
+                player.getStackInHand(hand).decrement(1);
+        }
+        else
+        {
+            if (player.getStackInHand(hand).isEmpty())
+                player.setStackInHand(hand, pillar.getStack());
+            else
+                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), pillar.getStack());
+            pillar.setStack(ItemStack.EMPTY);
+        }
+
         return ActionResult.SUCCESS;
+    }
+
+    @Override
+    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved)
+    {
+        if (!state.isOf(newState.getBlock()))
+        {
+            VoidPillarTile tile = (VoidPillarTile) world.getBlockEntity(pos);
+            if (tile != null)
+                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
+        }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override
