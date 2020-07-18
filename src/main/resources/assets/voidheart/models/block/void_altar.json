@@ -2,8 +2,8 @@
   "parent": "block/block",
   "credit": "Made with Blockbench",
   "textures": {
-    "0": "voidheart:block/void_altar",
-    "particle": "voidheart:block/void_altar"
+    "0": "voidheart:block/void_altar_inactive",
+    "particle": "voidheart:block/void_altar_inactive"
   },
   "elements": [
     {
