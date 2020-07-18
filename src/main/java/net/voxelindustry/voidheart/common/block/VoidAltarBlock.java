@@ -51,8 +51,6 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
-        world.setBlockState(pos, state.with(Properties.LIT, !state.get(Properties.LIT)));
-
         VoidAltarTile altar = (VoidAltarTile) world.getBlockEntity(pos);
 
         if (altar == null)

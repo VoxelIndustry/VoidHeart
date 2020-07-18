@@ -50,8 +50,6 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
-        world.setBlockState(pos, state.with(Properties.LIT, !state.get(Properties.LIT)));
-
         VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
 
         if (pillar == null)
@@ -82,6 +80,7 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
         if (!state.isOf(newState.getBlock()))
         {
             VoidPillarTile tile = (VoidPillarTile) world.getBlockEntity(pos);
+            tile.removeItself();
             if (tile != null)
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
         }

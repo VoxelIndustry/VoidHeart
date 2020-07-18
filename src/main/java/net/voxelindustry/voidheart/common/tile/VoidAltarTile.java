@@ -6,9 +6,9 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.property.Properties;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.Tickable;
@@ -17,7 +17,6 @@ import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
-import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -74,7 +73,11 @@ public class VoidAltarTile extends TileBase implements Tickable
                 recipeState.fromTag(tag.getCompound("recipeState"));
                 this.recipeState = recipeState;
             }
+            else
+                stopCrafting();
         }
+        else if (recipeState != null)
+            recipeState = null;
     }
 
     @Override
@@ -122,21 +125,21 @@ public class VoidAltarTile extends TileBase implements Tickable
         {
             if (!stack.isEmpty() && isCrafting)
             {
-                getWorld().addParticle(VoidHeart.ALTAR_PILLAR_PARTICLE,
+/*                getWorld().addParticle(VoidHeart.ALTAR_PILLAR_PARTICLE,
                         getPos().getX() + 0.5,
                         getPos().getY() + 1 + 6 / 16D,
                         getPos().getZ() + 0.5,
                         1,
                         1,
-                        1);
+                        1);*/
 
-                getWorld().addParticle(ParticleTypes.PORTAL,
+/*                getWorld().addParticle(ParticleTypes.PORTAL,
                         getPos().getX() + 0.5,
                         getPos().getY() + 1 + 6 / 16D,
                         getPos().getZ() + 0.5,
                         1,
                         -1,
-                        3);
+                        3);*/
             }
             return;
         }
@@ -206,12 +209,30 @@ public class VoidAltarTile extends TileBase implements Tickable
     {
         if (world.getBlockState(pos).getBlock() != VoidHeartBlocks.VOID_PILLAR)
             return;
-        pillars.add((VoidPillarTile) world.getBlockEntity(pos));
+
+        VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
+        if (pillar == null)
+            return;
+
+        if (isCrafting)
+            pillar.addAltar(getPos());
+
+        pillars.add(pillar);
+    }
+
+    public void removePillar(VoidPillarTile pillar)
+    {
+        pillars.remove(pillar);
     }
 
     private void startCrafting()
     {
         isCrafting = true;
+
+        if (!getCachedState().get(Properties.LIT))
+            getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, true));
+
+        pillars.forEach(pillar -> pillar.addAltar(getPos()));
     }
 
     private void stopCrafting()
@@ -220,6 +241,12 @@ public class VoidAltarTile extends TileBase implements Tickable
         recipeState = null;
         recipeProgress = 0;
         isCrafting = false;
+
+        if (getCachedState().get(Properties.LIT))
+            getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, false));
+
+        pillars.forEach(pillar -> pillar.removeAltar(getPos()));
+
     }
 
     private void finishCrafting()
@@ -230,6 +257,11 @@ public class VoidAltarTile extends TileBase implements Tickable
         currentRecipe = null;
         isCrafting = false;
         sync();
+
+        if (getCachedState().get(Properties.LIT))
+            getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, false));
+
+        pillars.forEach(pillar -> pillar.removeAltar(getPos()));
     }
 
     public void dropAteItems()
@@ -257,7 +289,7 @@ public class VoidAltarTile extends TileBase implements Tickable
 
         pillars.removeIf(BlockEntity::isRemoved);
 
-        if (pillars.size() == 0)
+        if (pillars.size() != 8)
             searchPillars();
 
         for (VoidPillarTile pillar : pillars)
