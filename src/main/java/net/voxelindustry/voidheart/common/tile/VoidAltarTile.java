@@ -176,64 +176,13 @@ public class VoidAltarTile extends TileBase implements Tickable
     {
         if (isClient())
         {
-            if (!stack.isEmpty() && isCrafting)
-            {
-                if (warmProgress < WARMING_TIME)
-                {
-                    getWorld().addParticle(new AltarVoidParticleEffect(0.05 + 0.05 * Interpolators.EXP_IN.apply(warmProgress / (float) WARMING_TIME)),
-                            getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
-                            getPos().getY() + 3 + getWorld().random.nextGaussian(),
-                            getPos().getZ() + 0.5 + getWorld().random.nextGaussian(),
-                            getPos().getX() + 0.5,
-                            getPos().getY() + 3,
-                            getPos().getZ() + 0.5);
-                }
-                else
-                {
-                    getWorld().addParticle(new AltarVoidParticleEffect(0.02),
-                            getPos().getX() + 0.5 + getWorld().random.nextGaussian() / 8F,
-                            getPos().getY() + 3,
-                            getPos().getZ() + 0.5 + getWorld().random.nextGaussian() / 8F,
-                            getPos().getX() + 0.5,
-                            getPos().getY() + 1,
-                            getPos().getZ() + 0.5);
-                }
-
-                if (consumingPillarIndex != -1)
-                {
-                    for (int index = 0; index < 3; index++)
-                    {
-                        getWorld().addParticle(new AltarItemParticleEffect(cachedToConsume, bezierFirstPoint, bezierSecondPoint),
-                                consumingPillarPos.getX() + 0.5,
-                                consumingPillarPos.getY() + 1 + 4 / 16D,
-                                consumingPillarPos.getZ() + 0.5,
-                                getPos().getX() + 0.5,
-                                getPos().getY() + 1 + 4 / 16D,
-                                getPos().getZ() + 0.5);
-                    }
-                }
-            }
+            playParticleEffects();
 
             if (isCrafting && warmProgress < WARMING_TIME)
                 warmProgress++;
 
-
             if (coolProgress > 0)
                 coolProgress--;
-
-            if (coolProgress == 1)
-            {
-                for (int index = 0; index < 16; index++)
-                {
-                    getWorld().addParticle(new AltarVoidParticleEffect(0.08),
-                            getPos().getX() + 0.5,
-                            getPos().getY() + 3,
-                            getPos().getZ() + 0.5,
-                            getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
-                            getPos().getY() + 3 + getWorld().random.nextGaussian(),
-                            getPos().getZ() + 0.5 + getWorld().random.nextGaussian());
-                }
-            }
 
             return;
         }
@@ -260,40 +209,104 @@ public class VoidAltarTile extends TileBase implements Tickable
         if (consumeProgress == 0 && pillars.size() != 8)
             refreshPillars();
 
-        if (consumingPillarIndex != -1)
-        {
-            if (!ItemUtils.deepEquals(cachedToConsume, pillars.get(consumingPillarIndex).getStack()))
-            {
-                consumeProgress = 0;
-                consumingPillarIndex = -1;
-                consumingPillarPos = BlockPos.ORIGIN;
-                cachedToConsume = ItemStack.EMPTY;
-            }
-
-            if (consumeProgress < VoidAltarTile.ITEM_EATING_TIME)
-                consumeProgress++;
-            else
-            {
-                consumeItemStack();
-                getWorld().playSound(getPos().getX(), getPos().getY(), getPos().getZ(), SoundEvents.BLOCK_PORTAL_TRAVEL, SoundCategory.BLOCKS, getWorld().random.nextFloat() * 0.4F + 0.8F, 0.25F, true);
-
-                consumeProgress = 0;
-                consumingPillarIndex = -1;
-                consumingPillarPos = BlockPos.ORIGIN;
-                cachedToConsume = ItemStack.EMPTY;
-            }
-        }
-
-        if (consumingPillarIndex == -1 && cachedToConsume.isEmpty())
-        {
-            ItemStack toConsume = getNextItemToEat();
-
-            if (toConsume.isEmpty())
-                finishCrafting();
-            else
-                cachedToConsume = findItemToConsume(toConsume);
-        }
+        computeConsumeAction();
+        computeCraftFinalization();
         sync();
+    }
+
+    private void computeCraftFinalization()
+    {
+        if (consumingPillarIndex != -1 || !cachedToConsume.isEmpty())
+            return;
+
+        ItemStack toConsume = getNextItemToEat();
+
+        if (toConsume.isEmpty())
+            finishCrafting();
+        else
+            cachedToConsume = findItemToConsume(toConsume);
+    }
+
+    private void computeConsumeAction()
+    {
+        if (consumingPillarIndex == -1)
+            return;
+
+        if (!ItemUtils.deepEquals(cachedToConsume, pillars.get(consumingPillarIndex).getStack()))
+        {
+            consumeProgress = 0;
+            consumingPillarIndex = -1;
+            consumingPillarPos = BlockPos.ORIGIN;
+            cachedToConsume = ItemStack.EMPTY;
+        }
+
+        if (consumeProgress < VoidAltarTile.ITEM_EATING_TIME)
+            consumeProgress++;
+        else
+        {
+            consumeItemStack();
+            getWorld().playSound(getPos().getX(), getPos().getY(), getPos().getZ(), SoundEvents.BLOCK_PORTAL_TRAVEL, SoundCategory.BLOCKS, getWorld().random.nextFloat() * 0.4F + 0.8F, 0.25F, true);
+
+            consumeProgress = 0;
+            consumingPillarIndex = -1;
+            consumingPillarPos = BlockPos.ORIGIN;
+            cachedToConsume = ItemStack.EMPTY;
+        }
+    }
+
+    private void playParticleEffects()
+    {
+        if (!stack.isEmpty() && isCrafting)
+        {
+            if (warmProgress < WARMING_TIME)
+            {
+                getWorld().addParticle(new AltarVoidParticleEffect(0.05 + 0.05 * Interpolators.EXP_IN.apply(warmProgress / (float) WARMING_TIME)),
+                        getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
+                        getPos().getY() + 3 + getWorld().random.nextGaussian(),
+                        getPos().getZ() + 0.5 + getWorld().random.nextGaussian(),
+                        getPos().getX() + 0.5,
+                        getPos().getY() + 3,
+                        getPos().getZ() + 0.5);
+            }
+            else
+            {
+                getWorld().addParticle(new AltarVoidParticleEffect(0.02),
+                        getPos().getX() + 0.5 + getWorld().random.nextGaussian() / 8F,
+                        getPos().getY() + 3,
+                        getPos().getZ() + 0.5 + getWorld().random.nextGaussian() / 8F,
+                        getPos().getX() + 0.5,
+                        getPos().getY() + 1,
+                        getPos().getZ() + 0.5);
+            }
+
+            if (consumingPillarIndex != -1)
+            {
+                for (int index = 0; index < 3; index++)
+                {
+                    getWorld().addParticle(new AltarItemParticleEffect(cachedToConsume, bezierFirstPoint, bezierSecondPoint),
+                            consumingPillarPos.getX() + 0.5,
+                            consumingPillarPos.getY() + 1 + 4 / 16D,
+                            consumingPillarPos.getZ() + 0.5,
+                            getPos().getX() + 0.5,
+                            getPos().getY() + 1 + 4 / 16D,
+                            getPos().getZ() + 0.5);
+                }
+            }
+        }
+
+        if (coolProgress == 1)
+        {
+            for (int index = 0; index < 16; index++)
+            {
+                getWorld().addParticle(new AltarVoidParticleEffect(0.08),
+                        getPos().getX() + 0.5,
+                        getPos().getY() + 3,
+                        getPos().getZ() + 0.5,
+                        getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
+                        getPos().getY() + 3 + getWorld().random.nextGaussian(),
+                        getPos().getZ() + 0.5 + getWorld().random.nextGaussian());
+            }
+        }
     }
 
     private void retrieveCurrentRecipe()
