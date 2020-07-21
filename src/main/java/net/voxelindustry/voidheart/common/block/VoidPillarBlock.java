@@ -35,7 +35,8 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
     {
         super(Settings.of(Material.STONE)
                 .strength(3F)
-                .sounds(BlockSoundGroup.STONE));
+                .sounds(BlockSoundGroup.STONE)
+                .lightLevel(state -> state.get(Properties.LIT) ? 11 : 0));
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.LIT, false));
@@ -80,9 +81,11 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
         if (!state.isOf(newState.getBlock()))
         {
             VoidPillarTile tile = (VoidPillarTile) world.getBlockEntity(pos);
-            tile.removeItself();
             if (tile != null)
+            {
+                tile.removeItself();
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
+            }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }

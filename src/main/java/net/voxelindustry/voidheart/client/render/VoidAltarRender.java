@@ -32,7 +32,8 @@ public class VoidAltarRender extends BlockEntityRenderer<VoidAltarTile>
         if (altar.getRecipeState() != null)
             CraftingOverlayRender.renderCraftingOverlay(altar, matrices, vertexConsumers, light);
 
-        CraftingVoidRender.renderVoidCube(altar, dispatcher, tickDelta, matrices, vertexConsumers);
+        if (altar.isCrafting() && altar.getWarmProgress() > 0 || altar.getCoolProgress() > 0)
+            CraftingVoidRender.renderVoidCube(altar, dispatcher, tickDelta, matrices, vertexConsumers);
 
         matrices.push();
 

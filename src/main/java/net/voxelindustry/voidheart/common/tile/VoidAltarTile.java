@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.tile;
 import lombok.Getter;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -13,10 +14,15 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Quaternion;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
+import net.voxelindustry.steamlayer.math.Vec3f;
+import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.particle.AltarItemParticleEffect;
+import net.voxelindustry.voidheart.common.particle.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -27,17 +33,39 @@ import java.util.List;
 
 public class VoidAltarTile extends TileBase implements Tickable
 {
+    public static final int WARMING_TIME     = 80;
+    public static final int COOLING_TIME     = 60;
+    public static final int ITEM_EATING_TIME = 60;
+
     private AltarRecipe currentRecipe;
     @Getter
     private RecipeState recipeState;
 
     private int     recipeProgress;
+    @Getter
     private boolean isCrafting;
+
+    @Getter
+    private int warmProgress;
+    @Getter
+    private int coolProgress;
+    private int consumeProgress;
+
+    private int       consumingPillarIndex = -1;
+    private BlockPos  consumingPillarPos   = BlockPos.ORIGIN;
+    private ItemStack cachedToConsume      = ItemStack.EMPTY;
 
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
 
     private final List<VoidPillarTile> pillars = new ArrayList<>();
+
+    ////////////
+    // CLIENT //
+    ////////////
+
+    private Vec3f bezierFirstPoint;
+    private Vec3f bezierSecondPoint;
 
     public VoidAltarTile()
     {
@@ -60,7 +88,23 @@ public class VoidAltarTile extends TileBase implements Tickable
 
         stack = ItemStack.fromTag(tag.getCompound("stack"));
         recipeProgress = tag.getInt("recipeProgress");
+        warmProgress = tag.getInt("warmProgress");
+        coolProgress = tag.getInt("coolProgress");
         isCrafting = tag.getBoolean("isCrafting");
+
+        if (isClient() && tag.contains("consumingPillarIndex"))
+        {
+            int previousConsumingPillarIndex = consumingPillarIndex;
+
+            consumingPillarIndex = tag.getInt("consumingPillarIndex");
+            consumingPillarPos = BlockPos.fromLong(tag.getLong("consumingPillarPos"));
+            cachedToConsume = ItemStack.fromTag(tag.getCompound("cachedToConsumeStack"));
+
+            if (previousConsumingPillarIndex != consumingPillarIndex)
+            {
+                computeBezier();
+            }
+        }
 
         if (isCrafting)
         {
@@ -85,7 +129,16 @@ public class VoidAltarTile extends TileBase implements Tickable
     {
         tag.put("stack", stack.toTag(new CompoundTag()));
         tag.putInt("recipeProgress", recipeProgress);
+        tag.putInt("warmProgress", warmProgress);
+        tag.putInt("coolProgress", coolProgress);
         tag.putBoolean("isCrafting", isCrafting);
+
+        if (isServer())
+        {
+            tag.putInt("consumingPillarIndex", consumingPillarIndex);
+            tag.putLong("consumingPillarPos", consumingPillarPos.asLong());
+            tag.put("cachedToConsumeStack", cachedToConsume.toTag(new CompoundTag()));
+        }
 
         if (isCrafting && recipeState != null)
             tag.put("recipeState", recipeState.toTag());
@@ -125,24 +178,68 @@ public class VoidAltarTile extends TileBase implements Tickable
         {
             if (!stack.isEmpty() && isCrafting)
             {
-/*                getWorld().addParticle(VoidHeart.ALTAR_PILLAR_PARTICLE,
-                        getPos().getX() + 0.5,
-                        getPos().getY() + 1 + 6 / 16D,
-                        getPos().getZ() + 0.5,
-                        1,
-                        1,
-                        1);*/
+                if (warmProgress < WARMING_TIME)
+                {
+                    getWorld().addParticle(new AltarVoidParticleEffect(0.05 + 0.05 * Interpolators.EXP_IN.apply(warmProgress / (float) WARMING_TIME)),
+                            getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
+                            getPos().getY() + 3 + getWorld().random.nextGaussian(),
+                            getPos().getZ() + 0.5 + getWorld().random.nextGaussian(),
+                            getPos().getX() + 0.5,
+                            getPos().getY() + 3,
+                            getPos().getZ() + 0.5);
+                }
+                else
+                {
+                    getWorld().addParticle(new AltarVoidParticleEffect(0.02),
+                            getPos().getX() + 0.5 + getWorld().random.nextGaussian() / 8F,
+                            getPos().getY() + 3,
+                            getPos().getZ() + 0.5 + getWorld().random.nextGaussian() / 8F,
+                            getPos().getX() + 0.5,
+                            getPos().getY() + 1,
+                            getPos().getZ() + 0.5);
+                }
 
-/*                getWorld().addParticle(ParticleTypes.PORTAL,
-                        getPos().getX() + 0.5,
-                        getPos().getY() + 1 + 6 / 16D,
-                        getPos().getZ() + 0.5,
-                        1,
-                        -1,
-                        3);*/
+                if (consumingPillarIndex != -1)
+                {
+                    for (int index = 0; index < 3; index++)
+                    {
+                        getWorld().addParticle(new AltarItemParticleEffect(cachedToConsume, bezierFirstPoint, bezierSecondPoint),
+                                consumingPillarPos.getX() + 0.5,
+                                consumingPillarPos.getY() + 1 + 4 / 16D,
+                                consumingPillarPos.getZ() + 0.5,
+                                getPos().getX() + 0.5,
+                                getPos().getY() + 1 + 4 / 16D,
+                                getPos().getZ() + 0.5);
+                    }
+                }
             }
+
+            if (isCrafting && warmProgress < WARMING_TIME)
+                warmProgress++;
+
+
+            if (coolProgress > 0)
+                coolProgress--;
+
+            if (coolProgress == 1)
+            {
+                for (int index = 0; index < 16; index++)
+                {
+                    getWorld().addParticle(new AltarVoidParticleEffect(0.08),
+                            getPos().getX() + 0.5,
+                            getPos().getY() + 3,
+                            getPos().getZ() + 0.5,
+                            getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
+                            getPos().getY() + 3 + getWorld().random.nextGaussian(),
+                            getPos().getZ() + 0.5 + getWorld().random.nextGaussian());
+                }
+            }
+
             return;
         }
+
+        if (coolProgress > 0)
+            coolProgress--;
 
         if (!isCrafting)
             return;
@@ -154,19 +251,49 @@ public class VoidAltarTile extends TileBase implements Tickable
             return;
         }
 
-        recipeProgress++;
-        if (recipeProgress >= currentRecipe.getTime())
+        if (warmProgress < WARMING_TIME)
         {
-            ItemStack toEat = getNextItemToEat();
-            if (toEat.isEmpty())
-                finishCrafting();
-            else if (tryEatItem(toEat))
+            warmProgress++;
+            return;
+        }
+
+        if (consumeProgress == 0 && pillars.size() != 8)
+            refreshPillars();
+
+        if (consumingPillarIndex != -1)
+        {
+            if (!ItemUtils.deepEquals(cachedToConsume, pillars.get(consumingPillarIndex).getStack()))
             {
-                sync();
-                recipeProgress = 0;
+                consumeProgress = 0;
+                consumingPillarIndex = -1;
+                consumingPillarPos = BlockPos.ORIGIN;
+                cachedToConsume = ItemStack.EMPTY;
+            }
+
+            if (consumeProgress < VoidAltarTile.ITEM_EATING_TIME)
+                consumeProgress++;
+            else
+            {
+                consumeItemStack();
                 getWorld().playSound(getPos().getX(), getPos().getY(), getPos().getZ(), SoundEvents.BLOCK_PORTAL_TRAVEL, SoundCategory.BLOCKS, getWorld().random.nextFloat() * 0.4F + 0.8F, 0.25F, true);
+
+                consumeProgress = 0;
+                consumingPillarIndex = -1;
+                consumingPillarPos = BlockPos.ORIGIN;
+                cachedToConsume = ItemStack.EMPTY;
             }
         }
+
+        if (consumingPillarIndex == -1 && cachedToConsume.isEmpty())
+        {
+            ItemStack toConsume = getNextItemToEat();
+
+            if (toConsume.isEmpty())
+                finishCrafting();
+            else
+                cachedToConsume = findItemToConsume(toConsume);
+        }
+        sync();
     }
 
     private void retrieveCurrentRecipe()
@@ -233,6 +360,8 @@ public class VoidAltarTile extends TileBase implements Tickable
             getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, true));
 
         pillars.forEach(pillar -> pillar.addAltar(getPos()));
+
+        warmProgress = 0;
     }
 
     private void stopCrafting()
@@ -246,7 +375,6 @@ public class VoidAltarTile extends TileBase implements Tickable
             getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, false));
 
         pillars.forEach(pillar -> pillar.removeAltar(getPos()));
-
     }
 
     private void finishCrafting()
@@ -254,6 +382,7 @@ public class VoidAltarTile extends TileBase implements Tickable
         stack = currentRecipe.getRecipeOutputs(ItemStack.class).get(0).getRaw();
         recipeState = null;
         recipeProgress = 0;
+        coolProgress = COOLING_TIME;
         currentRecipe = null;
         isCrafting = false;
         sync();
@@ -282,26 +411,38 @@ public class VoidAltarTile extends TileBase implements Tickable
         }
     }
 
-    private boolean tryEatItem(ItemStack toEat)
+    private void refreshPillars()
     {
-        if (toEat.isEmpty())
-            return false;
-
         pillars.removeIf(BlockEntity::isRemoved);
 
         if (pillars.size() != 8)
             searchPillars();
+    }
+
+    private ItemStack findItemToConsume(ItemStack toConsume)
+    {
+        if (toConsume.isEmpty())
+            return ItemStack.EMPTY;
+
+        refreshPillars();
 
         for (VoidPillarTile pillar : pillars)
         {
-            if (ItemUtils.deepEquals(pillar.getStack(), toEat))
+            if (ItemUtils.deepEquals(pillar.getStack(), toConsume))
             {
-                recipeState.consumeSlotless(ItemStack.class, pillar.getStack());
-                pillar.setStack(ItemStack.EMPTY);
-                return true;
+                consumingPillarIndex = pillars.indexOf(pillar);
+                consumingPillarPos = pillar.getPos();
+                return toConsume;
             }
         }
-        return false;
+        return ItemStack.EMPTY;
+    }
+
+    private void consumeItemStack()
+    {
+        VoidPillarTile pillar = pillars.get(consumingPillarIndex);
+        recipeState.consumeSlotless(ItemStack.class, pillar.getStack());
+        pillar.setStack(ItemStack.EMPTY);
     }
 
     private ItemStack getNextItemToEat()
@@ -319,5 +460,45 @@ public class VoidAltarTile extends TileBase implements Tickable
             return ingredientsLeft.get(index);
         }
         return ItemStack.EMPTY;
+    }
+
+    public void removeItself()
+    {
+        pillars.forEach(pillar -> pillar.removeAltar(getPos()));
+    }
+
+    private void computeBezier()
+    {
+        Vec3f start = new Vec3f(consumingPillarPos.getX() + 0.5F,
+                consumingPillarPos.getY() + 1 + 4 / 16F,
+                consumingPillarPos.getZ() + 0.5F);
+
+        Vec3f end = new Vec3f(getPos().getX() + 0.5F,
+                getPos().getY() + 1 + 4 / 16F,
+                getPos().getZ() + 0.5F);
+
+        Vec3f forward = end.subtract(start);
+        float length = forward.magnitude();
+        forward = forward.normalize();
+
+
+        float dispersion = getWorld().random.nextBoolean() ? getWorld().random.nextFloat() * 50 + 20 : -(getWorld().random.nextFloat() * 50 + 20);
+        Quaternion rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(dispersion);
+
+        bezierFirstPoint = start.add(forward.rotate(rotation).scale(length * (getWorld().random.nextFloat() / 3 + 0.2F)));
+
+        rotation.conjugate();
+        bezierSecondPoint = start.add(forward.rotate(rotation).scale(length * (getWorld().random.nextFloat() / 3 + 0.5F)));
+
+        if (getWorld().random.nextBoolean())
+        {
+            bezierFirstPoint.add(0, getWorld().random.nextFloat() * 1.5F, 0);
+            bezierSecondPoint.add(0, -getWorld().random.nextFloat() * 1.5F, 0);
+        }
+        else
+        {
+            bezierFirstPoint.add(0, -getWorld().random.nextFloat() * 1.5F, 0);
+            bezierSecondPoint.add(0, getWorld().random.nextFloat() * 1.5F, 0);
+        }
     }
 }

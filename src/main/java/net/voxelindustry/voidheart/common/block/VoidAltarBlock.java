@@ -36,7 +36,8 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
     {
         super(Settings.of(Material.STONE)
                 .strength(3F)
-                .sounds(BlockSoundGroup.STONE));
+                .sounds(BlockSoundGroup.STONE)
+                .lightLevel(state -> state.get(Properties.LIT) ? 11 : 0));
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.LIT, false));
@@ -83,6 +84,7 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
             VoidAltarTile tile = (VoidAltarTile) world.getBlockEntity(pos);
             if (tile != null)
             {
+                tile.removeItself();
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
                 tile.dropAteItems();
             }

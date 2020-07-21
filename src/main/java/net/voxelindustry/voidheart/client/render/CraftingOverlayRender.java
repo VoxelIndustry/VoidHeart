@@ -25,9 +25,9 @@ public class CraftingOverlayRender
         ItemStack output = altar.getRecipeState().getOutputs(ItemStack.class).get(0).getRaw();
 
         matrices.translate(0, 2, 0);
-        matrices.scale(2, 2, 2);
-        MinecraftClient.getInstance().getItemRenderer().renderItem(output, Mode.GUI, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers);
-        matrices.scale(0.5F, 0.5F, 0.5F);
+        matrices.scale(2.5F, 2.5F, 2.5F);
+        MinecraftClient.getInstance().getItemRenderer().renderItem(output, Mode.GUI, 15728880, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers);
+        matrices.scale(0.6F, 0.6F, 0.6F);
         matrices.translate(0, -2, 0);
 
         List<ItemStack> stackLefts = altar.getRecipeState().getIngredientsLeft(ItemStack.class);
@@ -45,7 +45,7 @@ public class CraftingOverlayRender
             if (stack.isEmpty())
                 continue;
             matrices.translate(1, 0, 0);
-            MinecraftClient.getInstance().getItemRenderer().renderItem(stack, Mode.GUI, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers);
+            MinecraftClient.getInstance().getItemRenderer().renderItem(stack, Mode.GUI, 15728880, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers);
         }
 
         matrices.pop();
