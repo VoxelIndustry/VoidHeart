@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.block;
+package net.voxelindustry.voidheart.common.content.portalframe;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
@@ -8,11 +8,10 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext.Builder;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -23,11 +22,11 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
-import net.voxelindustry.voidheart.common.tile.PortalFrameTile;
 
 import java.util.List;
 
 import static java.util.Collections.singletonList;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalFrameBlock extends Block implements BlockEntityProvider
 {
@@ -75,32 +74,26 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     {
         PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
         if (player.isSneaking())
-        {
-            if (!world.isClient())
-            {
-                player.sendMessage(new LiteralText("POINTS: " + tile.getPortalPoints()), false);
-            }
             return ActionResult.PASS;
-        }
-
 
         if (tile == null)
             return ActionResult.PASS;
 
-        if (world.isClient())
-            return ActionResult.SUCCESS;
-
         ItemStack stack = player.getStackInHand(hand);
-        if (stack.getItem() == VoidHeartItems.VOID_HEART_PIECE)
+        if (stack.getItem() == VoidHeartItems.VOID_PEARL)
         {
-            CompoundTag tag = stack.getOrCreateTag();
-            if (!tag.containsUuid("player"))
-                return ActionResult.PASS;
-
-            if (tile.voidPieceInteract(hit.getSide(), player, player.getStackInHand(hand)))
-            {
+            if (world.isClient())
                 return ActionResult.SUCCESS;
+
+            boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUuid());
+            if (!PortalFormer.canUsePearlHere(stack, isInPocket))
+            {
+                player.sendMessage(new TranslatableText(MODID + ".must_be_inside_outside"), true);
+                return ActionResult.PASS;
             }
+
+            if (tile.voidPieceInteract(hit.getSide(), player, player.getStackInHand(hand), isInPocket))
+                return ActionResult.SUCCESS;
         }
 
         return super.onUse(state, world, pos, player, hand, hit);

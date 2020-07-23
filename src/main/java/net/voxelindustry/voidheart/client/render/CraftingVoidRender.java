@@ -7,7 +7,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
-import net.voxelindustry.voidheart.common.tile.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 
 import java.util.Random;
 

@@ -15,12 +15,12 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
-import net.voxelindustry.voidheart.common.block.PortalFrameBlock;
-import net.voxelindustry.voidheart.common.block.PortalFrameCoreBlock;
-import net.voxelindustry.voidheart.common.block.PortalInteriorBlock;
-import net.voxelindustry.voidheart.common.block.VoidAltarBlock;
-import net.voxelindustry.voidheart.common.block.VoidPillarBlock;
-import net.voxelindustry.voidheart.common.block.VoidStoneBricksBlock;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
+import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
+import net.voxelindustry.voidheart.common.content.portalframe.VoidStoneBricksBlock;
+import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorBlock;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 

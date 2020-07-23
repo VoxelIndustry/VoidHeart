@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.particle;
+package net.voxelindustry.voidheart.common.content.altar;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;

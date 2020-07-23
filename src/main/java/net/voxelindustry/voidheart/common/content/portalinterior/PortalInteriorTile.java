@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.tile;
+package net.voxelindustry.voidheart.common.content.portalinterior;
 
 import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
 import net.minecraft.block.BlockState;
@@ -8,14 +8,15 @@ import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
-public class VoidPortalTile extends BlockEntity
+public class PortalInteriorTile extends BlockEntity
 {
     private BlockPos        corePos;
     private PortalFrameTile core;
 
-    public VoidPortalTile()
+    public PortalInteriorTile()
     {
         super(VoidHeartTiles.POCKET_PORTAL);
     }

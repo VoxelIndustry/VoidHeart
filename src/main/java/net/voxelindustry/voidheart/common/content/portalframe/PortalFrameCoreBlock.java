@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.block;
+package net.voxelindustry.voidheart.common.content.portalframe;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

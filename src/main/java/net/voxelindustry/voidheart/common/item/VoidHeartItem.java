@@ -71,7 +71,7 @@ public class VoidHeartItem extends Item
             ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
             VoidPocketState.getVoidPocketState(voidWorld).createPocket(voidWorld, tag.getUuid("player"));
 
-            ItemStack pieceStack = new ItemStack(VoidHeartItems.VOID_HEART_PIECE);
+            ItemStack pieceStack = new ItemStack(VoidHeartItems.VOID_PEARL);
             pieceStack.getOrCreateTag().putUuid("player", tag.getUuid("player"));
             pieceStack.getOrCreateTag().putString("playerName", tag.getString("playerName"));
 

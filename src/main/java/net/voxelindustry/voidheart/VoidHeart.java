@@ -16,13 +16,13 @@ import net.minecraft.world.dimension.DimensionType;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
-import net.voxelindustry.voidheart.common.generator.VoidChunkGenerator;
-import net.voxelindustry.voidheart.common.particle.AltarItemParticleEffect;
-import net.voxelindustry.voidheart.common.particle.AltarVoidParticleEffect;
+import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
+import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
 
 public class VoidHeart implements ModInitializer
 {

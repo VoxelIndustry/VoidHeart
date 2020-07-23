@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.tile;
+package net.voxelindustry.voidheart.common.content.portalframe;
 
 import com.qouteall.immersive_portals.portal.Portal;
 import lombok.AccessLevel;
@@ -24,9 +24,9 @@ import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
-import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import static java.lang.Math.abs;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalFrameTile extends TileBase
@@ -66,7 +65,7 @@ public class PortalFrameTile extends TileBase
         super(VoidHeartTiles.PORTAL_WALL);
     }
 
-    public boolean voidPieceInteract(Direction direction, PlayerEntity player, ItemStack voidPiece)
+    public boolean voidPieceInteract(Direction direction, PlayerEntity player, ItemStack voidPiece, boolean isInPocket)
     {
         CompoundTag tag = voidPiece.getOrCreateTag();
 
@@ -78,9 +77,6 @@ public class PortalFrameTile extends TileBase
                 return false;
             }
         }
-
-        UUID playerUUID = tag.getUuid("player");
-        boolean isInPocket = isInPocket(playerUUID);
 
         if (isInPocket)
         {
@@ -267,7 +263,7 @@ public class PortalFrameTile extends TileBase
             {
                 world.setBlockState(pos, VoidHeartBlocks.PORTAL_INTERIOR.getDefaultState().with(Properties.FACING, facing));
 
-                VoidPortalTile portal = (VoidPortalTile) world.getBlockEntity(pos);
+                PortalInteriorTile portal = (PortalInteriorTile) world.getBlockEntity(pos);
                 portal.setCore(getPos());
 
                 linkedInteriors.add(pos.toImmutable());
@@ -397,20 +393,6 @@ public class PortalFrameTile extends TileBase
         return center;
     }
 
-
-    public boolean isInPocket(UUID playerUUID)
-    {
-        ServerWorld voidWorld = getWorld().getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
-
-        if (getWorld() != voidWorld)
-            return false;
-
-        BlockPos pocketPos = VoidPocketState.getVoidPocketState((ServerWorld) getWorld()).getPosForPlayer(playerUUID);
-
-        return abs(pocketPos.getX() - getPos().getX()) < 9 &&
-                abs(pocketPos.getY() - getPos().getY()) < 9 &&
-                abs(pocketPos.getZ() - getPos().getZ()) < 9;
-    }
 
     void addCore(PortalFrameTile wall)
     {

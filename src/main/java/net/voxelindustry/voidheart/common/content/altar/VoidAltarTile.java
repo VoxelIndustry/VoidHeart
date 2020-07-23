@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.tile;
+package net.voxelindustry.voidheart.common.content.altar;
 
 import lombok.Getter;
 import net.minecraft.block.BlockState;
@@ -21,8 +21,7 @@ import net.voxelindustry.steamlayer.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
-import net.voxelindustry.voidheart.common.particle.AltarItemParticleEffect;
-import net.voxelindustry.voidheart.common.particle.AltarVoidParticleEffect;
+import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;

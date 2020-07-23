@@ -7,13 +7,13 @@ import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.item.VoidAmalgamItem;
 import net.voxelindustry.voidheart.common.item.VoidHeartItem;
-import net.voxelindustry.voidheart.common.item.VoidHeartPieceItem;
+import net.voxelindustry.voidheart.common.item.VoidPearlItem;
 
 public class VoidHeartItems
 {
-    public static VoidHeartItem      VOID_HEART;
-    public static VoidAmalgamItem    VOID_AMALGAM;
-    public static VoidHeartPieceItem VOID_HEART_PIECE;
+    public static VoidHeartItem   VOID_HEART;
+    public static VoidAmalgamItem VOID_AMALGAM;
+    public static VoidPearlItem   VOID_PEARL;
 
     public static Item OBSIDIAN_SHARD;
     public static Item ENDER_SHARD;
@@ -21,7 +21,7 @@ public class VoidHeartItems
     public static void registerItems()
     {
         registerItem(VOID_HEART = new VoidHeartItem(), new Identifier(VoidHeart.MODID, "void_heart"));
-        registerItem(VOID_HEART_PIECE = new VoidHeartPieceItem(), new Identifier(VoidHeart.MODID, "void_heart_piece"));
+        registerItem(VOID_PEARL = new VoidPearlItem(), new Identifier(VoidHeart.MODID, "void_pearl"));
         registerItem(VOID_AMALGAM = new VoidAmalgamItem(), new Identifier(VoidHeart.MODID, "void_amalgam"));
 
         registerItem(OBSIDIAN_SHARD = new Item(new Settings().group(VoidHeart.ITEMGROUP)), new Identifier(VoidHeart.MODID, "obsidian_shard"));

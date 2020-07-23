@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.generator;
+package net.voxelindustry.voidheart.common.world;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Decoder;

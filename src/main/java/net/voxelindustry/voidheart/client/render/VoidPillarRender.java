@@ -8,7 +8,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.model.json.ModelTransformation.Mode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.voxelindustry.voidheart.common.tile.VoidPillarTile;
+import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 
 public class VoidPillarRender extends BlockEntityRenderer<VoidPillarTile>
 {

@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.block;
+package net.voxelindustry.voidheart.common.content.altar;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
@@ -21,7 +21,6 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
-import net.voxelindustry.voidheart.common.tile.VoidAltarTile;
 
 public class VoidAltarBlock extends Block implements BlockEntityProvider
 {

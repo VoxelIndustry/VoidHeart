@@ -6,7 +6,7 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos.Mutable;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
-import net.voxelindustry.voidheart.common.tile.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 
 public class PillarPlacementRender
 {

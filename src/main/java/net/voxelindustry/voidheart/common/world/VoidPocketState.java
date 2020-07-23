@@ -120,4 +120,9 @@ public class VoidPocketState extends PersistentState
     {
         BlockPos.iterate(from, to).forEach(pos -> world.setBlockState(pos, state));
     }
+
+    public boolean hasPocket(UUID player)
+    {
+        return posByPlayerID.containsKey(player);
+    }
 }

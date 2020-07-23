@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.tile;
+package net.voxelindustry.voidheart.common.content.pillar;
 
 import lombok.Getter;
 import net.minecraft.block.BlockState;
@@ -8,6 +8,7 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 

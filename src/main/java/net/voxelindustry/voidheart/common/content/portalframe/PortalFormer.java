@@ -1,26 +1,52 @@
-package net.voxelindustry.voidheart.common.tile;
+package net.voxelindustry.voidheart.common.content.portalframe;
 
 import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.common.block.PortalFrameBlock;
+import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import static java.lang.Math.*;
 import static net.minecraft.util.math.Direction.Axis.X;
 import static net.minecraft.util.math.Direction.Axis.Y;
 import static net.minecraft.util.math.Direction.*;
 
 public class PortalFormer
 {
+    public static boolean canUsePearlHere(ItemStack stack, boolean isInPocket)
+    {
+        if (isInPocket && !stack.getOrCreateTag().contains("pocketPos"))
+            return true;
+        if (!isInPocket && !stack.getOrCreateTag().contains("externalPos"))
+            return true;
+        return false;
+    }
+
+    public static boolean isInPocket(World world, BlockPos pos, UUID playerUUID)
+    {
+        ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
+
+        if (world != voidWorld)
+            return false;
+
+        BlockPos pocketPos = VoidPocketState.getVoidPocketState((ServerWorld) world).getPosForPlayer(playerUUID);
+
+        return abs(pocketPos.getX() - pos.getX()) < 9 &&
+                abs(pocketPos.getY() + 6 - pos.getY()) < 9 &&
+                abs(pocketPos.getZ() - pos.getZ()) < 9;
+    }
+
     public static boolean tryForm(World world, BlockState state, BlockPos brickPos, Direction direction)
     {
         Pair<BlockPos, BlockPos> portalPoints = PortalFormer.tryFloodFill(

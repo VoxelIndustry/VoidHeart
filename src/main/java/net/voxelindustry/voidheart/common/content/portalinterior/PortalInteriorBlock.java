@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.block;
+package net.voxelindustry.voidheart.common.content.portalinterior;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -24,7 +24,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.common.tile.VoidPortalTile;
 
 import java.util.List;
 
@@ -89,7 +88,7 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
                 && VoxelShapes.matchesAnywhere(
                 VoxelShapes.cuboid(collider.getBoundingBox().offset(-pos.getX(), -pos.getY(), -pos.getZ())), getOutlineShape(state, world, pos, null), BooleanBiFunction.AND))
         {
-            VoidPortalTile tile = (VoidPortalTile) world.getBlockEntity(pos);
+            PortalInteriorTile tile = (PortalInteriorTile) world.getBlockEntity(pos);
 
             if (tile == null)
                 return;
@@ -125,6 +124,6 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
     @Override
     public BlockEntity createBlockEntity(BlockView world)
     {
-        return new VoidPortalTile();
+        return new PortalInteriorTile();
     }
 }
