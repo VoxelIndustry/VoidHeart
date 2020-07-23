@@ -1,8 +1,13 @@
 package net.voxelindustry.voidheart.common.tile;
 
+import com.qouteall.immersive_portals.portal.Portal;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -17,6 +22,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
+import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -31,7 +37,7 @@ import java.util.UUID;
 import static java.lang.Math.abs;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class PortalWallTile extends BlockEntity
+public class PortalFrameTile extends TileBase
 {
     @Getter
     private final List<BlockPos> linkedFrames    = new ArrayList<>();
@@ -41,17 +47,21 @@ public class PortalWallTile extends BlockEntity
     private final List<BlockPos> linkedCores     = new ArrayList<>();
 
     @Getter
+    @Setter(AccessLevel.PACKAGE)
     private Pair<BlockPos, BlockPos> portalPoints;
 
     @Getter
+    @Setter(AccessLevel.PACKAGE)
     private boolean isCore;
+
+    private UUID portalEntityID;
 
     private Identifier         linkedWorld;
     private BlockPos           linkedPos;
     private Direction          linkedFacing;
     private RegistryKey<World> linkedWorldKey;
 
-    public PortalWallTile()
+    public PortalFrameTile()
     {
         super(VoidHeartTiles.PORTAL_WALL);
     }
@@ -59,12 +69,10 @@ public class PortalWallTile extends BlockEntity
     public boolean voidPieceInteract(Direction direction, PlayerEntity player, ItemStack voidPiece)
     {
         CompoundTag tag = voidPiece.getOrCreateTag();
-        if (!tag.containsUuid("player"))
-            return false;
 
         if (!isCore())
         {
-            if (!tryForm(direction))
+            if (!PortalFormer.tryForm(getWorld(), getCachedState(), getPos(), direction))
             {
                 player.sendMessage(new TranslatableText(MODID + ".portal_form_error"), true);
                 return false;
@@ -83,9 +91,9 @@ public class PortalWallTile extends BlockEntity
 
                 BlockEntity linkedPortal = getWorld().getServer().getWorld(externalDimension).getBlockEntity(externalPos);
 
-                if (linkedPortal instanceof PortalWallTile)
+                if (linkedPortal instanceof PortalFrameTile)
                 {
-                    if (!areShapeEquals(((PortalWallTile) linkedPortal)))
+                    if (!areShapeEquals(((PortalFrameTile) linkedPortal)))
                     {
                         player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
                         return false;
@@ -99,10 +107,10 @@ public class PortalWallTile extends BlockEntity
 
                     voidPiece.decrement(1);
 
-                    ((PortalWallTile) linkedPortal).setLinkedPos(getPos());
-                    ((PortalWallTile) linkedPortal).setLinkedWorld(VoidHeart.VOID_WORLD_KEY.getValue());
-                    ((PortalWallTile) linkedPortal).setLinkedFacing(getFacing());
-                    ((PortalWallTile) linkedPortal).linkPortal();
+                    ((PortalFrameTile) linkedPortal).setLinkedPos(getPos());
+                    ((PortalFrameTile) linkedPortal).setLinkedWorld(VoidHeart.VOID_WORLD_KEY.getValue());
+                    ((PortalFrameTile) linkedPortal).setLinkedFacing(getFacing());
+                    ((PortalFrameTile) linkedPortal).linkPortal();
 
                     player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
                 }
@@ -133,9 +141,9 @@ public class PortalWallTile extends BlockEntity
 
             BlockEntity linkedPortal = voidWorld.getBlockEntity(pocketPos);
 
-            if (linkedPortal instanceof PortalWallTile)
+            if (linkedPortal instanceof PortalFrameTile)
             {
-                if (!areShapeEquals(((PortalWallTile) linkedPortal)))
+                if (!areShapeEquals(((PortalFrameTile) linkedPortal)))
                 {
                     player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
                     return false;
@@ -149,10 +157,10 @@ public class PortalWallTile extends BlockEntity
 
                 voidPiece.decrement(1);
 
-                ((PortalWallTile) linkedPortal).setLinkedPos(getPos());
-                ((PortalWallTile) linkedPortal).setLinkedWorld(getWorld().getRegistryKey().getValue());
-                ((PortalWallTile) linkedPortal).setLinkedFacing(getFacing());
-                ((PortalWallTile) linkedPortal).linkPortal();
+                ((PortalFrameTile) linkedPortal).setLinkedPos(getPos());
+                ((PortalFrameTile) linkedPortal).setLinkedWorld(getWorld().getRegistryKey().getValue());
+                ((PortalFrameTile) linkedPortal).setLinkedFacing(getFacing());
+                ((PortalFrameTile) linkedPortal).linkPortal();
 
                 player.sendMessage(new TranslatableText(MODID + ".link_successful", "§3"), true);
             }
@@ -189,7 +197,7 @@ public class PortalWallTile extends BlockEntity
                 if (pos.equals(eventSource))
                     return;
 
-                PortalWallTile wall = (PortalWallTile) getWorld().getBlockEntity(pos);
+                PortalFrameTile wall = (PortalFrameTile) getWorld().getBlockEntity(pos);
                 if (wall != null)
                     wall.removeCore(this);
             });
@@ -202,7 +210,7 @@ public class PortalWallTile extends BlockEntity
                 if (pos.equals(eventSource))
                     return;
 
-                PortalWallTile wall = (PortalWallTile) getWorld().getBlockEntity(pos);
+                PortalFrameTile wall = (PortalFrameTile) getWorld().getBlockEntity(pos);
                 if (wall != null)
                     wall.removeFrame(this);
             });
@@ -213,7 +221,7 @@ public class PortalWallTile extends BlockEntity
             return;
         }
 
-        PortalWallTile linked = getLinkedPortal();
+        PortalFrameTile linked = getLinkedPortal();
 
         if (linked != null)
         {
@@ -232,36 +240,110 @@ public class PortalWallTile extends BlockEntity
         setLinkedFacing(null);
         setLinkedPos(null);
 
+        if (!getWorld().isAir(pos))
+            getWorld().setBlockState(pos, getCachedState().with(Properties.LIT, false));
         linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
+
+        if (getWorld() != null && isServer() && portalEntityID != null)
+            ((ServerWorld) getWorld()).removeEntity(((ServerWorld) getWorld()).getEntity(portalEntityID));
     }
 
-    private PortalWallTile getLinkedPortal()
+    private PortalFrameTile getLinkedPortal()
     {
-        return (PortalWallTile) getWorld().getServer().getWorld(getLinkedWorldKey()).getBlockEntity(getLinkedPos());
+        return (PortalFrameTile) getWorld().getServer().getWorld(getLinkedWorldKey()).getBlockEntity(getLinkedPos());
     }
 
     private void linkPortal()
     {
         Direction facing = getFacing();
 
-        Pair<BlockPos, BlockPos> interiorPoints = PortalFormer.excludeBorders(portalPoints);
-        BlockPos.stream(interiorPoints.getLeft(), interiorPoints.getRight()).forEach(pos ->
+        if (FabricLoader.getInstance().isModLoaded(VoidHeart.IMMERSIVE_PORTALS))
+            linkImmersivePortal(facing);
+        else
         {
-            world.setBlockState(pos, VoidHeartBlocks.POCKET_PORTAL.getDefaultState().with(Properties.FACING, facing));
+            Pair<BlockPos, BlockPos> interiorPoints = PortalFormer.excludeBorders(portalPoints);
 
-            VoidPortalTile portal = (VoidPortalTile) world.getBlockEntity(pos);
-            portal.setCore(getPos());
+            BlockPos.stream(interiorPoints.getLeft(), interiorPoints.getRight()).forEach(pos ->
+            {
+                world.setBlockState(pos, VoidHeartBlocks.PORTAL_INTERIOR.getDefaultState().with(Properties.FACING, facing));
 
-            linkedInteriors.add(pos.toImmutable());
-        });
+                VoidPortalTile portal = (VoidPortalTile) world.getBlockEntity(pos);
+                portal.setCore(getPos());
+
+                linkedInteriors.add(pos.toImmutable());
+            });
+        }
+
+        getWorld().setBlockState(pos, getCachedState().with(Properties.LIT, true));
     }
 
-    private boolean areShapeEquals(PortalWallTile otherPortal)
+    private void linkImmersivePortal(Direction facing)
+    {
+        PortalFrameTile linkedPortal = getLinkedPortal();
+        Pair<BlockPos, BlockPos> linkedPortalPoints = linkedPortal.getPortalPoints();
+        Vec3d linkedCenter = new Vec3d(
+                (linkedPortalPoints.getRight().getX() - linkedPortalPoints.getLeft().getX()) / 2F,
+                (linkedPortalPoints.getRight().getY() - linkedPortalPoints.getLeft().getY()) / 2F,
+                (linkedPortalPoints.getRight().getZ() - linkedPortalPoints.getLeft().getZ()) / 2F
+        ).add(linkedPortalPoints.getLeft().getX() + 0.5, linkedPortalPoints.getLeft().getY() + 0.5, linkedPortalPoints.getLeft().getZ() + 0.5);
+
+        Portal portal = Portal.entityType.create(getWorld());
+        portal.dimensionTo = getLinkedWorldKey();
+        portal.width = getWidth() - 1;
+        portal.height = getHeight() - 1;
+        portal.destination = linkedCenter;
+
+        if (getFacing().getAxis().isHorizontal())
+        {
+            portal.axisH = new Vec3d(Direction.UP.getUnitVector());
+            portal.axisW = new Vec3d(facing.rotateYCounterclockwise().getUnitVector());
+
+            if (linkedFacing == facing)
+                portal.rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(180);
+            else if (linkedFacing == facing.getOpposite())
+            {
+                // DO NOTHING
+            }
+            else if (linkedFacing == facing.rotateYClockwise())
+            {
+                portal.rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(90);
+            }
+            else if (linkedFacing == facing.rotateYCounterclockwise())
+            {
+                portal.rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(-90);
+            }
+        }
+        else
+        {
+            if (facing == Direction.DOWN)
+                portal.axisH = new Vec3d(Direction.SOUTH.getUnitVector());
+            else
+                portal.axisH = new Vec3d(Direction.NORTH.getUnitVector());
+            portal.axisW = new Vec3d(Direction.EAST.getUnitVector());
+
+            if (linkedFacing == facing)
+                portal.rotation = Vector3f.POSITIVE_X.getDegreesQuaternion(180);
+        }
+
+        Vec3d center = new Vec3d(
+                (portalPoints.getRight().getX() - portalPoints.getLeft().getX()) / 2F,
+                (portalPoints.getRight().getY() - portalPoints.getLeft().getY()) / 2F,
+                (portalPoints.getRight().getZ() - portalPoints.getLeft().getZ()) / 2F
+        ).add(portalPoints.getLeft().getX() + 0.5, portalPoints.getLeft().getY() + 0.5, portalPoints.getLeft().getZ() + 0.5);
+        portal.updatePosition(center.x, center.y, center.z);
+        getWorld().spawnEntity(portal);
+
+        portalEntityID = portal.getUuid();
+    }
+
+    private boolean areShapeEquals(PortalFrameTile otherPortal)
     {
         if (portalPoints == null || otherPortal.portalPoints == null)
             return false;
 
-        return getWidth() == otherPortal.getWidth() && getHeight() == otherPortal.getHeight();
+        return getWidth() == otherPortal.getWidth()
+                && getHeight() == otherPortal.getHeight()
+                && getFacing().getAxis().isHorizontal() == otherPortal.getFacing().getAxis().isHorizontal();
     }
 
     public int getWidth()
@@ -315,39 +397,6 @@ public class PortalWallTile extends BlockEntity
         return center;
     }
 
-    private boolean tryForm(Direction direction)
-    {
-        Pair<BlockPos, BlockPos> portalPoints = PortalFormer.tryFloodFill(
-                getPos(),
-                16,
-                pos -> canUseBlock(pos, getWorld().getBlockState(pos)),
-                pos -> getWorld().isAir(pos),
-                direction,
-                getAdjacentDirection(direction));
-
-        if (portalPoints.getLeft().equals(getPos()) && portalPoints.getRight().equals(getPos()))
-            return false;
-
-        world.setBlockState(getPos(), getCachedState().with(Properties.FACING, direction));
-        BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos ->
-        {
-            PortalWallTile wall = (PortalWallTile) world.getBlockEntity(pos);
-
-            // Core check for corners (it's valid to have a core as a corner but not a wall of the portal)
-            if (wall == null || wall.isCore())
-                return;
-
-            wall.addCore(this);
-            linkedFrames.add(pos.toImmutable());
-        });
-
-        isCore = true;
-        this.portalPoints = portalPoints;
-
-        markDirty();
-
-        return true;
-    }
 
     public boolean isInPocket(UUID playerUUID)
     {
@@ -363,43 +412,30 @@ public class PortalWallTile extends BlockEntity
                 abs(pocketPos.getZ() - getPos().getZ()) < 9;
     }
 
-    private void addCore(PortalWallTile wall)
+    void addCore(PortalFrameTile wall)
     {
         linkedCores.add(wall.getPos());
         markDirty();
     }
 
-    private void removeCore(PortalWallTile wall)
+    private void removeCore(PortalFrameTile wall)
     {
         linkedCores.remove(wall.getPos());
     }
 
-    private void removeFrame(PortalWallTile wall)
+    private void removeFrame(PortalFrameTile wall)
     {
         linkedFrames.remove(wall);
         breakTile(wall.getPos());
     }
 
-    private Direction[] getAdjacentDirection(Direction facing)
+    public static Direction[] getAdjacentDirection(Direction facing)
     {
         if (facing.getAxis() == Axis.X)
             return new Direction[]{Direction.NORTH, Direction.UP, Direction.SOUTH, Direction.DOWN};
         else if (facing.getAxis() == Axis.Z)
             return new Direction[]{Direction.WEST, Direction.UP, Direction.EAST, Direction.DOWN};
         return new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
-    }
-
-    private boolean canUseBlock(BlockPos pos, BlockState state)
-    {
-        if (pos.equals(getPos()))
-            return true;
-
-        if (state.getBlock() != VoidHeartBlocks.PORTAL_WALL)
-            return false;
-
-        PortalWallTile tile = (PortalWallTile) getWorld().getBlockEntity(pos);
-
-        return tile != null && !tile.isCore();
     }
 
     public boolean isCore()
@@ -442,6 +478,9 @@ public class PortalWallTile extends BlockEntity
         {
             linkedCores.add(BlockPos.fromLong(tag.getLong("linkedCore" + index)));
         }
+
+        if (tag.containsUuid("portalEntityID"))
+            portalEntityID = tag.getUuid("portalEntityID");
     }
 
     @Override
@@ -488,6 +527,9 @@ public class PortalWallTile extends BlockEntity
             tag.putLong("linkedCore" + index, core.asLong());
             index++;
         }
+
+        if (portalEntityID != null)
+            tag.putUuid("portalEntityID", portalEntityID);
 
         return super.toTag(tag);
     }

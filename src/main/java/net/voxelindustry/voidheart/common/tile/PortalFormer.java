@@ -1,8 +1,13 @@
 package net.voxelindustry.voidheart.common.tile;
 
+import net.minecraft.block.BlockState;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.block.PortalFrameBlock;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.function.Predicate;
@@ -16,6 +21,110 @@ import static net.minecraft.util.math.Direction.*;
 
 public class PortalFormer
 {
+    public static boolean tryForm(World world, BlockState state, BlockPos brickPos, Direction direction)
+    {
+        Pair<BlockPos, BlockPos> portalPoints = PortalFormer.tryFloodFill(
+                brickPos,
+                16,
+                pos -> PortalFormer.canUseBlock(world, brickPos, pos, world.getBlockState(pos)),
+                world::isAir,
+                direction,
+                PortalFrameTile.getAdjacentDirection(direction));
+
+        if (portalPoints.getLeft().equals(brickPos) && portalPoints.getRight().equals(brickPos))
+            return false;
+
+        createCoreState(state, world, brickPos, direction);
+
+        PortalFrameTile portalFrameTile = (PortalFrameTile) world.getBlockEntity(brickPos);
+
+        if (portalFrameTile == null)
+            return false;
+
+        BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos ->
+        {
+            BlockState frameState = world.getBlockState(pos);
+
+            if (frameState.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
+                world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME.getDefaultState());
+
+            PortalFrameTile wall = (PortalFrameTile) world.getBlockEntity(pos);
+
+            // Core check for corners (it's valid to have a core as a corner but not a wall of the portal)
+            if (wall == null || wall.isCore())
+                return;
+
+            wall.addCore(portalFrameTile);
+            portalFrameTile.getLinkedFrames().add(pos.toImmutable());
+        });
+
+        portalFrameTile.setCore(true);
+        portalFrameTile.setPortalPoints(portalPoints);
+        portalFrameTile.markDirty();
+
+        return true;
+    }
+
+    public static void createCoreState(BlockState state, World world, BlockPos pos, Direction facing)
+    {
+        BlockState coreState = VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState();
+
+        coreState = coreState.with(Properties.FACING, facing);
+
+        if (state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
+        {
+            world.setBlockState(pos, coreState);
+            return;
+        }
+
+        for (Direction direction : Direction.values())
+        {
+            switch (direction)
+            {
+                case DOWN:
+                    if (state.get(PortalFrameBlock.DOWN))
+                        coreState = coreState.with(PortalFrameBlock.DOWN, true);
+                    break;
+                case UP:
+                    if (state.get(PortalFrameBlock.UP))
+                        coreState = coreState.with(PortalFrameBlock.UP, true);
+                    break;
+                case NORTH:
+                    if (state.get(PortalFrameBlock.NORTH))
+                        coreState = coreState.with(PortalFrameBlock.NORTH, true);
+                    break;
+                case SOUTH:
+                    if (state.get(PortalFrameBlock.SOUTH))
+                        coreState = coreState.with(PortalFrameBlock.SOUTH, true);
+                    break;
+                case WEST:
+                    if (state.get(PortalFrameBlock.WEST))
+                        coreState = coreState.with(PortalFrameBlock.WEST, true);
+                    break;
+                case EAST:
+                    if (state.get(PortalFrameBlock.EAST))
+                        coreState = coreState.with(PortalFrameBlock.EAST, true);
+                    break;
+            }
+        }
+
+        world.setBlockState(pos, coreState);
+    }
+
+    public static boolean canUseBlock(World world, BlockPos ownPos, BlockPos pos, BlockState state)
+    {
+        if (pos.equals(ownPos))
+            return true;
+
+        // Allow raw voidstone bricks and already formed portals
+        if (state.getBlock() != VoidHeartBlocks.PORTAL_FRAME)
+            return state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS;
+
+        PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
+
+        return tile != null && !tile.isCore();
+    }
+
     public static Stream<BlockPos> streamBorders(Pair<BlockPos, BlockPos> area)
     {
         return BlockPos.stream(area.getLeft(), area.getRight()).filter(pos ->

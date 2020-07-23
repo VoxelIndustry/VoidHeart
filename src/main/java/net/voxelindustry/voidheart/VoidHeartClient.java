@@ -14,7 +14,7 @@ public class VoidHeartClient implements ClientModInitializer
     @Override
     public void onInitializeClient()
     {
-        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.POCKET_PORTAL, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PORTAL_INTERIOR, RenderLayer.getTranslucent());
 
         BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_PILLAR, VoidPillarRender::new);
         BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);

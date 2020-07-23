@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "voidheart:block/voidstone_bricks",
+    "front": "voidheart:block/portal_frame_overlay_core",
+    "side": "voidheart:block/voidstone_bricks"
+  }
+}

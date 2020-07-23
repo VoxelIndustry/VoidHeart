@@ -30,13 +30,13 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 
-public class VoidPortalBlock extends Block implements BlockEntityProvider
+public class PortalInteriorBlock extends Block implements BlockEntityProvider
 {
     protected static final VoxelShape X_SHAPE = Block.createCuboidShape(0, 0, 6, 16, 16.0D, 10);
     protected static final VoxelShape Y_SHAPE = Block.createCuboidShape(0, 6, 0, 16, 10, 16);
     protected static final VoxelShape Z_SHAPE = Block.createCuboidShape(6, 0, 0, 10, 16, 16);
 
-    public VoidPortalBlock()
+    public PortalInteriorBlock()
     {
         super(Settings.of(Material.PORTAL)
                 .noCollision()

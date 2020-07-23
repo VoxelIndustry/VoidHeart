@@ -12,8 +12,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 public class VoidPortalTile extends BlockEntity
 {
-    private BlockPos       corePos;
-    private PortalWallTile core;
+    private BlockPos        corePos;
+    private PortalFrameTile core;
 
     public VoidPortalTile()
     {
@@ -41,13 +41,13 @@ public class VoidPortalTile extends BlockEntity
         if (corePos == null)
             return;
 
-        PortalWallTile core = getCore();
+        PortalFrameTile core = getCore();
 
         if (core.getLinkedWorld() != null)
         {
             ServerWorld destination = world.getServer().getWorld(core.getLinkedWorldKey());
 
-            PortalWallTile linkedPortal = (PortalWallTile) getWorld().getServer().getWorld(core.getLinkedWorldKey()).getBlockEntity(core.getLinkedPos());
+            PortalFrameTile linkedPortal = (PortalFrameTile) getWorld().getServer().getWorld(core.getLinkedWorldKey()).getBlockEntity(core.getLinkedPos());
 
             // If pos become invalid.
             // Almost impossible but we need to prevent the world to end corrupted by a player stuck inside the portal.
@@ -69,7 +69,7 @@ public class VoidPortalTile extends BlockEntity
         markDirty();
     }
 
-    public PortalWallTile getCore()
+    public PortalFrameTile getCore()
     {
         if (core == null)
         {
@@ -77,9 +77,9 @@ public class VoidPortalTile extends BlockEntity
                 return null;
             BlockEntity tile = getWorld().getBlockEntity(corePos);
 
-            if (!(tile instanceof PortalWallTile))
+            if (!(tile instanceof PortalFrameTile))
                 return null;
-            core = (PortalWallTile) tile;
+            core = (PortalFrameTile) tile;
         }
         return core;
     }

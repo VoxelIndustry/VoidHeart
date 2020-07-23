@@ -26,7 +26,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 public class VoidHeart implements ModInitializer
 {
-    public static final String MODID = "voidheart";
+    public static final String MODID             = "voidheart";
+    public static final String IMMERSIVE_PORTALS = "immersive_portals";
 
     public static ItemGroup                             ITEMGROUP = FabricItemGroupBuilder.build(
             new Identifier(MODID, "item_group"),

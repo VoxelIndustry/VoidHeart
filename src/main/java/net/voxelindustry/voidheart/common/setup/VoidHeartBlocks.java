@@ -15,17 +15,20 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
-import net.voxelindustry.voidheart.common.block.PortalWallBlock;
+import net.voxelindustry.voidheart.common.block.PortalFrameBlock;
+import net.voxelindustry.voidheart.common.block.PortalFrameCoreBlock;
+import net.voxelindustry.voidheart.common.block.PortalInteriorBlock;
 import net.voxelindustry.voidheart.common.block.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.block.VoidPillarBlock;
-import net.voxelindustry.voidheart.common.block.VoidPortalBlock;
+import net.voxelindustry.voidheart.common.block.VoidStoneBricksBlock;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartBlocks
 {
-    public static Block POCKET_PORTAL;
-    public static Block PORTAL_WALL;
+    public static Block PORTAL_INTERIOR;
+    public static Block PORTAL_FRAME;
+    public static Block PORTAL_FRAME_CORE;
 
     public static Block POCKET_WALL;
     public static Block VOIDSTONE;
@@ -39,8 +42,9 @@ public class VoidHeartBlocks
     {
         Settings itemGroup = new Item.Settings().group(VoidHeart.ITEMGROUP);
 
-        registerBlock(POCKET_PORTAL = new VoidPortalBlock(), itemGroup, "portal_interior");
-        registerBlock(PORTAL_WALL = new PortalWallBlock(), itemGroup, "portal_wall");
+        registerBlock(PORTAL_INTERIOR = new PortalInteriorBlock(), itemGroup, "portal_interior");
+        registerBlock(PORTAL_FRAME = new PortalFrameBlock(), itemGroup, "portal_frame");
+        registerBlock(PORTAL_FRAME_CORE = new PortalFrameCoreBlock(), itemGroup, "portal_frame_core");
 
         registerBlock(VOID_ALTAR = new VoidAltarBlock(), itemGroup, "void_altar");
         registerBlock(VOID_PILLAR = new VoidPillarBlock(), itemGroup, "void_pillar");
@@ -56,7 +60,7 @@ public class VoidHeartBlocks
                 .sounds(BlockSoundGroup.STONE)
                 .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone");
 
-        registerBlock(VOIDSTONE_BRICKS = new Block(FabricBlockSettings
+        registerBlock(VOIDSTONE_BRICKS = new VoidStoneBricksBlock(FabricBlockSettings
                 .of(Material.STONE, MaterialColor.BLACK)
                 .sounds(BlockSoundGroup.STONE)
                 .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");

@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.setup;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import net.voxelindustry.voidheart.common.tile.PortalWallTile;
+import net.voxelindustry.voidheart.common.tile.PortalFrameTile;
 import net.voxelindustry.voidheart.common.tile.VoidAltarTile;
 import net.voxelindustry.voidheart.common.tile.VoidPillarTile;
 import net.voxelindustry.voidheart.common.tile.VoidPortalTile;
@@ -12,19 +12,19 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartTiles
 {
-    public static BlockEntityType<VoidPortalTile> POCKET_PORTAL;
-    public static BlockEntityType<PortalWallTile> PORTAL_WALL;
-    public static BlockEntityType<VoidAltarTile>  VOID_ALTAR;
-    public static BlockEntityType<VoidPillarTile> VOID_PILLAR;
+    public static BlockEntityType<VoidPortalTile>  POCKET_PORTAL;
+    public static BlockEntityType<PortalFrameTile> PORTAL_WALL;
+    public static BlockEntityType<VoidAltarTile>   VOID_ALTAR;
+    public static BlockEntityType<VoidPillarTile>  VOID_PILLAR;
 
     public static void registerTiles()
     {
         registerTile(POCKET_PORTAL =
-                        BlockEntityType.Builder.create(VoidPortalTile::new, VoidHeartBlocks.POCKET_PORTAL).build(null),
+                        BlockEntityType.Builder.create(VoidPortalTile::new, VoidHeartBlocks.PORTAL_INTERIOR).build(null),
                 "pocket_portal");
 
         registerTile(PORTAL_WALL =
-                        BlockEntityType.Builder.create(PortalWallTile::new, VoidHeartBlocks.PORTAL_WALL).build(null),
+                        BlockEntityType.Builder.create(PortalFrameTile::new, VoidHeartBlocks.PORTAL_FRAME).build(null),
                 "portal_wall");
 
         registerTile(VOID_ALTAR =
