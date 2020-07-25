@@ -79,7 +79,7 @@ public class VoidPearlItem extends Item
                             BlockPos pos = voidPocketState.getPosForPlayer(user.getUuid());
                             return new BlockPattern.TeleportTarget(Vec3d.of(pos.up()).add(0.5, 0.5, 0.5), Vec3d.ZERO, 0);
                         });
-                return ItemStack.EMPTY;
+                stack.decrement(1);
             }
             else
                 ((PlayerEntity) user).sendMessage(new TranslatableText(MODID + ".no_pocket_for_player"), true);

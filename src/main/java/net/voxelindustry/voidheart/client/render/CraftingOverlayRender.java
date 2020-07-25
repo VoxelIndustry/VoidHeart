@@ -15,14 +15,25 @@ public class CraftingOverlayRender
 {
     static void renderCraftingOverlay(VoidAltarTile altar, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light)
     {
-        matrices.push();
+        ItemStack output = altar.getRecipeState().getOutputs(ItemStack.class).get(0).getRaw();
 
+        // Render count text label
+        if (output.getCount() > 1)
+        {
+            matrices.push();
+            matrices.translate(0.5, 1.85, 0.5);
+            matrices.scale(1 / 64F, 1 / 64F, 1 / 64F);
+            matrices.multiply(MinecraftClient.getInstance().getEntityRenderManager().getRotation());
+            matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180));
+            MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, String.valueOf(output.getCount()), 6, -6, 0xFFFFFF);
+            matrices.pop();
+        }
+
+        matrices.push();
         matrices.translate(0.5, 1.75, 0.5);
         matrices.scale(2 / 16F, 2 / 16F, 2 / 16F);
         matrices.multiply(MinecraftClient.getInstance().getEntityRenderManager().getRotation());
         matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180));
-
-        ItemStack output = altar.getRecipeState().getOutputs(ItemStack.class).get(0).getRaw();
 
         matrices.translate(0, 2, 0);
         matrices.scale(2.5F, 2.5F, 2.5F);

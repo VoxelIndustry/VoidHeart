@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.recipe;
 import lombok.Getter;
 import net.minecraft.item.ItemStack;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
+import net.voxelindustry.steamlayer.recipe.RecipeCallback;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
 
 public class AltarRecipe extends RecipeBase
@@ -16,5 +17,11 @@ public class AltarRecipe extends RecipeBase
         addOutputs(ItemStack.class, output);
 
         this.time = time;
+    }
+
+    public RecipeBase onCraft(RecipeCallback onCraft)
+    {
+        super.onCraft = onCraft;
+        return this;
     }
 }
