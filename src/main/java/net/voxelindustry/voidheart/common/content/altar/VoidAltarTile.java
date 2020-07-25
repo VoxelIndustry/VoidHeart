@@ -391,7 +391,9 @@ public class VoidAltarTile extends TileBase implements Tickable
 
     private void finishCrafting()
     {
+        recipeState.consumeSlotted(ItemStack.class, stack, 0);
         stack = currentRecipe.getRecipeOutputs(ItemStack.class).get(0).getRaw();
+        recipeState.complete(getWorld(), getPos(), null);
         recipeState = null;
         recipeProgress = 0;
         coolProgress = COOLING_TIME;

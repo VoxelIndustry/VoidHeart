@@ -39,5 +39,7 @@
   "voidheart.must_be_inside_outside": "Portals cannot link two places outside or two inside the pocket",
   "voidheart.link_started_pocket": "Started Link. Now hit a portal outside your Pocket",
   "voidheart.link_started_outside": "Started Link. Now hit a portal in your Pocket",
-  "voidheart.link_successful": "Successfully linked portals"
+  "voidheart.link_successful": "Successfully linked portals",
+  "voidheart.pocket_created": "Your pocket dimension was created",
+  "voidheart.pocket_already_exists": "Your pocket dimension already exists"
 }
