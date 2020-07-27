@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VEV",
+    "VVV"
+  ],
+  "key": {
+    "V": {
+      "item": "voidheart:voidstone_bricks"
+    },
+    "E": {
+      "item": "minecraft:ender_eye"
+    }
+  },
+  "result": {
+    "item": "voidheart:void_altar"
+  }
+}
