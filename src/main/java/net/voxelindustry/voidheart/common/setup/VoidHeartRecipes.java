@@ -57,9 +57,12 @@ public class VoidHeartRecipes
                     voidPocketState.createPocket(voidWorld, playerID);
                     if (player != null)
                     {
-                        ItemStack voidPearls = new ItemStack(VOID_PEARL, 3);
-                        if (!player.giveItemStack(voidPearls))
-                            player.dropItem(voidPearls, true);
+                        for (int i = 0; i < 3; i++)
+                        {
+                            ItemStack voidPearls = new ItemStack(VOID_PEARL);
+                            if (!player.giveItemStack(voidPearls))
+                                player.dropItem(voidPearls, true);
+                        }
 
                         player.sendMessage(new TranslatableText(MODID + ".pocket_created"), true);
                     }

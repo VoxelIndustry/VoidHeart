@@ -1,7 +1,6 @@
 package net.voxelindustry.voidheart.common.world;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -9,6 +8,7 @@ import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.HashMap;
@@ -98,7 +98,10 @@ public class VoidPocketState extends PersistentState
         BlockPos pos = getPosForPlayer(player);
         markDirty();
 
-        voidWorld.setBlockState(pos, Blocks.END_STONE.getDefaultState());
+        voidWorld.setBlockState(pos, VoidHeartBlocks.VOID_HEART.getDefaultState());
+        VoidHeartTile voidHeart = (VoidHeartTile) voidWorld.getBlockEntity(pos);
+        voidHeart.setPlayerID(player);
+        voidHeart.markDirty();
 
         placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 16, 16, 16, VoidHeartBlocks.VOIDSTONE.getDefaultState());
         placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 18, 18, 18, VoidHeartBlocks.POCKET_WALL.getDefaultState());

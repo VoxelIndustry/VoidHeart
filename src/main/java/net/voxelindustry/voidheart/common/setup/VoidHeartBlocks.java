@@ -16,6 +16,7 @@ import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
+import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
@@ -38,6 +39,8 @@ public class VoidHeartBlocks
     public static Block VOID_ALTAR;
     public static Block VOID_PILLAR;
 
+    public static Block VOID_HEART;
+
     public static void registerBlocks()
     {
         Settings itemGroup = new Item.Settings().group(VoidHeart.ITEMGROUP);
@@ -48,6 +51,8 @@ public class VoidHeartBlocks
 
         registerBlock(VOID_ALTAR = new VoidAltarBlock(), itemGroup, "void_altar");
         registerBlock(VOID_PILLAR = new VoidPillarBlock(), itemGroup, "void_pillar");
+
+        registerBlock(VOID_HEART = new VoidHeartBlock(), itemGroup, "void_heart_block");
 
         registerBlock(POCKET_WALL = new Block(FabricBlockSettings
                 .of(Material.STONE)

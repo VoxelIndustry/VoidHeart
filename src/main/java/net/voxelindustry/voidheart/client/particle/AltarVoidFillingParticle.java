@@ -47,6 +47,8 @@ public class AltarVoidFillingParticle extends Particle
         destinationZ = velocityZ;
         this.speed = speed;
 
+        collidesWithWorld = false;
+
         maxAge = (int) (32.0F / (random.nextFloat() * 0.9F + 0.1F));
     }
 
