@@ -20,6 +20,9 @@
     ],
     "client": [
       "net.voxelindustry.voidheart.VoidHeartClient"
+    ],
+    "rei_plugins": [
+      "net.voxelindustry.voidheart.compat.rei.VoidHeartREIPlugin"
     ]
   },
   "mixins": [

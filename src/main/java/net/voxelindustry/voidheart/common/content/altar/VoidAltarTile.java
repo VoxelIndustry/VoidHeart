@@ -310,7 +310,7 @@ public class VoidAltarTile extends TileBase implements Tickable
 
     private void retrieveCurrentRecipe()
     {
-        currentRecipe = (AltarRecipe) VoidHeartRecipes.ALTAR_CATEGORY.findOneRecipe(stack).orElse(null);
+        currentRecipe = VoidHeartRecipes.ALTAR_CATEGORY.findOneRecipe(stack).orElse(null);
     }
 
     public void searchPillars()
@@ -392,7 +392,7 @@ public class VoidAltarTile extends TileBase implements Tickable
     private void finishCrafting()
     {
         recipeState.consumeSlotted(ItemStack.class, stack, 0);
-        stack = currentRecipe.getRecipeOutputs(ItemStack.class).get(0).getRaw();
+        stack = currentRecipe.getRecipeOutput(ItemStack.class, 0);
         recipeState.complete(getWorld(), getPos(), null);
         recipeState = null;
         recipeProgress = 0;

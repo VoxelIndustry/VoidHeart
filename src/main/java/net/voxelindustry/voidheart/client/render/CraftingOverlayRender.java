@@ -15,18 +15,22 @@ public class CraftingOverlayRender
 {
     static void renderCraftingOverlay(VoidAltarTile altar, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light)
     {
-        ItemStack output = altar.getRecipeState().getOutputs(ItemStack.class).get(0).getRaw();
+        ItemStack output = altar.getRecipeState().getOutput(ItemStack.class, 0);
 
-        // Render count text label
-        if (output.getCount() > 1)
+        if (!output.isEmpty())
         {
-            matrices.push();
-            matrices.translate(0.5, 1.85, 0.5);
-            matrices.scale(1 / 64F, 1 / 64F, 1 / 64F);
-            matrices.multiply(MinecraftClient.getInstance().getEntityRenderManager().getRotation());
-            matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180));
-            MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, String.valueOf(output.getCount()), 6, -6, 0xFFFFFF);
-            matrices.pop();
+
+            // Render count text label
+            if (output.getCount() > 1)
+            {
+                matrices.push();
+                matrices.translate(0.5, 1.85, 0.5);
+                matrices.scale(1 / 64F, 1 / 64F, 1 / 64F);
+                matrices.multiply(MinecraftClient.getInstance().getEntityRenderManager().getRotation());
+                matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180));
+                MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, String.valueOf(output.getCount()), 6, -6, 0xFFFFFF);
+                matrices.pop();
+            }
         }
 
         matrices.push();
@@ -35,11 +39,14 @@ public class CraftingOverlayRender
         matrices.multiply(MinecraftClient.getInstance().getEntityRenderManager().getRotation());
         matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180));
 
-        matrices.translate(0, 2, 0);
-        matrices.scale(2.5F, 2.5F, 2.5F);
-        MinecraftClient.getInstance().getItemRenderer().renderItem(output, Mode.GUI, 15728880, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers);
-        matrices.scale(0.6F, 0.6F, 0.6F);
-        matrices.translate(0, -2, 0);
+        if (!output.isEmpty())
+        {
+            matrices.translate(0, 2, 0);
+            matrices.scale(2.5F, 2.5F, 2.5F);
+            MinecraftClient.getInstance().getItemRenderer().renderItem(output, Mode.GUI, 15728880, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers);
+            matrices.scale(0.6F, 0.6F, 0.6F);
+            matrices.translate(0, -2, 0);
+        }
 
         List<ItemStack> stackLefts = altar.getRecipeState().getIngredientsLeft(ItemStack.class);
         long stackLeft = stackLefts.stream().filter(stack -> !stack.isEmpty()).count();

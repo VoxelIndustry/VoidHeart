@@ -23,6 +23,8 @@
   "block.voidheart.voidstone_bricks_wall": "Voidstone Brick Wall",
   "block.voidheart.voidstone_slab": "Voidstone Slab",
   "block.voidheart.voidstone_bricks_slab": "Voidstone Brick Slab",
+  "__comment": "GUIs",
+  "voidheart.altar_crafting": "Void Altar Ritual",
   "__comment": "Lore",
   "voidheart.void_amalgam.lore": "Eat me... Eaaaaat meee!",
   "voidheart.void_amalgam.lore2": "I must become one with your Heart",
