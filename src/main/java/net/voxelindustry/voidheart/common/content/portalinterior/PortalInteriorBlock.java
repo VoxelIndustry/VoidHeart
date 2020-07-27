@@ -31,14 +31,22 @@ import static java.util.Collections.emptyList;
 
 public class PortalInteriorBlock extends Block implements BlockEntityProvider
 {
-    protected static final VoxelShape X_SHAPE = Block.createCuboidShape(0, 0, 6, 16, 16.0D, 10);
-    protected static final VoxelShape Y_SHAPE = Block.createCuboidShape(0, 6, 0, 16, 10, 16);
-    protected static final VoxelShape Z_SHAPE = Block.createCuboidShape(6, 0, 0, 10, 16, 16);
+    protected static final VoxelShape X_TELEPORT_SHAPE = Block.createCuboidShape(0, 0, 6, 16, 16, 10);
+    protected static final VoxelShape Y_TELEPORT_SHAPE = Block.createCuboidShape(0, 6, 0, 16, 10, 16);
+    protected static final VoxelShape Z_TELEPORT_SHAPE = Block.createCuboidShape(6, 0, 0, 10, 16, 16);
+
+    protected static final VoxelShape EAST_SHAPE = Block.createCuboidShape(0, 0, 0, 9, 16, 16);
+    protected static final VoxelShape WEST_SHAPE = Block.createCuboidShape(7, 0, 0, 16, 16, 16);
+
+    protected static final VoxelShape NORTH_SHAPE = Block.createCuboidShape(0, 0, 7, 16, 16, 16);
+    protected static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(0, 0, 0, 16, 16, 9);
+
+    protected static final VoxelShape UP_SHAPE   = Block.createCuboidShape(0, 0, 0, 16, 9, 16);
+    protected static final VoxelShape DOWN_SHAPE = Block.createCuboidShape(0, 7, 0, 16, 16, 16);
 
     public PortalInteriorBlock()
     {
         super(Settings.of(Material.PORTAL)
-                .noCollision()
                 .strength(-1.0F)
                 .sounds(BlockSoundGroup.GLASS)
                 .lightLevel(unused -> 11));
@@ -66,15 +74,35 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
         switch (state.get(Properties.FACING))
         {
             case UP:
+                return UP_SHAPE;
             case DOWN:
-                return Y_SHAPE;
+                return DOWN_SHAPE;
+            case NORTH:
+                return NORTH_SHAPE;
+            case SOUTH:
+                return SOUTH_SHAPE;
+            case EAST:
+                return EAST_SHAPE;
+            case WEST:
+            default:
+                return WEST_SHAPE;
+        }
+    }
+
+    public VoxelShape getTeleportShape(BlockState state)
+    {
+        switch (state.get(Properties.FACING))
+        {
+            case UP:
+            case DOWN:
+                return Y_TELEPORT_SHAPE;
             case NORTH:
             case SOUTH:
-                return X_SHAPE;
+                return X_TELEPORT_SHAPE;
             case EAST:
             case WEST:
             default:
-                return Z_SHAPE;
+                return Z_TELEPORT_SHAPE;
         }
     }
 
@@ -86,7 +114,7 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
 
         if (!world.isClient()
                 && VoxelShapes.matchesAnywhere(
-                VoxelShapes.cuboid(collider.getBoundingBox().offset(-pos.getX(), -pos.getY(), -pos.getZ())), getOutlineShape(state, world, pos, null), BooleanBiFunction.AND))
+                VoxelShapes.cuboid(collider.getBoundingBox().offset(-pos.getX(), -pos.getY(), -pos.getZ())), getTeleportShape(state), BooleanBiFunction.AND))
         {
             PortalInteriorTile tile = (PortalInteriorTile) world.getBlockEntity(pos);
 

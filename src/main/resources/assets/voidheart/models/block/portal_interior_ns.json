@@ -1,7 +1,8 @@
 {
   "textures": {
     "particle": "voidheart:block/portal",
-    "portal": "voidheart:block/portal"
+    "portal": "voidheart:block/portal",
+    "backface": "voidheart:block/voidstone_bricks"
   },
   "elements": [
     {
@@ -24,6 +25,29 @@
             16
           ],
           "texture": "#portal"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        11
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#backface"
         },
         "south": {
           "uv": [
@@ -32,7 +56,7 @@
             16,
             16
           ],
-          "texture": "#portal"
+          "texture": "#backface"
         }
       }
     }

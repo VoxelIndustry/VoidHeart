@@ -1,13 +1,11 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
-import com.qouteall.immersive_portals.portal.Portal;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -53,6 +51,7 @@ public class PortalFrameTile extends TileBase
     @Setter(AccessLevel.PACKAGE)
     private boolean isCore;
 
+    @Setter
     private UUID portalEntityID;
 
     private Identifier         linkedWorld;
@@ -244,7 +243,7 @@ public class PortalFrameTile extends TileBase
             ((ServerWorld) getWorld()).removeEntity(((ServerWorld) getWorld()).getEntity(portalEntityID));
     }
 
-    private PortalFrameTile getLinkedPortal()
+    PortalFrameTile getLinkedPortal()
     {
         return (PortalFrameTile) getWorld().getServer().getWorld(getLinkedWorldKey()).getBlockEntity(getLinkedPos());
     }
@@ -254,7 +253,7 @@ public class PortalFrameTile extends TileBase
         Direction facing = getFacing();
 
         if (FabricLoader.getInstance().isModLoaded(VoidHeart.IMMERSIVE_PORTALS))
-            linkImmersivePortal(facing);
+            ImmersivePortalFrameCreator.linkImmersivePortal(this, facing);
         else
         {
             Pair<BlockPos, BlockPos> interiorPoints = PortalFormer.excludeBorders(portalPoints);
@@ -271,65 +270,6 @@ public class PortalFrameTile extends TileBase
         }
 
         getWorld().setBlockState(pos, getCachedState().with(Properties.LIT, true));
-    }
-
-    private void linkImmersivePortal(Direction facing)
-    {
-        PortalFrameTile linkedPortal = getLinkedPortal();
-        Pair<BlockPos, BlockPos> linkedPortalPoints = linkedPortal.getPortalPoints();
-        Vec3d linkedCenter = new Vec3d(
-                (linkedPortalPoints.getRight().getX() - linkedPortalPoints.getLeft().getX()) / 2F,
-                (linkedPortalPoints.getRight().getY() - linkedPortalPoints.getLeft().getY()) / 2F,
-                (linkedPortalPoints.getRight().getZ() - linkedPortalPoints.getLeft().getZ()) / 2F
-        ).add(linkedPortalPoints.getLeft().getX() + 0.5, linkedPortalPoints.getLeft().getY() + 0.5, linkedPortalPoints.getLeft().getZ() + 0.5);
-
-        Portal portal = Portal.entityType.create(getWorld());
-        portal.dimensionTo = getLinkedWorldKey();
-        portal.width = getWidth() - 1;
-        portal.height = getHeight() - 1;
-        portal.destination = linkedCenter;
-
-        if (getFacing().getAxis().isHorizontal())
-        {
-            portal.axisH = new Vec3d(Direction.UP.getUnitVector());
-            portal.axisW = new Vec3d(facing.rotateYCounterclockwise().getUnitVector());
-
-            if (linkedFacing == facing)
-                portal.rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(180);
-            else if (linkedFacing == facing.getOpposite())
-            {
-                // DO NOTHING
-            }
-            else if (linkedFacing == facing.rotateYClockwise())
-            {
-                portal.rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(90);
-            }
-            else if (linkedFacing == facing.rotateYCounterclockwise())
-            {
-                portal.rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(-90);
-            }
-        }
-        else
-        {
-            if (facing == Direction.DOWN)
-                portal.axisH = new Vec3d(Direction.SOUTH.getUnitVector());
-            else
-                portal.axisH = new Vec3d(Direction.NORTH.getUnitVector());
-            portal.axisW = new Vec3d(Direction.EAST.getUnitVector());
-
-            if (linkedFacing == facing)
-                portal.rotation = Vector3f.POSITIVE_X.getDegreesQuaternion(180);
-        }
-
-        Vec3d center = new Vec3d(
-                (portalPoints.getRight().getX() - portalPoints.getLeft().getX()) / 2F,
-                (portalPoints.getRight().getY() - portalPoints.getLeft().getY()) / 2F,
-                (portalPoints.getRight().getZ() - portalPoints.getLeft().getZ()) / 2F
-        ).add(portalPoints.getLeft().getX() + 0.5, portalPoints.getLeft().getY() + 0.5, portalPoints.getLeft().getZ() + 0.5);
-        portal.updatePosition(center.x, center.y, center.z);
-        getWorld().spawnEntity(portal);
-
-        portalEntityID = portal.getUuid();
     }
 
     private boolean areShapeEquals(PortalFrameTile otherPortal)
