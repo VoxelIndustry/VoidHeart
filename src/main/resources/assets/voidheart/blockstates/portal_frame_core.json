@@ -1,54 +1,10 @@
 {
   "variants": {
-    "lit=false,facing=up": {
-      "model": "voidheart:block/portal_frame_core",
-      "x": 270,
-      "y": 270
+    "lit=false": {
+      "model": "voidheart:block/voidstone_bricks"
     },
-    "lit=false,facing=down": {
-      "model": "voidheart:block/portal_frame_core",
-      "x": 90,
-      "y": 90
-    },
-    "lit=false,facing=north": {
-      "model": "voidheart:block/portal_frame_core"
-    },
-    "lit=false,facing=south": {
-      "model": "voidheart:block/portal_frame_core",
-      "y": 180
-    },
-    "lit=false,facing=east": {
-      "model": "voidheart:block/portal_frame_core",
-      "y": 90
-    },
-    "lit=false,facing=west": {
-      "model": "voidheart:block/portal_frame_core",
-      "y": 270
-    },
-    "lit=true,facing=up": {
-      "model": "voidheart:block/portal_frame_core_active",
-      "x": 270,
-      "y": 270
-    },
-    "lit=true,facing=down": {
-      "model": "voidheart:block/portal_frame_core_active",
-      "x": 90,
-      "y": 90
-    },
-    "lit=true,facing=north": {
-      "model": "voidheart:block/portal_frame_core_active"
-    },
-    "lit=true,facing=south": {
-      "model": "voidheart:block/portal_frame_core_active",
-      "y": 180
-    },
-    "lit=true,facing=east": {
-      "model": "voidheart:block/portal_frame_core_active",
-      "y": 90
-    },
-    "lit=true,facing=west": {
-      "model": "voidheart:block/portal_frame_core_active",
-      "y": 270
+    "lit=true": {
+      "model": "voidheart:block/voidstone_bricks"
     }
   }
 }

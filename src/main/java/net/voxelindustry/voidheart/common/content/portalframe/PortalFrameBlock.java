@@ -46,6 +46,26 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
         initDefaultState();
     }
 
+    public static boolean hasPortalToSide(BlockState state, Direction direction)
+    {
+        switch (direction)
+        {
+            case DOWN:
+                return state.get(DOWN);
+            case UP:
+                return state.get(UP);
+            case NORTH:
+                return state.get(NORTH);
+            case SOUTH:
+                return state.get(SOUTH);
+            case WEST:
+                return state.get(WEST);
+            case EAST:
+                return state.get(EAST);
+        }
+        return false;
+    }
+
     protected void initDefaultState()
     {
         setDefaultState(getStateManager().getDefaultState()
