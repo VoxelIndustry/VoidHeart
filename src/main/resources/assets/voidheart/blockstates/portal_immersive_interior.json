@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "voidheart:block/portal/portal_immersive_interior_ud"
+    },
+    "facing=down": {
+      "model": "voidheart:block/portal/portal_immersive_interior_ud",
+      "x": 180,
+      "uvlock": true
+    },
+    "facing=north": {
+      "model": "voidheart:block/portal/portal_immersive_interior_ns"
+    },
+    "facing=south": {
+      "model": "voidheart:block/portal/portal_immersive_interior_ns",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=east": {
+      "model": "voidheart:block/portal/portal_immersive_interior_ew"
+    },
+    "facing=west": {
+      "model": "voidheart:block/portal/portal_immersive_interior_ew",
+      "y": 180,
+      "uvlock": true
+    }
+  }
+}

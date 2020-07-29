@@ -1,0 +1,31 @@
+{
+  "textures": {
+    "particle": "voidheart:block/portal/portal_interior_veins",
+    "backface": "voidheart:block/portal/portal_interior_veins"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        1,
+        16,
+        16
+      ],
+      "faces": {
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#backface"
+        }
+      }
+    }
+  ]
+}

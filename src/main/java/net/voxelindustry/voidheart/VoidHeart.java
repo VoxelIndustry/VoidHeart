@@ -4,7 +4,9 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleType;
@@ -15,6 +17,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
+import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
@@ -47,6 +50,8 @@ public class VoidHeart implements ModInitializer
 
         VoidHeartRecipes.registerRecipes();
 
+        ServerTickEvents.START_WORLD_TICK.register(VoidHeartTicker::tick);
+
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
 
         VOID_WORLD_KEY = RegistryKey.of(Registry.DIMENSION, new Identifier(MODID, "void"));
@@ -71,5 +76,10 @@ public class VoidHeart implements ModInitializer
                 ALTAR_ITEM_PARTICLE,
                 provider -> (parameters, world, x, y, z, velocityX, velocityY, velocityZ) ->
                         new AltarItemParticle(world, x, y, z, velocityX, velocityY, velocityZ, parameters.getStack(), parameters.getFirstPointBezier(), parameters.getSecondPointBezier()));
+    }
+
+    public static boolean useImmersivePortal()
+    {
+        return FabricLoader.getInstance().isModLoaded(VoidHeart.IMMERSIVE_PORTALS);
     }
 }

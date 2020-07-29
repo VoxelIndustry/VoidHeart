@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.VoidStoneBricksBlock;
+import net.voxelindustry.voidheart.common.content.portalinterior.PortalImmersiveInteriorBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorBlock;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -28,6 +29,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public class VoidHeartBlocks
 {
     public static Block PORTAL_INTERIOR;
+    public static Block PORTAL_IMMERSIVE_INTERIOR;
     public static Block PORTAL_FRAME;
     public static Block PORTAL_FRAME_CORE;
 
@@ -46,6 +48,7 @@ public class VoidHeartBlocks
         Settings itemGroup = new Item.Settings().group(VoidHeart.ITEMGROUP);
 
         registerBlock(PORTAL_INTERIOR = new PortalInteriorBlock(), itemGroup, "portal_interior");
+        registerBlock(PORTAL_IMMERSIVE_INTERIOR = new PortalImmersiveInteriorBlock(), itemGroup, "portal_immersive_interior");
         registerBlock(PORTAL_FRAME = new PortalFrameBlock(), itemGroup, "portal_frame");
         registerBlock(PORTAL_FRAME_CORE = new PortalFrameCoreBlock(), itemGroup, "portal_frame_core");
 
@@ -54,26 +57,30 @@ public class VoidHeartBlocks
 
         registerBlock(VOID_HEART = new VoidHeartBlock(), itemGroup, "void_heart_block");
 
-        registerBlock(POCKET_WALL = new Block(FabricBlockSettings
-                .of(Material.STONE)
-                .strength(-1.0F, 3600000.0F)
-                .dropsNothing()
-                .allowsSpawning((state, world, pos, type) -> false)), itemGroup, "pocket_wall");
+        registerBlock(POCKET_WALL = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE)
+                        .strength(-1.0F, 3600000.0F)
+                        .dropsNothing()
+                        .allowsSpawning((state, world, pos, type) -> false)), itemGroup, "pocket_wall");
 
-        registerBlock(VOIDSTONE = new Block(FabricBlockSettings
-                .of(Material.STONE, MaterialColor.BLACK)
-                .sounds(BlockSoundGroup.STONE)
-                .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone");
+        registerBlock(VOIDSTONE = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE, MaterialColor.BLACK)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone");
 
-        registerBlock(VOIDSTONE_BRICKS = new VoidStoneBricksBlock(FabricBlockSettings
-                .of(Material.STONE, MaterialColor.BLACK)
-                .sounds(BlockSoundGroup.STONE)
-                .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");
+        registerBlock(VOIDSTONE_BRICKS = new VoidStoneBricksBlock(
+                FabricBlockSettings
+                        .of(Material.STONE, MaterialColor.BLACK)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");
 
-        registerBlock(ELDRITCH_VOIDSTONE = new Block(FabricBlockSettings
-                .of(Material.STONE, MaterialColor.BLACK)
-                .sounds(BlockSoundGroup.STONE)
-                .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
+        registerBlock(ELDRITCH_VOIDSTONE = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE, MaterialColor.BLACK)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
 
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
