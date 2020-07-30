@@ -6,6 +6,8 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Direction;
 
+import static net.voxelindustry.voidheart.common.block.StateProperties.*;
+
 public class PortalFrameCoreBlock extends PortalFrameBlock
 {
     public PortalFrameCoreBlock()

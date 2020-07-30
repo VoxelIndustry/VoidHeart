@@ -25,6 +25,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
 
 public class VoidHeart implements ModInitializer
@@ -49,6 +50,7 @@ public class VoidHeart implements ModInitializer
         VoidHeartTiles.registerTiles();
 
         VoidHeartRecipes.registerRecipes();
+        VoidHeartWorld.registerGeneration();
 
         ServerTickEvents.START_WORLD_TICK.register(VoidHeartTicker::tick);
 

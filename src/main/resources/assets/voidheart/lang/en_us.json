@@ -16,6 +16,8 @@
   "block.voidheart.pocket_wall": "Pocket Wall",
   "block.voidheart.voidstone": "Voidstone",
   "block.voidheart.eldritch_voidstone": "Eldritch Voidstone",
+  "block.voidheart.void_monolith": "Void Monolith",
+  "__comment": "Decorative Blocks",
   "block.voidheart.voidstone_bricks": "Voidstone Bricks",
   "block.voidheart.voidstone_stairs": "Voidstone Stairs",
   "block.voidheart.voidstone_bricks_stairs": "Voidstone Brick Stairs",

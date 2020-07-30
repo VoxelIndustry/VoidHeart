@@ -1,11 +1,11 @@
-package net.voxelindustry.voidheart.client.model;
+package net.voxelindustry.voidheart.client.model.portalframe;
 
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction;
-import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
+import net.voxelindustry.voidheart.common.block.StateProperties;
 
 public class PortalFrameVeinModel
 {
@@ -13,7 +13,7 @@ public class PortalFrameVeinModel
     {
         for (Direction direction : Direction.values())
         {
-            if (!PortalFrameBlock.hasPortalToSide(state, direction))
+            if (!StateProperties.isConnectedToSide(state, direction))
                 continue;
 
             int rotation = MutableQuadView.BAKE_LOCK_UV;
@@ -33,7 +33,7 @@ public class PortalFrameVeinModel
                 if (adjacent == direction || adjacent == direction.getOpposite())
                     continue;
 
-                if (PortalFrameBlock.hasPortalToSide(state, direction.getOpposite()))
+                if (StateProperties.isConnectedToSide(state, direction.getOpposite()))
                 {
                     int spriteRotation = MutableQuadView.BAKE_LOCK_UV;
                     if (adjacent == Direction.UP)

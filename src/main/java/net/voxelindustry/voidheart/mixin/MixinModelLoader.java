@@ -5,8 +5,9 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.util.ModelIdentifier;
-import net.voxelindustry.voidheart.client.model.PortalFrameCoreUnbakedModel;
-import net.voxelindustry.voidheart.client.model.PortalFrameUnbakedModel;
+import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithUnbakedModel;
+import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameCoreUnbakedModel;
+import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameUnbakedModel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -28,6 +29,7 @@ public class MixinModelLoader
     {
         MODEL_MAP.put(new ModelIdentifier(MODID + ":portal_frame_core#*"), PortalFrameCoreUnbakedModel::new);
         MODEL_MAP.put(new ModelIdentifier(MODID + ":portal_frame#*"), PortalFrameUnbakedModel::new);
+        MODEL_MAP.put(new ModelIdentifier(MODID + ":void_monolith#*"), VoidMonolithUnbakedModel::new);
     }
 
     @ModifyVariable(method = "addModel", at = @At("STORE"))

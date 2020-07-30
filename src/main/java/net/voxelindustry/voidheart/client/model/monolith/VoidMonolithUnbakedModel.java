@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.client.model;
+package net.voxelindustry.voidheart.client.model.monolith;
 
 import com.mojang.datafixers.util.Pair;
 import net.fabricmc.api.EnvType;
@@ -10,6 +10,7 @@ import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.util.Identifier;
+import net.voxelindustry.voidheart.client.model.ForwardingUnbakedModel;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,9 +18,9 @@ import java.util.Set;
 import java.util.function.Function;
 
 @Environment(EnvType.CLIENT)
-public class PortalFrameUnbakedModel extends ForwardingUnbakedModel
+public class VoidMonolithUnbakedModel extends ForwardingUnbakedModel
 {
-    public PortalFrameUnbakedModel(UnbakedModel wrapped)
+    public VoidMonolithUnbakedModel(UnbakedModel wrapped)
     {
         this.wrapped = wrapped;
     }
@@ -28,13 +29,13 @@ public class PortalFrameUnbakedModel extends ForwardingUnbakedModel
     public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences)
     {
         Collection<SpriteIdentifier> dependencies = super.getTextureDependencies(unbakedModelGetter, unresolvedTextureReferences);
-        dependencies.addAll(Arrays.asList(PortalFrameVeinSpriteManager.getSpriteIdentifiers()));
+        dependencies.addAll(Arrays.asList(VoidMonolithSpriteManager.getSpriteIdentifiers()));
         return dependencies;
     }
 
     @Override
     public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId)
     {
-        return new PortalFrameBakedModel(super.bake(loader, textureGetter, rotationContainer, modelId), textureGetter);
+        return new VoidMonolithBakedModel(super.bake(loader, textureGetter, rotationContainer, modelId), textureGetter);
     }
 }

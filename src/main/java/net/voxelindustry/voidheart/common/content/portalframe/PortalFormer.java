@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.apache.commons.lang3.tuple.Pair;
@@ -108,28 +109,28 @@ public class PortalFormer
             switch (direction)
             {
                 case DOWN:
-                    if (state.get(PortalFrameBlock.DOWN))
-                        coreState = coreState.with(PortalFrameBlock.DOWN, true);
+                    if (state.get(StateProperties.DOWN))
+                        coreState = coreState.with(StateProperties.DOWN, true);
                     break;
                 case UP:
-                    if (state.get(PortalFrameBlock.UP))
-                        coreState = coreState.with(PortalFrameBlock.UP, true);
+                    if (state.get(StateProperties.UP))
+                        coreState = coreState.with(StateProperties.UP, true);
                     break;
                 case NORTH:
-                    if (state.get(PortalFrameBlock.NORTH))
-                        coreState = coreState.with(PortalFrameBlock.NORTH, true);
+                    if (state.get(StateProperties.NORTH))
+                        coreState = coreState.with(StateProperties.NORTH, true);
                     break;
                 case SOUTH:
-                    if (state.get(PortalFrameBlock.SOUTH))
-                        coreState = coreState.with(PortalFrameBlock.SOUTH, true);
+                    if (state.get(StateProperties.SOUTH))
+                        coreState = coreState.with(StateProperties.SOUTH, true);
                     break;
                 case WEST:
-                    if (state.get(PortalFrameBlock.WEST))
-                        coreState = coreState.with(PortalFrameBlock.WEST, true);
+                    if (state.get(StateProperties.WEST))
+                        coreState = coreState.with(StateProperties.WEST, true);
                     break;
                 case EAST:
-                    if (state.get(PortalFrameBlock.EAST))
-                        coreState = coreState.with(PortalFrameBlock.EAST, true);
+                    if (state.get(StateProperties.EAST))
+                        coreState = coreState.with(StateProperties.EAST, true);
                     break;
             }
         }

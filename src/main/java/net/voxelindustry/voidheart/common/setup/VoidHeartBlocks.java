@@ -15,6 +15,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
+import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
@@ -42,6 +43,8 @@ public class VoidHeartBlocks
     public static Block VOID_PILLAR;
 
     public static Block VOID_HEART;
+
+    public static Block VOID_MONOLITH;
 
     public static void registerBlocks()
     {
@@ -81,6 +84,8 @@ public class VoidHeartBlocks
                         .of(Material.STONE, MaterialColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
+
+        registerBlock(VOID_MONOLITH = new VoidMonolithBlock(), itemGroup, "void_monolith");
 
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");

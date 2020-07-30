@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.client.model;
+package net.voxelindustry.voidheart.client.model.portalframe;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
