@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -35,6 +36,7 @@ import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+@Log4j2
 public class PortalFrameTile extends TileBase implements ILoadable
 {
     @Getter
@@ -274,7 +276,10 @@ public class PortalFrameTile extends TileBase implements ILoadable
                     else
                         world.setBlockState(pos, VoidHeartBlocks.PORTAL_INTERIOR.getDefaultState().with(Properties.FACING, facing));
 
-                    PortalInteriorTile portal = (PortalInteriorTile) world.getBlockEntity(pos);
+                    BlockEntity tile = world.getBlockEntity(pos);
+                    if (!(tile instanceof PortalInteriorTile))
+                        log.error("Tile inside portal is not of correct instance. tilePos={}, portalCorePos={}, portalPoints={}", pos, getPos(), interiorPoints);
+                    PortalInteriorTile portal = (PortalInteriorTile) tile;
                     portal.setCore(getPos());
 
                     linkedInteriors.add(pos.toImmutable());
@@ -521,8 +526,6 @@ public class PortalFrameTile extends TileBase implements ILoadable
         boolean useImmersivePortal = VoidHeart.useImmersivePortal();
 
         if (wasImmersive != useImmersivePortal)
-        {
             VoidHeartTicker.addTaskForLoadedPos(getPos(), () -> linkPortal(useImmersivePortal));
-        }
     }
 }
