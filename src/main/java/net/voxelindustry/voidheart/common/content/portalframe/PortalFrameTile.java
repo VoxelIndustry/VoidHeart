@@ -269,8 +269,10 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
         linkedInteriors.clear();
         BlockPos.stream(interiorPoints.getLeft(), interiorPoints.getRight())
-                .forEach(pos ->
+                .forEach(mutablePos ->
                 {
+                    BlockPos pos = mutablePos.toImmutable();
+
                     if (useImmersivePortal)
                         world.setBlockState(pos, VoidHeartBlocks.PORTAL_IMMERSIVE_INTERIOR.getDefaultState().with(Properties.FACING, facing));
                     else
@@ -282,7 +284,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
                     PortalInteriorTile portal = (PortalInteriorTile) tile;
                     portal.setCore(getPos());
 
-                    linkedInteriors.add(pos.toImmutable());
+                    linkedInteriors.add(pos);
                 });
 
         wasImmersive = useImmersivePortal;
