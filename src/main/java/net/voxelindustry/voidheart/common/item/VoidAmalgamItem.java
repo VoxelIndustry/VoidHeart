@@ -2,12 +2,16 @@ package net.voxelindustry.voidheart.common.item;
 
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.FoodComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Rarity;
@@ -51,6 +55,14 @@ public class VoidAmalgamItem extends Item
 
         if (voidPocketState.hasPocket(user.getUuid()))
             return stack;
+
+        StatusEffectInstance blindness = new StatusEffectInstance(StatusEffects.BLINDNESS, 40);
+        StatusEffectInstance poison = new StatusEffectInstance(StatusEffects.POISON, 80);
+        StatusEffectInstance wither = new StatusEffectInstance(StatusEffects.WITHER, 40);
+        user.addStatusEffect(blindness);
+        user.addStatusEffect(poison);
+        user.addStatusEffect(wither);
+        ((PlayerEntity) user).playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1, 1 + (world.random.nextFloat() - world.random.nextFloat()) * 0.4F);
 
         ItemStack result = new ItemStack(VoidHeartItems.VOID_HEART);
         CompoundTag tag = result.getOrCreateTag();
