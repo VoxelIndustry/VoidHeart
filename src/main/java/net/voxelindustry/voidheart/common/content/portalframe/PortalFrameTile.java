@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -250,7 +251,11 @@ public class PortalFrameTile extends TileBase implements ILoadable
         linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
 
         if (getWorld() != null && isServer() && portalEntityID != null)
-            ((ServerWorld) getWorld()).removeEntity(((ServerWorld) getWorld()).getEntity(portalEntityID));
+        {
+            Entity portalEntity = ((ServerWorld) getWorld()).getEntity(portalEntityID);
+            if (portalEntity != null)
+                ((ServerWorld) getWorld()).removeEntity(portalEntity);
+        }
     }
 
     PortalFrameTile getLinkedPortal()

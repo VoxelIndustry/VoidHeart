@@ -167,6 +167,7 @@ public class VoidAltarTile extends TileBase implements Tickable
         else if (isCrafting)
             stopCrafting();
 
+        markDirty();
         sync();
     }
 
