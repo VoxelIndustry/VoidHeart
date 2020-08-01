@@ -85,7 +85,7 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
                 return ActionResult.PASS;
             }
 
-            if (tile.voidPieceInteract(hit.getSide(), player, player.getStackInHand(hand), isInPocket))
+            if (PortalFrameTile.voidPieceInteract(tile, tile.getWorld(), tile.getPos(), hit.getSide(), player, player.getStackInHand(hand), isInPocket))
                 return ActionResult.SUCCESS;
         }
 

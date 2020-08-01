@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import com.google.common.util.concurrent.Runnables;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
@@ -48,7 +49,7 @@ public class PortalFormer
                 abs(pocketPos.getZ() - pos.getZ()) < 9;
     }
 
-    public static boolean tryForm(World world, BlockState state, BlockPos brickPos, Direction direction)
+    public static DeferredRollbackWork<PortalFormerState> tryForm(World world, BlockState state, BlockPos brickPos, Direction direction)
     {
         Pair<BlockPos, BlockPos> portalPoints = PortalFormer.tryFloodFill(
                 brickPos,
@@ -59,37 +60,42 @@ public class PortalFormer
                 PortalFrameTile.getAdjacentDirection(direction));
 
         if (portalPoints.getLeft().equals(brickPos) && portalPoints.getRight().equals(brickPos))
-            return false;
+            return DeferredRollbackWork.willFail();
 
-        createCoreState(state, world, brickPos, direction);
+        return DeferredRollbackWork.maySucceed(false,
+                PortalFormerState.of(portalPoints.getLeft(), portalPoints.getRight(), direction),
+                portalFormerState ->
+                {
+                    createCoreState(state, world, brickPos, portalFormerState.getFacing());
 
-        PortalFrameTile portalFrameTile = (PortalFrameTile) world.getBlockEntity(brickPos);
+                    PortalFrameTile portalFrameTile = (PortalFrameTile) world.getBlockEntity(brickPos);
 
-        if (portalFrameTile == null)
-            return false;
+                    if (portalFrameTile == null)
+                        return false;
 
-        BlockPos.stream(portalPoints.getLeft(), portalPoints.getRight()).forEach(pos ->
-        {
-            BlockState frameState = world.getBlockState(pos);
+                    BlockPos.stream(portalFormerState.getFrom(), portalFormerState.getTo()).forEach(pos ->
+                    {
+                        BlockState frameState = world.getBlockState(pos);
 
-            if (frameState.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
-                world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME.getDefaultState());
+                        if (frameState.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
+                            world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME.getDefaultState());
 
-            PortalFrameTile wall = (PortalFrameTile) world.getBlockEntity(pos);
+                        PortalFrameTile wall = (PortalFrameTile) world.getBlockEntity(pos);
 
-            // Core check for corners (it's valid to have a core as a corner but not a wall of the portal)
-            if (wall == null || wall.isCore())
-                return;
+                        // Core check for corners (it's valid to have a core as a corner but not a wall of the portal)
+                        if (wall == null || wall.isCore())
+                            return;
 
-            wall.addCore(portalFrameTile);
-            portalFrameTile.getLinkedFrames().add(pos.toImmutable());
-        });
+                        wall.addCore(portalFrameTile);
+                        portalFrameTile.getLinkedFrames().add(pos.toImmutable());
+                    });
 
-        portalFrameTile.setCore(true);
-        portalFrameTile.setPortalPoints(portalPoints);
-        portalFrameTile.markDirty();
+                    portalFrameTile.setCore(true);
+                    portalFrameTile.setPortalState(portalFormerState);
+                    portalFrameTile.markDirty();
 
-        return true;
+                    return true;
+                }, Runnables.doNothing());
     }
 
     public static void createCoreState(BlockState state, World world, BlockPos pos, Direction facing)
@@ -152,29 +158,29 @@ public class PortalFormer
         return tile != null && !tile.isCore();
     }
 
-    public static Stream<BlockPos> streamBorders(Pair<BlockPos, BlockPos> area)
+    public static Stream<BlockPos> streamBorders(PortalFormerState area)
     {
-        return BlockPos.stream(area.getLeft(), area.getRight()).filter(pos ->
-                (pos.getX() == area.getLeft().getX() || pos.getX() == area.getRight().getX() &&
-                        pos.getY() == area.getLeft().getY() || pos.getY() == area.getRight().getY())
-                        || (pos.getX() == area.getLeft().getX() || pos.getX() == area.getRight().getX() &&
-                        pos.getZ() == area.getLeft().getZ() || pos.getZ() == area.getRight().getZ())
-                        || (pos.getZ() == area.getLeft().getZ() || pos.getZ() == area.getRight().getZ() &&
-                        pos.getY() == area.getLeft().getY() || pos.getY() == area.getRight().getY())
+        return BlockPos.stream(area.getFrom(), area.getTo()).filter(pos ->
+                (pos.getX() == area.getFrom().getX() || pos.getX() == area.getTo().getX() &&
+                        pos.getY() == area.getFrom().getY() || pos.getY() == area.getTo().getY())
+                        || (pos.getX() == area.getFrom().getX() || pos.getX() == area.getTo().getX() &&
+                        pos.getZ() == area.getFrom().getZ() || pos.getZ() == area.getTo().getZ())
+                        || (pos.getZ() == area.getFrom().getZ() || pos.getZ() == area.getTo().getZ() &&
+                        pos.getY() == area.getFrom().getY() || pos.getY() == area.getTo().getY())
         );
     }
 
-    public static Pair<BlockPos, BlockPos> excludeBorders(Pair<BlockPos, BlockPos> area)
+    public static Pair<BlockPos, BlockPos> excludeBorders(PortalFormerState area)
     {
         BlockPos min = new BlockPos(
-                min(area.getLeft().getX(), area.getRight().getX()) + (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
-                min(area.getLeft().getY(), area.getRight().getY()) + (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
-                min(area.getLeft().getZ(), area.getRight().getZ()) + (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0));
+                min(area.getFrom().getX(), area.getTo().getX()) + (area.getFrom().getX() != area.getTo().getX() ? 1 : 0),
+                min(area.getFrom().getY(), area.getTo().getY()) + (area.getFrom().getY() != area.getTo().getY() ? 1 : 0),
+                min(area.getFrom().getZ(), area.getTo().getZ()) + (area.getFrom().getZ() != area.getTo().getZ() ? 1 : 0));
 
         BlockPos max = new BlockPos(
-                max(area.getLeft().getX(), area.getRight().getX()) - (area.getLeft().getX() != area.getRight().getX() ? 1 : 0),
-                max(area.getLeft().getY(), area.getRight().getY()) - (area.getLeft().getY() != area.getRight().getY() ? 1 : 0),
-                max(area.getLeft().getZ(), area.getRight().getZ()) - (area.getLeft().getZ() != area.getRight().getZ() ? 1 : 0));
+                max(area.getFrom().getX(), area.getTo().getX()) - (area.getFrom().getX() != area.getTo().getX() ? 1 : 0),
+                max(area.getFrom().getY(), area.getTo().getY()) - (area.getFrom().getY() != area.getTo().getY() ? 1 : 0),
+                max(area.getFrom().getZ(), area.getTo().getZ()) - (area.getFrom().getZ() != area.getTo().getZ() ? 1 : 0));
 
         return Pair.of(min, max);
     }

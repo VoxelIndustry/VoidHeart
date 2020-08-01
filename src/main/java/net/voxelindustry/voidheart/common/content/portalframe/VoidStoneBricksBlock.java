@@ -37,14 +37,8 @@ public class VoidStoneBricksBlock extends Block
                 return ActionResult.PASS;
             }
 
-            if (PortalFormer.tryForm(world, state, pos, hit.getSide()))
-            {
-                PortalFrameTile frame = (PortalFrameTile) world.getBlockEntity(pos);
-                frame.voidPieceInteract(hit.getSide(), player, stack, isInPocket);
+            if (PortalFrameTile.voidPieceInteract(null, world, pos, hit.getSide(), player, stack, isInPocket))
                 return ActionResult.SUCCESS;
-            }
-            else
-                player.sendMessage(new TranslatableText(MODID + ".portal_form_error"), true);
         }
 
         return super.onUse(state, world, pos, player, hand, hit);
