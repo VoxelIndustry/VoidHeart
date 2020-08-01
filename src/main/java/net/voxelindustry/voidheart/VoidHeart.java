@@ -2,7 +2,6 @@ package net.voxelindustry.voidheart;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
-import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
@@ -15,8 +14,6 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
-import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
-import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
@@ -68,16 +65,6 @@ public class VoidHeart implements ModInitializer
                 new Identifier(MODID, "altar_void"), ALTAR_VOID_PARTICLE = FabricParticleTypes.complex(true, AltarVoidParticleEffect.PARAMETERS_FACTORY));
         Registry.register(Registry.PARTICLE_TYPE,
                 new Identifier(MODID, "altar_item"), ALTAR_ITEM_PARTICLE = FabricParticleTypes.complex(true, AltarItemParticleEffect.PARAMETERS_FACTORY));
-
-        ParticleFactoryRegistry.getInstance().register(
-                ALTAR_VOID_PARTICLE,
-                provider -> (parameters, world, x, y, z, velocityX, velocityY, velocityZ) ->
-                        new AltarVoidFillingParticle(world, x, y, z, velocityX, velocityY, velocityZ, parameters.getSpeed(), provider));
-
-        ParticleFactoryRegistry.getInstance().register(
-                ALTAR_ITEM_PARTICLE,
-                provider -> (parameters, world, x, y, z, velocityX, velocityY, velocityZ) ->
-                        new AltarItemParticle(world, x, y, z, velocityX, velocityY, velocityZ, parameters.getStack(), parameters.getFirstPointBezier(), parameters.getSecondPointBezier()));
     }
 
     public static boolean useImmersivePortal()

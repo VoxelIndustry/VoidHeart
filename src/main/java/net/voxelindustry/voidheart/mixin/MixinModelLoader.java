@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.mixin;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.util.ModelIdentifier;
@@ -19,7 +17,6 @@ import java.util.function.Function;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-@Environment(EnvType.CLIENT)
 @Mixin(ModelLoader.class)
 public class MixinModelLoader
 {

@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
@@ -19,7 +17,6 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@Environment(EnvType.CLIENT)
 public class VoidMonolithBakedModel extends ForwardingBakedModel
 {
     public VoidMonolithBakedModel(BakedModel wrapped, Function<SpriteIdentifier, Sprite> spriteGetter)

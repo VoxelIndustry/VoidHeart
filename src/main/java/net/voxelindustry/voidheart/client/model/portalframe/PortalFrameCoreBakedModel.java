@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.client.model.portalframe;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.renderer.v1.Renderer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
@@ -25,7 +23,6 @@ import java.util.function.Supplier;
 
 import static net.voxelindustry.voidheart.client.model.portalframe.PortalFrameVeinSpriteManager.*;
 
-@Environment(EnvType.CLIENT)
 public class PortalFrameCoreBakedModel extends ForwardingBakedModel
 {
     public PortalFrameCoreBakedModel(BakedModel wrapped, Function<SpriteIdentifier, Sprite> spriteGetter)

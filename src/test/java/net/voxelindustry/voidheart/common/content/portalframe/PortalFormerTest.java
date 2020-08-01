@@ -1,8 +1,7 @@
-package net.voxelindustry.voidheart.common.tile;
+package net.voxelindustry.voidheart.common.content.portalframe;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.voxelindustry.voidheart.common.content.portalframe.PortalFormer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 

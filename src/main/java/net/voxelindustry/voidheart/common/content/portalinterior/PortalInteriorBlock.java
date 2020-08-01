@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.common.content.portalinterior;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -57,7 +55,6 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
     }
 
     @Override
-    @Environment(EnvType.CLIENT)
     public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state)
     {
         return ItemStack.EMPTY;

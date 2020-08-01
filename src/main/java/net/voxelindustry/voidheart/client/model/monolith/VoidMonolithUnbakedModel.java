@@ -1,8 +1,6 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
 import com.mojang.datafixers.util.Pair;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.ModelBakeSettings;
 import net.minecraft.client.render.model.ModelLoader;
@@ -17,7 +15,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.function.Function;
 
-@Environment(EnvType.CLIENT)
 public class VoidMonolithUnbakedModel extends ForwardingUnbakedModel
 {
     public VoidMonolithUnbakedModel(UnbakedModel wrapped)

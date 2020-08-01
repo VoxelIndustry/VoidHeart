@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
@@ -14,7 +12,6 @@ import java.util.function.Function;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-@Environment(EnvType.CLIENT)
 public class VoidMonolithSpriteManager
 {
     private static final SpriteIdentifier[] SPRITE_IDENTIFIERS =
