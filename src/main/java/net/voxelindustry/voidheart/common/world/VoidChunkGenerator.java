@@ -6,6 +6,7 @@ import com.mojang.serialization.Encoder;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.SpawnGroup;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.util.math.BlockPos;
@@ -13,6 +14,8 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biome.SpawnEntry;
 import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.FixedBiomeSource;
@@ -25,14 +28,17 @@ import net.minecraft.world.gen.chunk.VerticalBlockSample;
 import net.minecraft.world.gen.feature.StructureFeature;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import static java.util.Collections.emptyList;
 
 public class VoidChunkGenerator extends ChunkGenerator
 {
     public static Codec<VoidChunkGenerator> codec;
 
-    private VerticalBlockSample verticalBlockSample = new VerticalBlockSample(
+    private final VerticalBlockSample verticalBlockSample = new VerticalBlockSample(
             Stream.generate(Blocks.AIR::getDefaultState)
                     .limit(256)
                     .toArray(BlockState[]::new)
@@ -122,6 +128,12 @@ public class VoidChunkGenerator extends ChunkGenerator
     public BlockView getColumnSample(int x, int z)
     {
         return verticalBlockSample;
+    }
+
+    @Override
+    public List<SpawnEntry> getEntitySpawnList(Biome biome, StructureAccessor accessor, SpawnGroup group, BlockPos pos)
+    {
+        return emptyList();
     }
 
     static
