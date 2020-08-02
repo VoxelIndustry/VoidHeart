@@ -35,13 +35,13 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
         this(Settings.of(Material.STONE)
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE));
-
-        initDefaultState();
     }
 
     public PortalFrameBlock(Settings settings)
     {
         super(settings);
+
+        initDefaultState();
     }
 
     protected void initDefaultState()
@@ -157,6 +157,7 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
             if (tile != null)
                 tile.breakTile(BlockPos.ORIGIN);
         }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override
