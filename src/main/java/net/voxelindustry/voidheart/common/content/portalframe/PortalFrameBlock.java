@@ -32,11 +32,16 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
 {
     public PortalFrameBlock()
     {
-        super(Settings.of(Material.STONE)
+        this(Settings.of(Material.STONE)
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE));
 
         initDefaultState();
+    }
+
+    public PortalFrameBlock(Settings settings)
+    {
+        super(settings);
     }
 
     protected void initDefaultState()
