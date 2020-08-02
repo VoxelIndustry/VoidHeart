@@ -49,23 +49,24 @@ public class VoidHeartBlocks
     public static void registerBlocks()
     {
         Settings itemGroup = new Item.Settings().group(VoidHeart.ITEMGROUP);
+        Settings noGroup = new Item.Settings();
 
-        registerBlock(PORTAL_INTERIOR = new PortalInteriorBlock(), itemGroup, "portal_interior");
-        registerBlock(PORTAL_IMMERSIVE_INTERIOR = new PortalImmersiveInteriorBlock(), itemGroup, "portal_immersive_interior");
-        registerBlock(PORTAL_FRAME = new PortalFrameBlock(), itemGroup, "portal_frame");
-        registerBlock(PORTAL_FRAME_CORE = new PortalFrameCoreBlock(), itemGroup, "portal_frame_core");
+        registerBlock(PORTAL_INTERIOR = new PortalInteriorBlock(), noGroup, "portal_interior");
+        registerBlock(PORTAL_IMMERSIVE_INTERIOR = new PortalImmersiveInteriorBlock(), noGroup, "portal_immersive_interior");
+        registerBlock(PORTAL_FRAME = new PortalFrameBlock(), noGroup, "portal_frame");
+        registerBlock(PORTAL_FRAME_CORE = new PortalFrameCoreBlock(), noGroup, "portal_frame_core");
 
         registerBlock(VOID_ALTAR = new VoidAltarBlock(), itemGroup, "void_altar");
         registerBlock(VOID_PILLAR = new VoidPillarBlock(), itemGroup, "void_pillar");
 
-        registerBlock(VOID_HEART = new VoidHeartBlock(), itemGroup, "void_heart_block");
+        registerBlock(VOID_HEART = new VoidHeartBlock(), noGroup, "void_heart_block");
 
         registerBlock(POCKET_WALL = new Block(
                 FabricBlockSettings
                         .of(Material.STONE)
                         .strength(-1.0F, 3600000.0F)
                         .dropsNothing()
-                        .allowsSpawning((state, world, pos, type) -> false)), itemGroup, "pocket_wall");
+                        .allowsSpawning((state, world, pos, type) -> false)), noGroup, "pocket_wall");
 
         registerBlock(VOIDSTONE = new Block(
                 FabricBlockSettings
@@ -96,12 +97,12 @@ public class VoidHeartBlocks
         generateSlab(VOIDSTONE_BRICKS, itemGroup, "voidstone_bricks");
     }
 
-    private static void registerBlock(Block block, Item.Settings builder, String name)
+    private static void registerBlock(Block block, Item.Settings settings, String name)
     {
         Identifier identifier = new Identifier(MODID, name);
 
         Registry.register(Registry.BLOCK, identifier, block);
-        BlockItem itemBlock = new BlockItem(block, builder);
+        BlockItem itemBlock = new BlockItem(block, settings);
         Registry.register(Registry.ITEM, identifier, itemBlock);
     }
 
