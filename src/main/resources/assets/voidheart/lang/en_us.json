@@ -38,6 +38,7 @@
   "__comment": "guide",
   "voidheart.no_pocket_for_player": "Your Pocket does not exist",
   "voidheart.no_portal_at_pos": "The target pos is not a portal",
+  "voidheart.no_portal_at_pos_broken": "The target pos might have been broken",
   "voidheart.portal_shape_differ": "The target portal is not of the same shape",
   "voidheart.portal_form_error": "Cannot form the portal. Invalid shape.",
   "voidheart.must_be_inside_outside": "Portals cannot link two places outside or two inside the pocket",

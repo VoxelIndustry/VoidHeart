@@ -103,6 +103,11 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
                 if (linkedPortal instanceof PortalFrameTile)
                 {
+                    if (!((PortalFrameTile) linkedPortal).isCore())
+                    {
+                        player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
+                        return false;
+                    }
                     if (portalFormer.isPresent() && !portalFormer.get().getState().areShapeEquals(((PortalFrameTile) linkedPortal).portalState)
                             || portalFrameTile != null && !portalFrameTile.portalState.areShapeEquals(((PortalFrameTile) linkedPortal).portalState))
                     {
@@ -180,6 +185,12 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
             if (linkedPortal instanceof PortalFrameTile)
             {
+                if (!((PortalFrameTile) linkedPortal).isCore())
+                {
+                    player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
+                    return false;
+                }
+
                 if (portalFormer.isPresent() && !portalFormer.get().getState().areShapeEquals(((PortalFrameTile) linkedPortal).portalState)
                         || portalFrameTile != null && !portalFrameTile.portalState.areShapeEquals(((PortalFrameTile) linkedPortal).portalState))
                 {
