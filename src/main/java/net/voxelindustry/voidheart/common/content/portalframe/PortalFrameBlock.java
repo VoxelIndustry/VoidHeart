@@ -70,9 +70,10 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
-        PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
         if (player.isSneaking())
             return ActionResult.PASS;
+
+        PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
 
         if (tile == null)
             return ActionResult.PASS;
