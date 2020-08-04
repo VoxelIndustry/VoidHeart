@@ -45,6 +45,7 @@ public class VoidHeartBlocks
     public static Block VOID_HEART;
 
     public static Block VOID_MONOLITH;
+    public static Block VOID_MONOLITH_CAP;
 
     public static void registerBlocks()
     {
@@ -87,6 +88,12 @@ public class VoidHeartBlocks
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
 
         registerBlock(VOID_MONOLITH = new VoidMonolithBlock(), itemGroup, "void_monolith");
+        registerBlock(VOID_MONOLITH_CAP = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE)
+                        .strength(1.5F, 6.0F)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool()), itemGroup, "void_monolith_cap");
 
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
