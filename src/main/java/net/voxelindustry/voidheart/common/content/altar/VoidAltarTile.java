@@ -105,22 +105,25 @@ public class VoidAltarTile extends TileBase implements Tickable
             }
         }
 
-        if (isCrafting)
+        if (isServer())
         {
-            if (currentRecipe == null)
-                retrieveCurrentRecipe();
-
-            if (currentRecipe != null)
+            if (isCrafting)
             {
-                RecipeState recipeState = currentRecipe.createState();
-                recipeState.fromTag(tag.getCompound("recipeState"));
-                this.recipeState = recipeState;
+                if (currentRecipe == null)
+                    retrieveCurrentRecipe();
+
+                if (currentRecipe != null)
+                {
+                    RecipeState recipeState = currentRecipe.createState();
+                    recipeState.fromTag(tag.getCompound("recipeState"));
+                    this.recipeState = recipeState;
+                }
+                else
+                    stopCrafting();
             }
-            else
-                stopCrafting();
+            else if (recipeState != null)
+                recipeState = null;
         }
-        else if (recipeState != null)
-            recipeState = null;
     }
 
     @Override
