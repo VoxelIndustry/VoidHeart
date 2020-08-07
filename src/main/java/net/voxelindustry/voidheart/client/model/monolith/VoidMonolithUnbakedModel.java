@@ -10,10 +10,13 @@ import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.client.model.ForwardingUnbakedModel;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+
+import static java.util.Arrays.asList;
 
 public class VoidMonolithUnbakedModel extends ForwardingUnbakedModel
 {
@@ -26,7 +29,11 @@ public class VoidMonolithUnbakedModel extends ForwardingUnbakedModel
     public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences)
     {
         Collection<SpriteIdentifier> dependencies = super.getTextureDependencies(unbakedModelGetter, unresolvedTextureReferences);
-        dependencies.addAll(Arrays.asList(VoidMonolithSpriteManager.getSpriteIdentifiers()));
+        
+        List<SpriteIdentifier> sprites = new ArrayList<>();
+        sprites.addAll(asList(VoidMonolithSpriteManager.getMonolithSprites()));
+        sprites.addAll(asList(VoidMonolithSpriteManager.getGlyphSprites()));
+        dependencies.addAll(sprites);
         return dependencies;
     }
 

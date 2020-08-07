@@ -7,6 +7,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.WorldAccess;
@@ -28,7 +29,8 @@ public class VoidMonolithBlock extends Block
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(UP, false)
-                .with(DOWN, false));
+                .with(DOWN, false)
+                .with(Properties.LIT, false));
     }
 
     @Override
@@ -63,6 +65,6 @@ public class VoidMonolithBlock extends Block
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
     {
-        builder.add(UP, DOWN);
+        builder.add(UP, DOWN, Properties.LIT);
     }
 }

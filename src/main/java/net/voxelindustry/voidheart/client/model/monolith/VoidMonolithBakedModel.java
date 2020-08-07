@@ -1,5 +1,9 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
+import net.fabricmc.fabric.api.renderer.v1.Renderer;
+import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
+import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
+import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
@@ -8,6 +12,7 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.item.ItemStack;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
@@ -19,6 +24,8 @@ import java.util.function.Supplier;
 
 public class VoidMonolithBakedModel extends ForwardingBakedModel
 {
+    private final Direction[] horizontals = new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+
     public VoidMonolithBakedModel(BakedModel wrapped, Function<SpriteIdentifier, Sprite> spriteGetter)
     {
         this.wrapped = wrapped;
@@ -57,6 +64,21 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
 
         super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
         context.popTransform();
+
+        Renderer renderer = RendererAccess.INSTANCE.getRenderer();
+        RenderMaterial outerMaterial = renderer.materialFinder().blendMode(0, BlendMode.CUTOUT).emissive(0, true).find();
+
+        Random random = randomSupplier.get();
+
+        for (Direction direction : horizontals)
+        {
+            context.getEmitter()
+                    .material(outerMaterial)
+                    .square(direction, 0, 0, 1, 1, 0)
+                    .spriteBake(0, VoidMonolithSpriteManager.getGlyphSprite(random.nextInt(15), state.get(Properties.LIT)), MutableQuadView.BAKE_LOCK_UV)
+                    .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
+                    .emit();
+        }
     }
 
     @Override
