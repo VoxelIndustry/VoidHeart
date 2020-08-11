@@ -16,6 +16,7 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
+import net.voxelindustry.voidheart.common.block.StateProperties;
 
 import java.util.Random;
 import java.util.function.Function;
@@ -46,10 +47,19 @@ public class PortalFrameCoreBakedModel extends ForwardingBakedModel
         PortalFrameVeinModel.createPortalVeinQuads(state, context, outerMaterial);
 
         Direction facing = state.get(Properties.FACING);
+
+        Sprite sprite;
+        if (state.get(StateProperties.BROKEN))
+            sprite = getBrokenCoreSprite();
+        else if (state.get(Properties.LIT))
+            sprite = getActiveCoreSprite();
+        else
+            sprite = getInactiveCoreSprite();
+
         context.getEmitter()
                 .material(outerMaterial)
                 .square(facing, 0, 0, 1, 1, 0)
-                .spriteBake(0, state.get(Properties.LIT) ? getActiveCoreSprite() : getInactiveCoreSprite(), MutableQuadView.BAKE_LOCK_UV)
+                .spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV)
                 .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                 .emit();
 

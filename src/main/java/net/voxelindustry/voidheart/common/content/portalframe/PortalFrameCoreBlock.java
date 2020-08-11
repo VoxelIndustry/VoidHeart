@@ -7,6 +7,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -14,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.block.StateProperties.*;
 
 public class PortalFrameCoreBlock extends PortalFrameBlock
@@ -30,16 +33,40 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
         if (player.isSneaking())
+        {
+            PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
+            if (tile.isServer())
+                player.sendMessage(new LiteralText(">> " + tile.getPortalState()), false);
             return ActionResult.PASS;
+        }
 
         PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
 
         if (tile == null)
             return ActionResult.PASS;
 
-        // Core block is probably a previously broken portal
-        if (!tile.isCore())
-            PortalFormer.tryForm(world, state, pos, hit.getSide()).execute();
+        if (!world.isClient())
+        {
+            // Core block is probably a previously broken portal
+            if (!tile.isCore())
+            {
+                DeferredRollbackWork<PortalFormerState> portalFormer = PortalFormer.tryForm(world, state, pos, hit.getSide());
+                if (portalFormer.maySucceed())
+                {
+                    portalFormer.execute();
+                    if (portalFormer.success())
+                        PortalLinker.tryRelink(player, tile);
+                    else
+                        player.sendMessage(new TranslatableText(MODID + ".portal_cannot_form_back"), true);
+                }
+                else
+                    player.sendMessage(new TranslatableText(MODID + ".portal_cannot_form_back"), true);
+            }
+            else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null)
+            {
+                PortalLinker.tryRelink(player, tile);
+            }
+        }
 
         return super.onUse(state, world, pos, player, hand, hit);
     }
@@ -55,12 +82,13 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                 .with(UP, false)
                 .with(DOWN, false)
                 .with(Properties.FACING, Direction.NORTH)
-                .with(Properties.LIT, false));
+                .with(Properties.LIT, false)
+                .with(BROKEN, false));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
     {
-        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, Properties.FACING, Properties.LIT);
+        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, Properties.FACING, Properties.LIT, BROKEN);
     }
 }

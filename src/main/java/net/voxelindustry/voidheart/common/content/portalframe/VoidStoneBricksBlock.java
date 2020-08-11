@@ -37,7 +37,7 @@ public class VoidStoneBricksBlock extends Block
                 return ActionResult.PASS;
             }
 
-            if (PortalFrameTile.voidPieceInteract(null, world, pos, hit.getSide(), player, stack, isInPocket))
+            if (PortalLinker.voidPieceInteract(null, world, pos, hit.getSide(), player, stack, isInPocket))
                 return ActionResult.SUCCESS;
         }
 

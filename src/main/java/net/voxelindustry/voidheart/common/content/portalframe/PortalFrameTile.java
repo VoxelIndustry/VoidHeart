@@ -7,12 +7,9 @@ import lombok.extern.log4j.Log4j2;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -25,6 +22,7 @@ import net.voxelindustry.steamlayer.tile.ILoadable;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
+import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -33,10 +31,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
-
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 @Log4j2
 public class PortalFrameTile extends TileBase implements ILoadable
@@ -64,6 +59,14 @@ public class PortalFrameTile extends TileBase implements ILoadable
     private Direction          linkedFacing;
     private RegistryKey<World> linkedWorldKey;
 
+    @Getter
+    private Identifier         previousLinkedWorld;
+    @Getter
+    private BlockPos           previousLinkedPos;
+    @Getter
+    private Direction          previousLinkedFacing;
+    private RegistryKey<World> previousLinkedWorldKey;
+
     private boolean wasImmersive;
 
     public PortalFrameTile()
@@ -71,191 +74,6 @@ public class PortalFrameTile extends TileBase implements ILoadable
         super(VoidHeartTiles.PORTAL_WALL);
     }
 
-    public static boolean voidPieceInteract(PortalFrameTile portalFrameTile, World world, BlockPos pos, Direction direction, PlayerEntity player, ItemStack voidPiece, boolean isInPocket)
-    {
-        CompoundTag tag = voidPiece.getOrCreateTag();
-
-        Optional<DeferredRollbackWork<PortalFormerState>> portalFormer = Optional.empty();
-
-        if (portalFrameTile == null || !portalFrameTile.isCore())
-        {
-            portalFormer = Optional.of(PortalFormer.tryForm(world,
-                    portalFrameTile == null ? VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction) : portalFrameTile.getCachedState(),
-                    pos,
-                    direction));
-
-            if (!portalFormer.get().maySucceed())
-            {
-                player.sendMessage(new TranslatableText(MODID + ".portal_form_error"), true);
-                return false;
-            }
-        }
-
-        if (isInPocket)
-        {
-            if (tag.contains("externalPos"))
-            {
-                BlockPos externalPos = BlockPos.fromLong(tag.getLong("externalPos"));
-                RegistryKey<World> externalDimension = RegistryKey.of(Registry.DIMENSION, new Identifier(tag.getString("externalDimension")));
-
-                ServerWorld outsideWorld = world.getServer().getWorld(externalDimension);
-                BlockEntity linkedPortal = outsideWorld.getBlockEntity(externalPos);
-
-                if (linkedPortal instanceof PortalFrameTile)
-                {
-                    if (!((PortalFrameTile) linkedPortal).isCore())
-                    {
-                        player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
-                        return false;
-                    }
-                    if (portalFormer.isPresent() && !portalFormer.get().getState().areShapeEquals(((PortalFrameTile) linkedPortal).portalState)
-                            || portalFrameTile != null && !portalFrameTile.portalState.areShapeEquals(((PortalFrameTile) linkedPortal).portalState))
-                    {
-                        player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
-                        return false;
-                    }
-
-                    if (portalFormer.isPresent())
-                    {
-                        if (portalFrameTile == null)
-                        {
-                            world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction));
-                            portalFrameTile = (PortalFrameTile) world.getBlockEntity(pos);
-                        }
-
-                        portalFrameTile.portalState = portalFormer.get().getState();
-                        portalFormer.get().execute();
-                    }
-
-                    Direction externalFacing = Direction.byId(tag.getByte("externalFacing"));
-                    portalFrameTile.setLinkedPos(externalPos);
-                    portalFrameTile.setLinkedWorld(externalDimension.getValue());
-                    portalFrameTile.setLinkedFacing(externalFacing);
-                    portalFrameTile.linkPortal(VoidHeart.useImmersivePortal());
-                    portalFrameTile.getWorld().setBlockState(portalFrameTile.pos, portalFrameTile.getCachedState().with(Properties.LIT, true));
-
-                    voidPiece.decrement(1);
-
-                    ((PortalFrameTile) linkedPortal).setLinkedPos(portalFrameTile.getPos());
-                    ((PortalFrameTile) linkedPortal).setLinkedWorld(VoidHeart.VOID_WORLD_KEY.getValue());
-                    ((PortalFrameTile) linkedPortal).setLinkedFacing(portalFrameTile.getFacing());
-                    ((PortalFrameTile) linkedPortal).linkPortal(VoidHeart.useImmersivePortal());
-                    outsideWorld.setBlockState(portalFrameTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
-
-                    player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
-                }
-                else
-                {
-                    player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos"), true);
-                    return false;
-                }
-            }
-            else if (!tag.contains("pocketPos"))
-            {
-                if (portalFormer.isPresent())
-                {
-                    if (portalFrameTile == null)
-                    {
-                        world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction));
-                        portalFrameTile = (PortalFrameTile) world.getBlockEntity(pos);
-                    }
-
-                    portalFrameTile.portalState = portalFormer.get().getState();
-                    portalFormer.get().execute();
-                }
-
-                tag.putLong("pocketPos", portalFrameTile.getPos().asLong());
-                tag.putByte("pocketFacing", (byte) portalFrameTile.getFacing().ordinal());
-                player.sendMessage(new TranslatableText(MODID + ".link_started_pocket"), true);
-            }
-            else
-                return false;
-            return true;
-        }
-
-        // Not in pocket
-
-        if (tag.contains("pocketPos"))
-        {
-            BlockPos pocketPos = BlockPos.fromLong(tag.getLong("pocketPos"));
-
-            ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
-
-            BlockEntity linkedPortal = voidWorld.getBlockEntity(pocketPos);
-
-            if (linkedPortal instanceof PortalFrameTile)
-            {
-                if (!((PortalFrameTile) linkedPortal).isCore())
-                {
-                    player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
-                    return false;
-                }
-
-                if (portalFormer.isPresent() && !portalFormer.get().getState().areShapeEquals(((PortalFrameTile) linkedPortal).portalState)
-                        || portalFrameTile != null && !portalFrameTile.portalState.areShapeEquals(((PortalFrameTile) linkedPortal).portalState))
-                {
-                    player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
-                    return false;
-                }
-
-                if (portalFormer.isPresent())
-                {
-                    if (portalFrameTile == null)
-                    {
-                        world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction));
-                        portalFrameTile = (PortalFrameTile) world.getBlockEntity(pos);
-                    }
-
-                    portalFrameTile.portalState = portalFormer.get().getState();
-                    portalFormer.get().execute();
-                }
-
-                Direction pocketFacing = Direction.byId(tag.getByte("pocketFacing"));
-                portalFrameTile.setLinkedPos(pocketPos);
-                portalFrameTile.setLinkedWorld(VoidHeart.VOID_WORLD_KEY.getValue());
-                portalFrameTile.setLinkedFacing(pocketFacing);
-                portalFrameTile.linkPortal(VoidHeart.useImmersivePortal());
-                portalFrameTile.getWorld().setBlockState(portalFrameTile.pos, portalFrameTile.getCachedState().with(Properties.LIT, true));
-
-                voidPiece.decrement(1);
-
-                ((PortalFrameTile) linkedPortal).setLinkedPos(portalFrameTile.getPos());
-                ((PortalFrameTile) linkedPortal).setLinkedWorld(portalFrameTile.getWorld().getRegistryKey().getValue());
-                ((PortalFrameTile) linkedPortal).setLinkedFacing(portalFrameTile.getFacing());
-                ((PortalFrameTile) linkedPortal).linkPortal(VoidHeart.useImmersivePortal());
-                voidWorld.setBlockState(portalFrameTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
-
-                player.sendMessage(new TranslatableText(MODID + ".link_successful", "§3"), true);
-            }
-            else
-            {
-                player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos"), true);
-                return false;
-            }
-            return true;
-        }
-        else if (!tag.contains("externalPos"))
-        {
-            if (portalFormer.isPresent())
-            {
-                if (portalFrameTile == null)
-                {
-                    world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction));
-                    portalFrameTile = (PortalFrameTile) world.getBlockEntity(pos);
-                }
-
-                portalFrameTile.portalState = portalFormer.get().getState();
-                portalFormer.get().execute();
-            }
-
-            tag.putLong("externalPos", portalFrameTile.getPos().asLong());
-            tag.putString("externalDimension", portalFrameTile.getWorld().getRegistryKey().getValue().toString());
-            tag.putByte("externalFacing", (byte) portalFrameTile.getFacing().ordinal());
-            player.sendMessage(new TranslatableText(MODID + ".link_started_outside"), true);
-            return true;
-        }
-        return false;
-    }
 
     /**
      * Cut link and notify potential linked portal
@@ -278,6 +96,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
             });
 
             linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
+
+            if (!eventSource.equals(BlockPos.ORIGIN))
+                getWorld().setBlockState(getPos(), getCachedState().with(StateProperties.BROKEN, true));
         }
         else
             linkedCores.forEach(pos ->
@@ -285,9 +106,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
                 if (pos.equals(eventSource))
                     return;
 
-                PortalFrameTile wall = (PortalFrameTile) getWorld().getBlockEntity(pos);
-                if (wall != null)
-                    wall.removeFrame(this);
+                PortalFrameTile coreFrame = (PortalFrameTile) getWorld().getBlockEntity(pos);
+                if (coreFrame != null)
+                    coreFrame.removeFrame(this);
             });
 
         if (world.isClient() || linkedWorld == null)
@@ -311,6 +132,10 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
     public void cutLinkFromPortal()
     {
+        previousLinkedWorld = getLinkedWorld();
+        previousLinkedPos = getLinkedPos();
+        previousLinkedFacing = getLinkedFacing();
+
         setLinkedWorld(null);
         setLinkedFacing(null);
         setLinkedPos(null);
@@ -332,7 +157,12 @@ public class PortalFrameTile extends TileBase implements ILoadable
         return (PortalFrameTile) getWorld().getServer().getWorld(getLinkedWorldKey()).getBlockEntity(getLinkedPos());
     }
 
-    private void linkPortal(boolean useImmersivePortal)
+    PortalFrameTile getPreviouslyLinkedPortal()
+    {
+        return (PortalFrameTile) getWorld().getServer().getWorld(getPreviousLinkedWorldKey()).getBlockEntity(getPreviousLinkedPos());
+    }
+
+    void linkPortal(boolean useImmersivePortal)
     {
         Direction facing = getFacing();
 
@@ -401,10 +231,10 @@ public class PortalFrameTile extends TileBase implements ILoadable
         linkedCores.remove(wall.getPos());
     }
 
-    private void removeFrame(PortalFrameTile wall)
+    private void removeFrame(PortalFrameTile frame)
     {
-        linkedFrames.remove(wall);
-        breakTile(wall.getPos());
+        linkedFrames.remove(frame);
+        breakTile(frame.getPos());
     }
 
     public static Direction[] getAdjacentDirection(Direction facing)
@@ -433,10 +263,17 @@ public class PortalFrameTile extends TileBase implements ILoadable
             linkedFacing = Direction.byId(tag.getByte("linkedFacing"));
         }
 
+        if (tag.contains("previousLinkedWorld"))
+        {
+            previousLinkedWorld = new Identifier(tag.getString("previousLinkedWorld"));
+            previousLinkedPos = BlockPos.fromLong(tag.getLong("previousLinkedPos"));
+            previousLinkedFacing = Direction.byId(tag.getByte("previousLinkedFacing"));
+        }
+
         isCore = tag.getBoolean("isCore");
         wasImmersive = tag.getBoolean("wasImmersive");
 
-        if (tag.contains("portalPointFrom"))
+        if (tag.contains("portalState"))
             portalState.fromTag(tag.getCompound("portalState"));
 
         int count = tag.getInt("linkedFramesCount");
@@ -469,6 +306,13 @@ public class PortalFrameTile extends TileBase implements ILoadable
             tag.putString("linkedWorld", linkedWorld.toString());
             tag.putLong("linkedPos", linkedPos.asLong());
             tag.putByte("linkedFacing", (byte) linkedFacing.getId());
+        }
+
+        if (previousLinkedWorld != null)
+        {
+            tag.putString("previousLinkedWorld", previousLinkedWorld.toString());
+            tag.putLong("previousLinkedPos", previousLinkedPos.asLong());
+            tag.putByte("previousLinkedFacing", (byte) previousLinkedFacing.getId());
         }
 
         tag.putBoolean("isCore", isCore);
@@ -510,6 +354,11 @@ public class PortalFrameTile extends TileBase implements ILoadable
         return super.toTag(tag);
     }
 
+    public boolean isBroken()
+    {
+        return getCachedState().getBlock() == VoidHeartBlocks.PORTAL_FRAME_CORE && !isCore();
+    }
+
     public Direction getFacing()
     {
         return getWorld().getBlockState(getPos()).get(Properties.FACING);
@@ -536,6 +385,14 @@ public class PortalFrameTile extends TileBase implements ILoadable
             linkedWorldKey = RegistryKey.of(Registry.DIMENSION, linkedWorld);
 
         return linkedWorldKey;
+    }
+
+    public RegistryKey<World> getPreviousLinkedWorldKey()
+    {
+        if (previousLinkedWorldKey == null)
+            previousLinkedWorldKey = RegistryKey.of(Registry.DIMENSION, previousLinkedWorld);
+
+        return previousLinkedWorldKey;
     }
 
     public void setLinkedWorld(Identifier linkedWorld)

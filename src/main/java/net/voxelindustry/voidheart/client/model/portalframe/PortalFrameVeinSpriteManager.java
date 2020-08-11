@@ -19,6 +19,7 @@ public class PortalFrameVeinSpriteManager
                     getSpriteIdentifier("portal_frame_overlay"),
                     getSpriteIdentifier("portal_frame_overlay_core"),
                     getSpriteIdentifier("portal_frame_overlay_core_inactive"),
+                    getSpriteIdentifier("portal_frame_overlay_core_broken"),
                     getSpriteIdentifier("portal_frame_overlay_down"),
                     getSpriteIdentifier("portal_frame_overlay_left"),
                     getSpriteIdentifier("portal_frame_overlay_right"),
@@ -29,6 +30,7 @@ public class PortalFrameVeinSpriteManager
 
     private static Sprite coreActiveSprite;
     private static Sprite coreInactiveSprite;
+    private static Sprite coreBrokenSprite;
 
     private static Function<SpriteIdentifier, Sprite> spriteGetter;
 
@@ -49,17 +51,17 @@ public class PortalFrameVeinSpriteManager
             switch (direction)
             {
                 case DOWN:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[3]);
+                    return spriteGetter.apply(SPRITE_IDENTIFIERS[4]);
                 case UP:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[6]);
+                    return spriteGetter.apply(SPRITE_IDENTIFIERS[7]);
                 case NORTH:
                     return spriteGetter.apply(SPRITE_IDENTIFIERS[0]);
                 case SOUTH:
                     return spriteGetter.apply(SPRITE_IDENTIFIERS[0]);
                 case WEST:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[4]);
-                case EAST:
                     return spriteGetter.apply(SPRITE_IDENTIFIERS[5]);
+                case EAST:
+                    return spriteGetter.apply(SPRITE_IDENTIFIERS[6]);
             }
             return null;
         });
@@ -77,6 +79,13 @@ public class PortalFrameVeinSpriteManager
         if (coreInactiveSprite == null)
             coreInactiveSprite = spriteGetter.apply(SPRITE_IDENTIFIERS[2]);
         return coreInactiveSprite;
+    }
+
+    public static Sprite getBrokenCoreSprite()
+    {
+        if (coreBrokenSprite == null)
+            coreBrokenSprite = spriteGetter.apply(SPRITE_IDENTIFIERS[3]);
+        return coreBrokenSprite;
     }
 
     private static SpriteIdentifier getSpriteIdentifier(String from)

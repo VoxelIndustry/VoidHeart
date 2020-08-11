@@ -13,6 +13,8 @@ public class StateProperties
     public static final BooleanProperty UP    = BooleanProperty.of("up");
     public static final BooleanProperty DOWN  = BooleanProperty.of("down");
 
+    public static final BooleanProperty BROKEN = BooleanProperty.of("broken");
+
     public static boolean isConnectedToSide(BlockState state, Direction direction)
     {
         switch (direction)
