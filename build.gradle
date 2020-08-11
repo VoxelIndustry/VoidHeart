@@ -34,12 +34,9 @@ dependencies {
 
     modImplementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
 
-    modApi "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:${project.cardinal_version}"
-    modImplementation "io.github.onyxstudios:Cardinal-Components-API:${project.cardinal_version}"
-
     modImplementation "io.github.prospector:modmenu:${project.modmenu_version}"
     modCompile "me.shedaniel:RoughlyEnoughItems:${project.rei_version}"
-    modImplementation "immersive-portals:immersive-portals:${project.importals_version}"
+    implementation "immersive-portals:immersive-portals:${project.importals_version}"
 
     modRuntime "me.shedaniel.cloth:config-2:2.14.1"
 
