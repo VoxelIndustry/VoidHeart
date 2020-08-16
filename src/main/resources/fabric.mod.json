@@ -3,16 +3,18 @@
   "id": "voidheart",
   "version": "${version}",
   "name": "Void Heart",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "description": "Mod about exchanging parts of yourself for power over the Void. Also there is a pocket dimension.",
   "authors": [
-    "Me!"
+    "Ourten",
+    "mantal++",
+    "Lich"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/VoxelIndustry/VoidHeart",
+    "sources": "https://github.com/VoxelIndustry/VoidHeart"
   },
-  "license": "CC0-1.0",
-  "icon": "assets/modid/icon.png",
+  "license": "Apache License 2.0",
+  "icon": "assets/voidheart/textures/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
