@@ -23,14 +23,12 @@ public class VoidAltarRender extends BlockEntityRenderer<VoidAltarTile>
     @Override
     public void render(VoidAltarTile altar, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay)
     {
-
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getTranslucent());
 
         if (!altar.getStack().isEmpty())
             PillarPlacementRender.renderPillarsPreview(this, altar, matrices, buffer);
 
-        if (altar.getRecipeState() != null)
-            CraftingOverlayRender.renderCraftingOverlay(altar, matrices, vertexConsumers, light);
+        CraftingOverlayRender.renderCraftingOverlay(altar, matrices, vertexConsumers, light);
 
         if (altar.isCrafting() && altar.getWarmProgress() > 0 || altar.getCoolProgress() > 0)
             CraftingVoidRender.renderVoidCube(altar, dispatcher, tickDelta, matrices, vertexConsumers);

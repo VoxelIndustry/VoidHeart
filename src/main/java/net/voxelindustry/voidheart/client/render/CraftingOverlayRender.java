@@ -15,7 +15,7 @@ public class CraftingOverlayRender
 {
     static void renderCraftingOverlay(VoidAltarTile altar, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light)
     {
-        ItemStack output = altar.getRecipeState().getOutput(ItemStack.class, 0);
+        ItemStack output = altar.getClientRecipeOutput();
 
         if (!output.isEmpty())
         {
@@ -48,7 +48,7 @@ public class CraftingOverlayRender
             matrices.translate(0, -2, 0);
         }
 
-        List<ItemStack> stackLefts = altar.getRecipeState().getIngredientsLeft(ItemStack.class);
+        List<ItemStack> stackLefts = altar.getClientRecipeToConsume();
         long stackLeft = stackLefts.stream().filter(stack -> !stack.isEmpty()).count();
         matrices.translate(-(stackLeft - 1) / 2F - 0.5F, 0, 0);
 

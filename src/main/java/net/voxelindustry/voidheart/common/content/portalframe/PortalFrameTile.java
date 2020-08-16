@@ -411,7 +411,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
     }
 
     @Override
-    public void load()
+    public void serverLoad()
     {
         if (!isCore() || getLinkedWorld() == null)
             return;

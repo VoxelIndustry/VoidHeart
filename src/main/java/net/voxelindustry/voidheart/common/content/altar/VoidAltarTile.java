@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
+import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -11,6 +12,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.LiteralText;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
@@ -19,6 +21,9 @@ import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
+import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
+import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
+import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -28,9 +33,14 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-public class VoidAltarTile extends TileBase implements Tickable
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+
+public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTile
 {
     public static final int WARMING_TIME     = 80;
     public static final int COOLING_TIME     = 60;
@@ -59,12 +69,19 @@ public class VoidAltarTile extends TileBase implements Tickable
 
     private final List<VoidPillarTile> pillars = new ArrayList<>();
 
+    private final Collection<Identifier> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
+
     ////////////
     // CLIENT //
     ////////////
 
     private Vec3f bezierFirstPoint;
     private Vec3f bezierSecondPoint;
+
+    @Getter
+    private ItemStack       clientRecipeOutput    = ItemStack.EMPTY;
+    @Getter
+    private List<ItemStack> clientRecipeToConsume = emptyList();
 
     public VoidAltarTile()
     {
@@ -162,6 +179,9 @@ public class VoidAltarTile extends TileBase implements Tickable
                 {
                     startCrafting();
                     recipeState = currentRecipe.createState();
+
+                    if (isServer())
+                        PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
                 }
             }
             else
@@ -225,7 +245,10 @@ public class VoidAltarTile extends TileBase implements Tickable
         ItemStack toConsume = getNextItemToEat();
 
         if (toConsume.isEmpty())
+        {
             finishCrafting();
+            PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
+        }
         else
             cachedToConsume = findItemToConsume(toConsume);
     }
@@ -391,6 +414,7 @@ public class VoidAltarTile extends TileBase implements Tickable
             getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, false));
 
         pillars.forEach(pillar -> pillar.removeAltar(getPos()));
+        PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
     }
 
     private void finishCrafting()
@@ -409,6 +433,7 @@ public class VoidAltarTile extends TileBase implements Tickable
             getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, false));
 
         pillars.forEach(pillar -> pillar.removeAltar(getPos()));
+        PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
     }
 
     public void dropAteItems()
@@ -461,6 +486,7 @@ public class VoidAltarTile extends TileBase implements Tickable
         VoidPillarTile pillar = pillars.get(consumingPillarIndex);
         recipeState.consumeSlotless(ItemStack.class, pillar.getStack());
         pillar.setStack(ItemStack.EMPTY);
+        PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
     }
 
     private ItemStack getNextItemToEat()
@@ -518,5 +544,44 @@ public class VoidAltarTile extends TileBase implements Tickable
             bezierFirstPoint.add(0, -getWorld().random.nextFloat() * 1.5F, 0);
             bezierSecondPoint.add(0, getWorld().random.nextFloat() * 1.5F, 0);
         }
+    }
+
+    @Override
+    public Optional<TileSyncElement<?>> getSyncElement(Identifier identifier)
+    {
+        if (identifier.equals(AltarCraftingSyncElement.IDENTIFIER))
+        {
+            if (recipeState != null)
+                return Optional.of(new AltarCraftingSyncElement(recipeState.getOutput(ItemStack.class, 0), recipeState.getIngredientsLeft(ItemStack.class)));
+            else
+                return Optional.of(new AltarCraftingSyncElement(ItemStack.EMPTY, emptyList()));
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public void receiveSyncElement(TileSyncElement<?> element)
+    {
+        if (element.getIdentifier().equals(AltarCraftingSyncElement.IDENTIFIER))
+        {
+            AltarCraftingSyncElement altarCrafting = (AltarCraftingSyncElement) element;
+
+            clientRecipeOutput = altarCrafting.getResult();
+            clientRecipeToConsume = altarCrafting.getToConsume();
+        }
+    }
+
+    @Override
+    public Codec<?> getSyncElementCodec(Identifier identifier)
+    {
+        if (identifier.equals(AltarCraftingSyncElement.IDENTIFIER))
+            return AltarCraftingSyncElement.CODEC;
+        return null;
+    }
+
+    @Override
+    public Collection<Identifier> getAllSyncElements()
+    {
+        return syncElements;
     }
 }
