@@ -24,7 +24,9 @@ public class VoidHeartBlock extends Block implements BlockEntityProvider
     {
         super(Settings.of(Material.SOLID_ORGANIC)
                 .noCollision()
-                .strength(-1.0F)
+                .strength(-1.0F, 3600000.0F)
+                .dropsNothing()
+                .allowsSpawning(((state, world, pos, type) -> false))
                 .lightLevel(unused -> 11));
     }
 
