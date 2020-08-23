@@ -49,6 +49,9 @@ public class PortalFormerState implements TagSerializable<CompoundTag>
         if (facing.getAxis().isHorizontal() != otherState.getFacing().getAxis().isHorizontal())
             return false;
 
+        if (facing.getAxis().isVertical() && facing == otherState.getFacing())
+            return false;
+
         if (facing.getAxis().isHorizontal())
             return getWidth() == otherState.getWidth()
                     && getHeight() == otherState.getHeight()
