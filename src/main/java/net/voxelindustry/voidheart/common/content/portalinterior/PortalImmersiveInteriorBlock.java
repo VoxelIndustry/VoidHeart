@@ -37,7 +37,7 @@ public class PortalImmersiveInteriorBlock extends Block implements BlockEntityPr
 
     public PortalImmersiveInteriorBlock()
     {
-        super(Settings.of(Material.PORTAL)
+        super(Settings.of(Material.GLASS)
                 .strength(-1.0F)
                 .sounds(BlockSoundGroup.GLASS)
                 .lightLevel(unused -> 11));

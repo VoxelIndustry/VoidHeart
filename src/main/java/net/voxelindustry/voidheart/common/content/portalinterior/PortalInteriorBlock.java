@@ -45,7 +45,7 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
 
     public PortalInteriorBlock()
     {
-        super(Settings.of(Material.PORTAL)
+        super(Settings.of(Material.GLASS)
                 .strength(-1.0F)
                 .sounds(BlockSoundGroup.GLASS)
                 .lightLevel(unused -> 11));
