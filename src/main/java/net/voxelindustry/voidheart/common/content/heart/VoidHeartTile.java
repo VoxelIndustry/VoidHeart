@@ -46,7 +46,8 @@ public class VoidHeartTile extends TileBase implements Tickable
     @Override
     public CompoundTag toTag(CompoundTag tag)
     {
-        tag.putUuid("playerID", playerID);
+        if (playerID != null)
+            tag.putUuid("playerID", playerID);
 
         return super.toTag(tag);
     }
