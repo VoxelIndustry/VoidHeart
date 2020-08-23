@@ -22,12 +22,11 @@ public class VoidHeartBlock extends Block implements BlockEntityProvider
 
     public VoidHeartBlock()
     {
-        super(Settings.of(Material.AIR)
+        super(Settings.of(Material.SOLID_ORGANIC)
                 .noCollision()
                 .strength(-1.0F)
                 .lightLevel(unused -> 11));
     }
-
 
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context)
