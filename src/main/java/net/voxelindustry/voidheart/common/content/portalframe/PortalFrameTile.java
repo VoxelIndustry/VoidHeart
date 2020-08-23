@@ -90,9 +90,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
                 if (pos.equals(eventSource))
                     return;
 
-                PortalFrameTile wall = (PortalFrameTile) getWorld().getBlockEntity(pos);
-                if (wall != null)
-                    wall.removeCore(this);
+                BlockEntity frame = getWorld().getBlockEntity(pos);
+                if (frame instanceof PortalFrameTile)
+                    ((PortalFrameTile) frame).removeCore(this);
             });
 
             linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
@@ -106,9 +106,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
                 if (pos.equals(eventSource))
                     return;
 
-                PortalFrameTile coreFrame = (PortalFrameTile) getWorld().getBlockEntity(pos);
-                if (coreFrame != null)
-                    coreFrame.removeFrame(this);
+                BlockEntity coreFrame = getWorld().getBlockEntity(pos);
+                if (coreFrame instanceof PortalFrameTile)
+                    ((PortalFrameTile) coreFrame).removeFrame(this);
             });
 
         if (world.isClient() || linkedWorld == null)
@@ -122,9 +122,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         if (linked != null)
         {
             if (Objects.equals(linked.getLinkedPos(), getPos()) && Objects.equals(linked.getLinkedWorldKey(), getWorld().getRegistryKey()))
-            {
                 linked.cutLinkFromPortal();
-            }
         }
 
         cutLinkFromPortal();
@@ -148,7 +146,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         {
             Entity portalEntity = ((ServerWorld) getWorld()).getEntity(portalEntityID);
             if (portalEntity != null)
-                ((ServerWorld) getWorld()).removeEntity(portalEntity);
+                VoidHeartTicker.addTaskForLoadedPos(getPos(), () -> ((ServerWorld) getWorld()).removeEntity(portalEntity));
         }
     }
 
