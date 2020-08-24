@@ -388,6 +388,9 @@ public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTi
 
     public void removePillar(VoidPillarTile pillar)
     {
+        if (consumingPillarIndex == pillars.indexOf(pillar))
+            consumingPillarIndex = -1;
+
         pillars.remove(pillar);
     }
 
