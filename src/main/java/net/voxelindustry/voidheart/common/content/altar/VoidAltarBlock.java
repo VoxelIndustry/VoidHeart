@@ -65,10 +65,8 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
         }
         else
         {
-            if (player.getStackInHand(hand).isEmpty())
-                player.setStackInHand(hand, altar.getStack());
-            else
-                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), altar.getStack());
+            if (!player.giveItemStack(altar.getStack()))
+                player.dropItem(altar.getStack(), false);
             altar.setStack(player, ItemStack.EMPTY);
         }
 

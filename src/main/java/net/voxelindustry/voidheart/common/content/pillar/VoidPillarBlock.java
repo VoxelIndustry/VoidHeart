@@ -64,10 +64,8 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
         }
         else
         {
-            if (player.getStackInHand(hand).isEmpty())
-                player.setStackInHand(hand, pillar.getStack());
-            else
-                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), pillar.getStack());
+            if (!player.giveItemStack(pillar.getStack()))
+                player.dropItem(pillar.getStack(), false);
             pillar.setStack(ItemStack.EMPTY);
         }
 
