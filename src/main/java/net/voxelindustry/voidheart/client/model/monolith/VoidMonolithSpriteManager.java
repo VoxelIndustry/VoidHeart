@@ -104,6 +104,6 @@ public class VoidMonolithSpriteManager
 
     private static SpriteIdentifier getSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier(MODID, "block/monolith/" + from));
+        return new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/monolith/" + from));
     }
 }

@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.4-SNAPSHOT'
+    id 'fabric-loom' version '0.5-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -36,9 +36,7 @@ dependencies {
 
     modImplementation "io.github.prospector:modmenu:${project.modmenu_version}"
     modCompile "me.shedaniel:RoughlyEnoughItems:${project.rei_version}"
-    implementation "immersive-portals:immersive-portals:${project.importals_version}"
-
-    modRuntime "me.shedaniel.cloth:config-2:2.14.1"
+    modImplementation "immersive-portals:imm_ptl_core:${project.importals_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.12'
     annotationProcessor 'org.projectlombok:lombok:1.18.12'

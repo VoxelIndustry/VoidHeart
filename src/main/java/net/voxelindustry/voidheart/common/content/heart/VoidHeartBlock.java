@@ -27,7 +27,7 @@ public class VoidHeartBlock extends Block implements BlockEntityProvider
                 .strength(-1.0F, 3600000.0F)
                 .dropsNothing()
                 .allowsSpawning(((state, world, pos, type) -> false))
-                .lightLevel(unused -> 11));
+                .luminance(unused -> 11));
     }
 
     @Override

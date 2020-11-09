@@ -1,13 +1,13 @@
 package net.voxelindustry.voidheart.common.content.portalinterior;
 
-import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -39,7 +39,7 @@ public class PortalInteriorTile extends BlockEntity
 
     public void teleport(Entity collider)
     {
-        if (corePos == null)
+        if (!(collider instanceof ServerPlayerEntity) || corePos == null)
             return;
 
         PortalFrameTile core = getCore();
@@ -55,12 +55,13 @@ public class PortalInteriorTile extends BlockEntity
             if (linkedPortal == null)
                 return;
 
-            FabricDimensions.teleport(collider, destination,
-                    (entity, newWorld, direction, offsetX, offsetY) ->
-                    {
-                        int yaw = (core.getFacing().getHorizontal() - core.getLinkedFacing().getOpposite().getHorizontal()) * 90;
-                        return new BlockPattern.TeleportTarget(linkedPortal.getPortalMiddlePos(), collider.getVelocity(), yaw);
-                    });
+            Vec3d destinationPos = linkedPortal.getPortalMiddlePos();
+            ((ServerPlayerEntity) collider).teleport(destination,
+                    destinationPos.getX(),
+                    destinationPos.getY(),
+                    destinationPos.getZ(),
+                    collider.getHeadYaw(),
+                    collider.getPitch(0));
         }
     }
 

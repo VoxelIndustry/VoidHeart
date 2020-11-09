@@ -48,7 +48,7 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
         super(Settings.of(Material.GLASS)
                 .strength(-1.0F)
                 .sounds(BlockSoundGroup.GLASS)
-                .lightLevel(unused -> 11));
+                .luminance(unused -> 11));
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.FACING, Direction.NORTH));

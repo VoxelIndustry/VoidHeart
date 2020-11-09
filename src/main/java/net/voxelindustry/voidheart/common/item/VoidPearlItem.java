@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.common.item;
 
-import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
-import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -9,6 +7,7 @@ import net.minecraft.item.FoodComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -66,19 +65,20 @@ public class VoidPearlItem extends Item
     @Override
     public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user)
     {
-        if (!world.isClient() && user instanceof PlayerEntity)
+        if (!world.isClient() && user instanceof ServerPlayerEntity)
         {
             ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
             VoidPocketState voidPocketState = getVoidPocketState(voidWorld);
 
             if (voidPocketState.hasPocket(user.getUuid()))
             {
-                FabricDimensions.teleport(user, voidWorld,
-                        (entity, newWorld, direction, offsetX, offsetY) ->
-                        {
-                            BlockPos pos = voidPocketState.getPosForPlayer(user.getUuid());
-                            return new BlockPattern.TeleportTarget(Vec3d.of(pos.up()).add(0.5, 0.5, 0.5), Vec3d.ZERO, 0);
-                        });
+                Vec3d destinationPos = Vec3d.ofCenter(voidPocketState.getPosForPlayer(user.getUuid()).up());
+                ((ServerPlayerEntity) user).teleport(voidWorld,
+                        destinationPos.getX(),
+                        destinationPos.getY(),
+                        destinationPos.getZ(),
+                        user.getHeadYaw(),
+                        user.getPitch(0));
                 stack.decrement(1);
             }
             else

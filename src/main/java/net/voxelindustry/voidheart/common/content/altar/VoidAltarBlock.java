@@ -36,7 +36,7 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
         super(Settings.of(Material.STONE)
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE)
-                .lightLevel(state -> state.get(Properties.LIT) ? 11 : 0));
+                .luminance(state -> state.get(Properties.LIT) ? 11 : 0));
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.LIT, false));

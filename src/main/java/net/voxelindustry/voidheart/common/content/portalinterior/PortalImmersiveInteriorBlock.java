@@ -40,7 +40,7 @@ public class PortalImmersiveInteriorBlock extends Block implements BlockEntityPr
         super(Settings.of(Material.GLASS)
                 .strength(-1.0F)
                 .sounds(BlockSoundGroup.GLASS)
-                .lightLevel(unused -> 11));
+                .luminance(unused -> 11));
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.FACING, Direction.NORTH));

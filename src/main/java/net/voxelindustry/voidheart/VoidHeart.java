@@ -28,7 +28,7 @@ import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
 public class VoidHeart implements ModInitializer
 {
     public static final String MODID             = "voidheart";
-    public static final String IMMERSIVE_PORTALS = "immersive_portals";
+    public static final String IMMERSIVE_PORTALS = "imm_ptl_core";
 
     public static ItemGroup                             ITEMGROUP = FabricItemGroupBuilder.build(
             new Identifier(MODID, "item_group"),

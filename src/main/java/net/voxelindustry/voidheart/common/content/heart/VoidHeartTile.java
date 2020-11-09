@@ -2,9 +2,7 @@ package net.voxelindustry.voidheart.common.content.heart;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -84,18 +82,20 @@ public class VoidHeartTile extends TileBase implements Tickable
             ServerWorld destination = world.getServer().getWorld(serverPlayer.getSpawnPointDimension());
 
             BlockPos spawnPointPosition = serverPlayer.getSpawnPointPosition();
-            Optional<Vec3d> respawnPosition = spawnPointPosition == null ? Optional.empty() : PlayerEntity.findRespawnPosition(destination, spawnPointPosition, serverPlayer.isSpawnPointSet(), true);
+            Optional<Vec3d> respawnPosition = spawnPointPosition == null ? Optional.empty() : PlayerEntity.findRespawnPosition(destination, spawnPointPosition, ((ServerPlayerEntity) player).getSpawnAngle(), serverPlayer.isSpawnPointSet(), true);
 
             if (!respawnPosition.isPresent())
                 destination = world.getServer().getOverworld();
 
             ServerWorld finalDestination = destination;
-            FabricDimensions.teleport(player, destination,
-                    (entity, newWorld, direction, offsetX, offsetY) ->
-                    {
-                        int yaw = (int) player.getHeadYaw();
-                        return new BlockPattern.TeleportTarget(respawnPosition.orElseGet(() -> Vec3d.ofCenter(finalDestination.getSpawnPos())), player.getVelocity(), yaw);
-                    });
+
+            Vec3d destinationPos = respawnPosition.orElseGet(() -> Vec3d.ofCenter(finalDestination.getSpawnPos()));
+            ((ServerPlayerEntity) player).teleport(destination,
+                    destinationPos.getX(),
+                    destinationPos.getY(),
+                    destinationPos.getZ(),
+                    player.getHeadYaw(),
+                    player.getPitch(0));
         }
         else
             lastPlayerHitCache.put(hitPlayerID, System.currentTimeMillis());

@@ -1,22 +1,21 @@
 package net.voxelindustry.voidheart.common.world;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.Decoder;
-import com.mojang.serialization.Encoder;
-import com.mojang.serialization.MapCodec;
+import lombok.Getter;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.structure.StructureManager;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryLookupCodec;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.Biome.SpawnEntry;
-import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.BiomeKeys;
+import net.minecraft.world.biome.SpawnSettings;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.FixedBiomeSource;
 import net.minecraft.world.chunk.Chunk;
@@ -27,9 +26,7 @@ import net.minecraft.world.gen.chunk.StructuresConfig;
 import net.minecraft.world.gen.chunk.VerticalBlockSample;
 import net.minecraft.world.gen.feature.StructureFeature;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -44,13 +41,18 @@ public class VoidChunkGenerator extends ChunkGenerator
                     .toArray(BlockState[]::new)
     );
 
-    public VoidChunkGenerator()
+    @Getter
+    private final Registry<Biome> biomeRegistry;
+
+    public VoidChunkGenerator(Registry<Biome> biomeRegistry)
     {
-        super(new FixedBiomeSource(Biomes.PLAINS), new StructuresConfig(Optional.empty(), new HashMap<>()));
+        super(new FixedBiomeSource(biomeRegistry.getOrThrow(BiomeKeys.PLAINS)), new StructuresConfig(false));
+
+        this.biomeRegistry = biomeRegistry;
     }
 
     @Override
-    protected Codec<? extends ChunkGenerator> method_28506()
+    protected Codec<? extends ChunkGenerator> getCodec()
     {
         return codec;
     }
@@ -105,20 +107,6 @@ public class VoidChunkGenerator extends ChunkGenerator
     }
 
     @Override
-    public void setStructureStarts(
-            StructureAccessor structureAccessor, Chunk chunk, StructureManager structureManager, long l
-    )
-    {
-    }
-
-    @Override
-    public void addStructureReferences(
-            WorldAccess world, StructureAccessor accessor, Chunk chunk
-    )
-    {
-    }
-
-    @Override
     public int getHeight(int x, int z, Heightmap.Type heightmapType)
     {
         return 0;
@@ -131,16 +119,16 @@ public class VoidChunkGenerator extends ChunkGenerator
     }
 
     @Override
-    public List<SpawnEntry> getEntitySpawnList(Biome biome, StructureAccessor accessor, SpawnGroup group, BlockPos pos)
+    public List<SpawnSettings.SpawnEntry> getEntitySpawnList(Biome biome, StructureAccessor accessor, SpawnGroup group, BlockPos pos)
     {
         return emptyList();
     }
 
     static
     {
-        codec = MapCodec.of(
-                Encoder.empty(),
-                Decoder.unit(VoidChunkGenerator::new)
-        ).stable().codec();
+        codec = RegistryLookupCodec.of(Registry.BIOME_KEY)
+                .xmap(VoidChunkGenerator::new, VoidChunkGenerator::getBiomeRegistry)
+                .stable()
+                .codec();
     }
 }

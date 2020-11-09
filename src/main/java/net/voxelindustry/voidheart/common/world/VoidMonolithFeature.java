@@ -6,9 +6,8 @@ import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.WorldAccess;
-import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.feature.Feature;
 import net.voxelindustry.voidheart.common.block.StateProperties;
@@ -24,12 +23,12 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
     }
 
     @Override
-    public boolean generate(ServerWorldAccess world,
-                            StructureAccessor structureAccessor,
-                            ChunkGenerator generator,
-                            Random random,
-                            BlockPos pos,
-                            VoidMonolithFeatureConfig config)
+    public boolean generate(
+            StructureWorldAccess world,
+            ChunkGenerator generator,
+            Random random,
+            BlockPos pos,
+            VoidMonolithFeatureConfig config)
     {
         if (random.nextFloat() > 0.025F)
             return false;
@@ -46,7 +45,7 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
         {
             boolean hasBelow = y != 0;
             boolean hasAbove = y != height - 1;
-            
+
             setBlockState(world, posToPlace,
                     VoidHeartBlocks.VOID_MONOLITH.getDefaultState()
                             .with(StateProperties.UP, hasAbove)

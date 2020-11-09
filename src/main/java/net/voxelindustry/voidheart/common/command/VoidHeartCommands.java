@@ -5,9 +5,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
-import net.minecraft.block.pattern.BlockPattern;
-import net.minecraft.command.arguments.GameProfileArgumentType;
+import net.minecraft.command.argument.GameProfileArgumentType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -41,8 +39,13 @@ public class VoidHeartCommands
                 ServerWorld voidWorld = context.getSource().getMinecraftServer().getWorld(VoidHeart.VOID_WORLD_KEY);
                 BlockPos pocketPos = VoidPocketState.getVoidPocketState(voidWorld).getPosForPlayer(targetProfile.get().getId());
 
-                FabricDimensions.teleport(context.getSource().getPlayer(), voidWorld, (entity, newWorld, direction, offsetX, offsetY) ->
-                        new BlockPattern.TeleportTarget(Vec3d.of(pocketPos.up()).add(0.5, 0.5, 0.5), Vec3d.ZERO, 0));
+                Vec3d destinationPos = Vec3d.of(pocketPos.up()).add(0.5, 0.5, 0.5);
+                context.getSource().getPlayer().teleport(voidWorld,
+                        destinationPos.getX(),
+                        destinationPos.getY(),
+                        destinationPos.getZ(),
+                        context.getSource().getPlayer().getHeadYaw(),
+                        context.getSource().getPlayer().getPitch(0));
             }
         } catch (CommandSyntaxException e)
         {
