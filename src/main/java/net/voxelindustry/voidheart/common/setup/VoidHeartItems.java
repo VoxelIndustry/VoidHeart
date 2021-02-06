@@ -5,6 +5,7 @@ import net.minecraft.item.Item.Settings;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
 import net.voxelindustry.voidheart.common.item.VoidAmalgamItem;
 import net.voxelindustry.voidheart.common.item.VoidHeartItem;
@@ -16,6 +17,7 @@ public class VoidHeartItems
     public static VoidAmalgamItem VOID_AMALGAM;
     public static VoidPearlItem   VOID_PEARL;
 
+    public static VoidKeyItem          VOID_KEY;
     public static PermeableBarrierItem PERMEABLE_BARRIER;
 
     public static Item OBSIDIAN_SHARD;
@@ -28,6 +30,7 @@ public class VoidHeartItems
         registerItem(VOID_PEARL = new VoidPearlItem(), "void_pearl");
         registerItem(VOID_AMALGAM = new VoidAmalgamItem(), "void_amalgam");
 
+        registerItem(VOID_KEY = new VoidKeyItem(), "void_key");
         registerItem(PERMEABLE_BARRIER = new PermeableBarrierItem(), "permeable_barrier_item");
 
         registerItem(OBSIDIAN_SHARD = new Item(new Settings().group(VoidHeart.ITEMGROUP)), "obsidian_shard");

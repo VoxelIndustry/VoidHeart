@@ -35,7 +35,7 @@ dependencies {
     modImplementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
 
     modImplementation "io.github.prospector:modmenu:${project.modmenu_version}"
-    modCompile "me.shedaniel:RoughlyEnoughItems:${project.rei_version}"
+    modImplementation "me.shedaniel:RoughlyEnoughItems:${project.rei_version}"
     modImplementation "immersive-portals:imm_ptl_core:${project.importals_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.12'

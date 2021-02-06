@@ -4,6 +4,7 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
@@ -18,6 +19,7 @@ public class VoidHeartTiles
     public static BlockEntityType<VoidAltarTile>      VOID_ALTAR;
     public static BlockEntityType<VoidPillarTile>     VOID_PILLAR;
     public static BlockEntityType<VoidHeartTile>      VOID_HEART;
+    public static BlockEntityType<VoidDoorTile>       VOID_DOOR;
 
     public static void registerTiles()
     {
@@ -40,6 +42,10 @@ public class VoidHeartTiles
         registerTile(VOID_HEART =
                         BlockEntityType.Builder.create(VoidHeartTile::new, VoidHeartBlocks.VOID_HEART).build(null),
                 "void_heart");
+
+        registerTile(VOID_DOOR =
+                        BlockEntityType.Builder.create(VoidDoorTile::new, VoidHeartBlocks.VOID_DOOR).build(null),
+                "void_door");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)

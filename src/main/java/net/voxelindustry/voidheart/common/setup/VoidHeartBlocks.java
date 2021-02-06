@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
+import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
@@ -52,6 +53,7 @@ public class VoidHeartBlocks
     public static Block VOID_MONOLITH;
     public static Block VOID_MONOLITH_CAP;
 
+    public static Block VOID_DOOR;
     public static Block PERMEABLE_BARRIER;
 
     public static void registerBlocks()
@@ -101,6 +103,8 @@ public class VoidHeartBlocks
                         .strength(1.5F, 6.0F)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool()), itemGroup, "void_monolith_cap");
+
+        registerBlock(VOID_DOOR = new VoidDoorBlock(), itemGroup, "void_door");
 
         registerBlock(PERMEABLE_BARRIER = new PermeableBarrierBlock(), itemGroup, "permeable_barrier");
 
