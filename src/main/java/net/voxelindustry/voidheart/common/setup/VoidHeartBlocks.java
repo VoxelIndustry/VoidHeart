@@ -3,21 +3,26 @@ package net.voxelindustry.voidheart.common.setup;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.block.MaterialColor;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.WallBlock;
+import net.minecraft.entity.EntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.BlockView;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
+import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
@@ -46,6 +51,8 @@ public class VoidHeartBlocks
 
     public static Block VOID_MONOLITH;
     public static Block VOID_MONOLITH_CAP;
+
+    public static Block PERMEABLE_BARRIER;
 
     public static void registerBlocks()
     {
@@ -95,6 +102,8 @@ public class VoidHeartBlocks
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool()), itemGroup, "void_monolith_cap");
 
+        registerBlock(PERMEABLE_BARRIER = new PermeableBarrierBlock(), itemGroup, "permeable_barrier");
+
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
         generateSlab(VOIDSTONE, itemGroup, "voidstone");
@@ -126,5 +135,10 @@ public class VoidHeartBlocks
     private static void generateSlab(Block block, Item.Settings builder, String name)
     {
         registerBlock(new SlabBlock(AbstractBlock.Settings.copy(block)), builder, name + "_slab");
+    }
+
+    public static Boolean never(BlockState state, BlockView world, BlockPos pos, EntityType<?> type)
+    {
+        return false;
     }
 }

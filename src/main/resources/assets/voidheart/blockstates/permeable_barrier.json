@@ -1,0 +1,29 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "voidheart:block/permeable_barrier_vert"
+    },
+    "facing=down": {
+      "model": "voidheart:block/permeable_barrier_vert",
+      "x": 180,
+      "uvlock": true
+    },
+    "facing=north": {
+      "model": "voidheart:block/permeable_barrier_hor",
+      "y": 270
+    },
+    "facing=south": {
+      "model": "voidheart:block/permeable_barrier_hor",
+      "uvlock": true,
+      "y": 90
+    },
+    "facing=east": {
+      "model": "voidheart:block/permeable_barrier_hor"
+    },
+    "facing=west": {
+      "model": "voidheart:block/permeable_barrier_hor",
+      "y": 180,
+      "uvlock": true
+    }
+  }
+}

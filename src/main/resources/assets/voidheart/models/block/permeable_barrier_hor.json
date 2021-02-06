@@ -1,0 +1,40 @@
+{
+  "textures": {
+    "particle": "voidheart:block/permeable_barrier",
+    "backface": "voidheart:block/permeable_barrier"
+  },
+  "elements": [
+    {
+      "from": [
+        15,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#backface"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#backface"
+        }
+      }
+    }
+  ]
+}
