@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "voidheart:block/voidstone_tile_small",
+    "top": "voidheart:block/voidstone_tile_small",
+    "side": "voidheart:block/voidstone_tile_small"
+  }
+}

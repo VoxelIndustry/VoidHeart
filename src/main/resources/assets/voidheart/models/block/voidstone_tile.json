@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "voidheart:block/voidstone_tile_top",
+    "side": "voidheart:block/voidstone_tile"
+  }
+}

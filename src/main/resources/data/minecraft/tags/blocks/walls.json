@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "voidheart:voidstone_wall",
-    "voidheart:voidstone_bricks_wall"
+    "voidheart:voidstone_bricks_wall",
+    "voidheart:voidstone_bricks_cracked_wall"
   ]
 }

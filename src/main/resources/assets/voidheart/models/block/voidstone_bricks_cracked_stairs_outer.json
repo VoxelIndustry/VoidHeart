@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "voidheart:block/voidstone_bricks_cracked",
+    "top": "voidheart:block/voidstone_bricks_cracked",
+    "side": "voidheart:block/voidstone_bricks_cracked"
+  }
+}
