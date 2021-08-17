@@ -5,7 +5,7 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 
@@ -33,10 +33,10 @@ public class CraftingVoidRender
 
         float size = 12 / 16F;
 
-        renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal(1)), -size / 2, -size / 2, -size / 2, size, size, size, 0.15F);
+        renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 0.15F);
 
         for (int l = 1; l < draws; ++l)
-            renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal(l + 1)), -size / 2, -size / 2, -size / 2, size, size, size, 2.0F / (float) (18 - l));
+            renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 2.0F / (float) (18 - l));
 
         matrices.pop();
     }
@@ -47,9 +47,9 @@ public class CraftingVoidRender
         float angle = 360 * ((altar.getWorld().getTime() + tickDelta) / 25);
 
         matrices.translate(0.5, 3, 0.5);
-        matrices.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion(angle));
-        matrices.multiply(Vector3f.NEGATIVE_X.getDegreesQuaternion(angle));
-        matrices.multiply(Vector3f.NEGATIVE_Z.getDegreesQuaternion(angle));
+        matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(angle));
+        matrices.multiply(Vec3f.NEGATIVE_X.getDegreesQuaternion(angle));
+        matrices.multiply(Vec3f.NEGATIVE_Z.getDegreesQuaternion(angle));
 
         float scale = 1 - Interpolators.SINE_BOTH.apply(coolingDelta);
         matrices.scale(scale, scale, scale);
@@ -61,9 +61,9 @@ public class CraftingVoidRender
 
         float angle = 360 * ((altar.getWorld().getTime() + tickDelta) / 100);
 
-        matrices.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion(angle));
-        matrices.multiply(Vector3f.NEGATIVE_X.getDegreesQuaternion(angle));
-        matrices.multiply(Vector3f.NEGATIVE_Z.getDegreesQuaternion(angle));
+        matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(angle));
+        matrices.multiply(Vec3f.NEGATIVE_X.getDegreesQuaternion(angle));
+        matrices.multiply(Vec3f.NEGATIVE_Z.getDegreesQuaternion(angle));
 
         float scale = max(1 / 16F, interpolateBounce(altar.getWarmProgress() / (float) VoidAltarTile.WARMING_TIME));
         matrices.scale(scale, scale, scale);

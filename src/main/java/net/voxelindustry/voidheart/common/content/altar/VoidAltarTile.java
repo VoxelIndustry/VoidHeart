@@ -4,17 +4,15 @@ import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Quaternion;
 import net.minecraft.world.World;
@@ -40,7 +38,7 @@ import java.util.Optional;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
-public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTile
+public class VoidAltarTile extends TileBase implements PartialSyncedTile
 {
     public static final int WARMING_TIME     = 80;
     public static final int COOLING_TIME     = 60;
@@ -83,26 +81,26 @@ public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTi
     @Getter
     private List<ItemStack> clientRecipeToConsume = emptyList();
 
-    public VoidAltarTile()
+    public VoidAltarTile(BlockPos pos, BlockState state)
     {
-        super(VoidHeartTiles.VOID_ALTAR);
+        super(VoidHeartTiles.VOID_ALTAR, pos, state);
     }
 
     @Override
-    public void setLocation(World world, BlockPos pos)
+    public void setWorld(World world)
     {
-        super.setLocation(world, pos);
+        super.setWorld(world);
 
         // Called on world load
         sync();
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
-        super.fromTag(state, tag);
+        super.readNbt(tag);
 
-        stack = ItemStack.fromTag(tag.getCompound("stack"));
+        stack = ItemStack.fromNbt(tag.getCompound("stack"));
         recipeProgress = tag.getInt("recipeProgress");
         warmProgress = tag.getInt("warmProgress");
         coolProgress = tag.getInt("coolProgress");
@@ -114,7 +112,7 @@ public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTi
 
             consumingPillarIndex = tag.getInt("consumingPillarIndex");
             consumingPillarPos = BlockPos.fromLong(tag.getLong("consumingPillarPos"));
-            cachedToConsume = ItemStack.fromTag(tag.getCompound("cachedToConsumeStack"));
+            cachedToConsume = ItemStack.fromNbt(tag.getCompound("cachedToConsumeStack"));
 
             if (previousConsumingPillarIndex != consumingPillarIndex)
             {
@@ -144,9 +142,9 @@ public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTi
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
-        tag.put("stack", stack.toTag(new CompoundTag()));
+        tag.put("stack", stack.writeNbt(new NbtCompound()));
         tag.putInt("recipeProgress", recipeProgress);
         tag.putInt("warmProgress", warmProgress);
         tag.putInt("coolProgress", coolProgress);
@@ -156,13 +154,13 @@ public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTi
         {
             tag.putInt("consumingPillarIndex", consumingPillarIndex);
             tag.putLong("consumingPillarPos", consumingPillarPos.asLong());
-            tag.put("cachedToConsumeStack", cachedToConsume.toTag(new CompoundTag()));
+            tag.put("cachedToConsumeStack", cachedToConsume.writeNbt(new NbtCompound()));
         }
 
         if (isCrafting && recipeState != null)
             tag.put("recipeState", recipeState.toTag());
 
-        return super.toTag(tag);
+        return super.writeNbt(tag);
     }
 
     public void setStack(PlayerEntity player, ItemStack stack)
@@ -194,47 +192,46 @@ public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTi
         sync();
     }
 
-    @Override
-    public void tick()
+    public static void tick(World world, BlockPos pos, BlockState state, VoidAltarTile altar)
     {
-        if (isClient())
+        if (altar.isClient())
         {
-            playParticleEffects();
+            altar.playParticleEffects();
 
-            if (isCrafting && warmProgress < WARMING_TIME)
-                warmProgress++;
+            if (altar.isCrafting && altar.warmProgress < WARMING_TIME)
+                altar.warmProgress++;
 
-            if (coolProgress > 0)
-                coolProgress--;
+            if (altar.coolProgress > 0)
+                altar.coolProgress--;
 
             return;
         }
 
-        if (coolProgress > 0)
-            coolProgress--;
+        if (altar.coolProgress > 0)
+            altar.coolProgress--;
 
-        if (!isCrafting)
+        if (!altar.isCrafting)
             return;
 
-        if (currentRecipe == null)
+        if (altar.currentRecipe == null)
         {
-            stopCrafting();
-            sync();
+            altar.stopCrafting();
+            altar.sync();
             return;
         }
 
-        if (warmProgress < WARMING_TIME)
+        if (altar.warmProgress < WARMING_TIME)
         {
-            warmProgress++;
+            altar.warmProgress++;
             return;
         }
 
-        if (consumeProgress == 0 && pillars.size() != 8)
-            refreshPillars();
+        if (altar.consumeProgress == 0 && altar.pillars.size() != 8)
+            altar.refreshPillars();
 
-        computeConsumeAction();
-        computeCraftFinalization();
-        sync();
+        altar.computeConsumeAction();
+        altar.computeCraftFinalization();
+        altar.sync();
     }
 
     private void computeCraftFinalization()
@@ -533,7 +530,7 @@ public class VoidAltarTile extends TileBase implements Tickable, PartialSyncedTi
 
 
         float dispersion = getWorld().random.nextBoolean() ? getWorld().random.nextFloat() * 50 + 20 : -(getWorld().random.nextFloat() * 50 + 20);
-        Quaternion rotation = Vector3f.POSITIVE_Y.getDegreesQuaternion(dispersion);
+        Quaternion rotation = Vec3f.UP.getDegreesQuaternion(dispersion);
 
         bezierFirstPoint = start.add(forward.rotate(rotation).scale(length * (getWorld().random.nextFloat() / 3 + 0.2F)));
 

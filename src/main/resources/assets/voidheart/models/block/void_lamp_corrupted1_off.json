@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "voidheart:block/lamp/voidlamp_corrupted1_off"
+  }
+}

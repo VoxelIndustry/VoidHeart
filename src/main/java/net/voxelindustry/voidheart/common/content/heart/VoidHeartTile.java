@@ -4,12 +4,12 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class VoidHeartTile extends TileBase implements Tickable
+public class VoidHeartTile extends TileBase
 {
     @Getter
     @Setter
@@ -27,49 +27,48 @@ public class VoidHeartTile extends TileBase implements Tickable
 
     private final Map<UUID, Long> lastPlayerHitCache = new HashMap<>();
 
-    public VoidHeartTile()
+    public VoidHeartTile(BlockPos pos, BlockState state)
     {
-        super(VoidHeartTiles.VOID_HEART);
+        super(VoidHeartTiles.VOID_HEART, pos, state);
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
-        super.fromTag(state, tag);
+        super.readNbt(tag);
 
         if (tag.containsUuid("playerID"))
             playerID = tag.getUuid("playerID");
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
         if (playerID != null)
             tag.putUuid("playerID", playerID);
 
-        return super.toTag(tag);
+        return super.writeNbt(tag);
     }
 
-    @Override
-    public void tick()
+    public static void tick(World world, BlockPos pos, BlockState state, VoidHeartTile heart)
     {
-        if (isClient())
+        if (heart.isClient())
         {
-            if (getWorld().getTime() % 2 == 0)
-                getWorld().addParticle(new AltarVoidParticleEffect(0.05),
-                        getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
-                        getPos().getY() + 0.5 + getWorld().random.nextGaussian(),
-                        getPos().getZ() + 0.5 + getWorld().random.nextGaussian(),
-                        getPos().getX() + 0.5,
-                        getPos().getY() + 0.5,
-                        getPos().getZ() + 0.5);
+            if (world.getTime() % 2 == 0)
+                world.addParticle(new AltarVoidParticleEffect(0.05),
+                        pos.getX() + 0.5 + world.random.nextGaussian(),
+                        pos.getY() + 0.5 + world.random.nextGaussian(),
+                        pos.getZ() + 0.5 + world.random.nextGaussian(),
+                        pos.getX() + 0.5,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5);
             return;
         }
 
-        if (lastPlayerHitCache.isEmpty())
+        if (heart.lastPlayerHitCache.isEmpty())
             return;
 
-        lastPlayerHitCache.values().removeIf(timestamp -> System.currentTimeMillis() - timestamp > 5_000);
+        heart.lastPlayerHitCache.values().removeIf(timestamp -> System.currentTimeMillis() - timestamp > 5_000);
     }
 
     public void playerHit(PlayerEntity player)

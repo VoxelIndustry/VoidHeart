@@ -7,7 +7,7 @@ import lombok.extern.log4j.Log4j2;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
@@ -69,9 +69,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
     private boolean wasImmersive;
 
-    public PortalFrameTile()
+    public PortalFrameTile(BlockPos pos, BlockState state)
     {
-        super(VoidHeartTiles.PORTAL_WALL);
+        super(VoidHeartTiles.PORTAL_WALL, pos, state);
     }
 
 
@@ -146,7 +146,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         {
             Entity portalEntity = ((ServerWorld) getWorld()).getEntity(portalEntityID);
             if (portalEntity != null)
-                VoidHeartTicker.addTaskForLoadedPos(getPos(), () -> ((ServerWorld) getWorld()).removeEntity(portalEntity));
+                portalEntity.remove(Entity.RemovalReason.DISCARDED);
         }
     }
 
@@ -250,9 +250,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
-        super.fromTag(state, tag);
+        super.readNbt(tag);
 
         if (tag.contains("linkedWorld"))
         {
@@ -297,7 +297,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
         if (linkedWorld != null)
         {
@@ -349,7 +349,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         if (portalEntityID != null)
             tag.putUuid("portalEntityID", portalEntityID);
 
-        return super.toTag(tag);
+        return super.writeNbt(tag);
     }
 
     public boolean isBroken()
@@ -380,7 +380,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
     public RegistryKey<World> getLinkedWorldKey()
     {
         if (linkedWorldKey == null)
-            linkedWorldKey = RegistryKey.of(Registry.DIMENSION, linkedWorld);
+            linkedWorldKey = RegistryKey.of(Registry.WORLD_KEY, linkedWorld);
 
         return linkedWorldKey;
     }
@@ -388,7 +388,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
     public RegistryKey<World> getPreviousLinkedWorldKey()
     {
         if (previousLinkedWorldKey == null)
-            previousLinkedWorldKey = RegistryKey.of(Registry.DIMENSION, previousLinkedWorld);
+            previousLinkedWorldKey = RegistryKey.of(Registry.WORLD_KEY, previousLinkedWorld);
 
         return previousLinkedWorldKey;
     }

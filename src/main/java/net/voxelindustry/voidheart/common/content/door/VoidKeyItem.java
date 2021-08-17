@@ -1,13 +1,12 @@
 package net.voxelindustry.voidheart.common.content.door;
 
-import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.ActionResult;
@@ -20,6 +19,7 @@ import net.voxelindustry.steamlayer.math.Vec3f;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.portalframe.ImmersivePortalFrameCreator;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import qouteall.imm_ptl.core.portal.Portal;
 
 public class VoidKeyItem extends Item
 {
@@ -54,7 +54,7 @@ public class VoidKeyItem extends Item
 
     private boolean isBlank(ItemStack stack)
     {
-        return !stack.hasTag() || !stack.getTag().contains("doorPos");
+        return !stack.hasNbt() || !stack.getNbt().contains("doorPos");
     }
 
     private void setDoor(ItemStack stack, World world, BlockPos pos)
@@ -64,8 +64,8 @@ public class VoidKeyItem extends Item
         if (door == null)
             return;
 
-        stack.getOrCreateTag().putLong("doorPos", pos.asLong());
-        stack.getOrCreateTag().putUuid("doorID", door.getId());
+        stack.getOrCreateNbt().putLong("doorPos", pos.asLong());
+        stack.getOrCreateNbt().putUuid("doorID", door.getId());
     }
 
     private void createPortal(ItemStack stack, World world, BlockPos pos, BlockState state)
@@ -73,7 +73,7 @@ public class VoidKeyItem extends Item
         if (state.get(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
             pos = pos.up();
 
-        CompoundTag tag = stack.getTag();
+        NbtCompound tag = stack.getNbt();
         ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
         BlockPos doorPos = BlockPos.fromLong(tag.getLong("doorPos"));
         VoidDoorTile door = (VoidDoorTile) voidWorld.getBlockEntity(doorPos);

@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.content.portalinterior;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -16,25 +16,25 @@ public class PortalInteriorTile extends BlockEntity
     private BlockPos        corePos;
     private PortalFrameTile core;
 
-    public PortalInteriorTile()
+    public PortalInteriorTile(BlockPos pos, BlockState state)
     {
-        super(VoidHeartTiles.POCKET_PORTAL);
+        super(VoidHeartTiles.POCKET_PORTAL, pos, state);
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
-        super.fromTag(state, tag);
+        super.readNbt(tag);
 
         corePos = BlockPos.fromLong(tag.getLong("corePos"));
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
         tag.putLong("corePos", corePos.asLong());
 
-        return super.toTag(tag);
+        return super.writeNbt(tag);
     }
 
     public void teleport(Entity collider)

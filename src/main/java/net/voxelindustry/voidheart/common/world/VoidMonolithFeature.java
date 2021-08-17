@@ -6,14 +6,11 @@ import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.WorldAccess;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
-
-import java.util.Random;
 
 public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
 {
@@ -23,30 +20,25 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
     }
 
     @Override
-    public boolean generate(
-            StructureWorldAccess world,
-            ChunkGenerator generator,
-            Random random,
-            BlockPos pos,
-            VoidMonolithFeatureConfig config)
+    public boolean generate(FeatureContext<VoidMonolithFeatureConfig> context)
     {
-        if (random.nextFloat() > 0.025F)
+        if (context.getRandom().nextFloat() > 0.025F)
             return false;
 
-        Mutable chosenPos = pos.mutableCopy().set(pos.getX() + random.nextInt(16), 256, pos.getZ() + random.nextInt(16));
-        Mutable posToPlace = findPosToPlace(world, chosenPos);
+        Mutable chosenPos = context.getOrigin().mutableCopy().set(context.getOrigin().getX() + context.getRandom().nextInt(16), 256, context.getOrigin().getZ() + context.getRandom().nextInt(16));
+        Mutable posToPlace = findPosToPlace(context.getWorld(), chosenPos);
 
         if (posToPlace == null)
             return false;
 
-        int height = random.nextInt(config.maxHeight - config.minHeight) + config.minHeight;
+        int height = context.getRandom().nextInt(context.getConfig().maxHeight - context.getConfig().minHeight) + context.getConfig().minHeight;
 
         for (int y = 0; y < height; y++)
         {
             boolean hasBelow = y != 0;
             boolean hasAbove = y != height - 1;
 
-            setBlockState(world, posToPlace,
+            setBlockState(context.getWorld(), posToPlace,
                     VoidHeartBlocks.VOID_MONOLITH.getDefaultState()
                             .with(StateProperties.UP, hasAbove)
                             .with(StateProperties.DOWN, hasBelow));

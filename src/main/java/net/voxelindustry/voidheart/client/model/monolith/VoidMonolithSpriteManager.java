@@ -8,7 +8,7 @@ import net.minecraft.util.math.Direction;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -61,11 +61,12 @@ public class VoidMonolithSpriteManager
     private static final Map<Direction, Sprite> frameSpriteCache = new HashMap<>();
     private static final Map<Integer, Sprite>   glyphSpriteCache = new HashMap<>();
 
-    private static Function<SpriteIdentifier, Sprite> spriteGetter;
-
-    public static void updateSpriteGetter(Function<SpriteIdentifier, Sprite> newGetter)
+    public static void registerSprites(Consumer<Identifier> spriteRegistrar)
     {
-        spriteGetter = newGetter;
+        for (var spriteIdentifier : MONOLITH_SPRITES)
+            spriteRegistrar.accept(spriteIdentifier.getTextureId());
+        for (var spriteIdentifier : GLYPH_SPRITES)
+            spriteRegistrar.accept(spriteIdentifier.getTextureId());
     }
 
     public static SpriteIdentifier[] getMonolithSprites()
@@ -81,25 +82,19 @@ public class VoidMonolithSpriteManager
     public static Sprite getFrameSprite(Direction dir)
     {
         return frameSpriteCache.computeIfAbsent(dir, direction ->
-        {
-            switch (direction)
-            {
-                case DOWN:
-                    return spriteGetter.apply(MONOLITH_SPRITES[3]);
-                case UP:
-                    return spriteGetter.apply(MONOLITH_SPRITES[1]);
-                case NORTH:
-                    return spriteGetter.apply(MONOLITH_SPRITES[2]);
-                default:
-                    return spriteGetter.apply(MONOLITH_SPRITES[0]);
-            }
-        });
+                switch (direction)
+                        {
+                            case DOWN -> MONOLITH_SPRITES[3].getSprite();
+                            case UP -> MONOLITH_SPRITES[1].getSprite();
+                            case NORTH -> MONOLITH_SPRITES[2].getSprite();
+                            default -> MONOLITH_SPRITES[0].getSprite();
+                        });
     }
 
     public static Sprite getGlyphSprite(int glyphIndex, boolean active)
     {
         return glyphSpriteCache.computeIfAbsent(glyphIndex + (active ? 0 : 16),
-                index -> spriteGetter.apply(GLYPH_SPRITES[index]));
+                index -> GLYPH_SPRITES[index].getSprite());
     }
 
     private static SpriteIdentifier getSpriteIdentifier(String from)

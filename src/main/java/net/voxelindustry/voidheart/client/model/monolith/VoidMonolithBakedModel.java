@@ -9,8 +9,6 @@ import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -19,17 +17,15 @@ import net.minecraft.world.BlockRenderView;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 
 import java.util.Random;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class VoidMonolithBakedModel extends ForwardingBakedModel
 {
     private final Direction[] horizontals = new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
-    public VoidMonolithBakedModel(BakedModel wrapped, Function<SpriteIdentifier, Sprite> spriteGetter)
+    public VoidMonolithBakedModel(BakedModel wrapped)
     {
         this.wrapped = wrapped;
-        VoidMonolithSpriteManager.updateSpriteGetter(spriteGetter);
     }
 
     @Override

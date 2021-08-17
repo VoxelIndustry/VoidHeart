@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.setup;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
@@ -42,7 +42,7 @@ public class VoidHeartRecipes
         {
             ALTAR_CATEGORY.getRecipe(VOIDHEART_RECIPE).ifPresent(recipe -> recipe.onCraft((world, blockPos, recipeState, livingEntity) ->
             {
-                CompoundTag tag = recipeState.getIngredientsConsumed(ItemStack.class).get(0).getOrCreateTag();
+                NbtCompound tag = recipeState.getIngredientsConsumed(ItemStack.class).get(0).getOrCreateNbt();
                 if (!tag.containsUuid("player"))
                     return;
 

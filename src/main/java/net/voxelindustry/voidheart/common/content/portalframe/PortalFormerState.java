@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.voxelindustry.steamlayer.common.utils.TagSerializable;
@@ -15,16 +15,16 @@ import net.voxelindustry.steamlayer.common.utils.TagSerializable;
 @EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
-public class PortalFormerState implements TagSerializable<CompoundTag>
+public class PortalFormerState implements TagSerializable<NbtCompound>
 {
     private BlockPos  from   = BlockPos.ORIGIN;
     private BlockPos  to     = BlockPos.ORIGIN;
     private Direction facing = Direction.UP;
 
     @Override
-    public CompoundTag toTag()
+    public NbtCompound toTag()
     {
-        CompoundTag tag = new CompoundTag();
+        NbtCompound tag = new NbtCompound();
         tag.putLong("fromPos", from.asLong());
         tag.putLong("toPos", to.asLong());
         tag.putInt("facing", facing.getId());
@@ -32,7 +32,7 @@ public class PortalFormerState implements TagSerializable<CompoundTag>
     }
 
     @Override
-    public void fromTag(CompoundTag tag)
+    public void fromTag(NbtCompound tag)
     {
         from = BlockPos.fromLong(tag.getLong("fromPos"));
         to = BlockPos.fromLong(tag.getLong("toPos"));

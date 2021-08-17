@@ -36,7 +36,7 @@ public class VoidHeartCommands
 
             if (targetProfile.isPresent())
             {
-                ServerWorld voidWorld = context.getSource().getMinecraftServer().getWorld(VoidHeart.VOID_WORLD_KEY);
+                ServerWorld voidWorld = context.getSource().getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
                 BlockPos pocketPos = VoidPocketState.getVoidPocketState(voidWorld).getPosForPlayer(targetProfile.get().getId());
 
                 Vec3d destinationPos = Vec3d.of(pocketPos.up()).add(0.5, 0.5, 0.5);

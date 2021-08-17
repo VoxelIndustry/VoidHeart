@@ -105,44 +105,44 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
         {
             case DOWN:
                 Boolean down = state.get(DOWN);
-                if (down && !newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                if (down && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(DOWN, false);
-                else if (!down && newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                else if (!down && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(DOWN, true);
                 break;
             case UP:
                 Boolean up = state.get(UP);
-                if (up && !newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                if (up && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(UP, false);
-                else if (!up && newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                else if (!up && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(UP, true);
                 break;
             case NORTH:
                 Boolean north = state.get(NORTH);
-                if (north && !newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                if (north && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(NORTH, false);
-                else if (!north && newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                else if (!north && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(NORTH, true);
                 break;
             case SOUTH:
                 Boolean south = state.get(SOUTH);
-                if (south && !newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                if (south && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(SOUTH, false);
-                else if (!south && newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                else if (!south && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(SOUTH, true);
                 break;
             case WEST:
                 Boolean west = state.get(WEST);
-                if (west && !newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                if (west && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(WEST, false);
-                else if (!west && newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                else if (!west && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(WEST, true);
                 break;
             case EAST:
                 Boolean east = state.get(EAST);
-                if (east && !newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                if (east && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(EAST, false);
-                else if (!east && newState.isOf(VoidHeartBlocks.PORTAL_INTERIOR))
+                else if (!east && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(EAST, true);
                 break;
         }
@@ -168,14 +168,8 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockView world)
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
     {
-        return new PortalFrameTile();
-    }
-
-    @Override
-    public boolean is(Block block)
-    {
-        return block == VoidHeartBlocks.PORTAL_FRAME || block == VoidHeartBlocks.PORTAL_FRAME_CORE;
+        return new PortalFrameTile(pos, state);
     }
 }

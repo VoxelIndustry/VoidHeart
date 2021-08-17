@@ -1,37 +1,33 @@
 package net.voxelindustry.voidheart.compat.rei;
 
 import lombok.Getter;
-import me.shedaniel.rei.api.EntryStack;
-import me.shedaniel.rei.api.RecipeDisplay;
-import me.shedaniel.rei.utils.CollectionUtils;
+import me.shedaniel.rei.api.common.category.CategoryIdentifier;
+import me.shedaniel.rei.api.common.display.Display;
+import me.shedaniel.rei.api.common.entry.EntryIngredient;
+import me.shedaniel.rei.api.common.util.CollectionUtils;
+import me.shedaniel.rei.api.common.util.EntryIngredients;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 
-import java.util.Collections;
 import java.util.List;
 
-public class AltarRecipeDisplay implements RecipeDisplay
+public class AltarRecipeDisplay implements Display
 {
-    private final AltarRecipe recipe;
-
     @Getter
-    private final List<List<EntryStack>> inputEntries;
+    private final List<EntryIngredient> inputEntries;
     @Getter
-    private final List<EntryStack>       outputEntries;
+    private final List<EntryIngredient> outputEntries;
 
     public AltarRecipeDisplay(AltarRecipe recipe)
     {
-        this.recipe = recipe;
-
         inputEntries = CollectionUtils.map(recipe.getRecipeInputs(ItemStack.class),
-                ingredient -> Collections.singletonList(EntryStack.create(ingredient.getRaw())));
+                ingredient -> EntryIngredients.of(ingredient.getRaw()));
         outputEntries = CollectionUtils.map(recipe.getRecipeOutputs(ItemStack.class),
-                ingredient -> EntryStack.create(ingredient.getRaw()));
+                ingredient -> EntryIngredients.of(ingredient.getRaw()));
     }
 
     @Override
-    public Identifier getRecipeCategory()
+    public CategoryIdentifier<AltarRecipeDisplay> getCategoryIdentifier()
     {
         return AltarRecipeCategory.IDENTIFIER;
     }

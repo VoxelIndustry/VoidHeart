@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.item;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Rarity;
@@ -27,7 +27,7 @@ public class VoidHeartItem extends Item
     @Override
     public Text getName(ItemStack stack)
     {
-        CompoundTag tag = stack.getOrCreateTag();
+        NbtCompound tag = stack.getOrCreateNbt();
         if (!tag.containsUuid("player"))
             return new TranslatableText(getTranslationKey(stack) + ".empty");
 

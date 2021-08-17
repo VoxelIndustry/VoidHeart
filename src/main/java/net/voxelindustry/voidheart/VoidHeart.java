@@ -25,10 +25,14 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
 
+import java.util.logging.Logger;
+
 public class VoidHeart implements ModInitializer
 {
     public static final String MODID             = "voidheart";
     public static final String IMMERSIVE_PORTALS = "imm_ptl_core";
+
+    public static final Logger LOGGER = Logger.getLogger(MODID);
 
     public static ItemGroup                             ITEMGROUP = FabricItemGroupBuilder.build(
             new Identifier(MODID, "item_group"),
@@ -53,7 +57,7 @@ public class VoidHeart implements ModInitializer
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
 
-        VOID_WORLD_KEY = RegistryKey.of(Registry.DIMENSION, new Identifier(MODID, "void"));
+        VOID_WORLD_KEY = RegistryKey.of(Registry.WORLD_KEY, new Identifier(MODID, "void"));
         VOID_DIMENSION_KEY = RegistryKey.of(Registry.DIMENSION_TYPE_KEY, new Identifier(MODID, "void"));
 
         Registry.register(

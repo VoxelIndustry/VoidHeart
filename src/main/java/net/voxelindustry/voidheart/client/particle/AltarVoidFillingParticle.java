@@ -6,11 +6,11 @@ import net.minecraft.client.particle.ParticleTextureSheet;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
 
 import static java.lang.Math.abs;
 
@@ -68,17 +68,17 @@ public class AltarVoidFillingParticle extends Particle
         {
             quaternion2 = new Quaternion(camera.getRotation());
             float i = MathHelper.lerp(tickDelta, prevAngle, angle);
-            quaternion2.hamiltonProduct(Vector3f.POSITIVE_Z.getRadialQuaternion(i));
+            quaternion2.hamiltonProduct(Vec3f.POSITIVE_Z.getRadialQuaternion(i));
         }
 
-        Vector3f vector3f = new Vector3f(-1.0F, -1.0F, 0.0F);
+        Vec3f vector3f = new Vec3f(-1.0F, -1.0F, 0.0F);
         vector3f.rotate(quaternion2);
-        Vector3f[] vector3fs = new Vector3f[]{new Vector3f(-1.0F, -1.0F, 0.0F), new Vector3f(-1.0F, 1.0F, 0.0F), new Vector3f(1.0F, 1.0F, 0.0F), new Vector3f(1.0F, -1.0F, 0.0F)};
+        Vec3f[] vector3fs = new Vec3f[]{new Vec3f(-1.0F, -1.0F, 0.0F), new Vec3f(-1.0F, 1.0F, 0.0F), new Vec3f(1.0F, 1.0F, 0.0F), new Vec3f(1.0F, -1.0F, 0.0F)};
         float size = 1 / 48F;
 
         for (int k = 0; k < 4; ++k)
         {
-            Vector3f vector3f2 = vector3fs[k];
+            Vec3f vector3f2 = vector3fs[k];
             vector3f2.rotate(quaternion2);
             vector3f2.scale(size);
             vector3f2.add(f, g, h);

@@ -1,10 +1,9 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
-import com.qouteall.immersive_portals.portal.Portal;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.voxelindustry.steamlayer.math.Vec3f;
+import qouteall.imm_ptl.core.portal.Portal;
 
 public class ImmersivePortalFrameCreator
 {
@@ -72,8 +71,8 @@ public class ImmersivePortalFrameCreator
         portalFrameTile.setPortalEntityID(portal.getUuid());
     }
 
-    public static Vector3f getUnitVector(Direction direction)
+    public static net.minecraft.util.math.Vec3f getUnitVector(Direction direction)
     {
-        return new Vector3f(direction.getOffsetX(), direction.getOffsetY(), direction.getOffsetZ());
+        return new net.minecraft.util.math.Vec3f(direction.getOffsetX(), direction.getOffsetY(), direction.getOffsetZ());
     }
 }

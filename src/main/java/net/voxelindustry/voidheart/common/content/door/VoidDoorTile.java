@@ -3,7 +3,8 @@ package net.voxelindustry.voidheart.common.content.door;
 import lombok.Setter;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.BlockPos;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.UUID;
@@ -17,13 +18,13 @@ public class VoidDoorTile extends BlockEntity
     @Setter
     private UUID portalDestinationEntityID;
 
-    public VoidDoorTile()
+    public VoidDoorTile(BlockPos pos, BlockState state)
     {
-        super(VoidHeartTiles.VOID_DOOR);
+        super(VoidHeartTiles.VOID_DOOR, pos, state);
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
         if (tag.contains("doorID"))
             id = tag.getUuid("doorID");
@@ -35,11 +36,11 @@ public class VoidDoorTile extends BlockEntity
         if (tag.containsUuid("portalDestinationEntityID"))
             portalDestinationEntityID = tag.getUuid("portalDestinationEntityID");
 
-        super.fromTag(state, tag);
+        super.readNbt(tag);
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
         if (id == null)
             id = UUID.randomUUID();
@@ -51,7 +52,7 @@ public class VoidDoorTile extends BlockEntity
         if (portalDestinationEntityID != null)
             tag.putUuid("portalDestinationEntityID", portalDestinationEntityID);
 
-        return super.toTag(tag);
+        return super.writeNbt(tag);
     }
 
     public UUID getId()

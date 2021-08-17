@@ -94,8 +94,8 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockView world)
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
     {
-        return new VoidPillarTile();
+        return new VoidPillarTile(pos, state);
     }
 }

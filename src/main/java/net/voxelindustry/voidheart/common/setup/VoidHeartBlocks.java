@@ -1,11 +1,12 @@
 package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import net.fabricmc.fabric.api.tag.TagRegistry;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.Material;
-import net.minecraft.block.MaterialColor;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.entity.EntityType;
@@ -13,12 +14,14 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
 import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.BlockView;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
+import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
@@ -35,6 +38,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartBlocks
 {
+    public static Tag<Block> PORTAL_INTERIOR_TAG = TagRegistry.block(new Identifier(MODID, "portal_interior"));
+
     public static Block PORTAL_INTERIOR;
     public static Block PORTAL_IMMERSIVE_INTERIOR;
     public static Block PORTAL_FRAME;
@@ -53,6 +58,8 @@ public class VoidHeartBlocks
     public static Block VOIDSTONE_WRITHING_MAW;
     public static Block VOIDSTONE_PILLAR;
     public static Block VOIDSTONE_WEATHERED_PILLAR;
+
+    public static Block VOID_LAMP;
 
     public static Block VOID_ALTAR;
     public static Block VOID_PILLAR;
@@ -89,67 +96,67 @@ public class VoidHeartBlocks
 
         registerBlock(VOIDSTONE = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone");
 
         registerBlock(VOIDSTONE_BRICKS = new VoidStoneBricksBlock(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");
         registerBlock(VOIDSTONE_BRICKS_CRACKED = new VoidStoneBricksBlock(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_cracked");
         registerBlock(VOIDSTONE_CHISELED = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_chiseled");
 
         registerBlock(VOIDSTONE_TILE = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile");
         registerBlock(VOIDSTONE_TILE_SMALL = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small");
 
         registerBlock(ELDRITCH_VOIDSTONE = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
 
         registerBlock(VOIDSTONE_WRITHING = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing");
         registerBlock(VOIDSTONE_WRITHING_BLOSSOM = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_blossom");
         registerBlock(VOIDSTONE_WRITHING_MAW = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_maw");
 
         registerBlock(VOIDSTONE_PILLAR = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar");
         registerBlock(VOIDSTONE_WEATHERED_PILLAR = new Block(
                 FabricBlockSettings
-                        .of(Material.STONE, MaterialColor.BLACK)
+                        .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar_weathered");
 
@@ -160,6 +167,8 @@ public class VoidHeartBlocks
                         .strength(1.5F, 6.0F)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool()), itemGroup, "void_monolith_cap");
+
+        registerBlock(VOID_LAMP = new VoidLampBlock(), itemGroup, "void_lamp");
 
         registerBlock(VOID_DOOR = new VoidDoorBlock(), itemGroup, "void_door");
 

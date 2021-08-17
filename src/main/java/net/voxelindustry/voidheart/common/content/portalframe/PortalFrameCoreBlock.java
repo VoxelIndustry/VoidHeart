@@ -7,7 +7,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -32,14 +31,6 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
-        if (player.isSneaking())
-        {
-            PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
-            if (tile.isServer())
-                player.sendMessage(new LiteralText(">> " + tile.getPortalState()), false);
-            return ActionResult.PASS;
-        }
-
         PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
 
         if (tile == null)
@@ -55,7 +46,11 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                 {
                     portalFormer.execute();
                     if (portalFormer.success())
+                    {
                         PortalLinker.tryRelink(player, tile);
+                        player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
+                        return ActionResult.SUCCESS;
+                    }
                     else
                         player.sendMessage(new TranslatableText(MODID + ".portal_cannot_form_back"), true);
                 }
@@ -65,10 +60,11 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
             else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null)
             {
                 PortalLinker.tryRelink(player, tile);
+                player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
+                return ActionResult.SUCCESS;
             }
         }
-
-        return super.onUse(state, world, pos, player, hand, hit);
+        return ActionResult.PASS;
     }
 
     @Override

@@ -18,14 +18,11 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static net.voxelindustry.voidheart.client.model.portalframe.PortalFrameVeinSpriteManager.updateSpriteGetter;
-
 public class PortalFrameBakedModel extends ForwardingBakedModel
 {
     public PortalFrameBakedModel(BakedModel wrapped, Function<SpriteIdentifier, Sprite> spriteGetter)
     {
         this.wrapped = wrapped;
-        updateSpriteGetter(spriteGetter);
     }
 
     @Override

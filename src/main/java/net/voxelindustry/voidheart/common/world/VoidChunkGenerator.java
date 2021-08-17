@@ -3,16 +3,15 @@ package net.voxelindustry.voidheart.common.world;
 import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.collection.Pool;
+import net.minecraft.util.dynamic.RegistryLookupCodec;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryLookupCodec;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.ChunkRegion;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.WorldAccess;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.SpawnSettings;
@@ -26,20 +25,12 @@ import net.minecraft.world.gen.chunk.StructuresConfig;
 import net.minecraft.world.gen.chunk.VerticalBlockSample;
 import net.minecraft.world.gen.feature.StructureFeature;
 
-import java.util.List;
-import java.util.stream.Stream;
-
-import static java.util.Collections.emptyList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public class VoidChunkGenerator extends ChunkGenerator
 {
     public static Codec<VoidChunkGenerator> codec;
-
-    private final VerticalBlockSample verticalBlockSample = new VerticalBlockSample(
-            Stream.generate(Blocks.AIR::getDefaultState)
-                    .limit(256)
-                    .toArray(BlockState[]::new)
-    );
 
     @Getter
     private final Registry<Biome> biomeRegistry;
@@ -66,13 +57,6 @@ public class VoidChunkGenerator extends ChunkGenerator
     @Override
     public void buildSurface(
             ChunkRegion region, Chunk chunk
-    )
-    {
-    }
-
-    @Override
-    public void populateNoise(
-            WorldAccess world, StructureAccessor accessor, Chunk chunk
     )
     {
     }
@@ -107,21 +91,27 @@ public class VoidChunkGenerator extends ChunkGenerator
     }
 
     @Override
-    public int getHeight(int x, int z, Heightmap.Type heightmapType)
+    public Pool<SpawnSettings.SpawnEntry> getEntitySpawnList(Biome biome, StructureAccessor accessor, SpawnGroup group, BlockPos pos)
+    {
+        return SpawnSettings.EMPTY_ENTRY_POOL;
+    }
+
+    @Override
+    public CompletableFuture<Chunk> populateNoise(Executor executor, StructureAccessor accessor, Chunk chunk)
+    {
+        return CompletableFuture.completedFuture(chunk);
+    }
+
+    @Override
+    public int getHeight(int x, int z, Heightmap.Type heightmap, HeightLimitView world)
     {
         return 0;
     }
 
     @Override
-    public BlockView getColumnSample(int x, int z)
+    public VerticalBlockSample getColumnSample(int x, int z, HeightLimitView world)
     {
-        return verticalBlockSample;
-    }
-
-    @Override
-    public List<SpawnSettings.SpawnEntry> getEntitySpawnList(Biome biome, StructureAccessor accessor, SpawnGroup group, BlockPos pos)
-    {
-        return emptyList();
+        return new VerticalBlockSample(0, new BlockState[0]);
     }
 
     static

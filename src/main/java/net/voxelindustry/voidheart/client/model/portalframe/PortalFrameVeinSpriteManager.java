@@ -8,7 +8,7 @@ import net.minecraft.util.math.Direction;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -32,11 +32,10 @@ public class PortalFrameVeinSpriteManager
     private static Sprite coreInactiveSprite;
     private static Sprite coreBrokenSprite;
 
-    private static Function<SpriteIdentifier, Sprite> spriteGetter;
-
-    public static void updateSpriteGetter(Function<SpriteIdentifier, Sprite> newGetter)
+    public static void registerSprites(Consumer<Identifier> spriteRegistrar)
     {
-        spriteGetter = newGetter;
+        for (var spriteIdentifier : SPRITE_IDENTIFIERS)
+            spriteRegistrar.accept(spriteIdentifier.getTextureId());
     }
 
     public static SpriteIdentifier[] getSpriteIdentifiers()
@@ -51,17 +50,17 @@ public class PortalFrameVeinSpriteManager
             switch (direction)
             {
                 case DOWN:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[4]);
+                    return SPRITE_IDENTIFIERS[4].getSprite();
                 case UP:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[7]);
+                    return SPRITE_IDENTIFIERS[7].getSprite();
                 case NORTH:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[0]);
+                    return SPRITE_IDENTIFIERS[0].getSprite();
                 case SOUTH:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[0]);
+                    return SPRITE_IDENTIFIERS[0].getSprite();
                 case WEST:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[5]);
+                    return SPRITE_IDENTIFIERS[5].getSprite();
                 case EAST:
-                    return spriteGetter.apply(SPRITE_IDENTIFIERS[6]);
+                    return SPRITE_IDENTIFIERS[6].getSprite();
             }
             return null;
         });
@@ -70,21 +69,21 @@ public class PortalFrameVeinSpriteManager
     public static Sprite getActiveCoreSprite()
     {
         if (coreActiveSprite == null)
-            coreActiveSprite = spriteGetter.apply(SPRITE_IDENTIFIERS[1]);
+            coreActiveSprite = SPRITE_IDENTIFIERS[1].getSprite();
         return coreActiveSprite;
     }
 
     public static Sprite getInactiveCoreSprite()
     {
         if (coreInactiveSprite == null)
-            coreInactiveSprite = spriteGetter.apply(SPRITE_IDENTIFIERS[2]);
+            coreInactiveSprite = SPRITE_IDENTIFIERS[2].getSprite();
         return coreInactiveSprite;
     }
 
     public static Sprite getBrokenCoreSprite()
     {
         if (coreBrokenSprite == null)
-            coreBrokenSprite = spriteGetter.apply(SPRITE_IDENTIFIERS[3]);
+            coreBrokenSprite = SPRITE_IDENTIFIERS[3].getSprite();
         return coreBrokenSprite;
     }
 

@@ -1,51 +1,25 @@
 package net.voxelindustry.voidheart.compat.rei;
 
-import me.shedaniel.rei.api.EntryRegistry;
-import me.shedaniel.rei.api.EntryStack;
-import me.shedaniel.rei.api.RecipeHelper;
-import me.shedaniel.rei.api.plugins.REIPluginV0;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.util.Identifier;
+import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
+import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
+import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
+import me.shedaniel.rei.api.common.util.EntryStacks;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
-import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 
-import java.util.function.Predicate;
-
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
-
-public class VoidHeartREIPlugin implements REIPluginV0
+public class VoidHeartREIPlugin implements REIClientPlugin
 {
     @Override
-    public Identifier getPluginIdentifier()
+    public void registerCategories(CategoryRegistry registry)
     {
-        return new Identifier(MODID, "rei_plugin");
+        registry.add(new AltarRecipeCategory());
+
+        registry.addWorkstations(AltarRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.VOID_ALTAR));
     }
 
     @Override
-    public void registerPluginCategories(RecipeHelper recipeHelper)
+    public void registerDisplays(DisplayRegistry registry)
     {
-        recipeHelper.registerCategory(new AltarRecipeCategory());
-    }
-
-    @Override
-    public void registerOthers(RecipeHelper recipeHelper)
-    {
-        recipeHelper.registerWorkingStations(AltarRecipeCategory.IDENTIFIER, EntryStack.create(VoidHeartBlocks.VOID_ALTAR));
-    }
-
-    @Override
-    public void registerRecipeDisplays(RecipeHelper recipeHelper)
-    {
-        recipeHelper.registerRecipes(
-                AltarRecipeCategory.IDENTIFIER,
-                (Predicate<Recipe>) recipe -> recipe.getType() == VoidHeartRecipes.ALTAR_CATEGORY.getType(),
-                recipe -> new AltarRecipeDisplay((AltarRecipe) recipe));
-    }
-
-    @Override
-    public void registerEntries(EntryRegistry entryRegistry)
-    {
-        entryRegistry.registerEntries();
+        registry.registerFiller(AltarRecipe.class, AltarRecipeDisplay::new);
     }
 }

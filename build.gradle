@@ -1,10 +1,10 @@
 plugins {
-    id 'fabric-loom' version '0.5-SNAPSHOT'
+    id 'fabric-loom' version '0.9-SNAPSHOT'
     id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_16
+targetCompatibility = JavaVersion.VERSION_16
 
 archivesBaseName = project.archives_base_name
 version = project.mod_version
@@ -20,9 +20,14 @@ repositories {
         url = 'https://maven.ferenyr.info/artifactory/libs-release'
     }
     maven {
-        name = "Ladysnake Libs"
-        url = 'https://dl.bintray.com/ladysnake/libs'
+        name = 'Rougly Enough Items'
+        url = 'https://maven.shedaniel.me/'
     }
+    maven {
+        name = 'ModMenu'
+        url = 'https://maven.terraformersmc.com/'
+    }
+    mavenCentral()
 }
 
 dependencies {
@@ -32,33 +37,31 @@ dependencies {
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    modImplementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
+    modImplementation include("net.voxelindustry:SteamLayer:${project.steamlayer_version}")
 
-    modImplementation "io.github.prospector:modmenu:${project.modmenu_version}"
-    modImplementation "me.shedaniel:RoughlyEnoughItems:${project.rei_version}"
-    modImplementation "immersive-portals:imm_ptl_core:${project.importals_version}"
+    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+    modImplementation "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
+    modImplementation "imm_ptl_core:imm_ptl_core:${project.importals_version}"
+    modImplementation "q_misc_util:q_misc_util:${project.importals_version}"
 
-    compileOnly 'org.projectlombok:lombok:1.18.12'
-    annotationProcessor 'org.projectlombok:lombok:1.18.12'
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
-    testCompile('org.junit.jupiter:junit-jupiter-api:5.6.1')
-    testCompile('org.mockito:mockito-core:3.3.3')
-    testCompile('org.mockito:mockito-junit-jupiter:3.3.3')
-    testCompile('org.assertj:assertj-core:3.15.0')
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.2')
+    testImplementation('org.mockito:mockito-core:3.11.2')
+    testImplementation('org.mockito:mockito-junit-jupiter:3.11.2')
+    testImplementation('org.assertj:assertj-core:3.20.2')
 
-    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.6.1')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.7.2')
 }
 
-processResources {
-    inputs.property "version", project.version
-
-    from(sourceSets.main.resources.srcDirs) {
-        include "fabric.mod.json"
-        expand "version": project.version
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "fabric.mod.json"
+sourceSets {
+    data {
+        compileClasspath += sourceSets.main.compileClasspath
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+        runtimeClasspath += sourceSets.main.output
     }
 }
 
@@ -69,10 +72,6 @@ tasks.withType(JavaCompile) {
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = "sources"
     from sourceSets.main.allSource
-}
-
-jar {
-    from "LICENSE"
 }
 
 publishing {
@@ -89,5 +88,25 @@ publishing {
 
     repositories {
         mavenLocal()
+    }
+}
+
+jar {
+    from "LICENSE"
+}
+
+processResources {
+    inputs.properties "version": project.version, "description": project.description
+
+    filesMatching(["fabric.mod.json", "pack.mcmeta"]) {
+        expand(
+                "version": project.version,
+                "description": project.description,
+                "repoOwner": project.repoOwner,
+                "repoName": project.repoName,
+                "id": project.modId,
+                "minecraftVersionLimit": project.minecraftVersionLimit,
+                "loaderVersionLimit": project.loaderVersionLimit
+        )
     }
 }

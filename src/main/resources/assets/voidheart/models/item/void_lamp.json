@@ -1,0 +1,41 @@
+{
+  "parent": "voidheart:block/void_lamp_off",
+  "overrides": [
+    {
+      "predicate": {
+        "voidheart:corruption": 1
+      },
+      "model": "voidheart:item/void_lamp_corrupted1_off"
+    },
+    {
+      "predicate": {
+        "voidheart:corruption": 2
+      },
+      "model": "voidheart:item/void_lamp_corrupted2_off"
+    },
+    {
+      "predicate": {
+        "voidheart:corruption": 3
+      },
+      "model": "voidheart:item/void_lamp_corrupted3_off"
+    },
+    {
+      "predicate": {
+        "voidheart:corruption": 4
+      },
+      "model": "voidheart:item/void_lamp_corrupted4_off"
+    },
+    {
+      "predicate": {
+        "voidheart:corruption": 5
+      },
+      "model": "voidheart:item/void_lamp_corrupted5"
+    },
+    {
+      "predicate": {
+        "voidheart:corruption": 6
+      },
+      "model": "voidheart:item/void_lamp_corrupted6"
+    }
+  ]
+}

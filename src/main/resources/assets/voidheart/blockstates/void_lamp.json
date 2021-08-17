@@ -1,0 +1,46 @@
+{
+  "variants": {
+    "lit=true,corruption=0": {
+      "model": "voidheart:block/void_lamp_on"
+    },
+    "lit=true,corruption=1": {
+      "model": "voidheart:block/void_lamp_corrupted1_on"
+    },
+    "lit=true,corruption=2": {
+      "model": "voidheart:block/void_lamp_corrupted2_on"
+    },
+    "lit=true,corruption=3": {
+      "model": "voidheart:block/void_lamp_corrupted3_on"
+    },
+    "lit=true,corruption=4": {
+      "model": "voidheart:block/void_lamp_corrupted4_on"
+    },
+    "lit=true,corruption=5": {
+      "model": "voidheart:block/void_lamp_corrupted5"
+    },
+    "lit=true,corruption=6": {
+      "model": "voidheart:block/void_lamp_corrupted6"
+    },
+    "lit=false,corruption=0": {
+      "model": "voidheart:block/void_lamp_off"
+    },
+    "lit=false,corruption=1": {
+      "model": "voidheart:block/void_lamp_corrupted1_off"
+    },
+    "lit=false,corruption=2": {
+      "model": "voidheart:block/void_lamp_corrupted2_off"
+    },
+    "lit=false,corruption=3": {
+      "model": "voidheart:block/void_lamp_corrupted3_off"
+    },
+    "lit=false,corruption=4": {
+      "model": "voidheart:block/void_lamp_corrupted4_off"
+    },
+    "lit=false,corruption=5": {
+      "model": "voidheart:block/void_lamp_corrupted5"
+    },
+    "lit=false,corruption=6": {
+      "model": "voidheart:block/void_lamp_corrupted6"
+    }
+  }
+}

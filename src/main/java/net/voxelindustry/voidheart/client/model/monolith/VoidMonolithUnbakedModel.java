@@ -29,7 +29,7 @@ public class VoidMonolithUnbakedModel extends ForwardingUnbakedModel
     public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences)
     {
         Collection<SpriteIdentifier> dependencies = super.getTextureDependencies(unbakedModelGetter, unresolvedTextureReferences);
-        
+
         List<SpriteIdentifier> sprites = new ArrayList<>();
         sprites.addAll(asList(VoidMonolithSpriteManager.getMonolithSprites()));
         sprites.addAll(asList(VoidMonolithSpriteManager.getGlyphSprites()));
@@ -40,6 +40,6 @@ public class VoidMonolithUnbakedModel extends ForwardingUnbakedModel
     @Override
     public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId)
     {
-        return new VoidMonolithBakedModel(super.bake(loader, textureGetter, rotationContainer, modelId), textureGetter);
+        return new VoidMonolithBakedModel(super.bake(loader, textureGetter, rotationContainer, modelId));
     }
 }

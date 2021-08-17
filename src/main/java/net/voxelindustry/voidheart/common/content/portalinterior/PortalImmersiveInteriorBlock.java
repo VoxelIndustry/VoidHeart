@@ -18,7 +18,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.List;
 
@@ -104,14 +103,8 @@ public class PortalImmersiveInteriorBlock extends Block implements BlockEntityPr
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockView world)
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
     {
-        return new PortalInteriorTile();
-    }
-
-    @Override
-    public boolean is(Block block)
-    {
-        return block == VoidHeartBlocks.PORTAL_IMMERSIVE_INTERIOR || block == VoidHeartBlocks.PORTAL_INTERIOR;
+        return new PortalInteriorTile(pos, state);
     }
 }

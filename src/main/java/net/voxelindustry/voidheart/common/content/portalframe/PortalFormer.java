@@ -28,9 +28,9 @@ public class PortalFormer
 {
     public static boolean canUsePearlHere(ItemStack stack, boolean isInPocket)
     {
-        if (isInPocket && !stack.getOrCreateTag().contains("pocketPos"))
+        if (isInPocket && !stack.getOrCreateNbt().contains("pocketPos"))
             return true;
-        if (!isInPocket && !stack.getOrCreateTag().contains("externalPos"))
+        if (!isInPocket && !stack.getOrCreateNbt().contains("externalPos"))
             return true;
         return false;
     }

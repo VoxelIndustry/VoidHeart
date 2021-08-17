@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.content.pillar;
 import lombok.Getter;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -22,26 +22,26 @@ public class VoidPillarTile extends TileBase
 
     private List<BlockPos> altars = new ArrayList<>();
 
-    public VoidPillarTile()
+    public VoidPillarTile(BlockPos pos, BlockState state)
     {
-        super(VoidHeartTiles.VOID_PILLAR);
+        super(VoidHeartTiles.VOID_PILLAR, pos, state);
     }
 
     @Override
-    public void setLocation(World world, BlockPos pos)
+    public void setWorld(World world)
     {
-        super.setLocation(world, pos);
+        super.setWorld(world);
 
         // Called on world load
         sync();
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
-        super.fromTag(state, tag);
+        super.readNbt(tag);
 
-        stack = ItemStack.fromTag(tag.getCompound("stack"));
+        stack = ItemStack.fromNbt(tag.getCompound("stack"));
 
         int pillarCount = tag.getInt("pillarCount");
         for (int index = 0; index < pillarCount; index++)
@@ -49,15 +49,15 @@ public class VoidPillarTile extends TileBase
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
-        tag.put("stack", stack.toTag(new CompoundTag()));
+        tag.put("stack", stack.writeNbt(new NbtCompound()));
 
         tag.putInt("pillarCount", altars.size());
         for (int index = 0; index < altars.size(); index++)
             tag.putLong("pillar" + index, altars.get(index).asLong());
 
-        return super.toTag(tag);
+        return super.writeNbt(tag);
     }
 
     public void setStack(ItemStack stack)

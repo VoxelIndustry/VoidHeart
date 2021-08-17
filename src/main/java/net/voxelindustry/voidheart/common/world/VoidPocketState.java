@@ -1,7 +1,7 @@
 package net.voxelindustry.voidheart.common.world;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.Mutable;
@@ -24,7 +24,11 @@ public class VoidPocketState extends PersistentState
 
     public VoidPocketState()
     {
-        super(MODID + ":pocket_storage");
+    }
+
+    public VoidPocketState(NbtCompound tag)
+    {
+        readNbt(tag);
     }
 
     public BlockPos getNextAvailable()
@@ -61,8 +65,7 @@ public class VoidPocketState extends PersistentState
         return posByPlayerID.computeIfAbsent(uuid, id -> getNextAvailable());
     }
 
-    @Override
-    public void fromTag(CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
         int count = tag.getInt("count");
 
@@ -73,7 +76,7 @@ public class VoidPocketState extends PersistentState
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
         tag.putInt("count", posByPlayerID.size());
 
@@ -90,7 +93,7 @@ public class VoidPocketState extends PersistentState
 
     public static VoidPocketState getVoidPocketState(ServerWorld world)
     {
-        return world.getPersistentStateManager().getOrCreate(VoidPocketState::new, MODID + ":pocket_storage");
+        return world.getPersistentStateManager().getOrCreate(VoidPocketState::new, () -> new VoidPocketState(), MODID + ":pocket_storage");
     }
 
     public void createPocket(ServerWorld voidWorld, UUID player)

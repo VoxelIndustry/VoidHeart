@@ -8,7 +8,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.FoodComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -65,7 +65,7 @@ public class VoidAmalgamItem extends Item
         ((PlayerEntity) user).playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1, 1 + (world.random.nextFloat() - world.random.nextFloat()) * 0.4F);
 
         ItemStack result = new ItemStack(VoidHeartItems.VOID_HEART);
-        CompoundTag tag = result.getOrCreateTag();
+        NbtCompound tag = result.getOrCreateNbt();
         tag.putUuid("player", user.getUuid());
         tag.putString("playerName", user.getEntityName());
 

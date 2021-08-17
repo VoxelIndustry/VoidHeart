@@ -48,17 +48,17 @@ public class AltarItemParticleEffect implements ParticleEffect
     @Override
     public String asString()
     {
-        return Registry.PARTICLE_TYPE.getId(getType()) + " " + (new ItemStackArgument(stack.getItem(), stack.getTag())).asString();
+        return Registry.PARTICLE_TYPE.getId(getType()) + " " + (new ItemStackArgument(stack.getItem(), stack.getNbt())).asString();
     }
 
-    public static final ParticleEffect.Factory<AltarItemParticleEffect> PARAMETERS_FACTORY = new ParticleEffect.Factory<AltarItemParticleEffect>()
+    public static final ParticleEffect.Factory<AltarItemParticleEffect> PARAMETERS_FACTORY = new ParticleEffect.Factory<>()
     {
         @Override
         public AltarItemParticleEffect read(ParticleType<AltarItemParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
         {
             stringReader.expect(' ');
             ItemStringReader itemStringReader = (new ItemStringReader(stringReader, false)).consume();
-            ItemStack itemStack = (new ItemStackArgument(itemStringReader.getItem(), itemStringReader.getTag())).createStack(1, false);
+            ItemStack itemStack = (new ItemStackArgument(itemStringReader.getItem(), itemStringReader.getNbt())).createStack(1, false);
 
             return new AltarItemParticleEffect(itemStack, Vec3f.UP, Vec3f.UP);
         }

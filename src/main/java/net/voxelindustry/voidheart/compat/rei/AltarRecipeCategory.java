@@ -2,13 +2,15 @@ package net.voxelindustry.voidheart.compat.rei;
 
 import me.shedaniel.math.Point;
 import me.shedaniel.math.Rectangle;
-import me.shedaniel.rei.api.EntryStack;
-import me.shedaniel.rei.api.RecipeCategory;
-import me.shedaniel.rei.api.widgets.Widgets;
-import me.shedaniel.rei.gui.entries.RecipeEntry;
-import me.shedaniel.rei.gui.entries.SimpleRecipeEntry;
-import me.shedaniel.rei.gui.widget.Widget;
-import net.minecraft.client.resource.language.I18n;
+import me.shedaniel.rei.api.client.gui.widgets.Widget;
+import me.shedaniel.rei.api.client.gui.widgets.Widgets;
+import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
+import me.shedaniel.rei.api.common.category.CategoryIdentifier;
+import me.shedaniel.rei.api.common.entry.EntryStack;
+import me.shedaniel.rei.api.common.util.EntryStacks;
+import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
@@ -16,35 +18,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static java.util.Collections.singletonList;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class AltarRecipeCategory implements RecipeCategory<AltarRecipeDisplay>
+public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
 {
-    public static final Identifier IDENTIFIER = new Identifier(MODID, "altar_crafting");
+    public static final CategoryIdentifier<AltarRecipeDisplay> IDENTIFIER = CategoryIdentifier.of(MODID, "altar_crafting");
 
     @Override
     public Identifier getIdentifier()
     {
-        return IDENTIFIER;
+        return IDENTIFIER.getIdentifier();
     }
 
     @Override
-    public EntryStack getLogo()
+    public EntryStack getIcon()
     {
-        return EntryStack.create(VoidHeartBlocks.VOID_ALTAR);
+        return EntryStacks.of(VoidHeartBlocks.VOID_ALTAR);
     }
 
     @Override
-    public String getCategoryName()
+    public Text getTitle()
     {
-        return I18n.translate(IDENTIFIER.toString().replace(":", "."));
-    }
-
-    @Override
-    public RecipeEntry getSimpleRenderer(AltarRecipeDisplay recipe)
-    {
-        return SimpleRecipeEntry.create(singletonList(recipe.getInputEntries().get(0)), recipe.getOutputEntries());
+        return new TranslatableText(IDENTIFIER.getIdentifier().toString().replace(":", "."));
     }
 
     @Override
@@ -78,15 +73,21 @@ public class AltarRecipeCategory implements RecipeCategory<AltarRecipeDisplay>
         return 90;
     }
 
-    public List<EntryStack> getInput(AltarRecipeDisplay recipeDisplay, int index)
+    @Override
+    public CategoryIdentifier<? extends AltarRecipeDisplay> getCategoryIdentifier()
     {
-        List<List<EntryStack>> inputs = recipeDisplay.getInputEntries();
-        return inputs.size() > index ? inputs.get(index) : Collections.emptyList();
+        return IDENTIFIER;
     }
 
-    public List<EntryStack> getOutput(AltarRecipeDisplay recipeDisplay, int index)
+    public List<EntryStack<ItemStack>> getInput(AltarRecipeDisplay recipeDisplay, int index)
     {
-        List<EntryStack> outputs = recipeDisplay.getOutputEntries();
-        return outputs.size() > index ? Collections.singletonList(outputs.get(index)) : Collections.emptyList();
+        var inputs = recipeDisplay.getInputEntries();
+        return inputs.size() > index ? inputs.get(index).cast() : Collections.emptyList();
+    }
+
+    public List<EntryStack<ItemStack>> getOutput(AltarRecipeDisplay recipeDisplay, int index)
+    {
+        var outputs = recipeDisplay.getOutputEntries();
+        return outputs.size() > index ? outputs.get(index).cast() : Collections.emptyList();
     }
 }

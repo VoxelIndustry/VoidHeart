@@ -22,7 +22,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.List;
 
@@ -148,14 +147,8 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockView world)
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
     {
-        return new PortalInteriorTile();
-    }
-
-    @Override
-    public boolean is(Block block)
-    {
-        return block == VoidHeartBlocks.PORTAL_IMMERSIVE_INTERIOR || block == VoidHeartBlocks.PORTAL_INTERIOR;
+        return new PortalInteriorTile(pos, state);
     }
 }

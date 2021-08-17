@@ -29,7 +29,6 @@ public class PortalFrameCoreBakedModel extends ForwardingBakedModel
     public PortalFrameCoreBakedModel(BakedModel wrapped, Function<SpriteIdentifier, Sprite> spriteGetter)
     {
         this.wrapped = wrapped;
-        updateSpriteGetter(spriteGetter);
     }
 
     @Override

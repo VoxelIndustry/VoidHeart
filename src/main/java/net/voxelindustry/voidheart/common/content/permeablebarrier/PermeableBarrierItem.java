@@ -4,7 +4,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
@@ -32,7 +32,7 @@ public class PermeableBarrierItem extends Item
             return ActionResult.SUCCESS;
 
         ItemStack stack = context.getStack();
-        CompoundTag tag = stack.getOrCreateTag();
+        NbtCompound tag = stack.getOrCreateNbt();
         if (hasFirstPoint(tag))
         {
             BlockPos first = BlockPos.fromLong(tag.getLong("firstPoint"));
@@ -81,12 +81,12 @@ public class PermeableBarrierItem extends Item
         return firstPoint.getX() == secondPoint.getX() || firstPoint.getY() == secondPoint.getY() || firstPoint.getZ() == secondPoint.getZ();
     }
 
-    private boolean hasFirstPoint(CompoundTag tag)
+    private boolean hasFirstPoint(NbtCompound tag)
     {
         return tag.contains("firstPoint");
     }
 
-    private void setFirstPoint(CompoundTag tag, BlockPos pos)
+    private void setFirstPoint(NbtCompound tag, BlockPos pos)
     {
         tag.putLong("firstPoint", pos.asLong());
     }

@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -24,27 +25,27 @@ public class VoidHeartTiles
     public static void registerTiles()
     {
         registerTile(POCKET_PORTAL =
-                        BlockEntityType.Builder.create(PortalInteriorTile::new, VoidHeartBlocks.PORTAL_INTERIOR).build(null),
+                        FabricBlockEntityTypeBuilder.create(PortalInteriorTile::new, VoidHeartBlocks.PORTAL_INTERIOR).build(null),
                 "pocket_portal");
 
         registerTile(PORTAL_WALL =
-                        BlockEntityType.Builder.create(PortalFrameTile::new, VoidHeartBlocks.PORTAL_FRAME).build(null),
+                        FabricBlockEntityTypeBuilder.create(PortalFrameTile::new, VoidHeartBlocks.PORTAL_FRAME).build(null),
                 "portal_wall");
 
         registerTile(VOID_ALTAR =
-                        BlockEntityType.Builder.create(VoidAltarTile::new, VoidHeartBlocks.VOID_ALTAR).build(null),
+                        FabricBlockEntityTypeBuilder.create(VoidAltarTile::new, VoidHeartBlocks.VOID_ALTAR).build(null),
                 "void_altar");
 
         registerTile(VOID_PILLAR =
-                        BlockEntityType.Builder.create(VoidPillarTile::new, VoidHeartBlocks.VOID_PILLAR).build(null),
+                        FabricBlockEntityTypeBuilder.create(VoidPillarTile::new, VoidHeartBlocks.VOID_PILLAR).build(null),
                 "void_pillar");
 
         registerTile(VOID_HEART =
-                        BlockEntityType.Builder.create(VoidHeartTile::new, VoidHeartBlocks.VOID_HEART).build(null),
+                        FabricBlockEntityTypeBuilder.create(VoidHeartTile::new, VoidHeartBlocks.VOID_HEART).build(null),
                 "void_heart");
 
         registerTile(VOID_DOOR =
-                        BlockEntityType.Builder.create(VoidDoorTile::new, VoidHeartBlocks.VOID_DOOR).build(null),
+                        FabricBlockEntityTypeBuilder.create(VoidDoorTile::new, VoidHeartBlocks.VOID_DOOR).build(null),
                 "void_door");
     }
 

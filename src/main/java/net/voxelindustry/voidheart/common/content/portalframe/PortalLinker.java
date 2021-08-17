@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.TranslatableText;
@@ -31,7 +31,7 @@ public class PortalLinker
                                             ItemStack voidPiece,
                                             boolean isInPocket)
     {
-        CompoundTag tag = voidPiece.getOrCreateTag();
+        NbtCompound tag = voidPiece.getOrCreateNbt();
 
         Optional<DeferredRollbackWork<PortalFormerState>> portalFormer = Optional.empty();
 
@@ -54,7 +54,7 @@ public class PortalLinker
             if (tag.contains("externalPos"))
             {
                 BlockPos externalPos = BlockPos.fromLong(tag.getLong("externalPos"));
-                RegistryKey<World> externalDimension = RegistryKey.of(Registry.DIMENSION, new Identifier(tag.getString("externalDimension")));
+                RegistryKey<World> externalDimension = RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("externalDimension")));
 
                 ServerWorld externalWorld = world.getServer().getWorld(externalDimension);
                 BlockEntity linkedPortal = externalWorld.getBlockEntity(externalPos);

@@ -6,6 +6,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.BlockSoundGroup;
@@ -21,6 +23,8 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import org.jetbrains.annotations.Nullable;
 
 public class VoidAltarBlock extends Block implements BlockEntityProvider
 {
@@ -95,9 +99,23 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
         builder.add(Properties.LIT);
     }
 
+    @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockView world)
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
     {
-        return new VoidAltarTile();
+        return new VoidAltarTile(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
+    {
+        return checkType(type, VoidHeartTiles.VOID_ALTAR, VoidAltarTile::tick);
+    }
+
+    @Nullable
+    protected static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> checkType(BlockEntityType<A> givenType, BlockEntityType<E> expectedType, BlockEntityTicker<? super E> ticker)
+    {
+        return expectedType == givenType ? (BlockEntityTicker<A>) ticker : null;
     }
 }

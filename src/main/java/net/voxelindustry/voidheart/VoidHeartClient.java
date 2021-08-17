@@ -4,7 +4,13 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendereregistry.v1.BlockEntityRendererRegistry;
+import net.fabricmc.fabric.api.event.client.ClientSpriteRegistryCallback;
+import net.fabricmc.fabric.api.object.builder.v1.client.model.FabricModelPredicateProviderRegistry;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.util.Identifier;
+import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithSpriteManager;
+import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameVeinSpriteManager;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
@@ -25,9 +31,9 @@ public class VoidHeartClient implements ClientModInitializer
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.VOID_DOOR, RenderLayer.getCutout());
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PERMEABLE_BARRIER, RenderLayer.getCutout());
 
-        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_PILLAR, VoidPillarRender::new);
-        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
-        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_HEART, VoidHeartRender::new);
+        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_PILLAR, ctx -> new VoidPillarRender());
+        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
+        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
 
         ParticleFactoryRegistry.getInstance().register(
                 ALTAR_VOID_PARTICLE,
@@ -38,5 +44,16 @@ public class VoidHeartClient implements ClientModInitializer
                 ALTAR_ITEM_PARTICLE,
                 provider -> (parameters, world, x, y, z, velocityX, velocityY, velocityZ) ->
                         new AltarItemParticle(world, x, y, z, velocityX, velocityY, velocityZ, parameters.getStack(), parameters.getFirstPointBezier(), parameters.getSecondPointBezier()));
+
+        FabricModelPredicateProviderRegistry.register(
+                VoidHeartBlocks.VOID_LAMP.asItem(),
+                new Identifier(VoidHeart.MODID, "corruption"),
+                ((stack, world, entity, provider) -> stack.hasNbt() ? stack.getNbt().getInt("corruption") : 0));
+
+        ClientSpriteRegistryCallback.event(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE).register((atlasTexture, registry) ->
+        {
+            VoidMonolithSpriteManager.registerSprites(registry::register);
+            PortalFrameVeinSpriteManager.registerSprites(registry::register);
+        });
     }
 }
