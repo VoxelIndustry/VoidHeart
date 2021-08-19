@@ -24,6 +24,7 @@ import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.world.VoidPocketState.getVoidPocketState;
+import static org.apache.commons.lang3.StringUtils.capitalize;
 
 public class VoidPearlItem extends Item
 {
@@ -45,21 +46,21 @@ public class VoidPearlItem extends Item
 
         if (tag.contains("pocketPos"))
         {
-            BlockPos blockPos = BlockPos.fromLong(tag.getLong("pocketPos"));
-            tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore",
-                    tag.getString("playerName")));
+            var blockPos = BlockPos.fromLong(tag.getLong("pocketPos"));
+            tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
             tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
-                    "[" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ() + "]"));
+                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
         }
         else if (tag.contains("externalPos"))
         {
-            BlockPos blockPos = BlockPos.fromLong(tag.getLong("externalPos"));
+            var blockPos = BlockPos.fromLong(tag.getLong("externalPos"));
             tooltip.add(new TranslatableText(MODID + ".void_pearl.external.lore",
-                    new Identifier(tag.getString("externalDimension")).getPath()));
+                    Text.of("§6" + capitalize(new Identifier(tag.getString("externalDimension")).getPath()))));
             tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
-                    "[" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ() + "]"));
+                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
         }
-        tooltip.add(new TranslatableText(MODID + ".void_pearl.lore", Formatting.AQUA, Formatting.RESET));
+        else
+            tooltip.add(new TranslatableText(MODID + ".void_pearl.lore", Formatting.AQUA, Formatting.RESET));
     }
 
     @Override
