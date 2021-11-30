@@ -3,7 +3,6 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.TranslatableText;
@@ -23,15 +22,14 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalLinker
 {
-    public static boolean voidPieceInteract(PortalFrameTile portalFrameTile,
+    public static boolean voidPearlInteract(PortalFrameTile portalFrameTile,
                                             World world,
                                             BlockPos pos,
                                             Direction direction,
                                             PlayerEntity player,
-                                            ItemStack voidPiece,
-                                            boolean isInPocket)
+                                            ItemStack voidPearl)
     {
-        NbtCompound tag = voidPiece.getOrCreateNbt();
+        var tag = voidPearl.getOrCreateNbt();
 
         Optional<DeferredRollbackWork<PortalFormerState>> portalFormer = Optional.empty();
 
@@ -49,74 +47,28 @@ public class PortalLinker
             }
         }
 
-        if (isInPocket)
+        if (tag.contains("firstPos"))
         {
-            if (tag.contains("externalPos"))
-            {
-                BlockPos externalPos = BlockPos.fromLong(tag.getLong("externalPos"));
-                RegistryKey<World> externalDimension = RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("externalDimension")));
+            var firstPos = BlockPos.fromLong(tag.getLong("firstPos"));
+            var firstDimension = RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension")));
 
-                ServerWorld externalWorld = world.getServer().getWorld(externalDimension);
-                BlockEntity linkedPortal = externalWorld.getBlockEntity(externalPos);
-                Direction externalFacing = Direction.byId(tag.getByte("externalFacing"));
-
-                return linkPortalCores(world,
-                        pos,
-                        direction,
-                        portalFrameTile,
-                        voidPiece,
-                        portalFormer,
-                        player,
-                        externalPos,
-                        externalWorld,
-                        linkedPortal,
-                        externalFacing);
-            }
-            else if (!tag.contains("pocketPos"))
-            {
-                if (portalFormer.isPresent())
-                {
-                    if (portalFrameTile == null)
-                    {
-                        world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction));
-                        portalFrameTile = (PortalFrameTile) world.getBlockEntity(pos);
-                    }
-
-                    portalFrameTile.setPortalState(portalFormer.get().getState());
-                    portalFormer.get().execute();
-                }
-
-                tag.putLong("pocketPos", portalFrameTile.getPos().asLong());
-                tag.putByte("pocketFacing", (byte) portalFrameTile.getFacing().ordinal());
-                player.sendMessage(new TranslatableText(MODID + ".link_started_pocket"), true);
-            }
-            else
-                return false;
-            return true;
-        }
-
-        // Not in pocket
-
-        if (tag.contains("pocketPos"))
-        {
-            BlockPos externalPos = BlockPos.fromLong(tag.getLong("pocketPos"));
-            ServerWorld externalWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
-            BlockEntity linkedPortal = externalWorld.getBlockEntity(externalPos);
-            Direction externalFacing = Direction.byId(tag.getByte("pocketFacing"));
+            var externalWorld = world.getServer().getWorld(firstDimension);
+            var linkedPortal = externalWorld.getBlockEntity(firstPos);
+            var firstFacing = Direction.byId(tag.getByte("firstFacing"));
 
             return linkPortalCores(world,
                     pos,
                     direction,
                     portalFrameTile,
-                    voidPiece,
+                    voidPearl,
                     portalFormer,
                     player,
-                    externalPos,
+                    firstPos,
                     externalWorld,
                     linkedPortal,
-                    externalFacing);
+                    firstFacing);
         }
-        else if (!tag.contains("externalPos"))
+        else
         {
             if (portalFormer.isPresent())
             {
@@ -130,13 +82,11 @@ public class PortalLinker
                 portalFormer.get().execute();
             }
 
-            tag.putLong("externalPos", portalFrameTile.getPos().asLong());
-            tag.putString("externalDimension", portalFrameTile.getWorld().getRegistryKey().getValue().toString());
-            tag.putByte("externalFacing", (byte) portalFrameTile.getFacing().ordinal());
-            player.sendMessage(new TranslatableText(MODID + ".link_started_outside"), true);
-            return true;
+            tag.putLong("firstPos", portalFrameTile.getPos().asLong());
+            tag.putString("firstDimension", portalFrameTile.getWorld().getRegistryKey().getValue().toString());
+            tag.putByte("firstFacing", (byte) portalFrameTile.getFacing().ordinal());
         }
-        return false;
+        return true;
     }
 
     public static boolean linkPortalCores(
@@ -144,7 +94,7 @@ public class PortalLinker
             BlockPos currentPos,
             Direction currentDirection,
             PortalFrameTile portalFrameTile,
-            ItemStack voidPiece,
+            ItemStack voidPearl,
             Optional<DeferredRollbackWork<PortalFormerState>> portalFormer,
             PlayerEntity player,
             BlockPos linkedPos,
@@ -184,7 +134,7 @@ public class PortalLinker
             portalFrameTile.linkPortal(VoidHeart.useImmersivePortal());
             portalFrameTile.getWorld().setBlockState(portalFrameTile.getPos(), portalFrameTile.getCachedState().with(Properties.LIT, true));
 
-            voidPiece.decrement(1);
+            voidPearl.decrement(1);
 
             ((PortalFrameTile) linkedPortal).setLinkedPos(portalFrameTile.getPos());
             ((PortalFrameTile) linkedPortal).setLinkedWorld(portalFrameTile.getWorld().getRegistryKey().getValue());

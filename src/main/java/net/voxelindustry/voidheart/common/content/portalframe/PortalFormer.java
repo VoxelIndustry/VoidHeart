@@ -2,7 +2,6 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 
 import com.google.common.util.concurrent.Runnables;
 import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -26,15 +25,6 @@ import static net.minecraft.util.math.Direction.*;
 
 public class PortalFormer
 {
-    public static boolean canUsePearlHere(ItemStack stack, boolean isInPocket)
-    {
-        if (isInPocket && !stack.getOrCreateNbt().contains("pocketPos"))
-            return true;
-        if (!isInPocket && !stack.getOrCreateNbt().contains("externalPos"))
-            return true;
-        return false;
-    }
-
     public static boolean isInPocket(World world, BlockPos pos, UUID playerUUID)
     {
         ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);

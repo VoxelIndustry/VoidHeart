@@ -16,6 +16,7 @@ public class VoidHeartItems
     public static VoidHeartItem   VOID_HEART;
     public static VoidAmalgamItem VOID_AMALGAM;
     public static VoidPearlItem   VOID_PEARL;
+    public static VoidPearlItem  LOCAL_PEARL;
 
     public static VoidKeyItem          VOID_KEY;
     public static PermeableBarrierItem PERMEABLE_BARRIER;
@@ -27,8 +28,9 @@ public class VoidHeartItems
     public static void registerItems()
     {
         registerItem(VOID_HEART = new VoidHeartItem(), "void_heart");
-        registerItem(VOID_PEARL = new VoidPearlItem(), "void_pearl");
         registerItem(VOID_AMALGAM = new VoidAmalgamItem(), "void_amalgam");
+        registerItem(VOID_PEARL = new VoidPearlItem(), "void_pearl");
+        registerItem(LOCAL_PEARL = new VoidPearlItem(), "local_pearl");
 
         registerItem(VOID_KEY = new VoidKeyItem(), "void_key");
         registerItem(PERMEABLE_BARRIER = new PermeableBarrierItem(), "permeable_barrier_item");

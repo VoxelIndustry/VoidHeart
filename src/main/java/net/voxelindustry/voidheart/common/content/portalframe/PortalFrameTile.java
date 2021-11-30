@@ -193,7 +193,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         markDirty();
     }
 
-    public Vec3d getPortalMiddlePos()
+    public Vec3d getPortalMiddlePos(boolean yCentered)
     {
         float y;
 
@@ -206,14 +206,14 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
         Vec3d center = new Vec3d(
                 (portalState.getTo().getX() - portalState.getFrom().getX()) / 2F,
-                y,
+                yCentered ? (portalState.getTo().getY() - portalState.getFrom().getY()) / 2F : y,
                 (portalState.getTo().getZ() - portalState.getFrom().getZ()) / 2F
         );
 
         Direction facing = getFacing();
         center = center.add(
                 facing.getOffsetX() + 0.5F + portalState.getFrom().getX(),
-                facing.getOffsetY() + portalState.getFrom().getY(),
+                facing.getOffsetY() + (yCentered ? 0.5F : 0) + portalState.getFrom().getY(),
                 facing.getOffsetZ() + 0.5F + portalState.getFrom().getZ());
         return center;
     }

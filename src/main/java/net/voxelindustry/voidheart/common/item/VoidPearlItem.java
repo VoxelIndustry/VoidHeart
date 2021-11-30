@@ -16,8 +16,11 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
 import java.util.List;
@@ -37,6 +40,53 @@ public class VoidPearlItem extends Item
                 .food(new FoodComponent.Builder().alwaysEdible().build()));
     }
 
+    public static boolean checkPearlUseHereAndWarn(ItemStack stack, boolean isInPocket, PlayerEntity player)
+    {
+        var tag = stack.getOrCreateNbt();
+
+        if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
+        {
+            boolean canUse = RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
+
+            if (!canUse)
+                player.sendMessage(new TranslatableText(MODID + ".must_be_same_world"), true);
+            return canUse;
+        }
+
+        // If first point is already set then it must not be already inside a pocket
+        if (isInPocket && (!tag.contains("firstPos") || !RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+            return true;
+        // If first point is already set then it must be inside a pocket
+        if (!isInPocket && (!tag.contains("firstPos") || RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+            return true;
+
+        player.sendMessage(new TranslatableText(MODID + ".must_be_inside_outside"), true);
+        return false;
+    }
+
+    public static boolean doesPearlHasFirstPosition(ItemStack stack)
+    {
+        return stack.getOrCreateNbt().contains("firstPos");
+    }
+
+    public static void sendSuccessMessage(PlayerEntity player, ItemStack stack, boolean alreadyHasFirstPoint)
+    {
+        if (alreadyHasFirstPoint)
+            return;
+
+        if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
+        {
+            player.sendMessage(new TranslatableText(MODID + ".link_started_local"), true);
+            return;
+        }
+
+        var tag = stack.getOrCreateNbt();
+        if (RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
+            player.sendMessage(new TranslatableText(MODID + ".link_started_pocket"), true);
+        else
+            player.sendMessage(new TranslatableText(MODID + ".link_started_outside"), true);
+    }
+
     @Override
     public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
     {
@@ -44,20 +94,23 @@ public class VoidPearlItem extends Item
 
         NbtCompound tag = stack.getOrCreateNbt();
 
-        if (tag.contains("pocketPos"))
+        if (tag.contains("firstPos"))
         {
-            var blockPos = BlockPos.fromLong(tag.getLong("pocketPos"));
-            tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
-            tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
-                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
-        }
-        else if (tag.contains("externalPos"))
-        {
-            var blockPos = BlockPos.fromLong(tag.getLong("externalPos"));
-            tooltip.add(new TranslatableText(MODID + ".void_pearl.external.lore",
-                    Text.of("§6" + capitalize(new Identifier(tag.getString("externalDimension")).getPath()))));
-            tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
-                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
+            var blockPos = BlockPos.fromLong(tag.getLong("firstPos"));
+
+            if (RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
+            {
+                tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
+                tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
+                        Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
+            }
+            else
+            {
+                tooltip.add(new TranslatableText(MODID + ".void_pearl.external.lore",
+                        Text.of("§6" + capitalize(new Identifier(tag.getString("firstDimension")).getPath()))));
+                tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
+                        Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
+            }
         }
         else
             tooltip.add(new TranslatableText(MODID + ".void_pearl.lore", Formatting.AQUA, Formatting.RESET));

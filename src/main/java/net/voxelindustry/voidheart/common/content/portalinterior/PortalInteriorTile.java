@@ -55,7 +55,7 @@ public class PortalInteriorTile extends BlockEntity
             if (linkedPortal == null)
                 return;
 
-            Vec3d destinationPos = linkedPortal.getPortalMiddlePos();
+            Vec3d destinationPos = linkedPortal.getPortalMiddlePos(false);
             ((ServerPlayerEntity) collider).teleport(destination,
                     destinationPos.getX(),
                     destinationPos.getY(),

@@ -10,7 +10,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -19,13 +18,13 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.voxelindustry.voidheart.common.item.VoidPearlItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.List;
 
 import static java.util.Collections.singletonList;
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.block.StateProperties.*;
 
 public class PortalFrameBlock extends Block implements BlockEntityProvider
@@ -79,20 +78,22 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
             return ActionResult.PASS;
 
         ItemStack stack = player.getStackInHand(hand);
-        if (stack.getItem() == VoidHeartItems.VOID_PEARL)
+        if (stack.getItem() == VoidHeartItems.VOID_PEARL || stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
             if (world.isClient())
                 return ActionResult.SUCCESS;
 
             boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUuid());
-            if (!PortalFormer.canUsePearlHere(stack, isInPocket))
-            {
-                player.sendMessage(new TranslatableText(MODID + ".must_be_inside_outside"), true);
+            if (!VoidPearlItem.checkPearlUseHereAndWarn(stack, isInPocket, player))
                 return ActionResult.PASS;
-            }
 
-            if (PortalLinker.voidPieceInteract(tile, tile.getWorld(), tile.getPos(), hit.getSide(), player, player.getStackInHand(hand), isInPocket))
+            boolean alreadyHasFirstPoint = VoidPearlItem.doesPearlHasFirstPosition(stack);
+
+            if (PortalLinker.voidPearlInteract(tile, tile.getWorld(), tile.getPos(), hit.getSide(), player, stack))
+            {
+                VoidPearlItem.sendSuccessMessage(player, stack, alreadyHasFirstPoint);
                 return ActionResult.SUCCESS;
+            }
         }
 
         return super.onUse(state, world, pos, player, hand, hit);
@@ -103,48 +104,48 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     {
         switch (direction)
         {
-            case DOWN:
+            case DOWN -> {
                 Boolean down = state.get(DOWN);
                 if (down && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(DOWN, false);
                 else if (!down && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(DOWN, true);
-                break;
-            case UP:
+            }
+            case UP -> {
                 Boolean up = state.get(UP);
                 if (up && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(UP, false);
                 else if (!up && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(UP, true);
-                break;
-            case NORTH:
+            }
+            case NORTH -> {
                 Boolean north = state.get(NORTH);
                 if (north && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(NORTH, false);
                 else if (!north && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(NORTH, true);
-                break;
-            case SOUTH:
+            }
+            case SOUTH -> {
                 Boolean south = state.get(SOUTH);
                 if (south && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(SOUTH, false);
                 else if (!south && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(SOUTH, true);
-                break;
-            case WEST:
+            }
+            case WEST -> {
                 Boolean west = state.get(WEST);
                 if (west && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(WEST, false);
                 else if (!west && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(WEST, true);
-                break;
-            case EAST:
+            }
+            case EAST -> {
                 Boolean east = state.get(EAST);
                 if (east && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(EAST, false);
                 else if (!east && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
                     state = state.with(EAST, true);
-                break;
+            }
         }
         return state;
     }
