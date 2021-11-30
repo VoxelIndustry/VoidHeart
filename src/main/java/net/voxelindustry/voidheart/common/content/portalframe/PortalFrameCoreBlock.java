@@ -47,9 +47,11 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                     portalFormer.execute();
                     if (portalFormer.success())
                     {
-                        PortalLinker.tryRelink(player, tile);
-                        player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
-                        return ActionResult.SUCCESS;
+                        if (PortalLinker.tryRelink(player, tile))
+                        {
+                            player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
+                            return ActionResult.SUCCESS;
+                        }
                     }
                     else
                         player.sendMessage(new TranslatableText(MODID + ".portal_cannot_form_back"), true);

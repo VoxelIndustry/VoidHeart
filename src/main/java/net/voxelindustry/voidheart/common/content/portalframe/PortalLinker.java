@@ -152,15 +152,15 @@ public class PortalLinker
         }
     }
 
-    public static void tryRelink(PlayerEntity player, PortalFrameTile core)
+    public static boolean tryRelink(PlayerEntity player, PortalFrameTile core)
     {
         if (!core.isCore() || core.getLinkedWorld() != null || core.getPreviousLinkedWorld() == null)
-            return;
+            return false;
 
         PortalFrameTile previouslyLinkedPortal = core.getPreviouslyLinkedPortal();
 
         if (previouslyLinkedPortal == null || previouslyLinkedPortal.getLinkedWorld() != null)
-            return;
+            return false;
 
         if (previouslyLinkedPortal.isBroken())
         {
@@ -171,19 +171,19 @@ public class PortalLinker
                 if (!portalFormer.success())
                 {
                     player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
-                    return;
+                    return false;
                 }
             }
             else
             {
                 player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
-                return;
+                return false;
             }
         }
         if (!core.getPortalState().areShapeEquals(previouslyLinkedPortal.getPortalState()))
         {
             player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
-            return;
+            return false;
         }
 
         core.setLinkedWorld(core.getPreviousLinkedWorld());
@@ -202,5 +202,6 @@ public class PortalLinker
 
         core.linkPortal(VoidHeart.useImmersivePortal());
         previouslyLinkedPortal.linkPortal(VoidHeart.useImmersivePortal());
+        return true;
     }
 }
