@@ -55,5 +55,26 @@ public class VoidHeartClient implements ClientModInitializer
             VoidMonolithSpriteManager.registerSprites(registry::register);
             PortalFrameVeinSpriteManager.registerSprites(registry::register);
         });
+
+        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
+            @Override
+            public Identifier getFabricId()
+            {
+                return new Identifier(MODID, "sprite_loader");
+            }
+
+            @Override
+            public void reload(ResourceManager manager)
+            {
+                for (Direction value : Direction.values())
+                {
+                    PortalFrameVeinSpriteManager.getFrameSprite(value);
+                    VoidMonolithSpriteManager.getFrameSprite(value);
+                }
+                PortalFrameVeinSpriteManager.getActiveCoreSprite();
+                PortalFrameVeinSpriteManager.getBrokenCoreSprite();
+                PortalFrameVeinSpriteManager.getInactiveCoreSprite();
+            }
+        });
     }
 }

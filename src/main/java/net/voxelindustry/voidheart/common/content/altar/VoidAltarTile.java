@@ -142,7 +142,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag)
+    public void writeNbt(NbtCompound tag)
     {
         tag.put("stack", stack.writeNbt(new NbtCompound()));
         tag.putInt("recipeProgress", recipeProgress);
@@ -160,7 +160,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile
         if (isCrafting && recipeState != null)
             tag.put("recipeState", recipeState.toTag());
 
-        return super.writeNbt(tag);
+        super.writeNbt(tag);
     }
 
     public void setStack(PlayerEntity player, ItemStack stack)

@@ -42,12 +42,12 @@ public class VoidHeartTile extends TileBase
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag)
+    public void writeNbt(NbtCompound tag)
     {
         if (playerID != null)
             tag.putUuid("playerID", playerID);
 
-        return super.writeNbt(tag);
+        super.writeNbt(tag);
     }
 
     public static void tick(World world, BlockPos pos, BlockState state, VoidHeartTile heart)
@@ -76,12 +76,16 @@ public class VoidHeartTile extends TileBase
         UUID hitPlayerID = player.getUuid();
         if (lastPlayerHitCache.containsKey(hitPlayerID))
         {
-            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+            var serverPlayer = (ServerPlayerEntity) player;
 
             ServerWorld destination = world.getServer().getWorld(serverPlayer.getSpawnPointDimension());
 
             BlockPos spawnPointPosition = serverPlayer.getSpawnPointPosition();
-            Optional<Vec3d> respawnPosition = spawnPointPosition == null ? Optional.empty() : PlayerEntity.findRespawnPosition(destination, spawnPointPosition, ((ServerPlayerEntity) player).getSpawnAngle(), serverPlayer.isSpawnPointSet(), true);
+            Optional<Vec3d> respawnPosition = spawnPointPosition == null ? Optional.empty() : PlayerEntity.findRespawnPosition(destination,
+                    spawnPointPosition,
+                    serverPlayer.getSpawnAngle(),
+                    serverPlayer.isSpawnForced(),
+                    true);
 
             if (!respawnPosition.isPresent())
                 destination = world.getServer().getOverworld();
@@ -89,7 +93,7 @@ public class VoidHeartTile extends TileBase
             ServerWorld finalDestination = destination;
 
             Vec3d destinationPos = respawnPosition.orElseGet(() -> Vec3d.ofCenter(finalDestination.getSpawnPos()));
-            ((ServerPlayerEntity) player).teleport(destination,
+            serverPlayer.teleport(destination,
                     destinationPos.getX(),
                     destinationPos.getY(),
                     destinationPos.getZ(),

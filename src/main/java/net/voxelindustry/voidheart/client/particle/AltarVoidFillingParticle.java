@@ -84,7 +84,6 @@ public class AltarVoidFillingParticle extends Particle
             vector3f2.add(f, g, h);
         }
 
-        spriteProvider.getSprites();
         Sprite sprite = spriteProvider.getSprite(age, maxAge);
 
         colorRed = 0.21F;
@@ -114,7 +113,7 @@ public class AltarVoidFillingParticle extends Particle
         prevPosX = x;
         prevPosY = y;
         prevPosZ = z;
-        if (age++ >= maxAge || (isNearDestination()))
+        if (age++ >= maxAge || isNearDestination())
         {
             markDead();
             return;

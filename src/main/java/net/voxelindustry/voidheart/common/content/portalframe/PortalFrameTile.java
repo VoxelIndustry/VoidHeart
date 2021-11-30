@@ -297,7 +297,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag)
+    public void writeNbt(NbtCompound tag)
     {
         if (linkedWorld != null)
         {
@@ -349,7 +349,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         if (portalEntityID != null)
             tag.putUuid("portalEntityID", portalEntityID);
 
-        return super.writeNbt(tag);
+        super.writeNbt(tag);
     }
 
     public boolean isBroken()

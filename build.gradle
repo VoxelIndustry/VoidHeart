@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.9-SNAPSHOT'
+    id 'fabric-loom' version '0.10-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -20,7 +20,7 @@ repositories {
         url = 'https://maven.ferenyr.info/artifactory/libs-release'
     }
     maven {
-        name = 'Rougly Enough Items'
+        name = 'Roughly Enough Items'
         url = 'https://maven.shedaniel.me/'
     }
     maven {
@@ -44,8 +44,8 @@ dependencies {
     modImplementation "imm_ptl_core:imm_ptl_core:${project.importals_version}"
     modImplementation "q_misc_util:q_misc_util:${project.importals_version}"
 
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.7.2')
     testImplementation('org.mockito:mockito-core:3.11.2')

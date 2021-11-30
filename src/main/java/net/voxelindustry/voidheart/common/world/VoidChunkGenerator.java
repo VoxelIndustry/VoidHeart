@@ -17,9 +17,11 @@ import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.SpawnSettings;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.FixedBiomeSource;
+import net.minecraft.world.biome.source.util.MultiNoiseUtil.MultiNoiseSampler;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.world.gen.GenerationStep.Carver;
 import net.minecraft.world.gen.StructureAccessor;
+import net.minecraft.world.gen.chunk.Blender;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.StructuresConfig;
 import net.minecraft.world.gen.chunk.VerticalBlockSample;
@@ -55,17 +57,15 @@ public class VoidChunkGenerator extends ChunkGenerator
     }
 
     @Override
-    public void buildSurface(
-            ChunkRegion region, Chunk chunk
-    )
+    public MultiNoiseSampler getMultiNoiseSampler()
     {
+        return null;
     }
 
     @Override
-    public void carve(
-            long seed, BiomeAccess access, Chunk chunk, GenerationStep.Carver carver
-    )
+    public void carve(ChunkRegion chunkRegion, long seed, BiomeAccess biomeAccess, StructureAccessor structureAccessor, Chunk chunk, Carver generationStep)
     {
+
     }
 
     @Override
@@ -81,13 +81,20 @@ public class VoidChunkGenerator extends ChunkGenerator
     }
 
     @Override
-    public void generateFeatures(ChunkRegion region, StructureAccessor accessor)
+    public void buildSurface(ChunkRegion region, StructureAccessor structures, Chunk chunk)
     {
+
     }
 
     @Override
     public void populateEntities(ChunkRegion region)
     {
+    }
+
+    @Override
+    public int getWorldHeight()
+    {
+        return 384;
     }
 
     @Override
@@ -97,9 +104,21 @@ public class VoidChunkGenerator extends ChunkGenerator
     }
 
     @Override
-    public CompletableFuture<Chunk> populateNoise(Executor executor, StructureAccessor accessor, Chunk chunk)
+    public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, StructureAccessor structureAccessor, Chunk chunk)
     {
         return CompletableFuture.completedFuture(chunk);
+    }
+
+    @Override
+    public int getSeaLevel()
+    {
+        return -63;
+    }
+
+    @Override
+    public int getMinimumY()
+    {
+        return 0;
     }
 
     @Override

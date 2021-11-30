@@ -46,24 +46,14 @@ public class PortalFrameVeinSpriteManager
     public static Sprite getFrameSprite(Direction dir)
     {
         return frameSpriteCache.computeIfAbsent(dir, direction ->
-        {
-            switch (direction)
-            {
-                case DOWN:
-                    return SPRITE_IDENTIFIERS[4].getSprite();
-                case UP:
-                    return SPRITE_IDENTIFIERS[7].getSprite();
-                case NORTH:
-                    return SPRITE_IDENTIFIERS[0].getSprite();
-                case SOUTH:
-                    return SPRITE_IDENTIFIERS[0].getSprite();
-                case WEST:
-                    return SPRITE_IDENTIFIERS[5].getSprite();
-                case EAST:
-                    return SPRITE_IDENTIFIERS[6].getSprite();
-            }
-            return null;
-        });
+                switch (direction)
+                        {
+                            case DOWN -> SPRITE_IDENTIFIERS[4].getSprite();
+                            case UP -> SPRITE_IDENTIFIERS[7].getSprite();
+                            case NORTH, SOUTH -> SPRITE_IDENTIFIERS[0].getSprite();
+                            case WEST -> SPRITE_IDENTIFIERS[5].getSprite();
+                            case EAST -> SPRITE_IDENTIFIERS[6].getSprite();
+                        });
     }
 
     public static Sprite getActiveCoreSprite()

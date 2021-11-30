@@ -30,11 +30,11 @@ public class PortalInteriorTile extends BlockEntity
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag)
+    public void writeNbt(NbtCompound tag)
     {
         tag.putLong("corePos", corePos.asLong());
 
-        return super.writeNbt(tag);
+        super.writeNbt(tag);
     }
 
     public void teleport(Entity collider)

@@ -37,7 +37,7 @@ public class AltarItemParticle extends SpriteBillboardParticle
     {
         super(world, x, y, z, velocityX, velocityY, velocityZ);
 
-        setSprite(MinecraftClient.getInstance().getItemRenderer().getModels().getSprite(stack));
+        setSprite(MinecraftClient.getInstance().getItemRenderer().getModels().getModel(stack).getParticleSprite());
 
         float uDiff = (sprite.getMaxU() - sprite.getMinU()) / 4;
         float vDiff = (sprite.getMaxV() - sprite.getMinV()) / 4;

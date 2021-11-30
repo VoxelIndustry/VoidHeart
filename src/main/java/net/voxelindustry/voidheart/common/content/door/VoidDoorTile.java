@@ -40,7 +40,7 @@ public class VoidDoorTile extends BlockEntity
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag)
+    public void writeNbt(NbtCompound tag)
     {
         if (id == null)
             id = UUID.randomUUID();
@@ -52,7 +52,7 @@ public class VoidDoorTile extends BlockEntity
         if (portalDestinationEntityID != null)
             tag.putUuid("portalDestinationEntityID", portalDestinationEntityID);
 
-        return super.writeNbt(tag);
+        super.writeNbt(tag);
     }
 
     public UUID getId()

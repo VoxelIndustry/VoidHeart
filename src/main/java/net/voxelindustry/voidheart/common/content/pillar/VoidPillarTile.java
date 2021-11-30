@@ -49,7 +49,7 @@ public class VoidPillarTile extends TileBase
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag)
+    public void writeNbt(NbtCompound tag)
     {
         tag.put("stack", stack.writeNbt(new NbtCompound()));
 
@@ -57,7 +57,7 @@ public class VoidPillarTile extends TileBase
         for (int index = 0; index < altars.size(); index++)
             tag.putLong("pillar" + index, altars.get(index).asLong());
 
-        return super.writeNbt(tag);
+        super.writeNbt(tag);
     }
 
     public void setStack(ItemStack stack)

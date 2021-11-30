@@ -91,81 +91,81 @@ public class CraftingVoidRender
         float green = (RANDOM.nextFloat() * 0.5F + 0.4F) * colorAlteration;
         float blue = (RANDOM.nextFloat() * 0.5F + 0.5F) * colorAlteration;
 
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY + height, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY + height, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY, posZ)
-                .color(red, green, blue, 1)
-                .next();
-
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY, posZ + length)
-                .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY + height, posZ + length)
-                .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY + height, posZ + length)
-                .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
                 .color(red, green, blue, 1)
                 .next();
 
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY + height, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY + height, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY, posZ)
-                .color(red, green, blue, 1)
-                .next();
-
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY, posZ)
-                .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY + height, posZ)
-                .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY + height, posZ + length)
-                .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
 
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY + height, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY + height, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY + height, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY + height, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
                 .color(red, green, blue, 1)
                 .next();
 
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX, posY, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY, posZ)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
-        buffer.vertex(matrixStack.peek().getModel(), posX + width, posY, posZ + length)
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
+                .color(red, green, blue, 1)
+                .next();
+
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
+                .color(red, green, blue, 1)
+                .next();
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
+                .color(red, green, blue, 1)
+                .next();
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
+                .color(red, green, blue, 1)
+                .next();
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
+                .color(red, green, blue, 1)
+                .next();
+
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
+                .color(red, green, blue, 1)
+                .next();
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
+                .color(red, green, blue, 1)
+                .next();
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
+                .color(red, green, blue, 1)
+                .next();
+        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
                 .color(red, green, blue, 1)
                 .next();
     }
