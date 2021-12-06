@@ -4,6 +4,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
@@ -15,6 +17,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
+import static java.util.Arrays.asList;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.block.StateProperties.*;
 
@@ -39,7 +42,7 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
         if (!world.isClient())
         {
             // Core block is probably a previously broken portal
-            if (!tile.isCore())
+            if (tile.isBroken())
             {
                 DeferredRollbackWork<PortalFormerState> portalFormer = PortalFormer.tryForm(world, state, pos, hit.getSide());
                 if (portalFormer.maySucceed())
@@ -47,6 +50,7 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                     portalFormer.execute();
                     if (portalFormer.success())
                     {
+                        tile.setBroken(false);
                         if (PortalLinker.tryRelink(player, tile))
                         {
                             player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
@@ -59,9 +63,8 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                 else
                     player.sendMessage(new TranslatableText(MODID + ".portal_cannot_form_back"), true);
             }
-            else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null)
+            else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
             {
-                PortalLinker.tryRelink(player, tile);
                 player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
                 return ActionResult.SUCCESS;
             }
@@ -88,5 +91,11 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
     {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, Properties.FACING, Properties.LIT, BROKEN);
+    }
+
+    @Override
+    public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
+    {
+        return asList(new ItemStack(VoidHeartBlocks.VOIDSTONE_BRICKS), new ItemStack(VoidHeartItems.VOID_PEARL));
     }
 }

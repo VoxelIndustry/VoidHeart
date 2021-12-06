@@ -33,7 +33,9 @@ public class PortalLinker
 
         Optional<DeferredRollbackWork<PortalFormerState>> portalFormer = Optional.empty();
 
-        if (portalFrameTile == null || !portalFrameTile.isCore())
+        // If the block is not a frame OR is a frame but not a core OR is a frame but is not linked to any core
+        // Then it is cleared for frame creation and will act as the core of the new portal
+        if (portalFrameTile == null || !portalFrameTile.isCore() || portalFrameTile.getLinkedCores().isEmpty())
         {
             portalFormer = Optional.of(PortalFormer.tryForm(world,
                     portalFrameTile == null ? VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction) : portalFrameTile.getCachedState(),
@@ -109,8 +111,7 @@ public class PortalLinker
                 player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
                 return false;
             }
-            if (portalFormer.isPresent() && !portalFormer.get().getState().areShapeEquals(((PortalFrameTile) linkedPortal).getPortalState())
-                    || portalFrameTile != null && !portalFrameTile.getPortalState().areShapeEquals(((PortalFrameTile) linkedPortal).getPortalState()))
+            if (arePortalShapesNotEquals(portalFrameTile, portalFormer, (PortalFrameTile) linkedPortal))
             {
                 player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
                 return false;
@@ -118,7 +119,7 @@ public class PortalLinker
 
             if (portalFormer.isPresent())
             {
-                if (portalFrameTile == null)
+                if (portalFrameTile == null || !portalFrameTile.isCore())
                 {
                     currentWorld.setBlockState(currentPos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, currentDirection));
                     portalFrameTile = (PortalFrameTile) currentWorld.getBlockEntity(currentPos);
@@ -152,6 +153,14 @@ public class PortalLinker
         }
     }
 
+    private static boolean arePortalShapesNotEquals(PortalFrameTile portalFrameTile, Optional<DeferredRollbackWork<PortalFormerState>> portalFormer, PortalFrameTile linkedPortal)
+    {
+        if (portalFormer.isPresent())
+            return !portalFormer.get().getState().areShapeEquals(linkedPortal.getPortalState());
+
+        return portalFrameTile != null && !portalFrameTile.getPortalState().areShapeEquals(linkedPortal.getPortalState());
+    }
+
     public static boolean tryRelink(PlayerEntity player, PortalFrameTile core)
     {
         if (!core.isCore() || core.getLinkedWorld() != null || core.getPreviousLinkedWorld() == null)
@@ -160,7 +169,10 @@ public class PortalLinker
         PortalFrameTile previouslyLinkedPortal = core.getPreviouslyLinkedPortal();
 
         if (previouslyLinkedPortal == null || previouslyLinkedPortal.getLinkedWorld() != null)
+        {
+            player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
             return false;
+        }
 
         if (previouslyLinkedPortal.isBroken())
         {

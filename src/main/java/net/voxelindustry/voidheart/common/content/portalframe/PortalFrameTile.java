@@ -47,9 +47,11 @@ public class PortalFrameTile extends TileBase implements ILoadable
     @Setter(AccessLevel.PACKAGE)
     private PortalFormerState portalState = new PortalFormerState();
 
-    @Getter
     @Setter(AccessLevel.PACKAGE)
     private boolean isCore;
+
+    @Setter(AccessLevel.PACKAGE)
+    private boolean isBroken;
 
     @Setter
     private UUID portalEntityID;
@@ -84,7 +86,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
         if (isCore())
         {
-            isCore = false;
+            setBroken(true);
             linkedFrames.forEach(pos ->
             {
                 if (pos.equals(eventSource))
@@ -113,7 +115,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
         if (world.isClient() || linkedWorld == null)
         {
-            cutLinkFromPortal();
+            cutLinkFromPortal(false);
             return;
         }
 
@@ -121,14 +123,20 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
         if (linked != null)
         {
+            // Is linked portal actually linked to us
             if (Objects.equals(linked.getLinkedPos(), getPos()) && Objects.equals(linked.getLinkedWorldKey(), getWorld().getRegistryKey()))
-                linked.cutLinkFromPortal();
+            {
+                // Linked core is broken if the core of this portal is broken
+                // Breaking a frame does not break the linked core since the portal can be restored later
+                boolean shouldBreakLinkedCore = isCore() && eventSource.equals(BlockPos.ORIGIN);
+                linked.cutLinkFromPortal(shouldBreakLinkedCore);
+            }
         }
 
-        cutLinkFromPortal();
+        cutLinkFromPortal(false);
     }
 
-    public void cutLinkFromPortal()
+    public void cutLinkFromPortal(boolean breakCore)
     {
         previousLinkedWorld = getLinkedWorld();
         previousLinkedPos = getLinkedPos();
@@ -138,7 +146,8 @@ public class PortalFrameTile extends TileBase implements ILoadable
         setLinkedFacing(null);
         setLinkedPos(null);
 
-        if (!getWorld().isAir(pos))
+        // Check if block has been replaced
+        if (getWorld().getBlockState(pos).getBlock() == getCachedState().getBlock())
             getWorld().setBlockState(pos, getCachedState().with(Properties.LIT, false));
         linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
 
@@ -148,6 +157,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
             if (portalEntity != null)
                 portalEntity.remove(Entity.RemovalReason.DISCARDED);
         }
+
+        if (breakCore)
+            getWorld().setBlockState(getPos(), VoidHeartBlocks.VOIDSTONE_BRICKS.getDefaultState());
     }
 
     PortalFrameTile getLinkedPortal()
@@ -269,6 +281,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         }
 
         isCore = tag.getBoolean("isCore");
+        isBroken = tag.getBoolean("isBroken");
         wasImmersive = tag.getBoolean("wasImmersive");
 
         if (tag.contains("portalState"))
@@ -314,6 +327,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         }
 
         tag.putBoolean("isCore", isCore);
+        tag.putBoolean("isBroken", isBroken());
         tag.putBoolean("wasImmersive", wasImmersive);
 
         if (portalState != null)
@@ -354,7 +368,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
     public boolean isBroken()
     {
-        return getCachedState().getBlock() == VoidHeartBlocks.PORTAL_FRAME_CORE && !isCore();
+        return getCachedState().getBlock() == VoidHeartBlocks.PORTAL_FRAME_CORE && isBroken;
     }
 
     public Direction getFacing()
