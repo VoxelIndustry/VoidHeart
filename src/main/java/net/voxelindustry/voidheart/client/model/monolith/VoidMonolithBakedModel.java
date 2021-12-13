@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -23,9 +24,18 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
 {
     private final Direction[] horizontals = new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
+    private RenderMaterial outerMaterial;
+
     public VoidMonolithBakedModel(BakedModel wrapped)
     {
         this.wrapped = wrapped;
+    }
+
+    private RenderMaterial getOuterMaterial(Renderer renderer)
+    {
+        if (outerMaterial == null)
+            outerMaterial = renderer.materialFinder().blendMode(0, BlendMode.CUTOUT).emissive(0, true).find();
+        return outerMaterial;
     }
 
     @Override
@@ -37,43 +47,70 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
     @Override
     public void emitBlockQuads(BlockRenderView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context)
     {
+        RenderMaterial outerMaterial = getOuterMaterial(RendererAccess.INSTANCE.getRenderer());
+        var variant = randomSupplier.get().nextInt(3);
+
         context.pushTransform(quad ->
         {
-            Direction facing = quad.nominalFace();
-            if (facing == null || facing.getAxis().isVertical())
-            {
+            if (quad.tag() != 0)
                 return true;
+
+            Direction facing = quad.nominalFace();
+            Sprite sprite;
+
+            if (facing == null || facing.getAxis().isVertical())
+                sprite = VoidMonolithSpriteManager.getAboveSprite(variant);
+            else
+            {
+                boolean top = StateProperties.isSideConnected(state, Direction.UP);
+                boolean bottom = StateProperties.isSideConnected(state, Direction.DOWN);
+                if (top && bottom)
+                    sprite = VoidMonolithSpriteManager.getMiddleSprite(variant);
+                else if (top)
+                    sprite = VoidMonolithSpriteManager.getBottomSprite(variant);
+                else if (bottom)
+                    sprite = VoidMonolithSpriteManager.getTopSprite(variant);
+                else
+                    sprite = VoidMonolithSpriteManager.getAboveSprite(variant);
             }
 
-            boolean top = StateProperties.isConnectedToSide(state, Direction.UP);
-            boolean bottom = StateProperties.isConnectedToSide(state, Direction.DOWN);
-            if (top && bottom)
-                quad.spriteBake(0, VoidMonolithSpriteManager.getFrameSprite(Direction.NORTH), MutableQuadView.BAKE_LOCK_UV);
-            else if (top)
-                quad.spriteBake(0, VoidMonolithSpriteManager.getFrameSprite(Direction.UP), MutableQuadView.BAKE_LOCK_UV);
-            else if (bottom)
-                quad.spriteBake(0, VoidMonolithSpriteManager.getFrameSprite(Direction.DOWN), MutableQuadView.BAKE_LOCK_UV);
-            else
-                quad.spriteBake(0, VoidMonolithSpriteManager.getFrameSprite(Direction.SOUTH), MutableQuadView.BAKE_LOCK_UV);
+            quad.spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV);
             return true;
         });
 
         super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
         context.popTransform();
 
-        Renderer renderer = RendererAccess.INSTANCE.getRenderer();
-        RenderMaterial outerMaterial = renderer.materialFinder().blendMode(0, BlendMode.CUTOUT).emissive(0, true).find();
-
-        Random random = randomSupplier.get();
-
-        for (Direction direction : horizontals)
+        if (state.get(Properties.LIT))
         {
-            context.getEmitter()
-                    .material(outerMaterial)
-                    .square(direction, 0, 0, 1, 1, 0)
-                    .spriteBake(0, VoidMonolithSpriteManager.getGlyphSprite(random.nextInt(15), state.get(Properties.LIT)), MutableQuadView.BAKE_LOCK_UV)
-                    .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                    .emit();
+            for (var direction : Direction.values())
+            {
+                Sprite sprite;
+
+                if (direction.getAxis().isVertical())
+                    sprite = VoidMonolithSpriteManager.getAboveOverlaySprite(variant);
+                else
+                {
+                    boolean top = StateProperties.isSideConnected(state, Direction.UP);
+                    boolean bottom = StateProperties.isSideConnected(state, Direction.DOWN);
+                    if (top && bottom)
+                        sprite = VoidMonolithSpriteManager.getMiddleOverlaySprite(variant);
+                    else if (top)
+                        sprite = VoidMonolithSpriteManager.getBottomOverlaySprite(variant);
+                    else if (bottom)
+                        sprite = VoidMonolithSpriteManager.getTopOverlaySprite(variant);
+                    else
+                        sprite = VoidMonolithSpriteManager.getAboveOverlaySprite(variant);
+                }
+
+                context.getEmitter()
+                        .material(outerMaterial)
+                        .square(direction, 0, 0, 1, 1, 0)
+                        .spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV)
+                        .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
+                        .tag(1)
+                        .emit();
+            }
         }
     }
 

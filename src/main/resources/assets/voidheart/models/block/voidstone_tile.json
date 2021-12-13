@@ -1,7 +1,6 @@
 {
-  "parent": "minecraft:block/cube_column",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "end": "voidheart:block/voidstone_tile_top",
-    "side": "voidheart:block/voidstone_tile"
+    "all": "voidheart:block/voidstone_tile"
   }
 }

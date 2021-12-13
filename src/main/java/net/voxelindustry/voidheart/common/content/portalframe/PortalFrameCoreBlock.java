@@ -16,10 +16,15 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
-import static net.voxelindustry.voidheart.common.block.StateProperties.*;
+import static net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.*;
+import static net.voxelindustry.voidheart.common.block.StateProperties.BROKEN;
 
 public class PortalFrameCoreBlock extends PortalFrameBlock
 {
@@ -28,6 +33,7 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
         super(Settings.of(Material.STONE)
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE)
+                .ticksRandomly()
                 .emissiveLighting((state, world, pos) -> state.get(Properties.LIT)));
     }
 
@@ -76,15 +82,16 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     protected void initDefaultState()
     {
         setDefaultState(getStateManager().getDefaultState()
-                .with(NORTH, false)
-                .with(SOUTH, false)
-                .with(EAST, false)
-                .with(WEST, false)
-                .with(UP, false)
-                .with(DOWN, false)
+                .with(NORTH, FrameConnection.NONE)
+                .with(SOUTH, FrameConnection.NONE)
+                .with(EAST, FrameConnection.NONE)
+                .with(WEST, FrameConnection.NONE)
+                .with(UP, FrameConnection.NONE)
+                .with(DOWN, FrameConnection.NONE)
                 .with(Properties.FACING, Direction.NORTH)
                 .with(Properties.LIT, false)
-                .with(BROKEN, false));
+                .with(BROKEN, false)
+        );
     }
 
     @Override

@@ -10,6 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -25,7 +26,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
-import static net.voxelindustry.voidheart.common.block.StateProperties.*;
+import static net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.*;
 
 public class PortalFrameBlock extends Block implements BlockEntityProvider
 {
@@ -46,12 +47,14 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     protected void initDefaultState()
     {
         setDefaultState(getStateManager().getDefaultState()
-                .with(NORTH, false)
-                .with(SOUTH, false)
-                .with(EAST, false)
-                .with(WEST, false)
-                .with(UP, false)
-                .with(DOWN, false));
+                .with(NORTH, FrameConnection.NONE)
+                .with(SOUTH, FrameConnection.NONE)
+                .with(EAST, FrameConnection.NONE)
+                .with(WEST, FrameConnection.NONE)
+                .with(UP, FrameConnection.NONE)
+                .with(DOWN, FrameConnection.NONE)
+                .with(Properties.LIT, false)
+        );
     }
 
     @Override
@@ -99,52 +102,77 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
         return super.onUse(state, world, pos, player, hand, hit);
     }
 
+    private static FrameConnection getConnectionType(BlockState state)
+    {
+        if (VoidHeartBlocks.PORTAL_FRAME_TAG.contains(state.getBlock()))
+            return FrameConnection.FRAME;
+        return FrameConnection.NONE;
+    }
+
     @Override
     public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom)
     {
         switch (direction)
         {
             case DOWN -> {
-                Boolean down = state.get(DOWN);
-                if (down && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(DOWN, false);
-                else if (!down && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(DOWN, true);
+                var down = state.get(DOWN);
+
+                if (down == FrameConnection.INTERIOR)
+                    return state;
+
+                var newConnection = getConnectionType(newState);
+                if (newConnection != down)
+                    state = state.with(DOWN, newConnection);
             }
             case UP -> {
-                Boolean up = state.get(UP);
-                if (up && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(UP, false);
-                else if (!up && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(UP, true);
+                var up = state.get(UP);
+
+                if (up == FrameConnection.INTERIOR)
+                    return state;
+
+                var newConnection = getConnectionType(newState);
+                if (newConnection != up)
+                    state = state.with(UP, newConnection);
             }
             case NORTH -> {
-                Boolean north = state.get(NORTH);
-                if (north && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(NORTH, false);
-                else if (!north && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(NORTH, true);
+                var north = state.get(NORTH);
+
+                if (north == FrameConnection.INTERIOR)
+                    return state;
+
+                var newConnection = getConnectionType(newState);
+                if (newConnection != north)
+                    state = state.with(NORTH, newConnection);
             }
             case SOUTH -> {
-                Boolean south = state.get(SOUTH);
-                if (south && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(SOUTH, false);
-                else if (!south && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(SOUTH, true);
+                var south = state.get(SOUTH);
+
+                if (south == FrameConnection.INTERIOR)
+                    return state;
+
+                var newConnection = getConnectionType(newState);
+                if (newConnection != south)
+                    state = state.with(SOUTH, newConnection);
             }
             case WEST -> {
-                Boolean west = state.get(WEST);
-                if (west && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(WEST, false);
-                else if (!west && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(WEST, true);
+                var west = state.get(WEST);
+
+                if (west == FrameConnection.INTERIOR)
+                    return state;
+
+                var newConnection = getConnectionType(newState);
+                if (newConnection != west)
+                    state = state.with(WEST, newConnection);
             }
             case EAST -> {
-                Boolean east = state.get(EAST);
-                if (east && !VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(EAST, false);
-                else if (!east && VoidHeartBlocks.PORTAL_INTERIOR_TAG.contains(newState.getBlock()))
-                    state = state.with(EAST, true);
+                var east = state.get(EAST);
+
+                if (east == FrameConnection.INTERIOR)
+                    return state;
+
+                var newConnection = getConnectionType(newState);
+                if (newConnection != east)
+                    state = state.with(EAST, newConnection);
             }
         }
         return state;
@@ -165,7 +193,7 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
     {
-        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
+        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, Properties.LIT);
     }
 
     @Override

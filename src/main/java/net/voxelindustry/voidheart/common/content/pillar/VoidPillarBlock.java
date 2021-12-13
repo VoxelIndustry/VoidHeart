@@ -25,7 +25,7 @@ import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 public class VoidPillarBlock extends Block implements BlockEntityProvider
 {
     private static final VoxelShape SHAPE = VoxelShapes.union(
-            createCuboidShape(1, 0, 1, 15, 4, 15),
+            createCuboidShape(3, 0, 3, 13, 4, 13),
             createCuboidShape(4, 4, 4, 12, 12, 12),
             createCuboidShape(3, 12, 3, 13, 16, 13)
     );
@@ -52,7 +52,8 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
     {
         VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
 
-        if (pillar == null)
+        System.out.println(pillar.getStack());
+        if (pillar == null || player.isSneaking())
             return ActionResult.SUCCESS;
 
         if (pillar.getStack().isEmpty())

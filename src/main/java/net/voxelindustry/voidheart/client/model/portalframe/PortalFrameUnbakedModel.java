@@ -26,7 +26,7 @@ public class PortalFrameUnbakedModel extends ForwardingUnbakedModel
     public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences)
     {
         Collection<SpriteIdentifier> dependencies = super.getTextureDependencies(unbakedModelGetter, unresolvedTextureReferences);
-        dependencies.addAll(Arrays.asList(PortalFrameVeinSpriteManager.getSpriteIdentifiers()));
+        dependencies.addAll(Arrays.asList(PortalFrameVeinSpriteManager.getFrameSpriteIdentifiers()));
         return dependencies;
     }
 

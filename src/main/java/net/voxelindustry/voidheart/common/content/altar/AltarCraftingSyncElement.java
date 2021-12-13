@@ -21,7 +21,7 @@ public class AltarCraftingSyncElement implements TileSyncElement<AltarCraftingSy
 
     public static final Codec<AltarCraftingSyncElement> CODEC = RecordCodecBuilder.create((instance) ->
             instance.group(
-                    ItemStack.CODEC.fieldOf("result")
+                    ItemUtils.FIXED_ITEMSTACK_CODEC.fieldOf("result")
                             .forGetter(AltarCraftingSyncElement::getResult),
                     ItemUtils.ITEMSTACK_LIST_CODEC.fieldOf("toConsume")
                             .forGetter(AltarCraftingSyncElement::getToConsume)

@@ -22,10 +22,10 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
     @Override
     public boolean generate(FeatureContext<VoidMonolithFeatureConfig> context)
     {
-        if (context.getRandom().nextFloat() > 0.025F)
+        if (context.getRandom().nextFloat() > 0.015F)
             return false;
 
-        Mutable chosenPos = context.getOrigin().mutableCopy().set(context.getOrigin().getX() + context.getRandom().nextInt(16), 256, context.getOrigin().getZ() + context.getRandom().nextInt(16));
+        Mutable chosenPos = context.getOrigin().mutableCopy().set(context.getOrigin().getX() + context.getRandom().nextInt(16), context.getWorld().getTopY(), context.getOrigin().getZ() + context.getRandom().nextInt(16));
         Mutable posToPlace = findPosToPlace(context.getWorld(), chosenPos);
 
         if (posToPlace == null)

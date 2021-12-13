@@ -3,7 +3,9 @@ package net.voxelindustry.voidheart.common.content.door;
 import lombok.Setter;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity.RemovalReason;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -15,7 +17,6 @@ public class VoidDoorTile extends BlockEntity
 
     @Setter
     private UUID portalEntityID;
-    @Setter
     private UUID portalDestinationEntityID;
 
     public VoidDoorTile(BlockPos pos, BlockState state)
@@ -60,5 +61,21 @@ public class VoidDoorTile extends BlockEntity
         if (id == null)
             return id = UUID.randomUUID();
         return id;
+    }
+
+    public void setPortal(UUID portalID)
+    {
+        if (getWorld().isClient())
+            return;
+
+        if (portalDestinationEntityID != null)
+        {
+            var portalEntity = ((ServerWorld) getWorld()).getEntity(portalDestinationEntityID);
+
+            if (portalEntity != null)
+                portalEntity.remove(RemovalReason.DISCARDED);
+        }
+
+        portalDestinationEntityID = portalID;
     }
 }

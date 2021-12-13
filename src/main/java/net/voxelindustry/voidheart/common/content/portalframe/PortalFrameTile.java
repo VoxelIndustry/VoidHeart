@@ -92,9 +92,12 @@ public class PortalFrameTile extends TileBase implements ILoadable
                 if (pos.equals(eventSource))
                     return;
 
-                BlockEntity frame = getWorld().getBlockEntity(pos);
-                if (frame instanceof PortalFrameTile)
-                    ((PortalFrameTile) frame).removeCore(this);
+                BlockEntity tile = getWorld().getBlockEntity(pos);
+                if (tile instanceof PortalFrameTile frame)
+                {
+                    frame.removeCore(this);
+                    frame.refreshLitStatus();
+                }
             });
 
             linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
@@ -148,7 +151,16 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
         // Check if block has been replaced
         if (getWorld().getBlockState(pos).getBlock() == getCachedState().getBlock())
+        {
             getWorld().setBlockState(pos, getCachedState().with(Properties.LIT, false));
+
+            for (BlockPos linkedFrame : getLinkedFrames())
+            {
+                BlockEntity tile = world.getBlockEntity(linkedFrame);
+                if (tile instanceof PortalFrameTile frame)
+                    frame.refreshLitStatus();
+            }
+        }
         linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
 
         if (getWorld() != null && isServer() && portalEntityID != null)
@@ -201,6 +213,13 @@ public class PortalFrameTile extends TileBase implements ILoadable
                     linkedInteriors.add(pos);
                 });
 
+        for (BlockPos linkedFrame : getLinkedFrames())
+        {
+            BlockEntity tile = world.getBlockEntity(linkedFrame);
+            if (tile instanceof PortalFrameTile frame && !frame.isCore())
+                frame.refreshLitStatus();
+        }
+
         wasImmersive = useImmersivePortal;
         markDirty();
     }
@@ -239,6 +258,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
     private void removeCore(PortalFrameTile wall)
     {
         linkedCores.remove(wall.getPos());
+        markDirty();
+
+
     }
 
     private void removeFrame(PortalFrameTile frame)
@@ -254,6 +276,29 @@ public class PortalFrameTile extends TileBase implements ILoadable
         else if (facing.getAxis() == Axis.Z)
             return new Direction[]{Direction.WEST, Direction.UP, Direction.EAST, Direction.DOWN};
         return new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+    }
+
+    public void refreshLitStatus()
+    {
+        var existingState = world.getBlockState(getPos());
+
+        if (existingState.getBlock() != getCachedState().getBlock())
+            return;
+
+        if (linkedCores.isEmpty())
+            world.setBlockState(getPos(), existingState.with(Properties.LIT, false));
+
+        var isAnyCoreLit = linkedCores.stream().anyMatch(this::isCoreLit);
+        world.setBlockState(getPos(), existingState.with(Properties.LIT, isAnyCoreLit));
+    }
+
+    private boolean isCoreLit(BlockPos corePos)
+    {
+        var coreState = world.getBlockState(corePos);
+
+        if (coreState.getBlock() != VoidHeartBlocks.PORTAL_FRAME_CORE)
+            return false;
+        return coreState.get(Properties.LIT);
     }
 
     public boolean isCore()

@@ -29,10 +29,10 @@ import org.jetbrains.annotations.Nullable;
 public class VoidAltarBlock extends Block implements BlockEntityProvider
 {
     private static final VoxelShape SHAPE = VoxelShapes.union(
-            createCuboidShape(0, 0, 0, 16, 6, 16),
-            createCuboidShape(1, 6, 1, 15, 10, 15),
-            createCuboidShape(0, 10, 0, 16, 14, 16),
-            createCuboidShape(4, 14, 4, 12, 16, 12)
+            createCuboidShape(0, 0, 0, 16, 4, 16),
+            createCuboidShape(1, 4, 1, 15, 8, 15),
+            createCuboidShape(0, 8, 0, 16, 14, 16),
+            createCuboidShape(5, 14, 5, 11, 16, 11)
     );
 
     public VoidAltarBlock()

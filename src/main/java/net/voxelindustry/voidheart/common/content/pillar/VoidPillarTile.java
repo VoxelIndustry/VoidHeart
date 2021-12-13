@@ -20,7 +20,7 @@ public class VoidPillarTile extends TileBase
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
 
-    private List<BlockPos> altars = new ArrayList<>();
+    private final List<BlockPos> altars = new ArrayList<>();
 
     public VoidPillarTile(BlockPos pos, BlockState state)
     {

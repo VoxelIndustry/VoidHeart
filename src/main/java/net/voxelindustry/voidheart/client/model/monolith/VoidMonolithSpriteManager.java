@@ -4,97 +4,78 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Direction;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.text.NumberFormat;
 import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidMonolithSpriteManager
 {
-    private static final SpriteIdentifier[] MONOLITH_SPRITES =
-            {
-                    getSpriteIdentifier("monolith_side"),
-                    getSpriteIdentifier("monolith_side_lower"),
-                    getSpriteIdentifier("monolith_side_middle"),
-                    getSpriteIdentifier("monolith_side_upper")
-            };
+    private static final SpriteIdentifier[] SPRITE_IDENTIFIERS = new SpriteIdentifier[24];
+    private static final Sprite[]           SPRITES            = new Sprite[24];
 
-    private static final SpriteIdentifier[] GLYPH_SPRITES =
-            {
-                    getSpriteIdentifier("glyph/glyph1_active"),
-                    getSpriteIdentifier("glyph/glyph2_active"),
-                    getSpriteIdentifier("glyph/glyph3_active"),
-                    getSpriteIdentifier("glyph/glyph4_active"),
-                    getSpriteIdentifier("glyph/glyph5_active"),
-                    getSpriteIdentifier("glyph/glyph6_active"),
-                    getSpriteIdentifier("glyph/glyph7_active"),
-                    getSpriteIdentifier("glyph/glyph8_active"),
-                    getSpriteIdentifier("glyph/glyph9_active"),
-                    getSpriteIdentifier("glyph/glyph10_active"),
-                    getSpriteIdentifier("glyph/glyph11_active"),
-                    getSpriteIdentifier("glyph/glyph12_active"),
-                    getSpriteIdentifier("glyph/glyph13_active"),
-                    getSpriteIdentifier("glyph/glyph14_active"),
-                    getSpriteIdentifier("glyph/glyph15_active"),
-                    getSpriteIdentifier("glyph/glyph16_active"),
-                    getSpriteIdentifier("glyph/glyph1_inactive"),
-                    getSpriteIdentifier("glyph/glyph2_inactive"),
-                    getSpriteIdentifier("glyph/glyph3_inactive"),
-                    getSpriteIdentifier("glyph/glyph4_inactive"),
-                    getSpriteIdentifier("glyph/glyph5_inactive"),
-                    getSpriteIdentifier("glyph/glyph6_inactive"),
-                    getSpriteIdentifier("glyph/glyph7_inactive"),
-                    getSpriteIdentifier("glyph/glyph8_inactive"),
-                    getSpriteIdentifier("glyph/glyph9_inactive"),
-                    getSpriteIdentifier("glyph/glyph10_inactive"),
-                    getSpriteIdentifier("glyph/glyph11_inactive"),
-                    getSpriteIdentifier("glyph/glyph12_inactive"),
-                    getSpriteIdentifier("glyph/glyph13_inactive"),
-                    getSpriteIdentifier("glyph/glyph14_inactive"),
-                    getSpriteIdentifier("glyph/glyph15_inactive"),
-                    getSpriteIdentifier("glyph/glyph16_inactive")
-            };
+    static
+    {
+        var format = NumberFormat.getInstance();
+        format.setMinimumIntegerDigits(2);
 
-    private static final Map<Direction, Sprite> frameSpriteCache = new HashMap<>();
-    private static final Map<Integer, Sprite>   glyphSpriteCache = new HashMap<>();
+        for (int i = 0; i < 24; i++)
+        {
+            SPRITE_IDENTIFIERS[i] = getSpriteIdentifier("monolith" + format.format(i));
+        }
+    }
 
     public static void registerSprites(Consumer<Identifier> spriteRegistrar)
     {
-        for (var spriteIdentifier : MONOLITH_SPRITES)
-            spriteRegistrar.accept(spriteIdentifier.getTextureId());
-        for (var spriteIdentifier : GLYPH_SPRITES)
+        for (SpriteIdentifier spriteIdentifier : SPRITE_IDENTIFIERS)
             spriteRegistrar.accept(spriteIdentifier.getTextureId());
     }
 
-    public static SpriteIdentifier[] getMonolithSprites()
+    public static void loadSprites()
     {
-        return MONOLITH_SPRITES;
+        for (int i = 0; i < 24; i++)
+            SPRITES[i] = SPRITE_IDENTIFIERS[i].getSprite();
     }
 
-    public static SpriteIdentifier[] getGlyphSprites()
+    public static Sprite getTopSprite(int variant)
     {
-        return GLYPH_SPRITES;
+        return SPRITES[variant];
     }
 
-    public static Sprite getFrameSprite(Direction dir)
+    public static Sprite getMiddleSprite(int variant)
     {
-        return frameSpriteCache.computeIfAbsent(dir, direction ->
-                switch (direction)
-                        {
-                            case DOWN -> MONOLITH_SPRITES[3].getSprite();
-                            case UP -> MONOLITH_SPRITES[1].getSprite();
-                            case NORTH -> MONOLITH_SPRITES[2].getSprite();
-                            default -> MONOLITH_SPRITES[0].getSprite();
-                        });
+        return SPRITES[variant + 3];
     }
 
-    public static Sprite getGlyphSprite(int glyphIndex, boolean active)
+    public static Sprite getBottomSprite(int variant)
     {
-        return glyphSpriteCache.computeIfAbsent(glyphIndex + (active ? 0 : 16),
-                index -> GLYPH_SPRITES[index].getSprite());
+        return SPRITES[variant + 6];
+    }
+
+    public static Sprite getAboveSprite(int variant)
+    {
+        return SPRITES[variant + 9];
+    }
+
+    public static Sprite getTopOverlaySprite(int variant)
+    {
+        return SPRITES[variant + 12];
+    }
+
+    public static Sprite getMiddleOverlaySprite(int variant)
+    {
+        return SPRITES[variant + 15];
+    }
+
+    public static Sprite getBottomOverlaySprite(int variant)
+    {
+        return SPRITES[variant + 18];
+    }
+
+    public static Sprite getAboveOverlaySprite(int variant)
+    {
+        return SPRITES[variant + 21];
     }
 
     private static SpriteIdentifier getSpriteIdentifier(String from)

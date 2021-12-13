@@ -9,19 +9,19 @@ import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
-import net.voxelindustry.voidheart.common.block.StateProperties;
+import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
+import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static net.minecraft.util.math.Direction.*;
 import static net.minecraft.util.math.Direction.Axis.X;
 import static net.minecraft.util.math.Direction.Axis.Y;
-import static net.minecraft.util.math.Direction.*;
 
 public class PortalFormer
 {
@@ -58,7 +58,7 @@ public class PortalFormer
                 {
                     createCoreState(state, world, brickPos, portalFormerState.getFacing());
 
-                    PortalFrameTile portalFrameTile = (PortalFrameTile) world.getBlockEntity(brickPos);
+                    var portalFrameTile = (PortalFrameTile) world.getBlockEntity(brickPos);
 
                     if (portalFrameTile == null)
                         return false;
@@ -67,10 +67,9 @@ public class PortalFormer
                     {
                         BlockState frameState = world.getBlockState(pos);
 
-                        if (frameState.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
-                            world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME.getDefaultState());
+                        setFrameBlockState(world, frameState, pos, portalFormerState);
 
-                        PortalFrameTile wall = (PortalFrameTile) world.getBlockEntity(pos);
+                        var wall = (PortalFrameTile) world.getBlockEntity(pos);
 
                         // Core check for corners (it's valid to have a core as a corner but not a wall of the portal)
                         if (wall == null || wall.isCore())
@@ -88,6 +87,72 @@ public class PortalFormer
                 }, Runnables.doNothing());
     }
 
+    private static void setFrameBlockState(World world, BlockState state, BlockPos pos, PortalFormerState portalFormerState)
+    {
+        if (state.isAir())
+            return;
+
+        var newState = VoidHeartBlocks.PORTAL_FRAME.getDefaultState();
+        FrameConnection up = FrameConnection.NONE;
+        FrameConnection down = FrameConnection.NONE;
+        FrameConnection north = FrameConnection.NONE;
+        FrameConnection south = FrameConnection.NONE;
+        FrameConnection east = FrameConnection.NONE;
+        FrameConnection west = FrameConnection.NONE;
+
+        if (state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS)
+        {
+            up = state.get(PortalFrameStateProperties.UP);
+            down = state.get(PortalFrameStateProperties.DOWN);
+            north = state.get(PortalFrameStateProperties.NORTH);
+            south = state.get(PortalFrameStateProperties.SOUTH);
+            east = state.get(PortalFrameStateProperties.EAST);
+            west = state.get(PortalFrameStateProperties.WEST);
+
+            newState = state;
+        }
+
+        if (portalFormerState.isCorner(pos))
+        {
+            if (state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
+                world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME.getDefaultState());
+            return;
+        }
+
+        if (!portalFormerState.getFacing().getAxis().isVertical())
+        {
+            up = portalFormerState.getFrom().getY() == pos.getY() ? FrameConnection.INTERIOR : up;
+            down = portalFormerState.getTo().getY() == pos.getY() ? FrameConnection.INTERIOR : down;
+
+            if (portalFormerState.getFacing().getAxis() == Axis.Z)
+            {
+                east = portalFormerState.getFrom().getX() == pos.getX() ? FrameConnection.INTERIOR : east;
+                west = portalFormerState.getTo().getX() == pos.getX() ? FrameConnection.INTERIOR : west;
+            }
+            else
+            {
+                north = portalFormerState.getTo().getZ() == pos.getZ() ? FrameConnection.INTERIOR : north;
+                south = portalFormerState.getFrom().getZ() == pos.getZ() ? FrameConnection.INTERIOR : south;
+            }
+        }
+        else
+        {
+            east = portalFormerState.getFrom().getX() == pos.getX() ? FrameConnection.INTERIOR : east;
+            west = portalFormerState.getTo().getX() == pos.getX() ? FrameConnection.INTERIOR : west;
+            north = portalFormerState.getTo().getZ() == pos.getZ() ? FrameConnection.INTERIOR : north;
+            south = portalFormerState.getFrom().getZ() == pos.getZ() ? FrameConnection.INTERIOR : south;
+        }
+
+        world.setBlockState(pos, newState
+                .with(PortalFrameStateProperties.UP, up)
+                .with(PortalFrameStateProperties.DOWN, down)
+                .with(PortalFrameStateProperties.NORTH, north)
+                .with(PortalFrameStateProperties.SOUTH, south)
+                .with(PortalFrameStateProperties.EAST, east)
+                .with(PortalFrameStateProperties.WEST, west)
+        );
+    }
+
     public static void createCoreState(BlockState state, World world, BlockPos pos, Direction facing)
     {
         BlockState coreState = VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState();
@@ -102,33 +167,15 @@ public class PortalFormer
 
         for (Direction direction : Direction.values())
         {
-            switch (direction)
-            {
-                case DOWN:
-                    if (state.get(StateProperties.DOWN))
-                        coreState = coreState.with(StateProperties.DOWN, true);
-                    break;
-                case UP:
-                    if (state.get(StateProperties.UP))
-                        coreState = coreState.with(StateProperties.UP, true);
-                    break;
-                case NORTH:
-                    if (state.get(StateProperties.NORTH))
-                        coreState = coreState.with(StateProperties.NORTH, true);
-                    break;
-                case SOUTH:
-                    if (state.get(StateProperties.SOUTH))
-                        coreState = coreState.with(StateProperties.SOUTH, true);
-                    break;
-                case WEST:
-                    if (state.get(StateProperties.WEST))
-                        coreState = coreState.with(StateProperties.WEST, true);
-                    break;
-                case EAST:
-                    if (state.get(StateProperties.EAST))
-                        coreState = coreState.with(StateProperties.EAST, true);
-                    break;
-            }
+            coreState = switch (direction)
+                    {
+                        case DOWN -> coreState.with(PortalFrameStateProperties.DOWN, state.get(PortalFrameStateProperties.DOWN));
+                        case UP -> coreState.with(PortalFrameStateProperties.UP, state.get(PortalFrameStateProperties.UP));
+                        case NORTH -> coreState.with(PortalFrameStateProperties.NORTH, state.get(PortalFrameStateProperties.NORTH));
+                        case SOUTH -> coreState.with(PortalFrameStateProperties.SOUTH, state.get(PortalFrameStateProperties.SOUTH));
+                        case WEST -> coreState.with(PortalFrameStateProperties.WEST, state.get(PortalFrameStateProperties.WEST));
+                        case EAST -> coreState.with(PortalFrameStateProperties.EAST, state.get(PortalFrameStateProperties.EAST));
+                    };
         }
 
         world.setBlockState(pos, coreState);
@@ -146,18 +193,6 @@ public class PortalFormer
         PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
 
         return tile != null && !tile.isCore();
-    }
-
-    public static Stream<BlockPos> streamBorders(PortalFormerState area)
-    {
-        return BlockPos.stream(area.getFrom(), area.getTo()).filter(pos ->
-                (pos.getX() == area.getFrom().getX() || pos.getX() == area.getTo().getX() &&
-                        pos.getY() == area.getFrom().getY() || pos.getY() == area.getTo().getY())
-                        || (pos.getX() == area.getFrom().getX() || pos.getX() == area.getTo().getX() &&
-                        pos.getZ() == area.getFrom().getZ() || pos.getZ() == area.getTo().getZ())
-                        || (pos.getZ() == area.getFrom().getZ() || pos.getZ() == area.getTo().getZ() &&
-                        pos.getY() == area.getFrom().getY() || pos.getY() == area.getTo().getY())
-        );
     }
 
     public static Pair<BlockPos, BlockPos> excludeBorders(PortalFormerState area)

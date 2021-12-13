@@ -42,10 +42,16 @@ public class VoidKeyItem extends Item
         if (state.getBlock() == VoidHeartBlocks.VOID_DOOR)
         {
             if (isBlank(stack))
+            {
+                if (state.get(DoorBlock.HALF) == DoubleBlockHalf.UPPER)
+                    pos = pos.down();
                 setDoor(stack, world, pos);
+            }
         }
-        else if (BlockTags.DOORS.contains(state.getBlock()))
+        else if (BlockTags.DOORS.contains(state.getBlock()) && state.contains(DoorBlock.HALF))
         {
+            if (state.get(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
+                pos = pos.up();
             if (!isBlank(stack) && !world.isClient())
                 createPortal(stack, world, pos, state);
         }
@@ -70,9 +76,6 @@ public class VoidKeyItem extends Item
 
     private void createPortal(ItemStack stack, World world, BlockPos pos, BlockState state)
     {
-        if (state.get(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
-            pos = pos.up();
-
         NbtCompound tag = stack.getNbt();
         ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
         BlockPos doorPos = BlockPos.fromLong(tag.getLong("doorPos"));
@@ -91,7 +94,7 @@ public class VoidKeyItem extends Item
         portal.destination = Vec3d.ofBottomCenter(doorPos.up());
 
         portal.axisH = new Vec3d(ImmersivePortalFrameCreator.getUnitVector(Direction.UP));
-        portal.axisW = new Vec3d(ImmersivePortalFrameCreator.getUnitVector(sourceFacing.rotateYCounterclockwise()));
+        portal.axisW = new Vec3d(ImmersivePortalFrameCreator.getUnitVector(sourceFacing.rotateYClockwise()));
 
         if (doorFacing == sourceFacing)
             portal.rotation = Vec3f.UP.getDegreesQuaternion(180);
@@ -108,10 +111,10 @@ public class VoidKeyItem extends Item
             portal.rotation = Vec3f.UP.getDegreesQuaternion(-90);
         }
 
-        Vec3d sourcePos = Vec3d.ofBottomCenter(pos).add(5 / 16D * sourceFacing.getVector().getX(), 0, 5 / 16D * sourceFacing.getVector().getZ());
+        Vec3d sourcePos = Vec3d.ofBottomCenter(pos).add(8 / 16D * sourceFacing.getVector().getX(), 0, 8 / 16D * sourceFacing.getVector().getZ());
         portal.updatePosition(sourcePos.x, sourcePos.y, sourcePos.z);
         world.spawnEntity(portal);
 
-        door.setPortalDestinationEntityID(portal.getUuid());
+        door.setPortal(portal.getUuid());
     }
 }

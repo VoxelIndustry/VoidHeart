@@ -1,8 +1,8 @@
 {
   "textures": {
-    "particle": "voidheart:block/portal/portal_interior_veins",
+    "particle": "voidheart:block/portal/portal_backface",
     "portal": "voidheart:block/portal",
-    "backface": "voidheart:block/portal/portal_interior_veins"
+    "backface": "voidheart:block/portal/portal_backface"
   },
   "elements": [
     {

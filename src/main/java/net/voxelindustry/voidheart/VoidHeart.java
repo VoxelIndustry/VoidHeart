@@ -18,6 +18,7 @@ import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
+import net.voxelindustry.voidheart.common.content.altar.PortalFrameParticleEffect;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -34,13 +35,14 @@ public class VoidHeart implements ModInitializer
 
     public static final Logger LOGGER = Logger.getLogger(MODID);
 
-    public static ItemGroup                             ITEMGROUP = FabricItemGroupBuilder.build(
+    public static ItemGroup                               ITEMGROUP = FabricItemGroupBuilder.build(
             new Identifier(MODID, "item_group"),
             () -> new ItemStack(VoidHeartItems.VOID_HEART));
-    public static RegistryKey<World>                    VOID_WORLD_KEY;
-    public static RegistryKey<DimensionType>            VOID_DIMENSION_KEY;
-    public static ParticleType<AltarVoidParticleEffect> ALTAR_VOID_PARTICLE;
-    public static ParticleType<AltarItemParticleEffect> ALTAR_ITEM_PARTICLE;
+    public static RegistryKey<World>                      VOID_WORLD_KEY;
+    public static RegistryKey<DimensionType>              VOID_DIMENSION_KEY;
+    public static ParticleType<AltarVoidParticleEffect>   ALTAR_VOID_PARTICLE;
+    public static ParticleType<AltarItemParticleEffect>   ALTAR_ITEM_PARTICLE;
+    public static ParticleType<PortalFrameParticleEffect> PORTAL_FRAME_PARTICLE;
 
     @Override
     public void onInitialize()
@@ -69,6 +71,8 @@ public class VoidHeart implements ModInitializer
                 new Identifier(MODID, "altar_void"), ALTAR_VOID_PARTICLE = FabricParticleTypes.complex(true, AltarVoidParticleEffect.PARAMETERS_FACTORY));
         Registry.register(Registry.PARTICLE_TYPE,
                 new Identifier(MODID, "altar_item"), ALTAR_ITEM_PARTICLE = FabricParticleTypes.complex(true, AltarItemParticleEffect.PARAMETERS_FACTORY));
+        Registry.register(Registry.PARTICLE_TYPE,
+                new Identifier(MODID, "portal_frame"), PORTAL_FRAME_PARTICLE = FabricParticleTypes.complex(true, PortalFrameParticleEffect.PARAMETERS_FACTORY));
     }
 
     public static boolean useImmersivePortal()

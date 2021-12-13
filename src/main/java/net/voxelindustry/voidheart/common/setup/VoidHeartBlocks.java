@@ -1,7 +1,7 @@
 package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.fabricmc.fabric.api.tag.TagRegistry;
+import net.fabricmc.fabric.api.tag.TagFactory;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -38,7 +38,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartBlocks
 {
-    public static Tag<Block> PORTAL_INTERIOR_TAG = TagRegistry.block(new Identifier(MODID, "portal_interior"));
+    public static Tag<Block> PORTAL_INTERIOR_TAG = TagFactory.BLOCK.create(new Identifier(MODID, "portal_interior"));
+    public static Tag<Block> PORTAL_FRAME_TAG    = TagFactory.BLOCK.create(new Identifier(MODID, "portal_frame"));
 
     public static Block PORTAL_INTERIOR;
     public static Block PORTAL_IMMERSIVE_INTERIOR;
@@ -47,11 +48,15 @@ public class VoidHeartBlocks
 
     public static Block POCKET_WALL;
     public static Block VOIDSTONE;
+    public static Block VOIDSTONE_POLISHED;
     public static Block VOIDSTONE_BRICKS;
+    public static Block VOIDSTONE_BRICKS_VERTICAL;
     public static Block VOIDSTONE_BRICKS_CRACKED;
     public static Block VOIDSTONE_CHISELED;
     public static Block VOIDSTONE_TILE;
     public static Block VOIDSTONE_TILE_SMALL;
+    public static Block VOIDSTONE_TILE_SMALL_CARVED;
+    public static Block VOIDSTONE_TILE_SMALL_CHISELED;
     public static Block ELDRITCH_VOIDSTONE;
     public static Block VOIDSTONE_WRITHING;
     public static Block VOIDSTONE_WRITHING_BLOSSOM;
@@ -98,7 +103,13 @@ public class VoidHeartBlocks
                 FabricBlockSettings
                         .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone");
+                        .requiresTool().strength(2F, 6.0F)), itemGroup, "voidstone");
+
+        registerBlock(VOIDSTONE_POLISHED = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE, MapColor.BLACK)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_polished");
 
         registerBlock(VOIDSTONE_BRICKS = new VoidStoneBricksBlock(
                 FabricBlockSettings
@@ -116,6 +127,12 @@ public class VoidHeartBlocks
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_chiseled");
 
+        registerBlock(VOIDSTONE_BRICKS_VERTICAL = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE, MapColor.BLACK)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_vertical");
+
         registerBlock(VOIDSTONE_TILE = new Block(
                 FabricBlockSettings
                         .of(Material.STONE, MapColor.BLACK)
@@ -126,6 +143,16 @@ public class VoidHeartBlocks
                         .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small");
+        registerBlock(VOIDSTONE_TILE_SMALL_CARVED = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE, MapColor.BLACK)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_carved");
+        registerBlock(VOIDSTONE_TILE_SMALL_CHISELED = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE, MapColor.BLACK)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_chiseled");
 
         registerBlock(ELDRITCH_VOIDSTONE = new Block(
                 FabricBlockSettings

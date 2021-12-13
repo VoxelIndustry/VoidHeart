@@ -4,118 +4,84 @@ import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
-import net.voxelindustry.voidheart.common.block.StateProperties;
+import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
+import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
 public class PortalFrameVeinModel
 {
-    static void createPortalVeinQuads(BlockState state, RenderContext context, RenderMaterial outerMaterial)
+    static void createPortalVeinQuadsAllDirections(BlockState state, RenderContext context, RenderMaterial outerMaterial, int variant)
+    {
+        for (Direction direction : Direction.values())
+            createPortalVeinQuads(direction, state, context, outerMaterial, variant);
+    }
+
+    static void createPortalVeinQuadsExpectDirection(Direction forbiddenDirection, BlockState state, RenderContext context, RenderMaterial outerMaterial, int variant)
     {
         for (Direction direction : Direction.values())
         {
-            if (!StateProperties.isConnectedToSide(state, direction))
+            if (direction == forbiddenDirection)
                 continue;
+            createPortalVeinQuads(direction, state, context, outerMaterial, variant);
+        }
+    }
 
-            int rotation = MutableQuadView.BAKE_LOCK_UV;
+    static void createPortalVeinQuads(Direction direction, BlockState state, RenderContext context, RenderMaterial outerMaterial, int variant)
+    {
+        int uvFlag = MutableQuadView.BAKE_LOCK_UV;
 
+        var sprite = getSpriteForState(state, direction, variant);
+        if (sprite == null)
+            return;
+
+        context.getEmitter()
+                .material(outerMaterial)
+                .square(direction, 0, 0, 1, 1, 0)
+                .spriteBake(0, sprite, uvFlag)
+                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
+                .tag(1)
+                .emit();
+    }
+
+    static Sprite getSpriteForState(BlockState state, Direction direction, int variant)
+    {
+        // The quad is directly facing a portal interior
+        if (PortalFrameStateProperties.getSideConnection(state, direction).isConnected())
+        {
+            return PortalFrameVeinSpriteManager.getOverlaySpriteForFront(variant);
+        }
+
+        var left = FrameConnection.NONE;
+        var right = FrameConnection.NONE;
+        var up = FrameConnection.NONE;
+        var down = FrameConnection.NONE;
+
+        if (direction.getAxis().isVertical())
+        {
             if (direction == Direction.UP)
-                rotation += MutableQuadView.BAKE_FLIP_V;
-
-            context.getEmitter()
-                    .material(outerMaterial)
-                    .square(direction, 0, 0, 1, 1, 0)
-                    .spriteBake(0, PortalFrameVeinSpriteManager.getFrameSprite(Direction.NORTH), rotation)
-                    .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                    .emit();
-
-            for (Direction adjacent : Direction.values())
             {
-                if (adjacent == direction || adjacent == direction.getOpposite())
-                    continue;
-
-                if (StateProperties.isConnectedToSide(state, direction.getOpposite()))
-                {
-                    int spriteRotation = MutableQuadView.BAKE_LOCK_UV;
-                    if (adjacent == Direction.UP)
-                        spriteRotation += MutableQuadView.BAKE_FLIP_V;
-                    context.getEmitter()
-                            .material(outerMaterial)
-                            .square(adjacent, 0, 0, 1, 1, 0)
-                            .spriteBake(0, PortalFrameVeinSpriteManager.getFrameSprite(Direction.NORTH), spriteRotation)
-                            .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                            .emit();
-                }
-                else if (direction.getAxis().isHorizontal())
-                {
-                    if (direction.rotateYCounterclockwise() == adjacent)
-                        context.getEmitter()
-                                .material(outerMaterial)
-                                .square(adjacent, 0, 0, 1, 1, 0)
-                                .spriteBake(0, PortalFrameVeinSpriteManager.getFrameSprite(Direction.EAST), MutableQuadView.BAKE_LOCK_UV)
-                                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                                .emit();
-                    else if (direction.rotateYClockwise() == adjacent)
-                        context.getEmitter()
-                                .material(outerMaterial)
-                                .square(adjacent, 0, 0, 1, 1, 0)
-                                .spriteBake(0, PortalFrameVeinSpriteManager.getFrameSprite(Direction.WEST), MutableQuadView.BAKE_LOCK_UV)
-                                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                                .emit();
-                    else if (adjacent.getAxis().isVertical())
-                    {
-                        Direction spriteOrientation;
-
-                        int spriteRotation = MutableQuadView.BAKE_LOCK_UV;
-
-                        if (direction == Direction.NORTH)
-                        {
-                            spriteOrientation = Direction.DOWN;
-                            spriteRotation += MutableQuadView.BAKE_FLIP_V;
-                        }
-                        else if (direction == Direction.SOUTH)
-                        {
-                            spriteOrientation = Direction.UP;
-                            spriteRotation += MutableQuadView.BAKE_FLIP_V;
-                        }
-                        else if (direction == Direction.EAST)
-                        {
-                            spriteOrientation = Direction.WEST;
-                            if (adjacent == Direction.UP)
-                                spriteRotation += MutableQuadView.BAKE_FLIP_V;
-                        }
-                        else
-                        {
-                            spriteOrientation = Direction.EAST;
-                            if (adjacent == Direction.UP)
-                                spriteRotation += MutableQuadView.BAKE_FLIP_V;
-                        }
-
-                        context.getEmitter()
-                                .material(outerMaterial)
-                                .square(adjacent, 0, 0, 1, 1, 0)
-                                .spriteBake(0, PortalFrameVeinSpriteManager.getFrameSprite(spriteOrientation), spriteRotation)
-                                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                                .emit();
-                    }
-                }
-                else
-                {
-                    if (direction == Direction.DOWN)
-                        context.getEmitter()
-                                .material(outerMaterial)
-                                .square(adjacent, 0, 0, 1, 1, 0)
-                                .spriteBake(0, PortalFrameVeinSpriteManager.getFrameSprite(Direction.UP), MutableQuadView.BAKE_LOCK_UV)
-                                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                                .emit();
-                    else
-                        context.getEmitter()
-                                .material(outerMaterial)
-                                .square(adjacent, 0, 0, 1, 1, 0)
-                                .spriteBake(0, PortalFrameVeinSpriteManager.getFrameSprite(Direction.DOWN), MutableQuadView.BAKE_LOCK_UV)
-                                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
-                                .emit();
-                }
+                left = PortalFrameStateProperties.getSideConnection(state, Direction.EAST);
+                right = PortalFrameStateProperties.getSideConnection(state, Direction.WEST);
+                up = PortalFrameStateProperties.getSideConnection(state, Direction.NORTH);
+                down = PortalFrameStateProperties.getSideConnection(state, Direction.SOUTH);
+            }
+            else
+            {
+                left = PortalFrameStateProperties.getSideConnection(state, Direction.EAST);
+                right = PortalFrameStateProperties.getSideConnection(state, Direction.WEST);
+                up = PortalFrameStateProperties.getSideConnection(state, Direction.SOUTH);
+                down = PortalFrameStateProperties.getSideConnection(state, Direction.NORTH);
             }
         }
+        else
+        {
+            left = PortalFrameStateProperties.getSideConnection(state, direction.rotateYCounterclockwise());
+            right = PortalFrameStateProperties.getSideConnection(state, direction.rotateYClockwise());
+            up = PortalFrameStateProperties.getSideConnection(state, Direction.UP);
+            down = PortalFrameStateProperties.getSideConnection(state, Direction.DOWN);
+        }
+
+        return PortalFrameVeinSpriteManager.getOverlaySpriteForSide(left, right, up, down, variant);
     }
 }

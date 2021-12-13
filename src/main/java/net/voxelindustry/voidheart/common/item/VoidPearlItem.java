@@ -46,7 +46,7 @@ public class VoidPearlItem extends Item
 
         if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
-            boolean canUse = RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
+            boolean canUse = !tag.contains("firstDimension") || RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
 
             if (!canUse)
                 player.sendMessage(new TranslatableText(MODID + ".must_be_same_world"), true);

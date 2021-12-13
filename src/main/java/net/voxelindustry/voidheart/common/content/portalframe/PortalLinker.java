@@ -132,16 +132,16 @@ public class PortalLinker
             portalFrameTile.setLinkedPos(linkedPos);
             portalFrameTile.setLinkedWorld(linkedWorld.getRegistryKey().getValue());
             portalFrameTile.setLinkedFacing(linkedFacing);
-            portalFrameTile.linkPortal(VoidHeart.useImmersivePortal());
             portalFrameTile.getWorld().setBlockState(portalFrameTile.getPos(), portalFrameTile.getCachedState().with(Properties.LIT, true));
+            portalFrameTile.linkPortal(VoidHeart.useImmersivePortal());
 
             voidPearl.decrement(1);
 
             ((PortalFrameTile) linkedPortal).setLinkedPos(portalFrameTile.getPos());
             ((PortalFrameTile) linkedPortal).setLinkedWorld(portalFrameTile.getWorld().getRegistryKey().getValue());
             ((PortalFrameTile) linkedPortal).setLinkedFacing(portalFrameTile.getFacing());
-            ((PortalFrameTile) linkedPortal).linkPortal(VoidHeart.useImmersivePortal());
             linkedWorld.setBlockState(portalFrameTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
+            ((PortalFrameTile) linkedPortal).linkPortal(VoidHeart.useImmersivePortal());
 
             player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
             return true;
