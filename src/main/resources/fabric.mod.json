@@ -30,6 +30,7 @@
   "mixins": [
     "voidheart.mixins.json"
   ],
+  "accessWidener": "voidheart.accesswidener",
   "depends": {
     "fabricloader": ">=0.12.0",
     "fabric": "*",

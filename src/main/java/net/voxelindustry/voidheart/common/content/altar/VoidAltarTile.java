@@ -539,13 +539,13 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile
 
         if (getWorld().random.nextBoolean())
         {
-            bezierFirstPoint.add(0, getWorld().random.nextFloat() * 1.5F, 0);
-            bezierSecondPoint.add(0, -getWorld().random.nextFloat() * 1.5F, 0);
+            bezierFirstPoint = bezierFirstPoint.add(0, getWorld().random.nextFloat() * 1.25F, 0);
+            bezierFirstPoint = bezierSecondPoint.add(0, -getWorld().random.nextFloat() * 1.25F, 0);
         }
         else
         {
-            bezierFirstPoint.add(0, -getWorld().random.nextFloat() * 1.5F, 0);
-            bezierSecondPoint.add(0, getWorld().random.nextFloat() * 1.5F, 0);
+            bezierFirstPoint = bezierFirstPoint.add(0, -getWorld().random.nextFloat() * 1.25F, 0);
+            bezierFirstPoint = bezierSecondPoint.add(0, getWorld().random.nextFloat() * 1.25F, 0);
         }
     }
 
