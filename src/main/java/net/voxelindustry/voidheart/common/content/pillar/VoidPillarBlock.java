@@ -52,7 +52,6 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
     {
         VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
 
-        System.out.println(pillar.getStack());
         if (pillar == null || player.isSneaking())
             return ActionResult.SUCCESS;
 

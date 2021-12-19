@@ -6,6 +6,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.EntityShapeContext;
 import net.minecraft.block.Material;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.ai.pathing.NavigationType;
@@ -54,6 +55,8 @@ public class PermeableBarrierBlock extends Block
                 .with(Properties.FACING, Direction.UP)
                 .with(Properties.LIT, true));
     }
+
+
 
     @Override
     public BlockRenderType getRenderType(BlockState state)
@@ -134,6 +137,11 @@ public class PermeableBarrierBlock extends Block
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context)
     {
+        if(context instanceof EntityShapeContext entityShapeContext)
+        {
+/*            if(entityShapeContext.getEntity())*/
+        }
+
         return state.get(Properties.LIT) ? state.getOutlineShape(world, pos) : VoxelShapes.empty();
     }
 

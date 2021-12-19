@@ -27,6 +27,7 @@ import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
+import net.voxelindustry.voidheart.common.content.permeablebarrier.VoidBarrierEmitterBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
@@ -76,6 +77,9 @@ public class VoidHeartBlocks
 
     public static Block VOID_DOOR;
     public static Block PERMEABLE_BARRIER;
+
+    public static Block VOID_BARRIER_EMITTER;
+    public static Block VOID_BARRIER;
 
     public static void registerBlocks()
     {
@@ -188,18 +192,15 @@ public class VoidHeartBlocks
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar_weathered");
 
         registerBlock(VOID_MONOLITH = new VoidMonolithBlock(), itemGroup, "void_monolith");
-        registerBlock(VOID_MONOLITH_CAP = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE)
-                        .strength(1.5F, 6.0F)
-                        .sounds(BlockSoundGroup.STONE)
-                        .requiresTool()), itemGroup, "void_monolith_cap");
 
         registerBlock(VOID_LAMP = new VoidLampBlock(), itemGroup, "void_lamp");
 
         registerBlock(VOID_DOOR = new VoidDoorBlock(), itemGroup, "void_door");
 
         registerBlock(PERMEABLE_BARRIER = new PermeableBarrierBlock(), itemGroup, "permeable_barrier");
+
+        registerBlock(VOID_BARRIER_EMITTER = new VoidBarrierEmitterBlock(), itemGroup, "void_barrier_emitter");
+      //  registerBlock(VOID_BARRIER = new VoidBarrierBlock(), itemGroup, "void_barrier");
 
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
