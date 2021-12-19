@@ -59,7 +59,7 @@ public class VoidLampBlock extends Block
     @Override
     public void appendStacks(ItemGroup group, DefaultedList<ItemStack> list)
     {
-        CORRUPTION.getValues().stream().forEach(corruption ->
+        CORRUPTION.getValues().forEach(corruption ->
         {
             ItemStack stack = new ItemStack(this);
             stack.getOrCreateNbt().putInt("corruption", corruption);
@@ -90,22 +90,14 @@ public class VoidLampBlock extends Block
 
         int corruptionLevel = state.get(CORRUPTION);
 
-        switch (corruptionLevel)
-        {
-            case 0:
-                return 0;
-            case 1:
-                return 3;
-            case 2:
-                return 5;
-            case 3:
-                return 7;
-            case 4:
-                return 10;
-            case 5:
-            case 6:
-                return 15;
-        }
-        return 0;
+        return switch (corruptionLevel)
+                {
+                    case 1 -> 3;
+                    case 2 -> 5;
+                    case 3 -> 7;
+                    case 4 -> 10;
+                    case 5, 6 -> 15;
+                    default -> 0;
+                };
     }
 }
