@@ -27,6 +27,8 @@ import net.minecraft.world.gen.chunk.StructuresConfig;
 import net.minecraft.world.gen.chunk.VerticalBlockSample;
 import net.minecraft.world.gen.feature.StructureFeature;
 
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -39,7 +41,7 @@ public class VoidChunkGenerator extends ChunkGenerator
 
     public VoidChunkGenerator(Registry<Biome> biomeRegistry)
     {
-        super(new FixedBiomeSource(biomeRegistry.getOrThrow(BiomeKeys.PLAINS)), new StructuresConfig(false));
+        super(new FixedBiomeSource(biomeRegistry.getOrThrow(BiomeKeys.PLAINS)), new StructuresConfig(Optional.empty(), Collections.emptyMap()));
 
         this.biomeRegistry = biomeRegistry;
     }
@@ -107,6 +109,12 @@ public class VoidChunkGenerator extends ChunkGenerator
     public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, StructureAccessor structureAccessor, Chunk chunk)
     {
         return CompletableFuture.completedFuture(chunk);
+    }
+
+    @Override
+    public StructuresConfig getStructuresConfig()
+    {
+        return super.getStructuresConfig();
     }
 
     @Override
