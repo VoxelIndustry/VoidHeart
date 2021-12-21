@@ -89,7 +89,7 @@ public class PortalFormer
 
     private static void setFrameBlockState(World world, BlockState state, BlockPos pos, PortalFormerState portalFormerState)
     {
-        if (state.isAir())
+        if (isStateInvalidPotentialFrame(state))
             return;
 
         var newState = VoidHeartBlocks.PORTAL_FRAME.getDefaultState();
@@ -151,6 +151,14 @@ public class PortalFormer
                 .with(PortalFrameStateProperties.EAST, east)
                 .with(PortalFrameStateProperties.WEST, west)
         );
+    }
+
+    private static boolean isStateInvalidPotentialFrame(BlockState state)
+    {
+        if (state.isAir())
+            return false;
+
+        return VoidHeartBlocks.PORTAL_FRAME_TAG.contains(state.getBlock()) || state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS;
     }
 
     public static void createCoreState(BlockState state, World world, BlockPos pos, Direction facing)

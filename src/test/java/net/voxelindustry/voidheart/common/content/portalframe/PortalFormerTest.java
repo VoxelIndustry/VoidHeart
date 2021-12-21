@@ -24,8 +24,8 @@ public class PortalFormerTest
                 Direction.EAST,
                 Direction.NORTH);
 
-        assertThat(area.getKey()).isEqualTo(new BlockPos(1, 1, 0));
-        assertThat(area.getValue()).isEqualTo(new BlockPos(2, 1, 0));
+        assertThat(area.getKey()).isEqualTo(new BlockPos(0, 0, 0));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(3, 2, 0));
 
         String[] longerMap = new String[]{
                 "XXXXXX",
@@ -39,8 +39,8 @@ public class PortalFormerTest
                 Direction.EAST,
                 Direction.NORTH);
 
-        assertThat(longerArea.getKey()).isEqualTo(new BlockPos(1, 1, 0));
-        assertThat(longerArea.getValue()).isEqualTo(new BlockPos(4, 1, 0));
+        assertThat(longerArea.getKey()).isEqualTo(new BlockPos(0, 0, 0));
+        assertThat(longerArea.getValue()).isEqualTo(new BlockPos(5, 2, 0));
     }
 
     @Test
@@ -59,8 +59,8 @@ public class PortalFormerTest
                 Direction.EAST,
                 Direction.NORTH);
 
-        assertThat(area.getKey()).isEqualTo(new BlockPos(1, 1, 0));
-        assertThat(area.getValue()).isEqualTo(new BlockPos(3, 2, 0));
+        assertThat(area.getKey()).isEqualTo(new BlockPos(0, 0, 0));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(4, 3, 0));
 
         String[] longerMap = new String[]{
                 "XXXX",
@@ -76,8 +76,8 @@ public class PortalFormerTest
                 Direction.EAST,
                 Direction.NORTH);
 
-        assertThat(longerArea.getKey()).isEqualTo(new BlockPos(1, 1, 0));
-        assertThat(longerArea.getValue()).isEqualTo(new BlockPos(2, 3, 0));
+        assertThat(longerArea.getKey()).isEqualTo(new BlockPos(0, 0, 0));
+        assertThat(longerArea.getValue()).isEqualTo(new BlockPos(3, 4, 0));
     }
 
     @Test
@@ -172,8 +172,8 @@ public class PortalFormerTest
                 pos -> map[map.length - pos.getY() - 1].charAt(pos.getX()) == '_',
                 Direction.NORTH, Direction.EAST, Direction.WEST);
 
-        assertThat(area.getKey()).isEqualTo(new BlockPos(5, 1, 0));
-        assertThat(area.getValue()).isEqualTo(new BlockPos(7, 2, 0));
+        assertThat(area.getKey()).isEqualTo(new BlockPos(4, 0, 0));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(8, 3, 0));
     }
 
     @Test
@@ -191,8 +191,8 @@ public class PortalFormerTest
                 pos -> map[map.length - pos.getY() - 1].charAt(pos.getX()) == '_',
                 Direction.NORTH, Direction.EAST, Direction.WEST);
 
-        assertThat(area.getKey()).isEqualTo(new BlockPos(1, 1, 0));
-        assertThat(area.getValue()).isEqualTo(new BlockPos(3, 2, 0));
+        assertThat(area.getKey()).isEqualTo(new BlockPos(0, 0, 0));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(4, 3, 0));
     }
 
     @Test
@@ -213,8 +213,8 @@ public class PortalFormerTest
                 pos -> map[map.length - pos.getY() - 1].charAt(pos.getX()) == '_',
                 Direction.NORTH, Direction.UP, Direction.DOWN);
 
-        assertThat(area.getKey()).isEqualTo(new BlockPos(1, 1, 0));
-        assertThat(area.getValue()).isEqualTo(new BlockPos(3, 2, 0));
+        assertThat(area.getKey()).isEqualTo(new BlockPos(0, 0, 0));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(4, 3, 0));
     }
 
     @Test
@@ -233,8 +233,8 @@ public class PortalFormerTest
                 pos -> mapEmptyChecker(pos, map),
                 Direction.NORTH, Direction.EAST, Direction.WEST);
 
-        assertThat(area.getKey()).isEqualTo(new BlockPos(1, 1, 0));
-        assertThat(area.getValue()).isEqualTo(new BlockPos(2, 3, 0));
+        assertThat(area.getKey()).isEqualTo(new BlockPos(0, 0, 0));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(3, 4, 0));
     }
 
     @Test
@@ -253,8 +253,8 @@ public class PortalFormerTest
                 pos -> mapEmptyCheckerHorizontal(pos, map),
                 Direction.UP, Direction.EAST, Direction.WEST);
 
-        assertThat(area.getKey()).isEqualTo(new BlockPos(1, 1, 1));
-        assertThat(area.getValue()).isEqualTo(new BlockPos(2, 1, 3));
+        assertThat(area.getKey()).isEqualTo(new BlockPos(0, 1, 0));
+        assertThat(area.getValue()).isEqualTo(new BlockPos(3, 1, 4));
     }
 
     private boolean mapBorderChecker(BlockPos pos, String[] map)
