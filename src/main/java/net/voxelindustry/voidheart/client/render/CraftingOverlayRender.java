@@ -19,7 +19,6 @@ public class CraftingOverlayRender
 
         if (!output.isEmpty())
         {
-
             // Render count text label
             if (output.getCount() > 1)
             {

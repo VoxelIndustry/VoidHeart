@@ -223,6 +223,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile
         if (altar.warmProgress < WARMING_TIME)
         {
             altar.warmProgress++;
+            altar.markDirty();
             return;
         }
 
@@ -490,6 +491,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile
         recipeState.consumeSlotless(ItemStack.class, pillar.getStack());
         pillar.setStack(ItemStack.EMPTY);
         PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
+        markDirty();
     }
 
     private ItemStack getNextItemToEat()

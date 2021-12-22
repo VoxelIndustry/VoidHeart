@@ -1,10 +1,12 @@
 package net.voxelindustry.voidheart.common.content.heart;
 
+import com.mojang.authlib.GameProfile;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -25,11 +27,31 @@ public class VoidHeartTile extends TileBase
     @Setter
     private UUID playerID;
 
+    @Getter
+    private GameProfile playerProfile;
+
     private final Map<UUID, Long> lastPlayerHitCache = new HashMap<>();
 
     public VoidHeartTile(BlockPos pos, BlockState state)
     {
         super(VoidHeartTiles.VOID_HEART, pos, state);
+    }
+
+    @Override
+    public void setWorld(World world)
+    {
+        super.setWorld(world);
+
+        if (isServer() && playerID != null)
+        {
+            var gameProfileOpt = world.getServer().getUserCache().getByUuid(playerID);
+
+            if (gameProfileOpt.isEmpty())
+                return;
+
+            playerProfile = gameProfileOpt.get();
+            sync();
+        }
     }
 
     @Override
@@ -39,13 +61,27 @@ public class VoidHeartTile extends TileBase
 
         if (tag.containsUuid("playerID"))
             playerID = tag.getUuid("playerID");
+
+        if (isClient() && tag.contains("ownerProfile"))
+        {
+            playerProfile = NbtHelper.toGameProfile(tag.getCompound("ownerProfile"));
+        }
     }
 
     @Override
     public void writeNbt(NbtCompound tag)
     {
         if (playerID != null)
+        {
             tag.putUuid("playerID", playerID);
+
+            if (isServer() && playerProfile != null)
+            {
+                var profileTag = new NbtCompound();
+                NbtHelper.writeGameProfile(profileTag, playerProfile);
+                tag.put("ownerProfile", profileTag);
+            }
+        }
 
         super.writeNbt(tag);
     }

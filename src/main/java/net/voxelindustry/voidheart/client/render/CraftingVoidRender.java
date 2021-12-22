@@ -1,17 +1,14 @@
 package net.voxelindustry.voidheart.client.render;
 
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayer.MultiPhaseParameters;
-import net.minecraft.client.render.RenderPhase;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
+import net.voxelindustry.voidheart.client.CustomRenderLayers;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 
 import java.util.Random;
@@ -23,19 +20,7 @@ public class CraftingVoidRender
 {
     private static final Random RANDOM = new Random(31100L);
 
-    private static final RenderLayer COLOR_TRANSLUCENT = RenderLayer.of("color_translucent",
-            VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL,
-            VertexFormat.DrawMode.QUADS,
-            0x200000,
-            true,
-            true,
-            MultiPhaseParameters.builder()
-                    .lightmap(RenderPhase.ENABLE_LIGHTMAP)
-                    .shader(RenderPhase.TRANSLUCENT_SHADER)
-                    .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
-                    .texture(new RenderPhase.Texture(new Identifier(MODID, "textures/block/altar_overlay_cube.png"), false, false))
-                    .build(true)
-    );
+    private static final Identifier ALTAR_OVERLAY_TEXTURE = new Identifier(MODID, "textures/block/altar_overlay_cube.png");
 
     static void renderVoidCube(VoidAltarTile altar, BlockEntityRenderDispatcher dispatcher, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers)
     {
@@ -53,7 +38,7 @@ public class CraftingVoidRender
         float size = 12 / 16F;
 
         var outlineThickness = 1.015F;
-        renderOutlineCubeFaces(matrices, vertexConsumers.getBuffer(COLOR_TRANSLUCENT), -size / 2 * outlineThickness, -size / 2 * outlineThickness, -size / 2 * outlineThickness, size * outlineThickness, size * outlineThickness, size * outlineThickness);
+        renderOutlineCubeFaces(matrices, vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(ALTAR_OVERLAY_TEXTURE)), -size / 2 * outlineThickness, -size / 2 * outlineThickness, -size / 2 * outlineThickness, size * outlineThickness, size * outlineThickness, size * outlineThickness);
 
         renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 0.15F);
 

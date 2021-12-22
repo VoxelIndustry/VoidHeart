@@ -11,3 +11,7 @@ accessible    field    net/minecraft/client/render/RenderPhase    TRANSLUCENT_SH
 accessible    field    net/minecraft/client/render/RenderPhase    ENABLE_LIGHTMAP    Lnet/minecraft/client/render/RenderPhase$Lightmap;
 
 accessible    field    net/minecraft/client/render/RenderPhase    TRANSLUCENT_TRANSPARENCY    Lnet/minecraft/client/render/RenderPhase$Transparency;
+
+accessible    method    net/minecraft/block/BlockWithEntity    checkType    (Lnet/minecraft/block/entity/BlockEntityType;Lnet/minecraft/block/entity/BlockEntityType;Lnet/minecraft/block/entity/BlockEntityTicker;)Lnet/minecraft/block/entity/BlockEntityTicker;
+
+accessible    class    net/minecraft/client/gui/hud/InGameHud$HeartType

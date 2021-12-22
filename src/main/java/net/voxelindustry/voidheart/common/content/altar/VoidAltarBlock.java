@@ -26,6 +26,8 @@ import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
+import static net.minecraft.block.BlockWithEntity.checkType;
+
 public class VoidAltarBlock extends Block implements BlockEntityProvider
 {
     private static final VoxelShape SHAPE = VoxelShapes.union(
@@ -111,11 +113,5 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
     {
         return checkType(type, VoidHeartTiles.VOID_ALTAR, VoidAltarTile::tick);
-    }
-
-    @Nullable
-    protected static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> checkType(BlockEntityType<A> givenType, BlockEntityType<E> expectedType, BlockEntityTicker<? super E> ticker)
-    {
-        return expectedType == givenType ? (BlockEntityTicker<A>) ticker : null;
     }
 }

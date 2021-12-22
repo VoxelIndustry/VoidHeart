@@ -7,6 +7,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -15,6 +17,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import org.jetbrains.annotations.Nullable;
+
+import static net.minecraft.block.BlockWithEntity.checkType;
 
 public class VoidHeartBlock extends Block implements BlockEntityProvider
 {
@@ -49,6 +55,13 @@ public class VoidHeartBlock extends Block implements BlockEntityProvider
             ((VoidHeartTile) world.getBlockEntity(pos)).playerHit(player);
 
         return ActionResult.SUCCESS;
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
+    {
+        return checkType(type, VoidHeartTiles.VOID_HEART, VoidHeartTile::tick);
     }
 
     @Override
