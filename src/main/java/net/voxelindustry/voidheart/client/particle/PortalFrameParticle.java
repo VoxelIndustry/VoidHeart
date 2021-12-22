@@ -83,10 +83,26 @@ public class PortalFrameParticle extends Particle
         float n = sprite.getMinV();
         float o = sprite.getMaxV();
         int light = 15728880;
-        vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ()).texture(l, o).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ()).texture(l, n).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(leftTop.getX(), leftTop.getY(), leftTop.getZ()).texture(m, o).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(rightTop.getX(), rightTop.getY(), rightTop.getZ()).texture(m, n).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
+        vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ())
+                .texture(l, o)
+                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .light(light)
+                .next();
+        vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ())
+                .texture(l, n)
+                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .light(light)
+                .next();
+        vertexConsumer.vertex(leftTop.getX(), leftTop.getY(), leftTop.getZ())
+                .texture(m, o)
+                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .light(light)
+                .next();
+        vertexConsumer.vertex(rightTop.getX(), rightTop.getY(), rightTop.getZ())
+                .texture(m, n)
+                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .light(light)
+                .next();
 
         vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ()).texture(l, o).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
         vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ()).texture(l, n).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();

@@ -144,28 +144,28 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
         var maxV = 0.25F;
 
         buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
-                .color(1, 1, 1, 0.5f)
+                .color(1, 1, 1, 0.95f)
                 .texture(minU, minV)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(240, 240)
                 .normal(-1, 0, 0)
                 .next();
         buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
-                .color(1, 1, 1, 0.5f)
+                .color(1, 1, 1, 0.95f)
                 .texture(minU, maxV)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(240, 240)
                 .normal(-1, 0, 0)
                 .next();
         buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
-                .color(1, 1, 1, 0.5f)
+                .color(1, 1, 1, 0.95f)
                 .texture(maxU, maxV)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(240, 240)
                 .normal(-1, 0, 0)
                 .next();
         buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
-                .color(1, 1, 1, 0.5f)
+                .color(1, 1, 1, 0.95f)
                 .texture(maxU, minV)
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(240, 240)

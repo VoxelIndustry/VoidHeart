@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
@@ -65,6 +66,9 @@ public class VoidHeartTile extends TileBase
         if (isClient() && tag.contains("ownerProfile"))
         {
             playerProfile = NbtHelper.toGameProfile(tag.getCompound("ownerProfile"));
+
+            if (playerProfile != null && playerProfile.isComplete())
+                MinecraftClient.getInstance().getSessionService().fillProfileProperties(playerProfile, true);
         }
     }
 
