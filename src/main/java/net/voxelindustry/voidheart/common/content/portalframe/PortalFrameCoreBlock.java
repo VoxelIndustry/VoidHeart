@@ -4,8 +4,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
@@ -16,12 +14,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
-import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
-import java.util.List;
-
-import static java.util.Arrays.asList;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.*;
 import static net.voxelindustry.voidheart.common.block.StateProperties.BROKEN;
@@ -98,11 +91,5 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
     {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, Properties.FACING, Properties.LIT, BROKEN);
-    }
-
-    @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
-    {
-        return asList(new ItemStack(VoidHeartBlocks.VOIDSTONE_BRICKS), new ItemStack(VoidHeartItems.VOID_PEARL));
     }
 }
