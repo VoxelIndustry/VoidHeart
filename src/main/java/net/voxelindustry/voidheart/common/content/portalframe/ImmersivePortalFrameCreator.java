@@ -32,7 +32,7 @@ public class ImmersivePortalFrameCreator
                 portal.rotation = Vec3f.UP.getDegreesQuaternion(180);
             else if (portalFrameTile.getLinkedFacing() == facing.getOpposite())
             {
-                // DO NOTHING
+                portal.rotation = Vec3f.UP.getDegreesQuaternion(0);
             }
             else if (portalFrameTile.getLinkedFacing() == facing.rotateYClockwise())
             {
@@ -53,6 +53,8 @@ public class ImmersivePortalFrameCreator
 
             if (portalFrameTile.getLinkedFacing() == facing)
                 portal.rotation = Vec3f.EAST.getDegreesQuaternion(180);
+            else
+                portal.rotation = Vec3f.EAST.getDegreesQuaternion(0);
 
             PortalFormerState linkedState = portalFrameTile.getLinkedPortal().getPortalState();
             // Special case for a rotated horizontal portal. Like a 3x2 portal connected to a 2x3
