@@ -15,6 +15,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
+import net.voxelindustry.voidheart.client.util.ImmersivePortalUtil;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
@@ -43,15 +44,15 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 
         var playerProfile = voidHeart.getPlayerProfile();
 
-        if (playerProfile == null)
+        if (playerProfile == null || ImmersivePortalUtil.areWeRenderedByPortal())
             return;
 
         matrices.push();
         matrices.translate(0.5, 1.3, 0.5);
         matrices.scale(1.25F / 64F, 1.25F / 64F, 1.25F / 64F);
-        matrices.multiply(MinecraftClient.getInstance().getEntityRenderDispatcher().getRotation());
-        matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180));
 
+        matrices.multiply(MinecraftClient.getInstance().gameRenderer.getCamera().getRotation());
+        matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180));
 
         var textRenderer = MinecraftClient.getInstance().textRenderer;
         var nameSize = textRenderer.getWidth(playerProfile.getName()) / 2F;
@@ -60,14 +61,36 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
         var headRenderLayer = SkullBlockEntityRenderer.getRenderLayer(SkullBlock.Type.PLAYER, playerProfile);
         renderHeadSkin(matrices, vertexConsumers.getBuffer(headRenderLayer), -16 - nameSize - 8, -2, 0, 20, 20);
 
-        var playerEntity = voidHeart.getWorld().getPlayerByUuid(voidHeart.getPlayerID());
+        PlayerEntity playerEntity = voidHeart.getWorld().getPlayerByUuid(voidHeart.getPlayerID());
         if (playerEntity != null)
-            renderHearts(playerEntity, matrices, vertexConsumers, -18, 8, 0, 6, 6);
+            renderHearts(playerEntity.getHealth(),
+                    playerEntity.getMaxHealth(),
+                    matrices,
+                    vertexConsumers,
+                    -18,
+                    8,
+                    0,
+                    6,
+                    6);
+        else
+        {
+            var playerEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(voidHeart.getPlayerID());
+            if (playerEntry != null)
+                renderHearts(playerEntry.getHealth(),
+                        MinecraftClient.getInstance().player.getMaxHealth(),
+                        matrices,
+                        vertexConsumers,
+                        -18,
+                        8,
+                        0,
+                        6,
+                        6);
+        }
 
         matrices.pop();
     }
 
-    private void renderHearts(PlayerEntity player, MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, float posX, float posY, float posZ, float width, float height)
+    private void renderHearts(float health, float maxHealth, MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, float posX, float posY, float posZ, float width, float height)
     {
         var heartRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(DrawableHelper.GUI_ICONS_TEXTURE));
 
@@ -77,24 +100,24 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
         var minV = 0;
         var maxV = 9 / 256F;
 
-        for (int i = 0; i < player.getMaxHealth(); i += 2)
+        for (int i = 0; i < maxHealth; i += 2)
         {
-            renderHeart(matrixStack, heartRenderBuffer, posX + width/2 * i, posY, posZ, width, height, containerMinU, minV, containerMaxU, maxV);
+            renderHeart(matrixStack, heartRenderBuffer, posX + width / 2 * i, posY, posZ, width, height, containerMinU, minV, containerMaxU, maxV);
         }
 
         var normalMinU = HeartType.NORMAL.getU(false, false) / 256F;
         var normalMaxU = normalMinU + (9 / 256F);
 
-        for (int i = 0; i < player.getHealth() - 1; i += 2)
+        for (int i = 0; i < health - 1; i += 2)
         {
-            renderHeart(matrixStack, heartRenderBuffer, posX + width/2 * i, posY, posZ, width, height, normalMinU, minV, normalMaxU, maxV);
+            renderHeart(matrixStack, heartRenderBuffer, posX + width / 2 * i, posY, posZ, width, height, normalMinU, minV, normalMaxU, maxV);
         }
 
-        if (player.getHealth() % 2 != 0)
+        if (health % 2 != 0)
         {
             var halfHeartMinU = HeartType.NORMAL.getU(true, false) / 256F;
             var halfHeartMaxU = halfHeartMinU + (9 / 256F);
-            renderHeart(matrixStack, heartRenderBuffer, posX + width * (float) floor(player.getHealth() / 2), posY, posZ, width, height, halfHeartMinU, minV, halfHeartMaxU, maxV);
+            renderHeart(matrixStack, heartRenderBuffer, posX + width * (float) floor(health / 2F), posY, posZ, width, height, halfHeartMinU, minV, halfHeartMaxU, maxV);
         }
     }
 
