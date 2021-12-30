@@ -8,6 +8,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
+import net.voxelindustry.voidheart.client.util.ImmersivePortalUtil;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.util.ExperienceUtil;
 
@@ -16,6 +17,9 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
     @Override
     public void render(ExperienceSkullTile skull, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay)
     {
+        if (ImmersivePortalUtil.areWeRenderedByPortal())
+            return;
+
         matrices.push();
         matrices.translate(0.5, 0.8, 0.5);
         matrices.scale(1.25F / 64F, 1.25F / 64F, 1.25F / 64F);
@@ -32,10 +36,10 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
         textRenderer.draw(matrices, levelText, -levelTextSize, -1, 0);
         textRenderer.draw(matrices, levelText, -levelTextSize, 1, 0);
 
-        matrices.translate(0,0,-0.1F);
+        matrices.translate(0, 0, -0.1F);
         textRenderer.draw(matrices, levelText, -levelTextSize, 0, 8453920);
 
-        matrices.translate(0,0,0.15F);
+        matrices.translate(0, 0, 0.15F);
         var expRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(DrawableHelper.GUI_ICONS_TEXTURE));
         renderExpBar(matrices,
                 expRenderBuffer,
