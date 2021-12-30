@@ -156,9 +156,9 @@ public class PortalFormer
     private static boolean isStateInvalidPotentialFrame(BlockState state)
     {
         if (state.isAir())
-            return false;
+            return true;
 
-        return VoidHeartBlocks.PORTAL_FRAME_TAG.contains(state.getBlock()) || state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS;
+        return !VoidHeartBlocks.PORTAL_FRAME_TAG.contains(state.getBlock()) && state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS;
     }
 
     public static void createCoreState(BlockState state, World world, BlockPos pos, Direction facing)
