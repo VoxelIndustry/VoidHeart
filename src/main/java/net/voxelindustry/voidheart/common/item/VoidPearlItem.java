@@ -89,6 +89,12 @@ public class VoidPearlItem extends Item
     }
 
     @Override
+    public boolean hasGlint(ItemStack stack)
+    {
+        return stack.hasNbt() && doesPearlHasFirstPosition(stack) || super.hasGlint(stack);
+    }
+
+    @Override
     public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
     {
         super.appendTooltip(stack, world, tooltip, context);
@@ -112,6 +118,8 @@ public class VoidPearlItem extends Item
                 tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
                         Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
             }
+
+            tooltip.add(new TranslatableText(MODID + ".void_pearl.erase.lore"));
         }
         else
             tooltip.add(new TranslatableText(MODID + ".void_pearl.lore", Formatting.AQUA, Formatting.RESET));
