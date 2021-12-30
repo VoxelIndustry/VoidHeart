@@ -34,6 +34,9 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlo
 import net.voxelindustry.voidheart.common.content.portalframe.VoidStoneBricksBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalImmersiveInteriorBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorBlock;
+import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullBlock;
+import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBlock;
+import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -80,6 +83,9 @@ public class VoidHeartBlocks
 
     public static Block VOID_BARRIER_EMITTER;
     public static Block VOID_BARRIER;
+
+    public static Block EXPERIENCE_SKULL;
+    public static Block MENDING_ALTAR;
 
     public static void registerBlocks()
     {
@@ -200,7 +206,16 @@ public class VoidHeartBlocks
         registerBlock(PERMEABLE_BARRIER = new PermeableBarrierBlock(), itemGroup, "permeable_barrier");
 
         registerBlock(VOID_BARRIER_EMITTER = new VoidBarrierEmitterBlock(), itemGroup, "void_barrier_emitter");
-      //  registerBlock(VOID_BARRIER = new VoidBarrierBlock(), itemGroup, "void_barrier");
+        //  registerBlock(VOID_BARRIER = new VoidBarrierBlock(), itemGroup, "void_barrier");
+
+        registerBlock(EXPERIENCE_SKULL = new ExperienceSkullBlock(FabricBlockSettings
+                .of(Material.STONE)
+                .strength(1.5F, 6.0F)
+                .sounds(BlockSoundGroup.STONE)), new ExperienceSkullItemBlock(EXPERIENCE_SKULL), "experience_skull");
+        registerBlock(MENDING_ALTAR = new MendingAltarBlock(FabricBlockSettings
+                .of(Material.STONE)
+                .strength(1.5F, 6.0F)
+                .sounds(BlockSoundGroup.STONE)), itemGroup, "mending_altar");
 
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
@@ -220,10 +235,14 @@ public class VoidHeartBlocks
 
     private static void registerBlock(Block block, Item.Settings settings, String name)
     {
-        Identifier identifier = new Identifier(MODID, name);
-
-        Registry.register(Registry.BLOCK, identifier, block);
         BlockItem itemBlock = new BlockItem(block, settings);
+        registerBlock(block, itemBlock, name);
+    }
+
+    private static void registerBlock(Block block, BlockItem itemBlock, String name)
+    {
+        Identifier identifier = new Identifier(MODID, name);
+        Registry.register(Registry.BLOCK, identifier, block);
         Registry.register(Registry.ITEM, identifier, itemBlock);
     }
 

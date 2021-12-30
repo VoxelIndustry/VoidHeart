@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/experience_skull"
+    },
+    "facing=south": {
+      "model": "voidheart:block/experience_skull",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "voidheart:block/experience_skull",
+      "y": 90
+    },
+    "facing=west": {
+      "model": "voidheart:block/experience_skull",
+      "y": 270
+    }
+  }
+}

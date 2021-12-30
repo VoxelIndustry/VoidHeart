@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
-import net.fabricmc.fabric.api.client.rendereregistry.v1.BlockEntityRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.event.client.ClientSpriteRegistryCallback;
 import net.fabricmc.fabric.api.object.builder.v1.client.model.FabricModelPredicateProviderRegistry;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
@@ -18,6 +18,7 @@ import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameVeinSprit
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.particle.PortalFrameParticle;
+import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.client.render.VoidPillarRender;
@@ -34,10 +35,12 @@ public class VoidHeartClient implements ClientModInitializer
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PORTAL_INTERIOR, RenderLayer.getTranslucent());
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.VOID_DOOR, RenderLayer.getCutout());
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PERMEABLE_BARRIER, RenderLayer.getCutout());
+        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.EXPERIENCE_SKULL, RenderLayer.getCutout());
 
-        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_PILLAR, ctx -> new VoidPillarRender());
-        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
-        BlockEntityRendererRegistry.INSTANCE.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
+        BlockEntityRendererRegistry.register(VoidHeartTiles.VOID_PILLAR, ctx -> new VoidPillarRender());
+        BlockEntityRendererRegistry.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
+        BlockEntityRendererRegistry.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
+        BlockEntityRendererRegistry.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
 
         ParticleFactoryRegistry.getInstance().register(
                 ALTAR_VOID_PARTICLE,

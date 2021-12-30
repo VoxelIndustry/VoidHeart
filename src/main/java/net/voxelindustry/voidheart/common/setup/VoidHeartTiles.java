@@ -11,6 +11,8 @@ import net.voxelindustry.voidheart.common.content.permeablebarrier.VoidBarrierEm
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
+import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
+import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -24,6 +26,9 @@ public class VoidHeartTiles
     public static BlockEntityType<VoidDoorTile>       VOID_DOOR;
 
     public static BlockEntityType<VoidBarrierEmitterTile> VOID_BARRIER_EMITTER;
+
+    public static BlockEntityType<ExperienceSkullTile> EXPERIENCE_SKULL;
+    public static BlockEntityType<MendingAltarTile> MENDING_ALTAR;
 
     public static void registerTiles()
     {
@@ -54,6 +59,13 @@ public class VoidHeartTiles
         registerTile(VOID_BARRIER_EMITTER =
                         FabricBlockEntityTypeBuilder.create(VoidBarrierEmitterTile::new, VoidHeartBlocks.VOID_BARRIER_EMITTER).build(null),
                 "void_barrier_emitter");
+
+        registerTile(EXPERIENCE_SKULL =
+                        FabricBlockEntityTypeBuilder.create(ExperienceSkullTile::new, VoidHeartBlocks.EXPERIENCE_SKULL).build(null),
+                "experience_skull");
+        registerTile(MENDING_ALTAR =
+                        FabricBlockEntityTypeBuilder.create(MendingAltarTile::new, VoidHeartBlocks.MENDING_ALTAR).build(null),
+                "mending_altar");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)
