@@ -5,39 +5,40 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:void_pearl",
+        "strictTagComparing": false
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ender_shard"
+        "item": "voidheart:obsidian_shard"
       }
     ]
   },
@@ -45,8 +46,7 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:local_pearl",
-        "quantity": 8
+        "item": "voidheart:local_pearl"
       }
     ]
   }

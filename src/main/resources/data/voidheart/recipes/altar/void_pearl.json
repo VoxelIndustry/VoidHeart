@@ -5,7 +5,7 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:ender_pearl"
+        "item": "voidheart:ender_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
@@ -45,8 +45,7 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl",
-        "quantity": 8
+        "item": "voidheart:void_pearl"
       }
     ]
   }
