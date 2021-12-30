@@ -20,6 +20,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
@@ -127,13 +128,16 @@ public class VoidPearlItem extends Item
             if (voidPocketState.hasPocket(user.getUuid()))
             {
                 Vec3d destinationPos = Vec3d.ofCenter(voidPocketState.getPosForPlayer(user.getUuid()).up());
-                ((ServerPlayerEntity) user).teleport(voidWorld,
-                        destinationPos.getX(),
-                        destinationPos.getY(),
-                        destinationPos.getZ(),
-                        user.getHeadYaw(),
-                        user.getPitch(0));
+
+                VoidHeartTicker.addDelayedTask(world.getServer(), 100, () ->
+                        ((ServerPlayerEntity) user).teleport(voidWorld,
+                                destinationPos.getX(),
+                                destinationPos.getY(),
+                                destinationPos.getZ(),
+                                user.getHeadYaw(),
+                                user.getPitch(0)));
                 stack.decrement(1);
+                ((PlayerEntity) user).sendMessage(new TranslatableText(MODID + ".teleport_in_progress", 5), true);
             }
             else
                 ((PlayerEntity) user).sendMessage(new TranslatableText(MODID + ".no_pocket_for_player"), true);

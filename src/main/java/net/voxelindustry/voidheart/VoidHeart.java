@@ -55,7 +55,8 @@ public class VoidHeart implements ModInitializer
         VoidHeartRecipes.registerRecipes();
         VoidHeartWorld.registerGeneration();
 
-        ServerTickEvents.START_WORLD_TICK.register(VoidHeartTicker::tick);
+        ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
+        ServerTickEvents.START_WORLD_TICK.register(VoidHeartTicker::tickWorld);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
 
