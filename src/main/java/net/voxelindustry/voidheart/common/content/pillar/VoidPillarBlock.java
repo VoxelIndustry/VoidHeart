@@ -7,6 +7,8 @@ import net.minecraft.block.Material;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
@@ -21,6 +23,8 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 public class VoidPillarBlock extends Block implements BlockEntityProvider
 {
@@ -52,15 +56,26 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
     {
         VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
 
-        if (pillar == null || player.isSneaking())
+        if (pillar == null || player.isSneaking() || !world.isAir(pos.up()))
             return ActionResult.SUCCESS;
 
         if (pillar.getStack().isEmpty())
         {
-            pillar.setStack(ItemUtils.copyWithSize(player.getStackInHand(hand), 1));
+            var stackInHand = player.getStackInHand(hand);
+            var itemInHand = stackInHand.getItem();
+
+            if (VoidHeartTags.PILLAR_PLACE_INSTEAD_OF_STORE.contains(itemInHand) && itemInHand instanceof BlockItem placeable)
+            {
+                placeable.place(new ItemPlacementContext(player,
+                        hand,
+                        player.getStackInHand(hand),
+                        hit.withBlockPos(pos.up())));
+            }
+            else
+                pillar.setStack(ItemUtils.copyWithSize(stackInHand, 1));
 
             if (!player.isCreative())
-                player.getStackInHand(hand).decrement(1);
+                stackInHand.decrement(1);
         }
         else
         {
@@ -85,6 +100,22 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
+    }
+
+    @Override
+    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify)
+    {
+        super.neighborUpdate(state, world, pos, block, fromPos, notify);
+
+        if (!fromPos.equals(pos.up()))
+            return;
+
+        var tile = world.getBlockEntity(pos, VoidHeartTiles.VOID_PILLAR);
+        if (tile.isEmpty())
+            return;
+
+        if (!tile.get().getStack().isEmpty() && !world.isAir(fromPos))
+            ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.get().getStack());
     }
 
     @Override
