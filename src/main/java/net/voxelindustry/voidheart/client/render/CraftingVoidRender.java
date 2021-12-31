@@ -9,6 +9,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
+import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 
 import java.util.Random;
@@ -22,16 +23,17 @@ public class CraftingVoidRender
 
     private static final Identifier ALTAR_OVERLAY_TEXTURE = new Identifier(MODID, "textures/block/altar_overlay_cube.png");
 
-    static void renderVoidCube(VoidAltarTile altar, BlockEntityRenderDispatcher dispatcher, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers)
+    static void renderVoidCube(VoidAltarTile altar, BlockEntityRenderDispatcher dispatcher, float worldTimeInterp, MatrixStack matrices, VertexConsumerProvider vertexConsumers)
     {
         RANDOM.setSeed(31100L);
 
         matrices.push();
 
+
         if (altar.getCoolProgress() > 0)
-            matricesForCooling(altar, tickDelta, matrices);
+            matricesForCooling(altar, worldTimeInterp, matrices);
         else
-            matricesForWarmingAndCrafting(altar, tickDelta, matrices);
+            matricesForWarmingAndCrafting(altar, worldTimeInterp, matrices);
         double playerDistance = altar.getPos().getSquaredDistance(dispatcher.camera.getPos(), true);
         int draws = getDrawFromPlayerDistance(playerDistance);
 
@@ -48,10 +50,10 @@ public class CraftingVoidRender
         matrices.pop();
     }
 
-    private static void matricesForCooling(VoidAltarTile altar, float tickDelta, MatrixStack matrices)
+    private static void matricesForCooling(VoidAltarTile altar, float worldTimeInterp, MatrixStack matrices)
     {
         float coolingDelta = 1 - altar.getCoolProgress() / (float) VoidAltarTile.COOLING_TIME;
-        float angle = 360 * ((altar.getWorld().getTime() + tickDelta) / 25);
+        float angle = 360 * (worldTimeInterp / 25);
 
         matrices.translate(0.5, 3, 0.5);
         matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(angle));
@@ -62,11 +64,11 @@ public class CraftingVoidRender
         matrices.scale(scale, scale, scale);
     }
 
-    private static void matricesForWarmingAndCrafting(VoidAltarTile altar, float tickDelta, MatrixStack matrices)
+    private static void matricesForWarmingAndCrafting(VoidAltarTile altar, float worldTimeInterp, MatrixStack matrices)
     {
         matrices.translate(0.5, 3, 0.5);
 
-        float angle = 360 * ((altar.getWorld().getTime() + tickDelta) / 100);
+        float angle = 360 * (worldTimeInterp / 100);
 
         matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(angle));
         matrices.multiply(Vec3f.NEGATIVE_X.getDegreesQuaternion(angle));
@@ -74,29 +76,14 @@ public class CraftingVoidRender
 
         float scale;
         if (altar.getWarmProgress() < VoidAltarTile.WARMING_TIME)
-            scale = max(1 / 16F, interpolateBounce(altar.getWarmProgress() / (float) VoidAltarTile.WARMING_TIME));
+            scale = max(1 / 16F, MathUtil.interpolateBounce(altar.getWarmProgress() / (float) VoidAltarTile.WARMING_TIME));
         else
         {
             float sinHeight = 8;
             float amplitude = 5;
-            scale = (float) (1 - abs(sin((altar.getWorld().getTime() + tickDelta) / amplitude)) / sinHeight);
+            scale = (float) (1 - abs(sin(worldTimeInterp / amplitude)) / sinHeight);
         }
         matrices.scale(scale, scale, scale);
-    }
-
-    private static float interpolateBounce(float delta)
-    {
-        if (delta > 1)
-            return 1;
-
-        float a = 0;
-        float b = 1;
-        while (!(delta >= (7 - 4 * a) / 11D))
-        {
-            a += b;
-            b /= 2;
-        }
-        return (float) (-pow((11 - 6 * a - 11 * delta) / 4, 2) + pow(b, 2));
     }
 
     private static void renderVoidCubeFaces(MatrixStack matrixStack, VertexConsumer buffer, float posX, float posY, float posZ, float width, float height, float length,
