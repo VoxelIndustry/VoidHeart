@@ -12,6 +12,8 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
@@ -99,6 +101,13 @@ public class ExperienceSkullBlock extends Block implements BlockEntityProvider
                 var toRemove = min(increment, skull.getExperience());
                 skull.setExperience(skull.getExperience() - toRemove);
                 player.addExperience(toRemove);
+
+                world.playSound(player,
+                        pos,
+                        SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
+                        SoundCategory.BLOCKS,
+                        0.1F,
+                        (world.random.nextFloat() - world.random.nextFloat()) * 0.35F + 0.9F);
             }
             return ActionResult.SUCCESS;
         }
@@ -107,6 +116,15 @@ public class ExperienceSkullBlock extends Block implements BlockEntityProvider
             var toAdd = min(increment, player.totalExperience);
             skull.setExperience(skull.getExperience() + toAdd);
             player.addExperience(-toAdd);
+
+            world.playSound(pos.getX(),
+                    pos.getY(),
+                    pos.getZ(),
+                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
+                    SoundCategory.BLOCKS,
+                    0.1F,
+                    (world.random.nextFloat() - world.random.nextFloat()) * 0.35F + 0.9F,
+                    true);
         }
 
         return ActionResult.SUCCESS;
