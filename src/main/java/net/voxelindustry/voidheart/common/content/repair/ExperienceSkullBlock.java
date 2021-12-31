@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.content.repair;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
@@ -20,6 +21,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,11 +32,20 @@ import static java.util.Collections.singletonList;
 
 public class ExperienceSkullBlock extends Block implements BlockEntityProvider
 {
-    private static final VoxelShape SHAPE = createCuboidShape(4, 0, 4, 12, 8, 12);
+    private static final VoxelShape SHAPE = createCuboidShape(1, 1, 1, 15, 15, 15);
 
     public ExperienceSkullBlock(Settings settings)
     {
         super(settings);
+
+        this.setDefaultState(getStateManager().getDefaultState()
+                .with(StateProperties.MODEL, false));
+    }
+
+    @Override
+    public BlockRenderType getRenderType(BlockState state)
+    {
+        return state.get(StateProperties.MODEL) ? BlockRenderType.MODEL : BlockRenderType.ENTITYBLOCK_ANIMATED;
     }
 
     @Override
@@ -110,7 +121,7 @@ public class ExperienceSkullBlock extends Block implements BlockEntityProvider
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
     {
-        builder.add(Properties.HORIZONTAL_FACING);
+        builder.add(Properties.HORIZONTAL_FACING, StateProperties.MODEL);
     }
 
     @Nullable
