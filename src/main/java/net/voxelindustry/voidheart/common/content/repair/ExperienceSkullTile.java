@@ -10,7 +10,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 public class ExperienceSkullTile extends TileBase
 {
-    public static final int MAX_EXPERIENCE = 1500;
+    public static final int MAX_EXPERIENCE = 1395;
 
     @Getter
     private int experience;
