@@ -8,7 +8,6 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.tile.TileBase;
-import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -98,10 +97,10 @@ public class VoidPillarTile extends TileBase
     {
         altars.forEach(altarPos ->
         {
-            VoidAltarTile altar = (VoidAltarTile) getWorld().getBlockEntity(altarPos);
+            var tile = getWorld().getBlockEntity(altarPos);
 
-            if (altar != null)
-                altar.removePillar(this);
+            if (tile instanceof PillarLinkedTile linkedTile)
+                linkedTile.removePillar(this);
         });
     }
 }

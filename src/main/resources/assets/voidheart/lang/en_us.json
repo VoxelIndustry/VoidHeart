@@ -76,5 +76,6 @@
   "voidheart.link_started_outside": "Started Link. Now hit a portal in your Pocket",
   "voidheart.link_successful": "Successfully linked portals",
   "voidheart.pocket_created": "Your pocket dimension was created",
-  "voidheart.pocket_already_exists": "Your pocket dimension already exists"
+  "voidheart.pocket_already_exists": "Your pocket dimension already exists",
+  "voidheart.altar.missing_pillars": "Missing %s pillar(s)"
 }

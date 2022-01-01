@@ -10,7 +10,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
@@ -24,6 +24,7 @@ import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -37,8 +38,9 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class VoidAltarTile extends TileBase implements PartialSyncedTile
+public class VoidAltarTile extends TileBase implements PartialSyncedTile, PillarLinkedTile
 {
     public static final int WARMING_TIME     = 80;
     public static final int COOLING_TIME     = 60;
@@ -183,7 +185,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile
                 }
             }
             else
-                player.sendMessage(new LiteralText("Missing " + (8 - pillars.size()) + " pillars"), true);
+                player.sendMessage(new TranslatableText(MODID + ".altar.missing_pillars", 8 - pillars.size()), true);
         }
         else if (isCrafting)
             stopCrafting();
@@ -374,16 +376,17 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile
         if (world.getBlockState(pos).getBlock() != VoidHeartBlocks.VOID_PILLAR)
             return;
 
-        VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
-        if (pillar == null)
+        var pillar = world.getBlockEntity(pos, VoidHeartTiles.VOID_PILLAR);
+        if (pillar.isEmpty())
             return;
 
         if (isCrafting)
-            pillar.addAltar(getPos());
+            pillar.get().addAltar(getPos());
 
-        pillars.add(pillar);
+        pillars.add(pillar.get());
     }
 
+    @Override
     public void removePillar(VoidPillarTile pillar)
     {
         if (consumingPillarIndex == pillars.indexOf(pillar))
