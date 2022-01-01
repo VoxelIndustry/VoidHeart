@@ -15,7 +15,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
-import net.voxelindustry.voidheart.client.util.ImmersivePortalUtil;
+import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
@@ -44,7 +44,7 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 
         var playerProfile = voidHeart.getPlayerProfile();
 
-        if (playerProfile == null || ImmersivePortalUtil.areWeRenderedByPortal())
+        if (playerProfile == null || ImmersivePortalCompat.areWeRenderedByPortal())
             return;
 
         matrices.push();

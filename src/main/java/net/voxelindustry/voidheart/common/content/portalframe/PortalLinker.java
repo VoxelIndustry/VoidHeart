@@ -12,9 +12,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 
 import java.util.Optional;
 
@@ -133,7 +133,7 @@ public class PortalLinker
             portalFrameTile.setLinkedWorld(linkedWorld.getRegistryKey().getValue());
             portalFrameTile.setLinkedFacing(linkedFacing);
             portalFrameTile.getWorld().setBlockState(portalFrameTile.getPos(), portalFrameTile.getCachedState().with(Properties.LIT, true));
-            portalFrameTile.linkPortal(VoidHeart.useImmersivePortal());
+            portalFrameTile.linkPortal(ImmersivePortalCompat.useImmersivePortal());
 
             voidPearl.decrement(1);
 
@@ -141,7 +141,7 @@ public class PortalLinker
             ((PortalFrameTile) linkedPortal).setLinkedWorld(portalFrameTile.getWorld().getRegistryKey().getValue());
             ((PortalFrameTile) linkedPortal).setLinkedFacing(portalFrameTile.getFacing());
             linkedWorld.setBlockState(portalFrameTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
-            ((PortalFrameTile) linkedPortal).linkPortal(VoidHeart.useImmersivePortal());
+            ((PortalFrameTile) linkedPortal).linkPortal(ImmersivePortalCompat.useImmersivePortal());
 
             player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
             return true;
@@ -212,8 +212,8 @@ public class PortalLinker
                 .with(StateProperties.BROKEN, false)
         );
 
-        core.linkPortal(VoidHeart.useImmersivePortal());
-        previouslyLinkedPortal.linkPortal(VoidHeart.useImmersivePortal());
+        core.linkPortal(ImmersivePortalCompat.useImmersivePortal());
+        previouslyLinkedPortal.linkPortal(ImmersivePortalCompat.useImmersivePortal());
         return true;
     }
 }

@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleType;
@@ -30,8 +29,7 @@ import java.util.logging.Logger;
 
 public class VoidHeart implements ModInitializer
 {
-    public static final String MODID             = "voidheart";
-    public static final String IMMERSIVE_PORTALS = "imm_ptl_core";
+    public static final String MODID = "voidheart";
 
     public static final Logger LOGGER = Logger.getLogger(MODID);
 
@@ -74,10 +72,5 @@ public class VoidHeart implements ModInitializer
                 new Identifier(MODID, "altar_item"), ALTAR_ITEM_PARTICLE = FabricParticleTypes.complex(true, AltarItemParticleEffect.PARAMETERS_FACTORY));
         Registry.register(Registry.PARTICLE_TYPE,
                 new Identifier(MODID, "portal_frame"), PORTAL_FRAME_PARTICLE = FabricParticleTypes.complex(true, PortalFrameParticleEffect.PARAMETERS_FACTORY));
-    }
-
-    public static boolean useImmersivePortal()
-    {
-        return FabricLoader.getInstance().isModLoaded(VoidHeart.IMMERSIVE_PORTALS);
     }
 }

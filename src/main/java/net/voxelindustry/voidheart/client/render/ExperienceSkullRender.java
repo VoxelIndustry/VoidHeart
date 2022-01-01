@@ -15,7 +15,7 @@ import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
-import net.voxelindustry.voidheart.client.util.ImmersivePortalUtil;
+import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkullTile>
 {
-    private Map<Direction, BlockState> experienceSkullStateCache = new HashMap<>();
+    private final Map<Direction, BlockState> experienceSkullStateCache = new HashMap<>();
 
     private static BlockState createSkullState(Direction direction)
     {
@@ -65,7 +65,7 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
                 skull.getWorld().getRandom());
         matrices.pop();
 
-        if (ImmersivePortalUtil.areWeRenderedByPortal())
+        if (ImmersivePortalCompat.areWeRenderedByPortal())
             return;
 
         matrices.push();

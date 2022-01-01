@@ -20,12 +20,12 @@ import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.tile.ILoadable;
 import net.voxelindustry.steamlayer.tile.TileBase;
-import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -473,7 +473,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
         if (!isCore() || getLinkedWorld() == null)
             return;
 
-        boolean useImmersivePortal = VoidHeart.useImmersivePortal();
+        boolean useImmersivePortal = ImmersivePortalCompat.useImmersivePortal();
 
         if (wasImmersive != useImmersivePortal)
             VoidHeartTicker.addTaskForLoadedPos(getPos(), () -> linkPortal(useImmersivePortal));
