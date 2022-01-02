@@ -48,26 +48,31 @@ public class PortalFormerState implements TagSerializable<NbtCompound>
         facing = Direction.byId(tag.getInt("facing"));
     }
 
-    public boolean areShapeEquals(PortalFormerState otherState)
+    public boolean areShapeIncompatible(PortalFormerState otherState)
     {
         if (otherState == null)
-            return false;
+            return true;
 
         Direction facing = getFacing();
 
         if (facing.getAxis().isHorizontal() != otherState.getFacing().getAxis().isHorizontal())
-            return false;
+            return true;
 
         if (facing.getAxis().isVertical() && facing == otherState.getFacing())
-            return false;
+            return true;
 
         if (facing.getAxis().isHorizontal())
-            return getWidth() == otherState.getWidth()
-                    && getHeight() == otherState.getHeight()
-                    && facing.getAxis().isHorizontal() == otherState.getFacing().getAxis().isHorizontal();
+            return getWidth() != otherState.getWidth()
+                    || getHeight() != otherState.getHeight()
+                    || facing.getAxis().isHorizontal() != otherState.getFacing().getAxis().isHorizontal();
         else
-            return (getWidth() == otherState.getWidth() || getWidth() == otherState.getHeight())
-                    && (getHeight() == otherState.getWidth() || getHeight() == otherState.getHeight());
+        {
+            if (getWidth() != otherState.getWidth() && getWidth() == otherState.getHeight())
+                return getHeight() != otherState.getWidth();
+            if (getHeight() != otherState.getHeight() && getHeight() == otherState.getWidth())
+                return getWidth() != otherState.getHeight();
+            return getWidth() != otherState.getWidth() || getHeight() != otherState.getHeight();
+        }
     }
 
     public int getWidth()

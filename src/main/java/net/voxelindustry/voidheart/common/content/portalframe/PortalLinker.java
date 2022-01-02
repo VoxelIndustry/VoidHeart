@@ -111,7 +111,7 @@ public class PortalLinker
                 player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
                 return false;
             }
-            if (arePortalShapesNotEquals(portalFrameTile, portalFormer, (PortalFrameTile) linkedPortal))
+            if (arePortalShapesIncompatible(portalFrameTile, portalFormer, (PortalFrameTile) linkedPortal))
             {
                 player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
                 return false;
@@ -153,12 +153,17 @@ public class PortalLinker
         }
     }
 
-    private static boolean arePortalShapesNotEquals(PortalFrameTile portalFrameTile, Optional<DeferredRollbackWork<PortalFormerState>> portalFormer, PortalFrameTile linkedPortal)
+    private static boolean arePortalShapesIncompatible(PortalFrameTile portalFrameTile, Optional<DeferredRollbackWork<PortalFormerState>> portalFormer, PortalFrameTile linkedPortal)
     {
-        if (portalFormer.isPresent())
-            return !portalFormer.get().getState().areShapeEquals(linkedPortal.getPortalState());
-
-        return portalFrameTile != null && !portalFrameTile.getPortalState().areShapeEquals(linkedPortal.getPortalState());
+        return portalFormer
+                .map(portalFormerStateDeferredRollbackWork ->
+                {
+                    return portalFormerStateDeferredRollbackWork.getState().areShapeIncompatible(linkedPortal.getPortalState());
+                })
+                .orElseGet(() ->
+                {
+                    return portalFrameTile != null && portalFrameTile.getPortalState().areShapeIncompatible(linkedPortal.getPortalState());
+                });
     }
 
     public static boolean tryRelink(PlayerEntity player, PortalFrameTile core)
@@ -192,7 +197,7 @@ public class PortalLinker
                 return false;
             }
         }
-        if (!core.getPortalState().areShapeEquals(previouslyLinkedPortal.getPortalState()))
+        if (core.getPortalState().areShapeIncompatible(previouslyLinkedPortal.getPortalState()))
         {
             player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
             return false;
