@@ -7,6 +7,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.MapColor;
 import net.minecraft.block.Material;
+import net.minecraft.block.PillarBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.entity.EntityType;
@@ -186,12 +187,12 @@ public class VoidHeartBlocks
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_maw");
 
-        registerBlock(VOIDSTONE_PILLAR = new Block(
+        registerBlock(VOIDSTONE_PILLAR = new PillarBlock(
                 FabricBlockSettings
                         .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar");
-        registerBlock(VOIDSTONE_WEATHERED_PILLAR = new Block(
+        registerBlock(VOIDSTONE_WEATHERED_PILLAR = new PillarBlock(
                 FabricBlockSettings
                         .of(Material.STONE, MapColor.BLACK)
                         .sounds(BlockSoundGroup.STONE)
