@@ -8,13 +8,13 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 public class PortalInteriorTile extends BlockEntity
 {
     private BlockPos        corePos;
-    private PortalFrameTile core;
+    private PortalFrameCoreTile core;
 
     public PortalInteriorTile(BlockPos pos, BlockState state)
     {
@@ -42,20 +42,20 @@ public class PortalInteriorTile extends BlockEntity
         if (!(collider instanceof ServerPlayerEntity) || corePos == null)
             return;
 
-        PortalFrameTile core = getCore();
+        var core = getCore();
 
         if (core.getLinkedWorld() != null)
         {
             ServerWorld destination = world.getServer().getWorld(core.getLinkedWorldKey());
 
-            PortalFrameTile linkedPortal = (PortalFrameTile) getWorld().getServer().getWorld(core.getLinkedWorldKey()).getBlockEntity(core.getLinkedPos());
+            var linkedPortalOpt =  getWorld().getServer().getWorld(core.getLinkedWorldKey()).getBlockEntity(core.getLinkedPos(), VoidHeartTiles.PORTAL_FRAME_CORE);
 
             // If pos become invalid.
             // Almost impossible but we need to prevent the world to end corrupted by a player stuck inside the portal.
-            if (linkedPortal == null)
+            if (linkedPortalOpt.isEmpty())
                 return;
 
-            Vec3d destinationPos = linkedPortal.getPortalMiddlePos(false);
+            Vec3d destinationPos = linkedPortalOpt.get().getPortalMiddlePos(false);
             ((ServerPlayerEntity) collider).teleport(destination,
                     destinationPos.getX(),
                     destinationPos.getY(),
@@ -71,17 +71,15 @@ public class PortalInteriorTile extends BlockEntity
         markDirty();
     }
 
-    public PortalFrameTile getCore()
+    public PortalFrameCoreTile getCore()
     {
         if (core == null)
         {
             if (corePos == null)
                 return null;
-            BlockEntity tile = getWorld().getBlockEntity(corePos);
+            var tileOpt = getWorld().getBlockEntity(corePos, VoidHeartTiles.PORTAL_FRAME_CORE);
 
-            if (!(tile instanceof PortalFrameTile))
-                return null;
-            core = (PortalFrameTile) tile;
+            tileOpt.ifPresent(tile -> this.core = tile);
         }
         return core;
     }

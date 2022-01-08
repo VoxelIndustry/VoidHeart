@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
@@ -14,6 +15,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.*;
@@ -33,11 +35,12 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
-        PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
+        var tileOpt = world.getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE);
 
-        if (tile == null)
+        if (tileOpt.isEmpty())
             return ActionResult.PASS;
 
+        var tile = tileOpt.get();
         if (!world.isClient())
         {
             // Core block is probably a previously broken portal
@@ -69,6 +72,12 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
             }
         }
         return ActionResult.PASS;
+    }
+
+    @Override
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    {
+        return new PortalFrameCoreTile(pos, state);
     }
 
     @Override

@@ -72,21 +72,28 @@ public class PortalLinker
         }
         else
         {
+            PortalFrameCoreTile coreFrame = null;
             if (portalFormer.isPresent())
             {
                 if (portalFrameTile == null)
                 {
                     world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, direction));
-                    portalFrameTile = (PortalFrameTile) world.getBlockEntity(pos);
+                    coreFrame = (PortalFrameCoreTile) world.getBlockEntity(pos);
+                    portalFrameTile = coreFrame;
                 }
+                else
+                    coreFrame = (PortalFrameCoreTile) portalFrameTile;
 
-                portalFrameTile.setPortalState(portalFormer.get().getState());
+                coreFrame.setPortalState(portalFormer.get().getState());
                 portalFormer.get().execute();
             }
 
+            if (coreFrame == null)
+                coreFrame = ((PortalFrameCoreTile) portalFrameTile);
+
             tag.putLong("firstPos", portalFrameTile.getPos().asLong());
             tag.putString("firstDimension", portalFrameTile.getWorld().getRegistryKey().getValue().toString());
-            tag.putByte("firstFacing", (byte) portalFrameTile.getFacing().ordinal());
+            tag.putByte("firstFacing", (byte) coreFrame.getFacing().ordinal());
         }
         return true;
     }
@@ -104,56 +111,60 @@ public class PortalLinker
             BlockEntity linkedPortal,
             Direction linkedFacing)
     {
-        if (linkedPortal instanceof PortalFrameTile)
-        {
-            if (((PortalFrameTile) linkedPortal).isBroken())
-            {
-                player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
-                return false;
-            }
-            if (arePortalShapesIncompatible(portalFrameTile, portalFormer, (PortalFrameTile) linkedPortal))
-            {
-                player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
-                return false;
-            }
-
-            if (portalFormer.isPresent())
-            {
-                if (portalFrameTile == null || !portalFrameTile.isCore())
-                {
-                    currentWorld.setBlockState(currentPos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, currentDirection));
-                    portalFrameTile = (PortalFrameTile) currentWorld.getBlockEntity(currentPos);
-                }
-
-                portalFrameTile.setPortalState(portalFormer.get().getState());
-                portalFormer.get().execute();
-            }
-
-            portalFrameTile.setLinkedPos(linkedPos);
-            portalFrameTile.setLinkedWorld(linkedWorld.getRegistryKey().getValue());
-            portalFrameTile.setLinkedFacing(linkedFacing);
-            portalFrameTile.getWorld().setBlockState(portalFrameTile.getPos(), portalFrameTile.getCachedState().with(Properties.LIT, true));
-            portalFrameTile.linkPortal(ImmersivePortalCompat.useImmersivePortal());
-
-            voidPearl.decrement(1);
-
-            ((PortalFrameTile) linkedPortal).setLinkedPos(portalFrameTile.getPos());
-            ((PortalFrameTile) linkedPortal).setLinkedWorld(portalFrameTile.getWorld().getRegistryKey().getValue());
-            ((PortalFrameTile) linkedPortal).setLinkedFacing(portalFrameTile.getFacing());
-            linkedWorld.setBlockState(portalFrameTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
-            ((PortalFrameTile) linkedPortal).linkPortal(ImmersivePortalCompat.useImmersivePortal());
-
-            player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
-            return true;
-        }
-        else
+        if (!(linkedPortal instanceof PortalFrameTile))
         {
             player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos"), true);
             return false;
         }
+        if (((PortalFrameTile) linkedPortal).isCore() && ((PortalFrameCoreTile) linkedPortal).isBroken())
+        {
+            player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
+            return false;
+        }
+        if (arePortalShapesIncompatible(portalFrameTile, portalFormer, (PortalFrameCoreTile) linkedPortal))
+        {
+            player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
+            return false;
+        }
+
+        PortalFrameCoreTile coreTile = null;
+        if (portalFormer.isPresent())
+        {
+            if (portalFrameTile == null || !portalFrameTile.isCore())
+            {
+                currentWorld.setBlockState(currentPos, VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState().with(Properties.FACING, currentDirection));
+                coreTile = (PortalFrameCoreTile) currentWorld.getBlockEntity(currentPos);
+            }
+            else
+                coreTile = (PortalFrameCoreTile) portalFrameTile;
+
+            coreTile.setPortalState(portalFormer.get().getState());
+            portalFormer.get().execute();
+        }
+
+        if (coreTile == null)
+            coreTile = (PortalFrameCoreTile) portalFrameTile;
+
+        coreTile.setLinkedPos(linkedPos);
+        coreTile.setLinkedWorld(linkedWorld.getRegistryKey().getValue());
+        coreTile.setLinkedFacing(linkedFacing);
+        coreTile.getWorld().setBlockState(coreTile.getPos(), coreTile.getCachedState().with(Properties.LIT, true));
+        coreTile.linkPortal(ImmersivePortalCompat.useImmersivePortal());
+
+        voidPearl.decrement(1);
+
+        var linkedPortalCore = (PortalFrameCoreTile) linkedPortal;
+        linkedPortalCore.setLinkedPos(coreTile.getPos());
+        linkedPortalCore.setLinkedWorld(coreTile.getWorld().getRegistryKey().getValue());
+        linkedPortalCore.setLinkedFacing(coreTile.getFacing());
+        linkedWorld.setBlockState(coreTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
+        linkedPortalCore.linkPortal(ImmersivePortalCompat.useImmersivePortal());
+
+        player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
+        return true;
     }
 
-    private static boolean arePortalShapesIncompatible(PortalFrameTile portalFrameTile, Optional<DeferredRollbackWork<PortalFormerState>> portalFormer, PortalFrameTile linkedPortal)
+    private static boolean arePortalShapesIncompatible(PortalFrameTile portalFrameTile, Optional<DeferredRollbackWork<PortalFormerState>> portalFormer, PortalFrameCoreTile linkedPortal)
     {
         return portalFormer
                 .map(portalFormerStateDeferredRollbackWork ->
@@ -162,26 +173,34 @@ public class PortalLinker
                 })
                 .orElseGet(() ->
                 {
-                    return portalFrameTile != null && portalFrameTile.getPortalState().areShapeIncompatible(linkedPortal.getPortalState());
+                    if (portalFrameTile instanceof PortalFrameCoreTile core)
+                        return core.getPortalState().areShapeIncompatible(linkedPortal.getPortalState());
+                    return true;
                 });
     }
 
-    public static boolean tryRelink(PlayerEntity player, PortalFrameTile core)
+    public static boolean tryRelink(PlayerEntity player, PortalFrameCoreTile core)
     {
-        if (!core.isCore() || core.getLinkedWorld() != null || core.getPreviousLinkedWorld() == null)
+        if (core.getLinkedWorld() != null || core.getPreviousLinkedWorld() == null)
             return false;
 
-        PortalFrameTile previouslyLinkedPortal = core.getPreviouslyLinkedPortal();
+        var previouslyLinkedPortalOpt = core.getPreviouslyLinkedPortal();
 
-        if (previouslyLinkedPortal == null || previouslyLinkedPortal.getLinkedWorld() != null)
+        if (previouslyLinkedPortalOpt.isEmpty() || previouslyLinkedPortalOpt.get().getLinkedWorld() != null)
         {
             player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
             return false;
         }
 
+        var previouslyLinkedPortal = previouslyLinkedPortalOpt.get();
         if (previouslyLinkedPortal.isBroken())
         {
-            DeferredRollbackWork<PortalFormerState> portalFormer = PortalFormer.tryForm(previouslyLinkedPortal.getWorld(), previouslyLinkedPortal.getCachedState(), previouslyLinkedPortal.getPos(), previouslyLinkedPortal.getFacing());
+            DeferredRollbackWork<PortalFormerState> portalFormer = PortalFormer.tryForm(
+                    previouslyLinkedPortal.getWorld(),
+                    previouslyLinkedPortal.getCachedState(),
+                    previouslyLinkedPortal.getPos(),
+                    previouslyLinkedPortal.getFacing()
+            );
             if (portalFormer.maySucceed())
             {
                 portalFormer.execute();

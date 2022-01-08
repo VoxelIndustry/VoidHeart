@@ -1,15 +1,25 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import lombok.extern.log4j.Log4j2;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.voxelindustry.steamlayer.math.Vec3f;
 import qouteall.imm_ptl.core.portal.Portal;
 
+@Log4j2
 public class ImmersivePortalFrameCreator
 {
-    public static void linkImmersivePortal(PortalFrameTile portalFrameTile, Direction facing)
+    public static void linkImmersivePortal(PortalFrameCoreTile portalFrameTile, Direction facing)
     {
-        PortalFrameTile linkedPortal = portalFrameTile.getLinkedPortal();
+        var linkedPortalOpt = portalFrameTile.getLinkedPortal();
+
+        if (linkedPortalOpt.isEmpty())
+        {
+            log.error("Unable to make ImmersivePortal for linking. Linked BlockEntity does not conform to PortalFrameCore or is null. world={}, pos={}", portalFrameTile.getWorld().getRegistryKey(), portalFrameTile.getLinkedPos());
+            return;
+        }
+
+        var linkedPortal = linkedPortalOpt.get();
         PortalFormerState linkedPortalPoints = linkedPortal.getPortalState();
         Vec3d linkedCenter = new Vec3d(
                 (linkedPortalPoints.getTo().getX() - linkedPortalPoints.getFrom().getX()) / 2F,
@@ -56,7 +66,7 @@ public class ImmersivePortalFrameCreator
             else
                 portal.rotation = Vec3f.EAST.getDegreesQuaternion(0);
 
-            PortalFormerState linkedState = portalFrameTile.getLinkedPortal().getPortalState();
+            var linkedState = linkedPortal.getPortalState();
             // Special case for a rotated horizontal portal. Like a 3x2 portal connected to a 2x3
             if (portalFrameTile.getPortalState().getWidth() != linkedState.getWidth())
                 portal.rotation.hamiltonProduct(Vec3f.UP.getDegreesQuaternion(90));

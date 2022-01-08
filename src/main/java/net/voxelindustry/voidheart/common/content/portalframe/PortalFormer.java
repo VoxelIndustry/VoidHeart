@@ -12,6 +12,7 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -58,11 +59,12 @@ public class PortalFormer
                 {
                     createCoreState(state, world, brickPos, portalFormerState.getFacing());
 
-                    var portalFrameTile = (PortalFrameTile) world.getBlockEntity(brickPos);
+                    var coreFrameOpt = world.getBlockEntity(brickPos, VoidHeartTiles.PORTAL_FRAME_CORE);
 
-                    if (portalFrameTile == null)
+                    if (coreFrameOpt.isEmpty())
                         return false;
 
+                    var coreFrame = coreFrameOpt.get();
                     BlockPos.stream(portalFormerState.getFrom(), portalFormerState.getTo()).forEach(pos ->
                     {
                         BlockState frameState = world.getBlockState(pos);
@@ -75,13 +77,12 @@ public class PortalFormer
                         if (wall == null || wall.isCore())
                             return;
 
-                        wall.addCore(portalFrameTile);
-                        portalFrameTile.getLinkedFrames().add(pos.toImmutable());
+                        wall.addCore(coreFrame);
+                        coreFrame.getLinkedFrames().add(pos.toImmutable());
                     });
 
-                    portalFrameTile.setCore(true);
-                    portalFrameTile.setPortalState(portalFormerState);
-                    portalFrameTile.markDirty();
+                    coreFrame.setPortalState(portalFormerState);
+                    coreFrame.markDirty();
 
                     return true;
                 }, Runnables.doNothing());
@@ -173,7 +174,7 @@ public class PortalFormer
             return;
         }
 
-        for (Direction direction : Direction.values())
+        for (var direction : Direction.values())
         {
             coreState = switch (direction)
                     {
