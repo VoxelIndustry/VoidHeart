@@ -71,8 +71,7 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
         }
         else
         {
-            if (!player.giveItemStack(altar.getStack()))
-                player.dropItem(altar.getStack(), false);
+            player.getInventory().offerOrDrop(altar.getStack());
             altar.setStack(player, ItemStack.EMPTY);
         }
 

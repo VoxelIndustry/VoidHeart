@@ -59,9 +59,8 @@ public class VoidHeartRecipes
                     {
                         for (int i = 0; i < 3; i++)
                         {
-                            ItemStack voidPearls = new ItemStack(VOID_PEARL);
-                            if (!player.giveItemStack(voidPearls))
-                                player.dropItem(voidPearls, true);
+                            var voidPearls = new ItemStack(VOID_PEARL);
+                            player.getInventory().offerOrDrop(voidPearls);
                         }
 
                         player.sendMessage(new TranslatableText(MODID + ".pocket_created"), true);

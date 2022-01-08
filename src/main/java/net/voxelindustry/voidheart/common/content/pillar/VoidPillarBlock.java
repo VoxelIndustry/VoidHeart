@@ -79,8 +79,7 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
         }
         else
         {
-            if (!player.giveItemStack(pillar.getStack()))
-                player.dropItem(pillar.getStack(), false);
+            player.getInventory().offerOrDrop(pillar.getStack());
             pillar.setStack(ItemStack.EMPTY);
         }
 
