@@ -18,6 +18,7 @@ import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.PortalFrameParticleEffect;
+import net.voxelindustry.voidheart.common.migration.VoidHeartDataMigration;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -45,6 +46,8 @@ public class VoidHeart implements ModInitializer
     @Override
     public void onInitialize()
     {
+        VoidHeartDataMigration.initMigrations();
+
         VoidHeartBlocks.registerBlocks();
         VoidHeartItems.registerItems();
 

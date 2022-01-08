@@ -4,6 +4,8 @@
   "package": "net.voxelindustry.voidheart.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "MixinChunkSerializer",
+    "MixinNbtHelper",
     "MixinStableLifecycle"
   ],
   "client": [
