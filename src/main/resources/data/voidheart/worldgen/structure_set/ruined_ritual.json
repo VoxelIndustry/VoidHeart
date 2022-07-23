@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "voidheart:ruined_ritual",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 40,
+    "separation": 35,
+    "salt": 98785569
+  }
+}

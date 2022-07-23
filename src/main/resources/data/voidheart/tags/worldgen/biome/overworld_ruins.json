@@ -1,0 +1,15 @@
+{
+  "values": [
+    "#c:taiga",
+    "#c:forest",
+    "#c:jungle",
+    "#c:savanna",
+    "#c:plains",
+    "#c:caves",
+    "#c:swamp",
+    "minecraft:mushroom_fields",
+    "minecraft:ice_spikes",
+    "minecraft:savanna",
+    "minecraft:snowy_plains"
+  ]
+}
