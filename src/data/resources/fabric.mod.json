@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "voidheart_datagen",
+  "version": "${version}",
+  "entrypoints": {
+    "preLaunch": [
+      "net.voxelindustry.voidheart.data.VoidHeartDatagenInitializer"
+    ]
+  }
+}

@@ -23,7 +23,7 @@
     "client": [
       "net.voxelindustry.voidheart.VoidHeartClient"
     ],
-    "rei_plugins": [
+    "rei_client": [
       "net.voxelindustry.voidheart.compat.rei.VoidHeartREIPlugin"
     ]
   },
@@ -32,9 +32,9 @@
   ],
   "accessWidener": "voidheart.accesswidener",
   "depends": {
-    "fabricloader": ">=0.12.0",
+    "fabricloader": ">=0.14.0",
     "fabric": "*",
-    "minecraft": "1.18.x"
+    "minecraft": "1.19.x"
   },
   "suggests": {
     "flamingo": "*"

@@ -22,6 +22,7 @@ import net.minecraft.world.WorldAccess;
 import net.voxelindustry.voidheart.common.item.VoidPearlItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 
 import java.util.List;
 
@@ -104,7 +105,7 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
 
     private static FrameConnection getConnectionType(BlockState state)
     {
-        if (VoidHeartBlocks.PORTAL_FRAME_TAG.contains(state.getBlock()))
+        if (state.isIn(VoidHeartTags.PORTAL_FRAME_TAG))
             return FrameConnection.FRAME;
         return FrameConnection.NONE;
     }
@@ -114,7 +115,8 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     {
         switch (direction)
         {
-            case DOWN -> {
+            case DOWN ->
+            {
                 var down = state.get(DOWN);
 
                 if (down == FrameConnection.INTERIOR)
@@ -124,7 +126,8 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
                 if (newConnection != down)
                     state = state.with(DOWN, newConnection);
             }
-            case UP -> {
+            case UP ->
+            {
                 var up = state.get(UP);
 
                 if (up == FrameConnection.INTERIOR)
@@ -134,7 +137,8 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
                 if (newConnection != up)
                     state = state.with(UP, newConnection);
             }
-            case NORTH -> {
+            case NORTH ->
+            {
                 var north = state.get(NORTH);
 
                 if (north == FrameConnection.INTERIOR)
@@ -144,7 +148,8 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
                 if (newConnection != north)
                     state = state.with(NORTH, newConnection);
             }
-            case SOUTH -> {
+            case SOUTH ->
+            {
                 var south = state.get(SOUTH);
 
                 if (south == FrameConnection.INTERIOR)
@@ -154,7 +159,8 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
                 if (newConnection != south)
                     state = state.with(SOUTH, newConnection);
             }
-            case WEST -> {
+            case WEST ->
+            {
                 var west = state.get(WEST);
 
                 if (west == FrameConnection.INTERIOR)
@@ -164,7 +170,8 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
                 if (newConnection != west)
                     state = state.with(WEST, newConnection);
             }
-            case EAST -> {
+            case EAST ->
+            {
                 var east = state.get(EAST);
 
                 if (east == FrameConnection.INTERIOR)

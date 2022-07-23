@@ -12,6 +12,7 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.apache.commons.lang3.tuple.Pair;
@@ -159,7 +160,7 @@ public class PortalFormer
         if (state.isAir())
             return true;
 
-        return !VoidHeartBlocks.PORTAL_FRAME_TAG.contains(state.getBlock()) && state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS;
+        return !state.isIn(VoidHeartTags.PORTAL_FRAME_TAG) && state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS;
     }
 
     public static void createCoreState(BlockState state, World world, BlockPos pos, Direction facing)

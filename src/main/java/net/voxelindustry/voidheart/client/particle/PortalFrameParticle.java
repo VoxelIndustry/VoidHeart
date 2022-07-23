@@ -34,7 +34,7 @@ public class PortalFrameParticle extends Particle
         this.direction = direction;
         this.width = width;
         this.height = height;
-        setColorAlpha(0.2F);
+        this.setAlpha(0.2F);
         maxAge = 40;
     }
 
@@ -74,9 +74,9 @@ public class PortalFrameParticle extends Particle
 
         Sprite sprite = spriteProvider.getSprite(0, 1);
 
-        colorRed = 0.21F;
-        colorGreen = 0.4F;
-        colorBlue = 0.33F;
+        this.red = 0.21F;
+        this.green = 0.4F;
+        this.blue = 0.33F;
 
         float l = sprite.getMinU();
         float m = sprite.getMaxU();
@@ -85,29 +85,29 @@ public class PortalFrameParticle extends Particle
         int light = 15728880;
         vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ())
                 .texture(l, o)
-                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
         vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ())
                 .texture(l, n)
-                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
         vertexConsumer.vertex(leftTop.getX(), leftTop.getY(), leftTop.getZ())
                 .texture(m, o)
-                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
         vertexConsumer.vertex(rightTop.getX(), rightTop.getY(), rightTop.getZ())
                 .texture(m, n)
-                .color(colorRed, colorGreen, colorBlue, colorAlpha)
+                .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
 
-        vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ()).texture(l, o).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ()).texture(l, n).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(leftTop.getX(), leftTop.getY(), leftTop.getZ()).texture(m, o).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(rightTop.getX(), rightTop.getY(), rightTop.getZ()).texture(m, n).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
+        vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ()).texture(l, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ()).texture(l, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(leftTop.getX(), leftTop.getY(), leftTop.getZ()).texture(m, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(rightTop.getX(), rightTop.getY(), rightTop.getZ()).texture(m, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
 
     }
 
@@ -124,7 +124,7 @@ public class PortalFrameParticle extends Particle
         prevPosY = y;
         prevPosZ = z;
 
-        setColorAlpha(MathHelper.lerp(age / (float) maxAge, 0.2F, 0F));
+        this.setAlpha(MathHelper.lerp(age / (float) maxAge, 0.2F, 0F));
 
         if (age++ >= maxAge)
             markDead();

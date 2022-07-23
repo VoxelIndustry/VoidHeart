@@ -1,4 +1,6 @@
 {
+  "monster_spawn_light_level": 15,
+  "monster_spawn_block_light_limit": 0,
   "ultrawarm": false,
   "natural": false,
   "coordinate_scale": 1,
@@ -13,5 +15,5 @@
   "logical_height": 128,
   "height": 256,
   "min_y": 0,
-  "infiniburn": "minecraft:infiniburn_overworld"
+  "infiniburn": "#minecraft:infiniburn_overworld"
 }

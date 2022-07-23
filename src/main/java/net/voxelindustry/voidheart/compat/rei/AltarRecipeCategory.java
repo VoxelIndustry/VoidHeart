@@ -10,7 +10,6 @@ import me.shedaniel.rei.api.common.entry.EntryStack;
 import me.shedaniel.rei.api.common.util.EntryStacks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
@@ -39,7 +38,7 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     @Override
     public Text getTitle()
     {
-        return new TranslatableText(IDENTIFIER.getIdentifier().toString().replace(":", "."));
+        return Text.translatable(IDENTIFIER.getIdentifier().toString().replace(":", "."));
     }
 
     @Override

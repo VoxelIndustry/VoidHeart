@@ -10,7 +10,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
@@ -185,7 +185,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
                 }
             }
             else
-                player.sendMessage(new TranslatableText(MODID + ".altar.missing_pillars", 8 - pillars.size()), true);
+                player.sendMessage(Text.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()), true);
         }
         else if (isCrafting)
             stopCrafting();

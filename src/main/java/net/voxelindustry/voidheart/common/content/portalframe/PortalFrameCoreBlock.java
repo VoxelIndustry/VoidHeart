@@ -8,7 +8,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -55,19 +55,19 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                         tile.setBroken(false);
                         if (PortalLinker.tryRelink(player, tile))
                         {
-                            player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
+                            player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
                             return ActionResult.SUCCESS;
                         }
                     }
                     else
-                        player.sendMessage(new TranslatableText(MODID + ".portal_cannot_form_back"), true);
+                        player.sendMessage(Text.translatable(MODID + ".portal_cannot_form_back"), true);
                 }
                 else
-                    player.sendMessage(new TranslatableText(MODID + ".portal_cannot_form_back"), true);
+                    player.sendMessage(Text.translatable(MODID + ".portal_cannot_form_back"), true);
             }
             else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
             {
-                player.sendMessage(new TranslatableText(MODID + ".portal_relinked_successful"), true);
+                player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
                 return ActionResult.SUCCESS;
             }
         }

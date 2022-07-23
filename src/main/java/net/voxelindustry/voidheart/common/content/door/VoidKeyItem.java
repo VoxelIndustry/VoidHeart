@@ -48,7 +48,7 @@ public class VoidKeyItem extends Item
                 setDoor(stack, world, pos);
             }
         }
-        else if (BlockTags.DOORS.contains(state.getBlock()) && state.contains(DoorBlock.HALF))
+        else if (state.isIn(BlockTags.DOORS) && state.contains(DoorBlock.HALF))
         {
             if (state.get(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
                 pos = pos.up();

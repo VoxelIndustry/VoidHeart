@@ -5,7 +5,9 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.GameProfileArgumentType;
+import net.minecraft.server.command.CommandManager.RegistrationEnvironment;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -54,7 +56,7 @@ public class VoidHeartCommands
         return 0;
     }
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated)
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess commandRegistryAccess, RegistrationEnvironment environment)
     {
         LiteralArgumentBuilder<ServerCommandSource> builder = literal(MODID)
                 .requires(commandSource -> commandSource.hasPermissionLevel(2));

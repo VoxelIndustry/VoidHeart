@@ -6,7 +6,6 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.util.ExperienceUtil;
@@ -31,12 +30,12 @@ public class ExperienceSkullItemBlock extends BlockItem
     {
         super.appendTooltip(stack, world, tooltip, context);
 
-        tooltip.add(new TranslatableText(MODID + ".skull_item.lore"));
+        tooltip.add(Text.translatable(MODID + ".skull_item.lore"));
 
         if (stack.hasNbt() && stack.getNbt().contains("experience"))
         {
             var experience = stack.getNbt().getInt("experience");
-            tooltip.add(new TranslatableText(MODID + ".skull_item.lore2", ExperienceUtil.getExperienceLevel(experience), experience));
+            tooltip.add(Text.translatable(MODID + ".skull_item.lore2", ExperienceUtil.getExperienceLevel(experience), experience));
         }
     }
 }

@@ -5,7 +5,7 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.recipe.RecipeManager;
 import net.voxelindustry.steamlayer.recipe.SteamLayerRecipe;
@@ -63,12 +63,12 @@ public class VoidHeartRecipes
                             player.getInventory().offerOrDrop(voidPearls);
                         }
 
-                        player.sendMessage(new TranslatableText(MODID + ".pocket_created"), true);
+                        player.sendMessage(Text.translatable(MODID + ".pocket_created"), true);
                     }
                 }
                 else if (player != null)
                 {
-                    player.sendMessage(new TranslatableText(MODID + ".pocket_already_exists"), true);
+                    player.sendMessage(Text.translatable(MODID + ".pocket_already_exists"), true);
                 }
             }));
         }

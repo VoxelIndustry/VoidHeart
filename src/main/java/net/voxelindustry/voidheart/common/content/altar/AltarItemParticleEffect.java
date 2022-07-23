@@ -4,6 +4,7 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.command.CommandRegistryWrapper;
 import net.minecraft.command.argument.ItemStackArgument;
 import net.minecraft.command.argument.ItemStringReader;
 import net.minecraft.item.ItemStack;
@@ -48,7 +49,7 @@ public class AltarItemParticleEffect implements ParticleEffect
     @Override
     public String asString()
     {
-        return Registry.PARTICLE_TYPE.getId(getType()) + " " + (new ItemStackArgument(stack.getItem(), stack.getNbt())).asString();
+        return Registry.PARTICLE_TYPE.getId(getType()) + " " + (new ItemStackArgument(stack.getRegistryEntry(), stack.getNbt())).asString();
     }
 
     public static final ParticleEffect.Factory<AltarItemParticleEffect> PARAMETERS_FACTORY = new ParticleEffect.Factory<>()
@@ -57,8 +58,9 @@ public class AltarItemParticleEffect implements ParticleEffect
         public AltarItemParticleEffect read(ParticleType<AltarItemParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
         {
             stringReader.expect(' ');
-            ItemStringReader itemStringReader = (new ItemStringReader(stringReader, false)).consume();
-            ItemStack itemStack = (new ItemStackArgument(itemStringReader.getItem(), itemStringReader.getNbt())).createStack(1, false);
+            var itemResult = ItemStringReader.item(CommandRegistryWrapper.of(Registry.ITEM), stringReader);
+            var itemStack = (new ItemStackArgument(itemResult.item(), itemResult.nbt()))
+                    .createStack(1, false);
 
             return new AltarItemParticleEffect(itemStack, Vec3f.UP, Vec3f.UP);
         }

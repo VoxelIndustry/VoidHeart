@@ -5,7 +5,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Rarity;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
@@ -29,9 +28,9 @@ public class VoidHeartItem extends Item
     {
         NbtCompound tag = stack.getOrCreateNbt();
         if (!tag.containsUuid("player"))
-            return new TranslatableText(getTranslationKey(stack) + ".empty");
+            return Text.translatable(getTranslationKey(stack) + ".empty");
 
-        return new TranslatableText(getTranslationKey(stack), tag.getString("playerName"));
+        return Text.translatable(getTranslationKey(stack), tag.getString("playerName"));
     }
 
     @Override
@@ -39,6 +38,6 @@ public class VoidHeartItem extends Item
     {
         super.appendTooltip(stack, world, tooltip, context);
 
-        tooltip.add(new TranslatableText(MODID + ".void_heart.lore"));
+        tooltip.add(Text.translatable(MODID + ".void_heart.lore"));
     }
 }

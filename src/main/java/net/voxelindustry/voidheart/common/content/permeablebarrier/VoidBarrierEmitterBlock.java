@@ -6,13 +6,16 @@ import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -30,6 +33,17 @@ public class VoidBarrierEmitterBlock extends Block implements BlockEntityProvide
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.FACING, Direction.NORTH)
         );
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack)
+    {
+        super.onPlaced(world, pos, state, placer, itemStack);
+
+        var tile = world.getBlockEntity(pos);
+
+        if (tile instanceof VoidBarrierEmitterTile barrier && placer != null)
+            barrier.setOwner(placer.getUuid());
     }
 
     @Override

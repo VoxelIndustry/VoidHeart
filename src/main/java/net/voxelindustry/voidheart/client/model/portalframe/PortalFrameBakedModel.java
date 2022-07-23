@@ -15,11 +15,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
-import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Supplier;
 

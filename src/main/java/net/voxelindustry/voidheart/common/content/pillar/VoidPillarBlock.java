@@ -64,7 +64,7 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
             var stackInHand = player.getStackInHand(hand);
             var itemInHand = stackInHand.getItem();
 
-            if (VoidHeartTags.PILLAR_PLACE_INSTEAD_OF_STORE.contains(itemInHand) && itemInHand instanceof BlockItem placeable)
+            if (stackInHand.isIn(VoidHeartTags.PILLAR_PLACE_INSTEAD_OF_STORE) && itemInHand instanceof BlockItem placeable)
             {
                 placeable.place(new ItemPlacementContext(player,
                         hand,

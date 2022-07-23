@@ -8,7 +8,9 @@ import net.minecraft.util.registry.BuiltinRegistries;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.gen.GenerationStep;
-import net.minecraft.world.gen.decorator.CountPlacementModifier;
+import net.minecraft.world.gen.feature.ConfiguredFeatures;
+import net.minecraft.world.gen.feature.PlacedFeatures;
+import net.minecraft.world.gen.placementmodifier.CountPlacementModifier;
 import net.voxelindustry.voidheart.common.world.VoidMonolithFeature;
 import net.voxelindustry.voidheart.common.world.VoidMonolithFeatureConfig;
 
@@ -22,11 +24,11 @@ public class VoidHeartWorld
     {
         Registry.register(Registry.FEATURE, new Identifier(MODID, "void_monolith"), VOID_MONOLITH = new VoidMonolithFeature(VoidMonolithFeatureConfig.CODEC));
 
-        var configuredMonolith = VOID_MONOLITH.configure(new VoidMonolithFeatureConfig(3, 5));
-        Registry.register(BuiltinRegistries.CONFIGURED_FEATURE, new Identifier(MODID, "configured_void_monolith"), configuredMonolith);
+        var configuredMonolith = ConfiguredFeatures.register(MODID + ":configured_void_monolith", VOID_MONOLITH, new VoidMonolithFeatureConfig(3, 5));
 
         var placedMonolithIdentifier = new Identifier(MODID, "placed_void_monolith");
-        Registry.register(BuiltinRegistries.PLACED_FEATURE, placedMonolithIdentifier, configuredMonolith.withPlacement(CountPlacementModifier.of(3)));
+
+        PlacedFeatures.register(placedMonolithIdentifier.toString(), configuredMonolith, CountPlacementModifier.of(3));
 
         BiomeModifications.create(new Identifier(MODID, "void_monolith_addition")).add(
                 ModificationPhase.ADDITIONS,

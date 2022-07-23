@@ -1,7 +1,6 @@
 package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.fabricmc.fabric.api.tag.TagFactory;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -15,7 +14,6 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
 import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
@@ -43,9 +41,6 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartBlocks
 {
-    public static Tag<Block> PORTAL_INTERIOR_TAG = TagFactory.BLOCK.create(new Identifier(MODID, "portal_interior"));
-    public static Tag<Block> PORTAL_FRAME_TAG    = TagFactory.BLOCK.create(new Identifier(MODID, "portal_frame"));
-
     public static Block PORTAL_INTERIOR;
     public static Block PORTAL_IMMERSIVE_INTERIOR;
     public static Block PORTAL_FRAME;
@@ -199,6 +194,12 @@ public class VoidHeartBlocks
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar_weathered");
 
         registerBlock(VOID_MONOLITH = new VoidMonolithBlock(), itemGroup, "void_monolith");
+        registerBlock(VOID_MONOLITH_CAP = new Block(
+                FabricBlockSettings
+                        .of(Material.STONE)
+                        .strength(1.5F, 6.0F)
+                        .sounds(BlockSoundGroup.STONE)
+                        .requiresTool()), itemGroup, "void_monolith_cap");
 
         registerBlock(VOID_LAMP = new VoidLampBlock(), itemGroup, "void_lamp");
 

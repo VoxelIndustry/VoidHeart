@@ -10,7 +10,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
@@ -50,7 +49,7 @@ public class VoidPearlItem extends Item
             boolean canUse = !tag.contains("firstDimension") || RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
 
             if (!canUse)
-                player.sendMessage(new TranslatableText(MODID + ".must_be_same_world"), true);
+                player.sendMessage(Text.translatable(MODID + ".must_be_same_world"), true);
             return canUse;
         }
 
@@ -61,7 +60,7 @@ public class VoidPearlItem extends Item
         if (!isInPocket && (!tag.contains("firstPos") || RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
             return true;
 
-        player.sendMessage(new TranslatableText(MODID + ".must_be_inside_outside"), true);
+        player.sendMessage(Text.translatable(MODID + ".must_be_inside_outside"), true);
         return false;
     }
 
@@ -77,15 +76,15 @@ public class VoidPearlItem extends Item
 
         if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
-            player.sendMessage(new TranslatableText(MODID + ".link_started_local"), true);
+            player.sendMessage(Text.translatable(MODID + ".link_started_local"), true);
             return;
         }
 
         var tag = stack.getOrCreateNbt();
         if (RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
-            player.sendMessage(new TranslatableText(MODID + ".link_started_pocket"), true);
+            player.sendMessage(Text.translatable(MODID + ".link_started_pocket"), true);
         else
-            player.sendMessage(new TranslatableText(MODID + ".link_started_outside"), true);
+            player.sendMessage(Text.translatable(MODID + ".link_started_outside"), true);
     }
 
     @Override
@@ -107,22 +106,22 @@ public class VoidPearlItem extends Item
 
             if (RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
             {
-                tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
-                tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
+                tooltip.add(Text.translatable(MODID + ".void_pearl.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
+                tooltip.add(Text.translatable(MODID + ".void_pearl.pocket.lore2",
                         Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
             }
             else
             {
-                tooltip.add(new TranslatableText(MODID + ".void_pearl.external.lore",
+                tooltip.add(Text.translatable(MODID + ".void_pearl.external.lore",
                         Text.of("§6" + capitalize(new Identifier(tag.getString("firstDimension")).getPath()))));
-                tooltip.add(new TranslatableText(MODID + ".void_pearl.pocket.lore2",
+                tooltip.add(Text.translatable(MODID + ".void_pearl.pocket.lore2",
                         Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
             }
 
-            tooltip.add(new TranslatableText(MODID + ".void_pearl.erase.lore"));
+            tooltip.add(Text.translatable(MODID + ".void_pearl.erase.lore"));
         }
         else
-            tooltip.add(new TranslatableText(MODID + ".void_pearl.lore", Formatting.AQUA, Formatting.RESET));
+            tooltip.add(Text.translatable(MODID + ".void_pearl.lore", Formatting.AQUA, Formatting.RESET));
     }
 
     @Override
@@ -145,10 +144,10 @@ public class VoidPearlItem extends Item
                                 user.getHeadYaw(),
                                 user.getPitch(0)));
                 stack.decrement(1);
-                ((PlayerEntity) user).sendMessage(new TranslatableText(MODID + ".teleport_in_progress", 5), true);
+                ((PlayerEntity) user).sendMessage(Text.translatable(MODID + ".teleport_in_progress", 5), true);
             }
             else
-                ((PlayerEntity) user).sendMessage(new TranslatableText(MODID + ".no_pocket_for_player"), true);
+                ((PlayerEntity) user).sendMessage(Text.translatable(MODID + ".no_pocket_for_player"), true);
         }
         return stack;
     }

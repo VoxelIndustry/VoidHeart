@@ -10,7 +10,7 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import net.minecraft.command.CommandSource;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Direction;
 import net.voxelindustry.voidheart.VoidHeart;
 
@@ -24,7 +24,7 @@ import static java.util.stream.Collectors.toList;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DirectionArgumentType implements ArgumentType<Direction>
 {
-    public static final SimpleCommandExceptionType INVALID_DIRECTION_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText(VoidHeart.MODID + ".argument.direction.unknown"));
+    public static final SimpleCommandExceptionType INVALID_DIRECTION_EXCEPTION = new SimpleCommandExceptionType(Text.translatable(VoidHeart.MODID + ".argument.direction.unknown"));
 
     private static final List<String> DIRECTIONS = Arrays.stream(Direction.values()).map(Enum::name).collect(toList());
 

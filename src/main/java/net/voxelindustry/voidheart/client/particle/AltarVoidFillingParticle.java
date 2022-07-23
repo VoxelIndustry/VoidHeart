@@ -85,20 +85,20 @@ public class AltarVoidFillingParticle extends Particle
         }
 
         Sprite sprite = spriteProvider.getSprite(age, maxAge);
-
-        colorRed = 0.21F;
-        colorGreen = 0.4F;
-        colorBlue = 0.33F;
+        
+        this.red = 0.21F;
+        this.green = 0.4F;
+        this.blue = 0.33F;
 
         float l = sprite.getMinU();
         float m = sprite.getMaxU();
         float n = sprite.getMinV();
         float o = sprite.getMaxV();
         int light = 15728880;
-        vertexConsumer.vertex(vector3fs[0].getX(), vector3fs[0].getY(), vector3fs[0].getZ()).texture(m, o).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[1].getX(), vector3fs[1].getY(), vector3fs[1].getZ()).texture(m, n).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[2].getX(), vector3fs[2].getY(), vector3fs[2].getZ()).texture(l, n).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[3].getX(), vector3fs[3].getY(), vector3fs[3].getZ()).texture(l, o).color(colorRed, colorGreen, colorBlue, colorAlpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[0].getX(), vector3fs[0].getY(), vector3fs[0].getZ()).texture(m, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[1].getX(), vector3fs[1].getY(), vector3fs[1].getZ()).texture(m, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[2].getX(), vector3fs[2].getY(), vector3fs[2].getZ()).texture(l, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[3].getX(), vector3fs[3].getY(), vector3fs[3].getZ()).texture(l, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
     }
 
     @Override

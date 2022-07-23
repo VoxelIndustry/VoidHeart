@@ -5,7 +5,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -44,7 +44,7 @@ public class PortalLinker
 
             if (!portalFormer.get().maySucceed())
             {
-                player.sendMessage(new TranslatableText(MODID + ".portal_form_error"), true);
+                player.sendMessage(Text.translatable(MODID + ".portal_form_error"), true);
                 return false;
             }
         }
@@ -113,17 +113,17 @@ public class PortalLinker
     {
         if (!(linkedPortal instanceof PortalFrameTile))
         {
-            player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos"), true);
+            player.sendMessage(Text.translatable(MODID + ".no_portal_at_pos"), true);
             return false;
         }
         if (((PortalFrameTile) linkedPortal).isCore() && ((PortalFrameCoreTile) linkedPortal).isBroken())
         {
-            player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
+            player.sendMessage(Text.translatable(MODID + ".no_portal_at_pos_broken"), true);
             return false;
         }
         if (arePortalShapesIncompatible(portalFrameTile, portalFormer, (PortalFrameCoreTile) linkedPortal))
         {
-            player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
+            player.sendMessage(Text.translatable(MODID + ".portal_shape_differ"), true);
             return false;
         }
 
@@ -160,7 +160,7 @@ public class PortalLinker
         linkedWorld.setBlockState(coreTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
         linkedPortalCore.linkPortal(ImmersivePortalCompat.useImmersivePortal());
 
-        player.sendMessage(new TranslatableText(MODID + ".link_successful"), true);
+        player.sendMessage(Text.translatable(MODID + ".link_successful"), true);
         return true;
     }
 
@@ -188,7 +188,7 @@ public class PortalLinker
 
         if (previouslyLinkedPortalOpt.isEmpty() || previouslyLinkedPortalOpt.get().getLinkedWorld() != null)
         {
-            player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
+            player.sendMessage(Text.translatable(MODID + ".no_portal_at_pos_broken"), true);
             return false;
         }
 
@@ -206,19 +206,19 @@ public class PortalLinker
                 portalFormer.execute();
                 if (!portalFormer.success())
                 {
-                    player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
+                    player.sendMessage(Text.translatable(MODID + ".no_portal_at_pos_broken"), true);
                     return false;
                 }
             }
             else
             {
-                player.sendMessage(new TranslatableText(MODID + ".no_portal_at_pos_broken"), true);
+                player.sendMessage(Text.translatable(MODID + ".no_portal_at_pos_broken"), true);
                 return false;
             }
         }
         if (core.getPortalState().areShapeIncompatible(previouslyLinkedPortal.getPortalState()))
         {
-            player.sendMessage(new TranslatableText(MODID + ".portal_shape_differ"), true);
+            player.sendMessage(Text.translatable(MODID + ".portal_shape_differ"), true);
             return false;
         }
 

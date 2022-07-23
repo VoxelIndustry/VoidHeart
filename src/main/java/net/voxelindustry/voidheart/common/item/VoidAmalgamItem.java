@@ -13,7 +13,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Rarity;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
@@ -40,8 +39,8 @@ public class VoidAmalgamItem extends Item
     {
         super.appendTooltip(stack, world, tooltip, context);
 
-        tooltip.add(new TranslatableText(MODID + ".void_amalgam.lore"));
-        tooltip.add(new TranslatableText(MODID + ".void_amalgam.lore2"));
+        tooltip.add(Text.translatable(MODID + ".void_amalgam.lore"));
+        tooltip.add(Text.translatable(MODID + ".void_amalgam.lore2"));
     }
 
     @Override

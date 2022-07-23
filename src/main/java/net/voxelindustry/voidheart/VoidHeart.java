@@ -2,7 +2,7 @@ package net.voxelindustry.voidheart;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.item.ItemGroup;
@@ -67,7 +67,7 @@ public class VoidHeart implements ModInitializer
         Registry.register(
                 Registry.CHUNK_GENERATOR,
                 new Identifier(MODID, "void_gen"),
-                VoidChunkGenerator.codec);
+                VoidChunkGenerator.CODEC);
 
         Registry.register(Registry.PARTICLE_TYPE,
                 new Identifier(MODID, "altar_void"), ALTAR_VOID_PARTICLE = FabricParticleTypes.complex(true, AltarVoidParticleEffect.PARAMETERS_FACTORY));

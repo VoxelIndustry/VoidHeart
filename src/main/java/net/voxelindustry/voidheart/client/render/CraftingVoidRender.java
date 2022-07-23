@@ -34,7 +34,7 @@ public class CraftingVoidRender
             matricesForCooling(altar, worldTimeInterp, matrices);
         else
             matricesForWarmingAndCrafting(altar, worldTimeInterp, matrices);
-        double playerDistance = altar.getPos().getSquaredDistance(dispatcher.camera.getPos(), true);
+        double playerDistance = altar.getPos().getSquaredDistance(dispatcher.camera.getPos());
         int draws = getDrawFromPlayerDistance(playerDistance);
 
         float size = 12 / 16F;

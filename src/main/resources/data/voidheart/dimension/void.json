@@ -1,6 +1,7 @@
 {
   "type": "voidheart:void",
   "generator": {
-    "type": "voidheart:void_gen"
+    "type": "voidheart:void_gen",
+    "seed": 0
   }
 }
