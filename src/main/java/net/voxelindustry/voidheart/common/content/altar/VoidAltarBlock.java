@@ -19,6 +19,7 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
+import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,10 +62,16 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
 
         if (altar.getStack().isEmpty())
         {
-            altar.setStack(player, ItemUtils.copyWithSize(player.getStackInHand(hand), 1));
+            var stackInHand = player.getStackInHand(hand);
+            if(!stackInHand.isEmpty())
+            {
+                altar.setStack(player, ItemUtils.copyWithSize(stackInHand, 1));
 
-            if (!player.isCreative())
-                player.getStackInHand(hand).decrement(1);
+                if (!player.isCreative())
+                    stackInHand.decrement(1);
+            }
+            else if(world.isClient())
+                VoidAltarRender.lastTouchedMillis = System.currentTimeMillis();
         }
         else
         {

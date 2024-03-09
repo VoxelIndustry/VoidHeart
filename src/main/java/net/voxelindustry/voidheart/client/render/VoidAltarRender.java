@@ -14,12 +14,15 @@ import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 
 public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile>
 {
+    public static long lastTouchedMillis;
+    private static final long HINT_DURATION_MILLIS = 10_000;
+
     @Override
     public void render(VoidAltarTile altar, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay)
     {
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getTranslucent());
 
-        if (!altar.getStack().isEmpty())
+        if (!altar.getStack().isEmpty() || System.currentTimeMillis() - lastTouchedMillis < HINT_DURATION_MILLIS)
             PillarPlacementRender.renderPillarsPreview(this, altar, matrices, buffer);
 
         CraftingOverlayRender.renderCraftingOverlay(altar, matrices, vertexConsumers, light);
