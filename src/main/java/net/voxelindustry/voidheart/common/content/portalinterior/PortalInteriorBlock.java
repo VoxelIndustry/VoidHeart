@@ -3,13 +3,14 @@ package net.voxelindustry.voidheart.common.content.portalinterior;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContext.Builder;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
@@ -44,7 +45,10 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
 
     public PortalInteriorBlock()
     {
-        super(Settings.of(Material.GLASS)
+        super(Settings.create()
+                .mapColor(MapColor.LIME)
+                .instrument(Instrument.XYLOPHONE)
+                .requiresTool()
                 .strength(-1.0F)
                 .sounds(BlockSoundGroup.GLASS)
                 .luminance(unused -> 11));
@@ -60,7 +64,7 @@ public class PortalInteriorBlock extends Block implements BlockEntityProvider
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder)
     {
         return emptyList();
     }

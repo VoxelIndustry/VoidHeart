@@ -8,14 +8,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.block.StateProperties;
@@ -357,7 +357,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
     public RegistryKey<World> getLinkedWorldKey()
     {
         if (linkedWorldKey == null)
-            linkedWorldKey = RegistryKey.of(Registry.WORLD_KEY, linkedWorld);
+            linkedWorldKey = RegistryKey.of(RegistryKeys.WORLD, linkedWorld);
 
         return linkedWorldKey;
     }
@@ -365,7 +365,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
     public RegistryKey<World> getPreviousLinkedWorldKey()
     {
         if (previousLinkedWorldKey == null)
-            previousLinkedWorldKey = RegistryKey.of(Registry.WORLD_KEY, previousLinkedWorld);
+            previousLinkedWorldKey = RegistryKey.of(RegistryKeys.WORLD, previousLinkedWorld);
 
         return previousLinkedWorldKey;
     }

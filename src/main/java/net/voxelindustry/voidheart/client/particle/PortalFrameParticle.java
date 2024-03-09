@@ -10,7 +10,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3f;
+import org.joml.Vector3f;
 
 public class PortalFrameParticle extends Particle
 {
@@ -50,27 +50,27 @@ public class PortalFrameParticle extends Particle
         var horizontalOffset = direction.getUnitVector();
         horizontalOffset.cross(vecUp);
 
-        var verticalOffset = horizontalOffset.copy();
+        var verticalOffset = new Vector3f(horizontalOffset);
         verticalOffset.cross(direction.getUnitVector());
-        verticalOffset.scale(MathHelper.lerp(age / (float) maxAge, height / 2F, height / 2F - 0.5F));
+        verticalOffset.mul(MathHelper.lerp(age / (float) maxAge, height / 2F, height / 2F - 0.5F));
 
-        horizontalOffset.scale(MathHelper.lerp(age / (float) maxAge, width / 2F, width / 2F - 0.5F));
+        horizontalOffset.mul(MathHelper.lerp(age / (float) maxAge, width / 2F, width / 2F - 0.5F));
 
-        var leftTop = new Vec3f(f, g, h);
-        leftTop.subtract(horizontalOffset);
+        var leftTop = new Vector3f(f, g, h);
+        leftTop.sub(horizontalOffset);
         leftTop.add(verticalOffset);
 
-        var rightTop = new Vec3f(f, g, h);
+        var rightTop = new Vector3f(f, g, h);
         rightTop.add(horizontalOffset);
         rightTop.add(verticalOffset);
 
-        var leftBottom = new Vec3f(f, g, h);
-        leftBottom.subtract(horizontalOffset);
-        leftBottom.subtract(verticalOffset);
+        var leftBottom = new Vector3f(f, g, h);
+        leftBottom.sub(horizontalOffset);
+        leftBottom.sub(verticalOffset);
 
-        var rightBottom = new Vec3f(f, g, h);
+        var rightBottom = new Vector3f(f, g, h);
         rightBottom.add(horizontalOffset);
-        rightBottom.subtract(verticalOffset);
+        rightBottom.sub(verticalOffset);
 
         Sprite sprite = spriteProvider.getSprite(0, 1);
 
@@ -83,31 +83,31 @@ public class PortalFrameParticle extends Particle
         float n = sprite.getMinV();
         float o = sprite.getMaxV();
         int light = 15728880;
-        vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ())
+        vertexConsumer.vertex(rightBottom.x(), rightBottom.y(), rightBottom.z())
                 .texture(l, o)
                 .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
-        vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ())
+        vertexConsumer.vertex(leftBottom.x(), leftBottom.y(), leftBottom.z())
                 .texture(l, n)
                 .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
-        vertexConsumer.vertex(leftTop.getX(), leftTop.getY(), leftTop.getZ())
+        vertexConsumer.vertex(leftTop.x(), leftTop.y(), leftTop.z())
                 .texture(m, o)
                 .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
-        vertexConsumer.vertex(rightTop.getX(), rightTop.getY(), rightTop.getZ())
+        vertexConsumer.vertex(rightTop.x(), rightTop.y(), rightTop.z())
                 .texture(m, n)
                 .color(this.red, this.green, this.blue, this.alpha)
                 .light(light)
                 .next();
 
-        vertexConsumer.vertex(rightBottom.getX(), rightBottom.getY(), rightBottom.getZ()).texture(l, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(leftBottom.getX(), leftBottom.getY(), leftBottom.getZ()).texture(l, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(leftTop.getX(), leftTop.getY(), leftTop.getZ()).texture(m, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(rightTop.getX(), rightTop.getY(), rightTop.getZ()).texture(m, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(rightBottom.x(), rightBottom.y(), rightBottom.z()).texture(l, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(leftBottom.x(), leftBottom.y(), leftBottom.z()).texture(l, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(leftTop.x(), leftTop.y(), leftTop.z()).texture(m, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(rightTop.x(), rightTop.y(), rightTop.z()).texture(m, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
 
     }
 

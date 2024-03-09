@@ -3,14 +3,14 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -52,7 +52,7 @@ public class PortalLinker
         if (tag.contains("firstPos"))
         {
             var firstPos = BlockPos.fromLong(tag.getLong("firstPos"));
-            var firstDimension = RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension")));
+            var firstDimension = RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension")));
 
             var externalWorld = world.getServer().getWorld(firstDimension);
             var linkedPortal = externalWorld.getBlockEntity(firstPos);

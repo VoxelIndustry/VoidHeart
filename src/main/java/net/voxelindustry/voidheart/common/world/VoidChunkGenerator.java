@@ -5,13 +5,11 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.SpawnGroup;
-import net.minecraft.structure.StructureSet;
+import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.entry.RegistryEntry.Reference;
 import net.minecraft.util.collection.Pool;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.BuiltinRegistries;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryEntry;
-import net.minecraft.util.registry.RegistryEntryList;
 import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.Heightmap;
@@ -29,18 +27,17 @@ import net.minecraft.world.gen.chunk.VerticalBlockSample;
 import net.minecraft.world.gen.noise.NoiseConfig;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 public class VoidChunkGenerator extends ChunkGenerator
 {
-    public static final Codec<VoidChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> VoidChunkGenerator.createStructureSetRegistryGetter(instance)
+    public static final Codec<VoidChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(RegistryOps.getEntryCodec(BiomeKeys.PLAINS))
             .apply(instance, instance.stable(VoidChunkGenerator::new)));
 
-    public VoidChunkGenerator(Registry<StructureSet> structureSetRegistry)
+    public VoidChunkGenerator(Reference<Biome> biomeReference)
     {
-        super(structureSetRegistry, Optional.of(RegistryEntryList.of()), new FixedBiomeSource(BuiltinRegistries.BIOME.entryOf(BiomeKeys.PLAINS)));
+        super(new FixedBiomeSource(biomeReference));
     }
 
     @Override
@@ -105,7 +102,7 @@ public class VoidChunkGenerator extends ChunkGenerator
     @Override
     public VerticalBlockSample getColumnSample(int x, int z, HeightLimitView world, NoiseConfig noiseConfig)
     {
-        return new VerticalBlockSample(world.getBottomY(), new BlockState[]{Blocks.AIR.getDefaultState()});
+        return new VerticalBlockSample(world.getBottomY(), new BlockState[] { Blocks.AIR.getDefaultState() });
     }
 
     @Override

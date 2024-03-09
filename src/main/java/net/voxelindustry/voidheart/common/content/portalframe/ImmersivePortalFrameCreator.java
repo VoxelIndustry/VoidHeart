@@ -2,9 +2,11 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import net.voxelindustry.steamlayer.math.Vec3f;
+import org.joml.Vector3f;
 import qouteall.imm_ptl.core.portal.Portal;
+import qouteall.q_misc_util.my_util.DQuaternion;
 
 @Log4j2
 public class ImmersivePortalFrameCreator
@@ -39,18 +41,19 @@ public class ImmersivePortalFrameCreator
             portal.axisW = new Vec3d(getUnitVector(facing.rotateYCounterclockwise()));
 
             if (portalFrameTile.getLinkedFacing() == facing)
-                portal.rotation = Vec3f.UP.getDegreesQuaternion(180);
+                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(180)));
+
             else if (portalFrameTile.getLinkedFacing() == facing.getOpposite())
             {
-                portal.rotation = Vec3f.UP.getDegreesQuaternion(0);
+                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(0)));
             }
             else if (portalFrameTile.getLinkedFacing() == facing.rotateYClockwise())
             {
-                portal.rotation = Vec3f.UP.getDegreesQuaternion(90);
+                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(90)));
             }
             else if (portalFrameTile.getLinkedFacing() == facing.rotateYCounterclockwise())
             {
-                portal.rotation = Vec3f.UP.getDegreesQuaternion(-90);
+                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(-90)));
             }
         }
         else
@@ -62,14 +65,14 @@ public class ImmersivePortalFrameCreator
             portal.axisW = new Vec3d(getUnitVector(Direction.EAST));
 
             if (portalFrameTile.getLinkedFacing() == facing)
-                portal.rotation = Vec3f.EAST.getDegreesQuaternion(180);
+                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_X.rotationDegrees(180)));
             else
-                portal.rotation = Vec3f.EAST.getDegreesQuaternion(0);
+                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_X.rotationDegrees(0)));
 
             var linkedState = linkedPortal.getPortalState();
             // Special case for a rotated horizontal portal. Like a 3x2 portal connected to a 2x3
             if (portalFrameTile.getPortalState().getWidth() != linkedState.getWidth())
-                portal.rotation.hamiltonProduct(Vec3f.UP.getDegreesQuaternion(90));
+                portal.setOrientationRotation(portal.getOrientationRotation().combine(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(90))));
         }
 
         Vec3d center = new Vec3d(
@@ -83,8 +86,8 @@ public class ImmersivePortalFrameCreator
         portalFrameTile.setPortalEntityID(portal.getUuid());
     }
 
-    public static net.minecraft.util.math.Vec3f getUnitVector(Direction direction)
+    public static Vector3f getUnitVector(Direction direction)
     {
-        return new net.minecraft.util.math.Vec3f(direction.getOffsetX(), direction.getOffsetY(), direction.getOffsetZ());
+        return new Vector3f(direction.getOffsetX(), direction.getOffsetY(), direction.getOffsetZ());
     }
 }

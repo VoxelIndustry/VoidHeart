@@ -2,22 +2,23 @@ package net.voxelindustry.voidheart.client.render;
 
 import net.minecraft.block.SkullBlock;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.gui.hud.InGameHud.HeartType;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.SkullBlockEntityRenderer;
-import net.minecraft.client.render.model.json.ModelTransformation.Mode;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
-import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
+import net.voxelindustry.voidheart.client.util.ClientConstants;
+import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 
 import static java.lang.Math.*;
 
@@ -31,14 +32,15 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
         matrices.push();
 
         matrices.translate(0.5, 0.3, 0.5);
-        matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(voidHeart.getWorld().getTime() + tickDelta));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(voidHeart.getWorld().getTime() + tickDelta, MathUtil.NEGATIVE_Y));
 
         float sinHeight = 6;
         float amplitude = 5;
         float scale = (float) (2 - abs(sin((voidHeart.getWorld().getTime() + tickDelta) / amplitude)) / sinHeight);
         matrices.scale(scale, scale, scale);
 
-        MinecraftClient.getInstance().getItemRenderer().renderItem(voidHeartStack, Mode.GROUND, 15728880, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, 0);
+        var model = MinecraftClient.getInstance().getItemRenderer().getModel(voidHeartStack, null, null, 0);
+        MinecraftClient.getInstance().getItemRenderer().renderItem(voidHeartStack, ModelTransformationMode.GROUND, false, matrices, vertexConsumers, 15728880, OverlayTexture.DEFAULT_UV, model);
 
         matrices.pop();
 
@@ -52,11 +54,11 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
         matrices.scale(1.25F / 64F, 1.25F / 64F, 1.25F / 64F);
 
         matrices.multiply(MinecraftClient.getInstance().gameRenderer.getCamera().getRotation());
-        matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
 
         var textRenderer = MinecraftClient.getInstance().textRenderer;
         var nameSize = textRenderer.getWidth(playerProfile.getName()) / 2F;
-        textRenderer.drawWithShadow(matrices, playerProfile.getName(), -nameSize, 0, 0xFFFFFF);
+        textRenderer.draw(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.SEE_THROUGH, 0, 15728880);
 
         var headRenderLayer = SkullBlockEntityRenderer.getRenderLayer(SkullBlock.Type.PLAYER, playerProfile);
         renderHeadSkin(matrices, vertexConsumers.getBuffer(headRenderLayer), -16 - nameSize - 8, -2, 0, 20, 20);
@@ -72,27 +74,13 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
                     0,
                     6,
                     6);
-        else
-        {
-            var playerEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(voidHeart.getPlayerID());
-            if (playerEntry != null)
-                renderHearts(playerEntry.getHealth(),
-                        MinecraftClient.getInstance().player.getMaxHealth(),
-                        matrices,
-                        vertexConsumers,
-                        -18,
-                        8,
-                        0,
-                        6,
-                        6);
-        }
 
         matrices.pop();
     }
 
     private void renderHearts(float health, float maxHealth, MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, float posX, float posY, float posZ, float width, float height)
     {
-        var heartRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(DrawableHelper.GUI_ICONS_TEXTURE));
+        var heartRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(ClientConstants.GUI_ICONS_TEXTURE));
 
         var containerMinU = HeartType.CONTAINER.getU(false, false) / 256F;
         var containerMaxU = containerMinU + (9 / 256F);

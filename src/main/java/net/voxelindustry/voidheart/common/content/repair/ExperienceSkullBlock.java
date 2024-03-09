@@ -10,7 +10,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContext.Builder;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -57,11 +57,11 @@ public class ExperienceSkullBlock extends Block implements BlockEntityProvider
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder)
     {
         var experienceSkull = new ItemStack(VoidHeartBlocks.EXPERIENCE_SKULL);
 
-        var tile = builder.getNullable(LootContextParameters.BLOCK_ENTITY);
+        var tile = builder.get(LootContextParameters.BLOCK_ENTITY);
 
         experienceSkull.setDamage(ExperienceSkullTile.MAX_EXPERIENCE);
         if (tile instanceof ExperienceSkullTile skullTile)
@@ -133,7 +133,7 @@ public class ExperienceSkullBlock extends Block implements BlockEntityProvider
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx)
     {
-        return this.getDefaultState().with(Properties.HORIZONTAL_FACING, ctx.getPlayerFacing().getOpposite());
+        return this.getDefaultState().with(Properties.HORIZONTAL_FACING, ctx.getPlayerLookDirection().getOpposite());
     }
 
     @Override

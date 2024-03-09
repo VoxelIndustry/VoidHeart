@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.compat.rei;
 
 import me.shedaniel.math.Point;
 import me.shedaniel.math.Rectangle;
+import me.shedaniel.rei.api.client.gui.Renderer;
 import me.shedaniel.rei.api.client.gui.widgets.Widget;
 import me.shedaniel.rei.api.client.gui.widgets.Widgets;
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
@@ -30,7 +31,7 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     }
 
     @Override
-    public EntryStack getIcon()
+    public Renderer getIcon()
     {
         return EntryStacks.of(VoidHeartBlocks.VOID_ALTAR);
     }
@@ -81,12 +82,12 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     public List<EntryStack<ItemStack>> getInput(AltarRecipeDisplay recipeDisplay, int index)
     {
         var inputs = recipeDisplay.getInputEntries();
-        return inputs.size() > index ? inputs.get(index).cast() : Collections.emptyList();
+        return inputs.size() > index ? inputs.get(index).castAsList() : Collections.emptyList();
     }
 
     public List<EntryStack<ItemStack>> getOutput(AltarRecipeDisplay recipeDisplay, int index)
     {
         var outputs = recipeDisplay.getOutputEntries();
-        return outputs.size() > index ? outputs.get(index).cast() : Collections.emptyList();
+        return outputs.size() > index ? outputs.get(index).castAsList() : Collections.emptyList();
     }
 }

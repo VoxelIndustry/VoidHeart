@@ -7,8 +7,8 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.command.DirectionArgumentType;
 
@@ -33,7 +33,7 @@ public record PortalFrameParticleEffect(Direction direction,
     @Override
     public String asString()
     {
-        return Registry.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
+        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
     }
 
     public static final Factory<PortalFrameParticleEffect> PARAMETERS_FACTORY = new Factory<>()

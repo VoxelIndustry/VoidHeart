@@ -2,8 +2,9 @@ package net.voxelindustry.voidheart.common.setup;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
@@ -35,12 +36,12 @@ public class VoidHeartItems
         registerItem(VOID_KEY = new VoidKeyItem(), "void_key");
         registerItem(PERMEABLE_BARRIER = new PermeableBarrierItem(), "permeable_barrier_item");
 
-        registerItem(OBSIDIAN_SHARD = new Item(new Settings().group(VoidHeart.ITEMGROUP)), "obsidian_shard");
-        registerItem(ENDER_SHARD = new Item(new Settings().group(VoidHeart.ITEMGROUP)), "ender_shard");
+        registerItem(OBSIDIAN_SHARD = new Item(new Settings()), "obsidian_shard");
+        registerItem(ENDER_SHARD = new Item(new Settings()), "ender_shard");
     }
 
     public static void registerItem(Item item, String name)
     {
-        Registry.register(Registry.ITEM, new Identifier(VoidHeart.MODID, name), item);
+        Registry.register(Registries.ITEM, new Identifier(VoidHeart.MODID, name), item);
     }
 }

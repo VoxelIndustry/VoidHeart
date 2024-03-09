@@ -7,6 +7,8 @@ import net.minecraft.item.FoodComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -15,8 +17,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
@@ -34,7 +34,6 @@ public class VoidPearlItem extends Item
     public VoidPearlItem()
     {
         super(new Settings()
-                .group(VoidHeart.ITEMGROUP)
                 .rarity(Rarity.COMMON)
                 .maxCount(1)
                 .food(new FoodComponent.Builder().alwaysEdible().build()));
@@ -46,7 +45,7 @@ public class VoidPearlItem extends Item
 
         if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
-            boolean canUse = !tag.contains("firstDimension") || RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
+            boolean canUse = !tag.contains("firstDimension") || RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
 
             if (!canUse)
                 player.sendMessage(Text.translatable(MODID + ".must_be_same_world"), true);
@@ -54,10 +53,10 @@ public class VoidPearlItem extends Item
         }
 
         // If first point is already set then it must not be already inside a pocket
-        if (isInPocket && (!tag.contains("firstPos") || !RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+        if (isInPocket && (!tag.contains("firstPos") || !RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
             return true;
         // If first point is already set then it must be inside a pocket
-        if (!isInPocket && (!tag.contains("firstPos") || RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+        if (!isInPocket && (!tag.contains("firstPos") || RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
             return true;
 
         player.sendMessage(Text.translatable(MODID + ".must_be_inside_outside"), true);
@@ -81,7 +80,7 @@ public class VoidPearlItem extends Item
         }
 
         var tag = stack.getOrCreateNbt();
-        if (RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
+        if (RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
             player.sendMessage(Text.translatable(MODID + ".link_started_pocket"), true);
         else
             player.sendMessage(Text.translatable(MODID + ".link_started_outside"), true);
@@ -104,7 +103,7 @@ public class VoidPearlItem extends Item
         {
             var blockPos = BlockPos.fromLong(tag.getLong("firstPos"));
 
-            if (RegistryKey.of(Registry.WORLD_KEY, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
+            if (RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
             {
                 tooltip.add(Text.translatable(MODID + ".void_pearl.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
                 tooltip.add(Text.translatable(MODID + ".void_pearl.pocket.lore2",

@@ -2,9 +2,9 @@ package net.voxelindustry.voidheart.common.block;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
+import net.minecraft.block.MapColor;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.BlockSoundGroup;
@@ -12,7 +12,6 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -26,7 +25,10 @@ public class VoidLampBlock extends Block
 
     public VoidLampBlock()
     {
-        super(Settings.of(Material.STONE)
+        super(Settings.create()
+                .mapColor(MapColor.DARK_GREEN)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE)
                 .luminance(VoidLampBlock::getLuminance));
@@ -54,17 +56,6 @@ public class VoidLampBlock extends Block
             return ActionResult.SUCCESS;
         }
         return ActionResult.PASS;
-    }
-
-    @Override
-    public void appendStacks(ItemGroup group, DefaultedList<ItemStack> list)
-    {
-        CORRUPTION.getValues().forEach(corruption ->
-        {
-            ItemStack stack = new ItemStack(this);
-            stack.getOrCreateNbt().putInt("corruption", corruption);
-            list.add(stack);
-        });
     }
 
     @Override

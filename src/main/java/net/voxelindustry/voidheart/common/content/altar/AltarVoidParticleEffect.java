@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.registry.Registries;
 import net.voxelindustry.voidheart.VoidHeart;
 
 @RequiredArgsConstructor
@@ -32,10 +32,10 @@ public class AltarVoidParticleEffect implements ParticleEffect
     @Override
     public String asString()
     {
-        return Registry.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
+        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
     }
 
-    public static final Factory<AltarVoidParticleEffect> PARAMETERS_FACTORY = new Factory<AltarVoidParticleEffect>()
+    public static final Factory<AltarVoidParticleEffect> PARAMETERS_FACTORY = new Factory<>()
     {
         @Override
         public AltarVoidParticleEffect read(ParticleType<AltarVoidParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException

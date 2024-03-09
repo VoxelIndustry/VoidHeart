@@ -28,7 +28,6 @@ public class VoidAmalgamItem extends Item
     public VoidAmalgamItem()
     {
         super(new Settings()
-                .group(VoidHeart.ITEMGROUP)
                 .rarity(Rarity.RARE)
                 .maxCount(1)
                 .food(new FoodComponent.Builder().alwaysEdible().build()));

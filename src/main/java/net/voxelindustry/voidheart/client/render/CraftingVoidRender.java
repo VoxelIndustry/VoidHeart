@@ -6,7 +6,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
 import net.voxelindustry.voidheart.client.util.MathUtil;
@@ -28,7 +27,6 @@ public class CraftingVoidRender
         RANDOM.setSeed(31100L);
 
         matrices.push();
-
 
         if (altar.getCoolProgress() > 0)
             matricesForCooling(altar, worldTimeInterp, matrices);
@@ -56,9 +54,10 @@ public class CraftingVoidRender
         float angle = 360 * (worldTimeInterp / 25);
 
         matrices.translate(0.5, 3, 0.5);
-        matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(angle));
-        matrices.multiply(Vec3f.NEGATIVE_X.getDegreesQuaternion(angle));
-        matrices.multiply(Vec3f.NEGATIVE_Z.getDegreesQuaternion(angle));
+
+        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Y));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_X));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Z));
 
         float scale = 1 - Interpolators.SINE_BOTH.apply(coolingDelta);
         matrices.scale(scale, scale, scale);
@@ -70,9 +69,9 @@ public class CraftingVoidRender
 
         float angle = 360 * (worldTimeInterp / 100);
 
-        matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(angle));
-        matrices.multiply(Vec3f.NEGATIVE_X.getDegreesQuaternion(angle));
-        matrices.multiply(Vec3f.NEGATIVE_Z.getDegreesQuaternion(angle));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Y));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_X));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Z));
 
         float scale;
         if (altar.getWarmProgress() < VoidAltarTile.WARMING_TIME)

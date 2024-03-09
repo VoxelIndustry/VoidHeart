@@ -8,8 +8,10 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import net.voxelindustry.voidheart.client.util.MathUtil;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 @Getter
 @ToString
@@ -21,7 +23,7 @@ public class PortalFormerState implements TagSerializable<NbtCompound>
     private BlockPos  to     = BlockPos.ORIGIN;
     private Direction facing = Direction.UP;
 
-    private Vec3f center = Vec3f.ZERO;
+    private Vector3fc center = new Vector3f(0);
 
     public PortalFormerState(BlockPos from, BlockPos to, Direction facing)
     {
@@ -101,10 +103,10 @@ public class PortalFormerState implements TagSerializable<NbtCompound>
         }
     }
 
-    public Vec3f getCenter()
+    public Vector3fc getCenter()
     {
-        if (center == Vec3f.ZERO)
-            center = new Vec3f(
+        if (center.equals(MathUtil.ZERO))
+            center = new Vector3f(
                     (getTo().getX() - getFrom().getX()) / 2F + getFrom().getX(),
                     (getTo().getY() - getFrom().getY()) / 2F + getFrom().getY(),
                     (getTo().getZ() - getFrom().getZ()) / 2F + getFrom().getZ()

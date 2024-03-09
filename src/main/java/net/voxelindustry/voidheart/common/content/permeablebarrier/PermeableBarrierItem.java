@@ -11,7 +11,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Rarity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 public class PermeableBarrierItem extends Item
@@ -19,7 +18,6 @@ public class PermeableBarrierItem extends Item
     public PermeableBarrierItem()
     {
         super(new Settings()
-                .group(VoidHeart.ITEMGROUP)
                 .rarity(Rarity.UNCOMMON)
                 .maxCount(1)
                 .maxDamage(128));
@@ -40,8 +38,7 @@ public class PermeableBarrierItem extends Item
 
             if (arePointsSamePlane(first, second))
             {
-
-                Direction direction = /*getDirection(first, second, context.getPlayer())*/ context.getPlayerFacing();
+                Direction direction = /*getDirection(first, second, context.getPlayer())*/ context.getHorizontalPlayerFacing();
 
                 for (BlockPos pos : BlockPos.iterate(first, second))
                 {
@@ -71,7 +68,7 @@ public class PermeableBarrierItem extends Item
     private Direction getDirection(BlockPos first, BlockPos second, ItemUsageContext context)
     {
         if (first.equals(second))
-            return context.getPlayerFacing();
+            return context.getHorizontalPlayerFacing();
 
         return null;
     }

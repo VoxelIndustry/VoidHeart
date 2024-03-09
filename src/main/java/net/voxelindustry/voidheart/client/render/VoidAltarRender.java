@@ -6,10 +6,10 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.model.json.ModelTransformation.Mode;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3f;
+import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 
 public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile>
@@ -34,9 +34,10 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile>
         double offset = Math.abs(Math.sin(worldTimeInterp / 8.0) / 24.0) + 2 / 16D;
 
         matrices.translate(0.5, 1 + offset, 0.5);
-        matrices.multiply(Vec3f.NEGATIVE_Y.getDegreesQuaternion(worldTimeInterp));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(worldTimeInterp, MathUtil.NEGATIVE_Y));
 
-        MinecraftClient.getInstance().getItemRenderer().renderItem(altar.getStack(), Mode.GROUND, 15728880, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, 0);
+        var model = MinecraftClient.getInstance().getItemRenderer().getModel(altar.getStack(), null, null, 0);
+        MinecraftClient.getInstance().getItemRenderer().renderItem(altar.getStack(), ModelTransformationMode.GROUND, false, matrices,vertexConsumers, 15728880, OverlayTexture.DEFAULT_UV, model);
 
         matrices.pop();
     }

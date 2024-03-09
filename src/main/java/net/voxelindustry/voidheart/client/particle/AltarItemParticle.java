@@ -6,7 +6,8 @@ import net.minecraft.client.particle.SpriteBillboardParticle;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.ItemStack;
 import net.voxelindustry.steamlayer.math.Bezier;
-import net.voxelindustry.steamlayer.math.Vec3f;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import static java.lang.Math.abs;
 
@@ -22,7 +23,7 @@ public class AltarItemParticle extends SpriteBillboardParticle
     private final double destinationY;
     private final double destinationZ;
 
-    private final Vec3f[] controlPoints;
+    private final Vector3fc[] controlPoints;
 
     public AltarItemParticle(ClientWorld world,
                              double x,
@@ -32,8 +33,8 @@ public class AltarItemParticle extends SpriteBillboardParticle
                              double velocityY,
                              double velocityZ,
                              ItemStack stack,
-                             Vec3f firstPointBezier,
-                             Vec3f secondPointBezier)
+                             Vector3fc firstPointBezier,
+                             Vector3fc secondPointBezier)
     {
         super(world, x, y, z, velocityX, velocityY, velocityZ);
 
@@ -62,12 +63,12 @@ public class AltarItemParticle extends SpriteBillboardParticle
 
         maxAge = 30;
 
-        controlPoints = new Vec3f[]
+        controlPoints = new Vector3fc[]
                 {
-                        new Vec3f((float) x, (float) y, (float) z),
+                        new Vector3f((float) x, (float) y, (float) z),
                         firstPointBezier,
                         secondPointBezier,
-                        new Vec3f((float) destinationX, (float) destinationY, (float) destinationZ)
+                        new Vector3f((float) destinationX, (float) destinationY, (float) destinationZ)
                 };
 
         scale = 0.1F * (random.nextFloat() * 0.5F + 0.5F);
@@ -87,9 +88,9 @@ public class AltarItemParticle extends SpriteBillboardParticle
 
         double delta = age / (double) maxAge;
 
-        Vec3f pos = Bezier.pointOfBezier4f(controlPoints, (float) delta);
+        Vector3fc pos = Bezier.pointOfBezier4f(controlPoints, (float) delta);
 
-        setPos(pos.getX(), pos.getY(), pos.getZ());
+        setPos(pos.x(), pos.y(), pos.z());
     }
 
     private boolean isNearDestination()

@@ -3,11 +3,12 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContext.Builder;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
@@ -33,8 +34,10 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
 {
     public PortalFrameBlock()
     {
-        this(Settings.of(Material.STONE)
-                .strength(3F)
+        this(Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .sounds(BlockSoundGroup.STONE));
     }
 
@@ -65,7 +68,7 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder)
     {
         return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE_BRICKS));
     }

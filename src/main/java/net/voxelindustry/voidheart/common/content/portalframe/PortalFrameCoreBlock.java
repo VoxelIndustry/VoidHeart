@@ -2,8 +2,9 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
@@ -25,8 +26,10 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
 {
     public PortalFrameCoreBlock()
     {
-        super(Settings.of(Material.STONE)
-                .strength(3F)
+        super(Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .sounds(BlockSoundGroup.STONE)
                 .ticksRandomly()
                 .emissiveLighting((state, world, pos) -> state.get(Properties.LIT)));

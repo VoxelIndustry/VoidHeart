@@ -38,8 +38,9 @@ public class PortalFrameVeinModel
         context.getEmitter()
                 .material(outerMaterial)
                 .square(direction, 0, 0, 1, 1, 0)
-                .spriteBake(0, sprite, uvFlag)
-                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
+                .cullFace(direction)
+                .spriteBake(sprite, uvFlag)
+                .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                 .tag(1)
                 .emit();
     }

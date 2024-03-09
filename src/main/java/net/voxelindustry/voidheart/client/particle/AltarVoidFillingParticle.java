@@ -7,10 +7,11 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import static java.lang.Math.abs;
 
@@ -59,28 +60,28 @@ public class AltarVoidFillingParticle extends Particle
         float f = (float) (MathHelper.lerp(tickDelta, prevPosX, x) - vec3d.getX());
         float g = (float) (MathHelper.lerp(tickDelta, prevPosY, y) - vec3d.getY());
         float h = (float) (MathHelper.lerp(tickDelta, prevPosZ, z) - vec3d.getZ());
-        Quaternion quaternion2;
+        Quaternionf quaternion2;
         if (angle == 0.0F)
         {
             quaternion2 = camera.getRotation();
         }
         else
         {
-            quaternion2 = new Quaternion(camera.getRotation());
+            quaternion2 = new Quaternionf(camera.getRotation());
             float i = MathHelper.lerp(tickDelta, prevAngle, angle);
-            quaternion2.hamiltonProduct(Vec3f.POSITIVE_Z.getRadialQuaternion(i));
+            quaternion2.mul(Direction.NORTH.getRotationQuaternion());
         }
 
-        Vec3f vector3f = new Vec3f(-1.0F, -1.0F, 0.0F);
+        var vector3f = new Vector3f(-1.0F, -1.0F, 0.0F);
         vector3f.rotate(quaternion2);
-        Vec3f[] vector3fs = new Vec3f[]{new Vec3f(-1.0F, -1.0F, 0.0F), new Vec3f(-1.0F, 1.0F, 0.0F), new Vec3f(1.0F, 1.0F, 0.0F), new Vec3f(1.0F, -1.0F, 0.0F)};
+        var vector3fs = new Vector3f[]{new Vector3f(-1.0F, -1.0F, 0.0F), new Vector3f(-1.0F, 1.0F, 0.0F), new Vector3f(1.0F, 1.0F, 0.0F), new Vector3f(1.0F, -1.0F, 0.0F)};
         float size = 1 / 48F;
 
         for (int k = 0; k < 4; ++k)
         {
-            Vec3f vector3f2 = vector3fs[k];
+            var vector3f2 = vector3fs[k];
             vector3f2.rotate(quaternion2);
-            vector3f2.scale(size);
+            vector3f2.mul(size);
             vector3f2.add(f, g, h);
         }
 
@@ -95,10 +96,10 @@ public class AltarVoidFillingParticle extends Particle
         float n = sprite.getMinV();
         float o = sprite.getMaxV();
         int light = 15728880;
-        vertexConsumer.vertex(vector3fs[0].getX(), vector3fs[0].getY(), vector3fs[0].getZ()).texture(m, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[1].getX(), vector3fs[1].getY(), vector3fs[1].getZ()).texture(m, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[2].getX(), vector3fs[2].getY(), vector3fs[2].getZ()).texture(l, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[3].getX(), vector3fs[3].getY(), vector3fs[3].getZ()).texture(l, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[0].x(), vector3fs[0].y(), vector3fs[0].z()).texture(m, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[1].x(), vector3fs[1].y(), vector3fs[1].z()).texture(m, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[2].x(), vector3fs[2].y(), vector3fs[2].z()).texture(l, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[3].x(), vector3fs[3].y(), vector3fs[3].z()).texture(l, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
     }
 
     @Override

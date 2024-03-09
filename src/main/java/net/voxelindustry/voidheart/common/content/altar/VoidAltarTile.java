@@ -14,10 +14,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Quaternion;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
-import net.voxelindustry.steamlayer.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
 import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
@@ -30,6 +29,7 @@ import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -75,8 +75,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     // CLIENT //
     ////////////
 
-    private Vec3f bezierFirstPoint;
-    private Vec3f bezierSecondPoint;
+    private Vector3f bezierFirstPoint;
+    private Vector3f bezierSecondPoint;
 
     @Getter
     private ItemStack       clientRecipeOutput    = ItemStack.EMPTY;
@@ -521,26 +521,25 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     private void computeBezier()
     {
-        Vec3f start = new Vec3f(consumingPillarPos.getX() + 0.5F,
+        var start = new Vector3f(consumingPillarPos.getX() + 0.5F,
                 consumingPillarPos.getY() + 1 + 4 / 16F,
                 consumingPillarPos.getZ() + 0.5F);
 
-        Vec3f end = new Vec3f(getPos().getX() + 0.5F,
+        var end = new Vector3f(getPos().getX() + 0.5F,
                 getPos().getY() + 1 + 4 / 16F,
                 getPos().getZ() + 0.5F);
 
-        Vec3f forward = end.subtract(start);
-        float length = forward.magnitude();
+        var forward = end.sub(start);
+        float length = forward.length();
         forward = forward.normalize();
 
-
         float dispersion = getWorld().random.nextBoolean() ? getWorld().random.nextFloat() * 50 + 20 : -(getWorld().random.nextFloat() * 50 + 20);
-        Quaternion rotation = Vec3f.UP.getDegreesQuaternion(dispersion);
+        var rotation = RotationAxis.POSITIVE_Y.rotationDegrees(dispersion);
 
-        bezierFirstPoint = start.add(forward.rotate(rotation).scale(length * (getWorld().random.nextFloat() / 3 + 0.2F)));
+        bezierFirstPoint = start.add(forward.rotate(rotation).mul(length * (getWorld().random.nextFloat() / 3 + 0.2F)));
 
         rotation.conjugate();
-        bezierSecondPoint = start.add(forward.rotate(rotation).scale(length * (getWorld().random.nextFloat() / 3 + 0.5F)));
+        bezierSecondPoint = start.add(forward.rotate(rotation).mul(length * (getWorld().random.nextFloat() / 3 + 0.5F)));
 
         if (getWorld().random.nextBoolean())
         {

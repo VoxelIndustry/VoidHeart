@@ -1,7 +1,11 @@
 package net.voxelindustry.voidheart.common.recipe;
 
+import com.google.gson.JsonObject;
 import lombok.Getter;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeCallback;
@@ -32,5 +36,29 @@ public class AltarRecipe extends RecipeBase
     {
         super.onCraft = onCraft;
         return this;
+    }
+
+    @Override
+    public void fromJson(JsonObject json)
+    {
+        super.fromJson(json);
+
+        this.time = json.get("time").getAsInt();
+    }
+
+    @Override
+    public void fromByteBuf(PacketByteBuf buffer)
+    {
+        super.fromByteBuf(buffer);
+
+        this.time = buffer.readInt();
+    }
+
+    @Override
+    public void toByteBuf(PacketByteBuf buffer)
+    {
+        super.toByteBuf(buffer);
+
+        buffer.writeInt(time);
     }
 }

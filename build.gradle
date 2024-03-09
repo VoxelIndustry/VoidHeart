@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.12-SNAPSHOT'
+    id 'fabric-loom' version '1.5.+'
     id 'maven-publish'
 }
 
@@ -12,22 +12,33 @@ group = project.maven_group
 
 repositories {
     maven {
+        name = "Gitea"
+        url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
+
+        credentials(HttpHeaderCredentials) {
+            name = "Authorization"
+            value = "token ${gitea_token}"
+        }
+
+        authentication {
+            header(HttpHeaderAuthentication)
+        }
+    }
+
+    maven {
         name = 'Fabric'
         url = 'https://maven.fabricmc.net/'
-    }
-    maven {
-        name = 'VoxelIndustry'
-        url = 'https://maven.ferenyr.info/artifactory/libs-release'
     }
     maven {
         name = 'Roughly Enough Items'
         url = 'https://maven.shedaniel.me/'
     }
     maven {
-        name = 'ModMenu'
+        name = 'ModMenu & EMI'
         url = 'https://maven.terraformersmc.com/'
     }
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -38,11 +49,15 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     modImplementation include("net.voxelindustry:SteamLayer:${project.steamlayer_version}")
+    //modImplementation "net.voxelindustry:biggerstructures:1.0.0"
 
     modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
-    modImplementation "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
-    modImplementation "imm_ptl_core:imm_ptl_core:${project.importals_version}"
-    modImplementation "q_misc_util:q_misc_util:${project.importals_version}"
+    modCompileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
+    modImplementation "dev.emi:emi-fabric:${project.emi_version}"
+
+    modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v3.3.9-mc1.20.1")
+    modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:q_misc_util:v3.3.9-mc1.20.1")
+    modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:build:v3.3.9-mc1.20.1")
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
@@ -73,19 +88,11 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = "sources"
-    from sourceSets.main.allSource
-}
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
             artifact(remapJar) {
                 builtBy remapJar
-            }
-            artifact(sourcesJar) {
-                builtBy remapSourcesJar
             }
         }
     }

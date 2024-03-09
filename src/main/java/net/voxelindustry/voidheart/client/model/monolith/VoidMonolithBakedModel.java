@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 
 public class VoidMonolithBakedModel extends ForwardingBakedModel
 {
-    private final Direction[] horizontals = new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+    private final Direction[] horizontals = new Direction[] { Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST };
 
     private RenderMaterial outerMaterial;
 
@@ -74,7 +74,7 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
                     sprite = VoidMonolithSpriteManager.getAboveSprite(variant);
             }
 
-            quad.spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV);
+            quad.spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV);
             return true;
         });
 
@@ -106,8 +106,9 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
                 context.getEmitter()
                         .material(outerMaterial)
                         .square(direction, 0, 0, 1, 1, 0)
-                        .spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV)
-                        .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
+                        .spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV)
+                        .cullFace(direction)
+                        .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                         .tag(1)
                         .emit();
             }

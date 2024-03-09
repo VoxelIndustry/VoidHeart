@@ -1,16 +1,14 @@
 package net.voxelindustry.voidheart.client.model;
 
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.Baker;
 import net.minecraft.client.render.model.ModelBakeSettings;
-import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.util.Identifier;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.function.Function;
 
 public abstract class ForwardingUnbakedModel implements UnbakedModel
@@ -24,14 +22,14 @@ public abstract class ForwardingUnbakedModel implements UnbakedModel
     }
 
     @Override
-    public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences)
+    public void setParents(Function<Identifier, UnbakedModel> modelLoader)
     {
-        return wrapped.getTextureDependencies(unbakedModelGetter, unresolvedTextureReferences);
+        wrapped.setParents(modelLoader);
     }
 
     @Override
-    public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId)
+    public BakedModel bake(Baker baker, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId)
     {
-        return wrapped.bake(loader, textureGetter, rotationContainer, modelId);
+        return wrapped.bake(baker, textureGetter, rotationContainer, modelId);
     }
 }

@@ -31,7 +31,7 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
         if (posToPlace == null)
             return false;
 
-        int height = context.getRandom().nextInt(context.getConfig().maxHeight - context.getConfig().minHeight) + context.getConfig().minHeight;
+        int height = context.getRandom().nextInt(context.getConfig().maxHeight() - context.getConfig().minHeight()) + context.getConfig().minHeight();
 
         for (int y = 0; y < height; y++)
         {

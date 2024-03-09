@@ -1,10 +1,6 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
-import net.minecraft.block.ShapeContext;
+import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
@@ -39,7 +35,8 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
 
     public VoidAltarBlock()
     {
-        super(Settings.of(Material.STONE)
+        super(Settings.create()
+                .mapColor(MapColor.BLACK)
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE)
                 .luminance(state -> state.get(Properties.LIT) ? 11 : 0));

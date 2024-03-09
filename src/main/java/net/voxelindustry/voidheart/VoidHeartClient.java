@@ -2,17 +2,17 @@ package net.voxelindustry.voidheart;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
-import net.fabricmc.fabric.api.event.client.ClientSpriteRegistryCallback;
 import net.fabricmc.fabric.api.object.builder.v1.client.model.FabricModelPredicateProviderRegistry;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
+import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithSpriteManager;
 import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameVeinSpriteManager;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
@@ -32,15 +32,17 @@ public class VoidHeartClient implements ClientModInitializer
     @Override
     public void onInitializeClient()
     {
+        ModelLoadingPlugin.register(new VoidHeartModelLoadingPlugin());
+
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PORTAL_INTERIOR, RenderLayer.getTranslucent());
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.VOID_DOOR, RenderLayer.getCutout());
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PERMEABLE_BARRIER, RenderLayer.getCutout());
         BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.EXPERIENCE_SKULL, RenderLayer.getCutout());
 
-        BlockEntityRendererRegistry.register(VoidHeartTiles.VOID_PILLAR, ctx -> new VoidPillarRender());
-        BlockEntityRendererRegistry.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
-        BlockEntityRendererRegistry.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
-        BlockEntityRendererRegistry.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
+        BlockEntityRendererFactories.register(VoidHeartTiles.VOID_PILLAR, ctx -> new VoidPillarRender());
+        BlockEntityRendererFactories.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
+        BlockEntityRendererFactories.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
+        BlockEntityRendererFactories.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
 
         ParticleFactoryRegistry.getInstance().register(
                 ALTAR_VOID_PARTICLE,
@@ -61,12 +63,6 @@ public class VoidHeartClient implements ClientModInitializer
                 VoidHeartBlocks.VOID_LAMP.asItem(),
                 new Identifier(VoidHeart.MODID, "corruption"),
                 ((stack, world, entity, provider) -> stack.hasNbt() ? stack.getNbt().getInt("corruption") : 0));
-
-        ClientSpriteRegistryCallback.event(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE).register((atlasTexture, registry) ->
-        {
-            VoidMonolithSpriteManager.registerSprites(registry::register);
-            PortalFrameVeinSpriteManager.registerSprites(registry::register);
-        });
 
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener()
         {

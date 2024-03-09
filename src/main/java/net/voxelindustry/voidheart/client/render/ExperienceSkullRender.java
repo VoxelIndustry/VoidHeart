@@ -2,7 +2,7 @@ package net.voxelindustry.voidheart.client.render;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -11,15 +11,17 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Quaternion;
-import net.minecraft.util.math.Vec3f;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
-import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
+import net.voxelindustry.voidheart.client.util.ClientConstants;
+import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.util.ExperienceUtil;
+import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
+import org.joml.Math;
+import org.joml.Quaternionf;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,7 +50,7 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
         matrices.translate(0.5, 0.5, 0.5);
         float rotationVerticalDelta = getAnimationDelta(skull, 160, 80, tickDelta);
         float rotationHorizontalDelta = getAnimationDelta(skull, 100, 0, tickDelta);
-        matrices.multiply(Quaternion.fromEulerXyz((float) Math.toRadians(15 * rotationVerticalDelta - 7.5), (float) Math.toRadians(10 * rotationHorizontalDelta - 5), 0));
+        matrices.multiply(new Quaternionf().rotationXYZ(Math.toRadians(15 * rotationVerticalDelta - 7.5F), Math.toRadians(10 * rotationHorizontalDelta - 5), 0));
         matrices.translate(-0.5, -0.5, -0.5);
 
         float translateDelta = getAnimationDelta(skull, 160, 0, tickDelta);
@@ -74,22 +76,25 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
         matrices.scale(1.25F / 64F, 1.25F / 64F, 1.25F / 64F);
 
         matrices.multiply(MinecraftClient.getInstance().gameRenderer.getCamera().getRotation());
-        matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180));
+        matrices.multiply(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
 
         var textRenderer = MinecraftClient.getInstance().textRenderer;
 
         var levelText = String.valueOf(ExperienceUtil.getExperienceLevel(skull.getExperience()));
         var levelTextSize = textRenderer.getWidth(levelText) / 2F;
-        textRenderer.draw(matrices, levelText, -levelTextSize - 1, 0, 0);
-        textRenderer.draw(matrices, levelText, -levelTextSize + 1, 0, 0);
-        textRenderer.draw(matrices, levelText, -levelTextSize, -1, 0);
-        textRenderer.draw(matrices, levelText, -levelTextSize, 1, 0);
+
+        var positionMatrix = matrices.peek().getPositionMatrix();
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize - 1, 0, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize + 1, 0, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize, -1, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+        MinecraftClient.getInstance().textRenderer.draw(levelText,  -levelTextSize, 1, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
 
         matrices.translate(0, 0, -0.1F);
-        textRenderer.draw(matrices, levelText, -levelTextSize, 0, 8453920);
+        positionMatrix = matrices.peek().getPositionMatrix();
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize, 0, 8453920, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
 
         matrices.translate(0, 0, 0.15F);
-        var expRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(DrawableHelper.GUI_ICONS_TEXTURE));
+        var expRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(ClientConstants.GUI_ICONS_TEXTURE));
         renderExpBar(matrices,
                 expRenderBuffer,
                 -182 / 5F,

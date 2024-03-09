@@ -3,9 +3,10 @@ package net.voxelindustry.voidheart.common.content.pillar;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
@@ -36,8 +37,10 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
 
     public VoidPillarBlock()
     {
-        super(Settings.of(Material.STONE)
-                .strength(3F)
+        super(Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .sounds(BlockSoundGroup.STONE)
                 .luminance(state -> state.get(Properties.LIT) ? 11 : 0));
 

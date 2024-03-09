@@ -1,8 +1,8 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
 import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.Baker;
 import net.minecraft.client.render.model.ModelBakeSettings;
-import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
@@ -19,8 +19,8 @@ public class VoidMonolithUnbakedModel extends ForwardingUnbakedModel
     }
 
     @Override
-    public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId)
+    public BakedModel bake(Baker baker, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId)
     {
-        return new VoidMonolithBakedModel(super.bake(loader, textureGetter, rotationContainer, modelId));
+        return new VoidMonolithBakedModel(super.bake(baker, textureGetter, rotationContainer, modelId));
     }
 }

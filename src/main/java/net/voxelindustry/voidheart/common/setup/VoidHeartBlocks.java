@@ -1,24 +1,23 @@
 package net.voxelindustry.voidheart.common.setup;
 
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.MapColor;
-import net.minecraft.block.Material;
 import net.minecraft.block.PillarBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.WallBlock;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.BlockView;
-import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
 import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
@@ -85,7 +84,7 @@ public class VoidHeartBlocks
 
     public static void registerBlocks()
     {
-        Settings itemGroup = new Item.Settings().group(VoidHeart.ITEMGROUP);
+        Settings itemGroup = new Item.Settings();
         Settings noGroup = new Item.Settings();
 
         registerBlock(PORTAL_INTERIOR = new PortalInteriorBlock(), noGroup, "portal_interior");
@@ -99,104 +98,140 @@ public class VoidHeartBlocks
         registerBlock(VOID_HEART = new VoidHeartBlock(), noGroup, "void_heart_block");
 
         registerBlock(POCKET_WALL = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .strength(-1.0F, 3600000.0F)
                         .dropsNothing()
                         .allowsSpawning((state, world, pos, type) -> false)), noGroup, "pocket_wall");
 
         registerBlock(VOIDSTONE = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(2F, 6.0F)), itemGroup, "voidstone");
 
         registerBlock(VOIDSTONE_POLISHED = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_polished");
 
         registerBlock(VOIDSTONE_BRICKS = new VoidStoneBricksBlock(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");
         registerBlock(VOIDSTONE_BRICKS_CRACKED = new VoidStoneBricksBlock(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_cracked");
         registerBlock(VOIDSTONE_CHISELED = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_chiseled");
 
         registerBlock(VOIDSTONE_BRICKS_VERTICAL = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_vertical");
 
         registerBlock(VOIDSTONE_TILE = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile");
         registerBlock(VOIDSTONE_TILE_SMALL = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small");
         registerBlock(VOIDSTONE_TILE_SMALL_CARVED = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_carved");
         registerBlock(VOIDSTONE_TILE_SMALL_CHISELED = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_chiseled");
 
         registerBlock(ELDRITCH_VOIDSTONE = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
 
         registerBlock(VOIDSTONE_WRITHING = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing");
         registerBlock(VOIDSTONE_WRITHING_BLOSSOM = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_blossom");
         registerBlock(VOIDSTONE_WRITHING_MAW = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_maw");
 
         registerBlock(VOIDSTONE_PILLAR = new PillarBlock(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar");
         registerBlock(VOIDSTONE_WEATHERED_PILLAR = new PillarBlock(
-                FabricBlockSettings
-                        .of(Material.STONE, MapColor.BLACK)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar_weathered");
 
         registerBlock(VOID_MONOLITH = new VoidMonolithBlock(), itemGroup, "void_monolith");
         registerBlock(VOID_MONOLITH_CAP = new Block(
-                FabricBlockSettings
-                        .of(Material.STONE)
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.BLACK)
+                        .instrument(Instrument.BASEDRUM)
+                        .requiresTool()
                         .strength(1.5F, 6.0F)
                         .sounds(BlockSoundGroup.STONE)
                         .requiresTool()), itemGroup, "void_monolith_cap");
@@ -210,12 +245,16 @@ public class VoidHeartBlocks
         registerBlock(VOID_BARRIER_EMITTER = new VoidBarrierEmitterBlock(), itemGroup, "void_barrier_emitter");
         //  registerBlock(VOID_BARRIER = new VoidBarrierBlock(), itemGroup, "void_barrier");
 
-        registerBlock(EXPERIENCE_SKULL = new ExperienceSkullBlock(FabricBlockSettings
-                .of(Material.STONE)
+        registerBlock(EXPERIENCE_SKULL = new ExperienceSkullBlock(AbstractBlock.Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .strength(1.5F, 6.0F)
                 .sounds(BlockSoundGroup.STONE)), new ExperienceSkullItemBlock(EXPERIENCE_SKULL), "experience_skull");
-        registerBlock(MENDING_ALTAR = new MendingAltarBlock(FabricBlockSettings
-                .of(Material.STONE)
+        registerBlock(MENDING_ALTAR = new MendingAltarBlock(AbstractBlock.Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .strength(1.5F, 6.0F)
                 .sounds(BlockSoundGroup.STONE)), itemGroup, "mending_altar");
 
@@ -237,15 +276,15 @@ public class VoidHeartBlocks
 
     private static void registerBlock(Block block, Item.Settings settings, String name)
     {
-        BlockItem itemBlock = new BlockItem(block, settings);
+        var itemBlock = new BlockItem(block, settings);
         registerBlock(block, itemBlock, name);
     }
 
     private static void registerBlock(Block block, BlockItem itemBlock, String name)
     {
-        Identifier identifier = new Identifier(MODID, name);
-        Registry.register(Registry.BLOCK, identifier, block);
-        Registry.register(Registry.ITEM, identifier, itemBlock);
+        var identifier = new Identifier(MODID, name);
+        Registry.register(Registries.BLOCK, identifier, block);
+        Registry.register(Registries.ITEM, identifier, itemBlock);
     }
 
     private static void generateStairs(Block block, Item.Settings builder, String name)

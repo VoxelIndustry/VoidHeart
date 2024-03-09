@@ -1,11 +1,11 @@
 package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -24,8 +24,10 @@ public class VoidBarrierEmitterBlock extends Block implements BlockEntityProvide
 {
     public VoidBarrierEmitterBlock()
     {
-        super(FabricBlockSettings
-                .of(Material.STONE)
+        super(Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .strength(60F, 1200.0F)
                 .sounds(BlockSoundGroup.STONE)
                 .requiresTool());

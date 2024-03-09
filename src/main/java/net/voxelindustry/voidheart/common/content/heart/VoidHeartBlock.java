@@ -1,11 +1,6 @@
 package net.voxelindustry.voidheart.common.content.heart;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
-import net.minecraft.block.ShapeContext;
+import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
@@ -28,7 +23,8 @@ public class VoidHeartBlock extends Block implements BlockEntityProvider
 
     public VoidHeartBlock()
     {
-        super(Settings.of(Material.SOLID_ORGANIC)
+        super(Settings
+                .create()
                 .noCollision()
                 .strength(-1.0F, 3600000.0F)
                 .dropsNothing()

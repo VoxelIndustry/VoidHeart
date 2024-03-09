@@ -39,7 +39,7 @@ public class PortalFrameCoreBakedModel extends ForwardingBakedModel
     private RenderMaterial getOuterMaterial(Renderer renderer)
     {
         if (outerMaterial == null)
-            outerMaterial = renderer.materialFinder().blendMode(0, BlendMode.CUTOUT).emissive(0, true).find();
+            outerMaterial = renderer.materialFinder().blendMode(BlendMode.CUTOUT).emissive(true).find();
         return outerMaterial;
     }
 
@@ -68,7 +68,7 @@ public class PortalFrameCoreBakedModel extends ForwardingBakedModel
                 if (direction == facing)
                 {
                     var sprite = PortalFrameVeinSpriteManager.getCoreSprite();
-                    quad.spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV);
+                    quad.spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV);
                     return true;
                 }
 
@@ -76,7 +76,7 @@ public class PortalFrameCoreBakedModel extends ForwardingBakedModel
                 if (PortalFrameStateProperties.getSideConnection(state, direction).isConnected())
                 {
                     var sprite = PortalFrameVeinSpriteManager.getBackgroundSpriteForFront(variant);
-                    quad.spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV);
+                    quad.spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV);
                     return true;
                 }
 
@@ -111,7 +111,7 @@ public class PortalFrameCoreBakedModel extends ForwardingBakedModel
                 }
 
                 var sprite = PortalFrameVeinSpriteManager.getBackgroundSpriteForSide(left, right, up, down, variant);
-                quad.spriteBake(0, sprite, uvFlag);
+                quad.spriteBake(sprite, uvFlag);
             }
             return true;
         });
@@ -133,8 +133,8 @@ public class PortalFrameCoreBakedModel extends ForwardingBakedModel
         context.getEmitter()
                 .material(outerMaterial)
                 .square(facing, 0, 0, 1, 1, 0)
-                .spriteBake(0, sprite, MutableQuadView.BAKE_LOCK_UV)
-                .spriteColor(0, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
+                .spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV)
+                .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                 .tag(1)
                 .emit();
 

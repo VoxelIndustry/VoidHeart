@@ -77,5 +77,7 @@
   "voidheart.link_successful": "Successfully linked portals",
   "voidheart.pocket_created": "Your pocket dimension was created",
   "voidheart.pocket_already_exists": "Your pocket dimension already exists",
-  "voidheart.altar.missing_pillars": "Missing %s pillar(s)"
+  "voidheart.altar.missing_pillars": "Missing %s pillar(s)",
+  "__comment": "EMI",
+  "emi.category.voidheart.altar": "Void Altar Crafting"
 }

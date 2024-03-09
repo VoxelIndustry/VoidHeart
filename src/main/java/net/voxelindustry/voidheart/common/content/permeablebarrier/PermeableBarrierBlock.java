@@ -7,7 +7,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.EntityShapeContext;
-import net.minecraft.block.Material;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -42,7 +41,7 @@ public class PermeableBarrierBlock extends Block
 
     public PermeableBarrierBlock()
     {
-        super(Settings.of(Material.STONE)
+        super(Settings.create()
                 .nonOpaque()
                 .allowsSpawning(VoidHeartBlocks::never)
                 .solidBlock((state, world, pos) -> state.get(Properties.LIT))
@@ -153,7 +152,7 @@ public class PermeableBarrierBlock extends Block
     }
 
     @Override
-    public boolean isTranslucent(BlockState state, BlockView world, BlockPos pos)
+    public boolean isTransparent(BlockState state, BlockView world, BlockPos pos)
     {
         return !state.get(Properties.LIT);
     }

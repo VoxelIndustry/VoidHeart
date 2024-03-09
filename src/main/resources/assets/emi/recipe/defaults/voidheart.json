@@ -1,0 +1,10 @@
+{
+  "recipes": [
+    "voidheart:altar/void_pearl",
+    "voidheart:altar/voidstone",
+    "voidheart:voidstone_bricks",
+    "voidheart:voidstone_polished",
+    "voidheart:obsidian_shard",
+    "voidheart:ender_shard"
+  ]
+}

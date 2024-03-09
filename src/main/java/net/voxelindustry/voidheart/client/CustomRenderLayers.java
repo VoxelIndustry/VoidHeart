@@ -21,7 +21,7 @@ public class CustomRenderLayers
                     true,
                     MultiPhaseParameters.builder()
                             .lightmap(RenderPhase.ENABLE_LIGHTMAP)
-                            .shader(RenderPhase.TRANSLUCENT_SHADER)
+                            .program(RenderPhase.TRANSLUCENT_PROGRAM)
                             .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
                             .texture(new RenderPhase.Texture(identifier, false, false))
                             .build(true)

@@ -7,7 +7,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.util.ExperienceUtil;
 
 import java.util.List;
@@ -19,7 +18,6 @@ public class ExperienceSkullItemBlock extends BlockItem
     public ExperienceSkullItemBlock(Block block)
     {
         super(block, new Item.Settings()
-                .group(VoidHeart.ITEMGROUP)
                 .maxCount(1)
                 .maxDamage(ExperienceSkullTile.MAX_EXPERIENCE)
         );

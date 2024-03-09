@@ -5,11 +5,9 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "MixinChunkSerializer",
-    "MixinNbtHelper",
     "MixinStableLifecycle"
   ],
   "client": [
-    "MixinModelLoader"
   ],
   "injectors": {
     "defaultRequire": 1

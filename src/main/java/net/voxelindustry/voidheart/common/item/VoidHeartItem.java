@@ -7,7 +7,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.Rarity;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.VoidHeart;
 
 import java.util.List;
 
@@ -18,7 +17,6 @@ public class VoidHeartItem extends Item
     public VoidHeartItem()
     {
         super(new Settings()
-                .group(VoidHeart.ITEMGROUP)
                 .rarity(Rarity.RARE)
                 .maxCount(1));
     }

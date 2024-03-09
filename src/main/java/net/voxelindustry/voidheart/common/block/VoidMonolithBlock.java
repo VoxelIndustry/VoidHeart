@@ -2,9 +2,10 @@ package net.voxelindustry.voidheart.common.block;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Material;
+import net.minecraft.block.MapColor;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContext.Builder;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -26,7 +27,10 @@ public class VoidMonolithBlock extends Block
 {
     public VoidMonolithBlock()
     {
-        super(Settings.of(Material.STONE)
+        super(Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
                 .strength(3F)
                 .sounds(BlockSoundGroup.STONE));
 
@@ -48,7 +52,7 @@ public class VoidMonolithBlock extends Block
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, Builder builder)
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder)
     {
         return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE));
     }
