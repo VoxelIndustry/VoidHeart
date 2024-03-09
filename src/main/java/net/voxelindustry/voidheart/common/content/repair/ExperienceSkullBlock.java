@@ -20,6 +20,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -128,6 +129,20 @@ public class ExperienceSkullBlock extends Block implements BlockEntityProvider
         }
 
         return ActionResult.SUCCESS;
+    }
+
+    @Override
+    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random)
+    {
+        super.randomDisplayTick(state, world, pos, random);
+
+        if (random.nextInt(1300) == 1)
+            world.playSoundAtBlockCenter(pos,
+                    SoundEvents.ENTITY_GENERIC_DRINK,
+                    SoundCategory.BLOCKS,
+                    0.5f,
+                    random.nextFloat() * 0.1F + 0.9F,
+                    false);
     }
 
     @Override
