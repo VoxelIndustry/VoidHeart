@@ -26,7 +26,7 @@ public class CraftingOverlayRender
                 matrices.translate(0.5, 1.85, 0.5);
                 matrices.scale(1 / 64F, 1 / 64F, 1 / 64F);
                 matrices.multiply(MinecraftClient.getInstance().getEntityRenderDispatcher().getRotation());
-                MinecraftClient.getInstance().textRenderer.draw(String.valueOf(output.getCount()), 6, -6, 0xFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+                MinecraftClient.getInstance().textRenderer.draw(String.valueOf(output.getCount()), 6, -6, 0xFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, light);
                 matrices.pop();
             }
         }

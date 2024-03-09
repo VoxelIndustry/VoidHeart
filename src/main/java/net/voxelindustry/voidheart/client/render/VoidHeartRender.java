@@ -58,7 +58,7 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 
         var textRenderer = MinecraftClient.getInstance().textRenderer;
         var nameSize = textRenderer.getWidth(playerProfile.getName()) / 2F;
-        textRenderer.draw(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.SEE_THROUGH, 0, 15728880);
+        textRenderer.draw(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
 
         var headRenderLayer = SkullBlockEntityRenderer.getRenderLayer(SkullBlock.Type.PLAYER, playerProfile);
         renderHeadSkin(matrices, vertexConsumers.getBuffer(headRenderLayer), -16 - nameSize - 8, -2, 0, 20, 20);

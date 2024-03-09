@@ -41,19 +41,19 @@ public class ImmersivePortalFrameCreator
             portal.axisW = new Vec3d(getUnitVector(facing.rotateYCounterclockwise()));
 
             if (portalFrameTile.getLinkedFacing() == facing)
-                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(180)));
+                portal.setRotationTransformation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(180)));
 
             else if (portalFrameTile.getLinkedFacing() == facing.getOpposite())
             {
-                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(0)));
+                portal.setRotationTransformation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(0)));
             }
             else if (portalFrameTile.getLinkedFacing() == facing.rotateYClockwise())
             {
-                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(90)));
+                portal.setRotationTransformation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(90)));
             }
             else if (portalFrameTile.getLinkedFacing() == facing.rotateYCounterclockwise())
             {
-                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(-90)));
+                portal.setRotationTransformation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(-90)));
             }
         }
         else
@@ -65,14 +65,14 @@ public class ImmersivePortalFrameCreator
             portal.axisW = new Vec3d(getUnitVector(Direction.EAST));
 
             if (portalFrameTile.getLinkedFacing() == facing)
-                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_X.rotationDegrees(180)));
+                portal.setRotationTransformation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_X.rotationDegrees(180)));
             else
-                portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_X.rotationDegrees(0)));
+                portal.setRotationTransformation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_X.rotationDegrees(0)));
 
             var linkedState = linkedPortal.getPortalState();
             // Special case for a rotated horizontal portal. Like a 3x2 portal connected to a 2x3
             if (portalFrameTile.getPortalState().getWidth() != linkedState.getWidth())
-                portal.setOrientationRotation(portal.getOrientationRotation().combine(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(90))));
+                portal.setRotationTransformation(portal.getRotation().combine(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(90))));
         }
 
         Vec3d center = new Vec3d(
