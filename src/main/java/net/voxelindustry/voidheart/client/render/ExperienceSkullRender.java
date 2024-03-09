@@ -84,14 +84,16 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
         var levelTextSize = textRenderer.getWidth(levelText) / 2F;
 
         var positionMatrix = matrices.peek().getPositionMatrix();
-        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize - 1, 0, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
-        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize + 1, 0, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
-        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize, -1, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
-        MinecraftClient.getInstance().textRenderer.draw(levelText,  -levelTextSize, 1, 0, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize - 1, -3, 0, false, positionMatrix, vertexConsumers, TextLayerType.NORMAL, 0, light);
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize + 1, -3, 0, false, positionMatrix, vertexConsumers, TextLayerType.NORMAL, 0, light);
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize, -4, 0, false, positionMatrix, vertexConsumers, TextLayerType.NORMAL, 0, light);
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize, -2, 0, false, positionMatrix, vertexConsumers, TextLayerType.NORMAL, 0, light);
+
 
         matrices.translate(0, 0, -0.1F);
         positionMatrix = matrices.peek().getPositionMatrix();
-        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize, 0, 8453920, false, positionMatrix, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+        MinecraftClient.getInstance().textRenderer.draw(levelText, -levelTextSize, -3, 8453920, false, positionMatrix, vertexConsumers, TextLayerType.NORMAL, 0, light);
 
         matrices.translate(0, 0, 0.15F);
         var expRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(ClientConstants.GUI_ICONS_TEXTURE));
