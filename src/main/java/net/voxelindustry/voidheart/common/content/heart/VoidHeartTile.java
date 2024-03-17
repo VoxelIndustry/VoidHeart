@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.heart;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.serialization.Codec;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.block.BlockState;
@@ -10,20 +11,31 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
+import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
+import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import net.voxelindustry.voidheart.common.world.VoidPocketState;
+import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class VoidHeartTile extends TileBase
+import static java.util.Collections.singletonList;
+
+public class VoidHeartTile extends TileBase implements PartialSyncedTile
 {
+    private final Collection<Identifier> syncElements = singletonList(VoidHeartDataSyncElement.IDENTIFIER);
+
     @Getter
     @Setter
     private UUID playerID;
@@ -33,9 +45,21 @@ public class VoidHeartTile extends TileBase
 
     private final Map<UUID, Long> lastPlayerHitCache = new HashMap<>();
 
+    private VoidHeartData heartData;
+
     public VoidHeartTile(BlockPos pos, BlockState state)
     {
         super(VoidHeartTiles.VOID_HEART, pos, state);
+    }
+
+    private void updateHeartData(VoidHeartData data)
+    {
+        this.heartData = data;
+    }
+
+    public VoidHeartData heartData()
+    {
+        return heartData;
     }
 
     @Override
@@ -105,6 +129,15 @@ public class VoidHeartTile extends TileBase
             return;
         }
 
+        if (world.getTime() % 20 == 0)
+        {
+            var heartData = VoidPocketState.getVoidPocketState(world).getHeartData(heart.playerID);
+            heart.updateHeartData(heartData);
+
+            if (heartData != null)
+                PartialTileSync.syncPart(heart, VoidHeartDataSyncElement.IDENTIFIER);
+        }
+
         if (heart.lastPlayerHitCache.isEmpty())
             return;
 
@@ -142,5 +175,40 @@ public class VoidHeartTile extends TileBase
         }
         else
             lastPlayerHitCache.put(hitPlayerID, System.currentTimeMillis());
+    }
+
+    @Override
+    public Optional<TileSyncElement<?>> getSyncElement(Identifier identifier)
+    {
+        if (identifier.equals(VoidHeartDataSyncElement.IDENTIFIER) && heartData != null)
+        {
+            return Optional.of(new VoidHeartDataSyncElement(heartData));
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public void receiveSyncElement(TileSyncElement<?> element)
+    {
+        if (element.getIdentifier().equals(VoidHeartDataSyncElement.IDENTIFIER))
+        {
+            var heartDataSyncElement = (VoidHeartDataSyncElement) element;
+
+            this.heartData = heartDataSyncElement.heartData();
+        }
+    }
+
+    @Override
+    public Codec<?> getSyncElementCodec(Identifier identifier)
+    {
+        if (identifier.equals(VoidHeartDataSyncElement.IDENTIFIER))
+            return VoidHeartDataSyncElement.CODEC;
+        return null;
+    }
+
+    @Override
+    public Collection<Identifier> getAllSyncElements()
+    {
+        return syncElements;
     }
 }

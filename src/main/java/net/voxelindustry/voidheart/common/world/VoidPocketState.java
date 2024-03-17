@@ -8,19 +8,20 @@ import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidPocketState extends PersistentState
 {
-    private final Map<UUID, BlockPos> posByPlayerID = new HashMap<>();
+    private final Map<UUID, VoidHeartData> heartDataByUUID = new HashMap<>();
 
     public VoidPocketState()
     {
@@ -29,6 +30,17 @@ public class VoidPocketState extends PersistentState
     public VoidPocketState(NbtCompound tag)
     {
         readNbt(tag);
+    }
+
+    @Override
+    public boolean isDirty()
+    {
+        for (var heartData : heartDataByUUID.values())
+        {
+            if(heartData.isDirty())
+                return true;
+        }
+        return false;
     }
 
     public BlockPos getNextAvailable()
@@ -40,7 +52,8 @@ public class VoidPocketState extends PersistentState
 
         Mutable currentPos = new Mutable(0, 64, 0);
 
-        while (posByPlayerID.containsValue(currentPos))
+        var pocketPositions = heartDataByUUID.values().stream().map(VoidHeartData::pocketPos).toList();
+        while (pocketPositions.contains(currentPos))
         {
             if (currentIndex == segmentLength)
             {
@@ -62,38 +75,48 @@ public class VoidPocketState extends PersistentState
 
     public BlockPos getPosForPlayer(UUID uuid)
     {
-        return posByPlayerID.computeIfAbsent(uuid, id -> getNextAvailable());
+        return heartDataByUUID.computeIfAbsent(uuid, id -> VoidHeartData.create(getNextAvailable())).pocketPos();
+    }
+
+    public VoidHeartData getHeartData(UUID uuid)
+    {
+        return heartDataByUUID.get(uuid);
     }
 
     public void readNbt(NbtCompound tag)
     {
-        int count = tag.getInt("count");
+        var heartsData = tag.getCompound("hearts");
 
-        for (int index = 0; index < count; index++)
-        {
-            posByPlayerID.put(tag.getUuid("uuid" + index), BlockPos.fromLong(tag.getLong("pos" + index)));
-        }
+        for (var playerUUID : heartsData.getKeys())
+            this.heartDataByUUID.put(UUID.fromString(playerUUID), VoidHeartData.fromNbt(heartsData.getCompound(playerUUID)));
     }
 
     @Override
     public NbtCompound writeNbt(NbtCompound tag)
     {
-        tag.putInt("count", posByPlayerID.size());
+        var heartsTag = new NbtCompound();
 
-        int count = 0;
-        for (Entry<UUID, BlockPos> posByID : posByPlayerID.entrySet())
+        for (var heartDataByPlayerUUID : this.heartDataByUUID.entrySet())
         {
-            tag.putUuid("uuid" + count, posByID.getKey());
-            tag.putLong("pos" + count, posByID.getValue().asLong());
-            count++;
+            heartsTag.put(heartDataByPlayerUUID.getKey().toString(), heartDataByPlayerUUID.getValue().toNbt());
         }
 
+        tag.put("hearts", heartsTag);
         return tag;
     }
 
-    public static VoidPocketState getVoidPocketState(ServerWorld world)
+    public static VoidPocketState getVoidPocketState(World world)
     {
-        return world.getPersistentStateManager().getOrCreate(VoidPocketState::new, () -> new VoidPocketState(), MODID + ":pocket_storage");
+        ServerWorld serverWorld;
+
+        if (!world.getRegistryKey().equals(VoidHeart.VOID_WORLD_KEY))
+            serverWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
+        else if (world instanceof ServerWorld s)
+            serverWorld = s;
+        else
+            throw new UnsupportedOperationException("Cannot access VoidPocketState from a ClientWorld");
+
+        return serverWorld.getPersistentStateManager().getOrCreate(VoidPocketState::new, VoidPocketState::new, MODID + ":pocket_storage");
     }
 
     public void createPocket(ServerWorld voidWorld, UUID player)
@@ -129,6 +152,6 @@ public class VoidPocketState extends PersistentState
 
     public boolean hasPocket(UUID player)
     {
-        return posByPlayerID.containsKey(player);
+        return heartDataByUUID.containsKey(player);
     }
 }

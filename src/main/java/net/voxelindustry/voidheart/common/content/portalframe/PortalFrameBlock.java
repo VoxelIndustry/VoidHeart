@@ -37,6 +37,7 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
         this(Settings.create()
                 .mapColor(MapColor.BLACK)
                 .instrument(Instrument.BASEDRUM)
+                .strength(4F)
                 .requiresTool()
                 .sounds(BlockSoundGroup.STONE));
     }

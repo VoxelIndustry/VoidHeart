@@ -22,6 +22,7 @@ import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -35,7 +36,7 @@ import java.util.UUID;
 public class PortalFrameCoreTile extends PortalFrameTile
 {
     @Getter
-    private final List<BlockPos> linkedFrames    = new ArrayList<>();
+    private final List<BlockPos> linkedFrames = new ArrayList<>();
     @Getter
     private final List<BlockPos> linkedInteriors = new ArrayList<>();
 
@@ -51,21 +52,25 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
     @Getter
     @Setter
-    private Identifier         linkedWorld;
+    private Identifier linkedWorld;
     @Getter
     @Setter
-    private BlockPos           linkedPos;
+    private BlockPos linkedPos;
     @Getter
     @Setter
-    private Direction          linkedFacing;
+    private Direction linkedFacing;
     private RegistryKey<World> linkedWorldKey;
 
     @Getter
-    private Identifier         previousLinkedWorld;
+    @Setter
+    private UUID ownerPlayerUUID;
+
     @Getter
-    private BlockPos           previousLinkedPos;
+    private Identifier previousLinkedWorld;
     @Getter
-    private Direction          previousLinkedFacing;
+    private BlockPos previousLinkedPos;
+    @Getter
+    private Direction previousLinkedFacing;
     private RegistryKey<World> previousLinkedWorldKey;
 
     private boolean wasImmersive;
@@ -115,6 +120,9 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
         if (tag.containsUuid("portalEntityID"))
             portalEntityID = tag.getUuid("portalEntityID");
+
+        if (tag.containsUuid("ownerPlayerUUID"))
+            ownerPlayerUUID = tag.getUuid("ownerPlayerUUID");
     }
 
     @Override
@@ -160,6 +168,9 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
         if (portalEntityID != null)
             tag.putUuid("portalEntityID", portalEntityID);
+
+        if (ownerPlayerUUID != null)
+            tag.putUuid("ownerPlayerUUID", ownerPlayerUUID);
 
         super.writeNbt(tag);
     }
@@ -228,6 +239,13 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
     void linkPortal(boolean useImmersivePortal)
     {
+        world.setBlockState(pos, getCachedState()
+                .with(Properties.LIT, true)
+                .with(StateProperties.BROKEN, false)
+        );
+
+        VoidPocketState.getVoidPocketState(world).getHeartData(ownerPlayerUUID).addPortal(world, pos);
+
         Direction facing = getFacing();
 
         if (useImmersivePortal)
@@ -290,11 +308,16 @@ public class PortalFrameCoreTile extends PortalFrameTile
         }
         linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
 
-        if (getWorld() != null && isServer() && portalEntityID != null)
+        if (getWorld() != null && isServer())
         {
-            Entity portalEntity = ((ServerWorld) getWorld()).getEntity(portalEntityID);
-            if (portalEntity != null)
-                portalEntity.remove(Entity.RemovalReason.DISCARDED);
+            VoidPocketState.getVoidPocketState(world).getHeartData(ownerPlayerUUID).removePortal(world, pos);
+
+            if (portalEntityID != null)
+            {
+                Entity portalEntity = ((ServerWorld) getWorld()).getEntity(portalEntityID);
+                if (portalEntity != null)
+                    portalEntity.remove(Entity.RemovalReason.DISCARDED);
+            }
         }
 
         if (breakCore)
@@ -310,7 +333,11 @@ public class PortalFrameCoreTile extends PortalFrameTile
         boolean useImmersivePortal = ImmersivePortalCompat.useImmersivePortal();
 
         if (wasImmersive != useImmersivePortal)
-            VoidHeartTicker.addTaskForLoadedPos(getPos(), () -> linkPortal(useImmersivePortal));
+            VoidHeartTicker.addTaskForLoadedPos(getPos(), () ->
+            {
+
+                linkPortal(useImmersivePortal);
+            });
     }
 
     Optional<PortalFrameCoreTile> getLinkedPortal()

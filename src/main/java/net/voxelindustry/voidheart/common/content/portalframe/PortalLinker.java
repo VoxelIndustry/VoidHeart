@@ -12,10 +12,10 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -51,6 +51,12 @@ public class PortalLinker
 
         if (tag.contains("firstPos"))
         {
+            if(!Objects.equals(tag.getUuid("owner"), player.getUuid()))
+            {
+                player.sendMessage(Text.translatable(MODID + ".portal_not_owner"), true);
+                return false;
+            }
+
             var firstPos = BlockPos.fromLong(tag.getLong("firstPos"));
             var firstDimension = RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension")));
 
@@ -94,6 +100,8 @@ public class PortalLinker
             tag.putLong("firstPos", portalFrameTile.getPos().asLong());
             tag.putString("firstDimension", portalFrameTile.getWorld().getRegistryKey().getValue().toString());
             tag.putByte("firstFacing", (byte) coreFrame.getFacing().ordinal());
+            tag.putUuid("owner", player.getUuid());
+            tag.putString("ownerName", player.getEntityName());
         }
         return true;
     }
@@ -148,7 +156,8 @@ public class PortalLinker
         coreTile.setLinkedPos(linkedPos);
         coreTile.setLinkedWorld(linkedWorld.getRegistryKey().getValue());
         coreTile.setLinkedFacing(linkedFacing);
-        coreTile.getWorld().setBlockState(coreTile.getPos(), coreTile.getCachedState().with(Properties.LIT, true));
+        coreTile.setOwnerPlayerUUID(player.getUuid());
+
         coreTile.linkPortal(ImmersivePortalCompat.useImmersivePortal());
 
         voidPearl.decrement(1);
@@ -157,7 +166,8 @@ public class PortalLinker
         linkedPortalCore.setLinkedPos(coreTile.getPos());
         linkedPortalCore.setLinkedWorld(coreTile.getWorld().getRegistryKey().getValue());
         linkedPortalCore.setLinkedFacing(coreTile.getFacing());
-        linkedWorld.setBlockState(coreTile.getLinkedPos(), linkedPortal.getCachedState().with(Properties.LIT, true));
+        linkedPortalCore.setOwnerPlayerUUID(player.getUuid());
+
         linkedPortalCore.linkPortal(ImmersivePortalCompat.useImmersivePortal());
 
         player.sendMessage(Text.translatable(MODID + ".link_successful"), true);
@@ -195,7 +205,7 @@ public class PortalLinker
         var previouslyLinkedPortal = previouslyLinkedPortalOpt.get();
         if (previouslyLinkedPortal.isBroken())
         {
-            DeferredRollbackWork<PortalFormerState> portalFormer = PortalFormer.tryForm(
+            var portalFormer = PortalFormer.tryForm(
                     previouslyLinkedPortal.getWorld(),
                     previouslyLinkedPortal.getCachedState(),
                     previouslyLinkedPortal.getPos(),
@@ -229,12 +239,7 @@ public class PortalLinker
         previouslyLinkedPortal.setLinkedWorld(core.getWorld().getRegistryKey().getValue());
         previouslyLinkedPortal.setLinkedPos(core.getPos());
         previouslyLinkedPortal.setLinkedFacing(core.getFacing());
-
-        previouslyLinkedPortal.getWorld().setBlockState(previouslyLinkedPortal.getPos(), previouslyLinkedPortal.getCachedState().with(Properties.LIT, true));
-        core.getWorld().setBlockState(core.getPos(), core.getWorld().getBlockState(core.getPos())
-                .with(Properties.LIT, true)
-                .with(StateProperties.BROKEN, false)
-        );
+        previouslyLinkedPortal.setOwnerPlayerUUID(core.getOwnerPlayerUUID());
 
         core.linkPortal(ImmersivePortalCompat.useImmersivePortal());
         previouslyLinkedPortal.linkPortal(ImmersivePortalCompat.useImmersivePortal());

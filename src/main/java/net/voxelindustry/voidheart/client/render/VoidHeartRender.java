@@ -13,17 +13,22 @@ import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
 import net.voxelindustry.voidheart.client.util.ClientConstants;
 import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
 import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 
 import static java.lang.Math.*;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 {
+    private final Identifier PORTAL_ICONS = new Identifier(MODID, "textures/hud/portal_icons.png");
+
     private final ItemStack voidHeartStack = new ItemStack(VoidHeartItems.VOID_HEART);
 
     @Override
@@ -58,7 +63,8 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 
         var textRenderer = MinecraftClient.getInstance().textRenderer;
         var nameSize = textRenderer.getWidth(playerProfile.getName()) / 2F;
-        textRenderer.draw(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+        textRenderer.draw(playerProfile.getName(), -nameSize + 1, 1, 0x3c3c3c, false, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+        textRenderer.draw(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, false, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.SEE_THROUGH, 0, 15728880);
 
         var headRenderLayer = SkullBlockEntityRenderer.getRenderLayer(SkullBlock.Type.PLAYER, playerProfile);
         renderHeadSkin(matrices, vertexConsumers.getBuffer(headRenderLayer), -16 - nameSize - 8, -2, 0, 20, 20);
@@ -75,7 +81,27 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
                     6,
                     6);
 
+        if (voidHeart.heartData() != null)
+        {
+            renderHeartData(voidHeart.heartData(), matrices, vertexConsumers, -50, 20, 0);
+        }
+
         matrices.pop();
+    }
+
+    private void renderHeartData(VoidHeartData data, MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, float posX, float posY, float posZ)
+    {
+        var heartRenderBuffer = vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(PORTAL_ICONS));
+
+        for (int i = 0; i < data.currentFlexionCount(); i++)
+        {
+            renderSprite(matrixStack, heartRenderBuffer, posX + 10 * (i % 2), posY + 10 * (i / 2), posZ, 8, 8, 0.25F, 4 / 48F, 0.75F, 12 / 48F);
+        }
+
+        for (int i = data.currentFlexionCount(); i < data.maxFlexion(); i++)
+        {
+            renderSprite(matrixStack, heartRenderBuffer, posX + 10 * (i % 2), posY + 10 * (i / 2), posZ, 8, 8, 0.25F, 20 / 48F, 0.75F, 28 / 48F);
+        }
     }
 
     private void renderHearts(float health, float maxHealth, MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, float posX, float posY, float posZ, float width, float height)
@@ -90,7 +116,7 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 
         for (int i = 0; i < maxHealth; i += 2)
         {
-            renderHeart(matrixStack, heartRenderBuffer, posX + width / 2 * i, posY, posZ, width, height, containerMinU, minV, containerMaxU, maxV);
+            renderSprite(matrixStack, heartRenderBuffer, posX + width / 2 * i, posY, posZ, width, height, containerMinU, minV, containerMaxU, maxV);
         }
 
         var normalMinU = HeartType.NORMAL.getU(false, false) / 256F;
@@ -98,28 +124,28 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 
         for (int i = 0; i < health - 1; i += 2)
         {
-            renderHeart(matrixStack, heartRenderBuffer, posX + width / 2 * i, posY, posZ, width, height, normalMinU, minV, normalMaxU, maxV);
+            renderSprite(matrixStack, heartRenderBuffer, posX + width / 2 * i, posY, posZ, width, height, normalMinU, minV, normalMaxU, maxV);
         }
 
         if (health % 2 != 0)
         {
             var halfHeartMinU = HeartType.NORMAL.getU(true, false) / 256F;
             var halfHeartMaxU = halfHeartMinU + (9 / 256F);
-            renderHeart(matrixStack, heartRenderBuffer, posX + width * (float) floor(health / 2F), posY, posZ, width, height, halfHeartMinU, minV, halfHeartMaxU, maxV);
+            renderSprite(matrixStack, heartRenderBuffer, posX + width * (float) floor(health / 2F), posY, posZ, width, height, halfHeartMinU, minV, halfHeartMaxU, maxV);
         }
     }
 
-    private void renderHeart(MatrixStack matrixStack,
-                             VertexConsumer buffer,
-                             float posX,
-                             float posY,
-                             float posZ,
-                             float width,
-                             float height,
-                             float minU,
-                             float minV,
-                             float maxU,
-                             float maxV)
+    private void renderSprite(MatrixStack matrixStack,
+                              VertexConsumer buffer,
+                              float posX,
+                              float posY,
+                              float posZ,
+                              float width,
+                              float height,
+                              float minU,
+                              float minV,
+                              float maxU,
+                              float maxV)
     {
         buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
                 .color(1, 1, 1, 0.95F)

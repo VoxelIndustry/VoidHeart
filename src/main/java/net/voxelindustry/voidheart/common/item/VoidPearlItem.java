@@ -101,6 +101,8 @@ public class VoidPearlItem extends Item
 
         if (tag.contains("firstPos"))
         {
+            tooltip.add(Text.translatable(MODID + ".void_pearl.owner.lore", Text.of("§6" + tag.getString("ownerName"))));
+
             var blockPos = BlockPos.fromLong(tag.getLong("firstPos"));
 
             if (RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))

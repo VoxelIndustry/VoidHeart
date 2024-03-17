@@ -4,6 +4,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -11,6 +12,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.item.VoidPearlItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.world.VoidPocketState;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidStoneBricksBlock extends Block
 {
@@ -27,6 +31,19 @@ public class VoidStoneBricksBlock extends Block
         {
             if (world.isClient())
                 return ActionResult.SUCCESS;
+
+            var voidPocketState = VoidPocketState.getVoidPocketState(world);
+
+            if (!voidPocketState.hasPocket(player.getUuid()))
+            {
+                player.sendMessage(Text.translatable(MODID + ".no_pocket_for_player"), true);
+                return ActionResult.PASS;
+            }
+            if (voidPocketState.getHeartData(player.getUuid()).noFlexionLeft())
+            {
+                player.sendMessage(Text.translatable(MODID + ".no_flexion_left"), true);
+                return ActionResult.PASS;
+            }
 
             boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUuid());
             if (!VoidPearlItem.checkPearlUseHereAndWarn(stack, isInPocket, player))

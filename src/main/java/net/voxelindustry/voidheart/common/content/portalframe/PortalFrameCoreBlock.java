@@ -30,6 +30,7 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                 .mapColor(MapColor.BLACK)
                 .instrument(Instrument.BASEDRUM)
                 .requiresTool()
+                .strength(4F)
                 .sounds(BlockSoundGroup.STONE)
                 .ticksRandomly()
                 .emissiveLighting((state, world, pos) -> state.get(Properties.LIT)));
