@@ -21,11 +21,11 @@
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:rotten_flesh"
+        "item": "minecraft:diamond"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:diamond"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",

@@ -24,6 +24,24 @@ public class ExperienceSkullItemBlock extends BlockItem
     }
 
     @Override
+    public boolean isDamageable()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean canRepair(ItemStack stack, ItemStack ingredient)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isEnchantable(ItemStack stack)
+    {
+        return false;
+    }
+
+    @Override
     public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
     {
         super.appendTooltip(stack, world, tooltip, context);
