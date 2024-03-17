@@ -15,7 +15,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +44,7 @@ public class MendingAltarBlock extends Block implements BlockEntityProvider
         var altar = altarOpt.get();
         if (altar.getTool().isEmpty())
         {
-            altar.setTool(player, ItemUtils.copyWithSize(player.getStackInHand(hand), 1));
+            altar.setTool(player, player.getStackInHand(hand).copyWithCount(1));
 
             if (!player.isCreative())
                 player.getStackInHand(hand).decrement(1);

@@ -1,6 +1,10 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
-import net.minecraft.block.*;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockEntityProvider;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.MapColor;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
@@ -18,7 +22,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +68,7 @@ public class VoidAltarBlock extends Block implements BlockEntityProvider
             var stackInHand = player.getStackInHand(hand);
             if(!stackInHand.isEmpty())
             {
-                altar.setStack(player, ItemUtils.copyWithSize(stackInHand, 1));
+                altar.setStack(player, stackInHand.copyWithCount(1));
 
                 if (!player.isCreative())
                     stackInHand.decrement(1);

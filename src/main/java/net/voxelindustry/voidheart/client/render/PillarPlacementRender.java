@@ -54,7 +54,7 @@ public class PillarPlacementRender
 
     private static void renderPillarPreview(VoidAltarRender voidAltarRender, VoidAltarTile altar, Mutable pos, MatrixStack matrices, VertexConsumer buffer)
     {
-        if (!altar.getWorld().isAir(pos) && altar.getWorld().getBlockState(pos).isOpaqueFullCube(altar.getWorld(), pos))
+        if (!altar.getWorld().isAir(pos) && altar.getWorld().getBlockState(pos).isOpaqueFullCube(altar.getWorld(), pos) || altar.getWorld().getBlockState(pos).getBlock() == VoidHeartBlocks.VOID_PILLAR)
             return;
 
         MinecraftClient.getInstance().getBlockRenderManager().renderBlock(

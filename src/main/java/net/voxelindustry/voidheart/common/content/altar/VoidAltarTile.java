@@ -16,7 +16,6 @@ import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.world.World;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
 import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
@@ -258,7 +257,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         if (consumingPillarIndex == -1)
             return;
 
-        if (!ItemUtils.deepEquals(cachedToConsume, pillars.get(consumingPillarIndex).getStack()))
+        if (!ItemStack.canCombine(cachedToConsume, pillars.get(consumingPillarIndex).getStack()))
         {
             consumeProgress = 0;
             consumingPillarIndex = -1;
@@ -478,7 +477,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
         for (VoidPillarTile pillar : pillars)
         {
-            if (ItemUtils.deepEquals(pillar.getStack(), toConsume))
+            if (ItemStack.canCombine(pillar.getStack(), toConsume))
             {
                 consumingPillarIndex = pillars.indexOf(pillar);
                 consumingPillarPos = pillar.getPos();
@@ -573,8 +572,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         {
             AltarCraftingSyncElement altarCrafting = (AltarCraftingSyncElement) element;
 
-            clientRecipeOutput = altarCrafting.getResult();
-            clientRecipeToConsume = altarCrafting.getToConsume();
+            clientRecipeOutput = altarCrafting.result();
+            clientRecipeToConsume = altarCrafting.toConsume();
         }
     }
 
