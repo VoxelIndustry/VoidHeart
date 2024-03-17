@@ -6,14 +6,16 @@ import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.util.Identifier;
 
 import java.text.NumberFormat;
-import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidMonolithSpriteManager
 {
     private static final SpriteIdentifier[] SPRITE_IDENTIFIERS = new SpriteIdentifier[24];
-    private static final Sprite[]           SPRITES            = new Sprite[24];
+    private static final SpriteIdentifier BROKEN_SPRITE_IDENTIFIER = getSpriteIdentifier("broken_overlay");
+
+    private static final Sprite[] SPRITES = new Sprite[24];
+    public static Sprite BROKEN_SPRITE;
 
     static
     {
@@ -26,16 +28,11 @@ public class VoidMonolithSpriteManager
         }
     }
 
-    public static void registerSprites(Consumer<Identifier> spriteRegistrar)
-    {
-        for (SpriteIdentifier spriteIdentifier : SPRITE_IDENTIFIERS)
-            spriteRegistrar.accept(spriteIdentifier.getTextureId());
-    }
-
     public static void loadSprites()
     {
         for (int i = 0; i < 24; i++)
             SPRITES[i] = SPRITE_IDENTIFIERS[i].getSprite();
+        BROKEN_SPRITE = BROKEN_SPRITE_IDENTIFIER.getSprite();
     }
 
     public static Sprite getTopSprite(int variant)
@@ -76,6 +73,11 @@ public class VoidMonolithSpriteManager
     public static Sprite getAboveOverlaySprite(int variant)
     {
         return SPRITES[variant + 21];
+    }
+
+    public static Sprite getBrokenSprite()
+    {
+        return BROKEN_SPRITE;
     }
 
     private static SpriteIdentifier getSpriteIdentifier(String from)

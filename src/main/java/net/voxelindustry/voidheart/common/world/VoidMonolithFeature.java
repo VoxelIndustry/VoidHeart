@@ -22,7 +22,7 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
     @Override
     public boolean generate(FeatureContext<VoidMonolithFeatureConfig> context)
     {
-        if (context.getRandom().nextFloat() > 0.015F)
+        if (context.getRandom().nextFloat() > 0.01F)
             return false;
 
         Mutable chosenPos = context.getOrigin().mutableCopy().set(context.getOrigin().getX() + context.getRandom().nextInt(16), context.getWorld().getTopY(), context.getOrigin().getZ() + context.getRandom().nextInt(16));
@@ -41,7 +41,8 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
             setBlockState(context.getWorld(), posToPlace,
                     VoidHeartBlocks.VOID_MONOLITH.getDefaultState()
                             .with(StateProperties.UP, hasAbove)
-                            .with(StateProperties.DOWN, hasBelow));
+                            .with(StateProperties.DOWN, hasBelow)
+                            .with(StateProperties.BROKEN, true));
             posToPlace.move(Direction.UP);
         }
         return true;

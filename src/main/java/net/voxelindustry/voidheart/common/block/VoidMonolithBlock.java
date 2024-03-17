@@ -20,8 +20,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
-import static net.voxelindustry.voidheart.common.block.StateProperties.DOWN;
-import static net.voxelindustry.voidheart.common.block.StateProperties.UP;
+import static net.voxelindustry.voidheart.common.block.StateProperties.*;
 
 public class VoidMonolithBlock extends Block
 {
@@ -37,13 +36,14 @@ public class VoidMonolithBlock extends Block
         setDefaultState(getStateManager().getDefaultState()
                 .with(UP, false)
                 .with(DOWN, false)
+                .with(BROKEN, false)
                 .with(Properties.LIT, false));
     }
 
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved)
     {
-        if (!state.isOf(newState.getBlock()))
+        if (!state.isOf(newState.getBlock()) && state.get(BROKEN))
         {
             if (world.getRandom().nextInt(5) == 0)
                 world.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.ENTITY_ENDERMAN_SCREAM, SoundCategory.BLOCKS, 1, 1);
@@ -54,7 +54,9 @@ public class VoidMonolithBlock extends Block
     @Override
     public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder)
     {
-        return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE));
+        if (state.get(BROKEN))
+            return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE));
+        return singletonList(new ItemStack(VoidHeartBlocks.VOID_MONOLITH));
     }
 
     @Override
@@ -62,14 +64,16 @@ public class VoidMonolithBlock extends Block
     {
         switch (direction)
         {
-            case DOWN -> {
+            case DOWN ->
+            {
                 Boolean down = state.get(DOWN);
                 if (down && !newState.isOf(VoidHeartBlocks.VOID_MONOLITH))
                     state = state.with(DOWN, false);
                 else if (!down && newState.isOf(VoidHeartBlocks.VOID_MONOLITH))
                     state = state.with(DOWN, true);
             }
-            case UP -> {
+            case UP ->
+            {
                 Boolean up = state.get(UP);
                 if (up && !newState.isOf(VoidHeartBlocks.VOID_MONOLITH))
                     state = state.with(UP, false);
@@ -83,6 +87,6 @@ public class VoidMonolithBlock extends Block
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
     {
-        builder.add(UP, DOWN, Properties.LIT);
+        builder.add(UP, DOWN, Properties.LIT, BROKEN);
     }
 }

@@ -81,6 +81,23 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
         super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
         context.popTransform();
 
+        if (state.get(StateProperties.BROKEN))
+        {
+            for (var direction : Direction.values())
+            {
+                var sprite = VoidMonolithSpriteManager.getBrokenSprite();
+
+                context.getEmitter()
+                        .material(outerMaterial)
+                        .square(direction, 0, 0, 1, 1, 0)
+                        .spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV)
+                        .cullFace(direction)
+                        .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
+                        .tag(1)
+                        .emit();
+            }
+        }
+
         if (state.get(Properties.LIT))
         {
             for (var direction : Direction.values())
