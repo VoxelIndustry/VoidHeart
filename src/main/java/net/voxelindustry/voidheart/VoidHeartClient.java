@@ -19,6 +19,7 @@ import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.particle.PortalFrameParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
+import net.voxelindustry.voidheart.client.render.EyeBottleRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.client.render.VoidPillarRender;
@@ -43,6 +44,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRendererFactories.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
         BlockEntityRendererFactories.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
         BlockEntityRendererFactories.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
+        BlockEntityRendererFactories.register(VoidHeartTiles.EYE_BOTTLE, ctx -> new EyeBottleRender());
 
         ParticleFactoryRegistry.getInstance().register(
                 ALTAR_VOID_PARTICLE,

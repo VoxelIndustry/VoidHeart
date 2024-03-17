@@ -7,6 +7,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
+import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleTile;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.VoidBarrierEmitterTile;
@@ -35,6 +36,8 @@ public class VoidHeartTiles
     public static BlockEntityType<MendingAltarTile> MENDING_ALTAR;
 
     public static BlockEntityType<InventoryInserterTile> INVENTORY_INSERTER;
+
+    public static BlockEntityType<EyeBottleTile> EYE_BOTTLE;
 
     public static void registerTiles()
     {
@@ -79,6 +82,10 @@ public class VoidHeartTiles
         registerTile(INVENTORY_INSERTER =
                         FabricBlockEntityTypeBuilder.create(InventoryInserterTile::new, VoidHeartBlocks.INVENTORY_INSERTER).build(),
                 "inventory_inserter");
+
+        registerTile(EYE_BOTTLE =
+                        FabricBlockEntityTypeBuilder.create(EyeBottleTile::new, VoidHeartBlocks.EYE_BOTTLE).build(),
+                "eye_bottle");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)

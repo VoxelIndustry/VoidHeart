@@ -1,0 +1,77 @@
+{
+	"credit": "Made with Blockbench",
+	"texture_size": [32, 32],
+	"textures": {
+		"1": "voidheart:block/eye_bottle_animated"
+	},
+	"elements": [
+		{
+			"name": "cap",
+			"from": [5, 6, 5],
+			"to": [11, 7, 11],
+			"faces": {
+				"north": {"uv": [6, 14.5, 9, 15], "texture": "#1"},
+				"east": {"uv": [6, 14, 9, 14.5], "texture": "#1"},
+				"south": {"uv": [6, 13.5, 9, 14], "texture": "#1"},
+				"west": {"uv": [6, 13, 9, 13.5], "texture": "#1"},
+				"up": {"uv": [3, 13, 6, 16], "texture": "#1"},
+				"down": {"uv": [0, 13, 3, 16], "texture": "#1"}
+			}
+		},
+		{
+			"name": "eye",
+			"from": [6, 1, 6],
+			"to": [10, 5, 10],
+			"faces": {
+				"north": {"uv": [2, 11, 4, 13], "texture": "#1"},
+				"east": {"uv": [2, 9, 4, 11], "texture": "#1"},
+				"south": {"uv": [0, 11, 2, 13], "texture": "#1"},
+				"west": {"uv": [4, 9, 6, 11], "texture": "#1"},
+				"up": {"uv": [4, 11, 6, 13], "texture": "#1"},
+				"down": {"uv": [0, 9, 2, 11], "texture": "#1"}
+			}
+		},
+		{
+			"name": "bottle",
+			"from": [5, 0, 5],
+			"to": [11, 6, 11],
+			"faces": {
+				"north": {"uv": [0, 0, 3, 3], "texture": "#1"},
+				"east": {"uv": [0, 3, 3, 6], "texture": "#1"},
+				"south": {"uv": [3, 0, 6, 3], "texture": "#1"},
+				"west": {"uv": [3, 3, 6, 6], "texture": "#1"},
+				"up": {"uv": [3, 9, 0, 6], "texture": "#1"},
+				"down": {"uv": [9, 0, 6, 3], "texture": "#1"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"translation": [0, 6.75, 0]
+		},
+		"thirdperson_lefthand": {
+			"translation": [0, 6.75, 0]
+		},
+		"firstperson_righthand": {
+			"rotation": [0, -42, 0],
+			"translation": [0, 6.75, 0]
+		},
+		"firstperson_lefthand": {
+			"rotation": [0, -42, 0],
+			"translation": [0, 6.75, 0]
+		},
+		"ground": {
+			"translation": [0, 4.25, 0]
+		},
+		"gui": {
+			"rotation": [19, -26, 0],
+			"translation": [0, 6.25, 0],
+			"scale": [1.5, 1.5, 1.5]
+		},
+		"fixed": {
+			"rotation": [0, 180, 0],
+			"translation": [0, 4, 0],
+			"scale": [1.5, 1.5, 1.5]
+		}
+	}
+}

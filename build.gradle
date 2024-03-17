@@ -37,6 +37,15 @@ repositories {
         name = 'ModMenu & EMI'
         url = 'https://maven.terraformersmc.com/'
     }
+    maven {
+        name = 'GeckoLib'
+        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content {
+            includeGroupByRegex("software\\.bernie.*")
+            includeGroup("com.eliotlash.mclib")
+        }
+    }
+
     mavenCentral()
     maven { url 'https://jitpack.io' }
 }
@@ -50,6 +59,7 @@ dependencies {
 
     modImplementation include("net.voxelindustry:SteamLayer:${project.steamlayer_version}")
     //modImplementation "net.voxelindustry:biggerstructures:1.0.0"
+    modImplementation 'software.bernie.geckolib:geckolib-fabric-1.20.1:4.4.2'
 
     modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     modCompileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"

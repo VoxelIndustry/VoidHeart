@@ -25,6 +25,7 @@
     {"type": "single", "resource": "voidheart:block/monolith/monolith21"},
     {"type": "single", "resource": "voidheart:block/monolith/monolith22"},
     {"type": "single", "resource": "voidheart:block/monolith/monolith23"},
+    {"type": "single", "resource": "voidheart:block/monolith/broken_overlay"},
 
     {"type": "single", "resource": "voidheart:block/portal/portal_00"},
     {"type": "single", "resource": "voidheart:block/portal/portal_01"},

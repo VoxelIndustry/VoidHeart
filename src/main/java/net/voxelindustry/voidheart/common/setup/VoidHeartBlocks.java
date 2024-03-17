@@ -23,6 +23,7 @@ import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
+import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterBlock;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
@@ -84,6 +85,9 @@ public class VoidHeartBlocks
     public static Block MENDING_ALTAR;
 
     public static Block INVENTORY_INSERTER;
+
+    public static Block EYE_BOTTLE;
+
     public static void registerBlocks()
     {
         Settings itemGroup = new Item.Settings();
@@ -261,6 +265,9 @@ public class VoidHeartBlocks
                 .sounds(BlockSoundGroup.STONE)), itemGroup, "mending_altar");
 
         registerBlock(INVENTORY_INSERTER = new InventoryInserterBlock(), itemGroup, "inventory_inserter");
+
+        registerBlock(EYE_BOTTLE = new EyeBottleBlock(), itemGroup, "eye_bottle");
+
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
         generateSlab(VOIDSTONE, itemGroup, "voidstone");
