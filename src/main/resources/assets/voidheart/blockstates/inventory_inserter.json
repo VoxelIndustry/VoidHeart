@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "voidheart:block/inventory_inserter"
+    },
+    "facing=down": {
+      "model": "voidheart:block/inventory_inserter",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "voidheart:block/inventory_inserter",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/inventory_inserter",
+      "x": 90,
+      "y": 180
+    },
+    "facing=east": {
+      "model": "voidheart:block/inventory_inserter",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west": {
+      "model": "voidheart:block/inventory_inserter",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

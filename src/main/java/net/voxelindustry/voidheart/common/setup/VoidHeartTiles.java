@@ -8,6 +8,7 @@ import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
+import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.VoidBarrierEmitterTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
@@ -20,18 +21,20 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartTiles
 {
-    public static BlockEntityType<PortalInteriorTile>  POCKET_PORTAL;
-    public static BlockEntityType<PortalFrameTile>     PORTAL_FRAME;
+    public static BlockEntityType<PortalInteriorTile> POCKET_PORTAL;
+    public static BlockEntityType<PortalFrameTile> PORTAL_FRAME;
     public static BlockEntityType<PortalFrameCoreTile> PORTAL_FRAME_CORE;
-    public static BlockEntityType<VoidAltarTile>       VOID_ALTAR;
-    public static BlockEntityType<VoidPillarTile>      VOID_PILLAR;
-    public static BlockEntityType<VoidHeartTile>       VOID_HEART;
-    public static BlockEntityType<VoidDoorTile>        VOID_DOOR;
+    public static BlockEntityType<VoidAltarTile> VOID_ALTAR;
+    public static BlockEntityType<VoidPillarTile> VOID_PILLAR;
+    public static BlockEntityType<VoidHeartTile> VOID_HEART;
+    public static BlockEntityType<VoidDoorTile> VOID_DOOR;
 
     public static BlockEntityType<VoidBarrierEmitterTile> VOID_BARRIER_EMITTER;
 
     public static BlockEntityType<ExperienceSkullTile> EXPERIENCE_SKULL;
-    public static BlockEntityType<MendingAltarTile>    MENDING_ALTAR;
+    public static BlockEntityType<MendingAltarTile> MENDING_ALTAR;
+
+    public static BlockEntityType<InventoryInserterTile> INVENTORY_INSERTER;
 
     public static void registerTiles()
     {
@@ -72,6 +75,10 @@ public class VoidHeartTiles
         registerTile(MENDING_ALTAR =
                         FabricBlockEntityTypeBuilder.create(MendingAltarTile::new, VoidHeartBlocks.MENDING_ALTAR).build(),
                 "mending_altar");
+
+        registerTile(INVENTORY_INSERTER =
+                        FabricBlockEntityTypeBuilder.create(InventoryInserterTile::new, VoidHeartBlocks.INVENTORY_INSERTER).build(),
+                "inventory_inserter");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)

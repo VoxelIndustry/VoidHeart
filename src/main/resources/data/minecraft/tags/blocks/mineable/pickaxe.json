@@ -35,6 +35,8 @@
     "voidheart:voidstone_bricks_cracked_slab",
     "voidheart:voidstone_bricks_cracked_stairs",
     "voidheart:voidstone_tile_small_slab",
-    "voidheart:voidstone_tile_small_stairs"
+    "voidheart:voidstone_tile_small_stairs",
+    "voidheart:inventory_inserter",
+    "voidheart:eye_bottle"
   ]
 }

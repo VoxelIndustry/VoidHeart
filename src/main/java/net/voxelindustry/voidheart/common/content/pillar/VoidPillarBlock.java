@@ -23,7 +23,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -40,6 +39,7 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
         super(Settings.create()
                 .mapColor(MapColor.BLACK)
                 .instrument(Instrument.BASEDRUM)
+                .strength(3F)
                 .requiresTool()
                 .sounds(BlockSoundGroup.STONE)
                 .luminance(state -> state.get(Properties.LIT) ? 11 : 0));
@@ -75,7 +75,7 @@ public class VoidPillarBlock extends Block implements BlockEntityProvider
                         hit.withBlockPos(pos.up())));
             }
             else
-                pillar.setStack(ItemUtils.copyWithSize(stackInHand, 1));
+                pillar.setStack(stackInHand.copyWithCount(1));
 
             if (!player.isCreative())
                 stackInHand.decrement(1);

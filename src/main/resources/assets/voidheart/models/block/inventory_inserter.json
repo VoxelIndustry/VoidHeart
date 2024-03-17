@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "voidheart:block/inventorymover/insert_down",
+    "top": "voidheart:block/inventorymover/insert_up",
+    "side": "voidheart:block/inventorymover/insert_side"
+  }
+}
