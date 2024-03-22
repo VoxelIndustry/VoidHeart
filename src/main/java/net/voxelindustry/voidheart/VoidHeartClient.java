@@ -13,13 +13,17 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
+import net.voxelindustry.voidheart.client.model.conduit.ConduitSpriteManager;
 import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithSpriteManager;
 import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameVeinSpriteManager;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.particle.PortalFrameParticle;
+import net.voxelindustry.voidheart.client.particle.ShatterForgeItemParticle;
+import net.voxelindustry.voidheart.client.particle.ShatterForgeRuneParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
 import net.voxelindustry.voidheart.client.render.EyeBottleRender;
+import net.voxelindustry.voidheart.client.render.ShatterForgeRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.client.render.VoidPillarRender;
@@ -45,6 +49,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRendererFactories.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
         BlockEntityRendererFactories.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
         BlockEntityRendererFactories.register(VoidHeartTiles.EYE_BOTTLE, ctx -> new EyeBottleRender());
+        BlockEntityRendererFactories.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new ShatterForgeRender());
 
         ParticleFactoryRegistry.getInstance().register(
                 ALTAR_VOID_PARTICLE,
@@ -60,6 +65,16 @@ public class VoidHeartClient implements ClientModInitializer
                 PORTAL_FRAME_PARTICLE,
                 provider -> (parameters, world, x, y, z, velocityX, velocityY, velocityZ) ->
                         new PortalFrameParticle(world, x, y, z, provider, parameters.direction(), parameters.width(), parameters.height()));
+
+        ParticleFactoryRegistry.getInstance().register(
+                SHATTER_FORGE_RUNE_PARTICLE,
+                provider -> (parameters, world, x, y, z, velocityX, velocityY, velocityZ) ->
+                        new ShatterForgeRuneParticle(world, x, y, z, provider, parameters.axis()));
+
+        ParticleFactoryRegistry.getInstance().register(
+                SHATTER_FORGE_ITEM_PARTICLE,
+                provider -> (parameters, world, x, y, z, velocityX, velocityY, velocityZ) ->
+                        new ShatterForgeItemParticle(world, x, y, z, velocityX, velocityY, velocityZ, parameters.input(), parameters.output()));
 
         FabricModelPredicateProviderRegistry.register(
                 VoidHeartBlocks.VOID_LAMP.asItem(),
@@ -79,6 +94,7 @@ public class VoidHeartClient implements ClientModInitializer
             {
                 VoidMonolithSpriteManager.loadSprites();
                 PortalFrameVeinSpriteManager.loadSprites();
+                ConduitSpriteManager.loadSprites();
             }
         });
     }

@@ -1,0 +1,22 @@
+{
+  "type": "voidheart:shatter_forge",
+  "time": 40,
+  "monolithCount": 3,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:cobblestone"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:voidstone",
+        "quantity": 1
+      }
+    ]
+  }
+}

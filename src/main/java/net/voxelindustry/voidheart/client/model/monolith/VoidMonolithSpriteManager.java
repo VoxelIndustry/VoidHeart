@@ -1,8 +1,8 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
 
 import java.text.NumberFormat;
@@ -82,6 +82,6 @@ public class VoidMonolithSpriteManager
 
     private static SpriteIdentifier getSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/monolith/" + from));
+        return new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/monolith/" + from));
     }
 }

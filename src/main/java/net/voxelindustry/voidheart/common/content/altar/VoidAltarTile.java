@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -41,15 +42,18 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidAltarTile extends TileBase implements PartialSyncedTile, PillarLinkedTile
 {
-    public static final int WARMING_TIME     = 80;
-    public static final int COOLING_TIME     = 60;
+    public static final int WARMING_TIME = 80;
+    public static final int COOLING_TIME = 60;
     public static final int ITEM_EATING_TIME = 60;
+
+    // Fixes Minecraft world.random being too coherent in certain conditions
+    private final Random actualRandom = new Random();
 
     private AltarRecipe currentRecipe;
     @Getter
     private RecipeState recipeState;
 
-    private int     recipeProgress;
+    private int recipeProgress;
     @Getter
     private boolean isCrafting;
 
@@ -59,9 +63,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private int coolProgress;
     private int consumeProgress;
 
-    private int       consumingPillarIndex = -1;
-    private BlockPos  consumingPillarPos   = BlockPos.ORIGIN;
-    private ItemStack cachedToConsume      = ItemStack.EMPTY;
+    private int consumingPillarIndex = -1;
+    private BlockPos consumingPillarPos = BlockPos.ORIGIN;
+    private ItemStack cachedToConsume = ItemStack.EMPTY;
 
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
@@ -78,7 +82,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private Vector3f bezierSecondPoint;
 
     @Getter
-    private ItemStack       clientRecipeOutput    = ItemStack.EMPTY;
+    private ItemStack clientRecipeOutput = ItemStack.EMPTY;
     @Getter
     private List<ItemStack> clientRecipeToConsume = emptyList();
 
@@ -286,9 +290,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             if (warmProgress < WARMING_TIME)
             {
                 getWorld().addParticle(new AltarVoidParticleEffect(0.05 + 0.05 * Interpolators.EXP_IN.apply(warmProgress / (float) WARMING_TIME)),
-                        getPos().getX() + 0.5 + getWorld().random.nextGaussian(),
-                        getPos().getY() + 3 + getWorld().random.nextGaussian(),
-                        getPos().getZ() + 0.5 + getWorld().random.nextGaussian(),
+                        getPos().getX() + 0.5 + this.actualRandom.nextGaussian(),
+                        getPos().getY() + 3 + this.actualRandom.nextGaussian(),
+                        getPos().getZ() + 0.5 + this.actualRandom.nextGaussian(),
                         getPos().getX() + 0.5,
                         getPos().getY() + 3,
                         getPos().getZ() + 0.5);
@@ -296,9 +300,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             else
             {
                 getWorld().addParticle(new AltarVoidParticleEffect(0.02),
-                        getPos().getX() + 0.5 + getWorld().random.nextGaussian() / 8F,
+                        getPos().getX() + 0.5 + this.actualRandom.nextGaussian() / 8F,
                         getPos().getY() + 3,
-                        getPos().getZ() + 0.5 + getWorld().random.nextGaussian() / 8F,
+                        getPos().getZ() + 0.5 + this.actualRandom.nextGaussian() / 8F,
                         getPos().getX() + 0.5,
                         getPos().getY() + 1,
                         getPos().getZ() + 0.5);

@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "voidheart:experience_skull"
+    "voidheart:experience_skull",
+    "voidheart:eye_bottle"
   ]
 }

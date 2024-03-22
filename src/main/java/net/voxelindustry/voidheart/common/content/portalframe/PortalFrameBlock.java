@@ -20,7 +20,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
-import net.voxelindustry.voidheart.common.item.VoidPearlItem;
+import net.voxelindustry.voidheart.common.item.PortalCoreItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
@@ -86,20 +86,20 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
             return ActionResult.PASS;
 
         ItemStack stack = player.getStackInHand(hand);
-        if (stack.getItem() == VoidHeartItems.VOID_PEARL || stack.getItem() == VoidHeartItems.LOCAL_PEARL)
+        if (stack.getItem() == VoidHeartItems.PORTAL_CORE)
         {
             if (world.isClient())
                 return ActionResult.SUCCESS;
 
             boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUuid());
-            if (!VoidPearlItem.checkPearlUseHereAndWarn(stack, isInPocket, player))
+            if (!PortalCoreItem.checkPearlUseHereAndWarn(stack, isInPocket, player))
                 return ActionResult.PASS;
 
-            boolean alreadyHasFirstPoint = VoidPearlItem.doesPearlHasFirstPosition(stack);
+            boolean alreadyHasFirstPoint = PortalCoreItem.doesPearlHasFirstPosition(stack);
 
-            if (PortalLinker.voidPearlInteract(tile, tile.getWorld(), tile.getPos(), hit.getSide(), player, stack))
+            if (PortalLinker.voidIronEyeInteract(tile, tile.getWorld(), tile.getPos(), hit.getSide(), player, stack))
             {
-                VoidPearlItem.sendSuccessMessage(player, stack, alreadyHasFirstPoint);
+                PortalCoreItem.sendSuccessMessage(player, stack, alreadyHasFirstPoint);
                 return ActionResult.SUCCESS;
             }
         }

@@ -335,7 +335,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
         if (wasImmersive != useImmersivePortal)
             VoidHeartTicker.addTaskForLoadedPos(getPos(), () ->
             {
-
                 linkPortal(useImmersivePortal);
             });
     }

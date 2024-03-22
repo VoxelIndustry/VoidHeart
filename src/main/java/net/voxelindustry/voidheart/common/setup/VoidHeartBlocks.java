@@ -37,6 +37,8 @@ import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorB
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBlock;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
+import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock;
+import net.voxelindustry.voidheart.common.content.shatterforge.VoidConduitBlock;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -87,6 +89,12 @@ public class VoidHeartBlocks
     public static Block INVENTORY_INSERTER;
 
     public static Block EYE_BOTTLE;
+
+    public static Block SHATTER_FORGE;
+    public static Block VOID_CONDUIT;
+
+    public static Block ARROGANT_IRON_BLOCK;
+    public static Block CUT_ARROGANT_IRON;
 
     public static void registerBlocks()
     {
@@ -268,6 +276,22 @@ public class VoidHeartBlocks
 
         registerBlock(EYE_BOTTLE = new EyeBottleBlock(), itemGroup, "eye_bottle");
 
+        registerBlock(SHATTER_FORGE = new ShatterForgeBlock(), itemGroup, "shatter_forge");
+        registerBlock(VOID_CONDUIT = new VoidConduitBlock(), itemGroup, "void_conduit");
+
+        registerBlock(ARROGANT_IRON_BLOCK = new Block(
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.PURPLE)
+                        .instrument(Instrument.BASEDRUM)
+                        .sounds(BlockSoundGroup.METAL)
+                        .requiresTool().strength(4F, 10.0F)), itemGroup, "arrogant_iron_block");
+        registerBlock(CUT_ARROGANT_IRON = new Block(
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.PURPLE)
+                        .instrument(Instrument.BASEDRUM)
+                        .sounds(BlockSoundGroup.METAL)
+                        .requiresTool().strength(4F, 10.0F)), itemGroup, "cut_arrogant_iron");
+
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
         generateSlab(VOIDSTONE, itemGroup, "voidstone");
@@ -282,6 +306,9 @@ public class VoidHeartBlocks
 
         generateStairs(VOIDSTONE_TILE_SMALL, itemGroup, "voidstone_tile_small");
         generateSlab(VOIDSTONE_TILE_SMALL, itemGroup, "voidstone_tile_small");
+
+        generateStairs(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
+        generateSlab(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
     }
 
     private static void registerBlock(Block block, Item.Settings settings, String name)

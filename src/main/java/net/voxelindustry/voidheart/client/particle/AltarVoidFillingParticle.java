@@ -68,7 +68,6 @@ public class AltarVoidFillingParticle extends Particle
         else
         {
             quaternion2 = new Quaternionf(camera.getRotation());
-            float i = MathHelper.lerp(tickDelta, prevAngle, angle);
             quaternion2.mul(Direction.NORTH.getRotationQuaternion());
         }
 
@@ -121,7 +120,7 @@ public class AltarVoidFillingParticle extends Particle
         }
 
         move(velocityX * speed, velocityY * speed, velocityZ * speed);
-        speed *= 0.9800000190734863D;
+        speed *= 0.98D;
     }
 
     private boolean isNearDestination()

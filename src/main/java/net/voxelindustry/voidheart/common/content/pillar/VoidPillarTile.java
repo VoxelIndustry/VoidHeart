@@ -8,13 +8,15 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.inventorymover.SingleStackExtractable;
+import net.voxelindustry.voidheart.common.content.inventorymover.SingleStackInsertable;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class VoidPillarTile extends TileBase
+public class VoidPillarTile extends TileBase implements SingleStackInsertable, SingleStackExtractable
 {
     @Getter
     private ItemStack stack = ItemStack.EMPTY;

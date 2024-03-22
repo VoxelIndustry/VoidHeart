@@ -88,7 +88,7 @@ public class AltarItemParticle extends SpriteBillboardParticle
 
         double delta = age / (double) maxAge;
 
-        Vector3fc pos = Bezier.pointOfBezier4f(controlPoints, (float) delta);
+        var pos = Bezier.pointOfBezier4f(controlPoints, (float) delta);
 
         setPos(pos.x(), pos.y(), pos.z());
     }

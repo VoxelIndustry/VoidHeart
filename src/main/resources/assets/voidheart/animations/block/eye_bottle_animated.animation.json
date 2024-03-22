@@ -109,6 +109,20 @@
 						}
 					}
 				}
+			},
+			"sound_effects": {
+				"0.4167": {
+					"effect": "block.glass.place"
+				},
+				"0.7917": {
+					"effect": "block.glass.place"
+				},
+				"7.25": {
+					"effect": "block.glass.place"
+				},
+				"7.7083": {
+					"effect": "block.glass.place"
+				}
 			}
 		}
 	},

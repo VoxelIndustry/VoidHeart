@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "VVV"
+  ],
+  "key": {
+    "V": {
+      "item": "voidheart:voidstone_bricks"
+    },
+    "E": {
+      "item": "voidheart:ender_shard"
+    }
+  },
+  "result": {
+    "item": "voidheart:void_conduit",
+    "count": 3
+  }
+}

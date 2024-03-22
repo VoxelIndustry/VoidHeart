@@ -6,6 +6,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.tile.TileBase;
@@ -17,6 +18,7 @@ import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.ClientUtils;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.HashMap;
@@ -107,7 +109,15 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
     @Override
     public void registerControllers(ControllerRegistrar controllers)
     {
-        controllers.add(new AnimationController<>(this, this::deployAnimController));
+        var animationController = new AnimationController<>(this, this::deployAnimController);
+        animationController.setSoundKeyframeHandler(event ->
+        {
+            var player = ClientUtils.getClientPlayer();
+
+            if (player != null)
+                player.playSound(SoundEvents.BLOCK_GLASS_PLACE, 0.5F, player.getRandom().nextFloat() * 0.1F + 0.9F);
+        });
+        controllers.add(animationController);
     }
 
     protected <E extends EyeBottleTile> PlayState deployAnimController(AnimationState<E> state)

@@ -35,6 +35,8 @@
   ],
   "accessWidener": "voidheart.accesswidener",
   "depends": {
+    "geckolib": ">=4.0.0",
+    "steamlayer-network": "1.6.x",
     "fabricloader": ">=0.14.0",
     "fabric": "*",
     "minecraft": "1.20.x"

@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.content.altar;
+package net.voxelindustry.voidheart.common.content.portalframe;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.DoubleArgumentType;

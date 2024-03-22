@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VEV",
+    "VEV",
+    "VEV"
+  ],
+  "key": {
+    "V": {
+      "item": "voidheart:voidstone_bricks"
+    },
+    "E": {
+      "item": "voidheart:ender_shard"
+    }
+  },
+  "result": {
+    "item": "voidheart:void_monolith",
+    "count": 6
+  }
+}

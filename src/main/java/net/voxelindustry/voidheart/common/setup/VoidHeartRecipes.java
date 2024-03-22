@@ -1,10 +1,7 @@
 package net.voxelindustry.voidheart.common.setup;
 
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.recipe.RecipeManager;
@@ -14,9 +11,8 @@ import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
+import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
-
-import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.setup.VoidHeartItems.VOID_PEARL;
@@ -24,6 +20,7 @@ import static net.voxelindustry.voidheart.common.setup.VoidHeartItems.VOID_PEARL
 public class VoidHeartRecipes
 {
     public static RecipeCategory<AltarRecipe> ALTAR_CATEGORY;
+    public static RecipeCategory<ShatterForgeRecipe> SHATTER_FORGE_CATEGORY;
 
     private static final Identifier VOIDHEART_RECIPE = new Identifier(MODID, "altar/voidheart");
 
@@ -33,45 +30,50 @@ public class VoidHeartRecipes
 
         RecipeManager.addCategory(ALTAR_CATEGORY = new RecipeCategory<>(
                 new Identifier(MODID, "altar"),
-                new SteamLayerRecipeType<>((type, identifier) -> new AltarRecipe(identifier))));
+                new SteamLayerRecipeType<>((type, identifier) -> new AltarRecipe(identifier))
+        ));
+        RecipeManager.addCategory(SHATTER_FORGE_CATEGORY = new RecipeCategory<>(
+                new Identifier(MODID, "shatter_forge"),
+                new SteamLayerRecipeType<>((type, identifier) -> new ShatterForgeRecipe(identifier))
+        ));
     }
 
     private static void onRecipeReload(RecipeCategory<?> category)
     {
-        if (category == ALTAR_CATEGORY)
+        if (category != ALTAR_CATEGORY)
+            return;
+
+        ALTAR_CATEGORY.getRecipe(VOIDHEART_RECIPE).ifPresent(recipe -> recipe.onCraft((world, blockPos, recipeState, livingEntity) ->
         {
-            ALTAR_CATEGORY.getRecipe(VOIDHEART_RECIPE).ifPresent(recipe -> recipe.onCraft((world, blockPos, recipeState, livingEntity) ->
+            var tag = recipeState.getIngredientsConsumed(ItemStack.class).get(0).getOrCreateNbt();
+            if (!tag.containsUuid("player"))
+                return;
+
+            var playerID = tag.getUuid("player");
+            var voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
+            var voidPocketState = VoidPocketState.getVoidPocketState(voidWorld);
+
+            var player = world.getPlayerByUuid(playerID);
+
+            if (!voidPocketState.hasPocket(playerID))
             {
-                NbtCompound tag = recipeState.getIngredientsConsumed(ItemStack.class).get(0).getOrCreateNbt();
-                if (!tag.containsUuid("player"))
-                    return;
-
-                UUID playerID = tag.getUuid("player");
-                ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
-                VoidPocketState voidPocketState = VoidPocketState.getVoidPocketState(voidWorld);
-
-                PlayerEntity player = world.getPlayerByUuid(playerID);
-
-                if (!voidPocketState.hasPocket(playerID))
+                voidPocketState.createPocket(voidWorld, playerID);
+                if (player != null)
                 {
-                    voidPocketState.createPocket(voidWorld, playerID);
-                    if (player != null)
+                    for (int i = 0; i < 3; i++)
                     {
-                        for (int i = 0; i < 3; i++)
-                        {
-                            var voidPearls = new ItemStack(VOID_PEARL);
-                            player.getInventory().offerOrDrop(voidPearls);
-                        }
-
-                        player.sendMessage(Text.translatable(MODID + ".pocket_created"), true);
+                        var voidPearls = new ItemStack(VOID_PEARL);
+                        player.getInventory().offerOrDrop(voidPearls);
                     }
+
+                    player.sendMessage(Text.translatable(MODID + ".pocket_created"), true);
                 }
-                else if (player != null)
-                {
-                    player.sendMessage(Text.translatable(MODID + ".pocket_already_exists"), true);
-                }
-            }));
-        }
+            }
+            else if (player != null)
+            {
+                player.sendMessage(Text.translatable(MODID + ".pocket_already_exists"), true);
+            }
+        }));
     }
 
     private static ItemStackRecipeIngredient ingredient(ItemConvertible item)

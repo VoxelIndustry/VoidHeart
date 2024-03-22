@@ -1,7 +1,6 @@
 package net.voxelindustry.voidheart.client.render;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -40,7 +39,7 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile>
         matrices.multiply(MathUtil.quatFromAngleDegrees(worldTimeInterp, MathUtil.NEGATIVE_Y));
 
         var model = MinecraftClient.getInstance().getItemRenderer().getModel(altar.getStack(), null, null, 0);
-        MinecraftClient.getInstance().getItemRenderer().renderItem(altar.getStack(), ModelTransformationMode.GROUND, false, matrices,vertexConsumers, 15728880, OverlayTexture.DEFAULT_UV, model);
+        MinecraftClient.getInstance().getItemRenderer().renderItem(altar.getStack(), ModelTransformationMode.GROUND, false, matrices, vertexConsumers, light, overlay, model);
 
         matrices.pop();
     }

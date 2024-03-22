@@ -46,6 +46,18 @@ repositories {
         }
     }
 
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+
     mavenCentral()
     maven { url 'https://jitpack.io' }
 }
@@ -57,13 +69,14 @@ dependencies {
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    modImplementation include("net.voxelindustry:SteamLayer:${project.steamlayer_version}")
+    modImplementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
     //modImplementation "net.voxelindustry:biggerstructures:1.0.0"
-    modImplementation 'software.bernie.geckolib:geckolib-fabric-1.20.1:4.4.2'
+    modImplementation 'software.bernie.geckolib:geckolib-fabric-1.20.1:4.4.4'
 
     modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     modCompileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
     modImplementation "dev.emi:emi-fabric:${project.emi_version}"
+    modImplementation "maven.modrinth:iris:1.6.11+1.20.1"
 
     modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v3.3.9-mc1.20.1")
     modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:q_misc_util:v3.3.9-mc1.20.1")

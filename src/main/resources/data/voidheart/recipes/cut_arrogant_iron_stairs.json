@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "#  ",
+    "## ",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "voidheart:cut_arrogant_iron"
+    }
+  },
+  "result": {
+    "item": "voidheart:cut_arrogant_iron_stairs",
+    "count": 4
+  }
+}

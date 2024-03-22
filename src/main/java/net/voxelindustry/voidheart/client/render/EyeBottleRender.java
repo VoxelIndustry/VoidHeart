@@ -37,19 +37,21 @@ public class EyeBottleRender extends GeoBlockRenderer<EyeBottleTile>
             if (playerProfile == null)
                 return;
 
-            matrices.push();
-            matrices.translate(0, 0.8, 0);
-            matrices.scale(1F / 64F, 1F / 64F, 1F / 64F);
+            if (MinecraftClient.getInstance().player.squaredDistanceTo(eyeBottle.getPos().getX(), eyeBottle.getPos().getY(), eyeBottle.getPos().getZ()) < 64)
+            {
+                matrices.push();
+                matrices.translate(0, 0.8, 0);
+                matrices.scale(1F / 64F, 1F / 64F, 1F / 64F);
 
-            matrices.multiply(MinecraftClient.getInstance().gameRenderer.getCamera().getRotation());
-            matrices.multiply(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
+                matrices.multiply(MinecraftClient.getInstance().gameRenderer.getCamera().getRotation());
+                matrices.multiply(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
+                var textRenderer = MinecraftClient.getInstance().textRenderer;
+                var nameSize = textRenderer.getWidth(playerProfile.getName()) / 2F;
+                textRenderer.draw(playerProfile.getName(), -nameSize + 1, 1, 0x3c3c3c, false, matrices.peek().getPositionMatrix(), bufferSource, TextLayerType.NORMAL, 0, 15728880);
+                textRenderer.draw(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, false, matrices.peek().getPositionMatrix(), bufferSource, TextLayerType.SEE_THROUGH, 0, 15728880);
 
-            var textRenderer = MinecraftClient.getInstance().textRenderer;
-            var nameSize = textRenderer.getWidth(playerProfile.getName()) / 2F;
-            textRenderer.draw(playerProfile.getName(), -nameSize + 1, 1, 0x3c3c3c, false, matrices.peek().getPositionMatrix(), bufferSource, TextLayerType.NORMAL, 0, 15728880);
-            textRenderer.draw(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, false, matrices.peek().getPositionMatrix(), bufferSource, TextLayerType.SEE_THROUGH, 0, 15728880);
-
-            matrices.pop();
+                matrices.pop();
+            }
         }
     }
 }

@@ -8,10 +8,10 @@ public class StateProperties
 {
     public static final BooleanProperty NORTH = BooleanProperty.of("north");
     public static final BooleanProperty SOUTH = BooleanProperty.of("south");
-    public static final BooleanProperty EAST  = BooleanProperty.of("east");
-    public static final BooleanProperty WEST  = BooleanProperty.of("west");
-    public static final BooleanProperty UP    = BooleanProperty.of("up");
-    public static final BooleanProperty DOWN  = BooleanProperty.of("down");
+    public static final BooleanProperty EAST = BooleanProperty.of("east");
+    public static final BooleanProperty WEST = BooleanProperty.of("west");
+    public static final BooleanProperty UP = BooleanProperty.of("up");
+    public static final BooleanProperty DOWN = BooleanProperty.of("down");
 
     public static final BooleanProperty BROKEN = BooleanProperty.of("broken");
 
@@ -19,14 +19,19 @@ public class StateProperties
 
     public static boolean isSideConnected(BlockState state, Direction direction)
     {
+        return state.get(getSideFromDirection(direction));
+    }
+
+    public static BooleanProperty getSideFromDirection(Direction direction)
+    {
         return switch (direction)
-                {
-                    case DOWN -> state.get(DOWN);
-                    case UP -> state.get(UP);
-                    case NORTH -> state.get(NORTH);
-                    case SOUTH -> state.get(SOUTH);
-                    case WEST -> state.get(WEST);
-                    case EAST -> state.get(EAST);
-                };
+        {
+            case DOWN -> DOWN;
+            case UP -> UP;
+            case NORTH -> NORTH;
+            case SOUTH -> SOUTH;
+            case WEST -> WEST;
+            case EAST -> EAST;
+        };
     }
 }

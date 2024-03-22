@@ -10,7 +10,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
-import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.ArrayList;
@@ -25,11 +24,19 @@ public class InventoryInserterTile extends BlockEntity
         super(VoidHeartTiles.INVENTORY_INSERTER, pos, state);
     }
 
-    private VoidPillarTile tryGetPillar(Direction direction)
+    private SingleStackInsertable tryGetInsertable(Direction direction)
     {
         var besideTile = getWorld().getBlockEntity(pos.offset(direction));
-        if (besideTile instanceof VoidPillarTile pillar)
-            return pillar;
+        if (besideTile instanceof SingleStackInsertable insertable)
+            return insertable;
+        return null;
+    }
+
+    private SingleStackExtractable tryGetExtractable(Direction direction)
+    {
+        var besideTile = getWorld().getBlockEntity(pos.offset(direction));
+        if (besideTile instanceof SingleStackExtractable extractable)
+            return extractable;
         return null;
     }
 
@@ -162,18 +169,33 @@ public class InventoryInserterTile extends BlockEntity
 
         if (insertInventory == null || extractInventory == null)
         {
-            var insertPillar = inserter.tryGetPillar(direction);
-            if (extractInventory != null && insertPillar != null)
+            var insertable = inserter.tryGetInsertable(direction);
+            if (extractInventory != null && insertable != null)
             {
-                if (!insertPillar.getStack().isEmpty())
+                if (!insertable.getStack().isEmpty())
                     return;
 
                 var extractionCandidate = inserter.getExtractionCandidate(Collections.emptyList(), extractInventory, direction);
 
                 if (!extractionCandidate.isEmpty())
                 {
-                    insertPillar.setStack(extractionCandidate);
+                    insertable.setStack(extractionCandidate);
                     inserter.doExtract(extractInventory, extractionCandidate, direction);
+                }
+            }
+
+            var extractable = inserter.tryGetExtractable(direction.getOpposite());
+            if (insertInventory != null && extractable != null)
+            {
+                if (extractable.getStack().isEmpty())
+                    return;
+
+                var extractionCandidate = extractable.getStack().copyWithCount(1);
+
+                if (!extractionCandidate.isEmpty())
+                {
+                    if (inserter.tryInsert(insertInventory, extractionCandidate.copy(), direction.getOpposite()))
+                        extractable.setStack(ItemStack.EMPTY);
                 }
             }
             return;

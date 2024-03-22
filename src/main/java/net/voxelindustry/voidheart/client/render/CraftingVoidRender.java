@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.render;
 
+import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -10,6 +11,8 @@ import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
 import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.compat.iris.IrisCompat;
+import net.voxelindustry.voidheart.compat.iris.IrisCraftingVoidRender;
 
 import java.util.Random;
 
@@ -40,10 +43,15 @@ public class CraftingVoidRender
         var outlineThickness = 1.015F;
         renderOutlineCubeFaces(matrices, vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(ALTAR_OVERLAY_TEXTURE)), -size / 2 * outlineThickness, -size / 2 * outlineThickness, -size / 2 * outlineThickness, size * outlineThickness, size * outlineThickness, size * outlineThickness);
 
-        renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 0.15F);
+        if (IrisCompat.useIris())
+            IrisCraftingVoidRender.irisEndPortalRender(matrices, vertexConsumers, OverlayTexture.DEFAULT_UV, 240);
+        else
+        {
+            renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 0.15F);
 
-        for (int l = 1; l < draws; ++l)
-            renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 2.0F / (float) (18 - l));
+            for (int l = 1; l < draws; ++l)
+                renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 2.0F / (float) (18 - l));
+        }
 
         matrices.pop();
     }

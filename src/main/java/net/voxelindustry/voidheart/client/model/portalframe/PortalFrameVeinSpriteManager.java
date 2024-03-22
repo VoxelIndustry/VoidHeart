@@ -1,8 +1,8 @@
 package net.voxelindustry.voidheart.client.model.portalframe;
 
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
@@ -53,7 +53,7 @@ public class PortalFrameVeinSpriteManager
         for (int i = 0; i < 4; i++)
             CORE_SPRITES[i] = CORE_SPRITE_IDENTIFIERS[i].getSprite();
 
-        VOIDBRICK_SPRITE = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/voidstone_bricks")).getSprite();
+        VOIDBRICK_SPRITE = new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/voidstone_bricks")).getSprite();
     }
 
     public static SpriteIdentifier[] getFrameSpriteIdentifiers()
@@ -151,11 +151,11 @@ public class PortalFrameVeinSpriteManager
 
     private static SpriteIdentifier getFrameSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/portal/" + from));
+        return new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/portal/" + from));
     }
 
     private static SpriteIdentifier getCoreSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/portalcore/" + from));
+        return new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/portalcore/" + from));
     }
 }

@@ -22,14 +22,14 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalLinker
 {
-    public static boolean voidPearlInteract(PortalFrameTile portalFrameTile,
-                                            World world,
-                                            BlockPos pos,
-                                            Direction direction,
-                                            PlayerEntity player,
-                                            ItemStack voidPearl)
+    public static boolean voidIronEyeInteract(PortalFrameTile portalFrameTile,
+                                              World world,
+                                              BlockPos pos,
+                                              Direction direction,
+                                              PlayerEntity player,
+                                              ItemStack voidIronEye)
     {
-        var tag = voidPearl.getOrCreateNbt();
+        var tag = voidIronEye.getOrCreateNbt();
 
         Optional<DeferredRollbackWork<PortalFormerState>> portalFormer = Optional.empty();
 
@@ -68,7 +68,7 @@ public class PortalLinker
                     pos,
                     direction,
                     portalFrameTile,
-                    voidPearl,
+                    voidIronEye,
                     portalFormer,
                     player,
                     firstPos,

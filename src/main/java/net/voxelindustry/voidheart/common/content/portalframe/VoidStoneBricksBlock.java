@@ -10,7 +10,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.common.item.VoidPearlItem;
+import net.voxelindustry.voidheart.common.item.PortalCoreItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
@@ -27,7 +27,7 @@ public class VoidStoneBricksBlock extends Block
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
     {
         ItemStack stack = player.getStackInHand(hand);
-        if (stack.getItem() == VoidHeartItems.VOID_PEARL || stack.getItem() == VoidHeartItems.LOCAL_PEARL)
+        if (stack.getItem() == VoidHeartItems.PORTAL_CORE)
         {
             if (world.isClient())
                 return ActionResult.SUCCESS;
@@ -46,11 +46,14 @@ public class VoidStoneBricksBlock extends Block
             }
 
             boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUuid());
-            if (!VoidPearlItem.checkPearlUseHereAndWarn(stack, isInPocket, player))
+            if (!PortalCoreItem.checkPearlUseHereAndWarn(stack, isInPocket, player))
                 return ActionResult.PASS;
 
-            if (PortalLinker.voidPearlInteract(null, world, pos, hit.getSide(), player, stack))
+            if (PortalLinker.voidIronEyeInteract(null, world, pos, hit.getSide(), player, stack))
+            {
+                PortalCoreItem.sendSuccessMessage(player, stack, false);
                 return ActionResult.SUCCESS;
+            }
         }
 
         return super.onUse(state, world, pos, player, hand, hit);

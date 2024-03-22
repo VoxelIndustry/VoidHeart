@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client.model;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.util.ModelIdentifier;
+import net.voxelindustry.voidheart.client.model.conduit.ConduitUnbakedModel;
 import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithUnbakedModel;
 import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameCoreUnbakedModel;
 import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameUnbakedModel;
@@ -18,6 +19,7 @@ public class VoidHeartModelLoadingPlugin implements ModelLoadingPlugin
     public final ModelIdentifier PORTAL_FRAME = new ModelIdentifier(MODID, "portal_frame", "");
     public final ModelIdentifier PORTAL_FRAME_CORE = new ModelIdentifier(MODID, "portal_frame_core", "");
     public final ModelIdentifier VOID_MONOLITH = new ModelIdentifier(MODID, "void_monolith", "");
+    public final ModelIdentifier CONDUIT = new ModelIdentifier(MODID, "void_conduit", "");
 
     private final Map<ModelIdentifier, Function<UnbakedModel, UnbakedModel>> modelMap = new HashMap<>();
 
@@ -27,6 +29,7 @@ public class VoidHeartModelLoadingPlugin implements ModelLoadingPlugin
         modelMap.put(PORTAL_FRAME, PortalFrameUnbakedModel::new);
         modelMap.put(PORTAL_FRAME_CORE, PortalFrameCoreUnbakedModel::new);
         modelMap.put(VOID_MONOLITH, VoidMonolithUnbakedModel::new);
+        modelMap.put(CONDUIT, ConduitUnbakedModel::new);
 
         pluginContext.modifyModelOnLoad().register((original, context) ->
         {
@@ -45,6 +48,8 @@ public class VoidHeartModelLoadingPlugin implements ModelLoadingPlugin
                 return modelMap.get(PORTAL_FRAME_CORE).apply(original);
             if (context.id().getPath().equals(VOID_MONOLITH.getPath()))
                 return modelMap.get(VOID_MONOLITH).apply(original);
+            if (context.id().getPath().equals(CONDUIT.getPath()))
+                return modelMap.get(CONDUIT).apply(original);
             return original;
         });
     }

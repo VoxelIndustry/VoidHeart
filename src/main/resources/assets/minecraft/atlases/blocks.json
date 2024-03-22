@@ -90,6 +90,32 @@
     {"type": "single", "resource": "voidheart:block/portalcore/core_0"},
     {"type": "single", "resource": "voidheart:block/portalcore/core_1"},
     {"type": "single", "resource": "voidheart:block/portalcore/core_2"},
-    {"type": "single", "resource": "voidheart:block/portalcore/core_3"}
+    {"type": "single", "resource": "voidheart:block/portalcore/core_3"},
+
+    {"type": "single", "resource": "voidheart:block/conduit/conduit0"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit1"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit2"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit3"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit4"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit5"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit6"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit7"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit8"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit9"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit10"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit11"},
+
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit1"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit2"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit3"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit4"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit5"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit6"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit7"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit8"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit9"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit10"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit11"},
+    {"type": "single", "resource": "voidheart:block/conduit/conduit_lit12"}
   ]
 }

@@ -24,6 +24,7 @@
     "voidheart:void_monolith",
     "voidheart:void_lamp",
     "voidheart:void_door",
+    "voidheart:experience_skull",
     "voidheart:permeable_barrier",
     "voidheart:voidstone_wall",
     "voidheart:voidstone_slab",
@@ -37,6 +38,12 @@
     "voidheart:voidstone_tile_small_slab",
     "voidheart:voidstone_tile_small_stairs",
     "voidheart:inventory_inserter",
-    "voidheart:eye_bottle"
+    "voidheart:void_conduit",
+    "voidheart:eye_bottle",
+    "voidheart:shatter_forge",
+    "voidheart:cut_arrogant_iron",
+    "voidheart:cut_arrogant_iron_stairs",
+    "voidheart:cut_arrogant_iron_slab",
+    "voidheart:arrogant_iron_block"
   ]
 }

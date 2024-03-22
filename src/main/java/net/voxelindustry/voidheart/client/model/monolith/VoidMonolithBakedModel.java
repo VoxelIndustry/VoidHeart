@@ -22,8 +22,6 @@ import java.util.function.Supplier;
 
 public class VoidMonolithBakedModel extends ForwardingBakedModel
 {
-    private final Direction[] horizontals = new Direction[] { Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST };
-
     private RenderMaterial outerMaterial;
 
     public VoidMonolithBakedModel(BakedModel wrapped)
@@ -88,7 +86,6 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
                 var sprite = VoidMonolithSpriteManager.getBrokenSprite();
 
                 context.getEmitter()
-                        .material(outerMaterial)
                         .square(direction, 0, 0, 1, 1, 0)
                         .spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV)
                         .cullFace(direction)

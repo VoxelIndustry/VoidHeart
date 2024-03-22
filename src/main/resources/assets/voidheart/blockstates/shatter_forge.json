@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "axis=x,lit=true": {
+      "model": "voidheart:block/shatter_forge_active",
+      "y": 90
+    },
+    "axis=z,lit=true": {
+      "model": "voidheart:block/shatter_forge_active"
+    },
+    "axis=x,lit=false": {
+      "model": "voidheart:block/shatter_forge",
+      "y": 90
+    },
+    "axis=z,lit=false": {
+      "model": "voidheart:block/shatter_forge"
+    }
+  }
+}

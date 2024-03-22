@@ -17,6 +17,7 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
+import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -38,6 +39,7 @@ public class VoidHeartTiles
     public static BlockEntityType<InventoryInserterTile> INVENTORY_INSERTER;
 
     public static BlockEntityType<EyeBottleTile> EYE_BOTTLE;
+    public static BlockEntityType<ShatterForgeTile> SHATTER_FORGE;
 
     public static void registerTiles()
     {
@@ -86,6 +88,9 @@ public class VoidHeartTiles
         registerTile(EYE_BOTTLE =
                         FabricBlockEntityTypeBuilder.create(EyeBottleTile::new, VoidHeartBlocks.EYE_BOTTLE).build(),
                 "eye_bottle");
+
+        registerTile(SHATTER_FORGE = FabricBlockEntityTypeBuilder.create(ShatterForgeTile::new, VoidHeartBlocks.SHATTER_FORGE).build(),
+                "shatter_forge");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)
