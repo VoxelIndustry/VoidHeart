@@ -5,6 +5,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
@@ -12,6 +13,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 
@@ -51,7 +53,7 @@ public class PortalLinker
 
         if (tag.contains("firstPos"))
         {
-            if(!Objects.equals(tag.getUuid("owner"), player.getUuid()))
+            if (!Objects.equals(tag.getUuid("owner"), player.getUuid()))
             {
                 player.sendMessage(Text.translatable(MODID + ".portal_not_owner"), true);
                 return false;
@@ -171,6 +173,8 @@ public class PortalLinker
         linkedPortalCore.linkPortal(ImmersivePortalCompat.useImmersivePortal());
 
         player.sendMessage(Text.translatable(MODID + ".link_successful"), true);
+
+        VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayerEntity) player);
         return true;
     }
 

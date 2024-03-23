@@ -1,0 +1,38 @@
+{
+  "criteria": {
+    "got_voidstone": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:voidstone"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "background": "voidheart:textures/block/voidstone.png",
+    "description": {
+      "text": "That's not from here"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "voidheart:voidstone"
+    },
+    "show_toast": true,
+    "title": {
+      "text": "Outside stone"
+    }
+  },
+  "requirements": [
+    [
+      "got_voidstone"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

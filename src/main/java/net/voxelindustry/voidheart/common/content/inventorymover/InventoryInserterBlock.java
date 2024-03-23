@@ -8,17 +8,24 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.Instrument;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 import static net.minecraft.block.BlockWithEntity.checkType;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class InventoryInserterBlock extends Block implements BlockEntityProvider
 {
@@ -33,6 +40,15 @@ public class InventoryInserterBlock extends Block implements BlockEntityProvider
 
         setDefaultState(getStateManager().getDefaultState()
                 .with(Properties.FACING, Direction.UP));
+    }
+
+    @Override
+    public void appendTooltip(ItemStack stack, @Nullable BlockView world, List<Text> tooltip, TooltipContext options)
+    {
+        super.appendTooltip(stack, world, tooltip, options);
+
+        tooltip.add(Text.translatable(MODID + ".inventory_inserter.lore1"));
+        tooltip.add(Text.translatable(MODID + ".inventory_inserter.lore2"));
     }
 
     @Nullable

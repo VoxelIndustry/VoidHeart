@@ -1,0 +1,38 @@
+{
+  "parent": "minecraft:voidheart/altar",
+  "criteria": {
+    "got_altar": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:void_amalgam"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "text": "Eat it and offer the result to the altar"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "voidheart:void_amalgam"
+    },
+    "show_toast": true,
+    "title": {
+      "text": "Ominous amalgam"
+    }
+  },
+  "requirements": [
+    [
+      "got_altar"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

@@ -1,0 +1,29 @@
+{
+  "parent": "minecraft:voidheart/portal_core",
+  "criteria": {
+    "make_portal": {
+      "trigger": "voidheart:portal_linked"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "text": "The flexion is made. The spheres are entwined"
+    },
+    "frame": "goal",
+    "hidden": false,
+    "icon": {
+      "item": "voidheart:portal_frame_core"
+    },
+    "show_toast": true,
+    "title": {
+      "text": "Portal"
+    }
+  },
+  "requirements": [
+    [
+      "make_portal"
+    ]
+  ],
+  "sends_telemetry_event": false
+}

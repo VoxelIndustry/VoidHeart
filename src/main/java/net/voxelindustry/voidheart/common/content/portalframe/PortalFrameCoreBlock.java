@@ -6,6 +6,7 @@ import net.minecraft.block.MapColor;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.enums.Instrument;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
@@ -16,6 +17,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -72,6 +74,7 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
             else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
             {
                 player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
+                VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayerEntity) player);
                 return ActionResult.SUCCESS;
             }
         }

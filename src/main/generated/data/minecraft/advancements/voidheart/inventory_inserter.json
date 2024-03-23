@@ -1,0 +1,38 @@
+{
+  "parent": "minecraft:voidheart/altar",
+  "criteria": {
+    "got_inventory_inserter": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:inventory_inserter"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "text": "Slow automated way to move items"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "voidheart:inventory_inserter"
+    },
+    "show_toast": true,
+    "title": {
+      "text": "Inventory Inserter"
+    }
+  },
+  "requirements": [
+    [
+      "got_inventory_inserter"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

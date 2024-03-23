@@ -3,8 +3,8 @@
   "id": "voidheart_datagen",
   "version": "${version}",
   "entrypoints": {
-    "preLaunch": [
-      "net.voxelindustry.voidheart.data.VoidHeartDatagenInitializer"
+    "fabric-datagen": [
+      "net.voxelindustry.voidheart.data.VoidHeartDataGenerator"
     ]
   }
 }

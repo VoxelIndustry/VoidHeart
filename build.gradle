@@ -129,6 +129,10 @@ jar {
     from "LICENSE"
 }
 
+fabricApi {
+    configureDataGeneration()
+}
+
 processResources {
     inputs.properties "version": project.version, "description": project.description
 

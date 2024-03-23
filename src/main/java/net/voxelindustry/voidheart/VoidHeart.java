@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleType;
@@ -21,6 +22,7 @@ import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameParticleEffect;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterion;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeRuneParticleEffect;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -50,6 +52,8 @@ public class VoidHeart implements ModInitializer
     public static ParticleType<PortalFrameParticleEffect> PORTAL_FRAME_PARTICLE;
     public static ParticleType<ShatterForgeRuneParticleEffect> SHATTER_FORGE_RUNE_PARTICLE;
     public static ParticleType<ShatterForgeItemParticleEffect> SHATTER_FORGE_ITEM_PARTICLE;
+
+    public static PortalLinkCriterion PORTAL_LINK_CRITERION = Criteria.register(new PortalLinkCriterion());
 
     @Override
     public void onInitialize()
