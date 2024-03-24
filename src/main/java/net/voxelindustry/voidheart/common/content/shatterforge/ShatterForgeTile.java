@@ -388,6 +388,12 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
             if (forge.recipeState.completionDelta() > 0.5F && forge.recipeState.getIngredientConsumed(ItemStack.class, 0).isEmpty())
             {
+                if (forge.getStack().isEmpty())
+                {
+                    forge.stopCrafting();
+                    forge.sync();
+                    return;
+                }
                 forge.recipeState.consumeSlotless(ItemStack.class, forge.getStack());
                 forge.stack = ItemStack.EMPTY;
             }
@@ -403,10 +409,18 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
                     forge.hasOutputtedResult = true;
                 }
 
-                if (!forge.stack.isEmpty() && forge.pillar.getStack().isEmpty() && forge.currentRecipe.getRecipeInputs(ItemStack.class).get(0).matchWithQuantity(forge.stack))
+                if (!forge.stack.isEmpty() && forge.pillar.getStack().isEmpty())
                 {
-                    forge.recipeState.reset();
-                    forge.hasOutputtedResult = false;
+                    if (forge.recipeState.getRecipe().getRecipeInputs(ItemStack.class).get(0).matchWithQuantity(forge.stack))
+                    {
+                        forge.recipeState.reset();
+                        forge.hasOutputtedResult = false;
+                    }
+                    else
+                    {
+                        forge.stopCrafting();
+                        forge.startCrafting();
+                    }
                 }
             }
 
