@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "voidheart:block/cut_ravenous_gold",
+    "side": "voidheart:block/cut_ravenous_gold",
+    "top": "voidheart:block/cut_ravenous_gold"
+  }
+}

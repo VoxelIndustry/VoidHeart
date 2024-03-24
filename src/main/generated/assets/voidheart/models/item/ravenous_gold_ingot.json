@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "voidheart:item/ravenous_gold_ingot"
+  }
+}

@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.recipe;
 
 import com.google.gson.JsonObject;
 import lombok.Getter;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
@@ -22,11 +23,21 @@ public class ShatterForgeRecipe extends RecipeBase
         super(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getType(), identifier);
     }
 
-    public ShatterForgeRecipe(Identifier identifier, ItemStackRecipeIngredient output, ItemStackRecipeIngredient catalyst, int time, int monolithCount)
+    public ShatterForgeRecipe(Identifier identifier, ItemConvertible output, ItemConvertible input, int time, int monolithCount)
+    {
+        this(identifier, new ItemStack(output), new ItemStack(input), time, monolithCount);
+    }
+
+    public ShatterForgeRecipe(Identifier identifier, ItemStack output, ItemStack input, int time, int monolithCount)
+    {
+        this(identifier, new ItemStackRecipeIngredient(output, false), new ItemStackRecipeIngredient(input, false), time, monolithCount);
+    }
+
+    public ShatterForgeRecipe(Identifier identifier, ItemStackRecipeIngredient output, ItemStackRecipeIngredient input, int time, int monolithCount)
     {
         this(identifier);
 
-        addInputs(ItemStack.class, catalyst);
+        addInputs(ItemStack.class, input);
         addOutputs(ItemStack.class, output);
 
         this.time = time;
@@ -51,6 +62,15 @@ public class ShatterForgeRecipe extends RecipeBase
 
         this.time = json.get("time").getAsInt();
         this.monolithCount = json.get("monolithCount").getAsInt();
+    }
+
+    @Override
+    public void toJson(JsonObject json)
+    {
+        json.addProperty("time", time);
+        json.addProperty("monolithCount", monolithCount);
+
+        super.toJson(json);
     }
 
     @Override

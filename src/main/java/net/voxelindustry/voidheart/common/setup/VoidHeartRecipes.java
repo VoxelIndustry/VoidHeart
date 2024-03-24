@@ -19,6 +19,9 @@ import static net.voxelindustry.voidheart.common.setup.VoidHeartItems.VOID_PEARL
 
 public class VoidHeartRecipes
 {
+    public static final SteamLayerRecipeType<AltarRecipe> ALTAR_TYPE = new SteamLayerRecipeType<>((type, identifier) -> new AltarRecipe(identifier));
+    public static final SteamLayerRecipeType<ShatterForgeRecipe> SHATTER_FORGE_TYPE = new SteamLayerRecipeType<>((type, identifier) -> new ShatterForgeRecipe(identifier));
+
     public static RecipeCategory<AltarRecipe> ALTAR_CATEGORY;
     public static RecipeCategory<ShatterForgeRecipe> SHATTER_FORGE_CATEGORY;
 
@@ -30,11 +33,11 @@ public class VoidHeartRecipes
 
         RecipeManager.addCategory(ALTAR_CATEGORY = new RecipeCategory<>(
                 new Identifier(MODID, "altar"),
-                new SteamLayerRecipeType<>((type, identifier) -> new AltarRecipe(identifier))
+                ALTAR_TYPE
         ));
         RecipeManager.addCategory(SHATTER_FORGE_CATEGORY = new RecipeCategory<>(
                 new Identifier(MODID, "shatter_forge"),
-                new SteamLayerRecipeType<>((type, identifier) -> new ShatterForgeRecipe(identifier))
+                SHATTER_FORGE_TYPE
         ));
     }
 

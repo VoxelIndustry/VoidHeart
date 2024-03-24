@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "count": 1,
+  "ingredient": {
+    "item": "voidheart:cut_ravenous_gold"
+  },
+  "result": "voidheart:cut_ravenous_gold_wall"
+}

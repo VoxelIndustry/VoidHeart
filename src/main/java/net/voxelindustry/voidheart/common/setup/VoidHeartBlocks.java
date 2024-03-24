@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.fabricmc.fabric.impl.datagen.FabricDataGenHelper;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -39,6 +40,9 @@ import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBloc
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.VoidConduitBlock;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -95,6 +99,13 @@ public class VoidHeartBlocks
 
     public static Block ARROGANT_IRON_BLOCK;
     public static Block CUT_ARROGANT_IRON;
+    public static Block RAVENOUS_GOLD_BLOCK;
+    public static Block CUT_RAVENOUS_GOLD;
+    public static Block CUT_RAVENOUS_GOLD_STAIRS;
+    public static Block CUT_RAVENOUS_GOLD_SLAB;
+    public static Block CUT_RAVENOUS_GOLD_WALL;
+
+    public static final List<Block> MINEABLE_BLOCKS = new ArrayList<>();
 
     public static void registerBlocks()
     {
@@ -291,6 +302,18 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .sounds(BlockSoundGroup.METAL)
                         .requiresTool().strength(4F, 10.0F)), itemGroup, "cut_arrogant_iron");
+        registerBlock(RAVENOUS_GOLD_BLOCK = new Block(
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.LIME)
+                        .instrument(Instrument.IRON_XYLOPHONE)
+                        .sounds(BlockSoundGroup.METAL)
+                        .requiresTool().strength(4F, 10.0F)), itemGroup, "ravenous_gold_block");
+        registerBlock(CUT_RAVENOUS_GOLD = new Block(
+                AbstractBlock.Settings.create()
+                        .mapColor(MapColor.LIME)
+                        .instrument(Instrument.IRON_XYLOPHONE)
+                        .sounds(BlockSoundGroup.METAL)
+                        .requiresTool().strength(4F, 10.0F)), itemGroup, "cut_ravenous_gold");
 
         generateStairs(VOIDSTONE, itemGroup, "voidstone");
         generateWall(VOIDSTONE, itemGroup, "voidstone");
@@ -309,34 +332,44 @@ public class VoidHeartBlocks
 
         generateStairs(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
         generateSlab(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
+
+        CUT_RAVENOUS_GOLD_STAIRS = generateStairs(CUT_RAVENOUS_GOLD, itemGroup, "cut_ravenous_gold");
+        CUT_RAVENOUS_GOLD_SLAB = generateSlab(CUT_RAVENOUS_GOLD, itemGroup, "cut_ravenous_gold");
+        CUT_RAVENOUS_GOLD_WALL = generateWall(CUT_RAVENOUS_GOLD, itemGroup, "cut_ravenous_gold");
     }
 
-    private static void registerBlock(Block block, Item.Settings settings, String name)
+    private static Block registerBlock(Block block, Item.Settings settings, String name)
     {
         var itemBlock = new BlockItem(block, settings);
         registerBlock(block, itemBlock, name);
+        return block;
     }
 
-    private static void registerBlock(Block block, BlockItem itemBlock, String name)
+    private static Block registerBlock(Block block, BlockItem itemBlock, String name)
     {
         var identifier = new Identifier(MODID, name);
         Registry.register(Registries.BLOCK, identifier, block);
         Registry.register(Registries.ITEM, identifier, itemBlock);
+
+        if (FabricDataGenHelper.ENABLED && block.getDefaultState().isToolRequired())
+            MINEABLE_BLOCKS.add(block);
+
+        return block;
     }
 
-    private static void generateStairs(Block block, Item.Settings builder, String name)
+    private static Block generateStairs(Block block, Item.Settings builder, String name)
     {
-        registerBlock(new CustomStairsBlock(block.getDefaultState(), AbstractBlock.Settings.copy(block)), builder, name + "_stairs");
+        return registerBlock(new CustomStairsBlock(block.getDefaultState(), AbstractBlock.Settings.copy(block)), builder, name + "_stairs");
     }
 
-    private static void generateWall(Block block, Item.Settings builder, String name)
+    private static Block generateWall(Block block, Item.Settings builder, String name)
     {
-        registerBlock(new WallBlock(AbstractBlock.Settings.copy(block)), builder, name + "_wall");
+        return registerBlock(new WallBlock(AbstractBlock.Settings.copy(block)), builder, name + "_wall");
     }
 
-    private static void generateSlab(Block block, Item.Settings builder, String name)
+    private static Block generateSlab(Block block, Item.Settings builder, String name)
     {
-        registerBlock(new SlabBlock(AbstractBlock.Settings.copy(block)), builder, name + "_slab");
+        return registerBlock(new SlabBlock(AbstractBlock.Settings.copy(block)), builder, name + "_slab");
     }
 
     public static Boolean never(BlockState state, BlockView world, BlockPos pos, EntityType<?> type)

@@ -23,6 +23,9 @@
     "client": [
       "net.voxelindustry.voidheart.VoidHeartClient"
     ],
+    "fabric-datagen": [
+      "net.voxelindustry.voidheart.data.VoidHeartDataGenerator"
+    ],
     "rei_client": [
       "net.voxelindustry.voidheart.compat.rei.VoidHeartREIPlugin"
     ],

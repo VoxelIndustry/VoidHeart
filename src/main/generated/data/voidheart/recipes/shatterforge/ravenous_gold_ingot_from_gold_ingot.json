@@ -1,0 +1,21 @@
+{
+  "type": "voidheart:shatter_forge",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:gold_ingot"
+      }
+    ]
+  },
+  "monolithCount": 3,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ravenous_gold_ingot"
+      }
+    ]
+  },
+  "time": 40
+}

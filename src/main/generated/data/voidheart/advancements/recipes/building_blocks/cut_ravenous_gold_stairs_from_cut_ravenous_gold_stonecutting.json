@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cut_ravenous_gold": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:cut_ravenous_gold"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:cut_ravenous_gold_stairs_from_cut_ravenous_gold_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_cut_ravenous_gold",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:cut_ravenous_gold_stairs_from_cut_ravenous_gold_stonecutting"
+    ]
+  },
+  "sends_telemetry_event": false
+}

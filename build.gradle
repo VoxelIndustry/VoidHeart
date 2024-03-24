@@ -97,16 +97,6 @@ loom {
     accessWidenerPath.set(file("src/main/resources/voidheart.accesswidener"))
 }
 
-sourceSets {
-    data {
-        compileClasspath += sourceSets.main.compileClasspath
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.compileClasspath
-        runtimeClasspath += sourceSets.main.runtimeClasspath
-        runtimeClasspath += sourceSets.main.output
-    }
-}
-
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }

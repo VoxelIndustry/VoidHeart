@@ -27,6 +27,7 @@ public class VoidHeartItems
     public static Item OBSIDIAN_SHARD;
     public static Item ENDER_SHARD;
     public static Item ARROGANT_IRON_INGOT;
+    public static Item RAVENOUS_GOLD_INGOT;
 
     public static void registerItems()
     {
@@ -44,6 +45,7 @@ public class VoidHeartItems
         registerItem(OBSIDIAN_SHARD = new Item(new Settings()), "obsidian_shard");
         registerItem(ENDER_SHARD = new Item(new Settings()), "ender_shard");
         registerItem(ARROGANT_IRON_INGOT = new Item(new Settings()), "arrogant_iron_ingot");
+        registerItem(RAVENOUS_GOLD_INGOT = new Item(new Settings()), "ravenous_gold_ingot");
     }
 
     public static void registerItem(Item item, String name)

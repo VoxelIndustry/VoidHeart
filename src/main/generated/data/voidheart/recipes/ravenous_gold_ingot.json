@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "voidheart:ravenous_gold_block"
+    }
+  ],
+  "result": {
+    "count": 9,
+    "item": "voidheart:ravenous_gold_ingot"
+  }
+}
