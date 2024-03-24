@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/inner_stairs",
-  "textures": {
-    "bottom": "voidheart:block/cut_arrogant_iron",
-    "top": "voidheart:block/cut_arrogant_iron",
-    "side": "voidheart:block/cut_arrogant_iron"
-  }
-}

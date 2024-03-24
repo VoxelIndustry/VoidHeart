@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "count": 1,
+  "ingredient": {
+    "item": "voidheart:voidstone_bricks_cracked"
+  },
+  "result": "voidheart:voidstone_bricks_cracked_stairs"
+}

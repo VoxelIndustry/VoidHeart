@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "ingredient": {
-    "item": "voidheart:voidstone_bricks"
-  },
-  "result": "voidheart:voidstone_pillar",
-  "count": 1
-}

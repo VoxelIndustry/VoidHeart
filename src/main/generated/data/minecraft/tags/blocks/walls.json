@@ -1,6 +1,12 @@
 {
   "replace": false,
   "values": [
-    "voidheart:cut_ravenous_gold_wall"
+    "voidheart:cut_arrogant_iron_wall",
+    "voidheart:cut_ravenous_gold_wall",
+    "voidheart:voidstone_bricks_cracked_wall",
+    "voidheart:voidstone_wall",
+    "voidheart:voidstone_bricks_wall",
+    "voidheart:voidstone_polished_wall",
+    "voidheart:voidstone_tile_small_wall"
   ]
 }

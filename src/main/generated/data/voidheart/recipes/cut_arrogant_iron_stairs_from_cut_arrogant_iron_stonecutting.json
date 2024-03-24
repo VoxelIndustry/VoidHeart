@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "count": 1,
+  "ingredient": {
+    "item": "voidheart:cut_arrogant_iron"
+  },
+  "result": "voidheart:cut_arrogant_iron_stairs"
+}

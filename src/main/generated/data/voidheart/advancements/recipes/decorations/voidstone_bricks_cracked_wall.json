@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "voidheart:voidstone_bricks_cracked_wall"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone_bricks_cracked": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:voidstone_bricks_cracked"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_voidstone_bricks_cracked",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:voidstone_bricks_cracked_wall"
+    ]
+  },
+  "sends_telemetry_event": false
+}

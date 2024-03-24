@@ -57,9 +57,28 @@ public class RecipesProvider extends FabricRecipeProvider
                 .filter(family -> family.shouldGenerateRecipes(FeatureFlags.VANILLA_FEATURES))
                 .forEach(family -> RecipesProvider.generateFamily(exporter, family));
 
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_BRICKS_VERTICAL, VoidHeartBlocks.VOIDSTONE_BRICKS);
+
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_TILE, VoidHeartBlocks.VOIDSTONE);
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_TILE_SMALL, VoidHeartBlocks.VOIDSTONE_TILE);
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_TILE_SMALL_CARVED, VoidHeartBlocks.VOIDSTONE_TILE);
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_TILE_SMALL_CHISELED, VoidHeartBlocks.VOIDSTONE_TILE);
+
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_BRICKS);
+
+        RecipeProvider.offer2x2CompactingRecipe(exporter, RecipeCategory.MISC, VoidHeartBlocks.VOIDSTONE_BRICKS, VoidHeartBlocks.VOIDSTONE_POLISHED);
+
         RecipeProvider.offerReversibleCompactingRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.RAVENOUS_GOLD_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
 
+        RecipeProvider.offerCrackingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_BRICKS_CRACKED, VoidHeartBlocks.VOIDSTONE_BRICKS);
+
         offerShatterForgeRecipe(exporter, Items.GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+    }
+
+    private void offerReversibleStoneCuttingRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible output, ItemConvertible input)
+    {
+        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, input, output);
+        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, output, input);
     }
 
     private void offerShatterForgeRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible input, ItemConvertible output)

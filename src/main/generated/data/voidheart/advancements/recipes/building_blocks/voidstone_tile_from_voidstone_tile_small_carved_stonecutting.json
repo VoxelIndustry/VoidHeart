@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:voidstone_tile_from_voidstone_tile_small_carved_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone_tile_small_carved": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:voidstone_tile_small_carved"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_voidstone_tile_small_carved",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:voidstone_tile_from_voidstone_tile_small_carved_stonecutting"
+    ]
+  },
+  "sends_telemetry_event": false
+}

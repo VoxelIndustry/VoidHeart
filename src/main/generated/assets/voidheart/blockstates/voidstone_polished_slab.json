@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "voidheart:block/voidstone_polished_slab"
+    },
+    "type=double": {
+      "model": "voidheart:block/voidstone_polished"
+    },
+    "type=top": {
+      "model": "voidheart:block/voidstone_polished_slab_top"
+    }
+  }
+}

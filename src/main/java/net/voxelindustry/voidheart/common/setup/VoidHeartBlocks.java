@@ -55,13 +55,34 @@ public class VoidHeartBlocks
 
     public static Block POCKET_WALL;
     public static Block VOIDSTONE;
-    public static Block VOIDSTONE_POLISHED;
-    public static Block VOIDSTONE_BRICKS;
-    public static Block VOIDSTONE_BRICKS_VERTICAL;
-    public static Block VOIDSTONE_BRICKS_CRACKED;
+    public static Block VOIDSTONE_STAIRS;
+    public static Block VOIDSTONE_SLAB;
+    public static Block VOIDSTONE_WALL;
     public static Block VOIDSTONE_CHISELED;
+
+    public static Block VOIDSTONE_POLISHED;
+    public static Block VOIDSTONE_POLISHED_STAIRS;
+    public static Block VOIDSTONE_POLISHED_SLAB;
+    public static Block VOIDSTONE_POLISHED_WALL;
+
+    public static Block VOIDSTONE_BRICKS;
+    public static Block VOIDSTONE_BRICKS_STAIRS;
+    public static Block VOIDSTONE_BRICKS_SLAB;
+    public static Block VOIDSTONE_BRICKS_WALL;
+
+    public static Block VOIDSTONE_BRICKS_VERTICAL;
+
+    public static Block VOIDSTONE_BRICKS_CRACKED;
+    public static Block VOIDSTONE_BRICKS_CRACKED_STAIRS;
+    public static Block VOIDSTONE_BRICKS_CRACKED_SLAB;
+    public static Block VOIDSTONE_BRICKS_CRACKED_WALL;
+
     public static Block VOIDSTONE_TILE;
     public static Block VOIDSTONE_TILE_SMALL;
+    public static Block VOIDSTONE_TILE_SMALL_STAIRS;
+    public static Block VOIDSTONE_TILE_SMALL_SLAB;
+    public static Block VOIDSTONE_TILE_SMALL_WALL;
+
     public static Block VOIDSTONE_TILE_SMALL_CARVED;
     public static Block VOIDSTONE_TILE_SMALL_CHISELED;
     public static Block ELDRITCH_VOIDSTONE;
@@ -69,6 +90,7 @@ public class VoidHeartBlocks
     public static Block VOIDSTONE_WRITHING_BLOSSOM;
     public static Block VOIDSTONE_WRITHING_MAW;
     public static Block VOIDSTONE_PILLAR;
+    public static Block VOIDSTONE_PILLAR_SLAB;
     public static Block VOIDSTONE_WEATHERED_PILLAR;
 
     public static Block VOID_LAMP;
@@ -99,6 +121,10 @@ public class VoidHeartBlocks
 
     public static Block ARROGANT_IRON_BLOCK;
     public static Block CUT_ARROGANT_IRON;
+    public static Block CUT_ARROGANT_IRON_STAIRS;
+    public static Block CUT_ARROGANT_IRON_SLAB;
+    public static Block CUT_ARROGANT_IRON_WALL;
+
     public static Block RAVENOUS_GOLD_BLOCK;
     public static Block CUT_RAVENOUS_GOLD;
     public static Block CUT_RAVENOUS_GOLD_STAIRS;
@@ -315,23 +341,31 @@ public class VoidHeartBlocks
                         .sounds(BlockSoundGroup.METAL)
                         .requiresTool().strength(4F, 10.0F)), itemGroup, "cut_ravenous_gold");
 
-        generateStairs(VOIDSTONE, itemGroup, "voidstone");
-        generateWall(VOIDSTONE, itemGroup, "voidstone");
-        generateSlab(VOIDSTONE, itemGroup, "voidstone");
+        VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, itemGroup, "voidstone_pillar");
 
-        generateStairs(VOIDSTONE_BRICKS, itemGroup, "voidstone_bricks");
-        generateWall(VOIDSTONE_BRICKS, itemGroup, "voidstone_bricks");
-        generateSlab(VOIDSTONE_BRICKS, itemGroup, "voidstone_bricks");
+        VOIDSTONE_STAIRS = generateStairs(VOIDSTONE, itemGroup, "voidstone");
+        VOIDSTONE_SLAB = generateSlab(VOIDSTONE, itemGroup, "voidstone");
+        VOIDSTONE_WALL = generateWall(VOIDSTONE, itemGroup, "voidstone");
 
-        generateStairs(VOIDSTONE_BRICKS_CRACKED, itemGroup, "voidstone_bricks_cracked");
-        generateWall(VOIDSTONE_BRICKS_CRACKED, itemGroup, "voidstone_bricks_cracked");
-        generateSlab(VOIDSTONE_BRICKS_CRACKED, itemGroup, "voidstone_bricks_cracked");
+        VOIDSTONE_POLISHED_STAIRS = generateStairs(VOIDSTONE_POLISHED, itemGroup, "voidstone_polished");
+        VOIDSTONE_POLISHED_SLAB = generateSlab(VOIDSTONE_POLISHED, itemGroup, "voidstone_polished");
+        VOIDSTONE_POLISHED_WALL = generateWall(VOIDSTONE_POLISHED, itemGroup, "voidstone_polished");
 
-        generateStairs(VOIDSTONE_TILE_SMALL, itemGroup, "voidstone_tile_small");
-        generateSlab(VOIDSTONE_TILE_SMALL, itemGroup, "voidstone_tile_small");
+        VOIDSTONE_BRICKS_STAIRS = generateStairs(VOIDSTONE_BRICKS, itemGroup, "voidstone_bricks");
+        VOIDSTONE_BRICKS_WALL = generateWall(VOIDSTONE_BRICKS, itemGroup, "voidstone_bricks");
+        VOIDSTONE_BRICKS_SLAB = generateSlab(VOIDSTONE_BRICKS, itemGroup, "voidstone_bricks");
 
-        generateStairs(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
-        generateSlab(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
+        VOIDSTONE_BRICKS_CRACKED_STAIRS = generateStairs(VOIDSTONE_BRICKS_CRACKED, itemGroup, "voidstone_bricks_cracked");
+        VOIDSTONE_BRICKS_CRACKED_WALL = generateWall(VOIDSTONE_BRICKS_CRACKED, itemGroup, "voidstone_bricks_cracked");
+        VOIDSTONE_BRICKS_CRACKED_SLAB = generateSlab(VOIDSTONE_BRICKS_CRACKED, itemGroup, "voidstone_bricks_cracked");
+
+        VOIDSTONE_TILE_SMALL_STAIRS = generateStairs(VOIDSTONE_TILE_SMALL, itemGroup, "voidstone_tile_small");
+        VOIDSTONE_TILE_SMALL_SLAB = generateSlab(VOIDSTONE_TILE_SMALL, itemGroup, "voidstone_tile_small");
+        VOIDSTONE_TILE_SMALL_WALL = generateWall(VOIDSTONE_TILE_SMALL, itemGroup, "voidstone_tile_small");
+
+        CUT_ARROGANT_IRON_STAIRS = generateStairs(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
+        CUT_ARROGANT_IRON_SLAB = generateSlab(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
+        CUT_ARROGANT_IRON_WALL = generateWall(CUT_ARROGANT_IRON, itemGroup, "cut_arrogant_iron");
 
         CUT_RAVENOUS_GOLD_STAIRS = generateStairs(CUT_RAVENOUS_GOLD, itemGroup, "cut_ravenous_gold");
         CUT_RAVENOUS_GOLD_SLAB = generateSlab(CUT_RAVENOUS_GOLD, itemGroup, "cut_ravenous_gold");

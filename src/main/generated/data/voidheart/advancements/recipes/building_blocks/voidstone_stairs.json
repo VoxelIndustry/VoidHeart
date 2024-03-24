@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "voidheart:voidstone_stairs"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:voidstone"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_voidstone",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:voidstone_stairs"
+    ]
+  },
+  "sends_telemetry_event": false
+}

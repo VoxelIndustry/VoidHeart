@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cut_arrogant_iron": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:cut_arrogant_iron"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:cut_arrogant_iron_wall_from_cut_arrogant_iron_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_cut_arrogant_iron",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:cut_arrogant_iron_wall_from_cut_arrogant_iron_stonecutting"
+    ]
+  },
+  "sends_telemetry_event": false
+}

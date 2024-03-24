@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "ingredient": {
-    "item": "voidheart:arrogant_iron_block"
-  },
-  "result": "voidheart:cut_arrogant_iron",
-  "count": 1
-}

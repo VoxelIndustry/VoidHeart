@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "count": 1,
+  "ingredient": {
+    "item": "voidheart:voidstone"
+  },
+  "result": "voidheart:voidstone_polished"
+}

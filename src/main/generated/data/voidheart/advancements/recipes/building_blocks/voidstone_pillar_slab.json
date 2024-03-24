@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "voidheart:voidstone_pillar_slab"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone_pillar": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:voidstone_pillar"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_voidstone_pillar",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:voidstone_pillar_slab"
+    ]
+  },
+  "sends_telemetry_event": false
+}

@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "ingredient": {
-    "item": "voidheart:voidstone"
-  },
-  "result": "voidheart:voidstone_tile_small_carved",
-  "count": 1
-}

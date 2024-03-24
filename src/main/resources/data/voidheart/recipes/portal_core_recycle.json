@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "voidheart:portal_core"
+    }
+  ],
+  "result": {
+    "item": "voidheart:portal_core",
+    "count": 1
+  }
+}

@@ -37,6 +37,7 @@ public class ModelsProvider extends FabricModelProvider
     public void generateItemModels(ItemModelGenerator generator)
     {
         generator.register(VoidHeartItems.RAVENOUS_GOLD_INGOT, Models.GENERATED);
+        generator.register(VoidHeartItems.ARROGANT_IRON_INGOT, Models.GENERATED);
     }
 
     private void registerSimpleCubeAll(Block block)
