@@ -1,22 +1,21 @@
 {
   "type": "voidheart:shatter_forge",
-  "time": 40,
-  "monolithCount": 3,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:iron_ingot"
+        "item": "minecraft:deepslate"
       }
     ]
   },
+  "monolithCount": 3,
   "outputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:arrogant_iron_ingot",
-        "quantity": 1
+        "item": "voidheart:voidstone"
       }
     ]
-  }
+  },
+  "time": 40
 }

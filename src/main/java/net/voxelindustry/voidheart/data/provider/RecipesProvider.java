@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.data.provider;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
+import net.minecraft.block.Blocks;
 import net.minecraft.data.family.BlockFamilies;
 import net.minecraft.data.family.BlockFamily;
 import net.minecraft.data.family.BlockFamily.Variant;
@@ -69,10 +70,14 @@ public class RecipesProvider extends FabricRecipeProvider
         RecipeProvider.offer2x2CompactingRecipe(exporter, RecipeCategory.MISC, VoidHeartBlocks.VOIDSTONE_BRICKS, VoidHeartBlocks.VOIDSTONE_POLISHED);
 
         RecipeProvider.offerReversibleCompactingRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.RAVENOUS_GOLD_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
+        RecipeProvider.offerReversibleCompactingRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.ARROGANT_IRON_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.ARROGANT_IRON_BLOCK);
 
         RecipeProvider.offerCrackingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_BRICKS_CRACKED, VoidHeartBlocks.VOIDSTONE_BRICKS);
 
         offerShatterForgeRecipe(exporter, Items.GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+        offerShatterForgeRecipe(exporter, Items.IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT);
+        offerShatterForgeRecipe(exporter, Blocks.COBBLESTONE, VoidHeartBlocks.VOIDSTONE);
+        offerShatterForgeRecipe(exporter, Blocks.DEEPSLATE, VoidHeartBlocks.VOIDSTONE);
     }
 
     private void offerReversibleStoneCuttingRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible output, ItemConvertible input)
