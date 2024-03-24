@@ -47,36 +47,36 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
             return ActionResult.PASS;
 
         var tile = tileOpt.get();
-        if (!world.isClient())
+        if (world.isClient())
+            return ActionResult.PASS;
+
+        // Core block is probably a previously broken portal
+        if (tile.isBroken())
         {
-            // Core block is probably a previously broken portal
-            if (tile.isBroken())
+            var portalFormer = PortalFormer.tryForm(world, state, pos, hit.getSide());
+            if (portalFormer.maySucceed())
             {
-                DeferredRollbackWork<PortalFormerState> portalFormer = PortalFormer.tryForm(world, state, pos, hit.getSide());
-                if (portalFormer.maySucceed())
+                portalFormer.execute();
+                if (portalFormer.success())
                 {
-                    portalFormer.execute();
-                    if (portalFormer.success())
+                    tile.setBroken(false);
+                    if (PortalLinker.tryRelink(player, tile))
                     {
-                        tile.setBroken(false);
-                        if (PortalLinker.tryRelink(player, tile))
-                        {
-                            player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
-                            return ActionResult.SUCCESS;
-                        }
+                        player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
+                        return ActionResult.SUCCESS;
                     }
-                    else
-                        player.sendMessage(Text.translatable(MODID + ".portal_cannot_form_back"), true);
                 }
                 else
                     player.sendMessage(Text.translatable(MODID + ".portal_cannot_form_back"), true);
             }
-            else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
-            {
-                player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
-                VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayerEntity) player);
-                return ActionResult.SUCCESS;
-            }
+            else
+                player.sendMessage(Text.translatable(MODID + ".portal_cannot_form_back"), true);
+        }
+        else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
+        {
+            player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
+            VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayerEntity) player);
+            return ActionResult.SUCCESS;
         }
         return ActionResult.PASS;
     }
