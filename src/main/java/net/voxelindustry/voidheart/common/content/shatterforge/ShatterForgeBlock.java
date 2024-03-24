@@ -79,7 +79,7 @@ public class ShatterForgeBlock extends Block implements BlockEntityProvider
         }
         else
         {
-            player.getInventory().offerOrDrop(forge.getStack());
+            player.getInventory().offerOrDrop(forge.getStack().copyWithCount(1));
             forge.setStack(ItemStack.EMPTY);
         }
 

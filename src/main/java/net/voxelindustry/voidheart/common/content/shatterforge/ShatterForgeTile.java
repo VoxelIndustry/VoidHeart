@@ -270,10 +270,18 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     public void setStack(ItemStack stack)
     {
+        var previousStack = this.stack;
         this.stack = stack;
 
         if (stack.isEmpty())
+        {
+            if (!previousStack.isEmpty() && isCrafting)
+            {
+                stopCrafting();
+                sync();
+            }
             return;
+        }
 
         retrieveCurrentRecipe();
         var isStructureCorrect = isStructureCorrect();
