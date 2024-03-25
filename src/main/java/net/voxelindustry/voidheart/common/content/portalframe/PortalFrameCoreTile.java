@@ -266,8 +266,11 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
                     BlockEntity tile = world.getBlockEntity(pos);
                     if (!(tile instanceof PortalInteriorTile))
+                    {
                         log.error("Tile inside portal is not of correct instance. tilePos={}, portalCorePos={}, portalPoints={}", pos, getPos(), interiorPoints);
-                    PortalInteriorTile portal = (PortalInteriorTile) tile;
+                        return;
+                    }
+                    var portal = (PortalInteriorTile) tile;
                     portal.setCore(getPos());
 
                     linkedInteriors.add(pos);

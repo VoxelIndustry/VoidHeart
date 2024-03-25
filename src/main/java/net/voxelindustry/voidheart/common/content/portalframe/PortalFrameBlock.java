@@ -80,9 +80,9 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
         if (player.isSneaking())
             return ActionResult.PASS;
 
-        PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
+        var tile = world.getBlockEntity(pos);
 
-        if (tile == null)
+        if (!(tile instanceof PortalFrameTile))
             return ActionResult.PASS;
 
         ItemStack stack = player.getStackInHand(hand);
@@ -97,7 +97,7 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
 
             boolean alreadyHasFirstPoint = PortalCoreItem.doesPearlHasFirstPosition(stack);
 
-            if (PortalLinker.voidIronEyeInteract(tile, tile.getWorld(), tile.getPos(), hit.getSide(), player, stack))
+            if (PortalLinker.voidIronEyeInteract((PortalFrameTile) tile, tile.getWorld(), tile.getPos(), hit.getSide(), player, stack))
             {
                 PortalCoreItem.sendSuccessMessage(player, stack, alreadyHasFirstPoint);
                 return ActionResult.SUCCESS;
@@ -194,9 +194,9 @@ public class PortalFrameBlock extends Block implements BlockEntityProvider
     {
         if (!state.isOf(newState.getBlock()))
         {
-            PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
-            if (tile != null)
-                tile.breakTile(BlockPos.ORIGIN);
+            var tile = world.getBlockEntity(pos);
+            if (tile instanceof PortalFrameTile frame)
+                frame.breakTile(BlockPos.ORIGIN);
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }

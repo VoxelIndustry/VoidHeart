@@ -76,7 +76,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
     {
         var existingState = world.getBlockState(getPos());
 
-        if (existingState.getBlock() != getCachedState().getBlock())
+        if (existingState.getBlock() != VoidHeartBlocks.PORTAL_FRAME)
             return;
 
         if (linkedCores.isEmpty())
