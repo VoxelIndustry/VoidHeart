@@ -10,6 +10,7 @@ import net.minecraft.data.server.recipe.RecipeJsonProvider;
 import net.minecraft.data.server.recipe.RecipeProvider;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.book.RecipeCategory;
 import net.minecraft.resource.featuretoggle.FeatureFlags;
 import net.minecraft.util.Identifier;
@@ -67,12 +68,22 @@ public class RecipesProvider extends FabricRecipeProvider
 
         offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_BRICKS);
 
-        RecipeProvider.offer2x2CompactingRecipe(exporter, RecipeCategory.MISC, VoidHeartBlocks.VOIDSTONE_BRICKS, VoidHeartBlocks.VOIDSTONE_POLISHED);
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE);
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB);
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS);
+
+        RecipeProvider.offerSlabRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB, VoidHeartBlocks.VOIDSTONE_PILLAR);
+        RecipeProvider.createStairsRecipe(VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS, Ingredient.ofItems(VoidHeartBlocks.VOIDSTONE_PILLAR))
+                .criterion(hasItem(VoidHeartBlocks.VOIDSTONE_PILLAR), conditionsFromItem(VoidHeartBlocks.VOIDSTONE_PILLAR))
+                .offerTo(exporter);
+
+        RecipeProvider.offerCutCopperRecipe(exporter, RecipeCategory.MISC, VoidHeartBlocks.VOIDSTONE_BRICKS, VoidHeartBlocks.VOIDSTONE_POLISHED);
 
         RecipeProvider.offerReversibleCompactingRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.RAVENOUS_GOLD_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
         RecipeProvider.offerReversibleCompactingRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.ARROGANT_IRON_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.ARROGANT_IRON_BLOCK);
 
         RecipeProvider.offerCrackingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_BRICKS_CRACKED, VoidHeartBlocks.VOIDSTONE_BRICKS);
+        RecipeProvider.offerCrackingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR);
 
         offerShatterForgeRecipe(exporter, Items.GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
         offerShatterForgeRecipe(exporter, Items.IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT);

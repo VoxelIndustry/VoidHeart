@@ -13,3 +13,5 @@ accessible    field    net/minecraft/client/render/RenderPhase    TRANSLUCENT_TR
 accessible    method    net/minecraft/block/BlockWithEntity    checkType    (Lnet/minecraft/block/entity/BlockEntityType;Lnet/minecraft/block/entity/BlockEntityType;Lnet/minecraft/block/entity/BlockEntityTicker;)Lnet/minecraft/block/entity/BlockEntityTicker;
 
 accessible    class    net/minecraft/client/gui/hud/InGameHud$HeartType
+
+accessible    field    net/minecraft/data/client/BlockStateModelGenerator    VARIANT_POOL_FUNCTIONS    Ljava/util/Map;

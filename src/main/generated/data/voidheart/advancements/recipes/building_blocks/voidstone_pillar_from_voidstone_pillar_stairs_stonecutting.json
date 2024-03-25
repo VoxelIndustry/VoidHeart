@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:voidstone_pillar_from_voidstone_pillar_stairs_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone_pillar_stairs": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "voidheart:voidstone_pillar_stairs"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_voidstone_pillar_stairs",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:voidstone_pillar_from_voidstone_pillar_stairs_stonecutting"
+    ]
+  },
+  "sends_telemetry_event": false
+}

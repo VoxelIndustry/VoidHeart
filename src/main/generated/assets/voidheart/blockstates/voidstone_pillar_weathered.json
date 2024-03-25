@@ -1,7 +1,16 @@
 {
   "variants": {
-    "": {
+    "axis=x": {
+      "model": "voidheart:block/voidstone_pillar_weathered",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
       "model": "voidheart:block/voidstone_pillar_weathered"
+    },
+    "axis=z": {
+      "model": "voidheart:block/voidstone_pillar_weathered",
+      "x": 90
     }
   }
 }

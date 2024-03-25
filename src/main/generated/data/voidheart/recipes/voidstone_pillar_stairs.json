@@ -1,18 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "misc",
+  "category": "building",
   "key": {
     "#": {
-      "item": "voidheart:voidstone_polished"
+      "item": "voidheart:voidstone_pillar"
     }
   },
   "pattern": [
-    "##",
-    "##"
+    "#  ",
+    "## ",
+    "###"
   ],
   "result": {
     "count": 4,
-    "item": "voidheart:voidstone_bricks"
+    "item": "voidheart:voidstone_pillar_stairs"
   },
   "show_notification": true
 }

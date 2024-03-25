@@ -74,11 +74,6 @@ public class VoidHeartDataGenerator implements DataGeneratorEntrypoint
         BlockFamilies.register(VoidHeartBlocks.VOIDSTONE_TILE_SMALL_CARVED)
                 .build();
 
-        BlockFamilies.register(VoidHeartBlocks.VOIDSTONE_PILLAR)
-                .slab(VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB)
-                .cracked(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR)
-                .build();
-
         BlockFamilies.register(VoidHeartBlocks.VOIDSTONE_TILE_SMALL)
                 .stairs(VoidHeartBlocks.VOIDSTONE_TILE_SMALL_STAIRS)
                 .slab(VoidHeartBlocks.VOIDSTONE_TILE_SMALL_SLAB)

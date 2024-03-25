@@ -1,5 +1,5 @@
 {
-  "parent": "minecraft:block/slab_top",
+  "parent": "minecraft:block/outer_stairs",
   "textures": {
     "bottom": "voidheart:block/voidstone_pillar_top",
     "side": "voidheart:block/voidstone_pillar_side",

@@ -4,7 +4,7 @@
       "model": "voidheart:block/voidstone_pillar_slab"
     },
     "type=double": {
-      "model": "voidheart:block/voidstone_pillar"
+      "model": "voidheart:block/voidstone_pillar_slab_double"
     },
     "type=top": {
       "model": "voidheart:block/voidstone_pillar_slab_top"

@@ -91,6 +91,7 @@ public class VoidHeartBlocks
     public static Block VOIDSTONE_WRITHING_MAW;
     public static Block VOIDSTONE_PILLAR;
     public static Block VOIDSTONE_PILLAR_SLAB;
+    public static Block VOIDSTONE_PILLAR_STAIRS;
     public static Block VOIDSTONE_WEATHERED_PILLAR;
 
     public static Block VOID_LAMP;
@@ -342,6 +343,7 @@ public class VoidHeartBlocks
                         .requiresTool().strength(4F, 10.0F)), itemGroup, "cut_ravenous_gold");
 
         VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, itemGroup, "voidstone_pillar");
+        VOIDSTONE_PILLAR_STAIRS = generateStairs(VOIDSTONE_PILLAR, itemGroup, "voidstone_pillar");
 
         VOIDSTONE_STAIRS = generateStairs(VOIDSTONE, itemGroup, "voidstone");
         VOIDSTONE_SLAB = generateSlab(VOIDSTONE, itemGroup, "voidstone");
