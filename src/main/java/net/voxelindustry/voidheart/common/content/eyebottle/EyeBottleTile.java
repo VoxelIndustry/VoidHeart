@@ -115,7 +115,7 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
             var player = ClientUtils.getClientPlayer();
 
             if (player != null)
-                player.playSound(SoundEvents.BLOCK_GLASS_PLACE, 0.5F, player.getRandom().nextFloat() * 0.1F + 0.9F);
+                player.playSound(SoundEvents.BLOCK_GLASS_PLACE, 0.1F, player.getRandom().nextFloat() * 0.1F + 0.9F);
         });
         controllers.add(animationController);
     }
