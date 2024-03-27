@@ -69,7 +69,7 @@ public class RecipesProvider extends FabricRecipeProvider
         offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_BRICKS);
 
         offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE);
-        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB);
+        offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB, VoidHeartBlocks.VOIDSTONE_PILLAR, 2);
         offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS);
 
         RecipeProvider.offerSlabRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB, VoidHeartBlocks.VOIDSTONE_PILLAR);
@@ -89,6 +89,12 @@ public class RecipesProvider extends FabricRecipeProvider
         offerShatterForgeRecipe(exporter, Items.IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT);
         offerShatterForgeRecipe(exporter, Blocks.COBBLESTONE, VoidHeartBlocks.VOIDSTONE);
         offerShatterForgeRecipe(exporter, Blocks.DEEPSLATE, VoidHeartBlocks.VOIDSTONE);
+    }
+
+    private void offerReversibleStoneCuttingRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible output, ItemConvertible input, int outputCount)
+    {
+        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, input, output, outputCount);
+        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, output, input);
     }
 
     private void offerReversibleStoneCuttingRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible output, ItemConvertible input)
