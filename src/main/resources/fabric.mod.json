@@ -31,6 +31,9 @@
     ],
     "emi": [
       "net.voxelindustry.voidheart.compat.emi.VoidHeartEMIPlugin"
+    ],
+    "jade": [
+      "net.voxelindustry.voidheart.compat.jade.VoidHeartJadePlugin"
     ]
   },
   "mixins": [
