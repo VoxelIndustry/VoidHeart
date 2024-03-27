@@ -15,7 +15,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.VoidHeart;
 
 import static net.minecraft.state.property.Properties.LIT;
 
@@ -44,18 +43,8 @@ public class VoidLampBlock extends Block
         if (player.isSneaking())
             return ActionResult.PASS;
 
-        if (state.get(LIT))
-        {
-            world.setBlockState(pos, state.with(LIT, false));
-            return ActionResult.SUCCESS;
-        }
-
-        if (world.getRegistryKey() == VoidHeart.VOID_WORLD_KEY)
-        {
-            world.setBlockState(pos, state.with(LIT, true));
-            return ActionResult.SUCCESS;
-        }
-        return ActionResult.PASS;
+        world.setBlockState(pos, state.with(LIT, !state.get(LIT)));
+        return ActionResult.SUCCESS;
     }
 
     @Override
@@ -82,13 +71,13 @@ public class VoidLampBlock extends Block
         int corruptionLevel = state.get(CORRUPTION);
 
         return switch (corruptionLevel)
-                {
-                    case 1 -> 3;
-                    case 2 -> 5;
-                    case 3 -> 7;
-                    case 4 -> 10;
-                    case 5, 6 -> 15;
-                    default -> 0;
-                };
+        {
+            case 1 -> 3;
+            case 2 -> 5;
+            case 3 -> 7;
+            case 4 -> 10;
+            case 5, 6 -> 15;
+            default -> 0;
+        };
     }
 }
