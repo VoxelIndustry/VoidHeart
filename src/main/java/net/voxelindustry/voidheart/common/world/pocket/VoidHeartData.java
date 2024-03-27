@@ -6,14 +6,16 @@ import lombok.extern.log4j.Log4j2;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalKey;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Log4j2
 public final class VoidHeartData
@@ -23,7 +25,7 @@ public final class VoidHeartData
                     BlockPos.CODEC.fieldOf("pocketPos").forGetter(VoidHeartData::pocketPos),
                     Codec.INT.fieldOf("maxFlexion").forGetter(VoidHeartData::maxFlexion),
                     Codec.INT.fieldOf("flexionCountWithoutPortals").orElse(0).forGetter(VoidHeartData::flexionCountWithoutPortals),
-                    Codec.list(PortalKey.CODEC).fieldOf("portalsKeyList").orElse(Collections.emptyList()).forGetter(VoidHeartData::portalKeyList)
+                    Codec.list(PortalKey.CODEC).fieldOf("portalsKeyList").orElse(Collections.emptyList()).forGetter(heartData -> List.copyOf(heartData.portalKeySet()))
             ).apply(instance, (pocketPos, maxFlexion, flexionCountWithoutPortals, portalKeys) ->
             {
                 var heartData = new VoidHeartData(pocketPos, maxFlexion);
@@ -36,7 +38,7 @@ public final class VoidHeartData
     private final int maxFlexion;
 
     private int flexionCountWithoutPortals;
-    private final List<PortalKey> portalKeyList = new ArrayList<>();
+    private final Set<PortalKey> portalKeyList = new HashSet<>();
 
     private boolean isDirty;
 
@@ -55,16 +57,12 @@ public final class VoidHeartData
     {
         portalKeyList.add(new PortalKey(fromWorld.getRegistryKey(), corePos));
         markDirty();
-
-        System.out.println("Portal added from " + fromWorld.getRegistryKey() + " at " + corePos);
     }
 
     public void removePortal(World fromWorld, BlockPos corePos)
     {
         portalKeyList.remove(new PortalKey(fromWorld.getRegistryKey(), corePos));
         markDirty();
-
-        System.out.println("Portal removed from " + fromWorld.getRegistryKey() + " at " + corePos);
     }
 
     public static VoidHeartData fromNbt(NbtCompound compound)
@@ -109,7 +107,7 @@ public final class VoidHeartData
         return portalKeyList.size();
     }
 
-    public List<PortalKey> portalKeyList()
+    public Set<PortalKey> portalKeySet()
     {
         return portalKeyList;
     }
@@ -146,6 +144,19 @@ public final class VoidHeartData
         return "VoidHeartData[" +
                 "pocketPos=" + pocketPos + ", " +
                 "maxFlexion=" + maxFlexion + ']';
+    }
+
+    public Text debugPrint()
+    {
+        var root = Text.literal("§6PocketPos: §3" + pocketPos.toShortString() + "\n");
+        root.append(Text.literal("§6Max Flexion: §3" + maxFlexion + "\n"));
+        root.append(Text.literal("§6Flexion Count (without portals): §3" + flexionCountWithoutPortals + "\n"));
+        root.append(Text.literal("§6Portals Count: §3" + portalsCount() + "\n"));
+
+        for (var key : portalKeyList)
+            root.append(Text.literal(" -> §3"+key.toString() + "\n"));
+
+        return root;
     }
 
     public static VoidHeartData create(BlockPos pocketPos)

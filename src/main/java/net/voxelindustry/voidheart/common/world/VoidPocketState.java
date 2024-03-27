@@ -37,7 +37,7 @@ public class VoidPocketState extends PersistentState
     {
         for (var heartData : heartDataByUUID.values())
         {
-            if(heartData.isDirty())
+            if (heartData.isDirty())
                 return true;
         }
         return false;
@@ -116,7 +116,16 @@ public class VoidPocketState extends PersistentState
         else
             throw new UnsupportedOperationException("Cannot access VoidPocketState from a ClientWorld");
 
-        return serverWorld.getPersistentStateManager().getOrCreate(VoidPocketState::new, VoidPocketState::new, MODID + ":pocket_storage");
+        return getOrCreateWithDeprecatedId(serverWorld);
+    }
+
+    private static VoidPocketState getOrCreateWithDeprecatedId(ServerWorld serverWorld)
+    {
+        var existingDeprecated = serverWorld.getPersistentStateManager().get(VoidPocketState::new, MODID + ":pocket_storage");
+        if (existingDeprecated != null)
+            return existingDeprecated;
+
+        return serverWorld.getPersistentStateManager().getOrCreate(VoidPocketState::new, VoidPocketState::new, MODID + "_pocket_storage");
     }
 
     public void createPocket(ServerWorld voidWorld, UUID player)

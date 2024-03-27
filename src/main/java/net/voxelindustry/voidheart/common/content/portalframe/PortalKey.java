@@ -14,4 +14,13 @@ public record PortalKey(RegistryKey<World> worldKey, BlockPos corePos)
                     RegistryKey.createCodec(RegistryKeys.WORLD).fieldOf("worldKey").forGetter(PortalKey::worldKey),
                     BlockPos.CODEC.fieldOf("corePos").forGetter(PortalKey::corePos)
             ).apply(instance, PortalKey::new));
+
+    @Override
+    public String toString()
+    {
+        return "[" +
+                "worldKey: " + worldKey.getValue() +
+                ", corePos: " + corePos.toShortString() +
+                ']';
+    }
 }
