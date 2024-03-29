@@ -35,6 +35,7 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlo
 import net.voxelindustry.voidheart.common.content.portalframe.VoidStoneBricksBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalImmersiveInteriorBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorBlock;
+import net.voxelindustry.voidheart.common.content.ravenouscollector.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBlock;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
@@ -132,6 +133,8 @@ public class VoidHeartBlocks
     public static Block CUT_RAVENOUS_GOLD_SLAB;
     public static Block CUT_RAVENOUS_GOLD_WALL;
 
+    public static Block RAVENOUS_COLLECTOR;
+
     public static final List<Block> MINEABLE_BLOCKS = new ArrayList<>();
 
     public static void registerBlocks()
@@ -164,7 +167,7 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(2F, 6.0F)), itemGroup, "voidstone");
+                        .strength(2F, 6.0F)), itemGroup, "voidstone");
 
         registerBlock(VOIDSTONE_POLISHED = new Block(
                 AbstractBlock.Settings.create()
@@ -172,7 +175,7 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_polished");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_polished");
 
         registerBlock(VOIDSTONE_BRICKS = new VoidStoneBricksBlock(
                 AbstractBlock.Settings.create()
@@ -180,21 +183,21 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks");
         registerBlock(VOIDSTONE_BRICKS_CRACKED = new VoidStoneBricksBlock(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_cracked");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_cracked");
         registerBlock(VOIDSTONE_CHISELED = new Block(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_chiseled");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_chiseled");
 
         registerBlock(VOIDSTONE_BRICKS_VERTICAL = new Block(
                 AbstractBlock.Settings.create()
@@ -202,7 +205,7 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_vertical");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_bricks_vertical");
 
         registerBlock(VOIDSTONE_TILE = new Block(
                 AbstractBlock.Settings.create()
@@ -210,28 +213,28 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_tile");
         registerBlock(VOIDSTONE_TILE_SMALL = new Block(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small");
         registerBlock(VOIDSTONE_TILE_SMALL_CARVED = new Block(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_carved");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_carved");
         registerBlock(VOIDSTONE_TILE_SMALL_CHISELED = new Block(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_chiseled");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_tile_small_chiseled");
 
         registerBlock(ELDRITCH_VOIDSTONE = new Block(
                 AbstractBlock.Settings.create()
@@ -239,7 +242,7 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
+                        .strength(1.5F, 6.0F)), itemGroup, "eldritch_voidstone");
 
         registerBlock(VOIDSTONE_WRITHING = new Block(
                 AbstractBlock.Settings.create()
@@ -247,21 +250,21 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing");
         registerBlock(VOIDSTONE_WRITHING_BLOSSOM = new Block(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_blossom");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_blossom");
         registerBlock(VOIDSTONE_WRITHING_MAW = new Block(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_maw");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_writhing_maw");
 
         registerBlock(VOIDSTONE_PILLAR = new PillarBlock(
                 AbstractBlock.Settings.create()
@@ -269,14 +272,14 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar");
         registerBlock(VOIDSTONE_WEATHERED_PILLAR = new PillarBlock(
                 AbstractBlock.Settings.create()
                         .mapColor(MapColor.BLACK)
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .sounds(BlockSoundGroup.STONE)
-                        .requiresTool().strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar_weathered");
+                        .strength(1.5F, 6.0F)), itemGroup, "voidstone_pillar_weathered");
 
         registerBlock(VOID_MONOLITH = new VoidMonolithBlock(), itemGroup, "void_monolith");
         registerBlock(VOID_MONOLITH_CAP = new Block(
@@ -285,8 +288,7 @@ public class VoidHeartBlocks
                         .instrument(Instrument.BASEDRUM)
                         .requiresTool()
                         .strength(1.5F, 6.0F)
-                        .sounds(BlockSoundGroup.STONE)
-                        .requiresTool()), itemGroup, "void_monolith_cap");
+                        .sounds(BlockSoundGroup.STONE)), itemGroup, "void_monolith_cap");
 
         registerBlock(VOID_LAMP = new VoidLampBlock(), itemGroup, "void_lamp");
 
@@ -341,6 +343,13 @@ public class VoidHeartBlocks
                         .instrument(Instrument.IRON_XYLOPHONE)
                         .sounds(BlockSoundGroup.METAL)
                         .requiresTool().strength(4F, 10.0F)), itemGroup, "cut_ravenous_gold");
+
+        registerBlock(RAVENOUS_COLLECTOR = new RavenousCollectorBlock(AbstractBlock.Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
+                .strength(1.5F, 6.0F)
+                .sounds(BlockSoundGroup.STONE)), itemGroup, "ravenous_collector");
 
         VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, itemGroup, "voidstone_pillar");
         VOIDSTONE_PILLAR_STAIRS = generateStairs(VOIDSTONE_PILLAR, itemGroup, "voidstone_pillar");

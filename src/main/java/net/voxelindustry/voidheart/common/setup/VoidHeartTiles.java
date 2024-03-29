@@ -15,6 +15,7 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
+import net.voxelindustry.voidheart.common.content.ravenouscollector.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
@@ -40,6 +41,8 @@ public class VoidHeartTiles
 
     public static BlockEntityType<EyeBottleTile> EYE_BOTTLE;
     public static BlockEntityType<ShatterForgeTile> SHATTER_FORGE;
+
+    public static BlockEntityType<RavenousCollectorTile> RAVENOUS_COLLECTOR;
 
     public static void registerTiles()
     {
@@ -91,6 +94,9 @@ public class VoidHeartTiles
 
         registerTile(SHATTER_FORGE = FabricBlockEntityTypeBuilder.create(ShatterForgeTile::new, VoidHeartBlocks.SHATTER_FORGE).build(),
                 "shatter_forge");
+
+        registerTile(RAVENOUS_COLLECTOR = FabricBlockEntityTypeBuilder.create(RavenousCollectorTile::new, VoidHeartBlocks.RAVENOUS_COLLECTOR).build(),
+                "ravenous_collector");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)

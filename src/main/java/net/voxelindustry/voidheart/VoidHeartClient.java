@@ -23,6 +23,7 @@ import net.voxelindustry.voidheart.client.particle.ShatterForgeItemParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeRuneParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
 import net.voxelindustry.voidheart.client.render.EyeBottleRender;
+import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
 import net.voxelindustry.voidheart.client.render.ShatterForgeRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
@@ -50,6 +51,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRendererFactories.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
         BlockEntityRendererFactories.register(VoidHeartTiles.EYE_BOTTLE, ctx -> new EyeBottleRender());
         BlockEntityRendererFactories.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new ShatterForgeRender());
+        BlockEntityRendererFactories.register(VoidHeartTiles.RAVENOUS_COLLECTOR, ctx -> new RavenousCollectorRender());
 
         ParticleFactoryRegistry.getInstance().register(
                 ALTAR_VOID_PARTICLE,

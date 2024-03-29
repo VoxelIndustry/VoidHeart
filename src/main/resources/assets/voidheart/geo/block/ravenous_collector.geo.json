@@ -1,0 +1,93 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.unknown",
+				"texture_width": 64,
+				"texture_height": 32,
+				"visible_bounds_width": 2,
+				"visible_bounds_height": 2.5,
+				"visible_bounds_offset": [0, 0.75, 0]
+			},
+			"bones": [
+				{
+					"name": "root",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-3, 5, -3], "size": [6, 6, 6], "uv": [29, 9]}
+					]
+				},
+				{
+					"name": "parts",
+					"parent": "root",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "NorthEastBottom",
+					"parent": "parts",
+					"pivot": [0.5, 8.5, 0],
+					"cubes": [
+						{"origin": [-4, 4, -4], "size": [4, 4, 4], "uv": [24, 0]}
+					]
+				},
+				{
+					"name": "NorthWestBottom",
+					"parent": "parts",
+					"pivot": [-0.5, 8.5, 0],
+					"cubes": [
+						{"origin": [0, 4, -4], "size": [4, 4, 4], "uv": [0, 16]}
+					]
+				},
+				{
+					"name": "SouthEastBottom",
+					"parent": "parts",
+					"pivot": [0, 8, 0],
+					"cubes": [
+						{"origin": [-4, 4, 0], "size": [4, 4, 4], "uv": [0, 24]}
+					]
+				},
+				{
+					"name": "SouthWestBottom",
+					"parent": "parts",
+					"pivot": [0, 8, 0],
+					"cubes": [
+						{"origin": [0, 4, 0], "size": [4, 4, 4], "uv": [12, 20]}
+					]
+				},
+				{
+					"name": "NorthEastTop",
+					"parent": "parts",
+					"pivot": [0.5, 7.5, 0.5],
+					"cubes": [
+						{"origin": [-4, 8, -4], "size": [4, 4, 4], "pivot": [0, 8, 0], "rotation": [0, 0, 0], "uv": [0, 8]}
+					]
+				},
+				{
+					"name": "NorthWestTop",
+					"parent": "parts",
+					"pivot": [-0.5, 7.5, 0.5],
+					"cubes": [
+						{"origin": [0, 8, -4], "size": [4, 4, 4], "pivot": [0, 8, 0], "rotation": [0, 0, 0], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "SouthEastTop",
+					"parent": "parts",
+					"pivot": [0.5, 8, -0.5],
+					"cubes": [
+						{"origin": [-4, 8, 0], "size": [4, 4, 4], "pivot": [0, 8, 0], "rotation": [0, 0, 0], "uv": [12, 4]}
+					]
+				},
+				{
+					"name": "SouthWestTop",
+					"parent": "parts",
+					"pivot": [-0.5, 8, -0.5],
+					"cubes": [
+						{"origin": [0, 8, 0], "size": [4, 4, 4], "pivot": [0, 8, 0], "rotation": [0, 0, 0], "uv": [12, 12]}
+					]
+				}
+			]
+		}
+	]
+}
