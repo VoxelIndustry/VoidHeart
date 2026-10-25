@@ -1,9 +1,8 @@
 package net.voxelindustry.voidheart.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.block.BlockModelResolver;
-import net.minecraft.client.renderer.block.model.BlockDisplayContext;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
@@ -11,6 +10,7 @@ import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.state.VoidAltarRenderState;
@@ -21,18 +21,15 @@ import org.jspecify.annotations.Nullable;
 
 public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidAltarRenderState>
 {
-    public static final BlockDisplayContext BLOCK_DISPLAY_CONTEXT = BlockDisplayContext.create();
-
     public static        long lastTouchedMillis;
     private static final long HINT_DURATION_MILLIS = 10_000;
 
-    private final ItemModelResolver  itemModelResolver;
-    private final BlockModelResolver blockModelResolver;
+    private final ItemModelResolver itemModelResolver;
+    private final RandomSource      pillarRandom = RandomSource.create();
 
     public VoidAltarRender(BlockEntityRendererProvider.Context context)
     {
         itemModelResolver = context.itemModelResolver();
-        blockModelResolver = context.blockModelResolver();
     }
 
     @Override
@@ -53,11 +50,17 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
         itemModelResolver.updateForTopItem(state.item, altar.getStack(), ItemDisplayContext.GROUND, level, null, seed);
 
         state.missingPillarOffsets.clear();
+        state.pillarParts.clear();
         if (!altar.getStack().isEmpty() || System.currentTimeMillis() - lastTouchedMillis < HINT_DURATION_MILLIS)
         {
             PillarPlacementRender.collectMissingPillars(altar, state.missingPillarOffsets);
             if (!state.missingPillarOffsets.isEmpty())
-                blockModelResolver.update(state.pillarModel, VoidHeartBlocks.VOID_PILLAR.defaultBlockState(), BLOCK_DISPLAY_CONTEXT);
+            {
+                pillarRandom.setSeed(seed);
+                Minecraft.getInstance().getModelManager().getBlockStateModelSet()
+                        .get(VoidHeartBlocks.VOID_PILLAR.defaultBlockState())
+                        .collectParts(pillarRandom, state.pillarParts);
+            }
         }
 
         state.warmProgress = altar.getWarmProgress();
