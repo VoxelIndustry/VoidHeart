@@ -1,7 +1,7 @@
 package net.voxelindustry.voidheart.client.model;
 
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleTile;
-import software.bernie.geckolib.model.DefaultedBlockGeoModel;
+import com.geckolib.model.DefaultedBlockGeoModel;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 

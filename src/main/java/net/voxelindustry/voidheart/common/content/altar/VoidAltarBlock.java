@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
+import net.minecraft.util.Prediction;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
@@ -79,7 +80,7 @@ public class VoidAltarBlock extends Block implements EntityBlock
         }
         else
         {
-            player.getInventory().placeItemBackInInventory(altar.getStack());
+            player.getInventory().placeItemBackInInventory(altar.getStack(), Prediction.SERVER_ONLY);
             altar.setStack(player, ItemStack.EMPTY);
         }
 

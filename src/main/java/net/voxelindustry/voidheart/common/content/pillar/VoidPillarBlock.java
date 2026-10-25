@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.pillar;
 
+import net.minecraft.util.Prediction;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.core.BlockPos;
@@ -84,7 +85,7 @@ public class VoidPillarBlock extends Block implements EntityBlock
         }
         else
         {
-            player.getInventory().placeItemBackInInventory(pillar.getStack());
+            player.getInventory().placeItemBackInInventory(pillar.getStack(), Prediction.SERVER_ONLY);
             pillar.setStack(ItemStack.EMPTY);
         }
 

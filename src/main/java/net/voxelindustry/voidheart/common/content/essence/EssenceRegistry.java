@@ -8,6 +8,7 @@ import net.minecraft.core.WritableRegistry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
@@ -35,21 +36,21 @@ public class EssenceRegistry
         KEY_EMPTY = ESSENCE_REGISTRY.getResourceKey(EMPTY = createEssenceType("empty",
                 MODID + ".essence.empty",
                 null,
-                ItemStack.EMPTY)
+                Items.AIR)
         ).get();
         KEY_WATER = ESSENCE_REGISTRY.getResourceKey(WATER = createEssenceType("water",
                 "block.minecraft.water",
                 VoidHeartTags.ESSENCE_WATER_TAG,
-                new ItemStack(Items.WATER_BUCKET))
+                Items.WATER_BUCKET)
         ).get();
         KEY_LAVA = ESSENCE_REGISTRY.getResourceKey(LAVA = createEssenceType("lava",
                 "block.minecraft.lava",
                 VoidHeartTags.ESSENCE_LAVA_TAG,
-                new ItemStack(Items.LAVA_BUCKET))
+                Items.LAVA_BUCKET)
         ).get();
     }
 
-    private static EssenceType createEssenceType(String identifierPath, String translatableName, TagKey<Block> consumables, ItemStack catalyst)
+    private static EssenceType createEssenceType(String identifierPath, String translatableName, TagKey<Block> consumables, Item catalyst)
     {
         var key = ResourceKey.create(ESSENCE_REGISTRY_TYPE, Identifier.fromNamespaceAndPath(MODID, identifierPath));
         var essenceType = new EssenceType(key.identifier(), translatableName, consumables, catalyst);
@@ -59,6 +60,6 @@ public class EssenceRegistry
 
     public static EssenceType getTypeFromCatalyst(ItemStack stack)
     {
-        return ESSENCE_REGISTRY.stream().filter(type -> ItemStack.matches(stack, type.catalyst())).findFirst().orElse(null);
+        return ESSENCE_REGISTRY.stream().filter(type -> stack.is(type.catalyst())).findFirst().orElse(null);
     }
 }

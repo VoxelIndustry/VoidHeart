@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "APA",
+    "AAA"
+  ],
+  "key": {
+    "A": "voidheart:arrogant_iron_ingot",
+    "P": "voidheart:void_pearl"
+  },
+  "result": {
+    "id": "voidheart:portal_core"
+  }
+}

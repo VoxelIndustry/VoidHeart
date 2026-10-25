@@ -1,20 +1,22 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
+import net.minecraft.client.resources.model.sprite.MaterialBaker;
+import net.minecraft.client.resources.model.ModelDebugName;
+import net.minecraft.client.resources.model.sprite.Material;
 import java.text.NumberFormat;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.Material;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.inventory.InventoryMenu;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidMonolithSpriteManager
 {
+    private static final ModelDebugName DEBUG_NAME = () -> "voidheart:VoidMonolithSpriteManager";
+
     private static final Material[] SPRITE_IDENTIFIERS = new Material[24];
     private static final Material BROKEN_SPRITE_IDENTIFIER = getSpriteIdentifier("broken_overlay");
 
-    private static final TextureAtlasSprite[] SPRITES = new TextureAtlasSprite[24];
-    public static TextureAtlasSprite BROKEN_SPRITE;
+    private static final Material.Baked[] SPRITES = new Material.Baked[24];
+    public static Material.Baked BROKEN_SPRITE;
 
     static
     {
@@ -27,60 +29,60 @@ public class VoidMonolithSpriteManager
         }
     }
 
-    public static void loadSprites()
+    public static void loadSprites(MaterialBaker materials)
     {
         for (int i = 0; i < 24; i++)
-            SPRITES[i] = SPRITE_IDENTIFIERS[i].sprite();
-        BROKEN_SPRITE = BROKEN_SPRITE_IDENTIFIER.sprite();
+            SPRITES[i] = materials.get(SPRITE_IDENTIFIERS[i], DEBUG_NAME);
+        BROKEN_SPRITE = materials.get(BROKEN_SPRITE_IDENTIFIER, DEBUG_NAME);
     }
 
-    public static TextureAtlasSprite getTopSprite(int variant)
+    public static Material.Baked getTopSprite(int variant)
     {
         return SPRITES[variant];
     }
 
-    public static TextureAtlasSprite getMiddleSprite(int variant)
+    public static Material.Baked getMiddleSprite(int variant)
     {
         return SPRITES[variant + 3];
     }
 
-    public static TextureAtlasSprite getBottomSprite(int variant)
+    public static Material.Baked getBottomSprite(int variant)
     {
         return SPRITES[variant + 6];
     }
 
-    public static TextureAtlasSprite getAboveSprite(int variant)
+    public static Material.Baked getAboveSprite(int variant)
     {
         return SPRITES[variant + 9];
     }
 
-    public static TextureAtlasSprite getTopOverlaySprite(int variant)
+    public static Material.Baked getTopOverlaySprite(int variant)
     {
         return SPRITES[variant + 12];
     }
 
-    public static TextureAtlasSprite getMiddleOverlaySprite(int variant)
+    public static Material.Baked getMiddleOverlaySprite(int variant)
     {
         return SPRITES[variant + 15];
     }
 
-    public static TextureAtlasSprite getBottomOverlaySprite(int variant)
+    public static Material.Baked getBottomOverlaySprite(int variant)
     {
         return SPRITES[variant + 18];
     }
 
-    public static TextureAtlasSprite getAboveOverlaySprite(int variant)
+    public static Material.Baked getAboveOverlaySprite(int variant)
     {
         return SPRITES[variant + 21];
     }
 
-    public static TextureAtlasSprite getBrokenSprite()
+    public static Material.Baked getBrokenSprite()
     {
         return BROKEN_SPRITE;
     }
 
     private static Material getSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/monolith/" + from));
+        return new Material(Identifier.fromNamespaceAndPath(MODID, "block/monolith/" + from));
     }
 }

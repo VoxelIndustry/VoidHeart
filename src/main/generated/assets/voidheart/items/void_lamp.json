@@ -1,0 +1,55 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_lamp_corrupted1_off"
+        },
+        "when": 1
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_lamp_corrupted2_off"
+        },
+        "when": 2
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_lamp_corrupted3_off"
+        },
+        "when": 3
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_lamp_corrupted4_off"
+        },
+        "when": 4
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_lamp_corrupted5"
+        },
+        "when": 5
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_lamp_corrupted6"
+        },
+        "when": 6
+      }
+    ],
+    "component": "voidheart:corruption",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "voidheart:item/void_lamp"
+    },
+    "property": "minecraft:component"
+  }
+}

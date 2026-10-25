@@ -113,5 +113,10 @@
   "voidheart.pocket_already_exists": "Your pocket dimension already exists",
   "voidheart.altar.missing_pillars": "Missing %s pillar(s)",
   "__comment": "Essences",
-  "voidheart.essence.empty": "Empty"
+  "voidheart.essence.empty": "Empty",
+  "__comment": "Jade",
+  "config.jade.plugin_voidheart.shatter_forge": "Shatter Forge",
+  "config.jade.plugin_voidheart.ravenous_collector": "Ravenous Collector",
+  "config.jade.plugin_voidheart.ravenous_storage": "Ravenous Storage",
+  "config.jade.plugin_voidheart.ravenous_storage_matrix": "Ravenous Storage Matrix"
 }

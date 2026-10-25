@@ -1,57 +1,71 @@
 package net.voxelindustry.voidheart.client.render;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.geckolib.constant.dataticket.DataTicket;
+import com.geckolib.renderer.GeoBlockRenderer;
+import com.geckolib.renderer.base.GeoRenderer;
+import com.geckolib.renderer.base.RenderPassInfo;
+import com.geckolib.renderer.layer.GeoRenderLayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font.DisplayMode;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.model.EyeBottleModel;
 import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleTile;
-import software.bernie.geckolib.cache.object.BakedGeoModel;
-import software.bernie.geckolib.renderer.GeoBlockRenderer;
-import software.bernie.geckolib.renderer.GeoRenderer;
-import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
+import net.voxelindustry.voidheart.common.util.ProfileUtil;
 
-public class EyeBottleRender extends GeoBlockRenderer<EyeBottleTile>
+public class EyeBottleRender extends GeoBlockRenderer<EyeBottleTile, BlockEntityRenderState>
 {
-    public EyeBottleRender()
+    private static final DataTicket<String> OWNER_NAME = DataTicket.create("voidheart_eye_bottle_owner", String.class);
+
+    public EyeBottleRender(BlockEntityRendererProvider.Context context)
     {
-        super(new EyeBottleModel());
-        this.addRenderLayer(new EyeBottleLabelLayer(this));
+        super(context, new EyeBottleModel());
+        withRenderLayer(new EyeBottleLabelLayer(this));
     }
 
-    public static class EyeBottleLabelLayer extends GeoRenderLayer<EyeBottleTile>
+    public static class EyeBottleLabelLayer extends GeoRenderLayer<EyeBottleTile, Void, BlockEntityRenderState>
     {
-        public EyeBottleLabelLayer(GeoRenderer<EyeBottleTile> renderer)
+        public EyeBottleLabelLayer(GeoRenderer<EyeBottleTile, Void, BlockEntityRenderState> renderer)
         {
             super(renderer);
         }
 
         @Override
-        public void render(PoseStack matrices, EyeBottleTile eyeBottle, BakedGeoModel bakedModel, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay)
+        public void addRenderData(EyeBottleTile eyeBottle, Void relatedObject, BlockEntityRenderState renderState, float partialTick)
         {
             var playerProfile = eyeBottle.getPlayerProfile();
+            var player = Minecraft.getInstance().player;
 
-            if (playerProfile == null)
+            if (playerProfile != null && player != null && player.distanceToSqr(Vec3.atLowerCornerOf(eyeBottle.getBlockPos())) < 64)
+                renderState.addGeckolibData(OWNER_NAME, ProfileUtil.getName(playerProfile));
+        }
+
+        @Override
+        public void submitRenderTask(RenderPassInfo<BlockEntityRenderState> renderPassInfo, SubmitNodeCollector collector)
+        {
+            var ownerName = renderPassInfo.getOrDefaultGeckolibData(OWNER_NAME, null);
+
+            if (ownerName == null)
                 return;
 
-            if (Minecraft.getInstance().player.distanceToSqr(eyeBottle.getBlockPos().getX(), eyeBottle.getBlockPos().getY(), eyeBottle.getBlockPos().getZ()) < 64)
-            {
-                matrices.pushPose();
-                matrices.translate(0, 0.8, 0);
-                matrices.scale(1F / 64F, 1F / 64F, 1F / 64F);
+            var matrices = renderPassInfo.poseStack();
+            matrices.pushPose();
+            matrices.translate(0, 0.8, 0);
+            matrices.scale(1F / 64F, 1F / 64F, 1F / 64F);
 
-                matrices.mulPose(Minecraft.getInstance().gameRenderer.getMainCamera().rotation());
-                matrices.mulPose(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
-                var textRenderer = Minecraft.getInstance().font;
-                var nameSize = textRenderer.width(playerProfile.getName()) / 2F;
-                textRenderer.drawInBatch(playerProfile.getName(), -nameSize + 1, 1, 0x3c3c3c, false, matrices.last().pose(), bufferSource, DisplayMode.NORMAL, 0, 15728880);
-                textRenderer.drawInBatch(playerProfile.getName(), -nameSize, 0, 0xFFFFFF, false, matrices.last().pose(), bufferSource, DisplayMode.SEE_THROUGH, 0, 15728880);
+            matrices.rotate(renderPassInfo.cameraState().orientation);
+            matrices.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
 
-                matrices.popPose();
-            }
+            var name = Component.literal(ownerName).getVisualOrderText();
+            var nameSize = Minecraft.getInstance().font.width(name) / 2F;
+            collector.submitText(matrices, -nameSize + 1, 1, name, false, DisplayMode.NORMAL, 15728880, 0xFF3C3C3C, 0, 0);
+            collector.submitText(matrices, -nameSize, 0, name, false, DisplayMode.SEE_THROUGH, 15728880, 0xFFFFFFFF, 0, 0);
+
+            matrices.popPose();
         }
     }
 }

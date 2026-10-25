@@ -1,9 +1,9 @@
 package net.voxelindustry.voidheart.client.model.portalframe;
 
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.Material;
+import net.minecraft.client.resources.model.sprite.MaterialBaker;
+import net.minecraft.client.resources.model.ModelDebugName;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
 import java.text.NumberFormat;
@@ -13,13 +13,15 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalFrameVeinSpriteManager
 {
+    private static final ModelDebugName DEBUG_NAME = () -> "voidheart:PortalFrameVeinSpriteManager";
+
     private static final Material[] FRAME_SPRITE_IDENTIFIERS = new Material[60];
-    private static final TextureAtlasSprite[]           FRAME_SPRITES            = new TextureAtlasSprite[60];
+    private static final Material.Baked[]           FRAME_SPRITES            = new Material.Baked[60];
 
     private static final Material[] CORE_SPRITE_IDENTIFIERS = new Material[4];
-    private static final TextureAtlasSprite[]           CORE_SPRITES            = new TextureAtlasSprite[4];
+    private static final Material.Baked[]           CORE_SPRITES            = new Material.Baked[4];
 
-    private static TextureAtlasSprite VOIDBRICK_SPRITE;
+    private static Material.Baked VOIDBRICK_SPRITE;
 
     static
     {
@@ -37,23 +39,14 @@ public class PortalFrameVeinSpriteManager
         }
     }
 
-    public static void registerSprites(Consumer<Identifier> spriteRegistrar)
-    {
-        for (var spriteIdentifier : FRAME_SPRITE_IDENTIFIERS)
-            spriteRegistrar.accept(spriteIdentifier.texture());
-
-        for (Material coreSpriteIdentifier : CORE_SPRITE_IDENTIFIERS)
-            spriteRegistrar.accept(coreSpriteIdentifier.texture());
-    }
-
-    public static void loadSprites()
+    public static void loadSprites(MaterialBaker materials)
     {
         for (int i = 0; i < 60; i++)
-            FRAME_SPRITES[i] = FRAME_SPRITE_IDENTIFIERS[i].sprite();
+            FRAME_SPRITES[i] = materials.get(FRAME_SPRITE_IDENTIFIERS[i], DEBUG_NAME);
         for (int i = 0; i < 4; i++)
-            CORE_SPRITES[i] = CORE_SPRITE_IDENTIFIERS[i].sprite();
+            CORE_SPRITES[i] = materials.get(CORE_SPRITE_IDENTIFIERS[i], DEBUG_NAME);
 
-        VOIDBRICK_SPRITE = new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/voidstone_bricks")).sprite();
+        VOIDBRICK_SPRITE = materials.get(new Material(Identifier.fromNamespaceAndPath(MODID, "block/voidstone_bricks")), DEBUG_NAME);
     }
 
     public static Material[] getFrameSpriteIdentifiers()
@@ -61,37 +54,37 @@ public class PortalFrameVeinSpriteManager
         return FRAME_SPRITE_IDENTIFIERS;
     }
 
-    public static TextureAtlasSprite getCoreSprite()
+    public static Material.Baked getCoreSprite()
     {
         return CORE_SPRITES[0];
     }
 
-    public static TextureAtlasSprite getCoreOverlaySprite()
+    public static Material.Baked getCoreOverlaySprite()
     {
         return CORE_SPRITES[3];
     }
 
-    public static TextureAtlasSprite getCoreBrokenOverlaySprite()
+    public static Material.Baked getCoreBrokenOverlaySprite()
     {
         return CORE_SPRITES[2];
     }
 
-    public static TextureAtlasSprite getBackgroundSpriteForFront(int variant)
+    public static Material.Baked getBackgroundSpriteForFront(int variant)
     {
         return FRAME_SPRITES[28 + variant];
     }
 
-    public static TextureAtlasSprite getOverlaySpriteForFront(int variant)
+    public static Material.Baked getOverlaySpriteForFront(int variant)
     {
         return FRAME_SPRITES[30 + 28 + variant];
     }
 
-    public static TextureAtlasSprite getOverlaySpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
+    public static Material.Baked getOverlaySpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
     {
         return getSpriteForSide(left, right, up, down, variant, 30);
     }
 
-    public static TextureAtlasSprite getBackgroundSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
+    public static Material.Baked getBackgroundSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
     {
         var sprite = getSpriteForSide(left, right, up, down, variant, 0);
 
@@ -100,7 +93,7 @@ public class PortalFrameVeinSpriteManager
         return sprite;
     }
 
-    private static TextureAtlasSprite getSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant, int offset)
+    private static Material.Baked getSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant, int offset)
     {
         if (!left.isConnected() && !right.isConnected() && !up.isConnected() && !down.isConnected())
             return null;
@@ -151,11 +144,11 @@ public class PortalFrameVeinSpriteManager
 
     private static Material getFrameSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/portal/" + from));
+        return new Material(Identifier.fromNamespaceAndPath(MODID, "block/portal/" + from));
     }
 
     private static Material getCoreSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/portalcore/" + from));
+        return new Material(Identifier.fromNamespaceAndPath(MODID, "block/portalcore/" + from));
     }
 }

@@ -1,20 +1,19 @@
 package net.voxelindustry.voidheart.client.particle;
 
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.fabricmc.fabric.api.client.particle.v1.FabricSpriteProvider;
+import net.fabricmc.fabric.api.client.particle.v1.FabricSpriteSet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
-public class PortalFrameParticle extends Particle
+public class PortalFrameParticle extends GeometryParticle
 {
-    private final FabricSpriteProvider spriteProvider;
+    private final FabricSpriteSet spriteProvider;
 
     private final Direction direction;
     private final int       width;
@@ -24,7 +23,7 @@ public class PortalFrameParticle extends Particle
                                double x,
                                double y,
                                double z,
-                               FabricSpriteProvider spriteProvider,
+                               FabricSpriteSet spriteProvider,
                                Direction direction,
                                int width,
                                int height)
@@ -41,7 +40,7 @@ public class PortalFrameParticle extends Particle
     @Override
     public void render(VertexConsumer vertexConsumer, Camera camera, float tickDelta)
     {
-        Vec3 vec3d = camera.getPosition();
+        Vec3 vec3d = camera.position();
         float f = (float) (Mth.lerp(tickDelta, xo, x) - vec3d.x());
         float g = (float) (Mth.lerp(tickDelta, yo, y) - vec3d.y());
         float h = (float) (Mth.lerp(tickDelta, zo, z) - vec3d.z());
@@ -83,38 +82,44 @@ public class PortalFrameParticle extends Particle
         float n = sprite.getV0();
         float o = sprite.getV1();
         int light = 15728880;
-        vertexConsumer.vertex(rightBottom.x(), rightBottom.y(), rightBottom.z())
-                .uv(l, o)
-                .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                .uv2(light)
-                .endVertex();
-        vertexConsumer.vertex(leftBottom.x(), leftBottom.y(), leftBottom.z())
-                .uv(l, n)
-                .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                .uv2(light)
-                .endVertex();
-        vertexConsumer.vertex(leftTop.x(), leftTop.y(), leftTop.z())
-                .uv(m, o)
-                .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                .uv2(light)
-                .endVertex();
-        vertexConsumer.vertex(rightTop.x(), rightTop.y(), rightTop.z())
-                .uv(m, n)
-                .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                .uv2(light)
-                .endVertex();
+        vertexConsumer.addVertex(rightBottom.x(), rightBottom.y(), rightBottom.z())
+                .setUv(l, o)
+                .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+        vertexConsumer.addVertex(leftBottom.x(), leftBottom.y(), leftBottom.z())
+                .setUv(l, n)
+                .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+        vertexConsumer.addVertex(leftTop.x(), leftTop.y(), leftTop.z())
+                .setUv(m, o)
+                .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+        vertexConsumer.addVertex(rightTop.x(), rightTop.y(), rightTop.z())
+                .setUv(m, n)
+                .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
 
-        vertexConsumer.vertex(rightBottom.x(), rightBottom.y(), rightBottom.z()).uv(l, o).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
-        vertexConsumer.vertex(leftBottom.x(), leftBottom.y(), leftBottom.z()).uv(l, n).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
-        vertexConsumer.vertex(leftTop.x(), leftTop.y(), leftTop.z()).uv(m, o).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
-        vertexConsumer.vertex(rightTop.x(), rightTop.y(), rightTop.z()).uv(m, n).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
+        vertexConsumer.addVertex(rightBottom.x(), rightBottom.y(), rightBottom.z()).setUv(l, o).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+        vertexConsumer.addVertex(leftBottom.x(), leftBottom.y(), leftBottom.z()).setUv(l, n).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+        vertexConsumer.addVertex(leftTop.x(), leftTop.y(), leftTop.z()).setUv(m, o).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+        vertexConsumer.addVertex(rightTop.x(), rightTop.y(), rightTop.z()).setUv(m, n).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
 
-    }
-
-    @Override
-    public ParticleRenderType getRenderType()
-    {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
     @Override

@@ -1,17 +1,19 @@
 package net.voxelindustry.voidheart.client.model.conduit;
 
+import net.minecraft.client.resources.model.sprite.MaterialBaker;
+import net.minecraft.client.resources.model.ModelDebugName;
+import net.minecraft.client.resources.model.sprite.Material;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.Material;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.inventory.InventoryMenu;
 
 public class ConduitSpriteManager
 {
+    private static final ModelDebugName DEBUG_NAME = () -> "voidheart:ConduitSpriteManager";
+
     private static final Material[] SPRITE_IDENTIFIERS = new Material[24];
 
-    private static final TextureAtlasSprite[] SPRITES = new TextureAtlasSprite[24];
+    private static final Material.Baked[] SPRITES = new Material.Baked[24];
 
     static
     {
@@ -21,10 +23,10 @@ public class ConduitSpriteManager
             SPRITE_IDENTIFIERS[i] = getSpriteIdentifier("conduit_lit" + (i - 11));
     }
 
-    public static void loadSprites()
+    public static void loadSprites(MaterialBaker materials)
     {
         for (int i = 0; i < 24; i++)
-            SPRITES[i] = SPRITE_IDENTIFIERS[i].sprite();
+            SPRITES[i] = materials.get(SPRITE_IDENTIFIERS[i], DEBUG_NAME);
     }
 
     private static int getSpriteIndexFor(boolean up, boolean down, boolean left, boolean right)
@@ -57,14 +59,13 @@ public class ConduitSpriteManager
         return 11;
     }
 
-    public static TextureAtlasSprite getSpriteFor(boolean up, boolean down, boolean left, boolean right, boolean lit)
+    public static Material.Baked getSpriteFor(boolean up, boolean down, boolean left, boolean right, boolean lit)
     {
         return SPRITES[getSpriteIndexFor(up, down, left, right) + (lit ? 12 : 0)];
     }
 
-
     private static Material getSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/conduit/" + from));
+        return new Material(Identifier.fromNamespaceAndPath(MODID, "block/conduit/" + from));
     }
 }

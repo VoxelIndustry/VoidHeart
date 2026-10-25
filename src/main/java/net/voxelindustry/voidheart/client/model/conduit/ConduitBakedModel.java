@@ -1,53 +1,32 @@
 package net.voxelindustry.voidheart.client.model.conduit;
 
-import net.fabricmc.fabric.api.renderer.v1.Renderer;
-import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
-import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
-import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
-import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
-import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
-import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
+import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.fabricmc.fabric.api.client.renderer.v1.mesh.QuadEmitter;
+import net.fabricmc.fabric.api.client.model.loading.v1.wrapper.WrapperBlockStateModel;
+import net.minecraft.client.resources.model.sprite.Material;
+import net.fabricmc.fabric.api.client.renderer.v1.mesh.MutableQuadView;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 
-import java.util.function.Supplier;
-
-public class ConduitBakedModel extends ForwardingBakedModel
+public class ConduitBakedModel extends WrapperBlockStateModel
 {
-    private RenderMaterial outerMaterial;
-
-    public ConduitBakedModel(BakedModel wrapped)
+    public ConduitBakedModel(BlockStateModel wrapped)
     {
-        this.wrapped = wrapped;
-    }
-
-    private RenderMaterial getOuterMaterial(Renderer renderer)
-    {
-        if (outerMaterial == null)
-            outerMaterial = renderer.materialFinder().blendMode(0, BlendMode.CUTOUT).emissive(0, true).find();
-        return outerMaterial;
+        super(wrapped);
     }
 
     @Override
-    public boolean isVanillaAdapter()
+    public void emitQuads(QuadEmitter emitter, BlockAndTintGetter blockView, BlockPos pos, BlockState state, RandomSource random, Predicate<@Nullable Direction> cullTest)
     {
-        return false;
-    }
-
-    @Override
-    public void emitBlockQuads(BlockAndTintGetter blockView, BlockState state, BlockPos pos, Supplier<RandomSource> randomSupplier, RenderContext context)
-    {
-        var outerMaterial = getOuterMaterial(RendererAccess.INSTANCE.getRenderer());
-
-        context.pushTransform(quad ->
+        emitter.pushTransform(quad ->
         {
             if (quad.tag() != 0)
                 return true;
@@ -55,12 +34,12 @@ public class ConduitBakedModel extends ForwardingBakedModel
             var facing = quad.nominalFace();
             var sprite = spriteFromBlockState(state, facing, false);
 
-            quad.spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV);
+            quad.materialBake(sprite, MutableQuadView.BAKE_LOCK_UV);
             return true;
         });
 
-        super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
-        context.popTransform();
+        super.emitQuads(emitter, blockView, pos, state, random, cullTest);
+        emitter.popTransform();
 
         if (state.getValue(BlockStateProperties.LIT))
         {
@@ -68,10 +47,11 @@ public class ConduitBakedModel extends ForwardingBakedModel
             {
                 var sprite = spriteFromBlockState(state, facing, true);
 
-                context.getEmitter()
-                        .material(outerMaterial)
+                emitter
+                        .chunkLayer(ChunkSectionLayer.CUTOUT)
+                .emissive(true)
                         .square(facing, 0, 0, 1, 1, 0)
-                        .spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV)
+                        .materialBake(sprite, MutableQuadView.BAKE_LOCK_UV)
                         .cullFace(facing)
                         .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                         .tag(1)
@@ -80,7 +60,7 @@ public class ConduitBakedModel extends ForwardingBakedModel
         }
     }
 
-    private static TextureAtlasSprite spriteFromBlockState(BlockState state, Direction facing, boolean lit)
+    private static Material.Baked spriteFromBlockState(BlockState state, Direction facing, boolean lit)
     {
         boolean up = false;
         boolean down = false;
@@ -133,11 +113,5 @@ public class ConduitBakedModel extends ForwardingBakedModel
             }
         }
         return ConduitSpriteManager.getSpriteFor(up, down, left, right, lit);
-    }
-
-    @Override
-    public void emitItemQuads(ItemStack stack, Supplier<RandomSource> randomSupplier, RenderContext context)
-    {
-        throw new UnsupportedOperationException("ItemStack attempted to render Conduit model as an item: " + stack);
     }
 }

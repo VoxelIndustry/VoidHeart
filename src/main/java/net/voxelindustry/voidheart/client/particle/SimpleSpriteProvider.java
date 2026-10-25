@@ -35,4 +35,10 @@ public class SimpleSpriteProvider implements SpriteSet
     {
         return this.sprites[random.nextInt(this.sprites.length)];
     }
+
+    @Override
+    public TextureAtlasSprite first()
+    {
+        return this.sprites[0];
+    }
 }

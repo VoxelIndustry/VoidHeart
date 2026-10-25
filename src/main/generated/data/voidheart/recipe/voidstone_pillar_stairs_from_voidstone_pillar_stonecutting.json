@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:voidstone_pillar",
+  "result": {
+    "id": "voidheart:voidstone_pillar_stairs"
+  }
+}

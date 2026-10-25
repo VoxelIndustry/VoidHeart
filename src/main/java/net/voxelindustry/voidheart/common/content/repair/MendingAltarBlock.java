@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
+import net.minecraft.util.Prediction;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,7 +53,7 @@ public class MendingAltarBlock extends Block implements EntityBlock
         }
         else
         {
-            player.getInventory().placeItemBackInInventory(altar.getTool());
+            player.getInventory().placeItemBackInInventory(altar.getTool(), Prediction.SERVER_ONLY);
             altar.setTool(player, ItemStack.EMPTY);
         }
 

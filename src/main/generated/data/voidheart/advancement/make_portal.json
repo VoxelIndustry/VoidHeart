@@ -1,0 +1,21 @@
+{
+  "parent": "voidheart:portal_core",
+  "criteria": {
+    "make_portal": {
+      "trigger": "voidheart:portal_linked"
+    }
+  },
+  "display": {
+    "description": "The flexion is made. The spheres are entwined",
+    "frame": "goal",
+    "icon": {
+      "id": "voidheart:portal_frame_core"
+    },
+    "title": "Portal"
+  },
+  "requirements": [
+    [
+      "make_portal"
+    ]
+  ]
+}

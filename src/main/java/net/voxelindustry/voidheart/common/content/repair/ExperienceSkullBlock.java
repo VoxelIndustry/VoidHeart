@@ -49,7 +49,7 @@ public class ExperienceSkullBlock extends Block implements EntityBlock
     @Override
     public RenderShape getRenderShape(BlockState state)
     {
-        return state.getValue(StateProperties.MODEL) ? RenderShape.MODEL : RenderShape.ENTITYBLOCK_ANIMATED;
+        return state.getValue(StateProperties.MODEL) ? RenderShape.MODEL : RenderShape.INVISIBLE;
     }
 
     @Override
@@ -139,7 +139,7 @@ public class ExperienceSkullBlock extends Block implements EntityBlock
 
         if (random.nextInt(1300) == 1)
             world.playLocalSound(pos,
-                    SoundEvents.GENERIC_DRINK,
+                    SoundEvents.GENERIC_DRINK.value(),
                     SoundSource.BLOCKS,
                     0.5f,
                     random.nextFloat() * 0.1F + 0.9F,

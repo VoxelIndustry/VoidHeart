@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.shatterforge;
 
+import net.minecraft.util.Prediction;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,7 +81,7 @@ public class ShatterForgeBlock extends Block implements EntityBlock
         }
         else
         {
-            player.getInventory().placeItemBackInInventory(forge.getStack().copyWithCount(1));
+            player.getInventory().placeItemBackInInventory(forge.getStack().copyWithCount(1), Prediction.SERVER_ONLY);
             forge.setStack(ItemStack.EMPTY);
         }
 

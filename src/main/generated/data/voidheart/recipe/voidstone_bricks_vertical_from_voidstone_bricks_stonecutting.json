@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:voidstone_bricks",
+  "result": {
+    "id": "voidheart:voidstone_bricks_vertical"
+  }
+}

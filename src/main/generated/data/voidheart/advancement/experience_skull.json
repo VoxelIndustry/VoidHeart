@@ -1,0 +1,29 @@
+{
+  "parent": "voidheart:altar",
+  "criteria": {
+    "got_experience_skull": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:experience_skull"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": "Store experience and use it later",
+    "icon": {
+      "id": "voidheart:experience_skull"
+    },
+    "title": "Experience Skull"
+  },
+  "requirements": [
+    [
+      "got_experience_skull"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

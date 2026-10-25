@@ -1,10 +1,9 @@
 package net.voxelindustry.voidheart.client.particle;
 
-import net.fabricmc.fabric.api.client.particle.v1.FabricSpriteProvider;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.fabricmc.fabric.api.client.particle.v1.FabricSpriteSet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.core.Direction.AxisDirection;
@@ -13,9 +12,9 @@ import org.joml.Vector3f;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.stream.IntStream;
 
-public class ShatterForgeRuneParticle extends Particle
+public class ShatterForgeRuneParticle extends GeometryParticle
 {
-    private final FabricSpriteProvider spriteProvider;
+    private final FabricSpriteSet spriteProvider;
 
     private final Axis axis;
     private final int[] spriteIndices;
@@ -24,7 +23,7 @@ public class ShatterForgeRuneParticle extends Particle
                                     double x,
                                     double y,
                                     double z,
-                                    FabricSpriteProvider spriteProvider,
+                                    FabricSpriteSet spriteProvider,
                                     Axis axis)
     {
         super(world, x, y, z);
@@ -39,7 +38,7 @@ public class ShatterForgeRuneParticle extends Particle
     @Override
     public void render(VertexConsumer vertexConsumer, Camera camera, float tickDelta)
     {
-        var cameraPos = camera.getPosition();
+        var cameraPos = camera.position();
         float posX = (float) (Mth.lerp(tickDelta, xo, x) - cameraPos.x());
         float posY = (float) (Mth.lerp(tickDelta, yo, y) - cameraPos.y()) - 1.31F;
         float posZ = (float) (Mth.lerp(tickDelta, zo, z) - cameraPos.z());
@@ -93,47 +92,55 @@ public class ShatterForgeRuneParticle extends Particle
             var vMin = sprite.getV0();
             var vMax = sprite.getV1();
 
-            vertexConsumer.vertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
-                    .uv(uMin, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
-                    .uv(uMax, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
-                    .uv(uMax, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
-                    .uv(uMin, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
+            vertexConsumer.addVertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
+                    .setUv(uMin, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
+                    .setUv(uMax, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
+                    .setUv(uMax, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
+                    .setUv(uMin, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
 
-            vertexConsumer.vertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
-                    .uv(uMin, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
-                    .uv(uMax, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
-                    .uv(uMax, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
-                    .uv(uMin, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
+            vertexConsumer.addVertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
+                    .setUv(uMin, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
+                    .setUv(uMax, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
+                    .setUv(uMax, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
+                    .setUv(uMin, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
         }
 
         offset = perpendicular.step().mul(-2.65F);
@@ -152,54 +159,56 @@ public class ShatterForgeRuneParticle extends Particle
             var vMin = sprite.getV0();
             var vMax = sprite.getV1();
 
-            vertexConsumer.vertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
-                    .uv(uMin, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
-                    .uv(uMax, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
-                    .uv(uMax, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
-                    .uv(uMin, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
+            vertexConsumer.addVertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
+                    .setUv(uMin, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
+                    .setUv(uMax, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
+                    .setUv(uMax, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
+                    .setUv(uMin, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
 
-            vertexConsumer.vertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
-                    .uv(uMin, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
-                    .uv(uMax, vMax)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
-                    .uv(uMax, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
-            vertexConsumer.vertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
-                    .uv(uMin, vMin)
-                    .color(this.rCol, this.gCol, this.bCol, this.alpha)
-                    .uv2(light)
-                    .endVertex();
+            vertexConsumer.addVertex(leftBottom.x(), leftBottom.y() + offsetY, leftBottom.z())
+                    .setUv(uMin, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightBottom.x(), rightBottom.y() + offsetY, rightBottom.z())
+                    .setUv(uMax, vMax)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(rightTop.x(), rightTop.y() + offsetY, rightTop.z())
+                    .setUv(uMax, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
+            vertexConsumer.addVertex(leftTop.x(), leftTop.y() + offsetY, leftTop.z())
+                    .setUv(uMin, vMin)
+                    .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                    .setLight(light)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setNormal(0, 1, 0);
         }
-    }
-
-    @Override
-    public ParticleRenderType getRenderType()
-    {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
     @Override

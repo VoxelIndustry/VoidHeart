@@ -1,9 +1,7 @@
 package net.voxelindustry.voidheart.client.particle;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.math.Bezier;
 import org.joml.Vector3f;
@@ -11,7 +9,7 @@ import org.joml.Vector3fc;
 
 import static java.lang.Math.abs;
 
-public class AltarItemParticle extends TextureSheetParticle
+public class AltarItemParticle extends SingleQuadParticle
 {
 
     private final float minU;
@@ -36,9 +34,7 @@ public class AltarItemParticle extends TextureSheetParticle
                              Vector3fc firstPointBezier,
                              Vector3fc secondPointBezier)
     {
-        super(world, x, y, z, velocityX, velocityY, velocityZ);
-
-        setSprite(Minecraft.getInstance().getItemRenderer().getItemModelShaper().getItemModel(stack).getParticleIcon());
+        super(world, x, y, z, velocityX, velocityY, velocityZ, ParticleSprites.itemSprite(stack, world, world.getRandom()));
 
         float uDiff = (sprite.getU1() - sprite.getU0()) / 4;
         float vDiff = (sprite.getV1() - sprite.getV0()) / 4;
@@ -123,8 +119,8 @@ public class AltarItemParticle extends TextureSheetParticle
     }
 
     @Override
-    public ParticleRenderType getRenderType()
+    protected Layer getLayer()
     {
-        return ParticleRenderType.TERRAIN_SHEET;
+        return Layer.bySprite(sprite);
     }
 }

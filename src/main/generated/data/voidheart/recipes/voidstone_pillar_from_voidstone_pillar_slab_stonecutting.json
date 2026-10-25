@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "count": 2,
-  "ingredient": {
-    "item": "voidheart:voidstone_pillar_slab"
-  },
-  "result": "voidheart:voidstone_pillar"
-}

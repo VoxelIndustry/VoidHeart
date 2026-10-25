@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "##",
+    "##"
+  ],
+  "key": {
+    "#": "voidheart:voidstone_tile"
+  },
+  "result": {
+    "id": "voidheart:voidstone_tile_small",
+    "count": 4
+  }
+}

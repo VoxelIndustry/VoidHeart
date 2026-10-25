@@ -33,10 +33,10 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     @Override
     public void registerClient(IWailaClientRegistration registration)
     {
-        registration.registerBlockComponent(shatterForgeProvider, ShatterForgeBlock.class);
-        registration.registerBlockComponent(ravenousCollectorProvider, RavenousCollectorBlock.class);
+        registration.registerBlockComponent(new ShatterForgeProvider.Client(shatterForgeProvider), ShatterForgeBlock.class);
+        registration.registerBlockComponent(new RavenousCollectorProvider.Client(), RavenousCollectorBlock.class);
 
-        registration.registerBlockComponent(ravenousStorageProvider, RavenousStorageBlock.class);
-        registration.registerBlockComponent(ravenousStorageMatrixProvider, RavenousStorageMatrixBlock.class);
+        registration.registerBlockComponent(new RavenousStorageProvider.Client(), RavenousStorageBlock.class);
+        registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
     }
 }

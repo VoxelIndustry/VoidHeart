@@ -111,7 +111,7 @@ public class PortalInteriorBlock extends Block implements EntityBlock
     @Override
     protected void entityInside(BlockState state, Level world, BlockPos pos, Entity collider, InsideBlockEffectApplier effectApplier, boolean isPrecise)
     {
-        if (collider.isPassenger() || collider.isVehicle() || !collider.canChangeDimensions())
+        if (collider.isPassenger() || collider.isVehicle() || !collider.canUsePortal(false))
             return;
 
         if (!world.isClientSide()

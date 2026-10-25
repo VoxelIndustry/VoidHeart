@@ -1,0 +1,29 @@
+{
+  "parent": "voidheart:shatter_forge",
+  "criteria": {
+    "got_portal_core": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:portal_core"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": "Bend the space between two dimensions",
+    "icon": {
+      "id": "voidheart:portal_core"
+    },
+    "title": "Portal Core"
+  },
+  "requirements": [
+    [
+      "got_portal_core"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

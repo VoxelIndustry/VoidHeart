@@ -8,13 +8,11 @@ import org.joml.Vector4fc;
 import static java.lang.Math.*;
 import static org.joml.Math.abs;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.world.item.ItemStack;
 
-public class ShatterForgeItemParticle extends TextureSheetParticle
+public class ShatterForgeItemParticle extends SingleQuadParticle
 {
     private final Vector4fc offsetItemUV;
 
@@ -35,7 +33,7 @@ public class ShatterForgeItemParticle extends TextureSheetParticle
                                     ItemStack inputStack,
                                     ItemStack outputStack)
     {
-        super(world, x, y, z, destinationX, destinationY, destinationZ);
+        super(world, x, y, z, destinationX, destinationY, destinationZ, ParticleSprites.itemSprite(inputStack, world, world.getRandom()));
 
         gravity = 0;
 
@@ -50,9 +48,8 @@ public class ShatterForgeItemParticle extends TextureSheetParticle
 
         quadSize = 0.1F * (random.nextFloat() * 0.5F + 0.5F);
 
-        var models = Minecraft.getInstance().getItemRenderer().getItemModelShaper();
-        var baseSprite = models.getItemModel(inputStack).getParticleIcon();
-        spriteProvider = new SimpleSpriteProvider(random.nextFloat() * 0.5F + 0.8F, baseSprite, models.getItemModel(outputStack).getParticleIcon());
+        var baseSprite = sprite;
+        spriteProvider = new SimpleSpriteProvider(random.nextFloat() * 0.5F + 0.8F, baseSprite, ParticleSprites.itemSprite(outputStack, world, random));
         setSpriteFromAge(spriteProvider);
 
         float uDiff = (baseSprite.getU1() - baseSprite.getU0()) / 4;
@@ -131,8 +128,8 @@ public class ShatterForgeItemParticle extends TextureSheetParticle
     }
 
     @Override
-    public ParticleRenderType getRenderType()
+    protected Layer getLayer()
     {
-        return ParticleRenderType.TERRAIN_SHEET;
+        return Layer.bySprite(sprite);
     }
 }
