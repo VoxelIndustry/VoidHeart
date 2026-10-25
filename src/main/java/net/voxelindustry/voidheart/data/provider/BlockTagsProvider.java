@@ -2,11 +2,13 @@ package net.voxelindustry.voidheart.data.provider;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider.BlockTagProvider;
+import net.minecraft.block.Blocks;
 import net.minecraft.data.family.BlockFamilies;
 import net.minecraft.data.family.BlockFamily.Variant;
 import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 import net.minecraft.registry.tag.BlockTags;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 
 import java.util.concurrent.CompletableFuture;
@@ -37,5 +39,13 @@ public class BlockTagsProvider extends BlockTagProvider
             if (family.getVariant(Variant.WALL) != null)
                 walls.add(family.getVariant(Variant.WALL));
         });
+
+        var essenceWater = getOrCreateTagBuilder(VoidHeartTags.ESSENCE_WATER_TAG)
+                .setReplace(false);
+        essenceWater.add(Blocks.WATER);
+
+        var essenceLava = getOrCreateTagBuilder(VoidHeartTags.ESSENCE_LAVA_TAG)
+                .setReplace(false);
+        essenceLava.add(Blocks.LAVA);
     }
 }

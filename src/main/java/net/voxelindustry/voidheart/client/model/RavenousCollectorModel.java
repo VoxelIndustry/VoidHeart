@@ -1,7 +1,7 @@
 package net.voxelindustry.voidheart.client.model;
 
 import net.minecraft.util.Identifier;
-import net.voxelindustry.voidheart.common.content.ravenouscollector.RavenousCollectorTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;

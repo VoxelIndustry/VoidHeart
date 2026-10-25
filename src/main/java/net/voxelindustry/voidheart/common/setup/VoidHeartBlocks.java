@@ -24,6 +24,11 @@ import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageItemBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterBlock;
@@ -35,7 +40,6 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlo
 import net.voxelindustry.voidheart.common.content.portalframe.VoidStoneBricksBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalImmersiveInteriorBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorBlock;
-import net.voxelindustry.voidheart.common.content.ravenouscollector.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBlock;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
@@ -134,6 +138,9 @@ public class VoidHeartBlocks
     public static Block CUT_RAVENOUS_GOLD_WALL;
 
     public static Block RAVENOUS_COLLECTOR;
+    public static Block RAVENOUS_STORAGE;
+    public static Block RAVENOUS_STORAGE_MATRIX;
+    public static Block RAVENOUS_RELAY;
 
     public static final List<Block> MINEABLE_BLOCKS = new ArrayList<>();
 
@@ -349,7 +356,25 @@ public class VoidHeartBlocks
                 .instrument(Instrument.BASEDRUM)
                 .requiresTool()
                 .strength(1.5F, 6.0F)
-                .sounds(BlockSoundGroup.STONE)), itemGroup, "ravenous_collector");
+                .sounds(BlockSoundGroup.STONE)), new RavenousStorageItemBlock(RAVENOUS_COLLECTOR), "ravenous_collector");
+        registerBlock(RAVENOUS_STORAGE = new RavenousStorageBlock(AbstractBlock.Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
+                .strength(1.5F, 6.0F)
+                .sounds(BlockSoundGroup.STONE)), itemGroup, "ravenous_storage");
+        registerBlock(RAVENOUS_STORAGE_MATRIX = new RavenousStorageMatrixBlock(AbstractBlock.Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
+                .strength(1.5F, 6.0F)
+                .sounds(BlockSoundGroup.STONE)), itemGroup, "ravenous_storage_matrix");
+        registerBlock(RAVENOUS_RELAY = new RavenousRelayBlock(AbstractBlock.Settings.create()
+                .mapColor(MapColor.BLACK)
+                .instrument(Instrument.BASEDRUM)
+                .requiresTool()
+                .strength(1.5F, 6.0F)
+                .sounds(BlockSoundGroup.STONE)), itemGroup, "ravenous_relay");
 
         VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, itemGroup, "voidstone_pillar");
         VOIDSTONE_PILLAR_STAIRS = generateStairs(VOIDSTONE_PILLAR, itemGroup, "voidstone_pillar");

@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameParticleEffect;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterion;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeItemParticleEffect;
@@ -90,5 +91,6 @@ public class VoidHeart implements ModInitializer
         Registry.register(Registries.PARTICLE_TYPE,
                 new Identifier(MODID, "shatter_forge_item"), SHATTER_FORGE_ITEM_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeItemParticleEffect.PARAMETERS_FACTORY));
 
+        EssenceRegistry.bootstrap();
     }
 }

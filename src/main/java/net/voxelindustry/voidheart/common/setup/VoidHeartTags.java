@@ -14,5 +14,8 @@ public class VoidHeartTags
 
     public static TagKey<Block> PORTAL_FRAME_TAG = TagKey.of(RegistryKeys.BLOCK, new Identifier(MODID, "portal_frame"));
 
+    public static TagKey<Block> ESSENCE_WATER_TAG = TagKey.of(RegistryKeys.BLOCK, new Identifier(MODID, "essence_water"));
+    public static TagKey<Block> ESSENCE_LAVA_TAG = TagKey.of(RegistryKeys.BLOCK, new Identifier(MODID, "essence_lava"));
+
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.of(RegistryKeys.ITEM, new Identifier(MODID, "pillar_place_instead_of_store"));
 }
