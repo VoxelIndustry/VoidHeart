@@ -1,7 +1,6 @@
 {
   "replace": false,
   "values": [
-    "voidheart:portal_interior",
-    "voidheart:portal_immersive_interior"
+    "voidheart:portal_interior"
   ]
 }

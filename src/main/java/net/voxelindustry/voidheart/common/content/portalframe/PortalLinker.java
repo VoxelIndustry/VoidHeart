@@ -15,7 +15,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
-import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -160,7 +159,7 @@ public class PortalLinker
         coreTile.setLinkedFacing(linkedFacing);
         coreTile.setOwnerPlayerUUID(player.getUuid());
 
-        coreTile.linkPortal(ImmersivePortalCompat.useImmersivePortal());
+        coreTile.linkPortal();
 
         voidPearl.decrement(1);
 
@@ -170,7 +169,7 @@ public class PortalLinker
         linkedPortalCore.setLinkedFacing(coreTile.getFacing());
         linkedPortalCore.setOwnerPlayerUUID(player.getUuid());
 
-        linkedPortalCore.linkPortal(ImmersivePortalCompat.useImmersivePortal());
+        linkedPortalCore.linkPortal();
 
         player.sendMessage(Text.translatable(MODID + ".link_successful"), true);
 
@@ -245,8 +244,8 @@ public class PortalLinker
         previouslyLinkedPortal.setLinkedFacing(core.getFacing());
         previouslyLinkedPortal.setOwnerPlayerUUID(core.getOwnerPlayerUUID());
 
-        core.linkPortal(ImmersivePortalCompat.useImmersivePortal());
-        previouslyLinkedPortal.linkPortal(ImmersivePortalCompat.useImmersivePortal());
+        core.linkPortal();
+        previouslyLinkedPortal.linkPortal();
         return true;
     }
 }

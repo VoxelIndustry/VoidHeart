@@ -20,7 +20,6 @@ import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
-import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 
 import static java.lang.Math.*;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -51,7 +50,7 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 
         var playerProfile = voidHeart.getPlayerProfile();
 
-        if (playerProfile == null || ImmersivePortalCompat.areWeRenderedByPortal())
+        if (playerProfile == null)
             return;
 
         matrices.push();

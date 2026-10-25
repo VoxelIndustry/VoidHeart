@@ -6,24 +6,20 @@ import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
-import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -47,9 +43,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
     @Setter(AccessLevel.PACKAGE)
     private boolean isBroken;
 
-    @Setter
-    private UUID portalEntityID;
-
     @Getter
     @Setter
     private Identifier linkedWorld;
@@ -72,8 +65,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
     @Getter
     private Direction previousLinkedFacing;
     private RegistryKey<World> previousLinkedWorldKey;
-
-    private boolean wasImmersive;
 
     public PortalFrameCoreTile(BlockPos pos, BlockState state)
     {
@@ -101,7 +92,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
         }
 
         isBroken = tag.getBoolean("isBroken");
-        wasImmersive = tag.getBoolean("wasImmersive");
 
         if (tag.contains("portalState"))
             portalState.fromTag(tag.getCompound("portalState"));
@@ -117,9 +107,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
         {
             linkedInteriors.add(BlockPos.fromLong(tag.getLong("linkedInterior" + index)));
         }
-
-        if (tag.containsUuid("portalEntityID"))
-            portalEntityID = tag.getUuid("portalEntityID");
 
         if (tag.containsUuid("ownerPlayerUUID"))
             ownerPlayerUUID = tag.getUuid("ownerPlayerUUID");
@@ -143,7 +130,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
         }
 
         tag.putBoolean("isBroken", isBroken());
-        tag.putBoolean("wasImmersive", wasImmersive);
 
         if (portalState != null)
             tag.put("portalState", portalState.toTag());
@@ -165,9 +151,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
             tag.putLong("linkedInterior" + index, interior.asLong());
             index++;
         }
-
-        if (portalEntityID != null)
-            tag.putUuid("portalEntityID", portalEntityID);
 
         if (ownerPlayerUUID != null)
             tag.putUuid("ownerPlayerUUID", ownerPlayerUUID);
@@ -237,7 +220,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
         cutLinkFromPortal(false);
     }
 
-    void linkPortal(boolean useImmersivePortal)
+    void linkPortal()
     {
         world.setBlockState(pos, getCachedState()
                 .with(Properties.LIT, true)
@@ -248,9 +231,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
         Direction facing = getFacing();
 
-        if (useImmersivePortal)
-            ImmersivePortalFrameCreator.linkImmersivePortal(this, facing);
-
         Pair<BlockPos, BlockPos> interiorPoints = PortalFormer.excludeBorders(portalState);
 
         linkedInteriors.clear();
@@ -259,10 +239,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
                 {
                     BlockPos pos = mutablePos.toImmutable();
 
-                    if (useImmersivePortal)
-                        world.setBlockState(pos, VoidHeartBlocks.PORTAL_IMMERSIVE_INTERIOR.getDefaultState().with(Properties.FACING, facing));
-                    else
-                        world.setBlockState(pos, VoidHeartBlocks.PORTAL_INTERIOR.getDefaultState().with(Properties.FACING, facing));
+                    world.setBlockState(pos, VoidHeartBlocks.PORTAL_INTERIOR.getDefaultState().with(Properties.FACING, facing));
 
                     BlockEntity tile = world.getBlockEntity(pos);
                     if (!(tile instanceof PortalInteriorTile))
@@ -283,7 +260,6 @@ public class PortalFrameCoreTile extends PortalFrameTile
                 frame.refreshLitStatus();
         }
 
-        wasImmersive = useImmersivePortal;
         markDirty();
     }
 
@@ -312,34 +288,10 @@ public class PortalFrameCoreTile extends PortalFrameTile
         linkedInteriors.forEach(pos -> getWorld().breakBlock(pos, true));
 
         if (getWorld() != null && isServer())
-        {
             VoidPocketState.getVoidPocketState(world).getHeartData(ownerPlayerUUID).removePortal(world, pos);
-
-            if (portalEntityID != null)
-            {
-                Entity portalEntity = ((ServerWorld) getWorld()).getEntity(portalEntityID);
-                if (portalEntity != null)
-                    portalEntity.remove(Entity.RemovalReason.DISCARDED);
-            }
-        }
 
         if (breakCore)
             getWorld().setBlockState(getPos(), VoidHeartBlocks.VOIDSTONE_BRICKS.getDefaultState());
-    }
-
-    @Override
-    public void serverLoad()
-    {
-        if (getLinkedWorld() == null)
-            return;
-
-        boolean useImmersivePortal = ImmersivePortalCompat.useImmersivePortal();
-
-        if (wasImmersive != useImmersivePortal)
-            VoidHeartTicker.addTaskForLoadedPos(getPos(), () ->
-            {
-                linkPortal(useImmersivePortal);
-            });
     }
 
     Optional<PortalFrameCoreTile> getLinkedPortal()

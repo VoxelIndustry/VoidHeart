@@ -20,9 +20,9 @@ public class MultiEssenceStorage implements IEssenceStorage
                     CodecUtil.arrayInt()
                             .fieldOf("amounts")
                             .forGetter(MultiEssenceStorage::amounts),
-                    CodecUtil.array(RegistryKey.createCodec(EssenceRegistry.ESSENCE_REGISTRY_TYPE), RegistryKey.class)
+                    CodecUtil.<RegistryKey<EssenceType>>array(RegistryKey.createCodec(EssenceRegistry.ESSENCE_REGISTRY_TYPE), RegistryKey.class)
                             .fieldOf("types")
-                            .forGetter(storage -> Arrays.stream(storage.types()).map(type -> EssenceRegistry.ESSENCE_REGISTRY.getKey(type).get()).toArray(RegistryKey[]::new))
+                            .forGetter(MultiEssenceStorage::typeKeys)
             ).apply(instance, (maximumAmount, storageCount, amounts, types) ->
             {
                 var storage = new MultiEssenceStorage(maximumAmount, storageCount);
@@ -99,6 +99,12 @@ public class MultiEssenceStorage implements IEssenceStorage
     public EssenceType[] types()
     {
         return types;
+    }
+
+    @SuppressWarnings("unchecked")
+    private RegistryKey<EssenceType>[] typeKeys()
+    {
+        return Arrays.stream(types).map(type -> EssenceRegistry.ESSENCE_REGISTRY.getKey(type).get()).toArray(RegistryKey[]::new);
     }
 
     public int maximumAmount()

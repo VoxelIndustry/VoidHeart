@@ -33,8 +33,6 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     @Override
     public void registerClient(IWailaClientRegistration registration)
     {
-        registration.hideTarget(VoidHeartBlocks.PORTAL_IMMERSIVE_INTERIOR);
-
         registration.registerBlockComponent(shatterForgeProvider, ShatterForgeBlock.class);
         registration.registerBlockComponent(ravenousCollectorProvider, RavenousCollectorBlock.class);
 

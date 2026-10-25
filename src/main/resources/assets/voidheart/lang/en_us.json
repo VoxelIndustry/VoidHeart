@@ -113,8 +113,5 @@
   "voidheart.pocket_already_exists": "Your pocket dimension already exists",
   "voidheart.altar.missing_pillars": "Missing %s pillar(s)",
   "__comment": "Essences",
-  "voidheart.essence.empty": "Empty",
-  "__comment": "EMI",
-  "emi.category.voidheart.altar": "Void Altar Crafting",
-  "emi.category.voidheart.shatter_forge": "Shatter Forge Crafting"
+  "voidheart.essence.empty": "Empty"
 }

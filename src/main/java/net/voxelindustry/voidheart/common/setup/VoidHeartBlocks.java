@@ -38,7 +38,6 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.VoidStoneBricksBlock;
-import net.voxelindustry.voidheart.common.content.portalinterior.PortalImmersiveInteriorBlock;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBlock;
@@ -54,7 +53,6 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public class VoidHeartBlocks
 {
     public static Block PORTAL_INTERIOR;
-    public static Block PORTAL_IMMERSIVE_INTERIOR;
     public static Block PORTAL_FRAME;
     public static Block PORTAL_FRAME_CORE;
 
@@ -150,7 +148,6 @@ public class VoidHeartBlocks
         Settings noGroup = new Item.Settings();
 
         registerBlock(PORTAL_INTERIOR = new PortalInteriorBlock(), noGroup, "portal_interior");
-        registerBlock(PORTAL_IMMERSIVE_INTERIOR = new PortalImmersiveInteriorBlock(), noGroup, "portal_immersive_interior");
         registerBlock(PORTAL_FRAME = new PortalFrameBlock(), noGroup, "portal_frame");
         registerBlock(PORTAL_FRAME_CORE = new PortalFrameCoreBlock(), noGroup, "portal_frame_core");
 

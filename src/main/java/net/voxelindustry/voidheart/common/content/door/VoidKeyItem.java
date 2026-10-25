@@ -12,15 +12,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Rarity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.voxelindustry.voidheart.VoidHeart;
-import net.voxelindustry.voidheart.common.content.portalframe.ImmersivePortalFrameCreator;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
-import qouteall.imm_ptl.core.portal.Portal;
-import qouteall.q_misc_util.my_util.DQuaternion;
 
 public class VoidKeyItem extends Item
 {
@@ -84,33 +78,6 @@ public class VoidKeyItem extends Item
         if (door == null)
             return;
 
-        Direction sourceFacing = state.get(DoorBlock.FACING).getOpposite();
-        Direction doorFacing = door.getCachedState().get(DoorBlock.FACING);
-
-        Portal portal = Portal.entityType.create(world);
-        portal.dimensionTo = voidWorld.getRegistryKey();
-        portal.width = 1;
-        portal.height = 2;
-        portal.destination = Vec3d.ofBottomCenter(doorPos.up());
-
-        portal.axisH = new Vec3d(ImmersivePortalFrameCreator.getUnitVector(Direction.UP));
-        portal.axisW = new Vec3d(ImmersivePortalFrameCreator.getUnitVector(sourceFacing.rotateYClockwise()));
-
-        if (doorFacing == sourceFacing)
-            portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(180)));
-        else if (doorFacing == sourceFacing.getOpposite())
-        {
-            // DO NOTHING
-        }
-        else if (doorFacing == sourceFacing.rotateYClockwise())
-            portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(90)));
-        else if (doorFacing == sourceFacing.rotateYCounterclockwise())
-            portal.setOrientationRotation(DQuaternion.fromMcQuaternion(RotationAxis.POSITIVE_Y.rotationDegrees(-90)));
-
-        Vec3d sourcePos = Vec3d.ofBottomCenter(pos).add(8 / 16D * sourceFacing.getVector().getX(), 0, 8 / 16D * sourceFacing.getVector().getZ());
-        portal.updatePosition(sourcePos.x, sourcePos.y, sourcePos.z);
-        world.spawnEntity(portal);
-
-        door.setPortal(portal.getUuid());
+        // TODO: Link source door to the void door (replaces the Immersive Portals entity)
     }
 }

@@ -19,7 +19,6 @@ import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.util.ExperienceUtil;
-import net.voxelindustry.voidheart.compat.immportal.ImmersivePortalCompat;
 import org.joml.Math;
 import org.joml.Quaternionf;
 
@@ -66,9 +65,6 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
                 true,
                 skull.getWorld().getRandom());
         matrices.pop();
-
-        if (ImmersivePortalCompat.areWeRenderedByPortal())
-            return;
 
         matrices.push();
         matrices.translate(0.5, 0.8, 0.5);

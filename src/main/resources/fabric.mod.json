@@ -29,9 +29,6 @@
     "rei_client": [
       "net.voxelindustry.voidheart.compat.rei.VoidHeartREIPlugin"
     ],
-    "emi": [
-      "net.voxelindustry.voidheart.compat.emi.VoidHeartEMIPlugin"
-    ],
     "jade": [
       "net.voxelindustry.voidheart.compat.jade.VoidHeartJadePlugin"
     ]

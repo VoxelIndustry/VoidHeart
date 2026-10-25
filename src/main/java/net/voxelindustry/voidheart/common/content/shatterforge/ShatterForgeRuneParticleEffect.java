@@ -3,13 +3,14 @@ package net.voxelindustry.voidheart.common.content.shatterforge;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Direction.Axis;
 import net.voxelindustry.voidheart.VoidHeart;
-import qouteall.imm_ptl.core.commands.AxisArgumentType;
 
 public record ShatterForgeRuneParticleEffect(Axis axis) implements ParticleEffect
 {
@@ -37,8 +38,10 @@ public record ShatterForgeRuneParticleEffect(Axis axis) implements ParticleEffec
         public ShatterForgeRuneParticleEffect read(ParticleType<ShatterForgeRuneParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
         {
             stringReader.expect(' ');
-            var direction = AxisArgumentType.instance.parse(stringReader);
-            return new ShatterForgeRuneParticleEffect(direction);
+            var axis = Axis.fromName(stringReader.readUnquotedString());
+            if (axis == null)
+                throw new SimpleCommandExceptionType(Text.literal("Invalid axis")).createWithContext(stringReader);
+            return new ShatterForgeRuneParticleEffect(axis);
         }
 
         @Override
