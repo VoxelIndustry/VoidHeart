@@ -111,8 +111,9 @@ public class ExperienceSkullRender implements BlockEntityRenderer<ExperienceSkul
         matrices.translate(0, Interpolators.QUAD_BOTH.apply(state.translateDelta) * 0.5, 0);
         matrices.scale(1.25F / 64F, 1.25F / 64F, 1.25F / 64F);
 
+        // Since 26.1 the camera orientation faces the other way, only the Y axis needs flipping for text and sprites
         matrices.rotate(camera.orientation);
-        matrices.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
+        matrices.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_X));
 
         var levelText = Component.literal(String.valueOf(state.level)).getVisualOrderText();
         var levelTextSize = Minecraft.getInstance().font.width(levelText) / 2F;

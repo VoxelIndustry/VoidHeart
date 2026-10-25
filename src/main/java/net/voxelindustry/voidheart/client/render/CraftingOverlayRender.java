@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.network.chat.Component;
 import net.voxelindustry.voidheart.client.render.state.VoidAltarRenderState;
+import net.voxelindustry.voidheart.client.util.MathUtil;
 
 public class CraftingOverlayRender
 {
@@ -21,6 +22,7 @@ public class CraftingOverlayRender
             poseStack.translate(0.5, 1.85, 0.5);
             poseStack.scale(1 / 64F, 1 / 64F, 1 / 64F);
             poseStack.rotate(camera.orientation);
+            poseStack.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Y));
             collector.submitText(poseStack, 6, -6, Component.literal(String.valueOf(state.outputCount)).getVisualOrderText(),
                     true, DisplayMode.NORMAL, state.lightCoords, 0xFFFFFFFF, 0, 0);
             poseStack.popPose();
@@ -29,7 +31,9 @@ public class CraftingOverlayRender
         poseStack.pushPose();
         poseStack.translate(0.5, 1.75, 0.5);
         poseStack.scale(2 / 16F, 2 / 16F, 2 / 16F);
+        // Since 26.1 the camera orientation faces the other way than the old entity dispatcher rotation
         poseStack.rotate(camera.orientation);
+        poseStack.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Y));
 
         if (!state.output.isEmpty())
         {

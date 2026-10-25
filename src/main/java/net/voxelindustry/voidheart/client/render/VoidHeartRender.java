@@ -2,7 +2,6 @@ package net.voxelindustry.voidheart.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font.DisplayMode;
 import net.minecraft.client.renderer.PlayerSkinRenderCache;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -38,6 +37,12 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile, VoidH
 {
     private static final Identifier PORTAL_ICONS = Identifier.fromNamespaceAndPath(MODID, "textures/hud/portal_icons.png");
     private static final int        FULL_BRIGHT  = 15728880;
+
+    // Owner overlay layout, the two flexion slot columns are as wide as the head and its bottom lines up with the hearts
+    private static final int OWNER_HEAD_X    = -40;
+    private static final int OWNER_HEAD_Y    = -4;
+    private static final int OWNER_HEAD_SIZE = 18;
+    private static final int OWNER_TEXT_X    = OWNER_HEAD_X + OWNER_HEAD_SIZE + 2;
 
     public static class VoidHeartRenderState extends BlockEntityRenderState
     {
@@ -136,22 +141,23 @@ public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile, VoidH
         matrices.translate(0.5, 1.3, 0.5);
         matrices.scale(1.25F / 64F, 1.25F / 64F, 1.25F / 64F);
 
+        // Since 26.1 the camera orientation faces the other way, only the Y axis needs flipping for text and sprites
         matrices.rotate(camera.orientation);
-        matrices.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Z));
+        matrices.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_X));
 
+        // The head sits in the corner, name and hearts start on its right and the flexion slots stack below it
         var name = Component.literal(state.ownerName).getVisualOrderText();
-        var nameSize = Minecraft.getInstance().font.width(name) / 2F;
-        collector.submitText(matrices, -nameSize + 1, 1, name, false, DisplayMode.NORMAL, FULL_BRIGHT, 0xFF3C3C3C, 0, 0);
-        collector.submitText(matrices, -nameSize, 0, name, false, DisplayMode.SEE_THROUGH, FULL_BRIGHT, 0xFFFFFFFF, 0, 0);
+        collector.submitText(matrices, OWNER_TEXT_X + 1, -1, name, false, DisplayMode.NORMAL, FULL_BRIGHT, 0xFF3C3C3C, 0, 0);
+        collector.submitText(matrices, OWNER_TEXT_X, -2, name, false, DisplayMode.SEE_THROUGH, FULL_BRIGHT, 0xFFFFFFFF, 0, 0);
 
         if (state.ownerSkin != null)
-            collector.submitCustomGeometry(matrices, state.ownerSkin, (pose, buffer) -> renderHeadSkin(pose, buffer, -16 - nameSize - 8, -2, 0, 20, 20));
+            collector.submitCustomGeometry(matrices, state.ownerSkin, (pose, buffer) -> renderHeadSkin(pose, buffer, OWNER_HEAD_X, OWNER_HEAD_Y, 0, OWNER_HEAD_SIZE, OWNER_HEAD_SIZE));
 
         if (state.ownerPresent)
-            collector.submitCustomGeometry(matrices, GuiSprites.renderType(), (pose, buffer) -> renderHearts(state.health, state.maxHealth, pose, buffer, -18, 8, 0, 6, 6));
+            collector.submitCustomGeometry(matrices, GuiSprites.renderType(), (pose, buffer) -> renderHearts(state.health, state.maxHealth, pose, buffer, OWNER_TEXT_X, 8, 0, 6, 6));
 
         if (state.hasHeartData)
-            collector.submitCustomGeometry(matrices, RenderTypes.entityTranslucent(PORTAL_ICONS), (pose, buffer) -> renderHeartData(state.currentFlexion, state.maxFlexion, pose, buffer, -50, 20, 0));
+            collector.submitCustomGeometry(matrices, RenderTypes.entityTranslucent(PORTAL_ICONS), (pose, buffer) -> renderHeartData(state.currentFlexion, state.maxFlexion, pose, buffer, OWNER_HEAD_X, OWNER_HEAD_Y + OWNER_HEAD_SIZE + 2, 0));
 
         matrices.popPose();
     }
