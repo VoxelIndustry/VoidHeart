@@ -2,9 +2,9 @@ package net.voxelindustry.voidheart.common.content.essence;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.resources.ResourceKey;
 
 public class EssenceStorage implements IEssenceStorage
 {
@@ -14,7 +14,7 @@ public class EssenceStorage implements IEssenceStorage
                             .forGetter(EssenceStorage::maximumAmount),
                     Codec.INT.fieldOf("amount")
                             .forGetter(EssenceStorage::amount),
-                    RegistryKey.createCodec(EssenceRegistry.ESSENCE_REGISTRY_TYPE).fieldOf("essenceType").forGetter(storage -> EssenceRegistry.ESSENCE_REGISTRY.getKey(storage.type).get())
+                    ResourceKey.codec(EssenceRegistry.ESSENCE_REGISTRY_TYPE).fieldOf("essenceType").forGetter(storage -> EssenceRegistry.ESSENCE_REGISTRY.getResourceKey(storage.type).get())
             ).apply(instance, (maximumAmount, amount, essenceTypeKey) ->
                     new EssenceStorage(EssenceRegistry.ESSENCE_REGISTRY.get(essenceTypeKey), maximumAmount, amount)));
 
@@ -103,7 +103,7 @@ public class EssenceStorage implements IEssenceStorage
                 '}';
     }
 
-    public static EssenceStorage fromNbt(NbtCompound compound)
+    public static EssenceStorage fromNbt(CompoundTag compound)
     {
         return CODEC.decode(NbtOps.INSTANCE, compound).result().get().getFirst();
     }

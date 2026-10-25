@@ -1,42 +1,42 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import org.jetbrains.annotations.Nullable;
 
-public class RavenousStorageMatrixBlock extends Block implements BlockEntityProvider
+public class RavenousStorageMatrixBlock extends Block implements EntityBlock
 {
-    public static final EnumProperty<RavenousStorageMatrixPart> PART = EnumProperty.of("part", RavenousStorageMatrixPart.class);
+    public static final EnumProperty<RavenousStorageMatrixPart> PART = EnumProperty.create("part", RavenousStorageMatrixPart.class);
 
-    public RavenousStorageMatrixBlock(Settings settings)
+    public RavenousStorageMatrixBlock(Properties settings)
     {
         super(settings);
 
-        this.setDefaultState(getStateManager().getDefaultState()
-                .with(PART, RavenousStorageMatrixPart.BASE)
+        this.registerDefaultState(getStateDefinition().any()
+                .setValue(PART, RavenousStorageMatrixPart.BASE)
         );
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
         builder.add(PART);
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new RavenousStorageTile(pos, state);
     }
 
-    public enum RavenousStorageMatrixPart implements StringIdentifiable
+    public enum RavenousStorageMatrixPart implements StringRepresentable
     {
         BASE("base"),
         PILLAR_TOP("pillar_top"),
@@ -58,7 +58,7 @@ public class RavenousStorageMatrixBlock extends Block implements BlockEntityProv
             return this.name;
         }
 
-        public String asString()
+        public String getSerializedName()
         {
             return this.name;
         }

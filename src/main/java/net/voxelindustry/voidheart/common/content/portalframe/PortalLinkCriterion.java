@@ -1,46 +1,46 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
 import com.google.gson.JsonObject;
-import net.minecraft.advancement.criterion.AbstractCriterion;
-import net.minecraft.advancement.criterion.AbstractCriterionConditions;
-import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
-import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer;
-import net.minecraft.predicate.entity.LootContextPredicate;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
+import net.minecraft.advancements.critereon.ContextAwarePredicate;
+import net.minecraft.advancements.critereon.DeserializationContext;
+import net.minecraft.advancements.critereon.SerializationContext;
+import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterion.Conditions;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class PortalLinkCriterion extends AbstractCriterion<Conditions>
+public class PortalLinkCriterion extends SimpleCriterionTrigger<Conditions>
 {
-    public static final Identifier ID = new Identifier(MODID, "portal_linked");
+    public static final ResourceLocation ID = new ResourceLocation(MODID, "portal_linked");
 
-    protected void trigger(ServerPlayerEntity player)
+    protected void trigger(ServerPlayer player)
     {
         trigger(player, Conditions::requirementsMet);
     }
 
     @Override
-    protected Conditions conditionsFromJson(JsonObject obj, LootContextPredicate playerPredicate, AdvancementEntityPredicateDeserializer predicateDeserializer)
+    protected Conditions createInstance(JsonObject obj, ContextAwarePredicate playerPredicate, DeserializationContext predicateDeserializer)
     {
         return new Conditions();
     }
 
     @Override
-    public Identifier getId()
+    public ResourceLocation getId()
     {
         return ID;
     }
 
-    public static class Conditions extends AbstractCriterionConditions
+    public static class Conditions extends AbstractCriterionTriggerInstance
     {
         public Conditions()
         {
-            super(ID, LootContextPredicate.EMPTY);
+            super(ID, ContextAwarePredicate.ANY);
         }
 
-        public JsonObject toJson(AdvancementEntityPredicateSerializer predicateSerializer)
+        public JsonObject serializeToJson(SerializationContext predicateSerializer)
         {
             return new JsonObject();
         }

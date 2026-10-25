@@ -1,123 +1,124 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
-import static net.minecraft.block.BlockWithEntity.checkType;
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 
-public class VoidAltarBlock extends Block implements BlockEntityProvider
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+public class VoidAltarBlock extends Block implements EntityBlock
 {
-    private static final VoxelShape SHAPE = VoxelShapes.union(
-            createCuboidShape(0, 0, 0, 16, 4, 16),
-            createCuboidShape(1, 4, 1, 15, 8, 15),
-            createCuboidShape(0, 8, 0, 16, 14, 16),
-            createCuboidShape(5, 14, 5, 11, 16, 11)
+    private static final VoxelShape SHAPE = Shapes.or(
+            box(0, 0, 0, 16, 4, 16),
+            box(1, 4, 1, 15, 8, 15),
+            box(0, 8, 0, 16, 14, 16),
+            box(5, 14, 5, 11, 16, 11)
     );
 
     public VoidAltarBlock()
     {
-        super(Settings.create()
-                .mapColor(MapColor.BLACK)
+        super(Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
                 .strength(3F)
-                .sounds(BlockSoundGroup.STONE)
-                .luminance(state -> state.get(Properties.LIT) ? 11 : 0));
+                .sound(SoundType.STONE)
+                .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 11 : 0));
 
-        setDefaultState(getStateManager().getDefaultState()
-                .with(Properties.LIT, false));
+        registerDefaultState(getStateDefinition().any()
+                .setValue(BlockStateProperties.LIT, false));
     }
 
     @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context)
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
     {
         return SHAPE;
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         VoidAltarTile altar = (VoidAltarTile) world.getBlockEntity(pos);
 
         if (altar == null)
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
 
         if (altar.getStack().isEmpty())
         {
-            var stackInHand = player.getStackInHand(hand);
+            var stackInHand = player.getItemInHand(hand);
             if(!stackInHand.isEmpty())
             {
                 altar.setStack(player, stackInHand.copyWithCount(1));
 
                 if (!player.isCreative())
-                    stackInHand.decrement(1);
+                    stackInHand.shrink(1);
             }
-            else if(world.isClient())
+            else if(world.isClientSide())
                 VoidAltarRender.lastTouchedMillis = System.currentTimeMillis();
         }
         else
         {
-            player.getInventory().offerOrDrop(altar.getStack());
+            player.getInventory().placeItemBackInInventory(altar.getStack());
             altar.setStack(player, ItemStack.EMPTY);
         }
 
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved)
+    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved)
     {
-        if (!state.isOf(newState.getBlock()))
+        if (!state.is(newState.getBlock()))
         {
             VoidAltarTile tile = (VoidAltarTile) world.getBlockEntity(pos);
             if (tile != null)
             {
                 tile.removeItself();
-                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
+                Containers.dropItemStack(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
                 tile.dropAteItems();
             }
         }
-        super.onStateReplaced(state, world, pos, newState, moved);
+        super.onRemove(state, world, pos, newState, moved);
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(Properties.LIT);
+        builder.add(BlockStateProperties.LIT);
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new VoidAltarTile(pos, state);
     }
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
     {
-        return checkType(type, VoidHeartTiles.VOID_ALTAR, VoidAltarTile::tick);
+        return createTickerHelper(type, VoidHeartTiles.VOID_ALTAR, VoidAltarTile::tick);
     }
 }

@@ -2,9 +2,9 @@ package net.voxelindustry.voidheart.common.world;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.world.gen.feature.FeatureConfig;
+import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
 
-public record VoidMonolithFeatureConfig(int minHeight, int maxHeight) implements FeatureConfig
+public record VoidMonolithFeatureConfig(int minHeight, int maxHeight) implements FeatureConfiguration
 {
     public static final Codec<VoidMonolithFeatureConfig> CODEC = RecordCodecBuilder.create((instance) ->
             instance.group(

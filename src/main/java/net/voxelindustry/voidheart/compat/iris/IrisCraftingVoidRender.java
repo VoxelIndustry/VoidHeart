@@ -1,12 +1,12 @@
 package net.voxelindustry.voidheart.compat.iris;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.coderbot.iris.uniforms.SystemTimeUniforms;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.entity.EndPortalBlockEntityRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Direction;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.blockentity.TheEndPortalRenderer;
+import net.minecraft.core.Direction;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
@@ -16,13 +16,13 @@ public class IrisCraftingVoidRender
     private static final float GREEN = 0.15f;
     private static final float BLUE = 0.2f;
 
-    public static void irisEndPortalRender(MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, int overlay, int light)
+    public static void irisEndPortalRender(PoseStack matrixStack, MultiBufferSource vertexConsumers, int overlay, int light)
     {
         var vertexConsumer =
-                vertexConsumers.getBuffer(RenderLayer.getEntitySolid(EndPortalBlockEntityRenderer.PORTAL_TEXTURE));
+                vertexConsumers.getBuffer(RenderType.entitySolid(TheEndPortalRenderer.END_PORTAL_LOCATION));
 
-        var pose = matrixStack.peek().getPositionMatrix();
-        var normal = matrixStack.peek().getNormalMatrix();
+        var pose = matrixStack.last().pose();
+        var normal = matrixStack.last().normal();
 
         var progress = (SystemTimeUniforms.TIMER.getFrameTimeCounter() * 0.01f) % 1f;
         var topHeight = 6 / 16F;
@@ -72,24 +72,24 @@ public class IrisCraftingVoidRender
                              float x3, float y3, float z3,
                              float x4, float y4, float z4)
     {
-        float nx = direction.getOffsetX();
-        float ny = direction.getOffsetY();
-        float nz = direction.getOffsetZ();
+        float nx = direction.getStepX();
+        float ny = direction.getStepY();
+        float nz = direction.getStepZ();
 
         vertexConsumer.vertex(pose, x1, y1, z1).color(RED, GREEN, BLUE, 1.0f)
-                .texture(0.0F + progress, 0.0F + progress).overlay(overlay).light(light)
-                .normal(normal, nx, ny, nz).next();
+                .uv(0.0F + progress, 0.0F + progress).overlayCoords(overlay).uv2(light)
+                .normal(normal, nx, ny, nz).endVertex();
 
         vertexConsumer.vertex(pose, x2, y2, z2).color(RED, GREEN, BLUE, 1.0f)
-                .texture(0.0F + progress, 0.2F + progress).overlay(overlay).light(light)
-                .normal(normal, nx, ny, nz).next();
+                .uv(0.0F + progress, 0.2F + progress).overlayCoords(overlay).uv2(light)
+                .normal(normal, nx, ny, nz).endVertex();
 
         vertexConsumer.vertex(pose, x3, y3, z3).color(RED, GREEN, BLUE, 1.0f)
-                .texture(0.2F + progress, 0.2F + progress).overlay(overlay).light(light)
-                .normal(normal, nx, ny, nz).next();
+                .uv(0.2F + progress, 0.2F + progress).overlayCoords(overlay).uv2(light)
+                .normal(normal, nx, ny, nz).endVertex();
 
         vertexConsumer.vertex(pose, x4, y4, z4).color(RED, GREEN, BLUE, 1.0f)
-                .texture(0.2F + progress, 0.0F + progress).overlay(overlay).light(light)
-                .normal(normal, nx, ny, nz).next();
+                .uv(0.2F + progress, 0.0F + progress).overlayCoords(overlay).uv2(light)
+                .normal(normal, nx, ny, nz).endVertex();
     }
 }

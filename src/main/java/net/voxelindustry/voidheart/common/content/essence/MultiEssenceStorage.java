@@ -2,7 +2,7 @@ package net.voxelindustry.voidheart.common.content.essence;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.resources.ResourceKey;
 import net.voxelindustry.voidheart.common.util.CodecUtil;
 
 import java.util.Arrays;
@@ -20,7 +20,7 @@ public class MultiEssenceStorage implements IEssenceStorage
                     CodecUtil.arrayInt()
                             .fieldOf("amounts")
                             .forGetter(MultiEssenceStorage::amounts),
-                    CodecUtil.<RegistryKey<EssenceType>>array(RegistryKey.createCodec(EssenceRegistry.ESSENCE_REGISTRY_TYPE), RegistryKey.class)
+                    CodecUtil.<ResourceKey<EssenceType>>array(ResourceKey.codec(EssenceRegistry.ESSENCE_REGISTRY_TYPE), ResourceKey.class)
                             .fieldOf("types")
                             .forGetter(MultiEssenceStorage::typeKeys)
             ).apply(instance, (maximumAmount, storageCount, amounts, types) ->
@@ -102,9 +102,9 @@ public class MultiEssenceStorage implements IEssenceStorage
     }
 
     @SuppressWarnings("unchecked")
-    private RegistryKey<EssenceType>[] typeKeys()
+    private ResourceKey<EssenceType>[] typeKeys()
     {
-        return Arrays.stream(types).map(type -> EssenceRegistry.ESSENCE_REGISTRY.getKey(type).get()).toArray(RegistryKey[]::new);
+        return Arrays.stream(types).map(type -> EssenceRegistry.ESSENCE_REGISTRY.getResourceKey(type).get()).toArray(ResourceKey[]::new);
     }
 
     public int maximumAmount()

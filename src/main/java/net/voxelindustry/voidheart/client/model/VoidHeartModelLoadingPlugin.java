@@ -1,8 +1,8 @@
 package net.voxelindustry.voidheart.client.model;
 
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
-import net.minecraft.client.render.model.UnbakedModel;
-import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.client.resources.model.UnbakedModel;
 import net.voxelindustry.voidheart.client.model.conduit.ConduitUnbakedModel;
 import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithUnbakedModel;
 import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameCoreUnbakedModel;
@@ -16,12 +16,12 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartModelLoadingPlugin implements ModelLoadingPlugin
 {
-    public final ModelIdentifier PORTAL_FRAME = new ModelIdentifier(MODID, "portal_frame", "");
-    public final ModelIdentifier PORTAL_FRAME_CORE = new ModelIdentifier(MODID, "portal_frame_core", "");
-    public final ModelIdentifier VOID_MONOLITH = new ModelIdentifier(MODID, "void_monolith", "");
-    public final ModelIdentifier CONDUIT = new ModelIdentifier(MODID, "void_conduit", "");
+    public final ModelResourceLocation PORTAL_FRAME = new ModelResourceLocation(MODID, "portal_frame", "");
+    public final ModelResourceLocation PORTAL_FRAME_CORE = new ModelResourceLocation(MODID, "portal_frame_core", "");
+    public final ModelResourceLocation VOID_MONOLITH = new ModelResourceLocation(MODID, "void_monolith", "");
+    public final ModelResourceLocation CONDUIT = new ModelResourceLocation(MODID, "void_conduit", "");
 
-    private final Map<ModelIdentifier, Function<UnbakedModel, UnbakedModel>> modelMap = new HashMap<>();
+    private final Map<ModelResourceLocation, Function<UnbakedModel, UnbakedModel>> modelMap = new HashMap<>();
 
     @Override
     public void onInitializeModelLoader(Context pluginContext)
@@ -36,7 +36,7 @@ public class VoidHeartModelLoadingPlugin implements ModelLoadingPlugin
             if (!context.id().getNamespace().equals(MODID))
                 return original;
 
-            if (context.id() instanceof ModelIdentifier modelIdentifier)
+            if (context.id() instanceof ModelResourceLocation modelIdentifier)
             {
                 if (modelIdentifier.getVariant().equals("inventory"))
                     return original;

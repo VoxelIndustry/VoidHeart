@@ -9,9 +9,9 @@ import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.entry.EntryStack;
 import me.shedaniel.rei.api.common.util.EntryStacks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     public static final CategoryIdentifier<AltarRecipeDisplay> IDENTIFIER = CategoryIdentifier.of(MODID, "altar_crafting");
 
     @Override
-    public Identifier getIdentifier()
+    public ResourceLocation getIdentifier()
     {
         return IDENTIFIER.getIdentifier();
     }
@@ -37,9 +37,9 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     }
 
     @Override
-    public Text getTitle()
+    public Component getTitle()
     {
-        return Text.translatable(IDENTIFIER.getIdentifier().toString().replace(":", "."));
+        return Component.translatable(IDENTIFIER.getIdentifier().toString().replace(":", "."));
     }
 
     @Override

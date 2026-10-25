@@ -1,20 +1,20 @@
 package net.voxelindustry.voidheart.common.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContextParameterSet;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.List;
@@ -26,67 +26,67 @@ public class VoidMonolithBlock extends Block
 {
     public VoidMonolithBlock()
     {
-        super(Settings.create()
-                .mapColor(MapColor.BLACK)
-                .instrument(Instrument.BASEDRUM)
-                .requiresTool()
+        super(Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
                 .strength(3F)
-                .sounds(BlockSoundGroup.STONE));
+                .sound(SoundType.STONE));
 
-        setDefaultState(getStateManager().getDefaultState()
-                .with(UP, false)
-                .with(DOWN, false)
-                .with(BROKEN, false)
-                .with(Properties.LIT, false));
+        registerDefaultState(getStateDefinition().any()
+                .setValue(UP, false)
+                .setValue(DOWN, false)
+                .setValue(BROKEN, false)
+                .setValue(BlockStateProperties.LIT, false));
     }
 
     @Override
-    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved)
+    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved)
     {
-        if (!state.isOf(newState.getBlock()) && state.get(BROKEN))
+        if (!state.is(newState.getBlock()) && state.getValue(BROKEN))
         {
             if (world.getRandom().nextInt(5) == 0)
-                world.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.ENTITY_ENDERMAN_SCREAM, SoundCategory.BLOCKS, 1, 1);
+                world.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.ENDERMAN_SCREAM, SoundSource.BLOCKS, 1, 1);
         }
-        super.onStateReplaced(state, world, pos, newState, moved);
+        super.onRemove(state, world, pos, newState, moved);
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder)
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder)
     {
-        if (state.get(BROKEN))
+        if (state.getValue(BROKEN))
             return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE));
         return singletonList(new ItemStack(VoidHeartBlocks.VOID_MONOLITH));
     }
 
     @Override
-    public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom)
+    public BlockState updateShape(BlockState state, Direction direction, BlockState newState, LevelAccessor world, BlockPos pos, BlockPos posFrom)
     {
         switch (direction)
         {
             case DOWN ->
             {
-                Boolean down = state.get(DOWN);
-                if (down && !newState.isOf(VoidHeartBlocks.VOID_MONOLITH))
-                    state = state.with(DOWN, false);
-                else if (!down && newState.isOf(VoidHeartBlocks.VOID_MONOLITH))
-                    state = state.with(DOWN, true);
+                Boolean down = state.getValue(DOWN);
+                if (down && !newState.is(VoidHeartBlocks.VOID_MONOLITH))
+                    state = state.setValue(DOWN, false);
+                else if (!down && newState.is(VoidHeartBlocks.VOID_MONOLITH))
+                    state = state.setValue(DOWN, true);
             }
             case UP ->
             {
-                Boolean up = state.get(UP);
-                if (up && !newState.isOf(VoidHeartBlocks.VOID_MONOLITH))
-                    state = state.with(UP, false);
-                else if (!up && newState.isOf(VoidHeartBlocks.VOID_MONOLITH))
-                    state = state.with(UP, true);
+                Boolean up = state.getValue(UP);
+                if (up && !newState.is(VoidHeartBlocks.VOID_MONOLITH))
+                    state = state.setValue(UP, false);
+                else if (!up && newState.is(VoidHeartBlocks.VOID_MONOLITH))
+                    state = state.setValue(UP, true);
             }
         }
         return state;
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(UP, DOWN, Properties.LIT, BROKEN);
+        builder.add(UP, DOWN, BlockStateProperties.LIT, BROKEN);
     }
 }

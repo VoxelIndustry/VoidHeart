@@ -7,11 +7,11 @@ import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.client.model.FabricModelPredicateProviderRegistry;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.model.conduit.ConduitSpriteManager;
 import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithSpriteManager;
@@ -40,18 +40,18 @@ public class VoidHeartClient implements ClientModInitializer
     {
         ModelLoadingPlugin.register(new VoidHeartModelLoadingPlugin());
 
-        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PORTAL_INTERIOR, RenderLayer.getTranslucent());
-        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.VOID_DOOR, RenderLayer.getCutout());
-        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PERMEABLE_BARRIER, RenderLayer.getCutout());
-        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.EXPERIENCE_SKULL, RenderLayer.getCutout());
+        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PORTAL_INTERIOR, RenderType.translucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.VOID_DOOR, RenderType.cutout());
+        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.PERMEABLE_BARRIER, RenderType.cutout());
+        BlockRenderLayerMap.INSTANCE.putBlock(VoidHeartBlocks.EXPERIENCE_SKULL, RenderType.cutout());
 
-        BlockEntityRendererFactories.register(VoidHeartTiles.VOID_PILLAR, ctx -> new VoidPillarRender());
-        BlockEntityRendererFactories.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
-        BlockEntityRendererFactories.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
-        BlockEntityRendererFactories.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
-        BlockEntityRendererFactories.register(VoidHeartTiles.EYE_BOTTLE, ctx -> new EyeBottleRender());
-        BlockEntityRendererFactories.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new ShatterForgeRender());
-        BlockEntityRendererFactories.register(VoidHeartTiles.RAVENOUS_COLLECTOR, ctx -> new RavenousCollectorRender());
+        BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new VoidPillarRender());
+        BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, ctx -> new VoidAltarRender());
+        BlockEntityRenderers.register(VoidHeartTiles.VOID_HEART, ctx -> new VoidHeartRender());
+        BlockEntityRenderers.register(VoidHeartTiles.EXPERIENCE_SKULL, ctx -> new ExperienceSkullRender());
+        BlockEntityRenderers.register(VoidHeartTiles.EYE_BOTTLE, ctx -> new EyeBottleRender());
+        BlockEntityRenderers.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new ShatterForgeRender());
+        BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, ctx -> new RavenousCollectorRender());
 
         ParticleFactoryRegistry.getInstance().register(
                 ALTAR_VOID_PARTICLE,
@@ -80,19 +80,19 @@ public class VoidHeartClient implements ClientModInitializer
 
         FabricModelPredicateProviderRegistry.register(
                 VoidHeartBlocks.VOID_LAMP.asItem(),
-                new Identifier(VoidHeart.MODID, "corruption"),
-                ((stack, world, entity, provider) -> stack.hasNbt() ? stack.getNbt().getInt("corruption") : 0));
+                new ResourceLocation(VoidHeart.MODID, "corruption"),
+                ((stack, world, entity, provider) -> stack.hasTag() ? stack.getTag().getInt("corruption") : 0));
 
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener()
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener()
         {
             @Override
-            public Identifier getFabricId()
+            public ResourceLocation getFabricId()
             {
-                return new Identifier(MODID, "sprite_loader");
+                return new ResourceLocation(MODID, "sprite_loader");
             }
 
             @Override
-            public void reload(ResourceManager manager)
+            public void onResourceManagerReload(ResourceManager manager)
             {
                 VoidMonolithSpriteManager.loadSprites();
                 PortalFrameVeinSpriteManager.loadSprites();

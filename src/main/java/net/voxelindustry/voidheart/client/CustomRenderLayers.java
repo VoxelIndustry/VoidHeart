@@ -1,33 +1,32 @@
 package net.voxelindustry.voidheart.client;
 
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayer.MultiPhaseParameters;
-import net.minecraft.client.render.RenderPhase;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
-
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.function.Function;
+import net.minecraft.Util;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderType.CompositeState;
+import net.minecraft.resources.ResourceLocation;
 
 public class CustomRenderLayers
 {
-    private static final Function<Identifier, RenderLayer> COLOR_TEXTURE_TRANSLUCENT = Util.memoize(identifier ->
-            RenderLayer.of("color_translucent",
-                    VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL,
-                    VertexFormat.DrawMode.QUADS,
+    private static final Function<ResourceLocation, RenderType> COLOR_TEXTURE_TRANSLUCENT = Util.memoize(identifier ->
+            RenderType.create("color_translucent",
+                    DefaultVertexFormat.BLOCK,
+                    VertexFormat.Mode.QUADS,
                     0x200000,
                     true,
                     true,
-                    MultiPhaseParameters.builder()
-                            .lightmap(RenderPhase.ENABLE_LIGHTMAP)
-                            .program(RenderPhase.TRANSLUCENT_PROGRAM)
-                            .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
-                            .texture(new RenderPhase.Texture(identifier, false, false))
-                            .build(true)
+                    CompositeState.builder()
+                            .setLightmapState(RenderStateShard.LIGHTMAP)
+                            .setShaderState(RenderStateShard.RENDERTYPE_TRANSLUCENT_SHADER)
+                            .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                            .setTextureState(new RenderStateShard.TextureStateShard(identifier, false, false))
+                            .createCompositeState(true)
             ));
 
-    public static RenderLayer getColorTextureTranslucent(Identifier texture)
+    public static RenderType getColorTextureTranslucent(ResourceLocation texture)
     {
         return COLOR_TEXTURE_TRANSLUCENT.apply(texture);
     }

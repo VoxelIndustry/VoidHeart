@@ -5,14 +5,14 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.FriendlyByteBuf;
 import net.voxelindustry.voidheart.VoidHeart;
 
 @RequiredArgsConstructor
-public class AltarVoidParticleEffect implements ParticleEffect
+public class AltarVoidParticleEffect implements ParticleOptions
 {
     @Getter
     private final double speed;
@@ -24,21 +24,21 @@ public class AltarVoidParticleEffect implements ParticleEffect
     }
 
     @Override
-    public void write(PacketByteBuf buf)
+    public void writeToNetwork(FriendlyByteBuf buf)
     {
         buf.writeDouble(speed);
     }
 
     @Override
-    public String asString()
+    public String writeToString()
     {
-        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
+        return BuiltInRegistries.PARTICLE_TYPE.getKey(getType()) + " " + (DoubleArgumentType.doubleArg(0));
     }
 
-    public static final Factory<AltarVoidParticleEffect> PARAMETERS_FACTORY = new Factory<>()
+    public static final Deserializer<AltarVoidParticleEffect> PARAMETERS_FACTORY = new Deserializer<>()
     {
         @Override
-        public AltarVoidParticleEffect read(ParticleType<AltarVoidParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
+        public AltarVoidParticleEffect fromCommand(ParticleType<AltarVoidParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
         {
             stringReader.expect(' ');
             double speed = DoubleArgumentType.doubleArg(0).parse(stringReader);
@@ -46,7 +46,7 @@ public class AltarVoidParticleEffect implements ParticleEffect
         }
 
         @Override
-        public AltarVoidParticleEffect read(ParticleType<AltarVoidParticleEffect> particleType, PacketByteBuf packetByteBuf)
+        public AltarVoidParticleEffect fromNetwork(ParticleType<AltarVoidParticleEffect> particleType, FriendlyByteBuf packetByteBuf)
         {
             return new AltarVoidParticleEffect(packetByteBuf.readDouble());
         }

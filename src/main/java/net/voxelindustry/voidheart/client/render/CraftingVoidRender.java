@@ -1,12 +1,10 @@
 package net.voxelindustry.voidheart.client.render;
 
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
 import net.voxelindustry.voidheart.client.util.MathUtil;
@@ -19,23 +17,26 @@ import java.util.Random;
 import static java.lang.Math.*;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 public class CraftingVoidRender
 {
     private static final Random RANDOM = new Random(31100L);
 
-    private static final Identifier ALTAR_OVERLAY_TEXTURE = new Identifier(MODID, "textures/block/altar_overlay_cube.png");
+    private static final ResourceLocation ALTAR_OVERLAY_TEXTURE = new ResourceLocation(MODID, "textures/block/altar_overlay_cube.png");
 
-    static void renderVoidCube(VoidAltarTile altar, BlockEntityRenderDispatcher dispatcher, float worldTimeInterp, MatrixStack matrices, VertexConsumerProvider vertexConsumers)
+    static void renderVoidCube(VoidAltarTile altar, BlockEntityRenderDispatcher dispatcher, float worldTimeInterp, PoseStack matrices, MultiBufferSource vertexConsumers)
     {
         RANDOM.setSeed(31100L);
 
-        matrices.push();
+        matrices.pushPose();
 
         if (altar.getCoolProgress() > 0)
             matricesForCooling(altar, worldTimeInterp, matrices);
         else
             matricesForWarmingAndCrafting(altar, worldTimeInterp, matrices);
-        double playerDistance = altar.getPos().getSquaredDistance(dispatcher.camera.getPos());
+        double playerDistance = altar.getBlockPos().distToCenterSqr(dispatcher.camera.getPosition());
         int draws = getDrawFromPlayerDistance(playerDistance);
 
         float size = 12 / 16F;
@@ -44,42 +45,42 @@ public class CraftingVoidRender
         renderOutlineCubeFaces(matrices, vertexConsumers.getBuffer(CustomRenderLayers.getColorTextureTranslucent(ALTAR_OVERLAY_TEXTURE)), -size / 2 * outlineThickness, -size / 2 * outlineThickness, -size / 2 * outlineThickness, size * outlineThickness, size * outlineThickness, size * outlineThickness);
 
         if (IrisCompat.useIris())
-            IrisCraftingVoidRender.irisEndPortalRender(matrices, vertexConsumers, OverlayTexture.DEFAULT_UV, 240);
+            IrisCraftingVoidRender.irisEndPortalRender(matrices, vertexConsumers, OverlayTexture.NO_OVERLAY, 240);
         else
         {
-            renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 0.15F);
+            renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderType.endPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 0.15F);
 
             for (int l = 1; l < draws; ++l)
-                renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderLayer.getEndPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 2.0F / (float) (18 - l));
+                renderVoidCubeFaces(matrices, vertexConsumers.getBuffer(RenderType.endPortal()), -size / 2, -size / 2, -size / 2, size, size, size, 2.0F / (float) (18 - l));
         }
 
-        matrices.pop();
+        matrices.popPose();
     }
 
-    private static void matricesForCooling(VoidAltarTile altar, float worldTimeInterp, MatrixStack matrices)
+    private static void matricesForCooling(VoidAltarTile altar, float worldTimeInterp, PoseStack matrices)
     {
         float coolingDelta = 1 - altar.getCoolProgress() / (float) VoidAltarTile.COOLING_TIME;
         float angle = 360 * (worldTimeInterp / 25);
 
         matrices.translate(0.5, 3, 0.5);
 
-        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Y));
-        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_X));
-        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Z));
+        matrices.mulPose(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Y));
+        matrices.mulPose(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_X));
+        matrices.mulPose(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Z));
 
         float scale = 1 - Interpolators.SINE_BOTH.apply(coolingDelta);
         matrices.scale(scale, scale, scale);
     }
 
-    private static void matricesForWarmingAndCrafting(VoidAltarTile altar, float worldTimeInterp, MatrixStack matrices)
+    private static void matricesForWarmingAndCrafting(VoidAltarTile altar, float worldTimeInterp, PoseStack matrices)
     {
         matrices.translate(0.5, 3, 0.5);
 
         float angle = 360 * (worldTimeInterp / 100);
 
-        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Y));
-        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_X));
-        matrices.multiply(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Z));
+        matrices.mulPose(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Y));
+        matrices.mulPose(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_X));
+        matrices.mulPose(MathUtil.quatFromAngleDegrees(angle, MathUtil.NEGATIVE_Z));
 
         float scale;
         if (altar.getWarmProgress() < VoidAltarTile.WARMING_TIME)
@@ -93,93 +94,93 @@ public class CraftingVoidRender
         matrices.scale(scale, scale, scale);
     }
 
-    private static void renderVoidCubeFaces(MatrixStack matrixStack, VertexConsumer buffer, float posX, float posY, float posZ, float width, float height, float length,
+    private static void renderVoidCubeFaces(PoseStack matrixStack, VertexConsumer buffer, float posX, float posY, float posZ, float width, float height, float length,
                                             float colorAlteration)
     {
         float red = (RANDOM.nextFloat() * 0.5F + 0.1F) * colorAlteration;
         float green = (RANDOM.nextFloat() * 0.5F + 0.4F) * colorAlteration;
         float blue = (RANDOM.nextFloat() * 0.5F + 0.5F) * colorAlteration;
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ)
                 .color(red, green, blue, 1)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ)
                 .color(red, green, blue, 1)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ)
                 .color(red, green, blue, 1)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ)
                 .color(red, green, blue, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ + length)
                 .color(red, green, blue, 1)
-                .next();
+                .endVertex();
     }
 
-    private static void renderOutlineCubeFaces(MatrixStack matrixStack, VertexConsumer buffer, float posX, float posY, float posZ, float width, float height, float length)
+    private static void renderOutlineCubeFaces(PoseStack matrixStack, VertexConsumer buffer, float posX, float posY, float posZ, float width, float height, float length)
     {
         float red = 86 / 255F;
         float green = 223 / 255F;
@@ -188,155 +189,155 @@ public class CraftingVoidRender
 
         int light = 15728880;
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ)
                 .color(red, green, blue, alpha)
-                .texture(1, 0)
-                .light(light)
+                .uv(1, 0)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ)
                 .color(red, green, blue, alpha)
-                .texture(1, 1)
-                .light(light)
+                .uv(1, 1)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ)
                 .color(red, green, blue, alpha)
-                .texture(0, 1)
-                .light(light)
+                .uv(0, 1)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ)
                 .color(red, green, blue, alpha)
-                .texture(0, 0)
-                .light(light)
+                .uv(0, 0)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(0, 0)
-                .light(light)
+                .uv(0, 0)
+                .uv2(light)
                 .normal(0, 0, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(0, 1)
-                .light(light)
+                .uv(0, 1)
+                .uv2(light)
                 .normal(0, 0, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(1, 1)
-                .light(light)
+                .uv(1, 1)
+                .uv2(light)
                 .normal(0, 0, 1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(1, 0)
-                .light(light)
+                .uv(1, 0)
+                .uv2(light)
                 .normal(0, 0, 1)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ)
                 .color(red, green, blue, alpha)
-                .texture(0, 0)
-                .light(light)
+                .uv(0, 0)
+                .uv2(light)
                 .normal(0, 0, -1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ)
                 .color(red, green, blue, alpha)
-                .texture(1, 0)
-                .light(light)
+                .uv(1, 0)
+                .uv2(light)
                 .normal(0, 0, -1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(1, 1)
-                .light(light)
+                .uv(1, 1)
+                .uv2(light)
                 .normal(0, 0, -1)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(0, 1)
-                .light(light)
+                .uv(0, 1)
+                .uv2(light)
                 .normal(0, 0, -1)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(0, 1)
-                .light(light)
+                .uv(0, 1)
+                .uv2(light)
                 .normal(0, -1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(1, 1)
-                .light(light)
+                .uv(1, 1)
+                .uv2(light)
                 .normal(0, -1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ)
                 .color(red, green, blue, alpha)
-                .texture(1, 0)
-                .light(light)
+                .uv(1, 0)
+                .uv2(light)
                 .normal(0, -1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ)
                 .color(red, green, blue, alpha)
-                .texture(0, 0)
-                .light(light)
+                .uv(0, 0)
+                .uv2(light)
                 .normal(0, -1, 0)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ)
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ)
                 .color(red, green, blue, alpha)
-                .texture(0, 0)
-                .light(light)
+                .uv(0, 0)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ)
                 .color(red, green, blue, alpha)
-                .texture(1, 0)
-                .light(light)
+                .uv(1, 0)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY + height, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(1, 1)
-                .light(light)
+                .uv(1, 1)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY + height, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY + height, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(0, 1)
-                .light(light)
+                .uv(0, 1)
+                .uv2(light)
                 .normal(0, 1, 0)
-                .next();
+                .endVertex();
 
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ + length)
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(1, 1)
-                .light(light)
+                .uv(1, 1)
+                .uv2(light)
                 .normal(-1, 0, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX + width, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX + width, posY, posZ)
                 .color(red, green, blue, alpha)
-                .texture(1, 0)
-                .light(light)
+                .uv(1, 0)
+                .uv2(light)
                 .normal(-1, 0, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ)
                 .color(red, green, blue, alpha)
-                .texture(0, 0)
-                .light(light)
+                .uv(0, 0)
+                .uv2(light)
                 .normal(-1, 0, 0)
-                .next();
-        buffer.vertex(matrixStack.peek().getPositionMatrix(), posX, posY, posZ + length)
+                .endVertex();
+        buffer.vertex(matrixStack.last().pose(), posX, posY, posZ + length)
                 .color(red, green, blue, alpha)
-                .texture(0, 1)
-                .light(light)
+                .uv(0, 1)
+                .uv2(light)
                 .normal(-1, 0, 0)
-                .next();
+                .endVertex();
     }
 
     private static int getDrawFromPlayerDistance(double playerDistance)

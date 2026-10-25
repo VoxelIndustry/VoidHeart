@@ -1,107 +1,108 @@
 package net.voxelindustry.voidheart.common.content.heart;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.jetbrains.annotations.Nullable;
 
-import static net.minecraft.block.BlockWithEntity.checkType;
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 
-public class VoidHeartBlock extends Block implements BlockEntityProvider
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+public class VoidHeartBlock extends Block implements EntityBlock
 {
-    private final VoxelShape SHAPE = Block.createCuboidShape(2, 2, 2, 14, 14, 14);
+    private final VoxelShape SHAPE = Block.box(2, 2, 2, 14, 14, 14);
 
     public VoidHeartBlock()
     {
-        super(Settings
-                .create()
-                .noCollision()
+        super(Properties
+                .of()
+                .noCollission()
                 .strength(-1.0F, 3600000.0F)
-                .dropsNothing()
-                .allowsSpawning(((state, world, pos, type) -> false))
-                .luminance(unused -> 11));
+                .noLootTable()
+                .isValidSpawn(((state, world, pos, type) -> false))
+                .lightLevel(unused -> 11));
     }
 
     @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context)
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
     {
         return SHAPE;
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state)
+    public RenderShape getRenderShape(BlockState state)
     {
-        return BlockRenderType.INVISIBLE;
+        return RenderShape.INVISIBLE;
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
-        if (!world.isClient())
+        if (!world.isClientSide())
             ((VoidHeartTile) world.getBlockEntity(pos)).playerHit(player);
 
-        if (player.isCreative() && !world.isClient())
+        if (player.isCreative() && !world.isClientSide())
         {
-            var debugText = Text.literal("§7====== §3Heart Inspection §7=====\n");
+            var debugText = Component.literal("§7====== §3Heart Inspection §7=====\n");
 
             var tile = world.getBlockEntity(pos);
 
             if (tile instanceof VoidHeartTile heart)
             {
-                debugText.append(Text.literal("§2Tile healthy\n"));
+                debugText.append(Component.literal("§2Tile healthy\n"));
 
                 var playerID = heart.getPlayerID();
 
-                var gameProfileOpt = world.getServer().getUserCache().getByUuid(playerID);
+                var gameProfileOpt = world.getServer().getProfileCache().get(playerID);
 
                 if (gameProfileOpt.isPresent())
-                    debugText.append(Text.literal("§6Owner: §7" + heart.getPlayerID() + " (§3" + gameProfileOpt.get().getName() + "§7)\n"));
+                    debugText.append(Component.literal("§6Owner: §7" + heart.getPlayerID() + " (§3" + gameProfileOpt.get().getName() + "§7)\n"));
                 else
-                    debugText.append(Text.literal("§6Owner: " + heart.getPlayerID() + " (ERROR RETRIEVING PROFILE)\n"));
+                    debugText.append(Component.literal("§6Owner: " + heart.getPlayerID() + " (ERROR RETRIEVING PROFILE)\n"));
 
                 var heartData = VoidPocketState.getVoidPocketState(world).getHeartData(heart.getPlayerID());
 
                 if (heartData == null)
-                    debugText.append(Text.literal("§cUnable to retrieve heart data\n"));
+                    debugText.append(Component.literal("§cUnable to retrieve heart data\n"));
                 else
                     debugText.append(heartData.debugPrint());
             }
             else
-                debugText.append(Text.literal("§cNo tile found\n"));
+                debugText.append(Component.literal("§cNo tile found\n"));
 
-            debugText.append(Text.literal("§7==========================="));
+            debugText.append(Component.literal("§7==========================="));
 
-            player.sendMessage(debugText);
+            player.sendSystemMessage(debugText);
         }
 
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
     {
-        return checkType(type, VoidHeartTiles.VOID_HEART, VoidHeartTile::tick);
+        return createTickerHelper(type, VoidHeartTiles.VOID_HEART, VoidHeartTile::tick);
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new VoidHeartTile(pos, state);
     }

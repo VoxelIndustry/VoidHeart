@@ -2,13 +2,13 @@ package net.voxelindustry.voidheart.common.content.eyebottle;
 
 import com.mojang.authlib.GameProfile;
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
@@ -43,9 +43,9 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
     }
 
     @Override
-    public void setWorld(World world)
+    public void setLevel(Level world)
     {
-        super.setWorld(world);
+        super.setLevel(world);
 
         refreshPlayerProfile();
     }
@@ -62,7 +62,7 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
         if (!isServer() || playerID == null)
             return;
 
-        var gameProfileOpt = world.getServer().getUserCache().getByUuid(playerID);
+        var gameProfileOpt = level.getServer().getProfileCache().get(playerID);
 
         if (gameProfileOpt.isEmpty())
             return;
@@ -72,38 +72,38 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    public void load(CompoundTag tag)
     {
-        super.readNbt(tag);
+        super.load(tag);
 
-        if (tag.containsUuid("playerID"))
-            playerID = tag.getUuid("playerID");
+        if (tag.hasUUID("playerID"))
+            playerID = tag.getUUID("playerID");
 
         if (isClient() && tag.contains("ownerProfile"))
         {
-            playerProfile = NbtHelper.toGameProfile(tag.getCompound("ownerProfile"));
+            playerProfile = NbtUtils.readGameProfile(tag.getCompound("ownerProfile"));
 
             if (playerProfile != null && playerProfile.isComplete())
-                MinecraftClient.getInstance().getSessionService().fillProfileProperties(playerProfile, true);
+                Minecraft.getInstance().getMinecraftSessionService().fillProfileProperties(playerProfile, true);
         }
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    public void saveAdditional(CompoundTag tag)
     {
         if (playerID != null)
         {
-            tag.putUuid("playerID", playerID);
+            tag.putUUID("playerID", playerID);
 
             if (isServer() && playerProfile != null)
             {
-                var profileTag = new NbtCompound();
-                NbtHelper.writeGameProfile(profileTag, playerProfile);
+                var profileTag = new CompoundTag();
+                NbtUtils.writeGameProfile(profileTag, playerProfile);
                 tag.put("ownerProfile", profileTag);
             }
         }
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     @Override
@@ -115,7 +115,7 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
             var player = ClientUtils.getClientPlayer();
 
             if (player != null)
-                player.playSound(SoundEvents.BLOCK_GLASS_PLACE, 0.1F, player.getRandom().nextFloat() * 0.1F + 0.9F);
+                player.playSound(SoundEvents.GLASS_PLACE, 0.1F, player.getRandom().nextFloat() * 0.1F + 0.9F);
         });
         controllers.add(animationController);
     }

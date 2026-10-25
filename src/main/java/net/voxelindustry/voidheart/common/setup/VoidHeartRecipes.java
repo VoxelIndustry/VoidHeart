@@ -1,9 +1,5 @@
 package net.voxelindustry.voidheart.common.setup;
 
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.recipe.RecipeManager;
 import net.voxelindustry.steamlayer.recipe.SteamLayerRecipe;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
@@ -17,6 +13,11 @@ import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.setup.VoidHeartItems.VOID_PEARL;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
+
 public class VoidHeartRecipes
 {
     public static final SteamLayerRecipeType<AltarRecipe> ALTAR_TYPE = new SteamLayerRecipeType<>((type, identifier) -> new AltarRecipe(identifier));
@@ -25,18 +26,18 @@ public class VoidHeartRecipes
     public static RecipeCategory<AltarRecipe> ALTAR_CATEGORY;
     public static RecipeCategory<ShatterForgeRecipe> SHATTER_FORGE_CATEGORY;
 
-    private static final Identifier VOIDHEART_RECIPE = new Identifier(MODID, "altar/voidheart");
+    private static final ResourceLocation VOIDHEART_RECIPE = new ResourceLocation(MODID, "altar/voidheart");
 
     public static void registerRecipes()
     {
         SteamLayerRecipe.RECIPE_CATEGORY_RELOAD_EVENT.register(VoidHeartRecipes::onRecipeReload);
 
         RecipeManager.addCategory(ALTAR_CATEGORY = new RecipeCategory<>(
-                new Identifier(MODID, "altar"),
+                new ResourceLocation(MODID, "altar"),
                 ALTAR_TYPE
         ));
         RecipeManager.addCategory(SHATTER_FORGE_CATEGORY = new RecipeCategory<>(
-                new Identifier(MODID, "shatter_forge"),
+                new ResourceLocation(MODID, "shatter_forge"),
                 SHATTER_FORGE_TYPE
         ));
     }
@@ -48,15 +49,15 @@ public class VoidHeartRecipes
 
         ALTAR_CATEGORY.getRecipe(VOIDHEART_RECIPE).ifPresent(recipe -> recipe.onCraft((world, blockPos, recipeState, livingEntity) ->
         {
-            var tag = recipeState.getIngredientsConsumed(ItemStack.class).get(0).getOrCreateNbt();
-            if (!tag.containsUuid("player"))
+            var tag = recipeState.getIngredientsConsumed(ItemStack.class).get(0).getOrCreateTag();
+            if (!tag.hasUUID("player"))
                 return;
 
-            var playerID = tag.getUuid("player");
-            var voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
+            var playerID = tag.getUUID("player");
+            var voidWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
             var voidPocketState = VoidPocketState.getVoidPocketState(voidWorld);
 
-            var player = world.getPlayerByUuid(playerID);
+            var player = world.getPlayerByUUID(playerID);
 
             if (!voidPocketState.hasPocket(playerID))
             {
@@ -66,25 +67,25 @@ public class VoidHeartRecipes
                     for (int i = 0; i < 3; i++)
                     {
                         var voidPearls = new ItemStack(VOID_PEARL);
-                        player.getInventory().offerOrDrop(voidPearls);
+                        player.getInventory().placeItemBackInInventory(voidPearls);
                     }
 
-                    player.sendMessage(Text.translatable(MODID + ".pocket_created"), true);
+                    player.displayClientMessage(Component.translatable(MODID + ".pocket_created"), true);
                 }
             }
             else if (player != null)
             {
-                player.sendMessage(Text.translatable(MODID + ".pocket_already_exists"), true);
+                player.displayClientMessage(Component.translatable(MODID + ".pocket_already_exists"), true);
             }
         }));
     }
 
-    private static ItemStackRecipeIngredient ingredient(ItemConvertible item)
+    private static ItemStackRecipeIngredient ingredient(ItemLike item)
     {
         return ingredient(item, 1);
     }
 
-    private static ItemStackRecipeIngredient ingredient(ItemConvertible item, int count)
+    private static ItemStackRecipeIngredient ingredient(ItemLike item, int count)
     {
         return new ItemStackRecipeIngredient(new ItemStack(item, count));
     }

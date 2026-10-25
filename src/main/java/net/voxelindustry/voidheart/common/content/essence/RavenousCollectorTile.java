@@ -1,11 +1,11 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
@@ -28,7 +28,7 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
 
     private EssenceStorage storage = new EssenceStorage(EssenceRegistry.EMPTY, CAPACITY);
 
-    private BlockPos harvestingPos = BlockPos.ORIGIN;
+    private BlockPos harvestingPos = BlockPos.ZERO;
     private long harvestingTickStart = 0;
 
     private long searchBackoff = 0L;
@@ -38,23 +38,23 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
         super(VoidHeartTiles.RAVENOUS_COLLECTOR, pos, state);
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, RavenousCollectorTile collector)
+    public static void tick(Level world, BlockPos pos, BlockState state, RavenousCollectorTile collector)
     {
-        if (world.isClient)
+        if (world.isClientSide)
             return;
 
         if (collector.storage.isUnattuned())
             return;
 
-        if (collector.harvestingPos == BlockPos.ORIGIN)
+        if (collector.harvestingPos == BlockPos.ZERO)
         {
-            if (world.getTime() - collector.searchBackoff < 40)
+            if (world.getGameTime() - collector.searchBackoff < 40)
                 return;
 
             var found = collector.findRandomCollectable();
-            if (found == BlockPos.ORIGIN)
+            if (found == BlockPos.ZERO)
             {
-                collector.searchBackoff = world.getTime();
+                collector.searchBackoff = world.getGameTime();
                 return;
             }
 
@@ -69,62 +69,62 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
     private void startHarvesting(BlockPos pos)
     {
         this.harvestingPos = pos;
-        this.harvestingTickStart = world.getTime();
+        this.harvestingTickStart = level.getGameTime();
         sync();
     }
 
     private boolean canEndHarvest()
     {
-        if (harvestingPos == BlockPos.ORIGIN || harvestingTickStart == 0)
+        if (harvestingPos == BlockPos.ZERO || harvestingTickStart == 0)
             return false;
 
         if (storage.spaceLeft() < 1_000)
             return false;
 
-        return world.getTime() - harvestingTickStart >= HARVESTING_TIME_TICKS && isBlockCollectable(harvestingPos);
+        return level.getGameTime() - harvestingTickStart >= HARVESTING_TIME_TICKS && isBlockCollectable(harvestingPos);
     }
 
     private void endHarvest()
     {
-        world.setBlockState(harvestingPos, Blocks.AIR.getDefaultState());
+        level.setBlockAndUpdate(harvestingPos, Blocks.AIR.defaultBlockState());
         storage.fill(storage.type(), 1_000);
 
-        harvestingPos = BlockPos.ORIGIN;
+        harvestingPos = BlockPos.ZERO;
         harvestingTickStart = 0;
     }
 
     private BlockPos findRandomCollectable()
     {
-        var iterablePos = BlockPos.iterateRandomly(world.random, 7 * 7 * 7, pos, 3);
+        var iterablePos = BlockPos.randomInCube(level.random, 7 * 7 * 7, worldPosition, 3);
 
         for (var candidate : iterablePos)
         {
             if (isBlockCollectable(candidate))
-                return candidate.toImmutable();
+                return candidate.immutable();
         }
 
-        return BlockPos.ORIGIN;
+        return BlockPos.ZERO;
     }
 
     private boolean isBlockCollectable(BlockPos pos)
     {
-        return world.getBlockState(pos).isIn(storage.type().consumables());
+        return level.getBlockState(pos).is(storage.type().consumables());
     }
 
     @Override
-    public void readNbt(NbtCompound nbt)
+    public void load(CompoundTag nbt)
     {
-        super.readNbt(nbt);
+        super.load(nbt);
 
         harvestingTickStart = nbt.getLong("harvestingTickStart");
-        harvestingPos = BlockPos.fromLong(nbt.getLong("harvestingPos"));
+        harvestingPos = BlockPos.of(nbt.getLong("harvestingPos"));
         storage = EssenceStorage.CODEC.decode(NbtOps.INSTANCE, nbt.getCompound("storage")).result().get().getFirst();
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt)
+    protected void saveAdditional(CompoundTag nbt)
     {
-        super.writeNbt(nbt);
+        super.saveAdditional(nbt);
 
         nbt.putLong("harvestingTickStart", harvestingTickStart);
         nbt.putLong("harvestingPos", harvestingPos.asLong());

@@ -4,17 +4,17 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.FriendlyByteBuf;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.command.DirectionArgumentType;
 
 public record PortalFrameParticleEffect(Direction direction,
                                         int width,
-                                        int height) implements ParticleEffect
+                                        int height) implements ParticleOptions
 {
     @Override
     public ParticleType<?> getType()
@@ -23,7 +23,7 @@ public record PortalFrameParticleEffect(Direction direction,
     }
 
     @Override
-    public void write(PacketByteBuf buffer)
+    public void writeToNetwork(FriendlyByteBuf buffer)
     {
         buffer.writeInt(direction.ordinal());
         buffer.writeInt(width);
@@ -31,15 +31,15 @@ public record PortalFrameParticleEffect(Direction direction,
     }
 
     @Override
-    public String asString()
+    public String writeToString()
     {
-        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
+        return BuiltInRegistries.PARTICLE_TYPE.getKey(getType()) + " " + (DoubleArgumentType.doubleArg(0));
     }
 
-    public static final Factory<PortalFrameParticleEffect> PARAMETERS_FACTORY = new Factory<>()
+    public static final Deserializer<PortalFrameParticleEffect> PARAMETERS_FACTORY = new Deserializer<>()
     {
         @Override
-        public PortalFrameParticleEffect read(ParticleType<PortalFrameParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
+        public PortalFrameParticleEffect fromCommand(ParticleType<PortalFrameParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
         {
             stringReader.expect(' ');
             var direction = DirectionArgumentType.direction().parse(stringReader);
@@ -51,9 +51,9 @@ public record PortalFrameParticleEffect(Direction direction,
         }
 
         @Override
-        public PortalFrameParticleEffect read(ParticleType<PortalFrameParticleEffect> particleType, PacketByteBuf buffer)
+        public PortalFrameParticleEffect fromNetwork(ParticleType<PortalFrameParticleEffect> particleType, FriendlyByteBuf buffer)
         {
-            return new PortalFrameParticleEffect(Direction.byId(buffer.readInt()), buffer.readInt(), buffer.readInt());
+            return new PortalFrameParticleEffect(Direction.from3DDataValue(buffer.readInt()), buffer.readInt(), buffer.readInt());
         }
     };
 }

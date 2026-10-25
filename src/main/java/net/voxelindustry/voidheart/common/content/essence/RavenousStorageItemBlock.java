@@ -1,14 +1,13 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
-import net.minecraft.block.Block;
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.world.World;
-
 import java.util.List;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -16,20 +15,20 @@ public class RavenousStorageItemBlock extends BlockItem
 {
     public RavenousStorageItemBlock(Block block)
     {
-        super(block, new Item.Settings()
-                .maxCount(1)
-                .maxDamage(RavenousCollectorTile.CAPACITY)
+        super(block, new Item.Properties()
+                .stacksTo(1)
+                .durability(RavenousCollectorTile.CAPACITY)
         );
     }
 
     @Override
-    public boolean isDamageable()
+    public boolean canBeDepleted()
     {
         return false;
     }
 
     @Override
-    public boolean canRepair(ItemStack stack, ItemStack ingredient)
+    public boolean isValidRepairItem(ItemStack stack, ItemStack ingredient)
     {
         return false;
     }
@@ -41,18 +40,18 @@ public class RavenousStorageItemBlock extends BlockItem
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
+    public void appendHoverText(ItemStack stack, Level world, List<Component> tooltip, TooltipFlag context)
     {
-        super.appendTooltip(stack, world, tooltip, context);
+        super.appendHoverText(stack, world, tooltip, context);
 
-        if (stack.hasNbt() && stack.getNbt().contains("storage"))
+        if (stack.hasTag() && stack.getTag().contains("storage"))
         {
-            var storage = EssenceStorage.fromNbt(stack.getNbt().getCompound("storage"));
+            var storage = EssenceStorage.fromNbt(stack.getTag().getCompound("storage"));
 
-            tooltip.add(Text.translatable(storage.type().translatableName()));
-            tooltip.add(Text.literal(storage.amount() + " / " + storage.maximumAmount()));
+            tooltip.add(Component.translatable(storage.type().translatableName()));
+            tooltip.add(Component.literal(storage.amount() + " / " + storage.maximumAmount()));
         }
         else
-            tooltip.add(Text.translatable(MODID + ".ravenous_collector.untyped"));
+            tooltip.add(Component.translatable(MODID + ".ravenous_collector.untyped"));
     }
 }

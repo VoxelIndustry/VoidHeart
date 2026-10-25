@@ -2,18 +2,18 @@ package net.voxelindustry.voidheart.data.provider;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
-import net.minecraft.block.Blocks;
-import net.minecraft.data.family.BlockFamilies;
-import net.minecraft.data.family.BlockFamily;
-import net.minecraft.data.family.BlockFamily.Variant;
-import net.minecraft.data.server.recipe.RecipeJsonProvider;
-import net.minecraft.data.server.recipe.RecipeProvider;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.item.Items;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.book.RecipeCategory;
-import net.minecraft.resource.featuretoggle.FeatureFlags;
-import net.minecraft.util.Identifier;
+import net.minecraft.data.BlockFamilies;
+import net.minecraft.data.BlockFamily;
+import net.minecraft.data.BlockFamily.Variant;
+import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.RecipeProvider;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.steamlayer.recipe.data.RecipeBaseJsonBuilder;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -29,11 +29,11 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public class RecipesProvider extends FabricRecipeProvider
 {
     private static final Map<Variant, Offer> STONECUTTING_OFFERERS = Map.of(
-            Variant.CUT, RecipeProvider::offerStonecuttingRecipe,
-            Variant.STAIRS, RecipeProvider::offerStonecuttingRecipe,
-            Variant.SLAB, (exporter, category, output, input) -> offerStonecuttingRecipe(exporter, category, output, input, 2),
-            Variant.WALL, RecipeProvider::offerStonecuttingRecipe,
-            Variant.POLISHED, RecipeProvider::offerStonecuttingRecipe
+            Variant.CUT, RecipeProvider::stonecutterResultFromBase,
+            Variant.STAIRS, RecipeProvider::stonecutterResultFromBase,
+            Variant.SLAB, (exporter, category, output, input) -> stonecutterResultFromBase(exporter, category, output, input, 2),
+            Variant.WALL, RecipeProvider::stonecutterResultFromBase,
+            Variant.POLISHED, RecipeProvider::stonecutterResultFromBase
     );
 
     public RecipesProvider(FabricDataOutput output)
@@ -41,23 +41,23 @@ public class RecipesProvider extends FabricRecipeProvider
         super(output);
     }
 
-    public static void generateFamily(Consumer<RecipeJsonProvider> exporter, BlockFamily family)
+    public static void generateRecipes(Consumer<FinishedRecipe> exporter, BlockFamily family)
     {
-        RecipeProvider.generateFamily(exporter, family);
+        RecipeProvider.generateRecipes(exporter, family);
         STONECUTTING_OFFERERS.forEach((variant, offer) ->
         {
             if (family.getVariants().containsKey(variant))
-                offer.accept(exporter, RecipeCategory.BUILDING_BLOCKS, family.getVariant(variant), family.getBaseBlock());
+                offer.accept(exporter, RecipeCategory.BUILDING_BLOCKS, family.get(variant), family.getBaseBlock());
         });
     }
 
     @Override
-    public void generate(Consumer<RecipeJsonProvider> exporter)
+    public void buildRecipes(Consumer<FinishedRecipe> exporter)
     {
-        BlockFamilies.getFamilies()
+        BlockFamilies.getAllFamilies()
                 .filter(VoidHeartDataGenerator::isVoidHeartFamily)
-                .filter(family -> family.shouldGenerateRecipes(FeatureFlags.VANILLA_FEATURES))
-                .forEach(family -> RecipesProvider.generateFamily(exporter, family));
+                .filter(family -> family.shouldGenerateRecipe(FeatureFlags.VANILLA_SET))
+                .forEach(family -> RecipesProvider.generateRecipes(exporter, family));
 
         offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_BRICKS_VERTICAL, VoidHeartBlocks.VOIDSTONE_BRICKS);
 
@@ -72,18 +72,18 @@ public class RecipesProvider extends FabricRecipeProvider
         offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB, VoidHeartBlocks.VOIDSTONE_PILLAR, 2);
         offerReversibleStoneCuttingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS);
 
-        RecipeProvider.offerSlabRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB, VoidHeartBlocks.VOIDSTONE_PILLAR);
-        RecipeProvider.createStairsRecipe(VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS, Ingredient.ofItems(VoidHeartBlocks.VOIDSTONE_PILLAR))
-                .criterion(hasItem(VoidHeartBlocks.VOIDSTONE_PILLAR), conditionsFromItem(VoidHeartBlocks.VOIDSTONE_PILLAR))
-                .offerTo(exporter);
+        RecipeProvider.slab(exporter, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB, VoidHeartBlocks.VOIDSTONE_PILLAR);
+        RecipeProvider.stairBuilder(VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS, Ingredient.of(VoidHeartBlocks.VOIDSTONE_PILLAR))
+                .unlockedBy(getHasName(VoidHeartBlocks.VOIDSTONE_PILLAR), has(VoidHeartBlocks.VOIDSTONE_PILLAR))
+                .save(exporter);
 
-        RecipeProvider.offerCutCopperRecipe(exporter, RecipeCategory.MISC, VoidHeartBlocks.VOIDSTONE_BRICKS, VoidHeartBlocks.VOIDSTONE_POLISHED);
+        RecipeProvider.cut(exporter, RecipeCategory.MISC, VoidHeartBlocks.VOIDSTONE_BRICKS, VoidHeartBlocks.VOIDSTONE_POLISHED);
 
-        RecipeProvider.offerReversibleCompactingRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.RAVENOUS_GOLD_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
-        RecipeProvider.offerReversibleCompactingRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.ARROGANT_IRON_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.ARROGANT_IRON_BLOCK);
+        RecipeProvider.nineBlockStorageRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.RAVENOUS_GOLD_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
+        RecipeProvider.nineBlockStorageRecipes(exporter, RecipeCategory.MISC, VoidHeartItems.ARROGANT_IRON_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.ARROGANT_IRON_BLOCK);
 
-        RecipeProvider.offerCrackingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_BRICKS_CRACKED, VoidHeartBlocks.VOIDSTONE_BRICKS);
-        RecipeProvider.offerCrackingRecipe(exporter, VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR);
+        RecipeProvider.smeltingResultFromBase(exporter, VoidHeartBlocks.VOIDSTONE_BRICKS_CRACKED, VoidHeartBlocks.VOIDSTONE_BRICKS);
+        RecipeProvider.smeltingResultFromBase(exporter, VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR);
 
         offerShatterForgeRecipe(exporter, Items.GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
         offerShatterForgeRecipe(exporter, Items.IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT);
@@ -91,32 +91,32 @@ public class RecipesProvider extends FabricRecipeProvider
         offerShatterForgeRecipe(exporter, Blocks.DEEPSLATE, VoidHeartBlocks.VOIDSTONE);
     }
 
-    private void offerReversibleStoneCuttingRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible output, ItemConvertible input, int outputCount)
+    private void offerReversibleStoneCuttingRecipe(Consumer<FinishedRecipe> exporter, ItemLike output, ItemLike input, int outputCount)
     {
-        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, input, output, outputCount);
-        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, output, input);
+        RecipeProvider.stonecutterResultFromBase(exporter, RecipeCategory.BUILDING_BLOCKS, input, output, outputCount);
+        RecipeProvider.stonecutterResultFromBase(exporter, RecipeCategory.BUILDING_BLOCKS, output, input);
     }
 
-    private void offerReversibleStoneCuttingRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible output, ItemConvertible input)
+    private void offerReversibleStoneCuttingRecipe(Consumer<FinishedRecipe> exporter, ItemLike output, ItemLike input)
     {
-        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, input, output);
-        RecipeProvider.offerStonecuttingRecipe(exporter, RecipeCategory.BUILDING_BLOCKS, output, input);
+        RecipeProvider.stonecutterResultFromBase(exporter, RecipeCategory.BUILDING_BLOCKS, input, output);
+        RecipeProvider.stonecutterResultFromBase(exporter, RecipeCategory.BUILDING_BLOCKS, output, input);
     }
 
-    private void offerShatterForgeRecipe(Consumer<RecipeJsonProvider> exporter, ItemConvertible input, ItemConvertible output)
+    private void offerShatterForgeRecipe(Consumer<FinishedRecipe> exporter, ItemLike input, ItemLike output)
     {
-        var recipePath = "shatterforge/" + RecipeProvider.convertBetween(output, input);
+        var recipePath = "shatterforge/" + RecipeProvider.getConversionRecipeName(output, input);
 
-        var recipe = new ShatterForgeRecipe(new Identifier(MODID, recipePath), output, input, 40, 3);
+        var recipe = new ShatterForgeRecipe(new ResourceLocation(MODID, recipePath), output, input, 40, 3);
 
         new RecipeBaseJsonBuilder(recipe, VoidHeartRecipes.SHATTER_FORGE_TYPE, RecipeCategory.MISC)
-                .criterion(RecipeProvider.hasItem(input), RecipeProvider.conditionsFromItem(input))
-                .offerTo(exporter, recipePath);
+                .unlockedBy(RecipeProvider.getHasName(input), RecipeProvider.has(input))
+                .save(exporter, recipePath);
     }
 
     @FunctionalInterface
     public interface Offer
     {
-        void accept(Consumer<RecipeJsonProvider> exporter, RecipeCategory category, ItemConvertible output, ItemConvertible input);
+        void accept(Consumer<FinishedRecipe> exporter, RecipeCategory category, ItemLike output, ItemLike input);
     }
 }

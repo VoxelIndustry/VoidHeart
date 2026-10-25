@@ -1,78 +1,78 @@
 package net.voxelindustry.voidheart.common.content.inventorymover;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-import static net.minecraft.block.BlockWithEntity.checkType;
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class InventoryInserterBlock extends Block implements BlockEntityProvider
+public class InventoryInserterBlock extends Block implements EntityBlock
 {
     public InventoryInserterBlock()
     {
-        super(Settings.create()
-                .mapColor(MapColor.BLACK)
-                .instrument(Instrument.BASEDRUM)
+        super(Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
                 .strength(3F)
-                .requiresTool()
-                .sounds(BlockSoundGroup.STONE));
+                .requiresCorrectToolForDrops()
+                .sound(SoundType.STONE));
 
-        setDefaultState(getStateManager().getDefaultState()
-                .with(Properties.FACING, Direction.UP));
+        registerDefaultState(getStateDefinition().any()
+                .setValue(BlockStateProperties.FACING, Direction.UP));
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, @Nullable BlockView world, List<Text> tooltip, TooltipContext options)
+    public void appendHoverText(ItemStack stack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag options)
     {
-        super.appendTooltip(stack, world, tooltip, options);
+        super.appendHoverText(stack, world, tooltip, options);
 
-        tooltip.add(Text.translatable(MODID + ".inventory_inserter.lore1"));
-        tooltip.add(Text.translatable(MODID + ".inventory_inserter.lore2"));
+        tooltip.add(Component.translatable(MODID + ".inventory_inserter.lore1"));
+        tooltip.add(Component.translatable(MODID + ".inventory_inserter.lore2"));
     }
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
     {
-        return checkType(type, VoidHeartTiles.INVENTORY_INSERTER, InventoryInserterTile::tick);
+        return createTickerHelper(type, VoidHeartTiles.INVENTORY_INSERTER, InventoryInserterTile::tick);
     }
 
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx)
+    public BlockState getStateForPlacement(BlockPlaceContext ctx)
     {
-        return this.getDefaultState().with(Properties.FACING, ctx.getPlayerLookDirection().getOpposite());
+        return this.defaultBlockState().setValue(BlockStateProperties.FACING, ctx.getNearestLookingDirection().getOpposite());
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(Properties.FACING);
+        builder.add(BlockStateProperties.FACING);
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new InventoryInserterTile(pos, state);
     }

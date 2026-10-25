@@ -2,12 +2,12 @@ package net.voxelindustry.voidheart.data.provider;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricAdvancementProvider;
-import net.minecraft.advancement.Advancement;
-import net.minecraft.advancement.AdvancementFrame;
-import net.minecraft.advancement.criterion.ChangedDimensionCriterion;
-import net.minecraft.advancement.criterion.InventoryChangedCriterion;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.FrameType;
+import net.minecraft.advancements.critereon.ChangeDimensionTrigger;
+import net.minecraft.advancements.critereon.InventoryChangeTrigger;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterion;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -27,153 +27,153 @@ public class AdvancementsProvider extends FabricAdvancementProvider
     @Override
     public void generateAdvancement(Consumer<Advancement> consumer)
     {
-        var rootAdvancement = Advancement.Builder.create()
+        var rootAdvancement = Advancement.Builder.advancement()
                 .display(
                         VoidHeartBlocks.VOIDSTONE,
-                        Text.literal("Outside stone"),
-                        Text.literal("That's not from here"),
-                        new Identifier(MODID, "textures/block/voidstone.png"),
-                        AdvancementFrame.TASK,
+                        Component.literal("Outside stone"),
+                        Component.literal("That's not from here"),
+                        new ResourceLocation(MODID, "textures/block/voidstone.png"),
+                        FrameType.TASK,
                         true,
                         true,
                         false
                 )
-                .criterion("got_voidstone", InventoryChangedCriterion.Conditions.items(VoidHeartBlocks.VOIDSTONE))
-                .build(consumer, MODID + "/root");
+                .addCriterion("got_voidstone", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartBlocks.VOIDSTONE))
+                .save(consumer, MODID + "/root");
 
-        var altarAdvancement = Advancement.Builder.create()
+        var altarAdvancement = Advancement.Builder.advancement()
                 .parent(rootAdvancement)
                 .display(
                         VoidHeartBlocks.VOID_ALTAR,
-                        Text.literal("Altar to the Void"),
-                        Text.literal("Great rewards awaits great sacrifice to the outside"),
+                        Component.literal("Altar to the Void"),
+                        Component.literal("Great rewards awaits great sacrifice to the outside"),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         false,
                         false
                 )
-                .criterion("got_altar", InventoryChangedCriterion.Conditions.items(VoidHeartBlocks.VOID_ALTAR))
-                .build(consumer, MODID + "/altar");
+                .addCriterion("got_altar", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartBlocks.VOID_ALTAR))
+                .save(consumer, MODID + "/altar");
 
-        Advancement.Builder.create()
+        Advancement.Builder.advancement()
                 .parent(altarAdvancement)
                 .display(
                         VoidHeartBlocks.EXPERIENCE_SKULL,
-                        Text.literal("Experience Skull"),
-                        Text.literal("Store experience and use it later"),
+                        Component.literal("Experience Skull"),
+                        Component.literal("Store experience and use it later"),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         false,
                         false
                 )
-                .criterion("got_experience_skull", InventoryChangedCriterion.Conditions.items(VoidHeartBlocks.EXPERIENCE_SKULL))
-                .build(consumer, MODID + "/experience_skull");
+                .addCriterion("got_experience_skull", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartBlocks.EXPERIENCE_SKULL))
+                .save(consumer, MODID + "/experience_skull");
 
-        Advancement.Builder.create()
+        Advancement.Builder.advancement()
                 .parent(altarAdvancement)
                 .display(
                         VoidHeartBlocks.INVENTORY_INSERTER,
-                        Text.literal("Inventory Inserter"),
-                        Text.literal("Slow automated way to move items"),
+                        Component.literal("Inventory Inserter"),
+                        Component.literal("Slow automated way to move items"),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         false,
                         false
                 )
-                .criterion("got_inventory_inserter", InventoryChangedCriterion.Conditions.items(VoidHeartBlocks.INVENTORY_INSERTER))
-                .build(consumer, MODID + "/inventory_inserter");
+                .addCriterion("got_inventory_inserter", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartBlocks.INVENTORY_INSERTER))
+                .save(consumer, MODID + "/inventory_inserter");
 
-        var amalgamAdvancement = Advancement.Builder.create()
+        var amalgamAdvancement = Advancement.Builder.advancement()
                 .parent(altarAdvancement)
                 .display(
                         VoidHeartItems.VOID_AMALGAM,
-                        Text.literal("Ominous amalgam"),
-                        Text.literal("Eat it and offer the result to the altar"),
+                        Component.literal("Ominous amalgam"),
+                        Component.literal("Eat it and offer the result to the altar"),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         false,
                         false
                 )
-                .criterion("got_altar", InventoryChangedCriterion.Conditions.items(VoidHeartItems.VOID_AMALGAM))
-                .build(consumer, MODID + "/amalgam");
+                .addCriterion("got_altar", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartItems.VOID_AMALGAM))
+                .save(consumer, MODID + "/amalgam");
 
-        Advancement.Builder.create()
+        Advancement.Builder.advancement()
                 .parent(amalgamAdvancement)
                 .display(
                         VoidHeartBlocks.EYE_BOTTLE,
-                        Text.literal("Eye In a Bottle"),
-                        Text.literal("Cheaper way to travel to the Pocket"),
+                        Component.literal("Eye In a Bottle"),
+                        Component.literal("Cheaper way to travel to the Pocket"),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         false,
                         false
                 )
-                .criterion("got_eye_bottle", InventoryChangedCriterion.Conditions.items(VoidHeartBlocks.EYE_BOTTLE))
-                .build(consumer, MODID + "/eye_bottle");
+                .addCriterion("got_eye_bottle", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartBlocks.EYE_BOTTLE))
+                .save(consumer, MODID + "/eye_bottle");
 
-        var pocketAdvancement = Advancement.Builder.create()
+        var pocketAdvancement = Advancement.Builder.advancement()
                 .parent(amalgamAdvancement)
                 .display(
                         VoidHeartItems.VOID_HEART,
-                        Text.literal("Pocket dimension"),
-                        Text.literal("The void will reward. Double click the heart to go back."),
+                        Component.literal("Pocket dimension"),
+                        Component.literal("The void will reward. Double click the heart to go back."),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         true,
                         false
                 )
-                .criterion("been_to_pocket", ChangedDimensionCriterion.Conditions.to(VoidHeart.VOID_WORLD_KEY))
-                .build(consumer, MODID + "/pocket");
+                .addCriterion("been_to_pocket", ChangeDimensionTrigger.TriggerInstance.changedDimensionTo(VoidHeart.VOID_WORLD_KEY))
+                .save(consumer, MODID + "/pocket");
 
-        var shatterForgeAdvancement = Advancement.Builder.create()
+        var shatterForgeAdvancement = Advancement.Builder.advancement()
                 .parent(pocketAdvancement)
                 .display(
                         VoidHeartBlocks.SHATTER_FORGE,
-                        Text.literal("Shatter forge"),
-                        Text.literal("Project matter through the Void with prejudice"),
+                        Component.literal("Shatter forge"),
+                        Component.literal("Project matter through the Void with prejudice"),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         false,
                         false
                 )
-                .criterion("got_shatter_forge", InventoryChangedCriterion.Conditions.items(VoidHeartBlocks.SHATTER_FORGE))
-                .build(consumer, MODID + "/shatter_forge");
+                .addCriterion("got_shatter_forge", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartBlocks.SHATTER_FORGE))
+                .save(consumer, MODID + "/shatter_forge");
 
-        var portalCoreAdvancement = Advancement.Builder.create()
+        var portalCoreAdvancement = Advancement.Builder.advancement()
                 .parent(shatterForgeAdvancement)
                 .display(
                         VoidHeartItems.PORTAL_CORE,
-                        Text.literal("Portal Core"),
-                        Text.literal("Bend the space between two dimensions"),
+                        Component.literal("Portal Core"),
+                        Component.literal("Bend the space between two dimensions"),
                         null,
-                        AdvancementFrame.TASK,
+                        FrameType.TASK,
                         true,
                         false,
                         false
                 )
-                .criterion("got_portal_core", InventoryChangedCriterion.Conditions.items(VoidHeartItems.PORTAL_CORE))
-                .build(consumer, MODID + "/portal_core");
+                .addCriterion("got_portal_core", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartItems.PORTAL_CORE))
+                .save(consumer, MODID + "/portal_core");
 
-        var makePortalAdvancement = Advancement.Builder.createUntelemetered()
+        var makePortalAdvancement = Advancement.Builder.recipeAdvancement()
                 .parent(portalCoreAdvancement)
                 .display(
                         VoidHeartBlocks.PORTAL_FRAME_CORE,
-                        Text.literal("Portal"),
-                        Text.literal("The flexion is made. The spheres are entwined"),
+                        Component.literal("Portal"),
+                        Component.literal("The flexion is made. The spheres are entwined"),
                         null,
-                        AdvancementFrame.GOAL,
+                        FrameType.GOAL,
                         true,
                         true,
                         false
                 )
-                .criterion("make_portal", new PortalLinkCriterion.Conditions())
-                .build(consumer, MODID + "/make_portal");
+                .addCriterion("make_portal", new PortalLinkCriterion.Conditions())
+                .save(consumer, MODID + "/make_portal");
     }
 }

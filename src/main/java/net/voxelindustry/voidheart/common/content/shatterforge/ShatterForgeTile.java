@@ -2,15 +2,15 @@ package net.voxelindustry.voidheart.common.content.shatterforge;
 
 import com.mojang.serialization.Codec;
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
 import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
@@ -57,7 +57,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     private int connectedMonolithCount;
     private Direction trackDirection;
 
-    private final Collection<Identifier> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
+    private final Collection<ResourceLocation> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
 
     ////////////
     // CLIENT //
@@ -74,19 +74,19 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         super(VoidHeartTiles.SHATTER_FORGE, pos, state);
     }
 
-    private final BlockPos.Mutable particlePosCache = new BlockPos.Mutable();
+    private final BlockPos.MutableBlockPos particlePosCache = new BlockPos.MutableBlockPos();
 
     private void playParticleEffects()
     {
         if (connectedMonolithCount != 0)
         {
-            if (getWorld().getTime() % 20 == 0)
+            if (getLevel().getGameTime() % 20 == 0)
             {
-                particlePosCache.set(getPos());
+                particlePosCache.set(getBlockPos());
                 var monolithToLit = (connectedMonolithCount + 1) * (warmProgress / (float) getWarmingTime());
                 for (int i = 0; i < monolithToLit; i++)
                 {
-                    getWorld().addParticle(new ShatterForgeRuneParticleEffect(getCachedState().get(Properties.HORIZONTAL_AXIS)),
+                    getLevel().addParticle(new ShatterForgeRuneParticleEffect(getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS)),
                             particlePosCache.getX() + 0.5,
                             particlePosCache.getY() + 1.5,
                             particlePosCache.getZ() + 0.5,
@@ -100,17 +100,17 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         if (isCrafting && recipeProgress > 1 && getPillar() != null && !clientRecipeOutput.isEmpty())
         {
-            getWorld().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
-                    getPos().getX() + 0.5,
-                    getPos().getY() + 1.3,
-                    getPos().getZ() + 0.5,
+            getLevel().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
+                    getBlockPos().getX() + 0.5,
+                    getBlockPos().getY() + 1.3,
+                    getBlockPos().getZ() + 0.5,
                     pillarPos.getX() + 0.5,
                     pillarPos.getY() + 1.3,
                     pillarPos.getZ() + 0.5);
-            getWorld().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
-                    getPos().getX() + 0.5,
-                    getPos().getY() + 1.3,
-                    getPos().getZ() + 0.5,
+            getLevel().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
+                    getBlockPos().getX() + 0.5,
+                    getBlockPos().getY() + 1.3,
+                    getBlockPos().getZ() + 0.5,
                     pillarPos.getX() + 0.5,
                     pillarPos.getY() + 1.3,
                     pillarPos.getZ() + 0.5);
@@ -143,11 +143,11 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         var neededMonoliths = this.currentRecipe.getMonolithCount();
 
-        var mutablePos = pos.mutableCopy();
+        var mutablePos = worldPosition.mutable();
         if (!ifConduitThenAdd(mutablePos.move(Direction.DOWN)))
             return false;
 
-        var axis = getCachedState().get(Properties.HORIZONTAL_AXIS);
+        var axis = getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS);
 
         var front = axis == Axis.Z ? Direction.NORTH : Direction.WEST;
         var back = axis == Axis.Z ? Direction.SOUTH : Direction.EAST;
@@ -172,7 +172,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             return false;
         }
 
-        var isConduitInFront = ifConduitThenAdd(mutablePos.set(pos).move(Direction.DOWN).move(front));
+        var isConduitInFront = ifConduitThenAdd(mutablePos.set(worldPosition).move(Direction.DOWN).move(front));
         var isConduitInBack = ifConduitThenAdd(mutablePos.move(back, 2));
 
         if (isConduitInFront && isConduitInBack)
@@ -183,7 +183,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         var actualForward = isConduitInFront ? front : back;
 
-        mutablePos.set(pos);
+        mutablePos.set(worldPosition);
         var advance = 0;
         while (true)
         {
@@ -214,7 +214,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         for (int i = 0; i < availableMonolith; i++)
         {
-            mutablePos.set(pos).move(actualForward, 3 * i + 1).move(Direction.DOWN);
+            mutablePos.set(worldPosition).move(actualForward, 3 * i + 1).move(Direction.DOWN);
 
             if (!ifConduitThenAdd(mutablePos)
                     || !ifConduitThenAdd(mutablePos.move(actualForward))
@@ -243,27 +243,27 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     private boolean ifConduitThenAdd(BlockPos pos)
     {
-        var isConduit = world.getBlockState(pos).isOf(VoidHeartBlocks.VOID_CONDUIT);
+        var isConduit = level.getBlockState(pos).is(VoidHeartBlocks.VOID_CONDUIT);
         if (isConduit)
-            this.connectedBlocks.add(pos.toImmutable());
+            this.connectedBlocks.add(pos.immutable());
         return isConduit;
     }
 
     private boolean ifMonolithThenAdd(BlockPos pos)
     {
-        var isMonolith = world.getBlockState(pos).isOf(VoidHeartBlocks.VOID_MONOLITH);
+        var isMonolith = level.getBlockState(pos).is(VoidHeartBlocks.VOID_MONOLITH);
         if (isMonolith)
-            this.connectedBlocks.add(pos.toImmutable());
+            this.connectedBlocks.add(pos.immutable());
         return isMonolith;
     }
 
     private boolean ifPillarThenAdd(BlockPos pos)
     {
-        var isPillar = world.getBlockState(pos).isOf(VoidHeartBlocks.VOID_PILLAR);
+        var isPillar = level.getBlockState(pos).is(VoidHeartBlocks.VOID_PILLAR);
         if (isPillar)
         {
-            pillar = ((VoidPillarTile) world.getBlockEntity(pos));
-            pillar.addAltar(getPos());
+            pillar = ((VoidPillarTile) level.getBlockEntity(pos));
+            pillar.addAltar(getBlockPos());
         }
         return isPillar;
     }
@@ -289,14 +289,14 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (isStructureCorrect && !isCrafting())
             startCrafting();
 
-        markDirty();
+        setChanged();
         sync();
     }
 
     public void removeItself()
     {
         if (getPillar() != null)
-            pillar.removeAltar(getPos());
+            pillar.removeAltar(getBlockPos());
     }
 
     private void retrieveCurrentRecipe()
@@ -306,13 +306,13 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     public void startCrafting()
     {
-        var litState = getCachedState().with(Properties.LIT, true);
-        world.setBlockState(pos, litState);
-        setCachedState(litState);
+        var litState = getBlockState().setValue(BlockStateProperties.LIT, true);
+        level.setBlockAndUpdate(worldPosition, litState);
+        setBlockState(litState);
 
         for (var pos : this.connectedBlocks)
-            world.setBlockState(pos, world.getBlockState(pos).with(Properties.LIT, true));
-        world.setBlockState(getPillar().getPos(), world.getBlockState(getPillar().getPos()).with(Properties.LIT, true));
+            level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(BlockStateProperties.LIT, true));
+        level.setBlockAndUpdate(getPillar().getBlockPos(), level.getBlockState(getPillar().getBlockPos()).setValue(BlockStateProperties.LIT, true));
 
         isCrafting = true;
 
@@ -332,32 +332,32 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         isCrafting = false;
         warmProgress = 0;
 
-        if (getCachedState().get(Properties.LIT) && getWorld() != null)
+        if (getBlockState().getValue(BlockStateProperties.LIT) && getLevel() != null)
         {
-            getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, false));
+            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(BlockStateProperties.LIT, false));
 
             for (var blockPos : this.connectedBlocks)
             {
-                var blockState = getWorld().getBlockState(blockPos);
+                var blockState = getLevel().getBlockState(blockPos);
 
-                if (blockState.isOf(VoidHeartBlocks.VOID_MONOLITH) || blockState.isOf(VoidHeartBlocks.VOID_CONDUIT))
-                    getWorld().setBlockState(blockPos, blockState.with(Properties.LIT, false));
+                if (blockState.is(VoidHeartBlocks.VOID_MONOLITH) || blockState.is(VoidHeartBlocks.VOID_CONDUIT))
+                    getLevel().setBlockAndUpdate(blockPos, blockState.setValue(BlockStateProperties.LIT, false));
             }
 
             if (getPillar() != null)
             {
-                var pillarState = getWorld().getBlockState(getPillar().getPos());
-                if (pillarState.isOf(VoidHeartBlocks.VOID_PILLAR))
-                    getWorld().setBlockState(getPillar().getPos(), pillarState.with(Properties.LIT, false));
+                var pillarState = getLevel().getBlockState(getPillar().getBlockPos());
+                if (pillarState.is(VoidHeartBlocks.VOID_PILLAR))
+                    getLevel().setBlockAndUpdate(getPillar().getBlockPos(), pillarState.setValue(BlockStateProperties.LIT, false));
             }
         }
 
         if (getPillar() != null)
-            pillar.removeAltar(getPos());
+            pillar.removeAltar(getBlockPos());
         PartialTileSync.syncPart(this, ShatterForgeCraftingSyncElement.IDENTIFIER);
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, ShatterForgeTile forge)
+    public static void tick(Level world, BlockPos pos, BlockState state, ShatterForgeTile forge)
     {
         if (forge.isClient())
         {
@@ -382,7 +382,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (forge.warmProgress < forge.getWarmingTime())
         {
             forge.warmProgress++;
-            forge.markDirty();
+            forge.setChanged();
             return;
         }
 
@@ -439,29 +439,29 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public void setWorld(World world)
+    public void setLevel(Level world)
     {
-        super.setWorld(world);
+        super.setLevel(world);
 
         // Called on world load
         sync();
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    public void load(CompoundTag tag)
     {
-        super.readNbt(tag);
+        super.load(tag);
 
-        stack = ItemStack.fromNbt(tag.getCompound("stack"));
+        stack = ItemStack.of(tag.getCompound("stack"));
         recipeProgress = tag.getInt("recipeProgress");
         warmProgress = tag.getInt("warmProgress");
         isCrafting = tag.getBoolean("isCrafting");
         hasOutputtedResult = tag.getBoolean("hasOutputtedResult");
 
         connectedMonolithCount = tag.getInt("connectedMonolithCount");
-        trackDirection = Direction.byId(tag.getByte("trackDirection"));
+        trackDirection = Direction.from3DDataValue(tag.getByte("trackDirection"));
 
-        pillarPos = BlockPos.fromLong(tag.getLong("pillarPos"));
+        pillarPos = BlockPos.of(tag.getLong("pillarPos"));
 
         if (isServer())
         {
@@ -478,9 +478,9 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    public void saveAdditional(CompoundTag tag)
     {
-        tag.put("stack", stack.writeNbt(new NbtCompound()));
+        tag.put("stack", stack.save(new CompoundTag()));
         tag.putInt("recipeProgress", recipeProgress);
         tag.putInt("warmProgress", warmProgress);
         tag.putBoolean("isCrafting", isCrafting);
@@ -491,14 +491,14 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             tag.putByte("trackDirection", (byte) trackDirection.ordinal());
 
         if (pillar != null)
-            tag.putLong("pillarPos", pillar.getPos().asLong());
+            tag.putLong("pillarPos", pillar.getBlockPos().asLong());
         else if (pillarPos != null)
             tag.putLong("pillarPos", pillarPos.asLong());
 
         if (isCrafting && recipeState != null)
             tag.put("recipeState", recipeState.toTag());
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     private VoidPillarTile getPillar()
@@ -506,13 +506,13 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (pillar == null)
         {
             if (pillarPos != null)
-                return pillar = (VoidPillarTile) world.getBlockEntity(pillarPos);
+                return pillar = (VoidPillarTile) level.getBlockEntity(pillarPos);
         }
         return pillar;
     }
 
     @Override
-    public Optional<TileSyncElement<?>> getSyncElement(Identifier identifier)
+    public Optional<TileSyncElement<?>> getSyncElement(ResourceLocation identifier)
     {
         if (identifier.equals(ShatterForgeCraftingSyncElement.IDENTIFIER))
         {
@@ -537,7 +537,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public Codec<?> getSyncElementCodec(Identifier identifier)
+    public Codec<?> getSyncElementCodec(ResourceLocation identifier)
     {
         if (identifier.equals(ShatterForgeCraftingSyncElement.IDENTIFIER))
             return ShatterForgeCraftingSyncElement.CODEC;
@@ -545,7 +545,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public Collection<Identifier> getAllSyncElements()
+    public Collection<ResourceLocation> getAllSyncElements()
     {
         return syncElements;
     }

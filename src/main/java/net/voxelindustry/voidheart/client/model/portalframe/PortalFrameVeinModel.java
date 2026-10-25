@@ -3,9 +3,9 @@ package net.voxelindustry.voidheart.client.model.portalframe;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.Direction;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
@@ -45,7 +45,7 @@ public class PortalFrameVeinModel
                 .emit();
     }
 
-    static Sprite getSpriteForState(BlockState state, Direction direction, int variant)
+    static TextureAtlasSprite getSpriteForState(BlockState state, Direction direction, int variant)
     {
         // The quad is directly facing a portal interior
         if (PortalFrameStateProperties.getSideConnection(state, direction).isConnected())
@@ -77,8 +77,8 @@ public class PortalFrameVeinModel
         }
         else
         {
-            left = PortalFrameStateProperties.getSideConnection(state, direction.rotateYCounterclockwise());
-            right = PortalFrameStateProperties.getSideConnection(state, direction.rotateYClockwise());
+            left = PortalFrameStateProperties.getSideConnection(state, direction.getCounterClockWise());
+            right = PortalFrameStateProperties.getSideConnection(state, direction.getClockWise());
             up = PortalFrameStateProperties.getSideConnection(state, Direction.UP);
             down = PortalFrameStateProperties.getSideConnection(state, Direction.DOWN);
         }

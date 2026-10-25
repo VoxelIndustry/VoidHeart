@@ -1,8 +1,5 @@
 package net.voxelindustry.voidheart.compat.jade;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -12,9 +9,13 @@ import snownee.jade.api.config.IPluginConfig;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+
 public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider
 {
-    private static final Identifier RAVENOUS_STORAGE_MATRIX = new Identifier(MODID, "ravenous_storage_matrix");
+    private static final ResourceLocation RAVENOUS_STORAGE_MATRIX = new ResourceLocation(MODID, "ravenous_storage_matrix");
 
     @Override
     public void appendTooltip(
@@ -30,20 +31,20 @@ public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockA
 
         for (int index = 0; index < storageCount; index++)
         {
-            tooltip.add(Text.literal(index + ": "));
-            tooltip.append(Text.translatable(accessor.getServerData().getString("essenceTypeName" + index)));
-            tooltip.append(Text.literal("  " + accessor.getServerData().getInt("essenceAmount" + index) + " / " + accessor.getServerData().getInt("essenceMaxAmount")));
+            tooltip.add(Component.literal(index + ": "));
+            tooltip.append(Component.translatable(accessor.getServerData().getString("essenceTypeName" + index)));
+            tooltip.append(Component.literal("  " + accessor.getServerData().getInt("essenceAmount" + index) + " / " + accessor.getServerData().getInt("essenceMaxAmount")));
         }
     }
 
     @Override
-    public Identifier getUid()
+    public ResourceLocation getUid()
     {
         return RAVENOUS_STORAGE_MATRIX;
     }
 
     @Override
-    public void appendServerData(NbtCompound tag, BlockAccessor accessor)
+    public void appendServerData(CompoundTag tag, BlockAccessor accessor)
     {
         var blockEntity = accessor.getBlockEntity();
 

@@ -1,34 +1,33 @@
 package net.voxelindustry.voidheart.client.model;
 
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.Baker;
-import net.minecraft.client.render.model.ModelBakeSettings;
-import net.minecraft.client.render.model.UnbakedModel;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.SpriteIdentifier;
-import net.minecraft.util.Identifier;
-
 import java.util.Collection;
 import java.util.function.Function;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.Material;
+import net.minecraft.client.resources.model.ModelBaker;
+import net.minecraft.client.resources.model.ModelState;
+import net.minecraft.client.resources.model.UnbakedModel;
+import net.minecraft.resources.ResourceLocation;
 
 public abstract class ForwardingUnbakedModel implements UnbakedModel
 {
     protected UnbakedModel wrapped;
 
     @Override
-    public Collection<Identifier> getModelDependencies()
+    public Collection<ResourceLocation> getDependencies()
     {
-        return wrapped.getModelDependencies();
+        return wrapped.getDependencies();
     }
 
     @Override
-    public void setParents(Function<Identifier, UnbakedModel> modelLoader)
+    public void resolveParents(Function<ResourceLocation, UnbakedModel> modelLoader)
     {
-        wrapped.setParents(modelLoader);
+        wrapped.resolveParents(modelLoader);
     }
 
     @Override
-    public BakedModel bake(Baker baker, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId)
+    public BakedModel bake(ModelBaker baker, Function<Material, TextureAtlasSprite> textureGetter, ModelState rotationContainer, ResourceLocation modelId)
     {
         return wrapped.bake(baker, textureGetter, rotationContainer, modelId);
     }

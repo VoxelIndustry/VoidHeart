@@ -1,10 +1,10 @@
 package net.voxelindustry.voidheart.common.setup;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.Item.Settings;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Item.Properties;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
@@ -42,14 +42,14 @@ public class VoidHeartItems
         registerItem(VOID_KEY = new VoidKeyItem(), "void_key");
         registerItem(PERMEABLE_BARRIER = new PermeableBarrierItem(), "permeable_barrier_item");
 
-        registerItem(OBSIDIAN_SHARD = new Item(new Settings()), "obsidian_shard");
-        registerItem(ENDER_SHARD = new Item(new Settings()), "ender_shard");
-        registerItem(ARROGANT_IRON_INGOT = new Item(new Settings()), "arrogant_iron_ingot");
-        registerItem(RAVENOUS_GOLD_INGOT = new Item(new Settings()), "ravenous_gold_ingot");
+        registerItem(OBSIDIAN_SHARD = new Item(new Properties()), "obsidian_shard");
+        registerItem(ENDER_SHARD = new Item(new Properties()), "ender_shard");
+        registerItem(ARROGANT_IRON_INGOT = new Item(new Properties()), "arrogant_iron_ingot");
+        registerItem(RAVENOUS_GOLD_INGOT = new Item(new Properties()), "ravenous_gold_ingot");
     }
 
     public static void registerItem(Item item, String name)
     {
-        Registry.register(Registries.ITEM, new Identifier(VoidHeart.MODID, name), item);
+        Registry.register(BuiltInRegistries.ITEM, new ResourceLocation(VoidHeart.MODID, name), item);
     }
 }

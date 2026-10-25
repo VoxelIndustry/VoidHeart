@@ -2,8 +2,8 @@ package net.voxelindustry.voidheart.common.content.shatterforge;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 
@@ -12,7 +12,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public record ShatterForgeCraftingSyncElement(ItemStack ingredient,
                                               ItemStack result) implements TileSyncElement<ShatterForgeCraftingSyncElement>
 {
-    public static final Identifier IDENTIFIER = new Identifier(MODID, "shatter_forge_crafting_sync");
+    public static final ResourceLocation IDENTIFIER = new ResourceLocation(MODID, "shatter_forge_crafting_sync");
 
     public static final Codec<ShatterForgeCraftingSyncElement> CODEC = RecordCodecBuilder.create((instance) ->
             instance.group(
@@ -23,7 +23,7 @@ public record ShatterForgeCraftingSyncElement(ItemStack ingredient,
             ).apply(instance, ShatterForgeCraftingSyncElement::new));
 
     @Override
-    public Identifier getIdentifier()
+    public ResourceLocation getIdentifier()
     {
         return IDENTIFIER;
     }

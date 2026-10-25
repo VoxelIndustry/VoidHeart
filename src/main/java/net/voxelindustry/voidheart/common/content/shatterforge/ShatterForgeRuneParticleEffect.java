@@ -4,15 +4,15 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.voxelindustry.voidheart.VoidHeart;
 
-public record ShatterForgeRuneParticleEffect(Axis axis) implements ParticleEffect
+public record ShatterForgeRuneParticleEffect(Axis axis) implements ParticleOptions
 {
     @Override
     public ParticleType<?> getType()
@@ -21,31 +21,31 @@ public record ShatterForgeRuneParticleEffect(Axis axis) implements ParticleEffec
     }
 
     @Override
-    public void write(PacketByteBuf buffer)
+    public void writeToNetwork(FriendlyByteBuf buffer)
     {
         buffer.writeInt(axis.ordinal());
     }
 
     @Override
-    public String asString()
+    public String writeToString()
     {
-        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
+        return BuiltInRegistries.PARTICLE_TYPE.getKey(getType()) + " " + (DoubleArgumentType.doubleArg(0));
     }
 
-    public static final Factory<ShatterForgeRuneParticleEffect> PARAMETERS_FACTORY = new Factory<>()
+    public static final Deserializer<ShatterForgeRuneParticleEffect> PARAMETERS_FACTORY = new Deserializer<>()
     {
         @Override
-        public ShatterForgeRuneParticleEffect read(ParticleType<ShatterForgeRuneParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
+        public ShatterForgeRuneParticleEffect fromCommand(ParticleType<ShatterForgeRuneParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
         {
             stringReader.expect(' ');
-            var axis = Axis.fromName(stringReader.readUnquotedString());
+            var axis = Axis.byName(stringReader.readUnquotedString());
             if (axis == null)
-                throw new SimpleCommandExceptionType(Text.literal("Invalid axis")).createWithContext(stringReader);
+                throw new SimpleCommandExceptionType(Component.literal("Invalid axis")).createWithContext(stringReader);
             return new ShatterForgeRuneParticleEffect(axis);
         }
 
         @Override
-        public ShatterForgeRuneParticleEffect read(ParticleType<ShatterForgeRuneParticleEffect> particleType, PacketByteBuf buffer)
+        public ShatterForgeRuneParticleEffect fromNetwork(ParticleType<ShatterForgeRuneParticleEffect> particleType, FriendlyByteBuf buffer)
         {
             return new ShatterForgeRuneParticleEffect(Axis.VALUES[buffer.readInt()]);
         }

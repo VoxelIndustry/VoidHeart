@@ -1,28 +1,28 @@
 package net.voxelindustry.voidheart.client.render;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
-import net.minecraft.client.util.math.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 
 public class VoidPillarRender implements BlockEntityRenderer<VoidPillarTile>
 {
     @Override
-    public void render(VoidPillarTile pillar, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay)
+    public void render(VoidPillarTile pillar, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay)
     {
-        matrices.push();
+        matrices.pushPose();
 
-        double offset = Math.abs(Math.sin((pillar.getWorld().getTime() + tickDelta) / 8.0) / 24.0);
+        double offset = Math.abs(Math.sin((pillar.getLevel().getGameTime() + tickDelta) / 8.0) / 24.0);
 
         matrices.translate(0.5, 1.1 + offset, 0.5);
-        matrices.multiply(MathUtil.quatFromAngleDegrees(pillar.getWorld().getTime() + tickDelta, MathUtil.NEGATIVE_Y));
+        matrices.mulPose(MathUtil.quatFromAngleDegrees(pillar.getLevel().getGameTime() + tickDelta, MathUtil.NEGATIVE_Y));
 
-        var model = MinecraftClient.getInstance().getItemRenderer().getModel(pillar.getStack(), null, null, 0);
-        MinecraftClient.getInstance().getItemRenderer().renderItem(pillar.getStack(), ModelTransformationMode.GROUND, false, matrices, vertexConsumers, light, overlay, model);
+        var model = Minecraft.getInstance().getItemRenderer().getModel(pillar.getStack(), null, null, 0);
+        Minecraft.getInstance().getItemRenderer().render(pillar.getStack(), ItemDisplayContext.GROUND, false, matrices, vertexConsumers, light, overlay, model);
 
-        matrices.pop();
+        matrices.popPose();
     }
 }

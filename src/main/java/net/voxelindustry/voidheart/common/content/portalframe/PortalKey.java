@@ -2,16 +2,16 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
-public record PortalKey(RegistryKey<World> worldKey, BlockPos corePos)
+public record PortalKey(ResourceKey<Level> worldKey, BlockPos corePos)
 {
     public static final Codec<PortalKey> CODEC = RecordCodecBuilder
             .create(instance -> instance.group(
-                    RegistryKey.createCodec(RegistryKeys.WORLD).fieldOf("worldKey").forGetter(PortalKey::worldKey),
+                    ResourceKey.codec(Registries.DIMENSION).fieldOf("worldKey").forGetter(PortalKey::worldKey),
                     BlockPos.CODEC.fieldOf("corePos").forGetter(PortalKey::corePos)
             ).apply(instance, PortalKey::new));
 
@@ -19,7 +19,7 @@ public record PortalKey(RegistryKey<World> worldKey, BlockPos corePos)
     public String toString()
     {
         return "[" +
-                "worldKey: " + worldKey.getValue() +
+                "worldKey: " + worldKey.location() +
                 ", corePos: " + corePos.toShortString() +
                 ']';
     }

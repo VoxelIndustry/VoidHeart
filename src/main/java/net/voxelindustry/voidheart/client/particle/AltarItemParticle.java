@@ -1,17 +1,17 @@
 package net.voxelindustry.voidheart.client.particle;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.particle.ParticleTextureSheet;
-import net.minecraft.client.particle.SpriteBillboardParticle;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.math.Bezier;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import static java.lang.Math.abs;
 
-public class AltarItemParticle extends SpriteBillboardParticle
+public class AltarItemParticle extends TextureSheetParticle
 {
 
     private final float minU;
@@ -25,7 +25,7 @@ public class AltarItemParticle extends SpriteBillboardParticle
 
     private final Vector3fc[] controlPoints;
 
-    public AltarItemParticle(ClientWorld world,
+    public AltarItemParticle(ClientLevel world,
                              double x,
                              double y,
                              double z,
@@ -38,30 +38,30 @@ public class AltarItemParticle extends SpriteBillboardParticle
     {
         super(world, x, y, z, velocityX, velocityY, velocityZ);
 
-        setSprite(MinecraftClient.getInstance().getItemRenderer().getModels().getModel(stack).getParticleSprite());
+        setSprite(Minecraft.getInstance().getItemRenderer().getItemModelShaper().getItemModel(stack).getParticleIcon());
 
-        float uDiff = (sprite.getMaxU() - sprite.getMinU()) / 4;
-        float vDiff = (sprite.getMaxV() - sprite.getMinV()) / 4;
+        float uDiff = (sprite.getU1() - sprite.getU0()) / 4;
+        float vDiff = (sprite.getV1() - sprite.getV0()) / 4;
 
         int uSlice = random.nextInt(4);
-        minU = sprite.getMinU() + uDiff * uSlice;
-        maxU = sprite.getMinU() + uDiff * (uSlice + 1);
+        minU = sprite.getU0() + uDiff * uSlice;
+        maxU = sprite.getU0() + uDiff * (uSlice + 1);
 
         int vSlice = random.nextInt(4);
-        minV = sprite.getMinV() + vDiff * vSlice;
-        maxV = sprite.getMinV() + vDiff * (vSlice + 1);
+        minV = sprite.getV0() + vDiff * vSlice;
+        maxV = sprite.getV0() + vDiff * (vSlice + 1);
 
-        gravityStrength = 0;
+        gravity = 0;
 
-        this.velocityX = velocityX - x;
-        this.velocityY = velocityY - y;
-        this.velocityZ = velocityZ - z;
+        this.xd = velocityX - x;
+        this.yd = velocityY - y;
+        this.zd = velocityZ - z;
 
         destinationX = velocityX;
         destinationY = velocityY;
         destinationZ = velocityZ;
 
-        maxAge = 30;
+        lifetime = 30;
 
         controlPoints = new Vector3fc[]
                 {
@@ -71,22 +71,22 @@ public class AltarItemParticle extends SpriteBillboardParticle
                         new Vector3f((float) destinationX, (float) destinationY, (float) destinationZ)
                 };
 
-        scale = 0.1F * (random.nextFloat() * 0.5F + 0.5F);
+        quadSize = 0.1F * (random.nextFloat() * 0.5F + 0.5F);
     }
 
     @Override
     public void tick()
     {
-        prevPosX = x;
-        prevPosY = y;
-        prevPosZ = z;
-        if (age++ >= maxAge || (isNearDestination()))
+        xo = x;
+        yo = y;
+        zo = z;
+        if (age++ >= lifetime || (isNearDestination()))
         {
-            markDead();
+            remove();
             return;
         }
 
-        double delta = age / (double) maxAge;
+        double delta = age / (double) lifetime;
 
         var pos = Bezier.pointOfBezier4f(controlPoints, (float) delta);
 
@@ -99,32 +99,32 @@ public class AltarItemParticle extends SpriteBillboardParticle
     }
 
     @Override
-    protected float getMinU()
+    protected float getU0()
     {
         return minU;
     }
 
     @Override
-    protected float getMaxU()
+    protected float getU1()
     {
         return maxU;
     }
 
     @Override
-    protected float getMinV()
+    protected float getV0()
     {
         return minV;
     }
 
     @Override
-    protected float getMaxV()
+    protected float getV1()
     {
         return maxV;
     }
 
     @Override
-    public ParticleTextureSheet getType()
+    public ParticleRenderType getRenderType()
     {
-        return ParticleTextureSheet.TERRAIN_SHEET;
+        return ParticleRenderType.TERRAIN_SHEET;
     }
 }

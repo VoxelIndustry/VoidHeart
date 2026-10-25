@@ -2,16 +2,16 @@ package net.voxelindustry.voidheart.common.content.shatterforge;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.argument.ItemStackArgument;
-import net.minecraft.command.argument.ItemStringReader;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.registry.Registries;
+import net.minecraft.commands.arguments.item.ItemInput;
+import net.minecraft.commands.arguments.item.ItemParser;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
 
-public record ShatterForgeItemParticleEffect(ItemStack input, ItemStack output) implements ParticleEffect
+public record ShatterForgeItemParticleEffect(ItemStack input, ItemStack output) implements ParticleOptions
 {
     @Override
     public ParticleType<?> getType()
@@ -20,41 +20,41 @@ public record ShatterForgeItemParticleEffect(ItemStack input, ItemStack output) 
     }
 
     @Override
-    public void write(PacketByteBuf buffer)
+    public void writeToNetwork(FriendlyByteBuf buffer)
     {
-        buffer.writeItemStack(input);
-        buffer.writeItemStack(output);
+        buffer.writeItem(input);
+        buffer.writeItem(output);
     }
 
     @Override
-    public String asString()
+    public String writeToString()
     {
-        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (new ItemStackArgument(input.getRegistryEntry(), input.getNbt())).asString() + " " + (new ItemStackArgument(output.getRegistryEntry(), output.getNbt())).asString();
+        return BuiltInRegistries.PARTICLE_TYPE.getKey(getType()) + " " + (new ItemInput(input.getItemHolder(), input.getTag())).serialize() + " " + (new ItemInput(output.getItemHolder(), output.getTag())).serialize();
     }
 
-    public static final Factory<ShatterForgeItemParticleEffect> PARAMETERS_FACTORY = new Factory<>()
+    public static final Deserializer<ShatterForgeItemParticleEffect> PARAMETERS_FACTORY = new Deserializer<>()
     {
         @Override
-        public ShatterForgeItemParticleEffect read(ParticleType<ShatterForgeItemParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
+        public ShatterForgeItemParticleEffect fromCommand(ParticleType<ShatterForgeItemParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
         {
             stringReader.expect(' ');
-            var inputItemResult = ItemStringReader.item(Registries.ITEM.getReadOnlyWrapper(), stringReader);
-            var inputStack = (new ItemStackArgument(inputItemResult.item(), inputItemResult.nbt()))
-                    .createStack(1, false);
+            var inputItemResult = ItemParser.parseForItem(BuiltInRegistries.ITEM.asLookup(), stringReader);
+            var inputStack = (new ItemInput(inputItemResult.item(), inputItemResult.nbt()))
+                    .createItemStack(1, false);
             stringReader.expect(' ');
 
-            var outputItemResult = ItemStringReader.item(Registries.ITEM.getReadOnlyWrapper(), stringReader);
-            var outputStack = (new ItemStackArgument(outputItemResult.item(), outputItemResult.nbt()))
-                    .createStack(1, false);
+            var outputItemResult = ItemParser.parseForItem(BuiltInRegistries.ITEM.asLookup(), stringReader);
+            var outputStack = (new ItemInput(outputItemResult.item(), outputItemResult.nbt()))
+                    .createItemStack(1, false);
             return new ShatterForgeItemParticleEffect(inputStack, outputStack);
         }
 
         @Override
-        public ShatterForgeItemParticleEffect read(ParticleType<ShatterForgeItemParticleEffect> particleType, PacketByteBuf buffer)
+        public ShatterForgeItemParticleEffect fromNetwork(ParticleType<ShatterForgeItemParticleEffect> particleType, FriendlyByteBuf buffer)
         {
             return new ShatterForgeItemParticleEffect(
-                    buffer.readItemStack(),
-                    buffer.readItemStack()
+                    buffer.readItem(),
+                    buffer.readItem()
             );
         }
     };

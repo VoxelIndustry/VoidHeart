@@ -1,12 +1,12 @@
 package net.voxelindustry.voidheart.common.content.pillar;
 
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.inventorymover.SingleStackExtractable;
 import net.voxelindustry.voidheart.common.content.inventorymover.SingleStackInsertable;
@@ -29,36 +29,36 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
     }
 
     @Override
-    public void setWorld(World world)
+    public void setLevel(Level world)
     {
-        super.setWorld(world);
+        super.setLevel(world);
 
         // Called on world load
         sync();
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    public void load(CompoundTag tag)
     {
-        super.readNbt(tag);
+        super.load(tag);
 
-        stack = ItemStack.fromNbt(tag.getCompound("stack"));
+        stack = ItemStack.of(tag.getCompound("stack"));
 
         int pillarCount = tag.getInt("pillarCount");
         for (int index = 0; index < pillarCount; index++)
-            altars.add(BlockPos.fromLong(tag.getLong("pillar" + index)));
+            altars.add(BlockPos.of(tag.getLong("pillar" + index)));
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    public void saveAdditional(CompoundTag tag)
     {
-        tag.put("stack", stack.writeNbt(new NbtCompound()));
+        tag.put("stack", stack.save(new CompoundTag()));
 
         tag.putInt("pillarCount", altars.size());
         for (int index = 0; index < altars.size(); index++)
             tag.putLong("pillar" + index, altars.get(index).asLong());
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     public void setStack(ItemStack stack)
@@ -86,20 +86,20 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
 
     private void setActive(boolean active)
     {
-        BlockState cachedState = getCachedState();
+        BlockState cachedState = getBlockState();
 
         if (cachedState.getBlock() != VoidHeartBlocks.VOID_PILLAR)
             return;
 
-        if (cachedState.get(Properties.LIT) != active)
-            getWorld().setBlockState(getPos(), cachedState.with(Properties.LIT, active));
+        if (cachedState.getValue(BlockStateProperties.LIT) != active)
+            getLevel().setBlockAndUpdate(getBlockPos(), cachedState.setValue(BlockStateProperties.LIT, active));
     }
 
     public void removeItself()
     {
         altars.forEach(altarPos ->
         {
-            var tile = getWorld().getBlockEntity(altarPos);
+            var tile = getLevel().getBlockEntity(altarPos);
 
             if (tile instanceof PillarLinkedTile linkedTile)
                 linkedTile.removePillar(this);

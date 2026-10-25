@@ -1,14 +1,14 @@
 package net.voxelindustry.voidheart.common.world;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockPos.Mutable;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.WorldAccess;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.util.FeatureContext;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockPos.MutableBlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
@@ -20,35 +20,35 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
     }
 
     @Override
-    public boolean generate(FeatureContext<VoidMonolithFeatureConfig> context)
+    public boolean place(FeaturePlaceContext<VoidMonolithFeatureConfig> context)
     {
-        if (context.getRandom().nextFloat() > 0.01F)
+        if (context.random().nextFloat() > 0.01F)
             return false;
 
-        Mutable chosenPos = context.getOrigin().mutableCopy().set(context.getOrigin().getX() + context.getRandom().nextInt(16), context.getWorld().getTopY(), context.getOrigin().getZ() + context.getRandom().nextInt(16));
-        Mutable posToPlace = findPosToPlace(context.getWorld(), chosenPos);
+        MutableBlockPos chosenPos = context.origin().mutable().set(context.origin().getX() + context.random().nextInt(16), context.level().getMaxBuildHeight(), context.origin().getZ() + context.random().nextInt(16));
+        MutableBlockPos posToPlace = findPosToPlace(context.level(), chosenPos);
 
         if (posToPlace == null)
             return false;
 
-        int height = context.getRandom().nextInt(context.getConfig().maxHeight() - context.getConfig().minHeight()) + context.getConfig().minHeight();
+        int height = context.random().nextInt(context.config().maxHeight() - context.config().minHeight()) + context.config().minHeight();
 
         for (int y = 0; y < height; y++)
         {
             boolean hasBelow = y != 0;
             boolean hasAbove = y != height - 1;
 
-            setBlockState(context.getWorld(), posToPlace,
-                    VoidHeartBlocks.VOID_MONOLITH.getDefaultState()
-                            .with(StateProperties.UP, hasAbove)
-                            .with(StateProperties.DOWN, hasBelow)
-                            .with(StateProperties.BROKEN, true));
+            setBlock(context.level(), posToPlace,
+                    VoidHeartBlocks.VOID_MONOLITH.defaultBlockState()
+                            .setValue(StateProperties.UP, hasAbove)
+                            .setValue(StateProperties.DOWN, hasBelow)
+                            .setValue(StateProperties.BROKEN, true));
             posToPlace.move(Direction.UP);
         }
         return true;
     }
 
-    private static Mutable findPosToPlace(WorldAccess worldAccess, BlockPos.Mutable mutable)
+    private static MutableBlockPos findPosToPlace(LevelAccessor worldAccess, BlockPos.MutableBlockPos mutable)
     {
         while (mutable.getY() > 1)
         {
@@ -57,7 +57,7 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
             {
                 BlockState blockState = worldAccess.getBlockState(mutable.move(Direction.DOWN));
                 mutable.move(Direction.UP);
-                if (!blockState.isOf(Blocks.WATER) && !blockState.isOf(Blocks.LAVA) && !blockState.isOf(Blocks.BEDROCK) && !blockState.isAir())
+                if (!blockState.is(Blocks.WATER) && !blockState.is(Blocks.LAVA) && !blockState.is(Blocks.BEDROCK) && !blockState.isAir())
                     return mutable;
             }
         }

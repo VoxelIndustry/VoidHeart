@@ -2,21 +2,21 @@ package net.voxelindustry.voidheart.data.provider;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
-import net.minecraft.block.Block;
-import net.minecraft.data.client.BlockStateModelGenerator;
-import net.minecraft.data.client.ItemModelGenerator;
-import net.minecraft.data.client.ModelIds;
-import net.minecraft.data.client.Models;
-import net.minecraft.data.client.TextureMap;
-import net.minecraft.data.family.BlockFamilies;
-import net.minecraft.data.family.BlockFamily;
+import net.minecraft.data.BlockFamilies;
+import net.minecraft.data.BlockFamily;
+import net.minecraft.data.models.BlockModelGenerators;
+import net.minecraft.data.models.ItemModelGenerators;
+import net.minecraft.data.models.model.ModelLocationUtils;
+import net.minecraft.data.models.model.ModelTemplates;
+import net.minecraft.data.models.model.TextureMapping;
+import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 
 public class ModelsProvider extends FabricModelProvider
 {
-    private BlockStateModelGenerator generator;
+    private BlockModelGenerators generator;
 
     public ModelsProvider(FabricDataOutput output)
     {
@@ -24,14 +24,14 @@ public class ModelsProvider extends FabricModelProvider
     }
 
     @Override
-    public void generateBlockStateModels(BlockStateModelGenerator generator)
+    public void generateBlockStateModels(BlockModelGenerators generator)
     {
         this.generator = generator;
 
-        BlockFamilies.getFamilies().filter(VoidHeartDataGenerator::isVoidHeartFamily).filter(BlockFamily::shouldGenerateModels).forEach(family ->
+        BlockFamilies.getAllFamilies().filter(VoidHeartDataGenerator::isVoidHeartFamily).filter(BlockFamily::shouldGenerateModel).forEach(family ->
         {
-            generator.registerCubeAllModelTexturePool(family.getBaseBlock()).family(family);
-            generator.registerParentedItemModel(family.getBaseBlock(), ModelIds.getBlockModelId(family.getBaseBlock()));
+            generator.family(family.getBaseBlock()).generateFor(family);
+            generator.delegateItemModel(family.getBaseBlock(), ModelLocationUtils.getModelLocation(family.getBaseBlock()));
         });
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_PILLAR);
@@ -42,42 +42,42 @@ public class ModelsProvider extends FabricModelProvider
     }
 
     @Override
-    public void generateItemModels(ItemModelGenerator generator)
+    public void generateItemModels(ItemModelGenerators generator)
     {
-        generator.register(VoidHeartItems.RAVENOUS_GOLD_INGOT, Models.GENERATED);
-        generator.register(VoidHeartItems.ARROGANT_IRON_INGOT, Models.GENERATED);
+        generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_INGOT, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_INGOT, ModelTemplates.FLAT_ITEM);
     }
 
     private void registerPillar(Block block)
     {
-        var textureMap = TextureMap.sideEnd(block);
-        generator.blockStateCollector.accept(BlockStateModelGenerator.createAxisRotatedBlockState(block, Models.CUBE_COLUMN.upload(block, textureMap, this.generator.modelCollector)));
+        var textureMap = TextureMapping.column(block);
+        generator.blockStateOutput.accept(BlockModelGenerators.createAxisAlignedPillarBlock(block, ModelTemplates.CUBE_COLUMN.create(block, textureMap, this.generator.modelOutput)));
     }
 
     private void registerPillarSlab(Block pillar, Block slab)
     {
-        var textureMap = TextureMap.sideEnd(pillar);
-        var slabModel = Models.SLAB.upload(slab, textureMap, this.generator.modelCollector);
-        var slabTopModel = Models.SLAB_TOP.upload(slab, textureMap, this.generator.modelCollector);
-        var slabDoubleModel = Models.CUBE_COLUMN.uploadWithoutVariant(slab, "_double", textureMap, this.generator.modelCollector);
-        generator.blockStateCollector.accept(BlockStateModelGenerator.createSlabBlockState(slab, slabModel, slabTopModel, slabDoubleModel));
+        var textureMap = TextureMapping.column(pillar);
+        var slabModel = ModelTemplates.SLAB_BOTTOM.create(slab, textureMap, this.generator.modelOutput);
+        var slabTopModel = ModelTemplates.SLAB_TOP.create(slab, textureMap, this.generator.modelOutput);
+        var slabDoubleModel = ModelTemplates.CUBE_COLUMN.createWithOverride(slab, "_double", textureMap, this.generator.modelOutput);
+        generator.blockStateOutput.accept(BlockModelGenerators.createSlab(slab, slabModel, slabTopModel, slabDoubleModel));
     }
 
     private void registerPillarStairs(Block pillar, Block stairs)
     {
-        var textureMap = TextureMap.sideEnd(pillar);
+        var textureMap = TextureMapping.column(pillar);
 
-        var innerStairsModel = Models.INNER_STAIRS.upload(stairs, textureMap, this.generator.modelCollector);
-        var stairsModel = Models.STAIRS.upload(stairs, textureMap, this.generator.modelCollector);
-        var outerStairsModel = Models.OUTER_STAIRS.upload(stairs, textureMap, this.generator.modelCollector);
+        var innerStairsModel = ModelTemplates.STAIRS_INNER.create(stairs, textureMap, this.generator.modelOutput);
+        var stairsModel = ModelTemplates.STAIRS_STRAIGHT.create(stairs, textureMap, this.generator.modelOutput);
+        var outerStairsModel = ModelTemplates.STAIRS_OUTER.create(stairs, textureMap, this.generator.modelOutput);
 
-        generator.blockStateCollector.accept(BlockStateModelGenerator.createStairsBlockState(stairs, innerStairsModel, stairsModel, outerStairsModel));
-        generator.registerParentedItemModel(stairs, stairsModel);
+        generator.blockStateOutput.accept(BlockModelGenerators.createStairs(stairs, innerStairsModel, stairsModel, outerStairsModel));
+        generator.delegateItemModel(stairs, stairsModel);
     }
 
     private void registerSimpleCubeAll(Block block)
     {
-        generator.registerSimpleCubeAll(block);
-        generator.registerParentedItemModel(block, ModelIds.getBlockModelId(block));
+        generator.createTrivialCube(block);
+        generator.delegateItemModel(block, ModelLocationUtils.getModelLocation(block));
     }
 }

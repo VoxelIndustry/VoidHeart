@@ -3,12 +3,12 @@ package net.voxelindustry.voidheart.common.world.pocket;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import lombok.extern.log4j.Log4j2;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalKey;
 
 import java.util.Collections;
@@ -53,26 +53,26 @@ public final class VoidHeartData
         return maxFlexion <= flexionCountWithoutPortals + portalsCount() / 2;
     }
 
-    public void addPortal(World fromWorld, BlockPos corePos)
+    public void addPortal(Level fromWorld, BlockPos corePos)
     {
-        portalKeyList.add(new PortalKey(fromWorld.getRegistryKey(), corePos));
+        portalKeyList.add(new PortalKey(fromWorld.dimension(), corePos));
         markDirty();
     }
 
-    public void removePortal(World fromWorld, BlockPos corePos)
+    public void removePortal(Level fromWorld, BlockPos corePos)
     {
-        portalKeyList.remove(new PortalKey(fromWorld.getRegistryKey(), corePos));
+        portalKeyList.remove(new PortalKey(fromWorld.dimension(), corePos));
         markDirty();
     }
 
-    public static VoidHeartData fromNbt(NbtCompound compound)
+    public static VoidHeartData fromNbt(CompoundTag compound)
     {
         return CODEC.decode(NbtOps.INSTANCE, compound)
                 .resultOrPartial(log::error)
                 .orElseThrow().getFirst();
     }
 
-    public NbtElement toNbt()
+    public Tag toNbt()
     {
         return CODEC.encodeStart(NbtOps.INSTANCE, this).result().orElseThrow();
     }
@@ -146,15 +146,15 @@ public final class VoidHeartData
                 "maxFlexion=" + maxFlexion + ']';
     }
 
-    public Text debugPrint()
+    public Component debugPrint()
     {
-        var root = Text.literal("§6PocketPos: §3" + pocketPos.toShortString() + "\n");
-        root.append(Text.literal("§6Max Flexion: §3" + maxFlexion + "\n"));
-        root.append(Text.literal("§6Flexion Count (without portals): §3" + flexionCountWithoutPortals + "\n"));
-        root.append(Text.literal("§6Portals Count: §3" + portalsCount() + "\n"));
+        var root = Component.literal("§6PocketPos: §3" + pocketPos.toShortString() + "\n");
+        root.append(Component.literal("§6Max Flexion: §3" + maxFlexion + "\n"));
+        root.append(Component.literal("§6Flexion Count (without portals): §3" + flexionCountWithoutPortals + "\n"));
+        root.append(Component.literal("§6Portals Count: §3" + portalsCount() + "\n"));
 
         for (var key : portalKeyList)
-            root.append(Text.literal(" -> §3"+key.toString() + "\n"));
+            root.append(Component.literal(" -> §3"+key.toString() + "\n"));
 
         return root;
     }

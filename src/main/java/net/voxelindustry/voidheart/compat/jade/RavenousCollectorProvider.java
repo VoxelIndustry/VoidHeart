@@ -1,8 +1,5 @@
 package net.voxelindustry.voidheart.compat.jade;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -12,9 +9,13 @@ import snownee.jade.api.config.IPluginConfig;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+
 public class RavenousCollectorProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider
 {
-    private static final Identifier RAVENOUS_COLLECTOR = new Identifier(MODID, "ravenous_collector");
+    private static final ResourceLocation RAVENOUS_COLLECTOR = new ResourceLocation(MODID, "ravenous_collector");
 
     @Override
     public void appendTooltip(
@@ -26,18 +27,18 @@ public class RavenousCollectorProvider implements IServerDataProvider<BlockAcces
         if (!accessor.getServerData().contains("essenceTypeName"))
             return;
 
-        tooltip.add(Text.translatable(accessor.getServerData().getString("essenceTypeName")));
-        tooltip.append(Text.literal("  "+accessor.getServerData().getInt("essenceAmount")+" / "+accessor.getServerData().getInt("essenceMaxAmount")));
+        tooltip.add(Component.translatable(accessor.getServerData().getString("essenceTypeName")));
+        tooltip.append(Component.literal("  "+accessor.getServerData().getInt("essenceAmount")+" / "+accessor.getServerData().getInt("essenceMaxAmount")));
     }
 
     @Override
-    public Identifier getUid()
+    public ResourceLocation getUid()
     {
         return RAVENOUS_COLLECTOR;
     }
 
     @Override
-    public void appendServerData(NbtCompound tag, BlockAccessor accessor)
+    public void appendServerData(CompoundTag tag, BlockAccessor accessor)
     {
         var blockEntity = accessor.getBlockEntity();
 

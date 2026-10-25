@@ -1,29 +1,29 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContextParameterSet;
-import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.jetbrains.annotations.Nullable;
@@ -33,133 +33,133 @@ import java.util.List;
 import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
 
-public class ExperienceSkullBlock extends Block implements BlockEntityProvider
+public class ExperienceSkullBlock extends Block implements EntityBlock
 {
-    private static final VoxelShape SHAPE = createCuboidShape(1, 1, 1, 15, 15, 15);
+    private static final VoxelShape SHAPE = box(1, 1, 1, 15, 15, 15);
 
-    public ExperienceSkullBlock(Settings settings)
+    public ExperienceSkullBlock(Properties settings)
     {
         super(settings);
 
-        this.setDefaultState(getStateManager().getDefaultState()
-                .with(StateProperties.MODEL, false));
+        this.registerDefaultState(getStateDefinition().any()
+                .setValue(StateProperties.MODEL, false));
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state)
+    public RenderShape getRenderShape(BlockState state)
     {
-        return state.get(StateProperties.MODEL) ? BlockRenderType.MODEL : BlockRenderType.ENTITYBLOCK_ANIMATED;
+        return state.getValue(StateProperties.MODEL) ? RenderShape.MODEL : RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
     @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context)
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
     {
         return SHAPE;
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder)
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder)
     {
         var experienceSkull = new ItemStack(VoidHeartBlocks.EXPERIENCE_SKULL);
 
-        var tile = builder.get(LootContextParameters.BLOCK_ENTITY);
+        var tile = builder.getParameter(LootContextParams.BLOCK_ENTITY);
 
-        experienceSkull.setDamage(ExperienceSkullTile.MAX_EXPERIENCE);
+        experienceSkull.setDamageValue(ExperienceSkullTile.MAX_EXPERIENCE);
         if (tile instanceof ExperienceSkullTile skullTile)
         {
-            experienceSkull.setDamage(ExperienceSkullTile.MAX_EXPERIENCE - skullTile.getExperience());
-            experienceSkull.getOrCreateNbt().putInt("experience", skullTile.getExperience());
+            experienceSkull.setDamageValue(ExperienceSkullTile.MAX_EXPERIENCE - skullTile.getExperience());
+            experienceSkull.getOrCreateTag().putInt("experience", skullTile.getExperience());
         }
 
         return singletonList(experienceSkull);
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack)
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack)
     {
-        super.onPlaced(world, pos, state, placer, itemStack);
+        super.setPlacedBy(world, pos, state, placer, itemStack);
 
         var tile = world.getBlockEntity(pos);
 
         if (tile instanceof ExperienceSkullTile skullTile)
-            skullTile.setExperience(itemStack.getOrCreateNbt().getInt("experience"));
+            skullTile.setExperience(itemStack.getOrCreateTag().getInt("experience"));
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         var skull = (ExperienceSkullTile) world.getBlockEntity(pos);
 
         if (skull == null)
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
 
         var increment = 10;
 
-        if (player.isSneaking())
+        if (player.isShiftKeyDown())
         {
             if (skull.getExperience() > 0)
             {
                 var toRemove = min(increment, skull.getExperience());
                 skull.setExperience(skull.getExperience() - toRemove);
-                player.addExperience(toRemove);
+                player.giveExperiencePoints(toRemove);
 
                 world.playSound(player,
                         pos,
-                        SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                        SoundCategory.BLOCKS,
+                        SoundEvents.EXPERIENCE_ORB_PICKUP,
+                        SoundSource.BLOCKS,
                         0.1F,
                         (world.random.nextFloat() - world.random.nextFloat()) * 0.35F + 0.9F);
             }
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
         if (skull.getExperience() < ExperienceSkullTile.MAX_EXPERIENCE && player.totalExperience > 0)
         {
             var toAdd = min(increment, player.totalExperience);
             skull.setExperience(skull.getExperience() + toAdd);
-            player.addExperience(-toAdd);
+            player.giveExperiencePoints(-toAdd);
 
-            world.playSound(pos.getX(),
+            world.playLocalSound(pos.getX(),
                     pos.getY(),
                     pos.getZ(),
-                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                    SoundCategory.BLOCKS,
+                    SoundEvents.EXPERIENCE_ORB_PICKUP,
+                    SoundSource.BLOCKS,
                     0.1F,
                     (world.random.nextFloat() - world.random.nextFloat()) * 0.35F + 0.9F,
                     true);
         }
 
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random)
+    public void animateTick(BlockState state, Level world, BlockPos pos, RandomSource random)
     {
-        super.randomDisplayTick(state, world, pos, random);
+        super.animateTick(state, world, pos, random);
 
         if (random.nextInt(1300) == 1)
-            world.playSoundAtBlockCenter(pos,
-                    SoundEvents.ENTITY_GENERIC_DRINK,
-                    SoundCategory.BLOCKS,
+            world.playLocalSound(pos,
+                    SoundEvents.GENERIC_DRINK,
+                    SoundSource.BLOCKS,
                     0.5f,
                     random.nextFloat() * 0.1F + 0.9F,
                     false);
     }
 
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx)
+    public BlockState getStateForPlacement(BlockPlaceContext ctx)
     {
-        return this.getDefaultState().with(Properties.HORIZONTAL_FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+        return this.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, ctx.getHorizontalDirection().getOpposite());
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(Properties.HORIZONTAL_FACING, StateProperties.MODEL);
+        builder.add(BlockStateProperties.HORIZONTAL_FACING, StateProperties.MODEL);
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new ExperienceSkullTile(pos, state);
     }

@@ -1,10 +1,5 @@
 package net.voxelindustry.voidheart.client.particle;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.particle.ParticleTextureSheet;
-import net.minecraft.client.particle.SpriteBillboardParticle;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.item.ItemStack;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.Vector4f;
@@ -13,7 +8,13 @@ import org.joml.Vector4fc;
 import static java.lang.Math.*;
 import static org.joml.Math.abs;
 
-public class ShatterForgeItemParticle extends SpriteBillboardParticle
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.world.item.ItemStack;
+
+public class ShatterForgeItemParticle extends TextureSheetParticle
 {
     private final Vector4fc offsetItemUV;
 
@@ -24,7 +25,7 @@ public class ShatterForgeItemParticle extends SpriteBillboardParticle
 
     private final double angleOffset;
 
-    public ShatterForgeItemParticle(ClientWorld world,
+    public ShatterForgeItemParticle(ClientLevel world,
                                     double x,
                                     double y,
                                     double z,
@@ -36,26 +37,26 @@ public class ShatterForgeItemParticle extends SpriteBillboardParticle
     {
         super(world, x, y, z, destinationX, destinationY, destinationZ);
 
-        gravityStrength = 0;
+        gravity = 0;
 
-        this.velocityX = 0;
-        this.velocityY = 0;
-        this.velocityZ = 0;
+        this.xd = 0;
+        this.yd = 0;
+        this.zd = 0;
 
         start = new Vector3d(x, y, z);
         end = new Vector3d(destinationX, destinationY, destinationZ);
 
-        maxAge = 20;
+        lifetime = 20;
 
-        scale = 0.1F * (random.nextFloat() * 0.5F + 0.5F);
+        quadSize = 0.1F * (random.nextFloat() * 0.5F + 0.5F);
 
-        var models = MinecraftClient.getInstance().getItemRenderer().getModels();
-        var baseSprite = models.getModel(inputStack).getParticleSprite();
-        spriteProvider = new SimpleSpriteProvider(random.nextFloat() * 0.5F + 0.8F, baseSprite, models.getModel(outputStack).getParticleSprite());
-        setSpriteForAge(spriteProvider);
+        var models = Minecraft.getInstance().getItemRenderer().getItemModelShaper();
+        var baseSprite = models.getItemModel(inputStack).getParticleIcon();
+        spriteProvider = new SimpleSpriteProvider(random.nextFloat() * 0.5F + 0.8F, baseSprite, models.getItemModel(outputStack).getParticleIcon());
+        setSpriteFromAge(spriteProvider);
 
-        float uDiff = (baseSprite.getMaxU() - baseSprite.getMinU()) / 4;
-        float vDiff = (baseSprite.getMaxV() - baseSprite.getMinV()) / 4;
+        float uDiff = (baseSprite.getU1() - baseSprite.getU0()) / 4;
+        float vDiff = (baseSprite.getV1() - baseSprite.getV0()) / 4;
 
         var uSlice = random.nextInt(4);
         var vSlice = random.nextInt(4);
@@ -68,18 +69,18 @@ public class ShatterForgeItemParticle extends SpriteBillboardParticle
     @Override
     public void tick()
     {
-        prevPosX = x;
-        prevPosY = y;
-        prevPosZ = z;
-        if (age++ >= maxAge || (isNearDestination()))
+        xo = x;
+        yo = y;
+        zo = z;
+        if (age++ >= lifetime || (isNearDestination()))
         {
-            markDead();
+            remove();
             return;
         }
 
-        setSpriteForAge(spriteProvider);
+        setSpriteFromAge(spriteProvider);
 
-        double delta = age / (double) maxAge;
+        double delta = age / (double) lifetime;
 
         var diff = end.sub(start, new Vector3d());
 
@@ -106,32 +107,32 @@ public class ShatterForgeItemParticle extends SpriteBillboardParticle
     }
 
     @Override
-    protected float getMinU()
+    protected float getU0()
     {
-        return this.sprite.getMinU() + offsetItemUV.x();
+        return this.sprite.getU0() + offsetItemUV.x();
     }
 
     @Override
-    protected float getMaxU()
+    protected float getU1()
     {
-        return this.sprite.getMinU() + offsetItemUV.z();
+        return this.sprite.getU0() + offsetItemUV.z();
     }
 
     @Override
-    protected float getMinV()
+    protected float getV0()
     {
-        return this.sprite.getMinV() + offsetItemUV.y();
+        return this.sprite.getV0() + offsetItemUV.y();
     }
 
     @Override
-    protected float getMaxV()
+    protected float getV1()
     {
-        return this.sprite.getMinV() + offsetItemUV.w();
+        return this.sprite.getV0() + offsetItemUV.w();
     }
 
     @Override
-    public ParticleTextureSheet getType()
+    public ParticleRenderType getRenderType()
     {
-        return ParticleTextureSheet.TERRAIN_SHEET;
+        return ParticleRenderType.TERRAIN_SHEET;
     }
 }

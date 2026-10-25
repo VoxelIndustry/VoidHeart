@@ -1,8 +1,8 @@
 package net.voxelindustry.voidheart.compat.jade;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import snownee.jade.api.BlockAccessor;
@@ -15,7 +15,7 @@ import snownee.jade.impl.ui.ProgressArrowElement;
 
 public class ShatterForgeProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider
 {
-    private static final Identifier SHATTER_FORGE = new Identifier(VoidHeart.MODID, "shatter_forge");
+    private static final ResourceLocation SHATTER_FORGE = new ResourceLocation(VoidHeart.MODID, "shatter_forge");
 
     @Override
     public void appendTooltip(
@@ -29,27 +29,27 @@ public class ShatterForgeProvider implements IServerDataProvider<BlockAccessor>,
 
         var helper = IElementHelper.get();
 
-        tooltip.append(helper.item(ItemStack.fromNbt(accessor.getServerData().getCompound("input"))));
+        tooltip.append(helper.item(ItemStack.of(accessor.getServerData().getCompound("input"))));
         tooltip.append(new ProgressArrowElement(accessor.getServerData().getFloat("progress")));
-        tooltip.append(helper.item(ItemStack.fromNbt(accessor.getServerData().getCompound("output"))));
+        tooltip.append(helper.item(ItemStack.of(accessor.getServerData().getCompound("output"))));
     }
 
     @Override
-    public Identifier getUid()
+    public ResourceLocation getUid()
     {
         return SHATTER_FORGE;
     }
 
     @Override
-    public void appendServerData(NbtCompound tag, BlockAccessor accessor)
+    public void appendServerData(CompoundTag tag, BlockAccessor accessor)
     {
         var blockEntity = accessor.getBlockEntity();
 
         if (blockEntity instanceof ShatterForgeTile forge && forge.getRecipeState() != null)
         {
-            tag.put("input", forge.getRecipeState().getInput(ItemStack.class, 0).writeNbt(new NbtCompound()));
+            tag.put("input", forge.getRecipeState().getInput(ItemStack.class, 0).save(new CompoundTag()));
             tag.putFloat("progress", forge.getRecipeState().completionDelta());
-            tag.put("output", forge.getRecipeState().getOutput(ItemStack.class, 0).writeNbt(new NbtCompound()));
+            tag.put("output", forge.getRecipeState().getOutput(ItemStack.class, 0).save(new CompoundTag()));
         }
     }
 }

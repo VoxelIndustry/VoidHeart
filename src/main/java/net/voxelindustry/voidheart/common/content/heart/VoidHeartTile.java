@@ -4,17 +4,17 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.Codec;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
 import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
@@ -34,7 +34,7 @@ import static java.util.Collections.singletonList;
 
 public class VoidHeartTile extends TileBase implements PartialSyncedTile
 {
-    private final Collection<Identifier> syncElements = singletonList(VoidHeartDataSyncElement.IDENTIFIER);
+    private final Collection<ResourceLocation> syncElements = singletonList(VoidHeartDataSyncElement.IDENTIFIER);
 
     @Getter
     @Setter
@@ -63,13 +63,13 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public void setWorld(World world)
+    public void setLevel(Level world)
     {
-        super.setWorld(world);
+        super.setLevel(world);
 
         if (isServer() && playerID != null)
         {
-            var gameProfileOpt = world.getServer().getUserCache().getByUuid(playerID);
+            var gameProfileOpt = world.getServer().getProfileCache().get(playerID);
 
             if (gameProfileOpt.isEmpty())
                 return;
@@ -80,45 +80,45 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    public void load(CompoundTag tag)
     {
-        super.readNbt(tag);
+        super.load(tag);
 
-        if (tag.containsUuid("playerID"))
-            playerID = tag.getUuid("playerID");
+        if (tag.hasUUID("playerID"))
+            playerID = tag.getUUID("playerID");
 
         if (isClient() && tag.contains("ownerProfile"))
         {
-            playerProfile = NbtHelper.toGameProfile(tag.getCompound("ownerProfile"));
+            playerProfile = NbtUtils.readGameProfile(tag.getCompound("ownerProfile"));
 
             if (playerProfile != null && playerProfile.isComplete())
-                MinecraftClient.getInstance().getSessionService().fillProfileProperties(playerProfile, true);
+                Minecraft.getInstance().getMinecraftSessionService().fillProfileProperties(playerProfile, true);
         }
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    public void saveAdditional(CompoundTag tag)
     {
         if (playerID != null)
         {
-            tag.putUuid("playerID", playerID);
+            tag.putUUID("playerID", playerID);
 
             if (isServer() && playerProfile != null)
             {
-                var profileTag = new NbtCompound();
-                NbtHelper.writeGameProfile(profileTag, playerProfile);
+                var profileTag = new CompoundTag();
+                NbtUtils.writeGameProfile(profileTag, playerProfile);
                 tag.put("ownerProfile", profileTag);
             }
         }
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, VoidHeartTile heart)
+    public static void tick(Level world, BlockPos pos, BlockState state, VoidHeartTile heart)
     {
         if (heart.isClient())
         {
-            if (world.getTime() % 2 == 0)
+            if (world.getGameTime() % 2 == 0)
                 world.addParticle(new AltarVoidParticleEffect(0.05),
                         pos.getX() + 0.5 + world.random.nextGaussian(),
                         pos.getY() + 0.5 + world.random.nextGaussian(),
@@ -129,7 +129,7 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
             return;
         }
 
-        if (world.getTime() % 20 == 0)
+        if (world.getGameTime() % 20 == 0)
         {
             var heartData = VoidPocketState.getVoidPocketState(world).getHeartData(heart.playerID);
             heart.updateHeartData(heartData);
@@ -144,41 +144,41 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
         heart.lastPlayerHitCache.values().removeIf(timestamp -> System.currentTimeMillis() - timestamp > 5_000);
     }
 
-    public void playerHit(PlayerEntity player)
+    public void playerHit(Player player)
     {
-        UUID hitPlayerID = player.getUuid();
+        UUID hitPlayerID = player.getUUID();
         if (lastPlayerHitCache.containsKey(hitPlayerID))
         {
-            var serverPlayer = (ServerPlayerEntity) player;
+            var serverPlayer = (ServerPlayer) player;
 
-            ServerWorld destination = world.getServer().getWorld(serverPlayer.getSpawnPointDimension());
+            ServerLevel destination = level.getServer().getLevel(serverPlayer.getRespawnDimension());
 
-            BlockPos spawnPointPosition = serverPlayer.getSpawnPointPosition();
-            Optional<Vec3d> respawnPosition = spawnPointPosition == null ? Optional.empty() : PlayerEntity.findRespawnPosition(destination,
+            BlockPos spawnPointPosition = serverPlayer.getRespawnPosition();
+            Optional<Vec3> respawnPosition = spawnPointPosition == null ? Optional.empty() : Player.findRespawnPositionAndUseSpawnBlock(destination,
                     spawnPointPosition,
-                    serverPlayer.getSpawnAngle(),
-                    serverPlayer.isSpawnForced(),
+                    serverPlayer.getRespawnAngle(),
+                    serverPlayer.isRespawnForced(),
                     true);
 
             if (!respawnPosition.isPresent())
-                destination = world.getServer().getOverworld();
+                destination = level.getServer().overworld();
 
-            ServerWorld finalDestination = destination;
+            ServerLevel finalDestination = destination;
 
-            Vec3d destinationPos = respawnPosition.orElseGet(() -> Vec3d.ofCenter(finalDestination.getSpawnPos()));
-            serverPlayer.teleport(destination,
-                    destinationPos.getX(),
-                    destinationPos.getY(),
-                    destinationPos.getZ(),
-                    player.getHeadYaw(),
-                    player.getPitch(0));
+            Vec3 destinationPos = respawnPosition.orElseGet(() -> Vec3.atCenterOf(finalDestination.getSharedSpawnPos()));
+            serverPlayer.teleportTo(destination,
+                    destinationPos.x(),
+                    destinationPos.y(),
+                    destinationPos.z(),
+                    player.getYHeadRot(),
+                    player.getViewXRot(0));
         }
         else
             lastPlayerHitCache.put(hitPlayerID, System.currentTimeMillis());
     }
 
     @Override
-    public Optional<TileSyncElement<?>> getSyncElement(Identifier identifier)
+    public Optional<TileSyncElement<?>> getSyncElement(ResourceLocation identifier)
     {
         if (identifier.equals(VoidHeartDataSyncElement.IDENTIFIER) && heartData != null)
         {
@@ -199,7 +199,7 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public Codec<?> getSyncElementCodec(Identifier identifier)
+    public Codec<?> getSyncElementCodec(ResourceLocation identifier)
     {
         if (identifier.equals(VoidHeartDataSyncElement.IDENTIFIER))
             return VoidHeartDataSyncElement.CODEC;
@@ -207,7 +207,7 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public Collection<Identifier> getAllSyncElements()
+    public Collection<ResourceLocation> getAllSyncElements()
     {
         return syncElements;
     }

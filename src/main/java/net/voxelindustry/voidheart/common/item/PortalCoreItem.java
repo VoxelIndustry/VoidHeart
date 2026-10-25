@@ -1,17 +1,17 @@
 package net.voxelindustry.voidheart.common.item;
 
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Rarity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
@@ -24,95 +24,95 @@ public class PortalCoreItem extends Item
 {
     public PortalCoreItem()
     {
-        super(new Settings()
+        super(new Properties()
                 .rarity(Rarity.COMMON)
-                .maxCount(1));
+                .stacksTo(1));
     }
 
-    public static boolean checkPearlUseHereAndWarn(ItemStack stack, boolean isInPocket, PlayerEntity player)
+    public static boolean checkPearlUseHereAndWarn(ItemStack stack, boolean isInPocket, Player player)
     {
-        var tag = stack.getOrCreateNbt();
+        var tag = stack.getOrCreateTag();
 
         if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
-            boolean canUse = !tag.contains("firstDimension") || RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
+            boolean canUse = !tag.contains("firstDimension") || ResourceKey.create(Registries.DIMENSION, new ResourceLocation(tag.getString("firstDimension"))).equals(player.level().dimension());
 
             if (!canUse)
-                player.sendMessage(Text.translatable(MODID + ".must_be_same_world"), true);
+                player.displayClientMessage(Component.translatable(MODID + ".must_be_same_world"), true);
             return canUse;
         }
 
         // If first point is already set then it must not be already inside a pocket
-        if (isInPocket && (!tag.contains("firstPos") || !RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+        if (isInPocket && (!tag.contains("firstPos") || !ResourceKey.create(Registries.DIMENSION, new ResourceLocation(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
             return true;
         // If first point is already set then it must be inside a pocket
-        if (!isInPocket && (!tag.contains("firstPos") || RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+        if (!isInPocket && (!tag.contains("firstPos") || ResourceKey.create(Registries.DIMENSION, new ResourceLocation(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
             return true;
 
-        player.sendMessage(Text.translatable(MODID + ".must_be_inside_outside"), true);
+        player.displayClientMessage(Component.translatable(MODID + ".must_be_inside_outside"), true);
         return false;
     }
 
     public static boolean doesPearlHasFirstPosition(ItemStack stack)
     {
-        return stack.getOrCreateNbt().contains("firstPos");
+        return stack.getOrCreateTag().contains("firstPos");
     }
 
-    public static void sendSuccessMessage(PlayerEntity player, ItemStack stack, boolean alreadyHasFirstPoint)
+    public static void sendSuccessMessage(Player player, ItemStack stack, boolean alreadyHasFirstPoint)
     {
         if (alreadyHasFirstPoint)
             return;
 
         if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
-            player.sendMessage(Text.translatable(MODID + ".link_started_local"), true);
+            player.displayClientMessage(Component.translatable(MODID + ".link_started_local"), true);
             return;
         }
 
-        var tag = stack.getOrCreateNbt();
-        if (RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
-            player.sendMessage(Text.translatable(MODID + ".link_started_pocket"), true);
+        var tag = stack.getOrCreateTag();
+        if (ResourceKey.create(Registries.DIMENSION, new ResourceLocation(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
+            player.displayClientMessage(Component.translatable(MODID + ".link_started_pocket"), true);
         else
-            player.sendMessage(Text.translatable(MODID + ".link_started_outside"), true);
+            player.displayClientMessage(Component.translatable(MODID + ".link_started_outside"), true);
     }
 
     @Override
-    public boolean hasGlint(ItemStack stack)
+    public boolean isFoil(ItemStack stack)
     {
-        return stack.hasNbt() && doesPearlHasFirstPosition(stack) || super.hasGlint(stack);
+        return stack.hasTag() && doesPearlHasFirstPosition(stack) || super.isFoil(stack);
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
+    public void appendHoverText(ItemStack stack, Level world, List<Component> tooltip, TooltipFlag context)
     {
-        super.appendTooltip(stack, world, tooltip, context);
+        super.appendHoverText(stack, world, tooltip, context);
 
-        NbtCompound tag = stack.getOrCreateNbt();
+        CompoundTag tag = stack.getOrCreateTag();
 
         if (!tag.contains("firstPos"))
         {
-            tooltip.add(Text.translatable(MODID + ".portal_core.manual.lore"));
+            tooltip.add(Component.translatable(MODID + ".portal_core.manual.lore"));
             return;
         }
 
-        tooltip.add(Text.translatable(MODID + ".portal_core.owner.lore", Text.of("§6" + tag.getString("ownerName"))));
+        tooltip.add(Component.translatable(MODID + ".portal_core.owner.lore", Component.nullToEmpty("§6" + tag.getString("ownerName"))));
 
-        var blockPos = BlockPos.fromLong(tag.getLong("firstPos"));
+        var blockPos = BlockPos.of(tag.getLong("firstPos"));
 
-        if (RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
+        if (ResourceKey.create(Registries.DIMENSION, new ResourceLocation(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
         {
-            tooltip.add(Text.translatable(MODID + ".portal_core.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
-            tooltip.add(Text.translatable(MODID + ".portal_core.pocket.lore2",
-                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
+            tooltip.add(Component.translatable(MODID + ".portal_core.pocket.lore", Component.nullToEmpty("§b" + tag.getString("playerName"))));
+            tooltip.add(Component.translatable(MODID + ".portal_core.pocket.lore2",
+                    Component.nullToEmpty("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
         }
         else
         {
-            tooltip.add(Text.translatable(MODID + ".portal_core.external.lore",
-                    Text.of("§6" + capitalize(new Identifier(tag.getString("firstDimension")).getPath()))));
-            tooltip.add(Text.translatable(MODID + ".portal_core.pocket.lore2",
-                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
+            tooltip.add(Component.translatable(MODID + ".portal_core.external.lore",
+                    Component.nullToEmpty("§6" + capitalize(new ResourceLocation(tag.getString("firstDimension")).getPath()))));
+            tooltip.add(Component.translatable(MODID + ".portal_core.pocket.lore2",
+                    Component.nullToEmpty("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
         }
 
-        tooltip.add(Text.translatable(MODID + ".portal_core.erase.lore"));
+        tooltip.add(Component.translatable(MODID + ".portal_core.erase.lore"));
     }
 }

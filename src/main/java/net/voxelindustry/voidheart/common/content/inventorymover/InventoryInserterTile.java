@@ -1,14 +1,14 @@
 package net.voxelindustry.voidheart.common.content.inventorymover;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SidedInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.Container;
+import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -26,7 +26,7 @@ public class InventoryInserterTile extends BlockEntity
 
     private SingleStackInsertable tryGetInsertable(Direction direction)
     {
-        var besideTile = getWorld().getBlockEntity(pos.offset(direction));
+        var besideTile = getLevel().getBlockEntity(worldPosition.relative(direction));
         if (besideTile instanceof SingleStackInsertable insertable)
             return insertable;
         return null;
@@ -34,43 +34,43 @@ public class InventoryInserterTile extends BlockEntity
 
     private SingleStackExtractable tryGetExtractable(Direction direction)
     {
-        var besideTile = getWorld().getBlockEntity(pos.offset(direction));
+        var besideTile = getLevel().getBlockEntity(worldPosition.relative(direction));
         if (besideTile instanceof SingleStackExtractable extractable)
             return extractable;
         return null;
     }
 
-    private Inventory tryGetInventory(Direction direction)
+    private Container tryGetInventory(Direction direction)
     {
-        var upsideTile = getWorld().getBlockEntity(pos.offset(direction));
-        if (upsideTile instanceof Inventory inventory)
+        var upsideTile = getLevel().getBlockEntity(worldPosition.relative(direction));
+        if (upsideTile instanceof Container inventory)
             return inventory;
         return null;
     }
 
-    private ItemStack getExtractionCandidate(Collection<ItemStack> alreadyTriedStacks, Inventory inventory, Direction direction)
+    private ItemStack getExtractionCandidate(Collection<ItemStack> alreadyTriedStacks, Container inventory, Direction direction)
     {
-        if (inventory instanceof SidedInventory sidedInventory)
+        if (inventory instanceof WorldlyContainer sidedInventory)
         {
-            var slots = sidedInventory.getAvailableSlots(direction);
+            var slots = sidedInventory.getSlotsForFace(direction);
             for (var slot : slots)
             {
-                var candidate = inventory.getStack(slot);
+                var candidate = inventory.getItem(slot);
                 if (!candidate.isEmpty() && !ItemUtils.containsStack(alreadyTriedStacks, candidate))
                 {
                     var copy = candidate.copyWithCount(1);
-                    if (sidedInventory.canExtract(slot, copy, direction))
+                    if (sidedInventory.canTakeItemThroughFace(slot, copy, direction))
                         return copy;
                 }
             }
             return ItemStack.EMPTY;
         }
 
-        var slots = IntStream.range(0, inventory.size()).toArray();
+        var slots = IntStream.range(0, inventory.getContainerSize()).toArray();
 
         for (var slot : slots)
         {
-            var candidate = inventory.getStack(slot);
+            var candidate = inventory.getItem(slot);
             if (!candidate.isEmpty() && !ItemUtils.containsStack(alreadyTriedStacks, candidate))
                 return candidate.copyWithCount(1);
         }
@@ -78,14 +78,14 @@ public class InventoryInserterTile extends BlockEntity
         return ItemStack.EMPTY;
     }
 
-    private boolean tryInsert(Inventory inventory, ItemStack stack, Direction direction)
+    private boolean tryInsert(Container inventory, ItemStack stack, Direction direction)
     {
-        if (inventory instanceof SidedInventory sidedInventory)
+        if (inventory instanceof WorldlyContainer sidedInventory)
         {
-            var slots = sidedInventory.getAvailableSlots(direction);
+            var slots = sidedInventory.getSlotsForFace(direction);
             for (var slot : slots)
             {
-                if (!sidedInventory.canInsert(slot, stack, direction))
+                if (!sidedInventory.canPlaceItemThroughFace(slot, stack, direction))
                     continue;
 
                 if (insert(inventory, stack, slot)) return true;
@@ -93,7 +93,7 @@ public class InventoryInserterTile extends BlockEntity
             return false;
         }
 
-        var slots = IntStream.range(0, inventory.size()).toArray();
+        var slots = IntStream.range(0, inventory.getContainerSize()).toArray();
 
         for (var slot : slots)
         {
@@ -103,12 +103,12 @@ public class InventoryInserterTile extends BlockEntity
         return false;
     }
 
-    private boolean insert(Inventory inventory, ItemStack stack, int slot)
+    private boolean insert(Container inventory, ItemStack stack, int slot)
     {
-        var candidate = inventory.getStack(slot);
+        var candidate = inventory.getItem(slot);
         if (candidate.isEmpty())
         {
-            inventory.setStack(slot, stack);
+            inventory.setItem(slot, stack);
             return true;
         }
 
@@ -120,20 +120,20 @@ public class InventoryInserterTile extends BlockEntity
         return false;
     }
 
-    private void doExtract(Inventory inventory, ItemStack toExtract, Direction direction)
+    private void doExtract(Container inventory, ItemStack toExtract, Direction direction)
     {
-        if (inventory instanceof SidedInventory sidedInventory)
+        if (inventory instanceof WorldlyContainer sidedInventory)
         {
-            var slots = sidedInventory.getAvailableSlots(direction);
+            var slots = sidedInventory.getSlotsForFace(direction);
             for (var slot : slots)
             {
-                var candidate = inventory.getStack(slot);
-                if (ItemStack.canCombine(candidate, toExtract))
+                var candidate = inventory.getItem(slot);
+                if (ItemStack.isSameItemSameTags(candidate, toExtract))
                 {
                     var copy = candidate.copyWithCount(1);
-                    if (sidedInventory.canExtract(slot, copy, direction))
+                    if (sidedInventory.canTakeItemThroughFace(slot, copy, direction))
                     {
-                        candidate.decrement(1);
+                        candidate.shrink(1);
                         return;
                     }
                 }
@@ -141,28 +141,28 @@ public class InventoryInserterTile extends BlockEntity
             return;
         }
 
-        var slots = IntStream.range(0, inventory.size()).toArray();
+        var slots = IntStream.range(0, inventory.getContainerSize()).toArray();
 
         for (var slot : slots)
         {
-            var candidate = inventory.getStack(slot);
-            if (ItemStack.canCombine(candidate, toExtract))
+            var candidate = inventory.getItem(slot);
+            if (ItemStack.isSameItemSameTags(candidate, toExtract))
             {
-                candidate.decrement(1);
+                candidate.shrink(1);
                 return;
             }
         }
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, InventoryInserterTile inserter)
+    public static void tick(Level world, BlockPos pos, BlockState state, InventoryInserterTile inserter)
     {
-        if (world.isClient())
+        if (world.isClientSide())
             return;
 
-        if (world.getTime() % 20 != 0)
+        if (world.getGameTime() % 20 != 0)
             return;
 
-        var direction = state.get(Properties.FACING);
+        var direction = state.getValue(BlockStateProperties.FACING);
 
         var insertInventory = inserter.tryGetInventory(direction);
         var extractInventory = inserter.tryGetInventory(direction.getOpposite());
@@ -204,7 +204,7 @@ public class InventoryInserterTile extends BlockEntity
         transferLoop(inserter, extractInventory, insertInventory, direction);
     }
 
-    private static void transferLoop(InventoryInserterTile inserter, Inventory extractInventory, Inventory insertInventory, Direction direction)
+    private static void transferLoop(InventoryInserterTile inserter, Container extractInventory, Container insertInventory, Direction direction)
     {
         var triedExtractionCandidates = new ArrayList<ItemStack>();
 

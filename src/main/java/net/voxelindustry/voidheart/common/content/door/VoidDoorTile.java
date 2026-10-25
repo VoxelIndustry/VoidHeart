@@ -1,9 +1,9 @@
 package net.voxelindustry.voidheart.common.content.door;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.UUID;
@@ -18,25 +18,25 @@ public class VoidDoorTile extends BlockEntity
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    public void load(CompoundTag tag)
     {
         if (tag.contains("doorID"))
-            id = tag.getUuid("doorID");
+            id = tag.getUUID("doorID");
         else
             id = UUID.randomUUID();
 
-        super.readNbt(tag);
+        super.load(tag);
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    public void saveAdditional(CompoundTag tag)
     {
         if (id == null)
             id = UUID.randomUUID();
 
-        tag.putUuid("doorID", id);
+        tag.putUUID("doorID", id);
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     public UUID getId()

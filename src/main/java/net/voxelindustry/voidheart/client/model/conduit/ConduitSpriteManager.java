@@ -1,17 +1,17 @@
 package net.voxelindustry.voidheart.client.model.conduit;
 
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.SpriteIdentifier;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.util.Identifier;
-
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
+
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.Material;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
 
 public class ConduitSpriteManager
 {
-    private static final SpriteIdentifier[] SPRITE_IDENTIFIERS = new SpriteIdentifier[24];
+    private static final Material[] SPRITE_IDENTIFIERS = new Material[24];
 
-    private static final Sprite[] SPRITES = new Sprite[24];
+    private static final TextureAtlasSprite[] SPRITES = new TextureAtlasSprite[24];
 
     static
     {
@@ -24,7 +24,7 @@ public class ConduitSpriteManager
     public static void loadSprites()
     {
         for (int i = 0; i < 24; i++)
-            SPRITES[i] = SPRITE_IDENTIFIERS[i].getSprite();
+            SPRITES[i] = SPRITE_IDENTIFIERS[i].sprite();
     }
 
     private static int getSpriteIndexFor(boolean up, boolean down, boolean left, boolean right)
@@ -57,14 +57,14 @@ public class ConduitSpriteManager
         return 11;
     }
 
-    public static Sprite getSpriteFor(boolean up, boolean down, boolean left, boolean right, boolean lit)
+    public static TextureAtlasSprite getSpriteFor(boolean up, boolean down, boolean left, boolean right, boolean lit)
     {
         return SPRITES[getSpriteIndexFor(up, down, left, right) + (lit ? 12 : 0)];
     }
 
 
-    private static SpriteIdentifier getSpriteIdentifier(String from)
+    private static Material getSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/conduit/" + from));
+        return new Material(InventoryMenu.BLOCK_ATLAS, new ResourceLocation(MODID, "block/conduit/" + from));
     }
 }

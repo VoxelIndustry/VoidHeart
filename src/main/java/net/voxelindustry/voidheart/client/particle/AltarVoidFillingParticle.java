@@ -1,19 +1,20 @@
 package net.voxelindustry.voidheart.client.particle;
 
 import net.fabricmc.fabric.api.client.particle.v1.FabricSpriteProvider;
+import net.minecraft.client.Camera;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleTextureSheet;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import static java.lang.Math.abs;
+
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 public class AltarVoidFillingParticle extends Particle
 {
@@ -25,7 +26,7 @@ public class AltarVoidFillingParticle extends Particle
 
     private double speed;
 
-    public AltarVoidFillingParticle(ClientWorld world,
+    public AltarVoidFillingParticle(ClientLevel world,
                                     double x,
                                     double y,
                                     double z,
@@ -37,38 +38,38 @@ public class AltarVoidFillingParticle extends Particle
     {
         super(world, x, y, z, velocityX, velocityY, velocityZ);
         this.spriteProvider = spriteProvider;
-        gravityStrength = 0;
+        gravity = 0;
 
-        this.velocityX = velocityX - x;
-        this.velocityY = velocityY - y;
-        this.velocityZ = velocityZ - z;
+        this.xd = velocityX - x;
+        this.yd = velocityY - y;
+        this.zd = velocityZ - z;
 
         destinationX = velocityX;
         destinationY = velocityY;
         destinationZ = velocityZ;
         this.speed = speed;
 
-        collidesWithWorld = false;
+        hasPhysics = false;
 
-        maxAge = (int) (32.0F / (random.nextFloat() * 0.9F + 0.1F));
+        lifetime = (int) (32.0F / (random.nextFloat() * 0.9F + 0.1F));
     }
 
     @Override
-    public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta)
+    public void render(VertexConsumer vertexConsumer, Camera camera, float tickDelta)
     {
-        Vec3d vec3d = camera.getPos();
-        float f = (float) (MathHelper.lerp(tickDelta, prevPosX, x) - vec3d.getX());
-        float g = (float) (MathHelper.lerp(tickDelta, prevPosY, y) - vec3d.getY());
-        float h = (float) (MathHelper.lerp(tickDelta, prevPosZ, z) - vec3d.getZ());
+        Vec3 vec3d = camera.getPosition();
+        float f = (float) (Mth.lerp(tickDelta, xo, x) - vec3d.x());
+        float g = (float) (Mth.lerp(tickDelta, yo, y) - vec3d.y());
+        float h = (float) (Mth.lerp(tickDelta, zo, z) - vec3d.z());
         Quaternionf quaternion2;
-        if (angle == 0.0F)
+        if (roll == 0.0F)
         {
-            quaternion2 = camera.getRotation();
+            quaternion2 = camera.rotation();
         }
         else
         {
-            quaternion2 = new Quaternionf(camera.getRotation());
-            quaternion2.mul(Direction.NORTH.getRotationQuaternion());
+            quaternion2 = new Quaternionf(camera.rotation());
+            quaternion2.mul(Direction.NORTH.getRotation());
         }
 
         var vector3f = new Vector3f(-1.0F, -1.0F, 0.0F);
@@ -84,42 +85,42 @@ public class AltarVoidFillingParticle extends Particle
             vector3f2.add(f, g, h);
         }
 
-        Sprite sprite = spriteProvider.getSprite(age, maxAge);
+        TextureAtlasSprite sprite = spriteProvider.get(age, lifetime);
         
-        this.red = 0.21F;
-        this.green = 0.4F;
-        this.blue = 0.33F;
+        this.rCol = 0.21F;
+        this.gCol = 0.4F;
+        this.bCol = 0.33F;
 
-        float l = sprite.getMinU();
-        float m = sprite.getMaxU();
-        float n = sprite.getMinV();
-        float o = sprite.getMaxV();
+        float l = sprite.getU0();
+        float m = sprite.getU1();
+        float n = sprite.getV0();
+        float o = sprite.getV1();
         int light = 15728880;
-        vertexConsumer.vertex(vector3fs[0].x(), vector3fs[0].y(), vector3fs[0].z()).texture(m, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[1].x(), vector3fs[1].y(), vector3fs[1].z()).texture(m, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[2].x(), vector3fs[2].y(), vector3fs[2].z()).texture(l, n).color(this.red, this.green, this.blue, this.alpha).light(light).next();
-        vertexConsumer.vertex(vector3fs[3].x(), vector3fs[3].y(), vector3fs[3].z()).texture(l, o).color(this.red, this.green, this.blue, this.alpha).light(light).next();
+        vertexConsumer.vertex(vector3fs[0].x(), vector3fs[0].y(), vector3fs[0].z()).uv(m, o).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
+        vertexConsumer.vertex(vector3fs[1].x(), vector3fs[1].y(), vector3fs[1].z()).uv(m, n).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
+        vertexConsumer.vertex(vector3fs[2].x(), vector3fs[2].y(), vector3fs[2].z()).uv(l, n).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
+        vertexConsumer.vertex(vector3fs[3].x(), vector3fs[3].y(), vector3fs[3].z()).uv(l, o).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(light).endVertex();
     }
 
     @Override
-    public ParticleTextureSheet getType()
+    public ParticleRenderType getRenderType()
     {
-        return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
+        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
     @Override
     public void tick()
     {
-        prevPosX = x;
-        prevPosY = y;
-        prevPosZ = z;
-        if (age++ >= maxAge || isNearDestination())
+        xo = x;
+        yo = y;
+        zo = z;
+        if (age++ >= lifetime || isNearDestination())
         {
-            markDead();
+            remove();
             return;
         }
 
-        move(velocityX * speed, velocityY * speed, velocityZ * speed);
+        move(xd * speed, yd * speed, zd * speed);
         speed *= 0.98D;
     }
 

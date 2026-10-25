@@ -1,12 +1,12 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
-import net.minecraft.block.Block;
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.world.World;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.util.ExperienceUtil;
 
 import java.util.List;
@@ -17,20 +17,20 @@ public class ExperienceSkullItemBlock extends BlockItem
 {
     public ExperienceSkullItemBlock(Block block)
     {
-        super(block, new Item.Settings()
-                .maxCount(1)
-                .maxDamage(ExperienceSkullTile.MAX_EXPERIENCE)
+        super(block, new Item.Properties()
+                .stacksTo(1)
+                .durability(ExperienceSkullTile.MAX_EXPERIENCE)
         );
     }
 
     @Override
-    public boolean isDamageable()
+    public boolean canBeDepleted()
     {
         return false;
     }
 
     @Override
-    public boolean canRepair(ItemStack stack, ItemStack ingredient)
+    public boolean isValidRepairItem(ItemStack stack, ItemStack ingredient)
     {
         return false;
     }
@@ -42,16 +42,16 @@ public class ExperienceSkullItemBlock extends BlockItem
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
+    public void appendHoverText(ItemStack stack, Level world, List<Component> tooltip, TooltipFlag context)
     {
-        super.appendTooltip(stack, world, tooltip, context);
+        super.appendHoverText(stack, world, tooltip, context);
 
-        tooltip.add(Text.translatable(MODID + ".skull_item.lore"));
+        tooltip.add(Component.translatable(MODID + ".skull_item.lore"));
 
-        if (stack.hasNbt() && stack.getNbt().contains("experience"))
+        if (stack.hasTag() && stack.getTag().contains("experience"))
         {
-            var experience = stack.getNbt().getInt("experience");
-            tooltip.add(Text.translatable(MODID + ".skull_item.lore2", ExperienceUtil.getExperienceLevel(experience), experience));
+            var experience = stack.getTag().getInt("experience");
+            tooltip.add(Component.translatable(MODID + ".skull_item.lore2", ExperienceUtil.getExperienceLevel(experience), experience));
         }
     }
 }

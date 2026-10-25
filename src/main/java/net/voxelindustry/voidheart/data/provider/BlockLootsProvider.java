@@ -14,7 +14,7 @@ public class BlockLootsProvider extends FabricBlockLootTableProvider
     @Override
     public void generate()
     {
-        this.addDrop(VoidHeartBlocks.CUT_RAVENOUS_GOLD);
-        this.addDrop(VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
+        this.dropSelf(VoidHeartBlocks.CUT_RAVENOUS_GOLD);
+        this.dropSelf(VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
     }
 }
