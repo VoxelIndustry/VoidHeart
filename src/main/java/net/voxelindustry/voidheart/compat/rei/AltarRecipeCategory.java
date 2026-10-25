@@ -47,8 +47,9 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     {
         List<Widget> widgets = new ArrayList<>();
 
-        int startX = 35;
-        int startY = 16;
+        // Center slot of the ring, the ring spans 36px around it and the output sits 72px to its right
+        int startX = (bounds.width - 126) / 2 + 36;
+        int startY = (bounds.height - 90) / 2 + 36;
         widgets.add(Widgets.createSlot(new Point(bounds.x + startX, bounds.y + startY)).entries(getInput(display, 0)).markInput());
         widgets.add(Widgets.createSlot(new Point(bounds.x + startX - 18, bounds.y + startY + 36)).entries(getInput(display, 1)).markInput());
         widgets.add(Widgets.createSlot(new Point(bounds.x + startX + 18, bounds.y + startY + 36)).entries(getInput(display, 2)).markInput());
@@ -70,7 +71,7 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     @Override
     public int getDisplayHeight()
     {
-        return 90;
+        return 100;
     }
 
     @Override
