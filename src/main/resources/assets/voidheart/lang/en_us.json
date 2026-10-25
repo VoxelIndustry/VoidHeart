@@ -111,6 +111,8 @@
   "voidheart.link_successful": "Successfully linked portals",
   "voidheart.pocket_created": "Your pocket dimension was created",
   "voidheart.pocket_already_exists": "Your pocket dimension already exists",
+  "voidheart.void_door_linked": "Door linked to your void door",
+  "voidheart.void_door_missing": "The void door bound to this key no longer exists",
   "voidheart.altar.missing_pillars": "Missing %s pillar(s)",
   "__comment": "Essences",
   "voidheart.essence.empty": "Empty",

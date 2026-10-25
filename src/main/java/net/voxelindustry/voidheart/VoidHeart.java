@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
+import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
@@ -75,6 +76,7 @@ public class VoidHeart implements ModInitializer
 
         ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
         ServerTickEvents.START_LEVEL_TICK.register(VoidHeartTicker::tickWorld);
+        ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
 

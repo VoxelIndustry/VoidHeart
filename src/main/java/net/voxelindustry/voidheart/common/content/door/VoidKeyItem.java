@@ -2,9 +2,11 @@ package net.voxelindustry.voidheart.common.content.door;
 
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -15,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import org.jetbrains.annotations.Nullable;
 
 public class VoidKeyItem extends Item
 {
@@ -35,19 +38,22 @@ public class VoidKeyItem extends Item
 
         if (state.getBlock() == VoidHeartBlocks.VOID_DOOR)
         {
-            if (isBlank(stack))
+            if (isBlank(stack) && !world.isClientSide() && world.dimension().equals(VoidHeart.VOID_WORLD_KEY))
             {
                 if (state.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER)
                     pos = pos.below();
                 setDoor(stack, world, pos);
             }
         }
-        else if (state.is(BlockTags.DOORS) && state.hasProperty(DoorBlock.HALF))
+        else if (state.getBlock() instanceof DoorBlock)
         {
-            if (state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
-                pos = pos.above();
-            if (!isBlank(stack) && !world.isClientSide())
-                createPortal(stack, world, pos, state);
+            if (state.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER)
+                pos = pos.below();
+            if (!isBlank(stack) && world instanceof ServerLevel serverLevel)
+            {
+                linkDoor(stack, serverLevel, pos, context.getPlayer());
+                return InteractionResult.SUCCESS;
+            }
         }
         return super.useOn(context);
     }
@@ -67,15 +73,22 @@ public class VoidKeyItem extends Item
         stack.set(VoidHeartDataComponents.DOOR_LINK, new VoidHeartDataComponents.DoorLink(pos, door.getId()));
     }
 
-    private void createPortal(ItemStack stack, Level world, BlockPos pos, BlockState state)
+    private void linkDoor(ItemStack stack, ServerLevel world, BlockPos pos, @Nullable Player player)
     {
         ServerLevel voidWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
-        BlockPos doorPos = stack.get(VoidHeartDataComponents.DOOR_LINK).doorPos();
-        VoidDoorTile door = (VoidDoorTile) voidWorld.getBlockEntity(doorPos);
+        var link = stack.get(VoidHeartDataComponents.DOOR_LINK);
 
-        if (door == null)
+        // The bound void door was broken or replaced since the key was made
+        if (!(voidWorld.getBlockEntity(link.doorPos()) instanceof VoidDoorTile door) || !door.getId().equals(link.doorId()))
+        {
+            if (player != null)
+                player.sendOverlayMessage(Component.translatable(VoidHeart.MODID + ".void_door_missing"));
             return;
+        }
 
-        // TODO: Link source door to the void door (replaces the Immersive Portals entity)
+        VoidDoorLinks.get(world.getServer()).link(GlobalPos.of(world.dimension(), pos), link.doorPos());
+
+        if (player != null)
+            player.sendOverlayMessage(Component.translatable(VoidHeart.MODID + ".void_door_linked"));
     }
 }

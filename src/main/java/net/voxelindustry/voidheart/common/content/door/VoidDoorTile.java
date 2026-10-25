@@ -1,6 +1,5 @@
 package net.voxelindustry.voidheart.common.content.door;
 
-import com.mojang.serialization.Codec;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
@@ -23,10 +22,7 @@ public class VoidDoorTile extends BlockEntity
     @Override
     protected void loadAdditional(ValueInput tag)
     {
-        if (tag.read("doorID", Codec.PASSTHROUGH).isPresent())
-            id = tag.read("doorID", UUIDUtil.CODEC).orElseThrow();
-        else
-            id = UUID.randomUUID();
+        id = tag.read("doorID", UUIDUtil.CODEC).orElse(null);
 
         super.loadAdditional(tag);
     }
@@ -44,8 +40,12 @@ public class VoidDoorTile extends BlockEntity
 
     public UUID getId()
     {
+        // Keys are bound to this id, it must be saved as soon as it exists
         if (id == null)
-            return id = UUID.randomUUID();
+        {
+            id = UUID.randomUUID();
+            setChanged();
+        }
         return id;
     }
 }
