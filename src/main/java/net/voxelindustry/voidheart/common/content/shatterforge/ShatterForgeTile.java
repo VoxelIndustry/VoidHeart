@@ -93,6 +93,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     @Getter
     private ItemStack clientRecipeOutput = ItemStack.EMPTY;
     private BlockPos pillarPos;
+    private final long[] runeHeartbeats = new long[ShatterForgeLayout.MAX_TRACK_PAIRS * 4];
 
     public ShatterForgeTile(BlockPos pos, BlockState state)
     {
@@ -105,21 +106,23 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     {
         if (connectedMonolithCount != 0)
         {
-            if (getLevel().getGameTime() % 20 == 0)
+            var gameTime = getLevel().getGameTime();
+            var litRunes = Math.min(litRuneCount(), runeHeartbeats.length);
+            particlePosCache.set(getBlockPos());
+            for (int i = 0; i < litRunes; i++)
             {
-                particlePosCache.set(getBlockPos());
-                var monolithToLit = (connectedMonolithCount + 1) * (warmProgress / (float) getWarmingTime());
-                for (int i = 0; i < monolithToLit; i++)
+                if (gameTime - runeHeartbeats[i] > 2)
                 {
-                    getLevel().addParticle(new ShatterForgeRuneParticleEffect(getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS)),
+                    runeHeartbeats[i] = gameTime;
+                    getLevel().addParticle(new ShatterForgeRuneParticleEffect(getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS), getBlockPos(), i),
                             particlePosCache.getX() + 0.5,
                             particlePosCache.getY() + 1.5,
                             particlePosCache.getZ() + 0.5,
                             0,
                             0,
                             0);
-                    particlePosCache.move(trackDirection, 3);
                 }
+                particlePosCache.move(trackDirection, 3);
             }
         }
 
@@ -141,6 +144,26 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     public int getWarmingTime()
     {
         return connectedMonolithCount * 25;
+    }
+
+    private int litRuneCount()
+    {
+        if (!isCrafting || trackDirection == null)
+            return 0;
+        if (getWarmingTime() == 0)
+            return connectedMonolithCount + 1;
+        return (int) Math.ceil((connectedMonolithCount + 1) * Math.min(1F, warmProgress / (float) getWarmingTime()));
+    }
+
+    public boolean isRuneLit(int index)
+    {
+        return index < litRuneCount();
+    }
+
+    public void runeHeartbeat(int index)
+    {
+        if (index < runeHeartbeats.length && level != null)
+            runeHeartbeats[index] = level.getGameTime();
     }
 
     @Override
@@ -172,7 +195,8 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     private void tryStartCrafting()
     {
-        if (isCrafting || level == null)
+        // The output slot must be emptied before the next craft starts
+        if (isCrafting || level == null || !stack.isEmpty())
             return;
 
         if (isStructureCorrect())
@@ -192,12 +216,6 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             unlinkPillar();
     }
 
-    private boolean canAcceptOutput(ItemStack output)
-    {
-        if (output.isEmpty() || stack.isEmpty())
-            return true;
-        return ItemStack.isSameItemSameComponents(stack, output) && stack.getCount() + output.getCount() <= stack.getMaxStackSize();
-    }
 
     private boolean isStructureCorrect()
     {
@@ -470,6 +488,9 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         setChanged();
         sync();
+
+        if (isServer() && stack.isEmpty())
+            tryStartCrafting();
     }
 
     public void removeItself()
@@ -597,7 +618,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             if (!forge.hasOutputtedResult)
             {
                 var output = forge.recipeState.getOutput(ItemStack.class, 0);
-                if (!forge.canAcceptOutput(output))
+                if (!forge.stack.isEmpty())
                     return;
 
                 var completionResolution = BeamResolver.resolve(world, pos);
@@ -611,24 +632,14 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
                 forge.drainEssence(forge.currentRecipe, completionResolution.collectorContributions());
 
-                if (forge.stack.isEmpty())
-                    forge.stack = output.copy();
-                else
-                    forge.stack.grow(output.getCount());
+                forge.stack = output.copy();
 
                 forge.recipeState.complete(world, pos, null);
                 forge.hasOutputtedResult = true;
                 forge.setChanged();
             }
 
-            if (recipeInput.matchWithQuantity(forge.pillar.getStack()))
-            {
-                forge.recipeState.reset();
-                forge.hasOutputtedResult = false;
-                forge.recipeProgress = 0;
-            }
-            else
-                forge.stopCrafting();
+            forge.stopCrafting();
         }
         forge.sync();
     }

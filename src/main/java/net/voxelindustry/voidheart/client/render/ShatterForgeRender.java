@@ -32,7 +32,7 @@ public class ShatterForgeRender implements BlockEntityRenderer<ShatterForgeTile,
 
     public ShatterForgeRender(BlockEntityRendererProvider.Context context)
     {
-        itemRender = new FloatingItemRender<>(context, ShatterForgeTile::getStack, 1);
+        itemRender = new FloatingItemRender<>(context, ShatterForgeTile::getStack, 1.2);
     }
 
     @Override
