@@ -1,0 +1,29 @@
+{
+  "parent": "voidheart:root",
+  "criteria": {
+    "got_altar": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:void_altar"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": "Great rewards awaits great sacrifice to the outside",
+    "icon": {
+      "id": "voidheart:void_altar"
+    },
+    "title": "Altar to the Void"
+  },
+  "requirements": [
+    [
+      "got_altar"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

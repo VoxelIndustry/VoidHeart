@@ -1,61 +1,62 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import net.voxelindustry.voidheart.common.item.PortalCoreItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+
 public class VoidStoneBricksBlock extends Block
 {
-    public VoidStoneBricksBlock(Settings settings)
+    public VoidStoneBricksBlock(Properties settings)
     {
         super(settings);
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
-        ItemStack stack = player.getStackInHand(hand);
+        ItemStack stack = player.getItemInHand(hand);
         if (stack.getItem() == VoidHeartItems.PORTAL_CORE)
         {
-            if (world.isClient())
-                return ActionResult.SUCCESS;
+            if (world.isClientSide())
+                return InteractionResult.SUCCESS;
 
             var voidPocketState = VoidPocketState.getVoidPocketState(world);
 
-            if (!voidPocketState.hasPocket(player.getUuid()))
+            if (!voidPocketState.hasPocket(player.getUUID()))
             {
-                player.sendMessage(Text.translatable(MODID + ".no_pocket_for_player"), true);
-                return ActionResult.PASS;
+                player.sendOverlayMessage(Component.translatable(MODID + ".no_pocket_for_player"));
+                return InteractionResult.PASS;
             }
-            if (voidPocketState.getHeartData(player.getUuid()).noFlexionLeft())
+            if (voidPocketState.getHeartData(player.getUUID()).noFlexionLeft())
             {
-                player.sendMessage(Text.translatable(MODID + ".no_flexion_left"), true);
-                return ActionResult.PASS;
+                player.sendOverlayMessage(Component.translatable(MODID + ".no_flexion_left"));
+                return InteractionResult.PASS;
             }
 
-            boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUuid());
+            boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUUID());
             if (!PortalCoreItem.checkPearlUseHereAndWarn(stack, isInPocket, player))
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
 
-            if (PortalLinker.voidIronEyeInteract(null, world, pos, hit.getSide(), player, stack))
+            if (PortalLinker.voidIronEyeInteract(null, world, pos, hit.getDirection(), player, stack))
             {
                 PortalCoreItem.sendSuccessMessage(player, stack, false);
-                return ActionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
 
-        return super.onUse(state, world, pos, player, hand, hit);
+        return super.useItemOn(heldStack, state, world, pos, player, hand, hit);
     }
 }

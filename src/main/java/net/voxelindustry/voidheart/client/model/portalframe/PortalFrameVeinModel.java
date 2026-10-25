@@ -1,33 +1,33 @@
 package net.voxelindustry.voidheart.client.model.portalframe;
 
-import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
-import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
-import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.Direction;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.fabricmc.fabric.api.client.renderer.v1.mesh.QuadEmitter;
+import net.minecraft.client.resources.model.sprite.Material;
+import net.fabricmc.fabric.api.client.renderer.v1.mesh.MutableQuadView;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
 public class PortalFrameVeinModel
 {
-    static void createPortalVeinQuadsAllDirections(BlockState state, RenderContext context, RenderMaterial outerMaterial, int variant)
+    static void createPortalVeinQuadsAllDirections(BlockState state, QuadEmitter emitter, int variant)
     {
         for (Direction direction : Direction.values())
-            createPortalVeinQuads(direction, state, context, outerMaterial, variant);
+            createPortalVeinQuads(direction, state, emitter, variant);
     }
 
-    static void createPortalVeinQuadsExpectDirection(Direction forbiddenDirection, BlockState state, RenderContext context, RenderMaterial outerMaterial, int variant)
+    static void createPortalVeinQuadsExpectDirection(Direction forbiddenDirection, BlockState state, QuadEmitter emitter, int variant)
     {
         for (Direction direction : Direction.values())
         {
             if (direction == forbiddenDirection)
                 continue;
-            createPortalVeinQuads(direction, state, context, outerMaterial, variant);
+            createPortalVeinQuads(direction, state, emitter, variant);
         }
     }
 
-    static void createPortalVeinQuads(Direction direction, BlockState state, RenderContext context, RenderMaterial outerMaterial, int variant)
+    static void createPortalVeinQuads(Direction direction, BlockState state, QuadEmitter emitter, int variant)
     {
         int uvFlag = MutableQuadView.BAKE_LOCK_UV;
 
@@ -35,17 +35,18 @@ public class PortalFrameVeinModel
         if (sprite == null)
             return;
 
-        context.getEmitter()
-                .material(outerMaterial)
+        emitter
+                .chunkLayer(ChunkSectionLayer.CUTOUT)
+                .emissive(true)
                 .square(direction, 0, 0, 1, 1, 0)
                 .cullFace(direction)
-                .spriteBake(sprite, uvFlag)
+                .materialBake(sprite, uvFlag)
                 .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                 .tag(1)
                 .emit();
     }
 
-    static Sprite getSpriteForState(BlockState state, Direction direction, int variant)
+    static Material.Baked getSpriteForState(BlockState state, Direction direction, int variant)
     {
         // The quad is directly facing a portal interior
         if (PortalFrameStateProperties.getSideConnection(state, direction).isConnected())
@@ -77,8 +78,8 @@ public class PortalFrameVeinModel
         }
         else
         {
-            left = PortalFrameStateProperties.getSideConnection(state, direction.rotateYCounterclockwise());
-            right = PortalFrameStateProperties.getSideConnection(state, direction.rotateYClockwise());
+            left = PortalFrameStateProperties.getSideConnection(state, direction.getCounterClockWise());
+            right = PortalFrameStateProperties.getSideConnection(state, direction.getClockWise());
             up = PortalFrameStateProperties.getSideConnection(state, Direction.UP);
             down = PortalFrameStateProperties.getSideConnection(state, Direction.DOWN);
         }

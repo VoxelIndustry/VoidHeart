@@ -1,6 +1,6 @@
 package net.voxelindustry.voidheart.common.content.inventorymover;
 
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public interface SingleStackInsertable
 {

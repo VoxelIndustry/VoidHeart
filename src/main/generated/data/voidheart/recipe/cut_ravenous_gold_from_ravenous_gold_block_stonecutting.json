@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:ravenous_gold_block",
+  "result": {
+    "id": "voidheart:cut_ravenous_gold"
+  }
+}

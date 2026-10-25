@@ -1,13 +1,14 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
 import com.google.common.util.concurrent.Runnables;
-import net.minecraft.block.BlockState;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockPos.Mutable;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockPos.MutableBlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
@@ -21,33 +22,33 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 import static java.lang.Math.*;
-import static net.minecraft.util.math.Direction.*;
-import static net.minecraft.util.math.Direction.Axis.X;
-import static net.minecraft.util.math.Direction.Axis.Y;
+import static net.minecraft.core.Direction.*;
+import static net.minecraft.core.Direction.Axis.X;
+import static net.minecraft.core.Direction.Axis.Y;
 
 public class PortalFormer
 {
-    public static boolean isInPocket(World world, BlockPos pos, UUID playerUUID)
+    public static boolean isInPocket(Level world, BlockPos pos, UUID playerUUID)
     {
-        ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
+        ServerLevel voidWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
 
         if (world != voidWorld)
             return false;
 
-        BlockPos pocketPos = VoidPocketState.getVoidPocketState((ServerWorld) world).getPosForPlayer(playerUUID);
+        BlockPos pocketPos = VoidPocketState.getVoidPocketState((ServerLevel) world).getPosForPlayer(playerUUID);
 
         return abs(pocketPos.getX() - pos.getX()) < 9 &&
                 abs(pocketPos.getY() + 6 - pos.getY()) < 9 &&
                 abs(pocketPos.getZ() - pos.getZ()) < 9;
     }
 
-    public static DeferredRollbackWork<PortalFormerState> tryForm(World world, BlockState state, BlockPos brickPos, Direction direction)
+    public static DeferredRollbackWork<PortalFormerState> tryForm(Level world, BlockState state, BlockPos brickPos, Direction direction)
     {
         Pair<BlockPos, BlockPos> portalPoints = PortalFormer.tryFloodFill(
                 brickPos,
                 16,
                 pos -> PortalFormer.canUseBlock(world, brickPos, pos, world.getBlockState(pos)),
-                world::isAir,
+                world::isEmptyBlock,
                 direction,
                 PortalFrameTile.getAdjacentDirection(direction));
 
@@ -66,7 +67,7 @@ public class PortalFormer
                         return false;
 
                     var coreFrame = coreFrameOpt.get();
-                    BlockPos.stream(portalFormerState.getFrom(), portalFormerState.getTo()).forEach(pos ->
+                    BlockPos.betweenClosedStream(portalFormerState.getFrom(), portalFormerState.getTo()).forEach(pos ->
                     {
                         BlockState frameState = world.getBlockState(pos);
 
@@ -79,22 +80,22 @@ public class PortalFormer
                             return;
 
                         wall.addCore(coreFrame);
-                        coreFrame.getLinkedFrames().add(pos.toImmutable());
+                        coreFrame.getLinkedFrames().add(pos.immutable());
                     });
 
                     coreFrame.setPortalState(portalFormerState);
-                    coreFrame.markDirty();
+                    coreFrame.setChanged();
 
                     return true;
                 }, Runnables.doNothing());
     }
 
-    private static void setFrameBlockState(World world, BlockState state, BlockPos pos, PortalFormerState portalFormerState)
+    private static void setFrameBlockState(Level world, BlockState state, BlockPos pos, PortalFormerState portalFormerState)
     {
         if (isStateInvalidPotentialFrame(state))
             return;
 
-        var newState = VoidHeartBlocks.PORTAL_FRAME.getDefaultState();
+        var newState = VoidHeartBlocks.PORTAL_FRAME.defaultBlockState();
         FrameConnection up = FrameConnection.NONE;
         FrameConnection down = FrameConnection.NONE;
         FrameConnection north = FrameConnection.NONE;
@@ -104,12 +105,12 @@ public class PortalFormer
 
         if (state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS)
         {
-            up = state.get(PortalFrameStateProperties.UP);
-            down = state.get(PortalFrameStateProperties.DOWN);
-            north = state.get(PortalFrameStateProperties.NORTH);
-            south = state.get(PortalFrameStateProperties.SOUTH);
-            east = state.get(PortalFrameStateProperties.EAST);
-            west = state.get(PortalFrameStateProperties.WEST);
+            up = state.getValue(PortalFrameStateProperties.UP);
+            down = state.getValue(PortalFrameStateProperties.DOWN);
+            north = state.getValue(PortalFrameStateProperties.NORTH);
+            south = state.getValue(PortalFrameStateProperties.SOUTH);
+            east = state.getValue(PortalFrameStateProperties.EAST);
+            west = state.getValue(PortalFrameStateProperties.WEST);
 
             newState = state;
         }
@@ -117,7 +118,7 @@ public class PortalFormer
         if (portalFormerState.isCorner(pos))
         {
             if (state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
-                world.setBlockState(pos, VoidHeartBlocks.PORTAL_FRAME.getDefaultState());
+                world.setBlockAndUpdate(pos, VoidHeartBlocks.PORTAL_FRAME.defaultBlockState());
             return;
         }
 
@@ -145,13 +146,13 @@ public class PortalFormer
             south = portalFormerState.getFrom().getZ() == pos.getZ() ? FrameConnection.INTERIOR : south;
         }
 
-        world.setBlockState(pos, newState
-                .with(PortalFrameStateProperties.UP, up)
-                .with(PortalFrameStateProperties.DOWN, down)
-                .with(PortalFrameStateProperties.NORTH, north)
-                .with(PortalFrameStateProperties.SOUTH, south)
-                .with(PortalFrameStateProperties.EAST, east)
-                .with(PortalFrameStateProperties.WEST, west)
+        world.setBlockAndUpdate(pos, newState
+                .setValue(PortalFrameStateProperties.UP, up)
+                .setValue(PortalFrameStateProperties.DOWN, down)
+                .setValue(PortalFrameStateProperties.NORTH, north)
+                .setValue(PortalFrameStateProperties.SOUTH, south)
+                .setValue(PortalFrameStateProperties.EAST, east)
+                .setValue(PortalFrameStateProperties.WEST, west)
         );
     }
 
@@ -160,18 +161,18 @@ public class PortalFormer
         if (state.isAir())
             return true;
 
-        return !state.isIn(VoidHeartTags.PORTAL_FRAME_TAG) && state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS;
+        return !state.is(VoidHeartTags.PORTAL_FRAME_TAG) && state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS;
     }
 
-    public static void createCoreState(BlockState state, World world, BlockPos pos, Direction facing)
+    public static void createCoreState(BlockState state, Level world, BlockPos pos, Direction facing)
     {
-        BlockState coreState = VoidHeartBlocks.PORTAL_FRAME_CORE.getDefaultState();
+        BlockState coreState = VoidHeartBlocks.PORTAL_FRAME_CORE.defaultBlockState();
 
-        coreState = coreState.with(Properties.FACING, facing);
+        coreState = coreState.setValue(BlockStateProperties.FACING, facing);
 
         if (state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
         {
-            world.setBlockState(pos, coreState);
+            world.setBlockAndUpdate(pos, coreState);
             return;
         }
 
@@ -179,19 +180,19 @@ public class PortalFormer
         {
             coreState = switch (direction)
                     {
-                        case DOWN -> coreState.with(PortalFrameStateProperties.DOWN, state.get(PortalFrameStateProperties.DOWN));
-                        case UP -> coreState.with(PortalFrameStateProperties.UP, state.get(PortalFrameStateProperties.UP));
-                        case NORTH -> coreState.with(PortalFrameStateProperties.NORTH, state.get(PortalFrameStateProperties.NORTH));
-                        case SOUTH -> coreState.with(PortalFrameStateProperties.SOUTH, state.get(PortalFrameStateProperties.SOUTH));
-                        case WEST -> coreState.with(PortalFrameStateProperties.WEST, state.get(PortalFrameStateProperties.WEST));
-                        case EAST -> coreState.with(PortalFrameStateProperties.EAST, state.get(PortalFrameStateProperties.EAST));
+                        case DOWN -> coreState.setValue(PortalFrameStateProperties.DOWN, state.getValue(PortalFrameStateProperties.DOWN));
+                        case UP -> coreState.setValue(PortalFrameStateProperties.UP, state.getValue(PortalFrameStateProperties.UP));
+                        case NORTH -> coreState.setValue(PortalFrameStateProperties.NORTH, state.getValue(PortalFrameStateProperties.NORTH));
+                        case SOUTH -> coreState.setValue(PortalFrameStateProperties.SOUTH, state.getValue(PortalFrameStateProperties.SOUTH));
+                        case WEST -> coreState.setValue(PortalFrameStateProperties.WEST, state.getValue(PortalFrameStateProperties.WEST));
+                        case EAST -> coreState.setValue(PortalFrameStateProperties.EAST, state.getValue(PortalFrameStateProperties.EAST));
                     };
         }
 
-        world.setBlockState(pos, coreState);
+        world.setBlockAndUpdate(pos, coreState);
     }
 
-    public static boolean canUseBlock(World world, BlockPos ownPos, BlockPos pos, BlockState state)
+    public static boolean canUseBlock(Level world, BlockPos ownPos, BlockPos pos, BlockState state)
     {
         if (pos.equals(ownPos))
             return true;
@@ -245,12 +246,12 @@ public class PortalFormer
                                               Direction direction,
                                               Direction perpendicular)
     {
-        Mutable offset = origin.mutableCopy().move(direction);
+        MutableBlockPos offset = origin.mutable().move(direction);
 
-        while (contentChecker.test(offset) && origin.getManhattanDistance(offset) < maxLength)
+        while (contentChecker.test(offset) && origin.distManhattan(offset) < maxLength)
             offset.move(direction);
 
-        int offsetDist = origin.getManhattanDistance(offset);
+        int offsetDist = origin.distManhattan(offset);
         if (offsetDist >= maxLength || offsetDist == 1)
             return Pair.of(origin, origin);
 
@@ -260,11 +261,11 @@ public class PortalFormer
         int maxInvertedAxis;
         int minInvertedAxis;
 
-        Mutable originWidth = origin.mutableCopy().move(direction);
-        Mutable offsetWidth = offset.mutableCopy().move(direction.getOpposite());
+        MutableBlockPos originWidth = origin.mutable().move(direction);
+        MutableBlockPos offsetWidth = offset.mutable().move(direction.getOpposite());
         while (isLineValid(originWidth, offsetWidth, contentChecker)
-                && borderChecker.test(originWidth.offset(direction.getOpposite()))
-                && borderChecker.test(offsetWidth.offset(direction))
+                && borderChecker.test(originWidth.relative(direction.getOpposite()))
+                && borderChecker.test(offsetWidth.relative(direction))
         )
         {
             Direction toMove;
@@ -295,8 +296,8 @@ public class PortalFormer
         originWidth.set(origin).move(direction);
         offsetWidth.set(offset).move(direction.getOpposite());
         while (isLineValid(originWidth, offsetWidth, contentChecker)
-                && borderChecker.test(originWidth.offset(direction.getOpposite()))
-                && borderChecker.test(offsetWidth.offset(direction))
+                && borderChecker.test(originWidth.relative(direction.getOpposite()))
+                && borderChecker.test(offsetWidth.relative(direction))
         )
         {
             Direction toMove;
@@ -381,6 +382,6 @@ public class PortalFormer
 
     private static boolean isLineValid(BlockPos from, BlockPos to, Predicate<BlockPos> checker)
     {
-        return BlockPos.stream(from, to).allMatch(checker);
+        return BlockPos.betweenClosedStream(from, to).allMatch(checker);
     }
 }

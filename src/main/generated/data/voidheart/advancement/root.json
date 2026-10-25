@@ -1,0 +1,28 @@
+{
+  "criteria": {
+    "got_voidstone": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:voidstone"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "background": "voidheart:block/voidstone",
+    "description": "That's not from here",
+    "icon": {
+      "id": "voidheart:voidstone"
+    },
+    "title": "Outside stone"
+  },
+  "requirements": [
+    [
+      "got_voidstone"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

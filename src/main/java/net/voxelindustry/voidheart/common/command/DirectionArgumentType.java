@@ -9,9 +9,9 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import net.minecraft.command.CommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Direction;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.voxelindustry.voidheart.VoidHeart;
 
 import java.util.Arrays;
@@ -24,7 +24,7 @@ import static java.util.stream.Collectors.toList;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DirectionArgumentType implements ArgumentType<Direction>
 {
-    public static final SimpleCommandExceptionType INVALID_DIRECTION_EXCEPTION = new SimpleCommandExceptionType(Text.translatable(VoidHeart.MODID + ".argument.direction.unknown"));
+    public static final SimpleCommandExceptionType INVALID_DIRECTION_EXCEPTION = new SimpleCommandExceptionType(Component.translatable(VoidHeart.MODID + ".argument.direction.unknown"));
 
     private static final List<String> DIRECTIONS = Arrays.stream(Direction.values()).map(Enum::name).collect(toList());
 
@@ -45,7 +45,7 @@ public class DirectionArgumentType implements ArgumentType<Direction>
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder)
     {
-        return CommandSource.suggestMatching(DIRECTIONS, builder);
+        return SharedSuggestionProvider.suggest(DIRECTIONS, builder);
     }
 
     @Override

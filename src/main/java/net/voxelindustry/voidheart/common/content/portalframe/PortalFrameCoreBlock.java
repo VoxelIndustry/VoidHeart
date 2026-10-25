@@ -1,59 +1,62 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.*;
 import static net.voxelindustry.voidheart.common.block.StateProperties.BROKEN;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.BlockHitResult;
+
 public class PortalFrameCoreBlock extends PortalFrameBlock
 {
-    public PortalFrameCoreBlock()
+    public PortalFrameCoreBlock(Properties properties)
     {
-        super(Settings.create()
-                .mapColor(MapColor.BLACK)
-                .instrument(Instrument.BASEDRUM)
-                .requiresTool()
+        super(properties
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
                 .strength(4F)
-                .sounds(BlockSoundGroup.STONE)
-                .ticksRandomly()
-                .emissiveLighting((state, world, pos) -> state.get(Properties.LIT)));
+                .sound(SoundType.STONE)
+                .randomTicks()
+                .emissiveRendering(state -> state.getValue(BlockStateProperties.LIT)));
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         var tileOpt = world.getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE);
 
         if (tileOpt.isEmpty())
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
 
         var tile = tileOpt.get();
-        if (world.isClient())
-            return ActionResult.PASS;
+        if (world.isClientSide())
+            return InteractionResult.PASS;
 
         // Core block is probably a previously broken portal
         if (tile.isBroken())
         {
-            var portalFormer = PortalFormer.tryForm(world, state, pos, hit.getSide());
+            var portalFormer = PortalFormer.tryForm(world, state, pos, hit.getDirection());
             if (portalFormer.maySucceed())
             {
                 portalFormer.execute();
@@ -62,27 +65,27 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                     tile.setBroken(false);
                     if (PortalLinker.tryRelink(player, tile))
                     {
-                        player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
-                        return ActionResult.SUCCESS;
+                        player.sendOverlayMessage(Component.translatable(MODID + ".portal_relinked_successful"));
+                        return InteractionResult.SUCCESS;
                     }
                 }
                 else
-                    player.sendMessage(Text.translatable(MODID + ".portal_cannot_form_back"), true);
+                    player.sendOverlayMessage(Component.translatable(MODID + ".portal_cannot_form_back"));
             }
             else
-                player.sendMessage(Text.translatable(MODID + ".portal_cannot_form_back"), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".portal_cannot_form_back"));
         }
         else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
         {
-            player.sendMessage(Text.translatable(MODID + ".portal_relinked_successful"), true);
-            VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayerEntity) player);
-            return ActionResult.SUCCESS;
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_relinked_successful"));
+            VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayer) player);
+            return InteractionResult.SUCCESS;
         }
-        return ActionResult.PASS;
+        return InteractionResult.PASS;
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new PortalFrameCoreTile(pos, state);
     }
@@ -90,22 +93,22 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     @Override
     protected void initDefaultState()
     {
-        setDefaultState(getStateManager().getDefaultState()
-                .with(NORTH, FrameConnection.NONE)
-                .with(SOUTH, FrameConnection.NONE)
-                .with(EAST, FrameConnection.NONE)
-                .with(WEST, FrameConnection.NONE)
-                .with(UP, FrameConnection.NONE)
-                .with(DOWN, FrameConnection.NONE)
-                .with(Properties.FACING, Direction.NORTH)
-                .with(Properties.LIT, false)
-                .with(BROKEN, false)
+        registerDefaultState(getStateDefinition().any()
+                .setValue(NORTH, FrameConnection.NONE)
+                .setValue(SOUTH, FrameConnection.NONE)
+                .setValue(EAST, FrameConnection.NONE)
+                .setValue(WEST, FrameConnection.NONE)
+                .setValue(UP, FrameConnection.NONE)
+                .setValue(DOWN, FrameConnection.NONE)
+                .setValue(BlockStateProperties.FACING, Direction.NORTH)
+                .setValue(BlockStateProperties.LIT, false)
+                .setValue(BROKEN, false)
         );
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, Properties.FACING, Properties.LIT, BROKEN);
+        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, BlockStateProperties.FACING, BlockStateProperties.LIT, BROKEN);
     }
 }

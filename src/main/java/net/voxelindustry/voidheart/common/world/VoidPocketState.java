@@ -1,13 +1,16 @@
 package net.voxelindustry.voidheart.common.world;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockPos.Mutable;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.PersistentState;
-import net.minecraft.world.World;
+import com.mojang.serialization.Codec;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockPos.MutableBlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.saveddata.SavedData;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -19,22 +22,37 @@ import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class VoidPocketState extends PersistentState
+public class VoidPocketState extends SavedData
 {
-    private final Map<UUID, VoidHeartData> heartDataByUUID = new HashMap<>();
+    public static final Codec<VoidPocketState> CODEC = Codec.unboundedMap(UUIDUtil.STRING_CODEC, VoidHeartData.CODEC)
+            .fieldOf("hearts")
+            .codec()
+            .xmap(VoidPocketState::new, state -> state.heartDataByUUID);
+
+    public static final SavedDataType<VoidPocketState> TYPE = new SavedDataType<>(
+            Identifier.fromNamespaceAndPath(MODID, "pocket_storage"),
+            VoidPocketState::new,
+            CODEC,
+            null);
+
+    private final Map<UUID, VoidHeartData> heartDataByUUID;
 
     public VoidPocketState()
     {
+        heartDataByUUID = new HashMap<>();
     }
 
-    public VoidPocketState(NbtCompound tag)
+    private VoidPocketState(Map<UUID, VoidHeartData> heartDataByUUID)
     {
-        readNbt(tag);
+        this.heartDataByUUID = new HashMap<>(heartDataByUUID);
     }
 
     @Override
     public boolean isDirty()
     {
+        if (super.isDirty())
+            return true;
+
         for (var heartData : heartDataByUUID.values())
         {
             if (heartData.isDirty())
@@ -50,14 +68,14 @@ public class VoidPocketState extends PersistentState
         int segmentIndex = 0;
         int currentIndex = 0;
 
-        Mutable currentPos = new Mutable(0, 64, 0);
+        MutableBlockPos currentPos = new MutableBlockPos(0, 64, 0);
 
         var pocketPositions = heartDataByUUID.values().stream().map(VoidHeartData::pocketPos).toList();
         while (pocketPositions.contains(currentPos))
         {
             if (currentIndex == segmentLength)
             {
-                startDir = startDir.rotateYCounterclockwise();
+                startDir = startDir.getCounterClockWise();
                 segmentIndex++;
 
                 if (segmentIndex % 2 == 0)
@@ -69,8 +87,8 @@ public class VoidPocketState extends PersistentState
             currentIndex++;
         }
 
-        markDirty();
-        return currentPos.toImmutable();
+        setDirty();
+        return currentPos.immutable();
     }
 
     public BlockPos getPosForPlayer(UUID uuid)
@@ -83,80 +101,49 @@ public class VoidPocketState extends PersistentState
         return heartDataByUUID.get(uuid);
     }
 
-    public void readNbt(NbtCompound tag)
+    public static VoidPocketState getVoidPocketState(Level world)
     {
-        var heartsData = tag.getCompound("hearts");
+        ServerLevel serverWorld;
 
-        for (var playerUUID : heartsData.getKeys())
-            this.heartDataByUUID.put(UUID.fromString(playerUUID), VoidHeartData.fromNbt(heartsData.getCompound(playerUUID)));
-    }
-
-    @Override
-    public NbtCompound writeNbt(NbtCompound tag)
-    {
-        var heartsTag = new NbtCompound();
-
-        for (var heartDataByPlayerUUID : this.heartDataByUUID.entrySet())
-        {
-            heartsTag.put(heartDataByPlayerUUID.getKey().toString(), heartDataByPlayerUUID.getValue().toNbt());
-        }
-
-        tag.put("hearts", heartsTag);
-        return tag;
-    }
-
-    public static VoidPocketState getVoidPocketState(World world)
-    {
-        ServerWorld serverWorld;
-
-        if (!world.getRegistryKey().equals(VoidHeart.VOID_WORLD_KEY))
-            serverWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
-        else if (world instanceof ServerWorld s)
+        if (!world.dimension().equals(VoidHeart.VOID_WORLD_KEY))
+            serverWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
+        else if (world instanceof ServerLevel s)
             serverWorld = s;
         else
             throw new UnsupportedOperationException("Cannot access VoidPocketState from a ClientWorld");
 
-        return getOrCreateWithDeprecatedId(serverWorld);
+        return serverWorld.getDataStorage().computeIfAbsent(TYPE);
     }
 
-    private static VoidPocketState getOrCreateWithDeprecatedId(ServerWorld serverWorld)
-    {
-        var existingDeprecated = serverWorld.getPersistentStateManager().get(VoidPocketState::new, MODID + ":pocket_storage");
-        if (existingDeprecated != null)
-            return existingDeprecated;
-
-        return serverWorld.getPersistentStateManager().getOrCreate(VoidPocketState::new, VoidPocketState::new, MODID + "_pocket_storage");
-    }
-
-    public void createPocket(ServerWorld voidWorld, UUID player)
+    public void createPocket(ServerLevel voidWorld, UUID player)
     {
         BlockPos pos = getPosForPlayer(player);
-        markDirty();
+        setDirty();
 
-        voidWorld.setBlockState(pos, VoidHeartBlocks.VOID_HEART.getDefaultState());
+        voidWorld.setBlockAndUpdate(pos, VoidHeartBlocks.VOID_HEART.defaultBlockState());
         VoidHeartTile voidHeart = (VoidHeartTile) voidWorld.getBlockEntity(pos);
         voidHeart.setPlayerID(player);
-        voidHeart.markDirty();
+        voidHeart.setChanged();
 
-        placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 16, 16, 16, VoidHeartBlocks.VOIDSTONE.getDefaultState());
-        placeBlockEmptyVolume(voidWorld, pos.add(0, 6, 0), 18, 18, 18, VoidHeartBlocks.POCKET_WALL.getDefaultState());
+        placeBlockEmptyVolume(voidWorld, pos.offset(0, 6, 0), 16, 16, 16, VoidHeartBlocks.VOIDSTONE.defaultBlockState());
+        placeBlockEmptyVolume(voidWorld, pos.offset(0, 6, 0), 18, 18, 18, VoidHeartBlocks.POCKET_WALL.defaultBlockState());
     }
 
-    private void placeBlockEmptyVolume(ServerWorld voidWorld, BlockPos center, int width, int height, int length, BlockState state)
+    private void placeBlockEmptyVolume(ServerLevel voidWorld, BlockPos center, int width, int height, int length, BlockState state)
     {
-        placeBlockArea(voidWorld, center.add(-width / 2, -height / 2, -length / 2), center.add(width / 2, -height / 2, length / 2), state);
-        placeBlockArea(voidWorld, center.add(-width / 2, height / 2, -length / 2), center.add(width / 2, height / 2, length / 2), state);
+        placeBlockArea(voidWorld, center.offset(-width / 2, -height / 2, -length / 2), center.offset(width / 2, -height / 2, length / 2), state);
+        placeBlockArea(voidWorld, center.offset(-width / 2, height / 2, -length / 2), center.offset(width / 2, height / 2, length / 2), state);
 
-        placeBlockArea(voidWorld, center.add(-width / 2, -height / 2 + 1, -length / 2), center.add(-width / 2, height / 2 - 1, length / 2), state);
-        placeBlockArea(voidWorld, center.add(width / 2, -height / 2 + 1, -length / 2), center.add(width / 2, height / 2 - 1, length / 2), state);
+        placeBlockArea(voidWorld, center.offset(-width / 2, -height / 2 + 1, -length / 2), center.offset(-width / 2, height / 2 - 1, length / 2), state);
+        placeBlockArea(voidWorld, center.offset(width / 2, -height / 2 + 1, -length / 2), center.offset(width / 2, height / 2 - 1, length / 2), state);
 
-        placeBlockArea(voidWorld, center.add(-width / 2 + 1, -height / 2 + 1, -length / 2), center.add(width / 2 - 1, height / 2 - 1, -length / 2), state);
-        placeBlockArea(voidWorld, center.add(-width / 2 + 1, -height / 2 + 1, length / 2), center.add(width / 2 - 1, height / 2 - 1, length / 2), state);
+        placeBlockArea(voidWorld, center.offset(-width / 2 + 1, -height / 2 + 1, -length / 2), center.offset(width / 2 - 1, height / 2 - 1, -length / 2), state);
+        placeBlockArea(voidWorld, center.offset(-width / 2 + 1, -height / 2 + 1, length / 2), center.offset(width / 2 - 1, height / 2 - 1, length / 2), state);
     }
 
-    private void placeBlockArea(World world, BlockPos from, BlockPos to, BlockState state)
+    private void placeBlockArea(Level world, BlockPos from, BlockPos to, BlockState state)
     {
-        BlockPos.iterate(from, to).forEach(pos -> world.setBlockState(pos, state));
+        BlockPos.betweenClosed(from, to).forEach(pos -> world.setBlockAndUpdate(pos, state));
     }
 
     public boolean hasPocket(UUID player)

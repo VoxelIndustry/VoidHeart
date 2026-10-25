@@ -1,27 +1,30 @@
 package net.voxelindustry.voidheart.common.content.door;
 
-import net.minecraft.block.*;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockSetType;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import org.jetbrains.annotations.Nullable;
 
-public class VoidDoorBlock extends DoorBlock implements BlockEntityProvider
+public class VoidDoorBlock extends DoorBlock implements EntityBlock
 {
-    public VoidDoorBlock()
+    public VoidDoorBlock(Properties properties)
     {
-        super(Settings.create()
-                .mapColor(MapColor.STONE_GRAY)
-                .instrument(Instrument.BASEDRUM)
+        super(BlockSetType.STONE, properties
+                .mapColor(MapColor.STONE)
+                .instrument(NoteBlockInstrument.BASEDRUM)
                 .strength(3F)
-                .sounds(BlockSoundGroup.STONE),
-                BlockSetType.STONE);
+                .sound(SoundType.STONE));
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new VoidDoorTile(pos, state);
     }

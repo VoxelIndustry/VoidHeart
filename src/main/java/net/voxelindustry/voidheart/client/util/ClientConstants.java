@@ -1,9 +1,9 @@
 package net.voxelindustry.voidheart.client.util;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public class ClientConstants
 {
-    public static final Identifier GUI_ICONS_TEXTURE = new Identifier("textures/gui/icons.png");
+    public static final Identifier GUI_ICONS_TEXTURE = Identifier.parse("textures/gui/icons.png");
 
 }

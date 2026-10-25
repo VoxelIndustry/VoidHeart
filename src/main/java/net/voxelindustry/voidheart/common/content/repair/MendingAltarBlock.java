@@ -1,80 +1,82 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.util.Prediction;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
-import static net.minecraft.block.BlockWithEntity.checkType;
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 
-public class MendingAltarBlock extends Block implements BlockEntityProvider
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+
+public class MendingAltarBlock extends Block implements EntityBlock
 {
-    public MendingAltarBlock(Settings settings)
+    public MendingAltarBlock(Properties settings)
     {
         super(settings);
 
-        this.setDefaultState(getStateManager().getDefaultState()
-                .with(Properties.LIT, false));
+        this.registerDefaultState(getStateDefinition().any()
+                .setValue(BlockStateProperties.LIT, false));
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
-        if (!player.getStackInHand(hand).isDamageable())
-            return ActionResult.PASS;
+        if (!player.getItemInHand(hand).isDamageableItem())
+            return InteractionResult.PASS;
 
         var altarOpt = world.getBlockEntity(pos, VoidHeartTiles.MENDING_ALTAR);
 
         if (altarOpt.isEmpty())
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
 
         var altar = altarOpt.get();
         if (altar.getTool().isEmpty())
         {
-            altar.setTool(player, player.getStackInHand(hand).copyWithCount(1));
+            altar.setTool(player, player.getItemInHand(hand).copyWithCount(1));
 
             if (!player.isCreative())
-                player.getStackInHand(hand).decrement(1);
+                player.getItemInHand(hand).shrink(1);
         }
         else
         {
-            player.getInventory().offerOrDrop(altar.getTool());
+            player.getInventory().placeItemBackInInventory(altar.getTool(), Prediction.SERVER_ONLY);
             altar.setTool(player, ItemStack.EMPTY);
         }
 
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new MendingAltarTile(pos, state);
     }
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
     {
-        return checkType(type, VoidHeartTiles.MENDING_ALTAR, MendingAltarTile::tick);
+        return createTickerHelper(type, VoidHeartTiles.MENDING_ALTAR, MendingAltarTile::tick);
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(Properties.LIT);
+        builder.add(BlockStateProperties.LIT);
     }
 }

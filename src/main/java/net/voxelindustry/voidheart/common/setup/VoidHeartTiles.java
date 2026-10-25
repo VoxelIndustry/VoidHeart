@@ -1,12 +1,16 @@
 package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleTile;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile;
@@ -15,7 +19,6 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
-import net.voxelindustry.voidheart.common.content.ravenouscollector.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
@@ -43,6 +46,9 @@ public class VoidHeartTiles
     public static BlockEntityType<ShatterForgeTile> SHATTER_FORGE;
 
     public static BlockEntityType<RavenousCollectorTile> RAVENOUS_COLLECTOR;
+    public static BlockEntityType<RavenousStorageTile> RAVENOUS_STORAGE;
+    public static BlockEntityType<RavenousStorageMatrixTile> RAVENOUS_STORAGE_MATRIX;
+    public static BlockEntityType<RavenousRelayTile> RAVENOUS_RELAY;
 
     public static void registerTiles()
     {
@@ -97,10 +103,16 @@ public class VoidHeartTiles
 
         registerTile(RAVENOUS_COLLECTOR = FabricBlockEntityTypeBuilder.create(RavenousCollectorTile::new, VoidHeartBlocks.RAVENOUS_COLLECTOR).build(),
                 "ravenous_collector");
+        registerTile(RAVENOUS_STORAGE = FabricBlockEntityTypeBuilder.create(RavenousStorageTile::new, VoidHeartBlocks.RAVENOUS_STORAGE).build(),
+                "ravenous_storage");
+        registerTile(RAVENOUS_STORAGE_MATRIX = FabricBlockEntityTypeBuilder.create(RavenousStorageMatrixTile::new, VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX).build(),
+                "ravenous_storage_matrix");
+        registerTile(RAVENOUS_RELAY = FabricBlockEntityTypeBuilder.create(RavenousRelayTile::new, VoidHeartBlocks.RAVENOUS_RELAY).build(),
+                "ravenous_relay");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)
     {
-        Registry.register(Registries.BLOCK_ENTITY_TYPE, new Identifier(MODID, name), type);
+        Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, name), type);
     }
 }

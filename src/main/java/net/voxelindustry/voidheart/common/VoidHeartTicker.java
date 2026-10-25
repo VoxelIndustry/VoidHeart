@@ -2,10 +2,9 @@ package net.voxelindustry.voidheart.common;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.server.level.ServerLevel;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +17,7 @@ public class VoidHeartTicker
 
     private final static Multimap<Integer, Runnable> delayedTasks = MultimapBuilder.treeKeys().arrayListValues().build();
 
-    public static void tickWorld(ServerWorld serverWorld)
+    public static void tickWorld(ServerLevel serverWorld)
     {
         if (tasksByPos.isEmpty())
             return;
@@ -27,7 +26,7 @@ public class VoidHeartTicker
 
         tasksByPos.forEach((pos, task) ->
         {
-            if (serverWorld.isChunkLoaded(pos))
+            if (serverWorld.hasChunkAt(pos))
             {
                 task.run();
                 toRemove.add(pos);
@@ -45,7 +44,7 @@ public class VoidHeartTicker
         var delaysToDelete = new HashSet<Integer>(1);
         for (var taskByDelay : delayedTasks.entries())
         {
-            if (taskByDelay.getKey() <= server.getTicks())
+            if (taskByDelay.getKey() <= server.getTickCount())
             {
                 taskByDelay.getValue().run();
                 delaysToDelete.add(taskByDelay.getKey());
@@ -65,6 +64,6 @@ public class VoidHeartTicker
 
     public static void addDelayedTask(MinecraftServer server, int delay, Runnable runnable)
     {
-        delayedTasks.put(server.getTicks() + delay, runnable);
+        delayedTasks.put(server.getTickCount() + delay, runnable);
     }
 }

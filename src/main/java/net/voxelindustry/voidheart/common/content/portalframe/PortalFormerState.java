@@ -1,14 +1,14 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
 import net.voxelindustry.voidheart.client.util.MathUtil;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -17,10 +17,10 @@ import org.joml.Vector3fc;
 @ToString
 @EqualsAndHashCode
 @NoArgsConstructor
-public class PortalFormerState implements TagSerializable<NbtCompound>
+public class PortalFormerState
 {
-    private BlockPos  from   = BlockPos.ORIGIN;
-    private BlockPos  to     = BlockPos.ORIGIN;
+    private BlockPos  from   = BlockPos.ZERO;
+    private BlockPos  to     = BlockPos.ZERO;
     private Direction facing = Direction.UP;
 
     private Vector3fc center = new Vector3f(0);
@@ -32,22 +32,18 @@ public class PortalFormerState implements TagSerializable<NbtCompound>
         this.facing = facing;
     }
 
-    @Override
-    public NbtCompound toTag()
+    public void save(ValueOutput output)
     {
-        NbtCompound tag = new NbtCompound();
-        tag.putLong("fromPos", from.asLong());
-        tag.putLong("toPos", to.asLong());
-        tag.putInt("facing", facing.getId());
-        return tag;
+        output.putLong("fromPos", from.asLong());
+        output.putLong("toPos", to.asLong());
+        output.putInt("facing", facing.get3DDataValue());
     }
 
-    @Override
-    public void fromTag(NbtCompound tag)
+    public void load(ValueInput input)
     {
-        from = BlockPos.fromLong(tag.getLong("fromPos"));
-        to = BlockPos.fromLong(tag.getLong("toPos"));
-        facing = Direction.byId(tag.getInt("facing"));
+        from = BlockPos.of(input.getLongOr("fromPos", 0L));
+        to = BlockPos.of(input.getLongOr("toPos", 0L));
+        facing = Direction.from3DDataValue(input.getIntOr("facing", Direction.UP.get3DDataValue()));
     }
 
     public boolean areShapeIncompatible(PortalFormerState otherState)

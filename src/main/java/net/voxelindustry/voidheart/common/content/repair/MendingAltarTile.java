@@ -1,15 +1,16 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -35,7 +36,7 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
     private int consumeProgress;
 
     private int       consumingPillarIndex = -1;
-    private BlockPos  consumingPillarPos   = BlockPos.ORIGIN;
+    private BlockPos  consumingPillarPos   = BlockPos.ZERO;
     private ItemStack cachedToConsume      = ItemStack.EMPTY;
 
     private final List<VoidPillarTile>      pillars          = new ArrayList<>(2);
@@ -46,12 +47,12 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
         super(VoidHeartTiles.MENDING_ALTAR, pos, state);
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, MendingAltarTile altar)
+    public static void tick(Level world, BlockPos pos, BlockState state, MendingAltarTile altar)
     {
         if (!altar.isCrafting())
             return;
 
-        if (altar.getTool().isEmpty() || altar.getTool().getDamage() == 0)
+        if (altar.getTool().isEmpty() || altar.getTool().getDamageValue() == 0)
         {
             altar.stopCrafting();
             altar.sync();
@@ -65,7 +66,7 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
             altar.refreshExperienceSkulls();
     }
 
-    public void setTool(PlayerEntity player, ItemStack stack)
+    public void setTool(Player player, ItemStack stack)
     {
         this.tool = stack;
 
@@ -77,29 +78,29 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
                 startCrafting();
             }
             else
-                player.sendMessage(Text.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()));
         }
         else if (isCrafting)
             stopCrafting();
 
-        markDirty();
+        setChanged();
         sync();
     }
 
     @Override
-    public void readNbt(NbtCompound nbt)
+    protected void loadAdditional(ValueInput nbt)
     {
-        super.readNbt(nbt);
+        super.loadAdditional(nbt);
 
-        tool = ItemStack.fromNbt(nbt.getCompound("tool"));
+        tool = nbt.read("tool", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt)
+    protected void saveAdditional(ValueOutput nbt)
     {
-        super.writeNbt(nbt);
+        super.saveAdditional(nbt);
 
-        nbt.put("tool", tool.writeNbt(new NbtCompound()));
+        nbt.store("tool", ItemStack.OPTIONAL_CODEC, tool);
     }
 
     private void refreshExperienceSkulls()
@@ -113,27 +114,27 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
     public void searchExperienceSkulls()
     {
         experienceSkulls.clear();
-        BlockPos.Mutable searchPos = getPos().mutableCopy();
+        BlockPos.MutableBlockPos searchPos = getBlockPos().mutable();
 
-        searchPos.set(getPos(), -1, 1, 0);
+        searchPos.setWithOffset(getBlockPos(), -1, 1, 0);
         findExperienceSkull(searchPos);
 
-        searchPos.set(getPos(), 1, 1, 0);
+        searchPos.setWithOffset(getBlockPos(), 1, 1, 0);
         findExperienceSkull(searchPos);
 
-        searchPos.set(getPos(), 0, 1, -1);
+        searchPos.setWithOffset(getBlockPos(), 0, 1, -1);
         findExperienceSkull(searchPos);
 
-        searchPos.set(getPos(), 0, 1, 1);
+        searchPos.setWithOffset(getBlockPos(), 0, 1, 1);
         findExperienceSkull(searchPos);
     }
 
     private void findExperienceSkull(BlockPos pos)
     {
-        if (world.getBlockState(pos).getBlock() != VoidHeartBlocks.EXPERIENCE_SKULL)
+        if (level.getBlockState(pos).getBlock() != VoidHeartBlocks.EXPERIENCE_SKULL)
             return;
 
-        var skull = world.getBlockEntity(pos, VoidHeartTiles.EXPERIENCE_SKULL);
+        var skull = level.getBlockEntity(pos, VoidHeartTiles.EXPERIENCE_SKULL);
         if (skull.isEmpty())
             return;
 
@@ -151,32 +152,32 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
     public void searchPillars()
     {
         pillars.clear();
-        BlockPos.Mutable searchPos = getPos().mutableCopy();
+        BlockPos.MutableBlockPos searchPos = getBlockPos().mutable();
 
-        searchPos.set(getPos(), -1, 0, 0);
+        searchPos.setWithOffset(getBlockPos(), -1, 0, 0);
         findPillar(searchPos);
 
-        searchPos.set(getPos(), 1, 0, 0);
+        searchPos.setWithOffset(getBlockPos(), 1, 0, 0);
         findPillar(searchPos);
 
-        searchPos.set(getPos(), 0, 0, -1);
+        searchPos.setWithOffset(getBlockPos(), 0, 0, -1);
         findPillar(searchPos);
 
-        searchPos.set(getPos(), 0, 0, 1);
+        searchPos.setWithOffset(getBlockPos(), 0, 0, 1);
         findPillar(searchPos);
     }
 
     private void findPillar(BlockPos pos)
     {
-        if (world.getBlockState(pos).getBlock() != VoidHeartBlocks.VOID_PILLAR)
+        if (level.getBlockState(pos).getBlock() != VoidHeartBlocks.VOID_PILLAR)
             return;
 
-        var pillar = world.getBlockEntity(pos, VoidHeartTiles.VOID_PILLAR);
+        var pillar = level.getBlockEntity(pos, VoidHeartTiles.VOID_PILLAR);
         if (pillar.isEmpty())
             return;
 
         if (isCrafting)
-            pillar.get().addAltar(getPos());
+            pillar.get().addAltar(getBlockPos());
 
         pillars.add(pillar.get());
     }
@@ -197,19 +198,19 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
     {
         isCrafting = true;
 
-        if (!getCachedState().get(Properties.LIT))
-            getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, true));
+        if (!getBlockState().getValue(BlockStateProperties.LIT))
+            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(BlockStateProperties.LIT, true));
 
-        pillars.forEach(pillar -> pillar.addAltar(getPos()));
+        pillars.forEach(pillar -> pillar.addAltar(getBlockPos()));
     }
 
     private void stopCrafting()
     {
         isCrafting = false;
 
-        if (getCachedState().get(Properties.LIT))
-            getWorld().setBlockState(getPos(), getCachedState().with(Properties.LIT, false));
+        if (getBlockState().getValue(BlockStateProperties.LIT))
+            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(BlockStateProperties.LIT, false));
 
-        pillars.forEach(pillar -> pillar.removeAltar(getPos()));
+        pillars.forEach(pillar -> pillar.removeAltar(getBlockPos()));
     }
 }

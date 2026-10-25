@@ -1,9 +1,9 @@
 package net.voxelindustry.voidheart.client.model.portalframe;
 
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.SpriteIdentifier;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.resources.model.sprite.MaterialBaker;
+import net.minecraft.client.resources.model.ModelDebugName;
+import net.minecraft.client.resources.model.sprite.Material;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
 import java.text.NumberFormat;
@@ -13,13 +13,15 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class PortalFrameVeinSpriteManager
 {
-    private static final SpriteIdentifier[] FRAME_SPRITE_IDENTIFIERS = new SpriteIdentifier[60];
-    private static final Sprite[]           FRAME_SPRITES            = new Sprite[60];
+    private static final ModelDebugName DEBUG_NAME = () -> "voidheart:PortalFrameVeinSpriteManager";
 
-    private static final SpriteIdentifier[] CORE_SPRITE_IDENTIFIERS = new SpriteIdentifier[4];
-    private static final Sprite[]           CORE_SPRITES            = new Sprite[4];
+    private static final Material[] FRAME_SPRITE_IDENTIFIERS = new Material[60];
+    private static final Material.Baked[]           FRAME_SPRITES            = new Material.Baked[60];
 
-    private static Sprite VOIDBRICK_SPRITE;
+    private static final Material[] CORE_SPRITE_IDENTIFIERS = new Material[4];
+    private static final Material.Baked[]           CORE_SPRITES            = new Material.Baked[4];
+
+    private static Material.Baked VOIDBRICK_SPRITE;
 
     static
     {
@@ -37,61 +39,52 @@ public class PortalFrameVeinSpriteManager
         }
     }
 
-    public static void registerSprites(Consumer<Identifier> spriteRegistrar)
-    {
-        for (var spriteIdentifier : FRAME_SPRITE_IDENTIFIERS)
-            spriteRegistrar.accept(spriteIdentifier.getTextureId());
-
-        for (SpriteIdentifier coreSpriteIdentifier : CORE_SPRITE_IDENTIFIERS)
-            spriteRegistrar.accept(coreSpriteIdentifier.getTextureId());
-    }
-
-    public static void loadSprites()
+    public static void loadSprites(MaterialBaker materials)
     {
         for (int i = 0; i < 60; i++)
-            FRAME_SPRITES[i] = FRAME_SPRITE_IDENTIFIERS[i].getSprite();
+            FRAME_SPRITES[i] = materials.get(FRAME_SPRITE_IDENTIFIERS[i], DEBUG_NAME);
         for (int i = 0; i < 4; i++)
-            CORE_SPRITES[i] = CORE_SPRITE_IDENTIFIERS[i].getSprite();
+            CORE_SPRITES[i] = materials.get(CORE_SPRITE_IDENTIFIERS[i], DEBUG_NAME);
 
-        VOIDBRICK_SPRITE = new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/voidstone_bricks")).getSprite();
+        VOIDBRICK_SPRITE = materials.get(new Material(Identifier.fromNamespaceAndPath(MODID, "block/voidstone_bricks")), DEBUG_NAME);
     }
 
-    public static SpriteIdentifier[] getFrameSpriteIdentifiers()
+    public static Material[] getFrameSpriteIdentifiers()
     {
         return FRAME_SPRITE_IDENTIFIERS;
     }
 
-    public static Sprite getCoreSprite()
+    public static Material.Baked getCoreSprite()
     {
         return CORE_SPRITES[0];
     }
 
-    public static Sprite getCoreOverlaySprite()
+    public static Material.Baked getCoreOverlaySprite()
     {
         return CORE_SPRITES[3];
     }
 
-    public static Sprite getCoreBrokenOverlaySprite()
+    public static Material.Baked getCoreBrokenOverlaySprite()
     {
         return CORE_SPRITES[2];
     }
 
-    public static Sprite getBackgroundSpriteForFront(int variant)
+    public static Material.Baked getBackgroundSpriteForFront(int variant)
     {
         return FRAME_SPRITES[28 + variant];
     }
 
-    public static Sprite getOverlaySpriteForFront(int variant)
+    public static Material.Baked getOverlaySpriteForFront(int variant)
     {
         return FRAME_SPRITES[30 + 28 + variant];
     }
 
-    public static Sprite getOverlaySpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
+    public static Material.Baked getOverlaySpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
     {
         return getSpriteForSide(left, right, up, down, variant, 30);
     }
 
-    public static Sprite getBackgroundSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
+    public static Material.Baked getBackgroundSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant)
     {
         var sprite = getSpriteForSide(left, right, up, down, variant, 0);
 
@@ -100,7 +93,7 @@ public class PortalFrameVeinSpriteManager
         return sprite;
     }
 
-    private static Sprite getSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant, int offset)
+    private static Material.Baked getSpriteForSide(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down, int variant, int offset)
     {
         if (!left.isConnected() && !right.isConnected() && !up.isConnected() && !down.isConnected())
             return null;
@@ -149,13 +142,13 @@ public class PortalFrameVeinSpriteManager
         return null;
     }
 
-    private static SpriteIdentifier getFrameSpriteIdentifier(String from)
+    private static Material getFrameSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/portal/" + from));
+        return new Material(Identifier.fromNamespaceAndPath(MODID, "block/portal/" + from));
     }
 
-    private static SpriteIdentifier getCoreSpriteIdentifier(String from)
+    private static Material getCoreSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/portalcore/" + from));
+        return new Material(Identifier.fromNamespaceAndPath(MODID, "block/portalcore/" + from));
     }
 }

@@ -1,38 +1,55 @@
 package net.voxelindustry.voidheart.data.provider;
 
-import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
-import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
-import net.minecraft.block.Block;
-import net.minecraft.data.client.BlockStateModelGenerator;
-import net.minecraft.data.client.ItemModelGenerator;
-import net.minecraft.data.client.ModelIds;
-import net.minecraft.data.client.Models;
-import net.minecraft.data.client.TextureMap;
-import net.minecraft.data.family.BlockFamilies;
-import net.minecraft.data.family.BlockFamily;
+import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
+import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
+import net.minecraft.client.data.models.BlockModelGenerators;
+import net.minecraft.client.data.models.ItemModelGenerators;
+import net.minecraft.client.data.models.model.ItemModelUtils;
+import net.minecraft.client.data.models.model.ModelTemplates;
+import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.renderer.item.properties.select.ComponentContents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.BlockFamily;
+import net.minecraft.data.BlockFamilies;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 
+import java.util.List;
+
+import static net.minecraft.client.data.models.BlockModelGenerators.plainVariant;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
+
 public class ModelsProvider extends FabricModelProvider
 {
-    private BlockStateModelGenerator generator;
+    /**
+     * Items whose model is hand-written in assets/voidheart/models/item.
+     */
+    private static final List<String> HAND_WRITTEN_ITEM_MODELS = List.of(
+            "eldritch_voidstone", "ender_shard", "experience_skull", "eye_bottle", "inventory_inserter", "local_pearl",
+            "obsidian_shard", "pocket_wall", "portal_core", "portal_frame", "portal_frame_core", "portal_interior",
+            "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
+            "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
+            "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item"
+    );
 
-    public ModelsProvider(FabricDataOutput output)
+    private BlockModelGenerators generator;
+
+    public ModelsProvider(FabricPackOutput output)
     {
         super(output);
     }
 
     @Override
-    public void generateBlockStateModels(BlockStateModelGenerator generator)
+    public void generateBlockStateModels(BlockModelGenerators generator)
     {
         this.generator = generator;
 
-        BlockFamilies.getFamilies().filter(VoidHeartDataGenerator::isVoidHeartFamily).filter(BlockFamily::shouldGenerateModels).forEach(family ->
-        {
-            generator.registerCubeAllModelTexturePool(family.getBaseBlock()).family(family);
-            generator.registerParentedItemModel(family.getBaseBlock(), ModelIds.getBlockModelId(family.getBaseBlock()));
-        });
+        BlockFamilies.getAllFamilies().filter(VoidHeartDataGenerator::isVoidHeartFamily).filter(BlockFamily::shouldGenerateModel).forEach(family ->
+                generator.family(family.getBaseBlock()).generateFor(family));
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_PILLAR);
         registerPillarSlab(VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB);
@@ -42,42 +59,56 @@ public class ModelsProvider extends FabricModelProvider
     }
 
     @Override
-    public void generateItemModels(ItemModelGenerator generator)
+    public void generateItemModels(ItemModelGenerators generator)
     {
-        generator.register(VoidHeartItems.RAVENOUS_GOLD_INGOT, Models.GENERATED);
-        generator.register(VoidHeartItems.ARROGANT_IRON_INGOT, Models.GENERATED);
+        generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_INGOT, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_INGOT, ModelTemplates.FLAT_ITEM);
+
+        for (var name : HAND_WRITTEN_ITEM_MODELS)
+            generator.itemModelOutput.accept(BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(MODID, name)), ItemModelUtils.plainModel(itemModel(name)));
+
+        generator.itemModelOutput.accept(VoidHeartBlocks.VOID_LAMP.asItem(), ItemModelUtils.select(
+                new ComponentContents<>(VoidHeartDataComponents.CORRUPTION),
+                ItemModelUtils.plainModel(itemModel("void_lamp")),
+                ItemModelUtils.when(1, ItemModelUtils.plainModel(itemModel("void_lamp_corrupted1_off"))),
+                ItemModelUtils.when(2, ItemModelUtils.plainModel(itemModel("void_lamp_corrupted2_off"))),
+                ItemModelUtils.when(3, ItemModelUtils.plainModel(itemModel("void_lamp_corrupted3_off"))),
+                ItemModelUtils.when(4, ItemModelUtils.plainModel(itemModel("void_lamp_corrupted4_off"))),
+                ItemModelUtils.when(5, ItemModelUtils.plainModel(itemModel("void_lamp_corrupted5"))),
+                ItemModelUtils.when(6, ItemModelUtils.plainModel(itemModel("void_lamp_corrupted6")))
+        ));
+    }
+
+    private static Identifier itemModel(String name)
+    {
+        return Identifier.fromNamespaceAndPath(MODID, "item/" + name);
     }
 
     private void registerPillar(Block block)
     {
-        var textureMap = TextureMap.sideEnd(block);
-        generator.blockStateCollector.accept(BlockStateModelGenerator.createAxisRotatedBlockState(block, Models.CUBE_COLUMN.upload(block, textureMap, this.generator.modelCollector)));
+        var textureMap = TextureMapping.column(block);
+        generator.blockStateOutput.accept(BlockModelGenerators.createAxisAlignedPillarBlock(block,
+                plainVariant(ModelTemplates.CUBE_COLUMN.create(block, textureMap, generator.modelOutput))));
     }
 
     private void registerPillarSlab(Block pillar, Block slab)
     {
-        var textureMap = TextureMap.sideEnd(pillar);
-        var slabModel = Models.SLAB.upload(slab, textureMap, this.generator.modelCollector);
-        var slabTopModel = Models.SLAB_TOP.upload(slab, textureMap, this.generator.modelCollector);
-        var slabDoubleModel = Models.CUBE_COLUMN.uploadWithoutVariant(slab, "_double", textureMap, this.generator.modelCollector);
-        generator.blockStateCollector.accept(BlockStateModelGenerator.createSlabBlockState(slab, slabModel, slabTopModel, slabDoubleModel));
+        var textureMap = TextureMapping.column(pillar);
+        var slabModel = ModelTemplates.SLAB_BOTTOM.create(slab, textureMap, generator.modelOutput);
+        var slabTopModel = ModelTemplates.SLAB_TOP.create(slab, textureMap, generator.modelOutput);
+        var slabDoubleModel = ModelTemplates.CUBE_COLUMN.createWithOverride(slab, "_double", textureMap, generator.modelOutput);
+        generator.blockStateOutput.accept(BlockModelGenerators.createSlab(slab, plainVariant(slabModel), plainVariant(slabTopModel), plainVariant(slabDoubleModel)));
     }
 
     private void registerPillarStairs(Block pillar, Block stairs)
     {
-        var textureMap = TextureMap.sideEnd(pillar);
+        var textureMap = TextureMapping.column(pillar);
 
-        var innerStairsModel = Models.INNER_STAIRS.upload(stairs, textureMap, this.generator.modelCollector);
-        var stairsModel = Models.STAIRS.upload(stairs, textureMap, this.generator.modelCollector);
-        var outerStairsModel = Models.OUTER_STAIRS.upload(stairs, textureMap, this.generator.modelCollector);
+        var innerStairsModel = ModelTemplates.STAIRS_INNER.create(stairs, textureMap, generator.modelOutput);
+        var stairsModel = ModelTemplates.STAIRS_STRAIGHT.create(stairs, textureMap, generator.modelOutput);
+        var outerStairsModel = ModelTemplates.STAIRS_OUTER.create(stairs, textureMap, generator.modelOutput);
 
-        generator.blockStateCollector.accept(BlockStateModelGenerator.createStairsBlockState(stairs, innerStairsModel, stairsModel, outerStairsModel));
-        generator.registerParentedItemModel(stairs, stairsModel);
-    }
-
-    private void registerSimpleCubeAll(Block block)
-    {
-        generator.registerSimpleCubeAll(block);
-        generator.registerParentedItemModel(block, ModelIds.getBlockModelId(block));
+        generator.blockStateOutput.accept(BlockModelGenerators.createStairs(stairs, plainVariant(innerStairsModel), plainVariant(stairsModel), plainVariant(outerStairsModel)));
+        generator.registerSimpleItemModel(stairs, stairsModel);
     }
 }

@@ -1,0 +1,24 @@
+{
+  "parent": "voidheart:amalgam",
+  "criteria": {
+    "been_to_pocket": {
+      "conditions": {
+        "to": "voidheart:void"
+      },
+      "trigger": "minecraft:changed_dimension"
+    }
+  },
+  "display": {
+    "description": "The void will reward. Double click the heart to go back.",
+    "icon": {
+      "id": "voidheart:void_heart"
+    },
+    "title": "Pocket dimension"
+  },
+  "requirements": [
+    [
+      "been_to_pocket"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

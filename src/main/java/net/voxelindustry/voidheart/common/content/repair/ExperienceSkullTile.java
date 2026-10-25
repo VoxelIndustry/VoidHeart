@@ -1,10 +1,11 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -21,26 +22,26 @@ public class ExperienceSkullTile extends TileBase
     }
 
     @Override
-    public void setWorld(World world)
+    public void setLevel(Level world)
     {
-        super.setWorld(world);
+        super.setLevel(world);
 
         // Called on world load
         sync();
     }
 
     @Override
-    public void readNbt(NbtCompound nbt)
+    protected void loadAdditional(ValueInput nbt)
     {
-        super.readNbt(nbt);
+        super.loadAdditional(nbt);
 
-        experience = nbt.getInt("experience");
+        experience = nbt.getIntOr("experience", 0);
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt)
+    protected void saveAdditional(ValueOutput nbt)
     {
-        super.writeNbt(nbt);
+        super.saveAdditional(nbt);
 
         nbt.putInt("experience", experience);
     }

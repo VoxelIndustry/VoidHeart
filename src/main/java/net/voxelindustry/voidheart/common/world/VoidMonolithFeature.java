@@ -1,54 +1,64 @@
 package net.voxelindustry.voidheart.common.world;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockPos.Mutable;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.WorldAccess;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.util.FeatureContext;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockPos.MutableBlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
-public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
+public record VoidMonolithFeature(int minHeight, int maxHeight) implements Feature
 {
-    public VoidMonolithFeature(Codec<VoidMonolithFeatureConfig> configCodec)
+    public static final MapCodec<VoidMonolithFeature> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            Codec.INT.fieldOf("minimum_height").forGetter(VoidMonolithFeature::minHeight),
+            Codec.INT.fieldOf("maximum_height").forGetter(VoidMonolithFeature::maxHeight)
+    ).apply(instance, VoidMonolithFeature::new));
+
+    @Override
+    public MapCodec<VoidMonolithFeature> codec()
     {
-        super(configCodec);
+        return CODEC;
     }
 
     @Override
-    public boolean generate(FeatureContext<VoidMonolithFeatureConfig> context)
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator, RandomSource random, BlockPos origin)
     {
-        if (context.getRandom().nextFloat() > 0.01F)
+        if (random.nextFloat() > 0.01F)
             return false;
 
-        Mutable chosenPos = context.getOrigin().mutableCopy().set(context.getOrigin().getX() + context.getRandom().nextInt(16), context.getWorld().getTopY(), context.getOrigin().getZ() + context.getRandom().nextInt(16));
-        Mutable posToPlace = findPosToPlace(context.getWorld(), chosenPos);
+        MutableBlockPos chosenPos = origin.mutable().set(origin.getX() + random.nextInt(16), level.getMaxY(), origin.getZ() + random.nextInt(16));
+        MutableBlockPos posToPlace = findPosToPlace(level, chosenPos);
 
         if (posToPlace == null)
             return false;
 
-        int height = context.getRandom().nextInt(context.getConfig().maxHeight() - context.getConfig().minHeight()) + context.getConfig().minHeight();
+        int height = random.nextInt(maxHeight - minHeight) + minHeight;
 
         for (int y = 0; y < height; y++)
         {
             boolean hasBelow = y != 0;
             boolean hasAbove = y != height - 1;
 
-            setBlockState(context.getWorld(), posToPlace,
-                    VoidHeartBlocks.VOID_MONOLITH.getDefaultState()
-                            .with(StateProperties.UP, hasAbove)
-                            .with(StateProperties.DOWN, hasBelow)
-                            .with(StateProperties.BROKEN, true));
+            setBlock(level, posToPlace,
+                    VoidHeartBlocks.VOID_MONOLITH.defaultBlockState()
+                            .setValue(StateProperties.UP, hasAbove)
+                            .setValue(StateProperties.DOWN, hasBelow)
+                            .setValue(StateProperties.BROKEN, true));
             posToPlace.move(Direction.UP);
         }
         return true;
     }
 
-    private static Mutable findPosToPlace(WorldAccess worldAccess, BlockPos.Mutable mutable)
+    private static MutableBlockPos findPosToPlace(LevelAccessor worldAccess, BlockPos.MutableBlockPos mutable)
     {
         while (mutable.getY() > 1)
         {
@@ -57,7 +67,7 @@ public class VoidMonolithFeature extends Feature<VoidMonolithFeatureConfig>
             {
                 BlockState blockState = worldAccess.getBlockState(mutable.move(Direction.DOWN));
                 mutable.move(Direction.UP);
-                if (!blockState.isOf(Blocks.WATER) && !blockState.isOf(Blocks.LAVA) && !blockState.isOf(Blocks.BEDROCK) && !blockState.isAir())
+                if (!blockState.is(Blocks.WATER) && !blockState.is(Blocks.LAVA) && !blockState.is(Blocks.BEDROCK) && !blockState.isAir())
                     return mutable;
             }
         }

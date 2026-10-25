@@ -1,38 +1,22 @@
 package net.voxelindustry.voidheart.compat.jade;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IServerDataProvider;
 import snownee.jade.api.ITooltip;
+import snownee.jade.api.StreamServerDataProvider;
 import snownee.jade.api.config.IPluginConfig;
-import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.impl.ui.ProgressArrowElement;
+import snownee.jade.api.ui.JadeUI;
 
-public class ShatterForgeProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider
+public class ShatterForgeProvider implements StreamServerDataProvider<BlockAccessor, ShatterForgeProvider.Data>
 {
-    private static final Identifier SHATTER_FORGE = new Identifier(VoidHeart.MODID, "shatter_forge");
-
-    @Override
-    public void appendTooltip(
-            ITooltip tooltip,
-            BlockAccessor accessor,
-            IPluginConfig config
-    )
-    {
-        if (!accessor.getServerData().contains("progress"))
-            return;
-
-        var helper = IElementHelper.get();
-
-        tooltip.append(helper.item(ItemStack.fromNbt(accessor.getServerData().getCompound("input"))));
-        tooltip.append(new ProgressArrowElement(accessor.getServerData().getFloat("progress")));
-        tooltip.append(helper.item(ItemStack.fromNbt(accessor.getServerData().getCompound("output"))));
-    }
+    private static final Identifier SHATTER_FORGE = Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shatter_forge");
 
     @Override
     public Identifier getUid()
@@ -41,15 +25,60 @@ public class ShatterForgeProvider implements IServerDataProvider<BlockAccessor>,
     }
 
     @Override
-    public void appendServerData(NbtCompound tag, BlockAccessor accessor)
+    public Data streamData(BlockAccessor accessor)
     {
-        var blockEntity = accessor.getBlockEntity();
-
-        if (blockEntity instanceof ShatterForgeTile forge && forge.getRecipeState() != null)
+        if (accessor.getBlockEntity() instanceof ShatterForgeTile forge && forge.getRecipeState() != null)
         {
-            tag.put("input", forge.getRecipeState().getInput(ItemStack.class, 0).writeNbt(new NbtCompound()));
-            tag.putFloat("progress", forge.getRecipeState().completionDelta());
-            tag.put("output", forge.getRecipeState().getOutput(ItemStack.class, 0).writeNbt(new NbtCompound()));
+            return new Data(forge.getRecipeState().getInput(ItemStack.class, 0),
+                    forge.getRecipeState().completionDelta(),
+                    forge.getRecipeState().getOutput(ItemStack.class, 0));
+        }
+        return null;
+    }
+
+    @Override
+    public StreamCodec<RegistryFriendlyByteBuf, Data> streamCodec()
+    {
+        return Data.STREAM_CODEC;
+    }
+
+    public record Data(ItemStack input, float progress, ItemStack output)
+    {
+        public static final StreamCodec<RegistryFriendlyByteBuf, Data> STREAM_CODEC = StreamCodec.composite(
+                ItemStack.OPTIONAL_STREAM_CODEC, Data::input,
+                ByteBufCodecs.FLOAT, Data::progress,
+                ItemStack.OPTIONAL_STREAM_CODEC, Data::output,
+                Data::new);
+    }
+
+    public static class Client implements IBlockComponentProvider
+    {
+        private final ShatterForgeProvider provider;
+
+        public Client(ShatterForgeProvider provider)
+        {
+            this.provider = provider;
+        }
+
+        @Override
+        public void appendTooltip(
+                ITooltip tooltip,
+                BlockAccessor accessor,
+                IPluginConfig config
+        )
+        {
+            provider.decodeFromData(accessor).ifPresent(data ->
+            {
+                tooltip.append(JadeUI.item(data.input()));
+                tooltip.append(JadeUI.progressArrow(data.progress()));
+                tooltip.append(JadeUI.item(data.output()));
+            });
+        }
+
+        @Override
+        public Identifier getUid()
+        {
+            return SHATTER_FORGE;
         }
     }
 }

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VEV",
+    "OOO",
+    "VVV"
+  ],
+  "key": {
+    "V": "voidheart:voidstone_bricks",
+    "E": "minecraft:ender_eye",
+    "O": "minecraft:obsidian"
+  },
+  "result": {
+    "id": "voidheart:void_altar"
+  }
+}

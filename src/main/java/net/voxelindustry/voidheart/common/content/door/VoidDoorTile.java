@@ -1,12 +1,11 @@
 package net.voxelindustry.voidheart.common.content.door;
 
-import lombok.Setter;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity.RemovalReason;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.UUID;
@@ -15,67 +14,38 @@ public class VoidDoorTile extends BlockEntity
 {
     private UUID id;
 
-    @Setter
-    private UUID portalEntityID;
-    private UUID portalDestinationEntityID;
-
     public VoidDoorTile(BlockPos pos, BlockState state)
     {
         super(VoidHeartTiles.VOID_DOOR, pos, state);
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        if (tag.contains("doorID"))
-            id = tag.getUuid("doorID");
-        else
-            id = UUID.randomUUID();
+        id = tag.read("doorID", UUIDUtil.CODEC).orElse(null);
 
-        if (tag.containsUuid("portalEntityID"))
-            portalEntityID = tag.getUuid("portalEntityID");
-        if (tag.containsUuid("portalDestinationEntityID"))
-            portalDestinationEntityID = tag.getUuid("portalDestinationEntityID");
-
-        super.readNbt(tag);
+        super.loadAdditional(tag);
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         if (id == null)
             id = UUID.randomUUID();
 
-        tag.putUuid("doorID", id);
+        tag.store("doorID", UUIDUtil.CODEC, id);
 
-        if (portalEntityID != null)
-            tag.putUuid("portalEntityID", portalEntityID);
-        if (portalDestinationEntityID != null)
-            tag.putUuid("portalDestinationEntityID", portalDestinationEntityID);
-
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     public UUID getId()
     {
+        // Keys are bound to this id, it must be saved as soon as it exists
         if (id == null)
-            return id = UUID.randomUUID();
-        return id;
-    }
-
-    public void setPortal(UUID portalID)
-    {
-        if (getWorld().isClient())
-            return;
-
-        if (portalDestinationEntityID != null)
         {
-            var portalEntity = ((ServerWorld) getWorld()).getEntity(portalDestinationEntityID);
-
-            if (portalEntity != null)
-                portalEntity.remove(RemovalReason.DISCARDED);
+            id = UUID.randomUUID();
+            setChanged();
         }
-
-        portalDestinationEntityID = portalID;
+        return id;
     }
 }

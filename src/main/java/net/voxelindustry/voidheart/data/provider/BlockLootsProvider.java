@@ -1,20 +1,23 @@
 package net.voxelindustry.voidheart.data.provider;
 
-import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
-import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootTableProvider;
+import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
+import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootSubProvider;
+import net.minecraft.core.HolderLookup;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
-public class BlockLootsProvider extends FabricBlockLootTableProvider
+import java.util.concurrent.CompletableFuture;
+
+public class BlockLootsProvider extends FabricBlockLootSubProvider
 {
-    public BlockLootsProvider(FabricDataOutput dataOutput)
+    public BlockLootsProvider(FabricPackOutput dataOutput, CompletableFuture<HolderLookup.Provider> registriesFuture)
     {
-        super(dataOutput);
+        super(dataOutput, registriesFuture);
     }
 
     @Override
     public void generate()
     {
-        this.addDrop(VoidHeartBlocks.CUT_RAVENOUS_GOLD);
-        this.addDrop(VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
+        this.dropSelf(VoidHeartBlocks.CUT_RAVENOUS_GOLD);
+        this.dropSelf(VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
     }
 }

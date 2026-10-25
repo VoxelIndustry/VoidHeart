@@ -26,11 +26,11 @@
     "fabric-datagen": [
       "net.voxelindustry.voidheart.data.VoidHeartDataGenerator"
     ],
+    "rei_common": [
+      "net.voxelindustry.voidheart.compat.rei.VoidHeartREICommonPlugin"
+    ],
     "rei_client": [
       "net.voxelindustry.voidheart.compat.rei.VoidHeartREIPlugin"
-    ],
-    "emi": [
-      "net.voxelindustry.voidheart.compat.emi.VoidHeartEMIPlugin"
     ],
     "jade": [
       "net.voxelindustry.voidheart.compat.jade.VoidHeartJadePlugin"
@@ -41,11 +41,12 @@
   ],
   "accessWidener": "voidheart.accesswidener",
   "depends": {
-    "geckolib": ">=4.0.0",
-    "steamlayer-network": "1.6.x",
-    "fabricloader": ">=0.14.0",
-    "fabric": "*",
-    "minecraft": "1.20.x"
+    "geckolib": ">=5.5.0",
+    "steamlayer-network": "2.0.x",
+    "fabricloader": ">=0.20.1",
+    "fabric-api": "*",
+    "minecraft": "~26.3",
+    "java": ">=25"
   },
   "suggests": {
     "flamingo": "*"

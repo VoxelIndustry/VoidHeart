@@ -1,56 +1,54 @@
 package net.voxelindustry.voidheart.client.model;
 
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
-import net.minecraft.client.render.model.UnbakedModel;
-import net.minecraft.client.util.ModelIdentifier;
-import net.voxelindustry.voidheart.client.model.conduit.ConduitUnbakedModel;
-import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithUnbakedModel;
-import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameCoreUnbakedModel;
-import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameUnbakedModel;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.resources.model.sprite.MaterialBaker;
+import net.minecraft.world.level.block.Block;
+import net.voxelindustry.voidheart.client.model.conduit.ConduitBakedModel;
+import net.voxelindustry.voidheart.client.model.conduit.ConduitSpriteManager;
+import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithBakedModel;
+import net.voxelindustry.voidheart.client.model.monolith.VoidMonolithSpriteManager;
+import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameBakedModel;
+import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameCoreBakedModel;
+import net.voxelindustry.voidheart.client.model.portalframe.PortalFrameVeinSpriteManager;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
-
 public class VoidHeartModelLoadingPlugin implements ModelLoadingPlugin
 {
-    public final ModelIdentifier PORTAL_FRAME = new ModelIdentifier(MODID, "portal_frame", "");
-    public final ModelIdentifier PORTAL_FRAME_CORE = new ModelIdentifier(MODID, "portal_frame_core", "");
-    public final ModelIdentifier VOID_MONOLITH = new ModelIdentifier(MODID, "void_monolith", "");
-    public final ModelIdentifier CONDUIT = new ModelIdentifier(MODID, "void_conduit", "");
-
-    private final Map<ModelIdentifier, Function<UnbakedModel, UnbakedModel>> modelMap = new HashMap<>();
+    private MaterialBaker spritesLoadedFrom;
 
     @Override
-    public void onInitializeModelLoader(Context pluginContext)
+    public void initialize(Context pluginContext)
     {
-        modelMap.put(PORTAL_FRAME, PortalFrameUnbakedModel::new);
-        modelMap.put(PORTAL_FRAME_CORE, PortalFrameCoreUnbakedModel::new);
-        modelMap.put(VOID_MONOLITH, VoidMonolithUnbakedModel::new);
-        modelMap.put(CONDUIT, ConduitUnbakedModel::new);
+        Map<Block, Function<BlockStateModel, BlockStateModel>> wrappers = Map.of(
+                VoidHeartBlocks.PORTAL_FRAME, PortalFrameBakedModel::new,
+                VoidHeartBlocks.PORTAL_FRAME_CORE, PortalFrameCoreBakedModel::new,
+                VoidHeartBlocks.VOID_MONOLITH, VoidMonolithBakedModel::new,
+                VoidHeartBlocks.VOID_CONDUIT, ConduitBakedModel::new
+        );
 
-        pluginContext.modifyModelOnLoad().register((original, context) ->
+        pluginContext.modifyBlockModelAfterBake().register((model, context) ->
         {
-            if (!context.id().getNamespace().equals(MODID))
-                return original;
+            var wrapper = wrappers.get(context.state().getBlock());
+            if (wrapper == null)
+                return model;
 
-            if (context.id() instanceof ModelIdentifier modelIdentifier)
-            {
-                if (modelIdentifier.getVariant().equals("inventory"))
-                    return original;
-            }
-
-            if (context.id().getPath().equals(PORTAL_FRAME.getPath()))
-                return modelMap.get(PORTAL_FRAME).apply(original);
-            if (context.id().getPath().equals(PORTAL_FRAME_CORE.getPath()))
-                return modelMap.get(PORTAL_FRAME_CORE).apply(original);
-            if (context.id().getPath().equals(VOID_MONOLITH.getPath()))
-                return modelMap.get(VOID_MONOLITH).apply(original);
-            if (context.id().getPath().equals(CONDUIT.getPath()))
-                return modelMap.get(CONDUIT).apply(original);
-            return original;
+            loadSprites(context.baker().materials());
+            return wrapper.apply(model);
         });
+    }
+
+    private synchronized void loadSprites(MaterialBaker materials)
+    {
+        if (spritesLoadedFrom == materials)
+            return;
+
+        VoidMonolithSpriteManager.loadSprites(materials);
+        PortalFrameVeinSpriteManager.loadSprites(materials);
+        ConduitSpriteManager.loadSprites(materials);
+        spritesLoadedFrom = materials;
     }
 }

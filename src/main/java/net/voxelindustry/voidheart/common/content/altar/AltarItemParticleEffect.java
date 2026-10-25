@@ -1,31 +1,32 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import net.minecraft.command.argument.ItemStackArgument;
-import net.minecraft.command.argument.ItemStringReader;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.math.Direction;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.util.ExtraCodecs;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
-import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
-@RequiredArgsConstructor
-public class AltarItemParticleEffect implements ParticleEffect
+public record AltarItemParticleEffect(ItemStack stack,
+                                      Vector3fc firstPointBezier,
+                                      Vector3fc secondPointBezier) implements ParticleOptions
 {
-    @Getter
-    private final ItemStack stack;
+    public static final MapCodec<AltarItemParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            ItemStack.CODEC.fieldOf("item").forGetter(AltarItemParticleEffect::stack),
+            ExtraCodecs.VECTOR3F.fieldOf("first_point").forGetter(AltarItemParticleEffect::firstPointBezier),
+            ExtraCodecs.VECTOR3F.fieldOf("second_point").forGetter(AltarItemParticleEffect::secondPointBezier)
+    ).apply(instance, AltarItemParticleEffect::new));
 
-    @Getter
-    private final Vector3fc firstPointBezier;
-    @Getter
-    private final Vector3fc secondPointBezier;
+    public static final StreamCodec<RegistryFriendlyByteBuf, AltarItemParticleEffect> STREAM_CODEC = StreamCodec.composite(
+            ItemStack.OPTIONAL_STREAM_CODEC, AltarItemParticleEffect::stack,
+            ByteBufCodecs.VECTOR3F, AltarItemParticleEffect::firstPointBezier,
+            ByteBufCodecs.VECTOR3F, AltarItemParticleEffect::secondPointBezier,
+            AltarItemParticleEffect::new);
 
     @Override
     public ParticleType<?> getType()
@@ -33,49 +34,18 @@ public class AltarItemParticleEffect implements ParticleEffect
         return VoidHeart.ALTAR_ITEM_PARTICLE;
     }
 
-    @Override
-    public void write(PacketByteBuf buf)
+    public ItemStack getStack()
     {
-        buf.writeItemStack(stack);
-
-        buf.writeFloat(firstPointBezier.x());
-        buf.writeFloat(firstPointBezier.y());
-        buf.writeFloat(firstPointBezier.z());
-
-        buf.writeFloat(secondPointBezier.x());
-        buf.writeFloat(secondPointBezier.y());
-        buf.writeFloat(secondPointBezier.z());
+        return stack;
     }
 
-    @Override
-    public String asString()
+    public Vector3fc getFirstPointBezier()
     {
-        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (new ItemStackArgument(stack.getRegistryEntry(), stack.getNbt())).asString();
+        return firstPointBezier;
     }
 
-    public static final ParticleEffect.Factory<AltarItemParticleEffect> PARAMETERS_FACTORY = new ParticleEffect.Factory<>()
+    public Vector3fc getSecondPointBezier()
     {
-        @Override
-        public AltarItemParticleEffect read(ParticleType<AltarItemParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
-        {
-            stringReader.expect(' ');
-
-            var itemResult = ItemStringReader.item(Registries.ITEM.getReadOnlyWrapper(), stringReader);
-            var itemStack = (new ItemStackArgument(itemResult.item(), itemResult.nbt()))
-                    .createStack(1, false);
-
-            var upVec = Direction.UP.getUnitVector();
-            return new AltarItemParticleEffect(itemStack, upVec, upVec);
-        }
-
-        @Override
-        public AltarItemParticleEffect read(ParticleType<AltarItemParticleEffect> particleType, PacketByteBuf buffer)
-        {
-            return new AltarItemParticleEffect(
-                    buffer.readItemStack(),
-                    new Vector3f(buffer.readFloat(), buffer.readFloat(), buffer.readFloat()),
-                    new Vector3f(buffer.readFloat(), buffer.readFloat(), buffer.readFloat())
-            );
-        }
-    };
+        return secondPointBezier;
+    }
 }

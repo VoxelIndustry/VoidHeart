@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CCC",
+    "OEO",
+    "CCC"
+  ],
+  "key": {
+    "C": "minecraft:cobblestone",
+    "O": "minecraft:obsidian",
+    "E": "minecraft:ender_pearl"
+  },
+  "result": {
+    "id": "voidheart:voidstone",
+    "count": 8
+  }
+}

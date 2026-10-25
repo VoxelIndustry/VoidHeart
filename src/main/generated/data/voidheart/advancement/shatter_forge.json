@@ -1,0 +1,29 @@
+{
+  "parent": "voidheart:pocket",
+  "criteria": {
+    "got_shatter_forge": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:shatter_forge"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": "Project matter through the Void with prejudice",
+    "icon": {
+      "id": "voidheart:shatter_forge"
+    },
+    "title": "Shatter forge"
+  },
+  "requirements": [
+    [
+      "got_shatter_forge"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

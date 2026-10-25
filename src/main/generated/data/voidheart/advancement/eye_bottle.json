@@ -1,0 +1,29 @@
+{
+  "parent": "voidheart:amalgam",
+  "criteria": {
+    "got_eye_bottle": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:eye_bottle"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": "Cheaper way to travel to the Pocket",
+    "icon": {
+      "id": "voidheart:eye_bottle"
+    },
+    "title": "Eye In a Bottle"
+  },
+  "requirements": [
+    [
+      "got_eye_bottle"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

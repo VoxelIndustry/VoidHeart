@@ -1,21 +1,19 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.registry.Registries;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.voxelindustry.voidheart.VoidHeart;
 
-@RequiredArgsConstructor
-public class AltarVoidParticleEffect implements ParticleEffect
+public record AltarVoidParticleEffect(double speed) implements ParticleOptions
 {
-    @Getter
-    private final double speed;
+    public static final MapCodec<AltarVoidParticleEffect> CODEC = Codec.DOUBLE.fieldOf("speed").xmap(AltarVoidParticleEffect::new, AltarVoidParticleEffect::speed);
+
+    public static final StreamCodec<ByteBuf, AltarVoidParticleEffect> STREAM_CODEC = ByteBufCodecs.DOUBLE.map(AltarVoidParticleEffect::new, AltarVoidParticleEffect::speed);
 
     @Override
     public ParticleType<?> getType()
@@ -23,32 +21,8 @@ public class AltarVoidParticleEffect implements ParticleEffect
         return VoidHeart.ALTAR_VOID_PARTICLE;
     }
 
-    @Override
-    public void write(PacketByteBuf buf)
+    public double getSpeed()
     {
-        buf.writeDouble(speed);
+        return speed;
     }
-
-    @Override
-    public String asString()
-    {
-        return Registries.PARTICLE_TYPE.getId(getType()) + " " + (DoubleArgumentType.doubleArg(0));
-    }
-
-    public static final Factory<AltarVoidParticleEffect> PARAMETERS_FACTORY = new Factory<>()
-    {
-        @Override
-        public AltarVoidParticleEffect read(ParticleType<AltarVoidParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException
-        {
-            stringReader.expect(' ');
-            double speed = DoubleArgumentType.doubleArg(0).parse(stringReader);
-            return new AltarVoidParticleEffect(speed);
-        }
-
-        @Override
-        public AltarVoidParticleEffect read(ParticleType<AltarVoidParticleEffect> particleType, PacketByteBuf packetByteBuf)
-        {
-            return new AltarVoidParticleEffect(packetByteBuf.readDouble());
-        }
-    };
 }

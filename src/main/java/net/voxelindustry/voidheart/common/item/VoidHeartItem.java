@@ -1,41 +1,39 @@
 package net.voxelindustry.voidheart.common.item;
 
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.text.Text;
-import net.minecraft.util.Rarity;
-import net.minecraft.world.World;
-
-import java.util.List;
+import net.minecraft.world.item.component.TooltipDisplay;
+import java.util.function.Consumer;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.TooltipFlag;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartItem extends Item
 {
-    public VoidHeartItem()
+    public VoidHeartItem(Properties properties)
     {
-        super(new Settings()
+        super(properties
                 .rarity(Rarity.RARE)
-                .maxCount(1));
+                .stacksTo(1));
     }
 
     @Override
-    public Text getName(ItemStack stack)
+    public Component getName(ItemStack stack)
     {
-        NbtCompound tag = stack.getOrCreateNbt();
-        if (!tag.containsUuid("player"))
-            return Text.translatable(getTranslationKey(stack) + ".empty");
+        var owner = stack.get(VoidHeartDataComponents.HEART_OWNER);
+        if (owner == null)
+            return Component.translatable(getDescriptionId() + ".empty");
 
-        return Text.translatable(getTranslationKey(stack), tag.getString("playerName"));
+        return Component.translatable(getDescriptionId(), owner.playerName());
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag)
     {
-        super.appendTooltip(stack, world, tooltip, context);
 
-        tooltip.add(Text.translatable(MODID + ".void_heart.lore"));
+        tooltip.accept(Component.translatable(MODID + ".void_heart.lore"));
     }
 }

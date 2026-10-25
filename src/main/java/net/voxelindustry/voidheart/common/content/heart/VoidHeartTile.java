@@ -1,20 +1,22 @@
 package net.voxelindustry.voidheart.common.content.heart;
 
-import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.Codec;
+import net.minecraft.world.level.portal.TeleportTransition;
+import net.voxelindustry.voidheart.common.util.ProfileUtil;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
 import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
@@ -41,7 +43,7 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     private UUID playerID;
 
     @Getter
-    private GameProfile playerProfile;
+    private ResolvableProfile playerProfile;
 
     private final Map<UUID, Long> lastPlayerHitCache = new HashMap<>();
 
@@ -63,73 +65,62 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public void setWorld(World world)
+    public void setLevel(Level world)
     {
-        super.setWorld(world);
+        super.setLevel(world);
 
         if (isServer() && playerID != null)
         {
-            var gameProfileOpt = world.getServer().getUserCache().getByUuid(playerID);
-
-            if (gameProfileOpt.isEmpty())
-                return;
-
-            playerProfile = gameProfileOpt.get();
-            sync();
+            ProfileUtil.resolve(world.getServer(), playerID, profile ->
+            {
+                playerProfile = profile;
+                sync();
+            });
         }
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.readNbt(tag);
+        super.loadAdditional(tag);
 
-        if (tag.containsUuid("playerID"))
-            playerID = tag.getUuid("playerID");
+        if (tag.read("playerID", UUIDUtil.CODEC).isPresent())
+            playerID = tag.read("playerID", UUIDUtil.CODEC).orElseThrow();
 
-        if (isClient() && tag.contains("ownerProfile"))
-        {
-            playerProfile = NbtHelper.toGameProfile(tag.getCompound("ownerProfile"));
-
-            if (playerProfile != null && playerProfile.isComplete())
-                MinecraftClient.getInstance().getSessionService().fillProfileProperties(playerProfile, true);
-        }
+        if (isClient())
+            playerProfile = tag.read("ownerProfile", ResolvableProfile.CODEC).orElse(null);
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         if (playerID != null)
         {
-            tag.putUuid("playerID", playerID);
+            tag.store("playerID", UUIDUtil.CODEC, playerID);
 
             if (isServer() && playerProfile != null)
-            {
-                var profileTag = new NbtCompound();
-                NbtHelper.writeGameProfile(profileTag, playerProfile);
-                tag.put("ownerProfile", profileTag);
-            }
+                tag.store("ownerProfile", ResolvableProfile.CODEC, playerProfile);
         }
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, VoidHeartTile heart)
+    public static void tick(Level world, BlockPos pos, BlockState state, VoidHeartTile heart)
     {
         if (heart.isClient())
         {
-            if (world.getTime() % 2 == 0)
+            if (world.getGameTime() % 2 == 0)
                 world.addParticle(new AltarVoidParticleEffect(0.05),
-                        pos.getX() + 0.5 + world.random.nextGaussian(),
-                        pos.getY() + 0.5 + world.random.nextGaussian(),
-                        pos.getZ() + 0.5 + world.random.nextGaussian(),
+                        pos.getX() + 0.5 + world.getRandom().nextGaussian(),
+                        pos.getY() + 0.5 + world.getRandom().nextGaussian(),
+                        pos.getZ() + 0.5 + world.getRandom().nextGaussian(),
                         pos.getX() + 0.5,
                         pos.getY() + 0.5,
                         pos.getZ() + 0.5);
             return;
         }
 
-        if (world.getTime() % 20 == 0)
+        if (world.getGameTime() % 20 == 0)
         {
             var heartData = VoidPocketState.getVoidPocketState(world).getHeartData(heart.playerID);
             heart.updateHeartData(heartData);
@@ -144,34 +135,13 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
         heart.lastPlayerHitCache.values().removeIf(timestamp -> System.currentTimeMillis() - timestamp > 5_000);
     }
 
-    public void playerHit(PlayerEntity player)
+    public void playerHit(Player player)
     {
-        UUID hitPlayerID = player.getUuid();
+        UUID hitPlayerID = player.getUUID();
         if (lastPlayerHitCache.containsKey(hitPlayerID))
         {
-            var serverPlayer = (ServerPlayerEntity) player;
-
-            ServerWorld destination = world.getServer().getWorld(serverPlayer.getSpawnPointDimension());
-
-            BlockPos spawnPointPosition = serverPlayer.getSpawnPointPosition();
-            Optional<Vec3d> respawnPosition = spawnPointPosition == null ? Optional.empty() : PlayerEntity.findRespawnPosition(destination,
-                    spawnPointPosition,
-                    serverPlayer.getSpawnAngle(),
-                    serverPlayer.isSpawnForced(),
-                    true);
-
-            if (!respawnPosition.isPresent())
-                destination = world.getServer().getOverworld();
-
-            ServerWorld finalDestination = destination;
-
-            Vec3d destinationPos = respawnPosition.orElseGet(() -> Vec3d.ofCenter(finalDestination.getSpawnPos()));
-            serverPlayer.teleport(destination,
-                    destinationPos.getX(),
-                    destinationPos.getY(),
-                    destinationPos.getZ(),
-                    player.getHeadYaw(),
-                    player.getPitch(0));
+            var serverPlayer = (ServerPlayer) player;
+            serverPlayer.teleport(serverPlayer.findRespawnPositionAndUseSpawnBlock(true, TeleportTransition.DO_NOTHING));
         }
         else
             lastPlayerHitCache.put(hitPlayerID, System.currentTimeMillis());

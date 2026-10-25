@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VVV",
+    " O ",
+    "VVV"
+  ],
+  "key": {
+    "V": "voidheart:voidstone_bricks",
+    "O": "minecraft:obsidian"
+  },
+  "result": {
+    "id": "voidheart:void_pillar",
+    "count": 4
+  }
+}

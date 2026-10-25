@@ -1,38 +1,44 @@
 package net.voxelindustry.voidheart.client.particle;
 
-import net.minecraft.client.particle.SpriteProvider;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.random.Random;
-
 import static java.lang.Math.min;
 
-public class SimpleSpriteProvider implements SpriteProvider
+import net.minecraft.client.particle.SpriteSet;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.util.RandomSource;
+
+public class SimpleSpriteProvider implements SpriteSet
 {
-    private final Sprite[] sprites;
+    private final TextureAtlasSprite[] sprites;
 
     private final float bias;
 
-    public SimpleSpriteProvider(float bias, Sprite... sprites)
+    public SimpleSpriteProvider(float bias, TextureAtlasSprite... sprites)
     {
         this.sprites = sprites;
         this.bias = bias;
     }
 
-    public SimpleSpriteProvider(Sprite... sprites)
+    public SimpleSpriteProvider(TextureAtlasSprite... sprites)
     {
         this(1, sprites);
     }
 
 
     @Override
-    public Sprite getSprite(int age, int maxAge)
+    public TextureAtlasSprite get(int age, int maxAge)
     {
         return this.sprites[min(this.sprites.length - 1, (int) (age * bias / (maxAge / this.sprites.length)))];
     }
 
     @Override
-    public Sprite getSprite(Random random)
+    public TextureAtlasSprite get(RandomSource random)
     {
         return this.sprites[random.nextInt(this.sprites.length)];
+    }
+
+    @Override
+    public TextureAtlasSprite first()
+    {
+        return this.sprites[0];
     }
 }

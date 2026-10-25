@@ -1,53 +1,51 @@
 package net.voxelindustry.voidheart.common.command;
 
-import com.mojang.authlib.GameProfile;
+import net.minecraft.commands.Commands;
+import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.minecraft.server.players.NameAndId;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.command.argument.GameProfileArgumentType;
-import net.minecraft.server.command.CommandManager.RegistrationEnvironment;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands.CommandSelection;
+import net.minecraft.commands.arguments.GameProfileArgument;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
 import java.util.Optional;
 
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartCommands
 {
-    public static void registerPocketCommand(LiteralArgumentBuilder<ServerCommandSource> builder)
+    public static void registerPocketCommand(LiteralArgumentBuilder<CommandSourceStack> builder)
     {
         builder.then(literal("pocket")
-                .then(argument("name", GameProfileArgumentType.gameProfile())
+                .then(argument("name", GameProfileArgument.gameProfile())
                         .executes(VoidHeartCommands::processPocketCommand)));
     }
 
-    public static int processPocketCommand(CommandContext<ServerCommandSource> context)
+    public static int processPocketCommand(CommandContext<CommandSourceStack> context)
     {
         try
         {
-            Optional<GameProfile> targetProfile = GameProfileArgumentType.getProfileArgument(context, "name").stream().findFirst();
+            Optional<NameAndId> targetProfile = GameProfileArgument.getGameProfiles(context, "name").stream().findFirst();
 
             if (targetProfile.isPresent())
             {
-                ServerWorld voidWorld = context.getSource().getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
-                BlockPos pocketPos = VoidPocketState.getVoidPocketState(voidWorld).getPosForPlayer(targetProfile.get().getId());
+                ServerLevel voidWorld = context.getSource().getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
+                BlockPos pocketPos = VoidPocketState.getVoidPocketState(voidWorld).getPosForPlayer(targetProfile.get().id());
 
-                Vec3d destinationPos = Vec3d.of(pocketPos.up()).add(0.5, 0.5, 0.5);
-                context.getSource().getPlayer().teleport(voidWorld,
-                        destinationPos.getX(),
-                        destinationPos.getY(),
-                        destinationPos.getZ(),
-                        context.getSource().getPlayer().getHeadYaw(),
-                        context.getSource().getPlayer().getPitch(0));
+                Vec3 destinationPos = Vec3.atLowerCornerOf(pocketPos.above()).add(0.5, 0.5, 0.5);
+                var player = context.getSource().getPlayerOrException();
+                TeleportUtil.teleport(player, voidWorld, destinationPos, player.getYHeadRot(), player.getViewXRot(0));
             }
         } catch (CommandSyntaxException e)
         {
@@ -56,10 +54,10 @@ public class VoidHeartCommands
         return 0;
     }
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess commandRegistryAccess, RegistrationEnvironment environment)
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext commandRegistryAccess, CommandSelection environment)
     {
-        LiteralArgumentBuilder<ServerCommandSource> builder = literal(MODID)
-                .requires(commandSource -> commandSource.hasPermissionLevel(2));
+        LiteralArgumentBuilder<CommandSourceStack> builder = literal(MODID)
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS));
 
         registerPocketCommand(builder);
 

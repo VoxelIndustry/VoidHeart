@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:voidstone_polished",
+  "result": {
+    "id": "voidheart:voidstone_polished_wall"
+  }
+}

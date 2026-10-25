@@ -1,62 +1,62 @@
 package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 
-public class VoidBarrierEmitterBlock extends Block implements BlockEntityProvider
+public class VoidBarrierEmitterBlock extends Block implements EntityBlock
 {
-    public VoidBarrierEmitterBlock()
+    public VoidBarrierEmitterBlock(Properties properties)
     {
-        super(Settings.create()
-                .mapColor(MapColor.BLACK)
-                .instrument(Instrument.BASEDRUM)
-                .requiresTool()
+        super(properties
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
                 .strength(60F, 1200.0F)
-                .sounds(BlockSoundGroup.STONE)
-                .requiresTool());
+                .sound(SoundType.STONE)
+                .requiresCorrectToolForDrops());
 
-        setDefaultState(getStateManager().getDefaultState()
-                .with(Properties.FACING, Direction.NORTH)
+        registerDefaultState(getStateDefinition().any()
+                .setValue(BlockStateProperties.FACING, Direction.NORTH)
         );
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack)
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack)
     {
-        super.onPlaced(world, pos, state, placer, itemStack);
+        super.setPlacedBy(world, pos, state, placer, itemStack);
 
         var tile = world.getBlockEntity(pos);
 
         if (tile instanceof VoidBarrierEmitterTile barrier && placer != null)
-            barrier.setOwner(placer.getUuid());
+            barrier.setOwner(placer.getUUID());
     }
 
     @Override
-    public float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos)
+    public float getDestroyProgress(BlockState state, Player player, BlockGetter world, BlockPos pos)
     {
-        float hardness = state.getHardness(world, pos);
+        float hardness = state.getDestroySpeed(world, pos);
 
         var tile = world.getBlockEntity(pos);
         if (tile instanceof VoidBarrierEmitterTile barrier)
         {
-            if (Objects.equals(player.getUuid(), barrier.getOwner()))
+            if (Objects.equals(player.getUUID(), barrier.getOwner()))
                 hardness = 6;
         }
 
@@ -64,19 +64,19 @@ public class VoidBarrierEmitterBlock extends Block implements BlockEntityProvide
         {
             return 0.0f;
         }
-        int i = player.canHarvest(state) ? 30 : 100;
-        return player.getBlockBreakingSpeed(state) / hardness / (float) i;
+        int i = player.hasCorrectToolForDrops(state) ? 30 : 100;
+        return player.getDestroySpeed(state) / hardness / (float) i;
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(Properties.FACING);
+        builder.add(BlockStateProperties.FACING);
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new VoidBarrierEmitterTile(pos, state);
     }

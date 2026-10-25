@@ -1,118 +1,113 @@
 package net.voxelindustry.voidheart.common.item;
 
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Rarity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 
 public class PortalCoreItem extends Item
 {
-    public PortalCoreItem()
+    public PortalCoreItem(Properties properties)
     {
-        super(new Settings()
+        super(properties
                 .rarity(Rarity.COMMON)
-                .maxCount(1));
+                .stacksTo(1));
     }
 
-    public static boolean checkPearlUseHereAndWarn(ItemStack stack, boolean isInPocket, PlayerEntity player)
+    public static boolean checkPearlUseHereAndWarn(ItemStack stack, boolean isInPocket, Player player)
     {
-        var tag = stack.getOrCreateNbt();
+        var linkStart = stack.get(VoidHeartDataComponents.PORTAL_LINK);
 
         if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
-            boolean canUse = !tag.contains("firstDimension") || RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(player.getWorld().getRegistryKey());
+            boolean canUse = linkStart == null || linkStart.firstPos().dimension().equals(player.level().dimension());
 
             if (!canUse)
-                player.sendMessage(Text.translatable(MODID + ".must_be_same_world"), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".must_be_same_world"));
             return canUse;
         }
 
         // If first point is already set then it must not be already inside a pocket
-        if (isInPocket && (!tag.contains("firstPos") || !RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+        if (isInPocket && (linkStart == null || !linkStart.firstPos().dimension().equals(VoidHeart.VOID_WORLD_KEY)))
             return true;
         // If first point is already set then it must be inside a pocket
-        if (!isInPocket && (!tag.contains("firstPos") || RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY)))
+        if (!isInPocket && (linkStart == null || linkStart.firstPos().dimension().equals(VoidHeart.VOID_WORLD_KEY)))
             return true;
 
-        player.sendMessage(Text.translatable(MODID + ".must_be_inside_outside"), true);
+        player.sendOverlayMessage(Component.translatable(MODID + ".must_be_inside_outside"));
         return false;
     }
 
     public static boolean doesPearlHasFirstPosition(ItemStack stack)
     {
-        return stack.getOrCreateNbt().contains("firstPos");
+        return stack.has(VoidHeartDataComponents.PORTAL_LINK);
     }
 
-    public static void sendSuccessMessage(PlayerEntity player, ItemStack stack, boolean alreadyHasFirstPoint)
+    public static void sendSuccessMessage(Player player, ItemStack stack, boolean alreadyHasFirstPoint)
     {
         if (alreadyHasFirstPoint)
             return;
 
         if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
         {
-            player.sendMessage(Text.translatable(MODID + ".link_started_local"), true);
+            player.sendOverlayMessage(Component.translatable(MODID + ".link_started_local"));
             return;
         }
 
-        var tag = stack.getOrCreateNbt();
-        if (RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
-            player.sendMessage(Text.translatable(MODID + ".link_started_pocket"), true);
+        var linkStart = stack.get(VoidHeartDataComponents.PORTAL_LINK);
+        if (linkStart != null && linkStart.firstPos().dimension().equals(VoidHeart.VOID_WORLD_KEY))
+            player.sendOverlayMessage(Component.translatable(MODID + ".link_started_pocket"));
         else
-            player.sendMessage(Text.translatable(MODID + ".link_started_outside"), true);
+            player.sendOverlayMessage(Component.translatable(MODID + ".link_started_outside"));
     }
 
     @Override
-    public boolean hasGlint(ItemStack stack)
+    public boolean isFoil(ItemStack stack)
     {
-        return stack.hasNbt() && doesPearlHasFirstPosition(stack) || super.hasGlint(stack);
+        return doesPearlHasFirstPosition(stack) || super.isFoil(stack);
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag)
     {
-        super.appendTooltip(stack, world, tooltip, context);
+        var linkStart = stack.get(VoidHeartDataComponents.PORTAL_LINK);
 
-        NbtCompound tag = stack.getOrCreateNbt();
-
-        if (!tag.contains("firstPos"))
+        if (linkStart == null)
         {
-            tooltip.add(Text.translatable(MODID + ".portal_core.manual.lore"));
+            tooltip.accept(Component.translatable(MODID + ".portal_core.manual.lore"));
             return;
         }
 
-        tooltip.add(Text.translatable(MODID + ".portal_core.owner.lore", Text.of("§6" + tag.getString("ownerName"))));
+        tooltip.accept(Component.translatable(MODID + ".portal_core.owner.lore", Component.nullToEmpty("§6" + linkStart.ownerName())));
 
-        var blockPos = BlockPos.fromLong(tag.getLong("firstPos"));
+        BlockPos blockPos = linkStart.firstPos().pos();
 
-        if (RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("firstDimension"))).equals(VoidHeart.VOID_WORLD_KEY))
+        if (linkStart.firstPos().dimension().equals(VoidHeart.VOID_WORLD_KEY))
         {
-            tooltip.add(Text.translatable(MODID + ".portal_core.pocket.lore", Text.of("§b" + tag.getString("playerName"))));
-            tooltip.add(Text.translatable(MODID + ".portal_core.pocket.lore2",
-                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
+            tooltip.accept(Component.translatable(MODID + ".portal_core.pocket.lore", Component.nullToEmpty("§b" + linkStart.ownerName())));
+            tooltip.accept(Component.translatable(MODID + ".portal_core.pocket.lore2",
+                    Component.nullToEmpty("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
         }
         else
         {
-            tooltip.add(Text.translatable(MODID + ".portal_core.external.lore",
-                    Text.of("§6" + capitalize(new Identifier(tag.getString("firstDimension")).getPath()))));
-            tooltip.add(Text.translatable(MODID + ".portal_core.pocket.lore2",
-                    Text.of("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
+            tooltip.accept(Component.translatable(MODID + ".portal_core.external.lore",
+                    Component.nullToEmpty("§6" + capitalize(linkStart.firstPos().dimension().identifier().getPath()))));
+            tooltip.accept(Component.translatable(MODID + ".portal_core.pocket.lore2",
+                    Component.nullToEmpty("§2" + blockPos.getX() + "/" + blockPos.getY() + "/" + blockPos.getZ())));
         }
 
-        tooltip.add(Text.translatable(MODID + ".portal_core.erase.lore"));
+        tooltip.accept(Component.translatable(MODID + ".portal_core.erase.lore"));
     }
 }

@@ -1,137 +1,124 @@
 package net.voxelindustry.voidheart.common.content.shatterforge;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.util.Prediction;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
-import static net.minecraft.block.BlockWithEntity.checkType;
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 
-public class ShatterForgeBlock extends Block implements BlockEntityProvider
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+public class ShatterForgeBlock extends Block implements EntityBlock
 {
-    private final VoxelShape SHAPE_X = VoxelShapes.union(
-            createCuboidShape(1, 0, 1, 15, 4, 15),
-            createCuboidShape(2, 4, 2, 14, 5, 14),
-            createCuboidShape(6, 5, 4, 10, 12, 12),
-            createCuboidShape(4, 12, 2, 12, 16, 14)
+    private final VoxelShape SHAPE_X = Shapes.or(
+            box(1, 0, 1, 15, 4, 15),
+            box(2, 4, 2, 14, 5, 14),
+            box(6, 5, 4, 10, 12, 12),
+            box(4, 12, 2, 12, 16, 14)
     );
 
-    private final VoxelShape SHAPE_Z = VoxelShapes.union(
-            createCuboidShape(1, 0, 1, 15, 4, 15),
-            createCuboidShape(2, 4, 2, 14, 5, 14),
-            createCuboidShape(4, 5, 6, 12, 12, 10),
-            createCuboidShape(2, 12, 4, 14, 16, 12)
+    private final VoxelShape SHAPE_Z = Shapes.or(
+            box(1, 0, 1, 15, 4, 15),
+            box(2, 4, 2, 14, 5, 14),
+            box(4, 5, 6, 12, 12, 10),
+            box(2, 12, 4, 14, 16, 12)
     );
 
-    public ShatterForgeBlock()
+    public ShatterForgeBlock(Properties properties)
     {
-        super(Settings.create()
-                .mapColor(MapColor.BLACK)
+        super(properties
+                .mapColor(MapColor.COLOR_BLACK)
                 .strength(3F)
-                .sounds(BlockSoundGroup.STONE)
-                .luminance(state -> state.get(Properties.LIT) ? 11 : 0));
+                .sound(SoundType.STONE)
+                .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 11 : 0));
 
-        setDefaultState(getStateManager().getDefaultState()
-                .with(Properties.LIT, false)
-                .with(Properties.HORIZONTAL_AXIS, Axis.X));
+        registerDefaultState(getStateDefinition().any()
+                .setValue(BlockStateProperties.LIT, false)
+                .setValue(BlockStateProperties.HORIZONTAL_AXIS, Axis.X));
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         var forge = (ShatterForgeTile) world.getBlockEntity(pos);
 
         if (forge == null)
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
 
         if (forge.getStack().isEmpty())
         {
-            var stackInHand = player.getStackInHand(hand);
+            var stackInHand = player.getItemInHand(hand);
             if (!stackInHand.isEmpty())
             {
                 forge.setStack(stackInHand.copyWithCount(1));
 
                 if (!player.isCreative())
-                    stackInHand.decrement(1);
+                    stackInHand.shrink(1);
             }
         }
         else
         {
-            player.getInventory().offerOrDrop(forge.getStack().copyWithCount(1));
+            player.getInventory().placeItemBackInInventory(forge.getStack().copyWithCount(1), Prediction.SERVER_ONLY);
             forge.setStack(ItemStack.EMPTY);
         }
 
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved)
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
     {
-        if (!state.isOf(newState.getBlock()))
-        {
-            var tile = (ShatterForgeTile) world.getBlockEntity(pos);
-            if (tile != null)
-            {
-                tile.removeItself();
-                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
-            }
-        }
-        super.onStateReplaced(state, world, pos, newState, moved);
-    }
-
-    @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context)
-    {
-        if (state.get(Properties.HORIZONTAL_AXIS) == Axis.X)
+        if (state.getValue(BlockStateProperties.HORIZONTAL_AXIS) == Axis.X)
             return SHAPE_X;
         return SHAPE_Z;
     }
 
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx)
+    public BlockState getStateForPlacement(BlockPlaceContext ctx)
     {
-        return this.getDefaultState().with(Properties.HORIZONTAL_AXIS, ctx.getHorizontalPlayerFacing().getAxis());
+        return this.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_AXIS, ctx.getHorizontalDirection().getAxis());
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(Properties.LIT, Properties.HORIZONTAL_AXIS);
+        builder.add(BlockStateProperties.LIT, BlockStateProperties.HORIZONTAL_AXIS);
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state)
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new ShatterForgeTile(pos, state);
     }
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type)
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
     {
-        return checkType(type, VoidHeartTiles.SHATTER_FORGE, ShatterForgeTile::tick);
+        return createTickerHelper(type, VoidHeartTiles.SHATTER_FORGE, ShatterForgeTile::tick);
     }
 }

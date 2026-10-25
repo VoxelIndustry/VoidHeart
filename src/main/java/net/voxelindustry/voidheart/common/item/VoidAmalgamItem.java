@@ -1,71 +1,69 @@
 package net.voxelindustry.voidheart.common.item;
 
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.FoodComponent;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Rarity;
-import net.minecraft.world.World;
+import net.minecraft.world.item.component.TooltipDisplay;
+import java.util.function.Consumer;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
-import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidAmalgamItem extends Item
 {
-    public VoidAmalgamItem()
+    public VoidAmalgamItem(Properties properties)
     {
-        super(new Settings()
+        super(properties
                 .rarity(Rarity.RARE)
-                .maxCount(1)
-                .food(new FoodComponent.Builder().alwaysEdible().build()));
+                .stacksTo(1)
+                .food(new FoodProperties.Builder().alwaysEdible().build()));
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context)
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag)
     {
-        super.appendTooltip(stack, world, tooltip, context);
 
-        tooltip.add(Text.translatable(MODID + ".void_amalgam.lore"));
-        tooltip.add(Text.translatable(MODID + ".void_amalgam.lore2"));
+        tooltip.accept(Component.translatable(MODID + ".void_amalgam.lore"));
+        tooltip.accept(Component.translatable(MODID + ".void_amalgam.lore2"));
     }
 
     @Override
-    public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user)
+    public ItemStack finishUsingItem(ItemStack stack, Level world, LivingEntity user)
     {
-        if (world.isClient() || !(user instanceof PlayerEntity))
+        if (world.isClientSide() || !(user instanceof Player))
             return stack;
 
-        ServerWorld voidWorld = world.getServer().getWorld(VoidHeart.VOID_WORLD_KEY);
+        ServerLevel voidWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
         VoidPocketState voidPocketState = VoidPocketState.getVoidPocketState(voidWorld);
 
-        if (voidPocketState.hasPocket(user.getUuid()))
+        if (voidPocketState.hasPocket(user.getUUID()))
             return stack;
 
-        StatusEffectInstance blindness = new StatusEffectInstance(StatusEffects.BLINDNESS, 40);
-        StatusEffectInstance poison = new StatusEffectInstance(StatusEffects.POISON, 80);
-        StatusEffectInstance wither = new StatusEffectInstance(StatusEffects.WITHER, 40);
-        user.addStatusEffect(blindness);
-        user.addStatusEffect(poison);
-        user.addStatusEffect(wither);
-        ((PlayerEntity) user).playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1, 1 + (world.random.nextFloat() - world.random.nextFloat()) * 0.4F);
+        MobEffectInstance blindness = new MobEffectInstance(MobEffects.BLINDNESS, 40);
+        MobEffectInstance poison = new MobEffectInstance(MobEffects.POISON, 80);
+        MobEffectInstance wither = new MobEffectInstance(MobEffects.WITHER, 40);
+        user.addEffect(blindness);
+        user.addEffect(poison);
+        user.addEffect(wither);
+        world.playSound(null, user.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1, 1 + (world.getRandom().nextFloat() - world.getRandom().nextFloat()) * 0.4F);
 
         ItemStack result = new ItemStack(VoidHeartItems.VOID_HEART);
-        NbtCompound tag = result.getOrCreateNbt();
-        tag.putUuid("player", user.getUuid());
-        tag.putString("playerName", user.getEntityName());
+        result.set(VoidHeartDataComponents.HEART_OWNER, new VoidHeartDataComponents.HeartOwner(user.getUUID(), user.getScoreboardName()));
 
         return result;
     }

@@ -1,16 +1,21 @@
 plugins {
-    id 'fabric-loom' version '1.5.+'
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
 
-archivesBaseName = project.archives_base_name
+base {
+    archivesName = project.archives_base_name
+}
 version = project.mod_version
 group = project.maven_group
 
 repositories {
+    mavenLocal()
     maven {
         name = "Gitea"
         url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
@@ -34,18 +39,9 @@ repositories {
         url = 'https://maven.shedaniel.me/'
     }
     maven {
-        name = 'ModMenu & EMI'
+        name = 'ModMenu'
         url = 'https://maven.terraformersmc.com/'
     }
-    maven {
-        name = 'GeckoLib'
-        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
-        content {
-            includeGroupByRegex("software\\.bernie.*")
-            includeGroup("com.eliotlash.mclib")
-        }
-    }
-
     exclusiveContent {
         forRepository {
             maven {
@@ -58,67 +54,55 @@ repositories {
         }
     }
 
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Curse"
-                url = "https://www.cursemaven.com"
-            }
-        }
-        filter {
-            includeGroup "curse.maven"
-        }
-    }
-
     mavenCentral()
-    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    modImplementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
-    //modImplementation "net.voxelindustry:biggerstructures:1.0.0"
-    modImplementation 'software.bernie.geckolib:geckolib-fabric-1.20.1:4.4.4'
+    implementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
+    implementation "maven.modrinth:geckolib:${project.geckolib_version}"
 
-    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
-    modCompileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
-    modImplementation "dev.emi:emi-fabric:${project.emi_version}"
-    modImplementation "maven.modrinth:iris:1.6.11+1.20.1"
-    modImplementation "curse.maven:jade-324717:${project.jade_version}"
+    implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+    compileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
+    compileOnly "me.shedaniel.cloth:basic-math:0.6.1"
+    compileOnly "dev.architectury:architectury-fabric:22.0.3"
+    compileOnly "maven.modrinth:iris:${project.iris_version}"
+    implementation "maven.modrinth:jade:${project.jade_version}"
 
-    modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v3.3.9-mc1.20.1")
-    modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:q_misc_util:v3.3.9-mc1.20.1")
-    modImplementation ("com.github.iPortalTeam.ImmersivePortalsMod:build:v3.3.9-mc1.20.1")
+    compileOnly "org.projectlombok:lombok:${project.lombok_version}"
+    annotationProcessor "org.projectlombok:lombok:${project.lombok_version}"
 
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    testImplementation(platform('org.junit:junit-bom:5.13.4'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testImplementation('org.mockito:mockito-core:5.20.0')
+    testImplementation('org.mockito:mockito-junit-jupiter:5.20.0')
+    testImplementation('org.assertj:assertj-core:3.27.6')
 
-    testImplementation('org.junit.jupiter:junit-jupiter-api:5.8.2')
-    testImplementation('org.mockito:mockito-core:4.6.1')
-    testImplementation('org.mockito:mockito-junit-jupiter:4.6.1')
-    testImplementation('org.assertj:assertj-core:3.23.1')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+}
 
-    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.8.2')
+test {
+    useJUnitPlatform()
 }
 
 loom {
     accessWidenerPath.set(file("src/main/resources/voidheart.accesswidener"))
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
+    options.release = 25
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact(remapJar) {
-                builtBy remapJar
+            artifact(jar) {
+                builtBy jar
             }
         }
     }
@@ -133,7 +117,9 @@ jar {
 }
 
 fabricApi {
-    configureDataGeneration()
+    configureDataGeneration {
+        client = true
+    }
 }
 
 processResources {

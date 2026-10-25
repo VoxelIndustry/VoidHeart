@@ -1,13 +1,15 @@
 package net.voxelindustry.voidheart.common.content.portalinterior;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -22,53 +24,48 @@ public class PortalInteriorTile extends BlockEntity
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.readNbt(tag);
+        super.loadAdditional(tag);
 
-        corePos = BlockPos.fromLong(tag.getLong("corePos"));
+        corePos = BlockPos.of(tag.getLongOr("corePos", 0L));
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         tag.putLong("corePos", corePos.asLong());
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     public void teleport(Entity collider)
     {
-        if (!(collider instanceof ServerPlayerEntity) || corePos == null)
+        if (!(collider instanceof ServerPlayer) || corePos == null)
             return;
 
         var core = getCore();
 
         if (core.getLinkedWorld() != null)
         {
-            ServerWorld destination = world.getServer().getWorld(core.getLinkedWorldKey());
+            ServerLevel destination = level.getServer().getLevel(core.getLinkedWorldKey());
 
-            var linkedPortalOpt =  getWorld().getServer().getWorld(core.getLinkedWorldKey()).getBlockEntity(core.getLinkedPos(), VoidHeartTiles.PORTAL_FRAME_CORE);
+            var linkedPortalOpt =  getLevel().getServer().getLevel(core.getLinkedWorldKey()).getBlockEntity(core.getLinkedPos(), VoidHeartTiles.PORTAL_FRAME_CORE);
 
             // If pos become invalid.
             // Almost impossible but we need to prevent the world to end corrupted by a player stuck inside the portal.
             if (linkedPortalOpt.isEmpty())
                 return;
 
-            Vec3d destinationPos = linkedPortalOpt.get().getPortalMiddlePos(false);
-            ((ServerPlayerEntity) collider).teleport(destination,
-                    destinationPos.getX(),
-                    destinationPos.getY(),
-                    destinationPos.getZ(),
-                    collider.getHeadYaw(),
-                    collider.getPitch(0));
+            Vec3 destinationPos = linkedPortalOpt.get().getPortalMiddlePos(false);
+            TeleportUtil.teleport((ServerPlayer) collider, destination, destinationPos, collider.getYHeadRot(), collider.getViewXRot(0));
         }
     }
 
     public void setCore(BlockPos pos)
     {
         corePos = pos;
-        markDirty();
+        setChanged();
     }
 
     public PortalFrameCoreTile getCore()
@@ -77,7 +74,7 @@ public class PortalInteriorTile extends BlockEntity
         {
             if (corePos == null)
                 return null;
-            var tileOpt = getWorld().getBlockEntity(corePos, VoidHeartTiles.PORTAL_FRAME_CORE);
+            var tileOpt = getLevel().getBlockEntity(corePos, VoidHeartTiles.PORTAL_FRAME_CORE);
 
             tileOpt.ifPresent(tile -> this.core = tile);
         }

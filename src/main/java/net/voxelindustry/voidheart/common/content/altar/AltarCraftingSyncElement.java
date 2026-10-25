@@ -2,8 +2,8 @@ package net.voxelindustry.voidheart.common.content.altar;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 
@@ -14,7 +14,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public record AltarCraftingSyncElement(ItemStack result,
                                        List<ItemStack> toConsume) implements TileSyncElement<AltarCraftingSyncElement>
 {
-    public static final Identifier IDENTIFIER = new Identifier(MODID, "altar_crafting_sync");
+    public static final Identifier IDENTIFIER = Identifier.fromNamespaceAndPath(MODID, "altar_crafting_sync");
 
     public static final Codec<AltarCraftingSyncElement> CODEC = RecordCodecBuilder.create((instance) ->
             instance.group(

@@ -1,60 +1,40 @@
 package net.voxelindustry.voidheart.client.model.monolith;
 
-import net.fabricmc.fabric.api.renderer.v1.Renderer;
-import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
-import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
-import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
-import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
-import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
-import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.item.ItemStack;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.BlockRenderView;
+import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.fabricmc.fabric.api.client.renderer.v1.mesh.QuadEmitter;
+import net.fabricmc.fabric.api.client.model.loading.v1.wrapper.WrapperBlockStateModel;
+import net.minecraft.client.resources.model.sprite.Material;
+import net.fabricmc.fabric.api.client.renderer.v1.mesh.MutableQuadView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 
-import java.util.function.Supplier;
-
-public class VoidMonolithBakedModel extends ForwardingBakedModel
+public class VoidMonolithBakedModel extends WrapperBlockStateModel
 {
-    private RenderMaterial outerMaterial;
-
-    public VoidMonolithBakedModel(BakedModel wrapped)
+    public VoidMonolithBakedModel(BlockStateModel wrapped)
     {
-        this.wrapped = wrapped;
-    }
-
-    private RenderMaterial getOuterMaterial(Renderer renderer)
-    {
-        if (outerMaterial == null)
-            outerMaterial = renderer.materialFinder().blendMode(0, BlendMode.CUTOUT).emissive(0, true).find();
-        return outerMaterial;
+        super(wrapped);
     }
 
     @Override
-    public boolean isVanillaAdapter()
+    public void emitQuads(QuadEmitter emitter, BlockAndTintGetter blockView, BlockPos pos, BlockState state, RandomSource random, Predicate<@Nullable Direction> cullTest)
     {
-        return false;
-    }
+        var variant = random.nextInt(3);
 
-    @Override
-    public void emitBlockQuads(BlockRenderView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context)
-    {
-        RenderMaterial outerMaterial = getOuterMaterial(RendererAccess.INSTANCE.getRenderer());
-        var variant = randomSupplier.get().nextInt(3);
-
-        context.pushTransform(quad ->
+        emitter.pushTransform(quad ->
         {
             if (quad.tag() != 0)
                 return true;
 
             Direction facing = quad.nominalFace();
-            Sprite sprite;
+            Material.Baked sprite;
 
             if (facing == null || facing.getAxis().isVertical())
                 sprite = VoidMonolithSpriteManager.getAboveSprite(variant);
@@ -72,22 +52,22 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
                     sprite = VoidMonolithSpriteManager.getAboveSprite(variant);
             }
 
-            quad.spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV);
+            quad.materialBake(sprite, MutableQuadView.BAKE_LOCK_UV);
             return true;
         });
 
-        super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
-        context.popTransform();
+        super.emitQuads(emitter, blockView, pos, state, random, cullTest);
+        emitter.popTransform();
 
-        if (state.get(StateProperties.BROKEN))
+        if (state.getValue(StateProperties.BROKEN))
         {
             for (var direction : Direction.values())
             {
                 var sprite = VoidMonolithSpriteManager.getBrokenSprite();
 
-                context.getEmitter()
+                emitter
                         .square(direction, 0, 0, 1, 1, 0)
-                        .spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV)
+                        .materialBake(sprite, MutableQuadView.BAKE_LOCK_UV)
                         .cullFace(direction)
                         .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                         .tag(1)
@@ -95,11 +75,11 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
             }
         }
 
-        if (state.get(Properties.LIT))
+        if (state.getValue(BlockStateProperties.LIT))
         {
             for (var direction : Direction.values())
             {
-                Sprite sprite;
+                Material.Baked sprite;
 
                 if (direction.getAxis().isVertical())
                     sprite = VoidMonolithSpriteManager.getAboveOverlaySprite(variant);
@@ -117,21 +97,16 @@ public class VoidMonolithBakedModel extends ForwardingBakedModel
                         sprite = VoidMonolithSpriteManager.getAboveOverlaySprite(variant);
                 }
 
-                context.getEmitter()
-                        .material(outerMaterial)
+                emitter
+                        .chunkLayer(ChunkSectionLayer.CUTOUT)
+                .emissive(true)
                         .square(direction, 0, 0, 1, 1, 0)
-                        .spriteBake(sprite, MutableQuadView.BAKE_LOCK_UV)
+                        .materialBake(sprite, MutableQuadView.BAKE_LOCK_UV)
                         .cullFace(direction)
                         .color(0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA)
                         .tag(1)
                         .emit();
             }
         }
-    }
-
-    @Override
-    public void emitItemQuads(ItemStack stack, Supplier<Random> randomSupplier, RenderContext context)
-    {
-        throw new UnsupportedOperationException("ItemStack attempted to render VoidMonolith model as an item: " + stack);
     }
 }

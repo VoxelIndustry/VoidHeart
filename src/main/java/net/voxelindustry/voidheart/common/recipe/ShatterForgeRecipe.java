@@ -2,10 +2,10 @@ package net.voxelindustry.voidheart.common.recipe;
 
 import com.google.gson.JsonObject;
 import lombok.Getter;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeCallback;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
@@ -23,7 +23,7 @@ public class ShatterForgeRecipe extends RecipeBase
         super(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getType(), identifier);
     }
 
-    public ShatterForgeRecipe(Identifier identifier, ItemConvertible output, ItemConvertible input, int time, int monolithCount)
+    public ShatterForgeRecipe(Identifier identifier, ItemLike output, ItemLike input, int time, int monolithCount)
     {
         this(identifier, new ItemStack(output), new ItemStack(input), time, monolithCount);
     }
@@ -74,7 +74,7 @@ public class ShatterForgeRecipe extends RecipeBase
     }
 
     @Override
-    public void fromByteBuf(PacketByteBuf buffer)
+    public void fromByteBuf(RegistryFriendlyByteBuf buffer)
     {
         super.fromByteBuf(buffer);
 
@@ -83,7 +83,7 @@ public class ShatterForgeRecipe extends RecipeBase
     }
 
     @Override
-    public void toByteBuf(PacketByteBuf buffer)
+    public void toByteBuf(RegistryFriendlyByteBuf buffer)
     {
         super.toByteBuf(buffer);
 

@@ -1,74 +1,72 @@
 package net.voxelindustry.voidheart.common.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.IntProperty;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import static net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT;
 
-import static net.minecraft.state.property.Properties.LIT;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class VoidLampBlock extends Block
 {
-    public static IntProperty CORRUPTION = IntProperty.of("corruption", 0, 6);
+    public static IntegerProperty CORRUPTION = IntegerProperty.create("corruption", 0, 6);
 
-    public VoidLampBlock()
+    public VoidLampBlock(Properties properties)
     {
-        super(Settings.create()
-                .mapColor(MapColor.DARK_GREEN)
-                .instrument(Instrument.BASEDRUM)
-                .requiresTool()
+        super(properties
+                .mapColor(MapColor.PLANT)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
                 .strength(3F)
-                .sounds(BlockSoundGroup.STONE)
-                .luminance(VoidLampBlock::getLuminance));
+                .sound(SoundType.STONE)
+                .lightLevel(VoidLampBlock::getLuminance));
 
-        setDefaultState(getStateManager().getDefaultState()
-                .with(CORRUPTION, 0)
-                .with(LIT, false));
+        registerDefaultState(getStateDefinition().any()
+                .setValue(CORRUPTION, 0)
+                .setValue(LIT, false));
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
-        if (player.isSneaking())
-            return ActionResult.PASS;
+        if (player.isShiftKeyDown())
+            return InteractionResult.PASS;
 
-        world.setBlockState(pos, state.with(LIT, !state.get(LIT)));
-        return ActionResult.SUCCESS;
+        world.setBlockAndUpdate(pos, state.setValue(LIT, !state.getValue(LIT)));
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx)
+    public BlockState getStateForPlacement(BlockPlaceContext ctx)
     {
-        ItemStack stack = ctx.getStack();
+        ItemStack stack = ctx.getItemInHand();
 
-        if (!stack.hasNbt() || !stack.getNbt().contains("corruption"))
-            return getDefaultState();
-
-        return getDefaultState().with(CORRUPTION, stack.getNbt().getInt("corruption"));
+        return defaultBlockState().setValue(CORRUPTION, stack.getOrDefault(VoidHeartDataComponents.CORRUPTION, 0));
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder)
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
         builder.add(CORRUPTION, LIT);
     }
 
     private static int getLuminance(BlockState state)
     {
-        if (state.get(LIT)) return 15;
+        if (state.getValue(LIT)) return 15;
 
-        int corruptionLevel = state.get(CORRUPTION);
+        int corruptionLevel = state.getValue(CORRUPTION);
 
         return switch (corruptionLevel)
         {

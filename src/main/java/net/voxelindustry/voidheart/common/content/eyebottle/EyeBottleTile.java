@@ -1,25 +1,26 @@
 package net.voxelindustry.voidheart.common.content.eyebottle;
 
-import com.mojang.authlib.GameProfile;
+import com.geckolib.util.GeckoLibUtil;
+import com.geckolib.util.ClientUtil;
+import com.geckolib.animation.object.PlayState;
+import com.geckolib.animation.RawAnimation;
+import com.geckolib.animation.state.AnimationTest;
+import com.geckolib.animation.AnimationController;
+import com.geckolib.animatable.manager.AnimatableManager.ControllerRegistrar;
+import com.geckolib.animatable.instance.AnimatableInstanceCache;
+import com.geckolib.animatable.GeoBlockEntity;
+import net.voxelindustry.voidheart.common.util.ProfileUtil;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
-import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
-import software.bernie.geckolib.util.ClientUtils;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
     @Getter
     private UUID playerID;
     @Getter
-    private GameProfile playerProfile;
+    private ResolvableProfile playerProfile;
     private final Map<UUID, Long> lastPlayerHitCache = new HashMap<>();
 
     public EyeBottleTile(BlockPos pos, BlockState state)
@@ -43,9 +44,9 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
     }
 
     @Override
-    public void setWorld(World world)
+    public void setLevel(Level world)
     {
-        super.setWorld(world);
+        super.setLevel(world);
 
         refreshPlayerProfile();
     }
@@ -62,65 +63,54 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
         if (!isServer() || playerID == null)
             return;
 
-        var gameProfileOpt = world.getServer().getUserCache().getByUuid(playerID);
-
-        if (gameProfileOpt.isEmpty())
-            return;
-
-        playerProfile = gameProfileOpt.get();
-        sync();
-    }
-
-    @Override
-    public void readNbt(NbtCompound tag)
-    {
-        super.readNbt(tag);
-
-        if (tag.containsUuid("playerID"))
-            playerID = tag.getUuid("playerID");
-
-        if (isClient() && tag.contains("ownerProfile"))
+        ProfileUtil.resolve(level.getServer(), playerID, profile ->
         {
-            playerProfile = NbtHelper.toGameProfile(tag.getCompound("ownerProfile"));
-
-            if (playerProfile != null && playerProfile.isComplete())
-                MinecraftClient.getInstance().getSessionService().fillProfileProperties(playerProfile, true);
-        }
+            playerProfile = profile;
+            sync();
+        });
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    protected void loadAdditional(ValueInput tag)
+    {
+        super.loadAdditional(tag);
+
+        if (tag.read("playerID", UUIDUtil.CODEC).isPresent())
+            playerID = tag.read("playerID", UUIDUtil.CODEC).orElseThrow();
+
+        if (isClient())
+            playerProfile = tag.read("ownerProfile", ResolvableProfile.CODEC).orElse(null);
+    }
+
+    @Override
+    protected void saveAdditional(ValueOutput tag)
     {
         if (playerID != null)
         {
-            tag.putUuid("playerID", playerID);
+            tag.store("playerID", UUIDUtil.CODEC, playerID);
 
             if (isServer() && playerProfile != null)
-            {
-                var profileTag = new NbtCompound();
-                NbtHelper.writeGameProfile(profileTag, playerProfile);
-                tag.put("ownerProfile", profileTag);
-            }
+                tag.store("ownerProfile", ResolvableProfile.CODEC, playerProfile);
         }
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     @Override
     public void registerControllers(ControllerRegistrar controllers)
     {
-        var animationController = new AnimationController<>(this, this::deployAnimController);
+        var animationController = new AnimationController<EyeBottleTile>("main", this::deployAnimController);
         animationController.setSoundKeyframeHandler(event ->
         {
-            var player = ClientUtils.getClientPlayer();
+            var player = ClientUtil.getClientPlayer();
 
             if (player != null)
-                player.playSound(SoundEvents.BLOCK_GLASS_PLACE, 0.1F, player.getRandom().nextFloat() * 0.1F + 0.9F);
+                player.playSound(SoundEvents.GLASS_PLACE, 0.1F, player.getRandom().nextFloat() * 0.1F + 0.9F);
         });
         controllers.add(animationController);
     }
 
-    protected <E extends EyeBottleTile> PlayState deployAnimController(AnimationState<E> state)
+    protected <E extends EyeBottleTile> PlayState deployAnimController(AnimationTest<E> state)
     {
         return state.setAndContinue(IDLE);
     }

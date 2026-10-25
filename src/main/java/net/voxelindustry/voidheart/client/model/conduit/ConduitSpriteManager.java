@@ -1,17 +1,19 @@
 package net.voxelindustry.voidheart.client.model.conduit;
 
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.SpriteIdentifier;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.resources.model.sprite.MaterialBaker;
+import net.minecraft.client.resources.model.ModelDebugName;
+import net.minecraft.client.resources.model.sprite.Material;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
+
+import net.minecraft.resources.Identifier;
 
 public class ConduitSpriteManager
 {
-    private static final SpriteIdentifier[] SPRITE_IDENTIFIERS = new SpriteIdentifier[24];
+    private static final ModelDebugName DEBUG_NAME = () -> "voidheart:ConduitSpriteManager";
 
-    private static final Sprite[] SPRITES = new Sprite[24];
+    private static final Material[] SPRITE_IDENTIFIERS = new Material[24];
+
+    private static final Material.Baked[] SPRITES = new Material.Baked[24];
 
     static
     {
@@ -21,10 +23,10 @@ public class ConduitSpriteManager
             SPRITE_IDENTIFIERS[i] = getSpriteIdentifier("conduit_lit" + (i - 11));
     }
 
-    public static void loadSprites()
+    public static void loadSprites(MaterialBaker materials)
     {
         for (int i = 0; i < 24; i++)
-            SPRITES[i] = SPRITE_IDENTIFIERS[i].getSprite();
+            SPRITES[i] = materials.get(SPRITE_IDENTIFIERS[i], DEBUG_NAME);
     }
 
     private static int getSpriteIndexFor(boolean up, boolean down, boolean left, boolean right)
@@ -57,14 +59,13 @@ public class ConduitSpriteManager
         return 11;
     }
 
-    public static Sprite getSpriteFor(boolean up, boolean down, boolean left, boolean right, boolean lit)
+    public static Material.Baked getSpriteFor(boolean up, boolean down, boolean left, boolean right, boolean lit)
     {
         return SPRITES[getSpriteIndexFor(up, down, left, right) + (lit ? 12 : 0)];
     }
 
-
-    private static SpriteIdentifier getSpriteIdentifier(String from)
+    private static Material getSpriteIdentifier(String from)
     {
-        return new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, new Identifier(MODID, "block/conduit/" + from));
+        return new Material(Identifier.fromNamespaceAndPath(MODID, "block/conduit/" + from));
     }
 }

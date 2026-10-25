@@ -1,14 +1,15 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.steamlayer.tile.ILoadable;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -38,29 +39,29 @@ public class PortalFrameTile extends TileBase implements ILoadable
      */
     public void breakTile(BlockPos eventSource)
     {
-        markDirty();
+        setChanged();
 
         linkedCores.forEach(pos ->
         {
             if (pos.equals(eventSource))
                 return;
 
-            var coreFrameOpt = getWorld().getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE);
+            var coreFrameOpt = getLevel().getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE);
             if (!coreFrameOpt.isEmpty())
-                coreFrameOpt.get().removeFrame(getPos());
+                coreFrameOpt.get().removeFrame(getBlockPos());
         });
     }
 
     void addCore(PortalFrameTile wall)
     {
-        linkedCores.add(wall.getPos());
-        markDirty();
+        linkedCores.add(wall.getBlockPos());
+        setChanged();
     }
 
     void removeCore(PortalFrameTile wall)
     {
-        linkedCores.remove(wall.getPos());
-        markDirty();
+        linkedCores.remove(wall.getBlockPos());
+        setChanged();
     }
 
     public static Direction[] getAdjacentDirection(Direction facing)
@@ -74,39 +75,39 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
     public void refreshLitStatus()
     {
-        var existingState = world.getBlockState(getPos());
+        var existingState = level.getBlockState(getBlockPos());
 
         if (existingState.getBlock() != VoidHeartBlocks.PORTAL_FRAME)
             return;
 
         if (linkedCores.isEmpty())
-            world.setBlockState(getPos(), existingState.with(Properties.LIT, false));
+            level.setBlockAndUpdate(getBlockPos(), existingState.setValue(BlockStateProperties.LIT, false));
 
         var isAnyCoreLit = linkedCores.stream().anyMatch(this::isCoreLit);
-        world.setBlockState(getPos(), existingState.with(Properties.LIT, isAnyCoreLit));
+        level.setBlockAndUpdate(getBlockPos(), existingState.setValue(BlockStateProperties.LIT, isAnyCoreLit));
     }
 
     private boolean isCoreLit(BlockPos corePos)
     {
-        var coreState = world.getBlockState(corePos);
+        var coreState = level.getBlockState(corePos);
 
         if (coreState.getBlock() != VoidHeartBlocks.PORTAL_FRAME_CORE)
             return false;
-        return coreState.get(Properties.LIT);
+        return coreState.getValue(BlockStateProperties.LIT);
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.readNbt(tag);
+        super.loadAdditional(tag);
 
-        var count = tag.getInt("linkedCoreCount");
+        var count = tag.getIntOr("linkedCoreCount", 0);
         for (int index = 0; index < count; index++)
-            linkedCores.add(BlockPos.fromLong(tag.getLong("linkedCore" + index)));
+            linkedCores.add(BlockPos.of(tag.getLongOr("linkedCore" + index, 0L)));
     }
 
     @Override
-    public void writeNbt(NbtCompound tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         tag.putInt("linkedCoreCount", linkedCores.size());
 
@@ -117,11 +118,18 @@ public class PortalFrameTile extends TileBase implements ILoadable
             index++;
         }
 
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     public boolean isCore()
     {
         return false;
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        breakTile(BlockPos.ZERO);
+        super.preRemoveSideEffects(pos, state);
     }
 }
