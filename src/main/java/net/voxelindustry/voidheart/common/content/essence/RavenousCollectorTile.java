@@ -149,6 +149,21 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
         return this.cache;
     }
 
+    public static EssenceStorage copyOf(EssenceStorage source)
+    {
+        var copy = new EssenceStorage(EssenceRegistry.EMPTY, CAPACITY);
+        copy.attune(source.type());
+        copy.fill(source.type(), source.amount());
+        return copy;
+    }
+
+    public void restoreStorage(EssenceStorage source)
+    {
+        storage = copyOf(source);
+        setChanged();
+        sync();
+    }
+
     public EssenceStorage storage()
     {
         return storage;

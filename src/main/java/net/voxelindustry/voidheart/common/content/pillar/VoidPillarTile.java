@@ -46,6 +46,7 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
 
         stack = tag.read("stack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
 
+        altars.clear();
         int pillarCount = tag.getIntOr("pillarCount", 0);
         for (int index = 0; index < pillarCount; index++)
             altars.add(BlockPos.of(tag.getLongOr("pillar" + index, 0L)));
@@ -67,7 +68,20 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
     {
         this.stack = stack;
 
+        setChanged();
         sync();
+
+        if (level != null && !level.isClientSide())
+            notifyLinkedTiles();
+    }
+
+    private void notifyLinkedTiles()
+    {
+        for (var altarPos : new ArrayList<>(altars))
+        {
+            if (level.getBlockEntity(altarPos) instanceof PillarLinkedTile linkedTile)
+                linkedTile.onPillarStackChanged(this);
+        }
     }
 
     public void addAltar(BlockPos pos)
@@ -99,13 +113,11 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
 
     public void removeItself()
     {
-        altars.forEach(altarPos ->
+        for (var altarPos : new ArrayList<>(altars))
         {
-            var tile = getLevel().getBlockEntity(altarPos);
-
-            if (tile instanceof PillarLinkedTile linkedTile)
+            if (getLevel().getBlockEntity(altarPos) instanceof PillarLinkedTile linkedTile)
                 linkedTile.removePillar(this);
-        });
+        }
     }
 
     @Override
