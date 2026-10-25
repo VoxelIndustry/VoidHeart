@@ -153,7 +153,7 @@ public class VoidHeartClient implements ClientModInitializer
                 SHATTER_FORGE_RUNE_PARTICLE,
                 spriteSet ->
                         (options, level, x, y, z, xAux, yAux, zAux, random) ->
-                                new ShatterForgeRuneParticle(level, x, y, z, spriteSet, options.axis()));
+                                new ShatterForgeRuneParticle(level, x, y, z, spriteSet, options.axis(), options.forge(), options.index()));
 
         particles.register(
                 EYE_BEAM_PARTICLE,
