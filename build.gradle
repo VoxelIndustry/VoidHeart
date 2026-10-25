@@ -1,11 +1,11 @@
 plugins {
-    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 base {
@@ -39,18 +39,9 @@ repositories {
         url = 'https://maven.shedaniel.me/'
     }
     maven {
-        name = 'ModMenu & EMI'
+        name = 'ModMenu'
         url = 'https://maven.terraformersmc.com/'
     }
-    maven {
-        name = 'GeckoLib'
-        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
-        content {
-            includeGroupByRegex("software\\.bernie.*")
-            includeGroup("com.eliotlash.mclib")
-        }
-    }
-
     exclusiveContent {
         forRepository {
             maven {
@@ -63,36 +54,22 @@ repositories {
         }
     }
 
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Curse"
-                url = "https://www.cursemaven.com"
-            }
-        }
-        filter {
-            includeGroup "curse.maven"
-        }
-    }
-
     mavenCentral()
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    modImplementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
-    //modImplementation "net.voxelindustry:biggerstructures:1.0.0"
-    modImplementation 'software.bernie.geckolib:geckolib-fabric-1.20.1:4.4.4'
+    implementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
+    implementation "maven.modrinth:geckolib:${project.geckolib_version}"
 
-    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
-    modCompileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
-    modImplementation "maven.modrinth:iris:1.6.11+1.20.1"
-    modImplementation "curse.maven:jade-324717:${project.jade_version}"
+    implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+    compileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
+    compileOnly "maven.modrinth:iris:${project.iris_version}"
+    implementation "maven.modrinth:jade:${project.jade_version}"
 
     compileOnly "org.projectlombok:lombok:${project.lombok_version}"
     annotationProcessor "org.projectlombok:lombok:${project.lombok_version}"
@@ -116,14 +93,14 @@ loom {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
-    options.release = 17
+    options.release = 25
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact(remapJar) {
-                builtBy remapJar
+            artifact(jar) {
+                builtBy jar
             }
         }
     }
@@ -138,7 +115,9 @@ jar {
 }
 
 fabricApi {
-    configureDataGeneration()
+    configureDataGeneration {
+        client = true
+    }
 }
 
 processResources {

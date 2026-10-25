@@ -1,25 +1,26 @@
 package net.voxelindustry.voidheart.common.content.eyebottle;
 
-import com.mojang.authlib.GameProfile;
+import com.geckolib.util.GeckoLibUtil;
+import com.geckolib.util.ClientUtil;
+import com.geckolib.animation.object.PlayState;
+import com.geckolib.animation.RawAnimation;
+import com.geckolib.animation.state.AnimationTest;
+import com.geckolib.animation.AnimationController;
+import com.geckolib.animatable.manager.AnimatableManager.ControllerRegistrar;
+import com.geckolib.animatable.instance.AnimatableInstanceCache;
+import com.geckolib.animatable.GeoBlockEntity;
+import net.voxelindustry.voidheart.common.util.ProfileUtil;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
-import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
-import software.bernie.geckolib.util.ClientUtils;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
     @Getter
     private UUID playerID;
     @Getter
-    private GameProfile playerProfile;
+    private ResolvableProfile playerProfile;
     private final Map<UUID, Long> lastPlayerHitCache = new HashMap<>();
 
     public EyeBottleTile(BlockPos pos, BlockState state)
@@ -62,45 +63,34 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
         if (!isServer() || playerID == null)
             return;
 
-        var gameProfileOpt = level.getServer().getProfileCache().get(playerID);
-
-        if (gameProfileOpt.isEmpty())
-            return;
-
-        playerProfile = gameProfileOpt.get();
-        sync();
-    }
-
-    @Override
-    public void load(CompoundTag tag)
-    {
-        super.load(tag);
-
-        if (tag.hasUUID("playerID"))
-            playerID = tag.getUUID("playerID");
-
-        if (isClient() && tag.contains("ownerProfile"))
+        ProfileUtil.resolve(level.getServer(), playerID, profile ->
         {
-            playerProfile = NbtUtils.readGameProfile(tag.getCompound("ownerProfile"));
-
-            if (playerProfile != null && playerProfile.isComplete())
-                Minecraft.getInstance().getMinecraftSessionService().fillProfileProperties(playerProfile, true);
-        }
+            playerProfile = profile;
+            sync();
+        });
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
+    {
+        super.loadAdditional(tag);
+
+        if (tag.read("playerID", UUIDUtil.CODEC).isPresent())
+            playerID = tag.read("playerID", UUIDUtil.CODEC).orElseThrow();
+
+        if (isClient())
+            playerProfile = tag.read("ownerProfile", ResolvableProfile.CODEC).orElse(null);
+    }
+
+    @Override
+    protected void saveAdditional(ValueOutput tag)
     {
         if (playerID != null)
         {
-            tag.putUUID("playerID", playerID);
+            tag.store("playerID", UUIDUtil.CODEC, playerID);
 
             if (isServer() && playerProfile != null)
-            {
-                var profileTag = new CompoundTag();
-                NbtUtils.writeGameProfile(profileTag, playerProfile);
-                tag.put("ownerProfile", profileTag);
-            }
+                tag.store("ownerProfile", ResolvableProfile.CODEC, playerProfile);
         }
 
         super.saveAdditional(tag);
@@ -109,10 +99,10 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
     @Override
     public void registerControllers(ControllerRegistrar controllers)
     {
-        var animationController = new AnimationController<>(this, this::deployAnimController);
+        var animationController = new AnimationController<EyeBottleTile>("main", this::deployAnimController);
         animationController.setSoundKeyframeHandler(event ->
         {
-            var player = ClientUtils.getClientPlayer();
+            var player = ClientUtil.getClientPlayer();
 
             if (player != null)
                 player.playSound(SoundEvents.GLASS_PLACE, 0.1F, player.getRandom().nextFloat() * 0.1F + 0.9F);
@@ -120,7 +110,7 @@ public class EyeBottleTile extends TileBase implements GeoBlockEntity
         controllers.add(animationController);
     }
 
-    protected <E extends EyeBottleTile> PlayState deployAnimController(AnimationState<E> state)
+    protected <E extends EyeBottleTile> PlayState deployAnimController(AnimationTest<E> state)
     {
         return state.setAndContinue(IDLE);
     }

@@ -1,11 +1,12 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
+import net.minecraft.core.RegistrationInfo;
 import com.mojang.serialization.Lifecycle;
 import net.minecraft.core.DefaultedMappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.WritableRegistry;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -16,7 +17,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class EssenceRegistry
 {
-    public static final ResourceKey<Registry<EssenceType>> ESSENCE_REGISTRY_TYPE = ResourceKey.createRegistryKey(new ResourceLocation(MODID, "registry/essence"));
+    public static final ResourceKey<Registry<EssenceType>> ESSENCE_REGISTRY_TYPE = ResourceKey.createRegistryKey(Identifier.fromNamespaceAndPath(MODID, "registry/essence"));
     public static WritableRegistry<EssenceType> ESSENCE_REGISTRY;
 
     public static ResourceKey<EssenceType> KEY_EMPTY;
@@ -50,9 +51,9 @@ public class EssenceRegistry
 
     private static EssenceType createEssenceType(String identifierPath, String translatableName, TagKey<Block> consumables, ItemStack catalyst)
     {
-        var key = ResourceKey.create(ESSENCE_REGISTRY_TYPE, new ResourceLocation(MODID, identifierPath));
-        var essenceType = new EssenceType(key.location(), translatableName, consumables, catalyst);
-        ESSENCE_REGISTRY.register(key, essenceType, Lifecycle.stable());
+        var key = ResourceKey.create(ESSENCE_REGISTRY_TYPE, Identifier.fromNamespaceAndPath(MODID, identifierPath));
+        var essenceType = new EssenceType(key.identifier(), translatableName, consumables, catalyst);
+        ESSENCE_REGISTRY.register(key, essenceType, RegistrationInfo.BUILT_IN);
         return essenceType;
     }
 

@@ -128,7 +128,7 @@ public class InventoryInserterTile extends BlockEntity
             for (var slot : slots)
             {
                 var candidate = inventory.getItem(slot);
-                if (ItemStack.isSameItemSameTags(candidate, toExtract))
+                if (ItemStack.isSameItemSameComponents(candidate, toExtract))
                 {
                     var copy = candidate.copyWithCount(1);
                     if (sidedInventory.canTakeItemThroughFace(slot, copy, direction))
@@ -146,7 +146,7 @@ public class InventoryInserterTile extends BlockEntity
         for (var slot : slots)
         {
             var candidate = inventory.getItem(slot);
-            if (ItemStack.isSameItemSameTags(candidate, toExtract))
+            if (ItemStack.isSameItemSameComponents(candidate, toExtract))
             {
                 candidate.shrink(1);
                 return;

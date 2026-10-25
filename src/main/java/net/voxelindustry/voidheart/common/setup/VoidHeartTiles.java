@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.setup;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
@@ -113,6 +113,6 @@ public class VoidHeartTiles
 
     private static void registerTile(BlockEntityType<?> type, String name)
     {
-        Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, new ResourceLocation(MODID, name), type);
+        Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, name), type);
     }
 }

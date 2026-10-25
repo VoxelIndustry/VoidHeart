@@ -1,11 +1,12 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -96,17 +97,17 @@ public class PortalFrameTile extends TileBase implements ILoadable
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.load(tag);
+        super.loadAdditional(tag);
 
-        var count = tag.getInt("linkedCoreCount");
+        var count = tag.getIntOr("linkedCoreCount", 0);
         for (int index = 0; index < count; index++)
-            linkedCores.add(BlockPos.of(tag.getLong("linkedCore" + index)));
+            linkedCores.add(BlockPos.of(tag.getLongOr("linkedCore" + index, 0L)));
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         tag.putInt("linkedCoreCount", linkedCores.size());
 
@@ -123,5 +124,12 @@ public class PortalFrameTile extends TileBase implements ILoadable
     public boolean isCore()
     {
         return false;
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        breakTile(BlockPos.ZERO);
+        super.preRemoveSideEffects(pos, state);
     }
 }

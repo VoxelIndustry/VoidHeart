@@ -1,8 +1,9 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
@@ -30,15 +31,15 @@ public class ExperienceSkullTile extends TileBase
     }
 
     @Override
-    public void load(CompoundTag nbt)
+    protected void loadAdditional(ValueInput nbt)
     {
-        super.load(nbt);
+        super.loadAdditional(nbt);
 
-        experience = nbt.getInt("experience");
+        experience = nbt.getIntOr("experience", 0);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag nbt)
+    protected void saveAdditional(ValueOutput nbt)
     {
         super.saveAdditional(nbt);
 

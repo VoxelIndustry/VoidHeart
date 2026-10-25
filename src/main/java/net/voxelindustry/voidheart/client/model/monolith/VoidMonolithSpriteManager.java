@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.client.model.monolith;
 import java.text.NumberFormat;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.Material;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.InventoryMenu;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -81,6 +81,6 @@ public class VoidMonolithSpriteManager
 
     private static Material getSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, new ResourceLocation(MODID, "block/monolith/" + from));
+        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/monolith/" + from));
     }
 }

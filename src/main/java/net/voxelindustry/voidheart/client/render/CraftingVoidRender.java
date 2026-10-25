@@ -4,7 +4,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.steamlayer.math.interpolator.Interpolators;
 import net.voxelindustry.voidheart.client.CustomRenderLayers;
 import net.voxelindustry.voidheart.client.util.MathUtil;
@@ -24,7 +24,7 @@ public class CraftingVoidRender
 {
     private static final Random RANDOM = new Random(31100L);
 
-    private static final ResourceLocation ALTAR_OVERLAY_TEXTURE = new ResourceLocation(MODID, "textures/block/altar_overlay_cube.png");
+    private static final Identifier ALTAR_OVERLAY_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/block/altar_overlay_cube.png");
 
     static void renderVoidCube(VoidAltarTile altar, BlockEntityRenderDispatcher dispatcher, float worldTimeInterp, PoseStack matrices, MultiBufferSource vertexConsumers)
     {

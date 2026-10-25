@@ -1,8 +1,9 @@
 package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
+import net.minecraft.server.level.ServerLevel;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
@@ -15,9 +16,9 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 public class PermeableBarrierItem extends Item
 {
-    public PermeableBarrierItem()
+    public PermeableBarrierItem(Properties properties)
     {
-        super(new Properties()
+        super(properties
                 .rarity(Rarity.UNCOMMON)
                 .stacksTo(1)
                 .durability(128));
@@ -30,10 +31,9 @@ public class PermeableBarrierItem extends Item
             return InteractionResult.SUCCESS;
 
         ItemStack stack = context.getItemInHand();
-        CompoundTag tag = stack.getOrCreateTag();
-        if (hasFirstPoint(tag))
+        BlockPos first = stack.get(VoidHeartDataComponents.BARRIER_FIRST_POINT);
+        if (first != null)
         {
-            BlockPos first = BlockPos.of(tag.getLong("firstPoint"));
             BlockPos second = context.getClickedPos().relative(context.getClickedFace());
 
             if (arePointsSamePlane(first, second))
@@ -48,20 +48,17 @@ public class PermeableBarrierItem extends Item
                     {
                         context.getLevel().setBlockAndUpdate(pos, VoidHeartBlocks.PERMEABLE_BARRIER.defaultBlockState().setValue(BlockStateProperties.FACING, direction));
 
-                        stack.hurt(1, context.getLevel().getRandom(), (ServerPlayer) context.getPlayer());
-                        if (stack.getDamageValue() == stack.getMaxDamage())
-                        {
-                            stack.setCount(0);
+                        stack.hurtAndBreak(1, (ServerLevel) context.getLevel(), (ServerPlayer) context.getPlayer(), item -> {});
+                        if (stack.isEmpty())
                             break;
-                        }
                     }
                 }
 
-                tag.remove("firstPoint");
+                stack.remove(VoidHeartDataComponents.BARRIER_FIRST_POINT);
             }
         }
         else
-            setFirstPoint(tag, context.getClickedPos().relative(context.getClickedFace()));
+            stack.set(VoidHeartDataComponents.BARRIER_FIRST_POINT, context.getClickedPos().relative(context.getClickedFace()));
         return super.useOn(context);
     }
 
@@ -78,13 +75,4 @@ public class PermeableBarrierItem extends Item
         return firstPoint.getX() == secondPoint.getX() || firstPoint.getY() == secondPoint.getY() || firstPoint.getZ() == secondPoint.getZ();
     }
 
-    private boolean hasFirstPoint(CompoundTag tag)
-    {
-        return tag.contains("firstPoint");
-    }
-
-    private void setFirstPoint(CompoundTag tag, BlockPos pos)
-    {
-        tag.putLong("firstPoint", pos.asLong());
-    }
 }

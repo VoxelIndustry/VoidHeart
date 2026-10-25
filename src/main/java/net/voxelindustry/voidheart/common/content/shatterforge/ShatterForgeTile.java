@@ -1,12 +1,14 @@
 package net.voxelindustry.voidheart.common.content.shatterforge;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.Containers;
 import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -57,7 +59,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     private int connectedMonolithCount;
     private Direction trackDirection;
 
-    private final Collection<ResourceLocation> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
+    private final Collection<Identifier> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
 
     ////////////
     // CLIENT //
@@ -448,26 +450,26 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.load(tag);
+        super.loadAdditional(tag);
 
-        stack = ItemStack.of(tag.getCompound("stack"));
-        recipeProgress = tag.getInt("recipeProgress");
-        warmProgress = tag.getInt("warmProgress");
-        isCrafting = tag.getBoolean("isCrafting");
-        hasOutputtedResult = tag.getBoolean("hasOutputtedResult");
+        stack = tag.read("stack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
+        recipeProgress = tag.getIntOr("recipeProgress", 0);
+        warmProgress = tag.getIntOr("warmProgress", 0);
+        isCrafting = tag.getBooleanOr("isCrafting", false);
+        hasOutputtedResult = tag.getBooleanOr("hasOutputtedResult", false);
 
-        connectedMonolithCount = tag.getInt("connectedMonolithCount");
-        trackDirection = Direction.from3DDataValue(tag.getByte("trackDirection"));
+        connectedMonolithCount = tag.getIntOr("connectedMonolithCount", 0);
+        trackDirection = Direction.from3DDataValue(tag.getByteOr("trackDirection", (byte) 0));
 
-        pillarPos = BlockPos.of(tag.getLong("pillarPos"));
+        pillarPos = BlockPos.of(tag.getLongOr("pillarPos", 0L));
 
         if (isServer())
         {
             if (isCrafting)
             {
-                this.recipeState = RecipeState.fromTag(VoidHeartRecipes.SHATTER_FORGE_CATEGORY, tag.getCompound("recipeState"));
+                this.recipeState = RecipeState.load(VoidHeartRecipes.SHATTER_FORGE_CATEGORY, tag.childOrEmpty("recipeState"));
 
                 if (recipeState != null)
                     this.currentRecipe = (ShatterForgeRecipe) recipeState.getRecipe();
@@ -478,9 +480,9 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
-        tag.put("stack", stack.save(new CompoundTag()));
+        tag.store("stack", ItemStack.OPTIONAL_CODEC, stack);
         tag.putInt("recipeProgress", recipeProgress);
         tag.putInt("warmProgress", warmProgress);
         tag.putBoolean("isCrafting", isCrafting);
@@ -496,7 +498,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             tag.putLong("pillarPos", pillarPos.asLong());
 
         if (isCrafting && recipeState != null)
-            tag.put("recipeState", recipeState.toTag());
+            recipeState.save(tag.child("recipeState"));
 
         super.saveAdditional(tag);
     }
@@ -512,7 +514,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public Optional<TileSyncElement<?>> getSyncElement(ResourceLocation identifier)
+    public Optional<TileSyncElement<?>> getSyncElement(Identifier identifier)
     {
         if (identifier.equals(ShatterForgeCraftingSyncElement.IDENTIFIER))
         {
@@ -537,7 +539,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public Codec<?> getSyncElementCodec(ResourceLocation identifier)
+    public Codec<?> getSyncElementCodec(Identifier identifier)
     {
         if (identifier.equals(ShatterForgeCraftingSyncElement.IDENTIFIER))
             return ShatterForgeCraftingSyncElement.CODEC;
@@ -545,7 +547,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     @Override
-    public Collection<ResourceLocation> getAllSyncElements()
+    public Collection<Identifier> getAllSyncElements()
     {
         return syncElements;
     }
@@ -556,5 +558,13 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         CONDUIT_BOTH_DIRECTION,
         TOO_FEW_MONOLITH,
         NO_PILLAR_AT_END
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        removeItself();
+        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
+        super.preRemoveSideEffects(pos, state);
     }
 }

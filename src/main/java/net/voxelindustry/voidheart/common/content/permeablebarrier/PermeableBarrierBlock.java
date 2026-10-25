@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
+import net.minecraft.world.item.ItemStack;
 import com.google.common.collect.Queues;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -39,9 +40,9 @@ public class PermeableBarrierBlock extends Block
     private static final VoxelShape WEST  = box(0, 0, 0, 1, 16, 16);
     private static final VoxelShape EAST  = box(15, 0, 0, 16, 16, 16);
 
-    public PermeableBarrierBlock()
+    public PermeableBarrierBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .noOcclusion()
                 .isValidSpawn(VoidHeartBlocks::never)
                 .isRedstoneConductor((state, world, pos) -> state.getValue(BlockStateProperties.LIT))
@@ -71,7 +72,7 @@ public class PermeableBarrierBlock extends Block
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         if (!player.isShiftKeyDown())
         {
@@ -79,7 +80,7 @@ public class PermeableBarrierBlock extends Block
             return InteractionResult.SUCCESS;
         }
 
-        return super.use(state, world, pos, player, hand, hit);
+        return super.useItemOn(heldStack, state, world, pos, player, hand, hit);
     }
 
     private void switchLit(Level world, BlockPos pos, BlockState state)
@@ -152,7 +153,7 @@ public class PermeableBarrierBlock extends Block
     }
 
     @Override
-    public boolean propagatesSkylightDown(BlockState state, BlockGetter world, BlockPos pos)
+    protected boolean propagatesSkylightDown(BlockState state)
     {
         return !state.getValue(BlockStateProperties.LIT);
     }
@@ -165,7 +166,7 @@ public class PermeableBarrierBlock extends Block
     }
 
     @Override
-    public boolean isPathfindable(BlockState state, BlockGetter world, BlockPos pos, PathComputationType type)
+    protected boolean isPathfindable(BlockState state, PathComputationType type)
     {
         return false;
     }

@@ -1,7 +1,10 @@
 package net.voxelindustry.voidheart.common.content.door;
 
+import com.mojang.serialization.Codec;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -18,23 +21,23 @@ public class VoidDoorTile extends BlockEntity
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        if (tag.contains("doorID"))
-            id = tag.getUUID("doorID");
+        if (tag.read("doorID", Codec.PASSTHROUGH).isPresent())
+            id = tag.read("doorID", UUIDUtil.CODEC).orElseThrow();
         else
             id = UUID.randomUUID();
 
-        super.load(tag);
+        super.loadAdditional(tag);
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         if (id == null)
             id = UUID.randomUUID();
 
-        tag.putUUID("doorID", id);
+        tag.store("doorID", UUIDUtil.CODEC, id);
 
         super.saveAdditional(tag);
     }

@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.common.command;
 
-import com.mojang.authlib.GameProfile;
+import net.minecraft.commands.Commands;
+import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.minecraft.server.players.NameAndId;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -34,20 +36,16 @@ public class VoidHeartCommands
     {
         try
         {
-            Optional<GameProfile> targetProfile = GameProfileArgument.getGameProfiles(context, "name").stream().findFirst();
+            Optional<NameAndId> targetProfile = GameProfileArgument.getGameProfiles(context, "name").stream().findFirst();
 
             if (targetProfile.isPresent())
             {
                 ServerLevel voidWorld = context.getSource().getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
-                BlockPos pocketPos = VoidPocketState.getVoidPocketState(voidWorld).getPosForPlayer(targetProfile.get().getId());
+                BlockPos pocketPos = VoidPocketState.getVoidPocketState(voidWorld).getPosForPlayer(targetProfile.get().id());
 
                 Vec3 destinationPos = Vec3.atLowerCornerOf(pocketPos.above()).add(0.5, 0.5, 0.5);
-                context.getSource().getPlayer().teleportTo(voidWorld,
-                        destinationPos.x(),
-                        destinationPos.y(),
-                        destinationPos.z(),
-                        context.getSource().getPlayer().getYHeadRot(),
-                        context.getSource().getPlayer().getViewXRot(0));
+                var player = context.getSource().getPlayerOrException();
+                TeleportUtil.teleport(player, voidWorld, destinationPos, player.getYHeadRot(), player.getViewXRot(0));
             }
         } catch (CommandSyntaxException e)
         {
@@ -59,7 +57,7 @@ public class VoidHeartCommands
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext commandRegistryAccess, CommandSelection environment)
     {
         LiteralArgumentBuilder<CommandSourceStack> builder = literal(MODID)
-                .requires(commandSource -> commandSource.hasPermission(2));
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS));
 
         registerPocketCommand(builder);
 

@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.item;
 
+import net.minecraft.world.item.component.TooltipDisplay;
+import java.util.function.Consumer;
+import net.voxelindustry.voidheart.common.util.TeleportUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -17,27 +20,25 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
-import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.world.VoidPocketState.getVoidPocketState;
 
 public class VoidPearlItem extends Item
 {
-    public VoidPearlItem()
+    public VoidPearlItem(Properties properties)
     {
-        super(new Properties()
+        super(properties
                 .rarity(Rarity.COMMON)
                 .stacksTo(1)
-                .food(new FoodProperties.Builder().alwaysEat().build()));
+                .food(new FoodProperties.Builder().alwaysEdible().build()));
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level world, List<Component> tooltip, TooltipFlag context)
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag)
     {
-        super.appendHoverText(stack, world, tooltip, context);
 
-        tooltip.add(Component.translatable(MODID + ".void_pearl.lore", ChatFormatting.AQUA, ChatFormatting.RESET));
+        tooltip.accept(Component.translatable(MODID + ".void_pearl.lore", ChatFormatting.AQUA, ChatFormatting.RESET));
     }
 
     @Override
@@ -53,17 +54,12 @@ public class VoidPearlItem extends Item
                 Vec3 destinationPos = Vec3.atCenterOf(voidPocketState.getPosForPlayer(user.getUUID()).above());
 
                 VoidHeartTicker.addDelayedTask(world.getServer(), 100, () ->
-                        ((ServerPlayer) user).teleportTo(voidWorld,
-                                destinationPos.x(),
-                                destinationPos.y(),
-                                destinationPos.z(),
-                                user.getYHeadRot(),
-                                user.getViewXRot(0)));
+                        TeleportUtil.teleport((ServerPlayer) user, voidWorld, destinationPos, user.getYHeadRot(), user.getViewXRot(0)));
                 stack.shrink(1);
-                ((Player) user).displayClientMessage(Component.translatable(MODID + ".teleport_in_progress", 5), true);
+                ((Player) user).sendOverlayMessage(Component.translatable(MODID + ".teleport_in_progress", 5));
             }
             else
-                ((Player) user).displayClientMessage(Component.translatable(MODID + ".no_pocket_for_player"), true);
+                ((Player) user).sendOverlayMessage(Component.translatable(MODID + ".no_pocket_for_player"));
         }
         return stack;
     }

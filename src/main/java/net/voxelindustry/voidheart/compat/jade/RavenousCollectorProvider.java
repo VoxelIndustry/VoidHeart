@@ -11,11 +11,11 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class RavenousCollectorProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider
 {
-    private static final ResourceLocation RAVENOUS_COLLECTOR = new ResourceLocation(MODID, "ravenous_collector");
+    private static final Identifier RAVENOUS_COLLECTOR = Identifier.fromNamespaceAndPath(MODID, "ravenous_collector");
 
     @Override
     public void appendTooltip(
@@ -32,7 +32,7 @@ public class RavenousCollectorProvider implements IServerDataProvider<BlockAcces
     }
 
     @Override
-    public ResourceLocation getUid()
+    public Identifier getUid()
     {
         return RAVENOUS_COLLECTOR;
     }

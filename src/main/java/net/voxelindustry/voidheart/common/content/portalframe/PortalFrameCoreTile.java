@@ -1,5 +1,9 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import com.mojang.serialization.Codec;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -7,9 +11,8 @@ import lombok.extern.log4j.Log4j2;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -45,7 +48,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
     @Getter
     @Setter
-    private ResourceLocation linkedWorld;
+    private Identifier linkedWorld;
     @Getter
     @Setter
     private BlockPos linkedPos;
@@ -59,7 +62,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
     private UUID ownerPlayerUUID;
 
     @Getter
-    private ResourceLocation previousLinkedWorld;
+    private Identifier previousLinkedWorld;
     @Getter
     private BlockPos previousLinkedPos;
     @Getter
@@ -72,48 +75,48 @@ public class PortalFrameCoreTile extends PortalFrameTile
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.load(tag);
+        super.loadAdditional(tag);
 
 
-        if (tag.contains("linkedWorld"))
+        if (tag.read("linkedWorld", Codec.PASSTHROUGH).isPresent())
         {
-            linkedWorld = new ResourceLocation(tag.getString("linkedWorld"));
-            linkedPos = BlockPos.of(tag.getLong("linkedPos"));
-            linkedFacing = Direction.from3DDataValue(tag.getByte("linkedFacing"));
+            linkedWorld = Identifier.parse(tag.getStringOr("linkedWorld", ""));
+            linkedPos = BlockPos.of(tag.getLongOr("linkedPos", 0L));
+            linkedFacing = Direction.from3DDataValue(tag.getByteOr("linkedFacing", (byte) 0));
         }
 
-        if (tag.contains("previousLinkedWorld"))
+        if (tag.read("previousLinkedWorld", Codec.PASSTHROUGH).isPresent())
         {
-            previousLinkedWorld = new ResourceLocation(tag.getString("previousLinkedWorld"));
-            previousLinkedPos = BlockPos.of(tag.getLong("previousLinkedPos"));
-            previousLinkedFacing = Direction.from3DDataValue(tag.getByte("previousLinkedFacing"));
+            previousLinkedWorld = Identifier.parse(tag.getStringOr("previousLinkedWorld", ""));
+            previousLinkedPos = BlockPos.of(tag.getLongOr("previousLinkedPos", 0L));
+            previousLinkedFacing = Direction.from3DDataValue(tag.getByteOr("previousLinkedFacing", (byte) 0));
         }
 
-        isBroken = tag.getBoolean("isBroken");
+        isBroken = tag.getBooleanOr("isBroken", false);
 
-        if (tag.contains("portalState"))
-            portalState.fromTag(tag.getCompound("portalState"));
+        if (tag.read("portalState", Codec.PASSTHROUGH).isPresent())
+            portalState.load(tag.childOrEmpty("portalState"));
 
-        int count = tag.getInt("linkedFramesCount");
+        int count = tag.getIntOr("linkedFramesCount", 0);
         for (int index = 0; index < count; index++)
         {
-            linkedFrames.add(BlockPos.of(tag.getLong("linkedFrame" + index)));
+            linkedFrames.add(BlockPos.of(tag.getLongOr("linkedFrame" + index, 0L)));
         }
 
-        count = tag.getInt("linkedInteriorsCount");
+        count = tag.getIntOr("linkedInteriorsCount", 0);
         for (int index = 0; index < count; index++)
         {
-            linkedInteriors.add(BlockPos.of(tag.getLong("linkedInterior" + index)));
+            linkedInteriors.add(BlockPos.of(tag.getLongOr("linkedInterior" + index, 0L)));
         }
 
-        if (tag.hasUUID("ownerPlayerUUID"))
-            ownerPlayerUUID = tag.getUUID("ownerPlayerUUID");
+        if (tag.read("ownerPlayerUUID", UUIDUtil.CODEC).isPresent())
+            ownerPlayerUUID = tag.read("ownerPlayerUUID", UUIDUtil.CODEC).orElseThrow();
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         if (linkedWorld != null)
         {
@@ -132,7 +135,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
         tag.putBoolean("isBroken", isBroken());
 
         if (portalState != null)
-            tag.put("portalState", portalState.toTag());
+            portalState.save(tag.child("portalState"));
 
         tag.putInt("linkedFramesCount", linkedFrames.size());
 
@@ -153,7 +156,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
         }
 
         if (ownerPlayerUUID != null)
-            tag.putUUID("ownerPlayerUUID", ownerPlayerUUID);
+            tag.store("ownerPlayerUUID", UUIDUtil.CODEC, ownerPlayerUUID);
 
         super.saveAdditional(tag);
     }

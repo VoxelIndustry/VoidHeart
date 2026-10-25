@@ -19,7 +19,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.SkullBlockRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -27,7 +27,7 @@ import net.minecraft.world.level.block.SkullBlock;
 
 public class VoidHeartRender implements BlockEntityRenderer<VoidHeartTile>
 {
-    private final ResourceLocation PORTAL_ICONS = new ResourceLocation(MODID, "textures/hud/portal_icons.png");
+    private final Identifier PORTAL_ICONS = Identifier.fromNamespaceAndPath(MODID, "textures/hud/portal_icons.png");
 
     private final ItemStack voidHeartStack = new ItemStack(VoidHeartItems.VOID_HEART);
 

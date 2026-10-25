@@ -32,7 +32,7 @@ public class MendingAltarBlock extends Block implements EntityBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         if (!player.getItemInHand(hand).isDamageableItem())
             return InteractionResult.PASS;

@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.block;
 
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import static net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT;
 
 import net.minecraft.core.BlockPos;
@@ -22,9 +23,9 @@ public class VoidLampBlock extends Block
 {
     public static IntegerProperty CORRUPTION = IntegerProperty.create("corruption", 0, 6);
 
-    public VoidLampBlock()
+    public VoidLampBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.PLANT)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
@@ -38,7 +39,7 @@ public class VoidLampBlock extends Block
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         if (player.isShiftKeyDown())
             return InteractionResult.PASS;
@@ -52,10 +53,7 @@ public class VoidLampBlock extends Block
     {
         ItemStack stack = ctx.getItemInHand();
 
-        if (!stack.hasTag() || !stack.getTag().contains("corruption"))
-            return defaultBlockState();
-
-        return defaultBlockState().setValue(CORRUPTION, stack.getTag().getInt("corruption"));
+        return defaultBlockState().setValue(CORRUPTION, stack.getOrDefault(VoidHeartDataComponents.CORRUPTION, 0));
     }
 
     @Override

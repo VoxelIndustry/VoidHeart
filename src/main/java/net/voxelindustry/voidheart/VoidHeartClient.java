@@ -9,7 +9,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
@@ -80,15 +80,15 @@ public class VoidHeartClient implements ClientModInitializer
 
         FabricModelPredicateProviderRegistry.register(
                 VoidHeartBlocks.VOID_LAMP.asItem(),
-                new ResourceLocation(VoidHeart.MODID, "corruption"),
+                Identifier.fromNamespaceAndPath(VoidHeart.MODID, "corruption"),
                 ((stack, world, entity, provider) -> stack.hasTag() ? stack.getTag().getInt("corruption") : 0));
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener()
         {
             @Override
-            public ResourceLocation getFabricId()
+            public Identifier getFabricId()
             {
-                return new ResourceLocation(MODID, "sprite_loader");
+                return Identifier.fromNamespaceAndPath(MODID, "sprite_loader");
             }
 
             @Override

@@ -2,8 +2,8 @@ package net.voxelindustry.voidheart.common.recipe;
 
 import com.google.gson.JsonObject;
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
@@ -18,22 +18,22 @@ public class ShatterForgeRecipe extends RecipeBase
     @Getter
     private int monolithCount;
 
-    public ShatterForgeRecipe(ResourceLocation identifier)
+    public ShatterForgeRecipe(Identifier identifier)
     {
         super(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getType(), identifier);
     }
 
-    public ShatterForgeRecipe(ResourceLocation identifier, ItemLike output, ItemLike input, int time, int monolithCount)
+    public ShatterForgeRecipe(Identifier identifier, ItemLike output, ItemLike input, int time, int monolithCount)
     {
         this(identifier, new ItemStack(output), new ItemStack(input), time, monolithCount);
     }
 
-    public ShatterForgeRecipe(ResourceLocation identifier, ItemStack output, ItemStack input, int time, int monolithCount)
+    public ShatterForgeRecipe(Identifier identifier, ItemStack output, ItemStack input, int time, int monolithCount)
     {
         this(identifier, new ItemStackRecipeIngredient(output, false), new ItemStackRecipeIngredient(input, false), time, monolithCount);
     }
 
-    public ShatterForgeRecipe(ResourceLocation identifier, ItemStackRecipeIngredient output, ItemStackRecipeIngredient input, int time, int monolithCount)
+    public ShatterForgeRecipe(Identifier identifier, ItemStackRecipeIngredient output, ItemStackRecipeIngredient input, int time, int monolithCount)
     {
         this(identifier);
 
@@ -74,7 +74,7 @@ public class ShatterForgeRecipe extends RecipeBase
     }
 
     @Override
-    public void fromByteBuf(FriendlyByteBuf buffer)
+    public void fromByteBuf(RegistryFriendlyByteBuf buffer)
     {
         super.fromByteBuf(buffer);
 
@@ -83,7 +83,7 @@ public class ShatterForgeRecipe extends RecipeBase
     }
 
     @Override
-    public void toByteBuf(FriendlyByteBuf buffer)
+    public void toByteBuf(RegistryFriendlyByteBuf buffer)
     {
         super.toByteBuf(buffer);
 

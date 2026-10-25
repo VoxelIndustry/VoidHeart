@@ -2,8 +2,8 @@ package net.voxelindustry.voidheart.common.recipe;
 
 import com.google.gson.JsonObject;
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeCallback;
@@ -15,12 +15,12 @@ public class AltarRecipe extends RecipeBase
     @Getter
     private int time;
 
-    public AltarRecipe(ResourceLocation identifier)
+    public AltarRecipe(Identifier identifier)
     {
         super(VoidHeartRecipes.ALTAR_CATEGORY.getType(), identifier);
     }
 
-    public AltarRecipe(ResourceLocation identifier, ItemStackRecipeIngredient output, ItemStackRecipeIngredient catalyst, int time, ItemStackRecipeIngredient... ingredients)
+    public AltarRecipe(Identifier identifier, ItemStackRecipeIngredient output, ItemStackRecipeIngredient catalyst, int time, ItemStackRecipeIngredient... ingredients)
     {
         this(identifier);
 
@@ -45,7 +45,7 @@ public class AltarRecipe extends RecipeBase
     }
 
     @Override
-    public void fromByteBuf(FriendlyByteBuf buffer)
+    public void fromByteBuf(RegistryFriendlyByteBuf buffer)
     {
         super.fromByteBuf(buffer);
 
@@ -53,7 +53,7 @@ public class AltarRecipe extends RecipeBase
     }
 
     @Override
-    public void toByteBuf(FriendlyByteBuf buffer)
+    public void toByteBuf(RegistryFriendlyByteBuf buffer)
     {
         super.toByteBuf(buffer);
 

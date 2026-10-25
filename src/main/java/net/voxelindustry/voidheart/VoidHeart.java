@@ -3,16 +3,15 @@ package net.voxelindustry.voidheart;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
-import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -27,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterio
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeRuneParticleEffect;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -41,10 +41,7 @@ public class VoidHeart implements ModInitializer
 
     public static final Logger LOGGER = Logger.getLogger(MODID);
 
-    public static CreativeModeTab ITEMGROUP = FabricItemGroup.builder()
-            .icon(() -> new ItemStack(VoidHeartItems.VOID_HEART))
-            .title(Component.translatable("itemGroup.voidheart.item_group"))
-            .build();
+    public static CreativeModeTab ITEMGROUP;
 
     public static ResourceKey<Level> VOID_WORLD_KEY;
     public static ResourceKey<DimensionType> VOID_DIMENSION_KEY;
@@ -54,42 +51,51 @@ public class VoidHeart implements ModInitializer
     public static ParticleType<ShatterForgeRuneParticleEffect> SHATTER_FORGE_RUNE_PARTICLE;
     public static ParticleType<ShatterForgeItemParticleEffect> SHATTER_FORGE_ITEM_PARTICLE;
 
-    public static PortalLinkCriterion PORTAL_LINK_CRITERION = CriteriaTriggers.register(new PortalLinkCriterion());
+    public static PortalLinkCriterion PORTAL_LINK_CRITERION;
 
     @Override
     public void onInitialize()
     {
+        VoidHeartDataComponents.registerComponents();
         VoidHeartBlocks.registerBlocks();
         VoidHeartItems.registerItems();
 
         VoidHeartTiles.registerTiles();
 
+        ITEMGROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(MODID, "item_group"), FabricCreativeModeTab.builder()
+                .icon(() -> new ItemStack(VoidHeartItems.VOID_HEART))
+                .title(Component.translatable("itemGroup.voidheart.item_group"))
+                .displayItems((parameters, output) -> VoidHeartItems.CREATIVE_TAB_ITEMS.forEach(output::accept))
+                .build());
+
+        PORTAL_LINK_CRITERION = Registry.register(BuiltInRegistries.TRIGGER_TYPES, PortalLinkCriterion.ID, new PortalLinkCriterion());
+
         VoidHeartRecipes.registerRecipes();
         VoidHeartWorld.registerGeneration();
 
         ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
-        ServerTickEvents.START_WORLD_TICK.register(VoidHeartTicker::tickWorld);
+        ServerTickEvents.START_LEVEL_TICK.register(VoidHeartTicker::tickWorld);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
 
-        VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(MODID, "void"));
-        VOID_DIMENSION_KEY = ResourceKey.create(Registries.DIMENSION_TYPE, new ResourceLocation(MODID, "void"));
+        VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
+        VOID_DIMENSION_KEY = ResourceKey.create(Registries.DIMENSION_TYPE, Identifier.fromNamespaceAndPath(MODID, "void"));
 
         Registry.register(
                 BuiltInRegistries.CHUNK_GENERATOR,
-                new ResourceLocation(MODID, "void_gen"),
+                Identifier.fromNamespaceAndPath(MODID, "void_gen"),
                 VoidChunkGenerator.CODEC);
 
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
-                new ResourceLocation(MODID, "altar_void"), ALTAR_VOID_PARTICLE = FabricParticleTypes.complex(true, AltarVoidParticleEffect.PARAMETERS_FACTORY));
+                Identifier.fromNamespaceAndPath(MODID, "altar_void"), ALTAR_VOID_PARTICLE = FabricParticleTypes.complex(true, AltarVoidParticleEffect.CODEC, AltarVoidParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
-                new ResourceLocation(MODID, "altar_item"), ALTAR_ITEM_PARTICLE = FabricParticleTypes.complex(true, AltarItemParticleEffect.PARAMETERS_FACTORY));
+                Identifier.fromNamespaceAndPath(MODID, "altar_item"), ALTAR_ITEM_PARTICLE = FabricParticleTypes.complex(true, AltarItemParticleEffect.CODEC, AltarItemParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
-                new ResourceLocation(MODID, "portal_frame"), PORTAL_FRAME_PARTICLE = FabricParticleTypes.complex(true, PortalFrameParticleEffect.PARAMETERS_FACTORY));
+                Identifier.fromNamespaceAndPath(MODID, "portal_frame"), PORTAL_FRAME_PARTICLE = FabricParticleTypes.complex(true, PortalFrameParticleEffect.CODEC, PortalFrameParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
-                new ResourceLocation(MODID, "shatter_forge_rune"), SHATTER_FORGE_RUNE_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeRuneParticleEffect.PARAMETERS_FACTORY));
+                Identifier.fromNamespaceAndPath(MODID, "shatter_forge_rune"), SHATTER_FORGE_RUNE_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeRuneParticleEffect.CODEC, ShatterForgeRuneParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
-                new ResourceLocation(MODID, "shatter_forge_item"), SHATTER_FORGE_ITEM_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeItemParticleEffect.PARAMETERS_FACTORY));
+                Identifier.fromNamespaceAndPath(MODID, "shatter_forge_item"), SHATTER_FORGE_ITEM_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeItemParticleEffect.CODEC, ShatterForgeItemParticleEffect.STREAM_CODEC));
 
         EssenceRegistry.bootstrap();
     }

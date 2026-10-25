@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.pillar;
 
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
@@ -34,9 +36,9 @@ public class VoidPillarBlock extends Block implements EntityBlock
             box(3, 12, 3, 13, 16, 13)
     );
 
-    public VoidPillarBlock()
+    public VoidPillarBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .strength(3F)
@@ -55,7 +57,7 @@ public class VoidPillarBlock extends Block implements EntityBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         VoidPillarTile pillar = (VoidPillarTile) world.getBlockEntity(pos);
 
@@ -90,33 +92,16 @@ public class VoidPillarBlock extends Block implements EntityBlock
     }
 
     @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved)
+    protected void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, @Nullable Orientation orientation, boolean notify)
     {
-        if (!state.is(newState.getBlock()))
-        {
-            VoidPillarTile tile = (VoidPillarTile) world.getBlockEntity(pos);
-            if (tile != null)
-            {
-                tile.removeItself();
-                Containers.dropItemStack(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
-            }
-        }
-        super.onRemove(state, world, pos, newState, moved);
-    }
-
-    @Override
-    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, BlockPos fromPos, boolean notify)
-    {
-        super.neighborChanged(state, world, pos, block, fromPos, notify);
-
-        if (!fromPos.equals(pos.above()))
-            return;
+        super.neighborChanged(state, world, pos, block, orientation, notify);
 
         var tile = world.getBlockEntity(pos, VoidHeartTiles.VOID_PILLAR);
         if (tile.isEmpty())
             return;
 
-        if (!tile.get().getStack().isEmpty() && !world.isEmptyBlock(fromPos))
+        // The neighbor source is no longer given, the item is ejected as soon as the block above is occupied
+        if (!tile.get().getStack().isEmpty() && !world.isEmptyBlock(pos.above()))
             Containers.dropItemStack(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.get().getStack());
     }
 

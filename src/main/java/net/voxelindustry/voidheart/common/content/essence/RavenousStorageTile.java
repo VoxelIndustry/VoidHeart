@@ -1,8 +1,8 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -19,19 +19,19 @@ public class RavenousStorageTile extends BlockEntity
     }
 
     @Override
-    public void load(CompoundTag nbt)
+    protected void loadAdditional(ValueInput nbt)
     {
-        super.load(nbt);
+        super.loadAdditional(nbt);
 
-        storage = EssenceStorage.CODEC.decode(NbtOps.INSTANCE, nbt.getCompound("storage")).result().get().getFirst();
+        storage = nbt.read("storage", EssenceStorage.CODEC).orElse(storage);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag nbt)
+    protected void saveAdditional(ValueOutput nbt)
     {
         super.saveAdditional(nbt);
 
-        nbt.put("storage", EssenceStorage.CODEC.encodeStart(NbtOps.INSTANCE, storage).result().get());
+        nbt.store("storage", EssenceStorage.CODEC, storage);
     }
 
     public EssenceStorage storage()

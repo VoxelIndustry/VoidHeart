@@ -1,53 +1,43 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
-import com.google.gson.JsonObject;
-import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
-import net.minecraft.advancements.critereon.ContextAwarePredicate;
-import net.minecraft.advancements.critereon.DeserializationContext;
-import net.minecraft.advancements.critereon.SerializationContext;
-import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
-import net.minecraft.resources.ResourceLocation;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.advancements.triggers.Criterion;
+import net.minecraft.advancements.triggers.SimpleCriterionTrigger;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterion.Conditions;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+import net.voxelindustry.voidheart.VoidHeart;
+
+import java.util.Optional;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class PortalLinkCriterion extends SimpleCriterionTrigger<Conditions>
+public class PortalLinkCriterion extends SimpleCriterionTrigger<PortalLinkCriterion.Conditions>
 {
-    public static final ResourceLocation ID = new ResourceLocation(MODID, "portal_linked");
-
-    protected void trigger(ServerPlayer player)
-    {
-        trigger(player, Conditions::requirementsMet);
-    }
+    public static final Identifier ID = Identifier.fromNamespaceAndPath(MODID, "portal_linked");
 
     @Override
-    protected Conditions createInstance(JsonObject obj, ContextAwarePredicate playerPredicate, DeserializationContext predicateDeserializer)
+    public Codec<Conditions> codec()
     {
-        return new Conditions();
+        return Conditions.CODEC;
     }
 
-    @Override
-    public ResourceLocation getId()
+    public void trigger(ServerPlayer player)
     {
-        return ID;
+        trigger(player, conditions -> true);
     }
 
-    public static class Conditions extends AbstractCriterionTriggerInstance
+    public record Conditions(Optional<Holder<LootItemCondition>> player) implements SimpleCriterionTrigger.SimpleInstance
     {
-        public Conditions()
-        {
-            super(ID, ContextAwarePredicate.ANY);
-        }
+        public static final Codec<Conditions> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                LootItemCondition.CODEC.optionalFieldOf("player").forGetter(Conditions::player)
+        ).apply(instance, Conditions::new));
 
-        public JsonObject serializeToJson(SerializationContext predicateSerializer)
+        public static Criterion<Conditions> linked()
         {
-            return new JsonObject();
-        }
-
-        boolean requirementsMet()
-        {
-            return true;
+            return VoidHeart.PORTAL_LINK_CRITERION.createCriterion(new Conditions(Optional.empty()));
         }
     }
 }

@@ -2,7 +2,9 @@ package net.voxelindustry.voidheart.common.setup;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
 import net.voxelindustry.voidheart.VoidHeart;
@@ -12,6 +14,10 @@ import net.voxelindustry.voidheart.common.item.VoidAmalgamItem;
 import net.voxelindustry.voidheart.common.item.VoidHeartItem;
 import net.voxelindustry.voidheart.common.item.PortalCoreItem;
 import net.voxelindustry.voidheart.common.item.VoidPearlItem;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 public class VoidHeartItems
 {
@@ -29,27 +35,32 @@ public class VoidHeartItems
     public static Item ARROGANT_IRON_INGOT;
     public static Item RAVENOUS_GOLD_INGOT;
 
+    public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
+
     public static void registerItems()
     {
-        registerItem(VOID_HEART = new VoidHeartItem(), "void_heart");
-        registerItem(VOID_AMALGAM = new VoidAmalgamItem(), "void_amalgam");
-        registerItem(VOID_PEARL = new VoidPearlItem(), "void_pearl");
+        VOID_HEART = registerItem("void_heart", VoidHeartItem::new);
+        VOID_AMALGAM = registerItem("void_amalgam", VoidAmalgamItem::new);
+        VOID_PEARL = registerItem("void_pearl", VoidPearlItem::new);
 
-        registerItem(PORTAL_CORE = new PortalCoreItem(), "portal_core");
+        PORTAL_CORE = registerItem("portal_core", PortalCoreItem::new);
 
-        registerItem(LOCAL_PEARL = new VoidPearlItem(), "local_pearl");
+        LOCAL_PEARL = registerItem("local_pearl", VoidPearlItem::new);
 
-        registerItem(VOID_KEY = new VoidKeyItem(), "void_key");
-        registerItem(PERMEABLE_BARRIER = new PermeableBarrierItem(), "permeable_barrier_item");
+        VOID_KEY = registerItem("void_key", VoidKeyItem::new);
+        PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
 
-        registerItem(OBSIDIAN_SHARD = new Item(new Properties()), "obsidian_shard");
-        registerItem(ENDER_SHARD = new Item(new Properties()), "ender_shard");
-        registerItem(ARROGANT_IRON_INGOT = new Item(new Properties()), "arrogant_iron_ingot");
-        registerItem(RAVENOUS_GOLD_INGOT = new Item(new Properties()), "ravenous_gold_ingot");
+        OBSIDIAN_SHARD = registerItem("obsidian_shard", Item::new);
+        ENDER_SHARD = registerItem("ender_shard", Item::new);
+        ARROGANT_IRON_INGOT = registerItem("arrogant_iron_ingot", Item::new);
+        RAVENOUS_GOLD_INGOT = registerItem("ravenous_gold_ingot", Item::new);
     }
 
-    public static void registerItem(Item item, String name)
+    public static <T extends Item> T registerItem(String name, Function<Properties, T> factory)
     {
-        Registry.register(BuiltInRegistries.ITEM, new ResourceLocation(VoidHeart.MODID, name), item);
+        var identifier = Identifier.fromNamespaceAndPath(VoidHeart.MODID, name);
+        var item = Registry.register(BuiltInRegistries.ITEM, identifier, factory.apply(new Properties().setId(ResourceKey.create(Registries.ITEM, identifier))));
+        CREATIVE_TAB_ITEMS.add(item);
+        return item;
     }
 }

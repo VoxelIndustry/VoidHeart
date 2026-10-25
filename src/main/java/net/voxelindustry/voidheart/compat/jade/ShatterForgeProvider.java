@@ -1,7 +1,7 @@
 package net.voxelindustry.voidheart.compat.jade;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
@@ -15,7 +15,7 @@ import snownee.jade.impl.ui.ProgressArrowElement;
 
 public class ShatterForgeProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider
 {
-    private static final ResourceLocation SHATTER_FORGE = new ResourceLocation(VoidHeart.MODID, "shatter_forge");
+    private static final Identifier SHATTER_FORGE = Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shatter_forge");
 
     @Override
     public void appendTooltip(
@@ -35,7 +35,7 @@ public class ShatterForgeProvider implements IServerDataProvider<BlockAccessor>,
     }
 
     @Override
-    public ResourceLocation getUid()
+    public Identifier getUid()
     {
         return SHATTER_FORGE;
     }

@@ -13,14 +13,13 @@ import org.jetbrains.annotations.Nullable;
 
 public class VoidDoorBlock extends DoorBlock implements EntityBlock
 {
-    public VoidDoorBlock()
+    public VoidDoorBlock(Properties properties)
     {
-        super(Properties.of()
+        super(BlockSetType.STONE, properties
                 .mapColor(MapColor.STONE)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .strength(3F)
-                .sound(SoundType.STONE),
-                BlockSetType.STONE);
+                .sound(SoundType.STONE));
     }
 
     @Nullable

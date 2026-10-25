@@ -38,9 +38,9 @@ public class VoidAltarBlock extends Block implements EntityBlock
             box(5, 14, 5, 11, 16, 11)
     );
 
-    public VoidAltarBlock()
+    public VoidAltarBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .strength(3F)
                 .sound(SoundType.STONE)
@@ -57,7 +57,7 @@ public class VoidAltarBlock extends Block implements EntityBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         VoidAltarTile altar = (VoidAltarTile) world.getBlockEntity(pos);
 
@@ -84,22 +84,6 @@ public class VoidAltarBlock extends Block implements EntityBlock
         }
 
         return InteractionResult.SUCCESS;
-    }
-
-    @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved)
-    {
-        if (!state.is(newState.getBlock()))
-        {
-            VoidAltarTile tile = (VoidAltarTile) world.getBlockEntity(pos);
-            if (tile != null)
-            {
-                tile.removeItself();
-                Containers.dropItemStack(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
-                tile.dropAteItems();
-            }
-        }
-        super.onRemove(state, world, pos, newState, moved);
     }
 
     @Override

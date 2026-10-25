@@ -5,12 +5,12 @@ import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class RavenousCollectorModel extends DefaultedBlockGeoModel<RavenousCollectorTile>
 {
     public RavenousCollectorModel()
     {
-        super(new ResourceLocation(MODID, "ravenous_collector"));
+        super(Identifier.fromNamespaceAndPath(MODID, "ravenous_collector"));
     }
 }

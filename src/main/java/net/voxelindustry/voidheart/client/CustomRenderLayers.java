@@ -7,11 +7,11 @@ import net.minecraft.Util;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderType.CompositeState;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class CustomRenderLayers
 {
-    private static final Function<ResourceLocation, RenderType> COLOR_TEXTURE_TRANSLUCENT = Util.memoize(identifier ->
+    private static final Function<Identifier, RenderType> COLOR_TEXTURE_TRANSLUCENT = Util.memoize(identifier ->
             RenderType.create("color_translucent",
                     DefaultVertexFormat.BLOCK,
                     VertexFormat.Mode.QUADS,
@@ -26,7 +26,7 @@ public class CustomRenderLayers
                             .createCompositeState(true)
             ));
 
-    public static RenderType getColorTextureTranslucent(ResourceLocation texture)
+    public static RenderType getColorTextureTranslucent(Identifier texture)
     {
         return COLOR_TEXTURE_TRANSLUCENT.apply(texture);
     }

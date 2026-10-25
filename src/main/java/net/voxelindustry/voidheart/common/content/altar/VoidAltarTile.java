@@ -1,12 +1,13 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import com.mojang.math.Axis;
 import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
@@ -46,7 +47,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     public static final int COOLING_TIME = 60;
     public static final int ITEM_EATING_TIME = 60;
 
-    // Fixes Minecraft world.random being too coherent in certain conditions
+    // Fixes Minecraft world.getRandom() being too coherent in certain conditions
     private final Random actualRandom = new Random();
 
     private AltarRecipe currentRecipe;
@@ -72,7 +73,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     private final List<VoidPillarTile> pillars = new ArrayList<>();
 
-    private final Collection<ResourceLocation> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
+    private final Collection<Identifier> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
 
     ////////////
     // CLIENT //
@@ -101,23 +102,23 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.load(tag);
+        super.loadAdditional(tag);
 
-        stack = ItemStack.of(tag.getCompound("stack"));
-        recipeProgress = tag.getInt("recipeProgress");
-        warmProgress = tag.getInt("warmProgress");
-        coolProgress = tag.getInt("coolProgress");
-        isCrafting = tag.getBoolean("isCrafting");
+        stack = tag.read("stack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
+        recipeProgress = tag.getIntOr("recipeProgress", 0);
+        warmProgress = tag.getIntOr("warmProgress", 0);
+        coolProgress = tag.getIntOr("coolProgress", 0);
+        isCrafting = tag.getBooleanOr("isCrafting", false);
 
-        if (isClient() && tag.contains("consumingPillarIndex"))
+        if (isClient() && tag.read("consumingPillarIndex", Codec.PASSTHROUGH).isPresent())
         {
             int previousConsumingPillarIndex = consumingPillarIndex;
 
-            consumingPillarIndex = tag.getInt("consumingPillarIndex");
-            consumingPillarPos = BlockPos.of(tag.getLong("consumingPillarPos"));
-            cachedToConsume = ItemStack.of(tag.getCompound("cachedToConsumeStack"));
+            consumingPillarIndex = tag.getIntOr("consumingPillarIndex", 0);
+            consumingPillarPos = BlockPos.of(tag.getLongOr("consumingPillarPos", 0L));
+            cachedToConsume = tag.read("cachedToConsumeStack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
 
             if (previousConsumingPillarIndex != consumingPillarIndex)
             {
@@ -135,7 +136,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
                 if (currentRecipe != null)
                 {
                     RecipeState recipeState = currentRecipe.createState();
-                    recipeState.fromTag(tag.getCompound("recipeState"));
+                    recipeState.load(tag.childOrEmpty("recipeState"));
                     this.recipeState = recipeState;
                 }
                 else
@@ -147,9 +148,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
-        tag.put("stack", stack.save(new CompoundTag()));
+        tag.store("stack", ItemStack.OPTIONAL_CODEC, stack);
         tag.putInt("recipeProgress", recipeProgress);
         tag.putInt("warmProgress", warmProgress);
         tag.putInt("coolProgress", coolProgress);
@@ -159,11 +160,11 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         {
             tag.putInt("consumingPillarIndex", consumingPillarIndex);
             tag.putLong("consumingPillarPos", consumingPillarPos.asLong());
-            tag.put("cachedToConsumeStack", cachedToConsume.save(new CompoundTag()));
+            tag.store("cachedToConsumeStack", ItemStack.OPTIONAL_CODEC, cachedToConsume);
         }
 
         if (isCrafting && recipeState != null)
-            tag.put("recipeState", recipeState.toTag());
+            recipeState.save(tag.child("recipeState"));
 
         super.saveAdditional(tag);
     }
@@ -188,7 +189,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
                 }
             }
             else
-                player.displayClientMessage(Component.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()));
         }
         else if (isCrafting)
             stopCrafting();
@@ -261,7 +262,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         if (consumingPillarIndex == -1)
             return;
 
-        if (!ItemStack.isSameItemSameTags(cachedToConsume, pillars.get(consumingPillarIndex).getStack()))
+        if (!ItemStack.isSameItemSameComponents(cachedToConsume, pillars.get(consumingPillarIndex).getStack()))
         {
             consumeProgress = 0;
             consumingPillarIndex = -1;
@@ -274,7 +275,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         else
         {
             consumeItemStack();
-            getLevel().playLocalSound(getBlockPos().getX(), getBlockPos().getY(), getBlockPos().getZ(), SoundEvents.PORTAL_TRAVEL, SoundSource.BLOCKS, getLevel().random.nextFloat() * 0.4F + 0.8F, 0.25F, true);
+            getLevel().playLocalSound(getBlockPos().getX(), getBlockPos().getY(), getBlockPos().getZ(), SoundEvents.PORTAL_TRAVEL, SoundSource.BLOCKS, getLevel().getRandom().nextFloat() * 0.4F + 0.8F, 0.25F, true);
 
             consumeProgress = 0;
             consumingPillarIndex = -1;
@@ -331,9 +332,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
                         getBlockPos().getX() + 0.5,
                         getBlockPos().getY() + 3,
                         getBlockPos().getZ() + 0.5,
-                        getBlockPos().getX() + 0.5 + getLevel().random.nextGaussian(),
-                        getBlockPos().getY() + 3 + getLevel().random.nextGaussian(),
-                        getBlockPos().getZ() + 0.5 + getLevel().random.nextGaussian());
+                        getBlockPos().getX() + 0.5 + getLevel().getRandom().nextGaussian(),
+                        getBlockPos().getY() + 3 + getLevel().getRandom().nextGaussian(),
+                        getBlockPos().getZ() + 0.5 + getLevel().getRandom().nextGaussian());
             }
         }
     }
@@ -481,7 +482,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
         for (VoidPillarTile pillar : pillars)
         {
-            if (ItemStack.isSameItemSameTags(pillar.getStack(), toConsume))
+            if (ItemStack.isSameItemSameComponents(pillar.getStack(), toConsume))
             {
                 consumingPillarIndex = pillars.indexOf(pillar);
                 consumingPillarPos = pillar.getBlockPos();
@@ -536,28 +537,28 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         float length = forward.length();
         forward = forward.normalize();
 
-        float dispersion = getLevel().random.nextBoolean() ? getLevel().random.nextFloat() * 50 + 20 : -(getLevel().random.nextFloat() * 50 + 20);
+        float dispersion = getLevel().getRandom().nextBoolean() ? getLevel().getRandom().nextFloat() * 50 + 20 : -(getLevel().getRandom().nextFloat() * 50 + 20);
         var rotation = Axis.YP.rotationDegrees(dispersion);
 
-        bezierFirstPoint = start.add(forward.rotate(rotation).mul(length * (getLevel().random.nextFloat() / 3 + 0.2F)));
+        bezierFirstPoint = start.add(forward.rotate(rotation).mul(length * (getLevel().getRandom().nextFloat() / 3 + 0.2F)));
 
         rotation.conjugate();
-        bezierSecondPoint = start.add(forward.rotate(rotation).mul(length * (getLevel().random.nextFloat() / 3 + 0.5F)));
+        bezierSecondPoint = start.add(forward.rotate(rotation).mul(length * (getLevel().getRandom().nextFloat() / 3 + 0.5F)));
 
-        if (getLevel().random.nextBoolean())
+        if (getLevel().getRandom().nextBoolean())
         {
-            bezierFirstPoint = bezierFirstPoint.add(0, getLevel().random.nextFloat() * 1.25F, 0);
-            bezierFirstPoint = bezierSecondPoint.add(0, -getLevel().random.nextFloat() * 1.25F, 0);
+            bezierFirstPoint = bezierFirstPoint.add(0, getLevel().getRandom().nextFloat() * 1.25F, 0);
+            bezierFirstPoint = bezierSecondPoint.add(0, -getLevel().getRandom().nextFloat() * 1.25F, 0);
         }
         else
         {
-            bezierFirstPoint = bezierFirstPoint.add(0, -getLevel().random.nextFloat() * 1.25F, 0);
-            bezierFirstPoint = bezierSecondPoint.add(0, getLevel().random.nextFloat() * 1.25F, 0);
+            bezierFirstPoint = bezierFirstPoint.add(0, -getLevel().getRandom().nextFloat() * 1.25F, 0);
+            bezierFirstPoint = bezierSecondPoint.add(0, getLevel().getRandom().nextFloat() * 1.25F, 0);
         }
     }
 
     @Override
-    public Optional<TileSyncElement<?>> getSyncElement(ResourceLocation identifier)
+    public Optional<TileSyncElement<?>> getSyncElement(Identifier identifier)
     {
         if (identifier.equals(AltarCraftingSyncElement.IDENTIFIER))
         {
@@ -582,7 +583,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     }
 
     @Override
-    public Codec<?> getSyncElementCodec(ResourceLocation identifier)
+    public Codec<?> getSyncElementCodec(Identifier identifier)
     {
         if (identifier.equals(AltarCraftingSyncElement.IDENTIFIER))
             return AltarCraftingSyncElement.CODEC;
@@ -590,8 +591,17 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     }
 
     @Override
-    public Collection<ResourceLocation> getAllSyncElements()
+    public Collection<Identifier> getAllSyncElements()
     {
         return syncElements;
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        removeItself();
+        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
+        dropAteItems();
+        super.preRemoveSideEffects(pos, state);
     }
 }

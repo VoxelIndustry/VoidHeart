@@ -1,14 +1,16 @@
 package net.voxelindustry.voidheart.common.content.heart;
 
-import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.Codec;
+import net.minecraft.world.level.portal.TeleportTransition;
+import net.voxelindustry.voidheart.common.util.ProfileUtil;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -34,14 +36,14 @@ import static java.util.Collections.singletonList;
 
 public class VoidHeartTile extends TileBase implements PartialSyncedTile
 {
-    private final Collection<ResourceLocation> syncElements = singletonList(VoidHeartDataSyncElement.IDENTIFIER);
+    private final Collection<Identifier> syncElements = singletonList(VoidHeartDataSyncElement.IDENTIFIER);
 
     @Getter
     @Setter
     private UUID playerID;
 
     @Getter
-    private GameProfile playerProfile;
+    private ResolvableProfile playerProfile;
 
     private final Map<UUID, Long> lastPlayerHitCache = new HashMap<>();
 
@@ -69,46 +71,35 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
 
         if (isServer() && playerID != null)
         {
-            var gameProfileOpt = world.getServer().getProfileCache().get(playerID);
-
-            if (gameProfileOpt.isEmpty())
-                return;
-
-            playerProfile = gameProfileOpt.get();
-            sync();
+            ProfileUtil.resolve(world.getServer(), playerID, profile ->
+            {
+                playerProfile = profile;
+                sync();
+            });
         }
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.load(tag);
+        super.loadAdditional(tag);
 
-        if (tag.hasUUID("playerID"))
-            playerID = tag.getUUID("playerID");
+        if (tag.read("playerID", UUIDUtil.CODEC).isPresent())
+            playerID = tag.read("playerID", UUIDUtil.CODEC).orElseThrow();
 
-        if (isClient() && tag.contains("ownerProfile"))
-        {
-            playerProfile = NbtUtils.readGameProfile(tag.getCompound("ownerProfile"));
-
-            if (playerProfile != null && playerProfile.isComplete())
-                Minecraft.getInstance().getMinecraftSessionService().fillProfileProperties(playerProfile, true);
-        }
+        if (isClient())
+            playerProfile = tag.read("ownerProfile", ResolvableProfile.CODEC).orElse(null);
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         if (playerID != null)
         {
-            tag.putUUID("playerID", playerID);
+            tag.store("playerID", UUIDUtil.CODEC, playerID);
 
             if (isServer() && playerProfile != null)
-            {
-                var profileTag = new CompoundTag();
-                NbtUtils.writeGameProfile(profileTag, playerProfile);
-                tag.put("ownerProfile", profileTag);
-            }
+                tag.store("ownerProfile", ResolvableProfile.CODEC, playerProfile);
         }
 
         super.saveAdditional(tag);
@@ -120,9 +111,9 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
         {
             if (world.getGameTime() % 2 == 0)
                 world.addParticle(new AltarVoidParticleEffect(0.05),
-                        pos.getX() + 0.5 + world.random.nextGaussian(),
-                        pos.getY() + 0.5 + world.random.nextGaussian(),
-                        pos.getZ() + 0.5 + world.random.nextGaussian(),
+                        pos.getX() + 0.5 + world.getRandom().nextGaussian(),
+                        pos.getY() + 0.5 + world.getRandom().nextGaussian(),
+                        pos.getZ() + 0.5 + world.getRandom().nextGaussian(),
                         pos.getX() + 0.5,
                         pos.getY() + 0.5,
                         pos.getZ() + 0.5);
@@ -150,35 +141,14 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
         if (lastPlayerHitCache.containsKey(hitPlayerID))
         {
             var serverPlayer = (ServerPlayer) player;
-
-            ServerLevel destination = level.getServer().getLevel(serverPlayer.getRespawnDimension());
-
-            BlockPos spawnPointPosition = serverPlayer.getRespawnPosition();
-            Optional<Vec3> respawnPosition = spawnPointPosition == null ? Optional.empty() : Player.findRespawnPositionAndUseSpawnBlock(destination,
-                    spawnPointPosition,
-                    serverPlayer.getRespawnAngle(),
-                    serverPlayer.isRespawnForced(),
-                    true);
-
-            if (!respawnPosition.isPresent())
-                destination = level.getServer().overworld();
-
-            ServerLevel finalDestination = destination;
-
-            Vec3 destinationPos = respawnPosition.orElseGet(() -> Vec3.atCenterOf(finalDestination.getSharedSpawnPos()));
-            serverPlayer.teleportTo(destination,
-                    destinationPos.x(),
-                    destinationPos.y(),
-                    destinationPos.z(),
-                    player.getYHeadRot(),
-                    player.getViewXRot(0));
+            serverPlayer.teleport(serverPlayer.findRespawnPositionAndUseSpawnBlock(true, TeleportTransition.DO_NOTHING));
         }
         else
             lastPlayerHitCache.put(hitPlayerID, System.currentTimeMillis());
     }
 
     @Override
-    public Optional<TileSyncElement<?>> getSyncElement(ResourceLocation identifier)
+    public Optional<TileSyncElement<?>> getSyncElement(Identifier identifier)
     {
         if (identifier.equals(VoidHeartDataSyncElement.IDENTIFIER) && heartData != null)
         {
@@ -199,7 +169,7 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public Codec<?> getSyncElementCodec(ResourceLocation identifier)
+    public Codec<?> getSyncElementCodec(Identifier identifier)
     {
         if (identifier.equals(VoidHeartDataSyncElement.IDENTIFIER))
             return VoidHeartDataSyncElement.CODEC;
@@ -207,7 +177,7 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
     }
 
     @Override
-    public Collection<ResourceLocation> getAllSyncElements()
+    public Collection<Identifier> getAllSyncElements()
     {
         return syncElements;
     }

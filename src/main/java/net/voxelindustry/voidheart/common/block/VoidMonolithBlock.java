@@ -1,5 +1,9 @@
 package net.voxelindustry.voidheart.common.block;
 
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -24,9 +28,9 @@ import static net.voxelindustry.voidheart.common.block.StateProperties.*;
 
 public class VoidMonolithBlock extends Block
 {
-    public VoidMonolithBlock()
+    public VoidMonolithBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
@@ -41,14 +45,11 @@ public class VoidMonolithBlock extends Block
     }
 
     @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved)
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel world, BlockPos pos, boolean moved)
     {
-        if (!state.is(newState.getBlock()) && state.getValue(BROKEN))
-        {
-            if (world.getRandom().nextInt(5) == 0)
-                world.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.ENDERMAN_SCREAM, SoundSource.BLOCKS, 1, 1);
-        }
-        super.onRemove(state, world, pos, newState, moved);
+        if (state.getValue(BROKEN) && world.getRandom().nextInt(5) == 0)
+            world.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.ENDERMAN_SCREAM, SoundSource.BLOCKS, 1, 1);
+        super.affectNeighborsAfterRemoval(state, world, pos, moved);
     }
 
     @Override
@@ -60,7 +61,7 @@ public class VoidMonolithBlock extends Block
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState newState, LevelAccessor world, BlockPos pos, BlockPos posFrom)
+    protected BlockState updateShape(BlockState state, LevelReader world, ScheduledTickAccess ticks, BlockPos pos, Direction direction, BlockPos posFrom, BlockState newState, RandomSource random)
     {
         switch (direction)
         {

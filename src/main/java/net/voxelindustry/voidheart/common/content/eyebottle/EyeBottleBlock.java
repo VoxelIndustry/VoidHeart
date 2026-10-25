@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.eyebottle;
 
+import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.voxelindustry.voidheart.common.util.ProfileUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,9 +44,9 @@ public class EyeBottleBlock extends Block implements EntityBlock
             Shapes.box(0.3125, 0.375, 0.3125, 0.6875, 0.4375, 0.6875)
     );
 
-    public EyeBottleBlock()
+    public EyeBottleBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.SNOW)
                 .strength(2F)
                 .sound(SoundType.GLASS)
@@ -52,14 +54,6 @@ public class EyeBottleBlock extends Block implements EntityBlock
 
         registerDefaultState(getStateDefinition().any()
                 .setValue(BlockStateProperties.LIT, false));
-    }
-
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag options)
-    {
-        super.appendHoverText(stack, world, tooltip, options);
-
-        tooltip.add(Component.translatable(MODID + ".eye_bottle.lore"));
     }
 
     @Override
@@ -75,7 +69,7 @@ public class EyeBottleBlock extends Block implements EntityBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player user, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player user, InteractionHand hand, BlockHitResult hit)
     {
         if (world.isClientSide())
             return InteractionResult.SUCCESS;
@@ -95,17 +89,12 @@ public class EyeBottleBlock extends Block implements EntityBlock
 
                 VoidHeartTicker.addDelayedTask(world.getServer(), 100, () ->
                 {
-                    ((ServerPlayer) user).teleportTo(voidWorld,
-                            destinationPos.x(),
-                            destinationPos.y(),
-                            destinationPos.z(),
-                            user.getYHeadRot(),
-                            user.getViewXRot(0));
+                    TeleportUtil.teleport((ServerPlayer) user, voidWorld, destinationPos, user.getYHeadRot(), user.getViewXRot(0));
                 });
-                user.displayClientMessage(Component.translatable(MODID + ".teleport_in_progress", 5), true);
+                user.sendOverlayMessage(Component.translatable(MODID + ".teleport_in_progress", 5));
             }
             else
-                user.displayClientMessage(Component.translatable(MODID + ".no_pocket_for_a_player", bottle.getPlayerProfile().getName()), true);
+                user.sendOverlayMessage(Component.translatable(MODID + ".no_pocket_for_a_player", ProfileUtil.getName(bottle.getPlayerProfile())));
         }
 
         return InteractionResult.SUCCESS;
@@ -126,7 +115,7 @@ public class EyeBottleBlock extends Block implements EntityBlock
     @Override
     public RenderShape getRenderShape(BlockState state)
     {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.INVISIBLE;
     }
 
     @Nullable

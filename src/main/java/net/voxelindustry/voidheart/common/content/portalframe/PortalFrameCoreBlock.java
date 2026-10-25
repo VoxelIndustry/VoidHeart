@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -28,20 +29,20 @@ import net.minecraft.world.phys.BlockHitResult;
 
 public class PortalFrameCoreBlock extends PortalFrameBlock
 {
-    public PortalFrameCoreBlock()
+    public PortalFrameCoreBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(4F)
                 .sound(SoundType.STONE)
                 .randomTicks()
-                .emissiveRendering((state, world, pos) -> state.getValue(BlockStateProperties.LIT)));
+                .emissiveRendering(state -> state.getValue(BlockStateProperties.LIT)));
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         var tileOpt = world.getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE);
 
@@ -64,19 +65,19 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
                     tile.setBroken(false);
                     if (PortalLinker.tryRelink(player, tile))
                     {
-                        player.displayClientMessage(Component.translatable(MODID + ".portal_relinked_successful"), true);
+                        player.sendOverlayMessage(Component.translatable(MODID + ".portal_relinked_successful"));
                         return InteractionResult.SUCCESS;
                     }
                 }
                 else
-                    player.displayClientMessage(Component.translatable(MODID + ".portal_cannot_form_back"), true);
+                    player.sendOverlayMessage(Component.translatable(MODID + ".portal_cannot_form_back"));
             }
             else
-                player.displayClientMessage(Component.translatable(MODID + ".portal_cannot_form_back"), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".portal_cannot_form_back"));
         }
         else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
         {
-            player.displayClientMessage(Component.translatable(MODID + ".portal_relinked_successful"), true);
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_relinked_successful"));
             VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayer) player);
             return InteractionResult.SUCCESS;
         }

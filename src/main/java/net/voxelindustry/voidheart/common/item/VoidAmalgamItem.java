@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.common.item;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.component.TooltipDisplay;
+import java.util.function.Consumer;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -19,27 +21,25 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
-import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidAmalgamItem extends Item
 {
-    public VoidAmalgamItem()
+    public VoidAmalgamItem(Properties properties)
     {
-        super(new Properties()
+        super(properties
                 .rarity(Rarity.RARE)
                 .stacksTo(1)
-                .food(new FoodProperties.Builder().alwaysEat().build()));
+                .food(new FoodProperties.Builder().alwaysEdible().build()));
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level world, List<Component> tooltip, TooltipFlag context)
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag)
     {
-        super.appendHoverText(stack, world, tooltip, context);
 
-        tooltip.add(Component.translatable(MODID + ".void_amalgam.lore"));
-        tooltip.add(Component.translatable(MODID + ".void_amalgam.lore2"));
+        tooltip.accept(Component.translatable(MODID + ".void_amalgam.lore"));
+        tooltip.accept(Component.translatable(MODID + ".void_amalgam.lore2"));
     }
 
     @Override
@@ -60,12 +60,10 @@ public class VoidAmalgamItem extends Item
         user.addEffect(blindness);
         user.addEffect(poison);
         user.addEffect(wither);
-        ((Player) user).playNotifySound(SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1, 1 + (world.random.nextFloat() - world.random.nextFloat()) * 0.4F);
+        world.playSound(null, user.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1, 1 + (world.getRandom().nextFloat() - world.getRandom().nextFloat()) * 0.4F);
 
         ItemStack result = new ItemStack(VoidHeartItems.VOID_HEART);
-        CompoundTag tag = result.getOrCreateTag();
-        tag.putUUID("player", user.getUUID());
-        tag.putString("playerName", user.getScoreboardName());
+        result.set(VoidHeartDataComponents.HEART_OWNER, new VoidHeartDataComponents.HeartOwner(user.getUUID(), user.getScoreboardName()));
 
         return result;
     }

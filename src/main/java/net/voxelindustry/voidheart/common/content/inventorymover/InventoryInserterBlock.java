@@ -29,9 +29,9 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class InventoryInserterBlock extends Block implements EntityBlock
 {
-    public InventoryInserterBlock()
+    public InventoryInserterBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .strength(3F)
@@ -40,15 +40,6 @@ public class InventoryInserterBlock extends Block implements EntityBlock
 
         registerDefaultState(getStateDefinition().any()
                 .setValue(BlockStateProperties.FACING, Direction.UP));
-    }
-
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag options)
-    {
-        super.appendHoverText(stack, world, tooltip, options);
-
-        tooltip.add(Component.translatable(MODID + ".inventory_inserter.lore1"));
-        tooltip.add(Component.translatable(MODID + ".inventory_inserter.lore2"));
     }
 
     @Nullable

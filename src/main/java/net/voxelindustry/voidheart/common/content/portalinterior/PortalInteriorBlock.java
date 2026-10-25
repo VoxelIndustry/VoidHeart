@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.portalinterior;
 
+import net.minecraft.world.entity.InsideBlockEffectApplier;
+import net.minecraft.world.level.LevelReader;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -42,9 +44,9 @@ public class PortalInteriorBlock extends Block implements EntityBlock
     protected static final VoxelShape UP_SHAPE   = Block.box(0, 0, 0, 16, 9, 16);
     protected static final VoxelShape DOWN_SHAPE = Block.box(0, 7, 0, 16, 16, 16);
 
-    public PortalInteriorBlock()
+    public PortalInteriorBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_LIGHT_GREEN)
                 .instrument(NoteBlockInstrument.XYLOPHONE)
                 .requiresCorrectToolForDrops()
@@ -57,7 +59,7 @@ public class PortalInteriorBlock extends Block implements EntityBlock
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter world, BlockPos pos, BlockState state)
+    protected ItemStack getCloneItemStack(LevelReader world, BlockPos pos, BlockState state, boolean includeData)
     {
         return ItemStack.EMPTY;
     }
@@ -107,7 +109,7 @@ public class PortalInteriorBlock extends Block implements EntityBlock
     }
 
     @Override
-    public void entityInside(BlockState state, Level world, BlockPos pos, Entity collider)
+    protected void entityInside(BlockState state, Level world, BlockPos pos, Entity collider, InsideBlockEffectApplier effectApplier, boolean isPrecise)
     {
         if (collider.isPassenger() || collider.isVehicle() || !collider.canChangeDimensions())
             return;

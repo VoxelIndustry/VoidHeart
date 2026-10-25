@@ -5,12 +5,12 @@ import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class EyeBottleModel extends DefaultedBlockGeoModel<EyeBottleTile>
 {
     public EyeBottleModel()
     {
-        super(new ResourceLocation(MODID, "eye_bottle_animated"));
+        super(Identifier.fromNamespaceAndPath(MODID, "eye_bottle_animated"));
     }
 }

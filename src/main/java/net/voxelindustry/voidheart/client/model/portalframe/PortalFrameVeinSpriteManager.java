@@ -2,7 +2,7 @@ package net.voxelindustry.voidheart.client.model.portalframe;
 
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.Material;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 
@@ -37,7 +37,7 @@ public class PortalFrameVeinSpriteManager
         }
     }
 
-    public static void registerSprites(Consumer<ResourceLocation> spriteRegistrar)
+    public static void registerSprites(Consumer<Identifier> spriteRegistrar)
     {
         for (var spriteIdentifier : FRAME_SPRITE_IDENTIFIERS)
             spriteRegistrar.accept(spriteIdentifier.texture());
@@ -53,7 +53,7 @@ public class PortalFrameVeinSpriteManager
         for (int i = 0; i < 4; i++)
             CORE_SPRITES[i] = CORE_SPRITE_IDENTIFIERS[i].sprite();
 
-        VOIDBRICK_SPRITE = new Material(InventoryMenu.BLOCK_ATLAS, new ResourceLocation(MODID, "block/voidstone_bricks")).sprite();
+        VOIDBRICK_SPRITE = new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/voidstone_bricks")).sprite();
     }
 
     public static Material[] getFrameSpriteIdentifiers()
@@ -151,11 +151,11 @@ public class PortalFrameVeinSpriteManager
 
     private static Material getFrameSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, new ResourceLocation(MODID, "block/portal/" + from));
+        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/portal/" + from));
     }
 
     private static Material getCoreSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, new ResourceLocation(MODID, "block/portalcore/" + from));
+        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/portalcore/" + from));
     }
 }

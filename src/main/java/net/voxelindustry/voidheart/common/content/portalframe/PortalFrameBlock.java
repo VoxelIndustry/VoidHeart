@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -33,16 +36,6 @@ import static net.voxelindustry.voidheart.common.block.PortalFrameStatePropertie
 
 public class PortalFrameBlock extends Block implements EntityBlock
 {
-    public PortalFrameBlock()
-    {
-        this(Properties.of()
-                .mapColor(MapColor.COLOR_BLACK)
-                .instrument(NoteBlockInstrument.BASEDRUM)
-                .strength(4F)
-                .requiresCorrectToolForDrops()
-                .sound(SoundType.STONE));
-    }
-
     public PortalFrameBlock(Properties settings)
     {
         super(settings);
@@ -64,7 +57,7 @@ public class PortalFrameBlock extends Block implements EntityBlock
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter world, BlockPos pos, BlockState state)
+    protected ItemStack getCloneItemStack(LevelReader world, BlockPos pos, BlockState state, boolean includeData)
     {
         return new ItemStack(VoidHeartBlocks.VOIDSTONE_BRICKS);
     }
@@ -76,7 +69,7 @@ public class PortalFrameBlock extends Block implements EntityBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         if (player.isShiftKeyDown())
             return InteractionResult.PASS;
@@ -105,7 +98,7 @@ public class PortalFrameBlock extends Block implements EntityBlock
             }
         }
 
-        return super.use(state, world, pos, player, hand, hit);
+        return super.useItemOn(heldStack, state, world, pos, player, hand, hit);
     }
 
     private static FrameConnection getConnectionType(BlockState state)
@@ -116,7 +109,7 @@ public class PortalFrameBlock extends Block implements EntityBlock
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState newState, LevelAccessor world, BlockPos pos, BlockPos posFrom)
+    protected BlockState updateShape(BlockState state, LevelReader world, ScheduledTickAccess ticks, BlockPos pos, Direction direction, BlockPos posFrom, BlockState newState, RandomSource random)
     {
         switch (direction)
         {
@@ -188,18 +181,6 @@ public class PortalFrameBlock extends Block implements EntityBlock
             }
         }
         return state;
-    }
-
-    @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved)
-    {
-        if (!state.is(newState.getBlock()))
-        {
-            var tile = world.getBlockEntity(pos);
-            if (tile instanceof PortalFrameTile frame)
-                frame.breakTile(BlockPos.ZERO);
-        }
-        super.onRemove(state, world, pos, newState, moved);
     }
 
     @Override

@@ -22,9 +22,9 @@ import net.minecraft.world.level.material.MapColor;
 
 public class VoidBarrierEmitterBlock extends Block implements EntityBlock
 {
-    public VoidBarrierEmitterBlock()
+    public VoidBarrierEmitterBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()

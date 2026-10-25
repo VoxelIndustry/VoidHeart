@@ -28,7 +28,7 @@ public class MultiEssenceStorage implements IEssenceStorage
                 var storage = new MultiEssenceStorage(maximumAmount, storageCount);
 
                 for (int i = 0; i < amounts.length; i++)
-                    storage.set(i, EssenceRegistry.ESSENCE_REGISTRY.get(types[i]), amounts[i]);
+                    storage.set(i, EssenceRegistry.ESSENCE_REGISTRY.getValue(types[i]), amounts[i]);
 
                 return storage;
             }));

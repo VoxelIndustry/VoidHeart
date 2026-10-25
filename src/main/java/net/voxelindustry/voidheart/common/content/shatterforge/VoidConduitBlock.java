@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.content.shatterforge;
 
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
@@ -18,9 +21,9 @@ import net.minecraft.world.level.material.MapColor;
 
 public class VoidConduitBlock extends Block
 {
-    public VoidConduitBlock()
+    public VoidConduitBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
@@ -38,7 +41,7 @@ public class VoidConduitBlock extends Block
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState newState, LevelAccessor world, BlockPos pos, BlockPos posFrom)
+    protected BlockState updateShape(BlockState state, LevelReader world, ScheduledTickAccess ticks, BlockPos pos, Direction direction, BlockPos posFrom, BlockState newState, RandomSource random)
     {
         var connected = StateProperties.isSideConnected(state, direction);
 

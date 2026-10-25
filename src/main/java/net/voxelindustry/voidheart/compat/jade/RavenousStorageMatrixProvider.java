@@ -11,11 +11,11 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider
 {
-    private static final ResourceLocation RAVENOUS_STORAGE_MATRIX = new ResourceLocation(MODID, "ravenous_storage_matrix");
+    private static final Identifier RAVENOUS_STORAGE_MATRIX = Identifier.fromNamespaceAndPath(MODID, "ravenous_storage_matrix");
 
     @Override
     public void appendTooltip(
@@ -38,7 +38,7 @@ public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockA
     }
 
     @Override
-    public ResourceLocation getUid()
+    public Identifier getUid()
     {
         return RAVENOUS_STORAGE_MATRIX;
     }

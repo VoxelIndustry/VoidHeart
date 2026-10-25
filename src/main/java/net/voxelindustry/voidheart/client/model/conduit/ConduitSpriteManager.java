@@ -4,7 +4,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.Material;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.InventoryMenu;
 
 public class ConduitSpriteManager
@@ -65,6 +65,6 @@ public class ConduitSpriteManager
 
     private static Material getSpriteIdentifier(String from)
     {
-        return new Material(InventoryMenu.BLOCK_ATLAS, new ResourceLocation(MODID, "block/conduit/" + from));
+        return new Material(InventoryMenu.BLOCK_ATLAS, Identifier.fromNamespaceAndPath(MODID, "block/conduit/" + from));
     }
 }

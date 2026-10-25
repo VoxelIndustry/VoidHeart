@@ -25,7 +25,7 @@ public class VoidStoneBricksBlock extends Block
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         ItemStack stack = player.getItemInHand(hand);
         if (stack.getItem() == VoidHeartItems.PORTAL_CORE)
@@ -37,12 +37,12 @@ public class VoidStoneBricksBlock extends Block
 
             if (!voidPocketState.hasPocket(player.getUUID()))
             {
-                player.displayClientMessage(Component.translatable(MODID + ".no_pocket_for_player"), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".no_pocket_for_player"));
                 return InteractionResult.PASS;
             }
             if (voidPocketState.getHeartData(player.getUUID()).noFlexionLeft())
             {
-                player.displayClientMessage(Component.translatable(MODID + ".no_flexion_left"), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".no_flexion_left"));
                 return InteractionResult.PASS;
             }
 
@@ -57,6 +57,6 @@ public class VoidStoneBricksBlock extends Block
             }
         }
 
-        return super.use(state, world, pos, player, hand, hit);
+        return super.useItemOn(heldStack, state, world, pos, player, hand, hit);
     }
 }

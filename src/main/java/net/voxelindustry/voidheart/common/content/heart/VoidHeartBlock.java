@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.heart;
 
+import net.voxelindustry.voidheart.common.util.ProfileUtil;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import org.jetbrains.annotations.Nullable;
@@ -28,11 +30,10 @@ public class VoidHeartBlock extends Block implements EntityBlock
 {
     private final VoxelShape SHAPE = Block.box(2, 2, 2, 14, 14, 14);
 
-    public VoidHeartBlock()
+    public VoidHeartBlock(Properties properties)
     {
-        super(Properties
-                .of()
-                .noCollission()
+        super(properties
+                .noCollision()
                 .strength(-1.0F, 3600000.0F)
                 .noLootTable()
                 .isValidSpawn(((state, world, pos, type) -> false))
@@ -52,7 +53,7 @@ public class VoidHeartBlock extends Block implements EntityBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         if (!world.isClientSide())
             ((VoidHeartTile) world.getBlockEntity(pos)).playerHit(player);
@@ -69,10 +70,10 @@ public class VoidHeartBlock extends Block implements EntityBlock
 
                 var playerID = heart.getPlayerID();
 
-                var gameProfileOpt = world.getServer().getProfileCache().get(playerID);
+                var profile = heart.getPlayerProfile();
 
-                if (gameProfileOpt.isPresent())
-                    debugText.append(Component.literal("§6Owner: §7" + heart.getPlayerID() + " (§3" + gameProfileOpt.get().getName() + "§7)\n"));
+                if (profile != null)
+                    debugText.append(Component.literal("§6Owner: §7" + heart.getPlayerID() + " (§3" + ProfileUtil.getName(profile) + "§7)\n"));
                 else
                     debugText.append(Component.literal("§6Owner: " + heart.getPlayerID() + " (ERROR RETRIEVING PROFILE)\n"));
 

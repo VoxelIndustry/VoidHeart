@@ -1,7 +1,9 @@
 package net.voxelindustry.voidheart.common.content.portalinterior;
 
+import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -22,15 +24,15 @@ public class PortalInteriorTile extends BlockEntity
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.load(tag);
+        super.loadAdditional(tag);
 
-        corePos = BlockPos.of(tag.getLong("corePos"));
+        corePos = BlockPos.of(tag.getLongOr("corePos", 0L));
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
         tag.putLong("corePos", corePos.asLong());
 
@@ -56,12 +58,7 @@ public class PortalInteriorTile extends BlockEntity
                 return;
 
             Vec3 destinationPos = linkedPortalOpt.get().getPortalMiddlePos(false);
-            ((ServerPlayer) collider).teleportTo(destination,
-                    destinationPos.x(),
-                    destinationPos.y(),
-                    destinationPos.z(),
-                    collider.getYHeadRot(),
-                    collider.getViewXRot(0));
+            TeleportUtil.teleport((ServerPlayer) collider, destination, destinationPos, collider.getYHeadRot(), collider.getViewXRot(0));
         }
     }
 

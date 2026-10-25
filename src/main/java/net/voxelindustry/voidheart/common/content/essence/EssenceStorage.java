@@ -16,7 +16,7 @@ public class EssenceStorage implements IEssenceStorage
                             .forGetter(EssenceStorage::amount),
                     ResourceKey.codec(EssenceRegistry.ESSENCE_REGISTRY_TYPE).fieldOf("essenceType").forGetter(storage -> EssenceRegistry.ESSENCE_REGISTRY.getResourceKey(storage.type).get())
             ).apply(instance, (maximumAmount, amount, essenceTypeKey) ->
-                    new EssenceStorage(EssenceRegistry.ESSENCE_REGISTRY.get(essenceTypeKey), maximumAmount, amount)));
+                    new EssenceStorage(EssenceRegistry.ESSENCE_REGISTRY.getValue(essenceTypeKey), maximumAmount, amount)));
 
     private EssenceType type;
     private final int maximumAmount;

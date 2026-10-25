@@ -1,7 +1,7 @@
 package net.voxelindustry.voidheart.common.content.door;
 
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionResult;
@@ -18,9 +18,9 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 public class VoidKeyItem extends Item
 {
-    public VoidKeyItem()
+    public VoidKeyItem(Properties properties)
     {
-        super(new Properties()
+        super(properties
                 .rarity(Rarity.UNCOMMON)
                 .stacksTo(1));
     }
@@ -54,7 +54,7 @@ public class VoidKeyItem extends Item
 
     private boolean isBlank(ItemStack stack)
     {
-        return !stack.hasTag() || !stack.getTag().contains("doorPos");
+        return !stack.has(VoidHeartDataComponents.DOOR_LINK);
     }
 
     private void setDoor(ItemStack stack, Level world, BlockPos pos)
@@ -64,15 +64,13 @@ public class VoidKeyItem extends Item
         if (door == null)
             return;
 
-        stack.getOrCreateTag().putLong("doorPos", pos.asLong());
-        stack.getOrCreateTag().putUUID("doorID", door.getId());
+        stack.set(VoidHeartDataComponents.DOOR_LINK, new VoidHeartDataComponents.DoorLink(pos, door.getId()));
     }
 
     private void createPortal(ItemStack stack, Level world, BlockPos pos, BlockState state)
     {
-        CompoundTag tag = stack.getTag();
         ServerLevel voidWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
-        BlockPos doorPos = BlockPos.of(tag.getLong("doorPos"));
+        BlockPos doorPos = stack.get(VoidHeartDataComponents.DOOR_LINK).doorPos();
         VoidDoorTile door = (VoidDoorTile) voidWorld.getBlockEntity(doorPos);
 
         if (door == null)

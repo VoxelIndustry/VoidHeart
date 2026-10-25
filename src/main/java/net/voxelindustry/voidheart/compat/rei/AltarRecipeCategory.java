@@ -10,7 +10,7 @@ import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.entry.EntryStack;
 import me.shedaniel.rei.api.common.util.EntryStacks;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
@@ -25,7 +25,7 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
     public static final CategoryIdentifier<AltarRecipeDisplay> IDENTIFIER = CategoryIdentifier.of(MODID, "altar_crafting");
 
     @Override
-    public ResourceLocation getIdentifier()
+    public Identifier getIdentifier()
     {
         return IDENTIFIER.getIdentifier();
     }

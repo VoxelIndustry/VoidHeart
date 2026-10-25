@@ -1,8 +1,10 @@
 package net.voxelindustry.voidheart.common.content.pillar;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.Containers;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -38,21 +40,21 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput tag)
     {
-        super.load(tag);
+        super.loadAdditional(tag);
 
-        stack = ItemStack.of(tag.getCompound("stack"));
+        stack = tag.read("stack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
 
-        int pillarCount = tag.getInt("pillarCount");
+        int pillarCount = tag.getIntOr("pillarCount", 0);
         for (int index = 0; index < pillarCount; index++)
-            altars.add(BlockPos.of(tag.getLong("pillar" + index)));
+            altars.add(BlockPos.of(tag.getLongOr("pillar" + index, 0L)));
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput tag)
     {
-        tag.put("stack", stack.save(new CompoundTag()));
+        tag.store("stack", ItemStack.OPTIONAL_CODEC, stack);
 
         tag.putInt("pillarCount", altars.size());
         for (int index = 0; index < altars.size(); index++)
@@ -104,5 +106,13 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
             if (tile instanceof PillarLinkedTile linkedTile)
                 linkedTile.removePillar(this);
         });
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        removeItself();
+        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
+        super.preRemoveSideEffects(pos, state);
     }
 }

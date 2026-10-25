@@ -19,7 +19,7 @@ public record PortalKey(ResourceKey<Level> worldKey, BlockPos corePos)
     public String toString()
     {
         return "[" +
-                "worldKey: " + worldKey.location() +
+                "worldKey: " + worldKey.identifier() +
                 ", corePos: " + corePos.toShortString() +
                 ']';
     }

@@ -46,9 +46,9 @@ public class ShatterForgeBlock extends Block implements EntityBlock
             box(2, 12, 4, 14, 16, 12)
     );
 
-    public ShatterForgeBlock()
+    public ShatterForgeBlock(Properties properties)
     {
-        super(Properties.of()
+        super(properties
                 .mapColor(MapColor.COLOR_BLACK)
                 .strength(3F)
                 .sound(SoundType.STONE)
@@ -60,7 +60,7 @@ public class ShatterForgeBlock extends Block implements EntityBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         var forge = (ShatterForgeTile) world.getBlockEntity(pos);
 
@@ -85,21 +85,6 @@ public class ShatterForgeBlock extends Block implements EntityBlock
         }
 
         return InteractionResult.SUCCESS;
-    }
-
-    @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved)
-    {
-        if (!state.is(newState.getBlock()))
-        {
-            var tile = (ShatterForgeTile) world.getBlockEntity(pos);
-            if (tile != null)
-            {
-                tile.removeItself();
-                Containers.dropItemStack(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.getStack());
-            }
-        }
-        super.onRemove(state, world, pos, newState, moved);
     }
 
     @Override

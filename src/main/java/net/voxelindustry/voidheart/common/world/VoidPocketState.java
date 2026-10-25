@@ -1,9 +1,12 @@
 package net.voxelindustry.voidheart.common.world;
 
+import com.mojang.serialization.Codec;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockPos.MutableBlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,20 +24,35 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidPocketState extends SavedData
 {
-    private final Map<UUID, VoidHeartData> heartDataByUUID = new HashMap<>();
+    public static final Codec<VoidPocketState> CODEC = Codec.unboundedMap(UUIDUtil.STRING_CODEC, VoidHeartData.CODEC)
+            .fieldOf("hearts")
+            .codec()
+            .xmap(VoidPocketState::new, state -> state.heartDataByUUID);
+
+    public static final SavedDataType<VoidPocketState> TYPE = new SavedDataType<>(
+            Identifier.fromNamespaceAndPath(MODID, "pocket_storage"),
+            VoidPocketState::new,
+            CODEC,
+            null);
+
+    private final Map<UUID, VoidHeartData> heartDataByUUID;
 
     public VoidPocketState()
     {
+        heartDataByUUID = new HashMap<>();
     }
 
-    public VoidPocketState(CompoundTag tag)
+    private VoidPocketState(Map<UUID, VoidHeartData> heartDataByUUID)
     {
-        readNbt(tag);
+        this.heartDataByUUID = new HashMap<>(heartDataByUUID);
     }
 
     @Override
     public boolean isDirty()
     {
+        if (super.isDirty())
+            return true;
+
         for (var heartData : heartDataByUUID.values())
         {
             if (heartData.isDirty())
@@ -83,28 +101,6 @@ public class VoidPocketState extends SavedData
         return heartDataByUUID.get(uuid);
     }
 
-    public void readNbt(CompoundTag tag)
-    {
-        var heartsData = tag.getCompound("hearts");
-
-        for (var playerUUID : heartsData.getAllKeys())
-            this.heartDataByUUID.put(UUID.fromString(playerUUID), VoidHeartData.fromNbt(heartsData.getCompound(playerUUID)));
-    }
-
-    @Override
-    public CompoundTag save(CompoundTag tag)
-    {
-        var heartsTag = new CompoundTag();
-
-        for (var heartDataByPlayerUUID : this.heartDataByUUID.entrySet())
-        {
-            heartsTag.put(heartDataByPlayerUUID.getKey().toString(), heartDataByPlayerUUID.getValue().toNbt());
-        }
-
-        tag.put("hearts", heartsTag);
-        return tag;
-    }
-
     public static VoidPocketState getVoidPocketState(Level world)
     {
         ServerLevel serverWorld;
@@ -116,16 +112,7 @@ public class VoidPocketState extends SavedData
         else
             throw new UnsupportedOperationException("Cannot access VoidPocketState from a ClientWorld");
 
-        return getOrCreateWithDeprecatedId(serverWorld);
-    }
-
-    private static VoidPocketState getOrCreateWithDeprecatedId(ServerLevel serverWorld)
-    {
-        var existingDeprecated = serverWorld.getDataStorage().get(VoidPocketState::new, MODID + ":pocket_storage");
-        if (existingDeprecated != null)
-            return existingDeprecated;
-
-        return serverWorld.getDataStorage().computeIfAbsent(VoidPocketState::new, VoidPocketState::new, MODID + "_pocket_storage");
+        return serverWorld.getDataStorage().computeIfAbsent(TYPE);
     }
 
     public void createPocket(ServerLevel voidWorld, UUID player)

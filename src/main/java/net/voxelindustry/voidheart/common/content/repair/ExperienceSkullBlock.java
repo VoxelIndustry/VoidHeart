@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -68,7 +69,7 @@ public class ExperienceSkullBlock extends Block implements EntityBlock
         if (tile instanceof ExperienceSkullTile skullTile)
         {
             experienceSkull.setDamageValue(ExperienceSkullTile.MAX_EXPERIENCE - skullTile.getExperience());
-            experienceSkull.getOrCreateTag().putInt("experience", skullTile.getExperience());
+            experienceSkull.set(VoidHeartDataComponents.EXPERIENCE, skullTile.getExperience());
         }
 
         return singletonList(experienceSkull);
@@ -82,11 +83,11 @@ public class ExperienceSkullBlock extends Block implements EntityBlock
         var tile = world.getBlockEntity(pos);
 
         if (tile instanceof ExperienceSkullTile skullTile)
-            skullTile.setExperience(itemStack.getOrCreateTag().getInt("experience"));
+            skullTile.setExperience(itemStack.getOrDefault(VoidHeartDataComponents.EXPERIENCE, 0));
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         var skull = (ExperienceSkullTile) world.getBlockEntity(pos);
 
@@ -108,7 +109,7 @@ public class ExperienceSkullBlock extends Block implements EntityBlock
                         SoundEvents.EXPERIENCE_ORB_PICKUP,
                         SoundSource.BLOCKS,
                         0.1F,
-                        (world.random.nextFloat() - world.random.nextFloat()) * 0.35F + 0.9F);
+                        (world.getRandom().nextFloat() - world.getRandom().nextFloat()) * 0.35F + 0.9F);
             }
             return InteractionResult.SUCCESS;
         }
@@ -124,7 +125,7 @@ public class ExperienceSkullBlock extends Block implements EntityBlock
                     SoundEvents.EXPERIENCE_ORB_PICKUP,
                     SoundSource.BLOCKS,
                     0.1F,
-                    (world.random.nextFloat() - world.random.nextFloat()) * 0.35F + 0.9F,
+                    (world.getRandom().nextFloat() - world.getRandom().nextFloat()) * 0.35F + 0.9F,
                     true);
         }
 

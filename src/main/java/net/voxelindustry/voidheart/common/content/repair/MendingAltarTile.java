@@ -1,8 +1,9 @@
 package net.voxelindustry.voidheart.common.content.repair;
 
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -77,7 +78,7 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
                 startCrafting();
             }
             else
-                player.displayClientMessage(Component.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()), true);
+                player.sendOverlayMessage(Component.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()));
         }
         else if (isCrafting)
             stopCrafting();
@@ -87,19 +88,19 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
     }
 
     @Override
-    public void load(CompoundTag nbt)
+    protected void loadAdditional(ValueInput nbt)
     {
-        super.load(nbt);
+        super.loadAdditional(nbt);
 
-        tool = ItemStack.of(nbt.getCompound("tool"));
+        tool = nbt.read("tool", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag nbt)
+    protected void saveAdditional(ValueOutput nbt)
     {
         super.saveAdditional(nbt);
 
-        nbt.put("tool", tool.save(new CompoundTag()));
+        nbt.store("tool", ItemStack.OPTIONAL_CODEC, tool);
     }
 
     private void refreshExperienceSkulls()

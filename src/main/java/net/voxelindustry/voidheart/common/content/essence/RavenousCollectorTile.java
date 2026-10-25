@@ -1,21 +1,21 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
+import com.geckolib.util.GeckoLibUtil;
+import com.geckolib.animation.object.PlayState;
+import com.geckolib.animation.RawAnimation;
+import com.geckolib.animation.state.AnimationTest;
+import com.geckolib.animation.AnimationController;
+import com.geckolib.animatable.manager.AnimatableManager.ControllerRegistrar;
+import com.geckolib.animatable.instance.AnimatableInstanceCache;
+import com.geckolib.animatable.GeoBlockEntity;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
-import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
 {
@@ -40,7 +40,7 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
 
     public static void tick(Level world, BlockPos pos, BlockState state, RavenousCollectorTile collector)
     {
-        if (world.isClientSide)
+        if (world.isClientSide())
             return;
 
         if (collector.storage.isUnattuned())
@@ -95,7 +95,7 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
 
     private BlockPos findRandomCollectable()
     {
-        var iterablePos = BlockPos.randomInCube(level.random, 7 * 7 * 7, worldPosition, 3);
+        var iterablePos = BlockPos.randomInCube(level.getRandom(), 7 * 7 * 7, worldPosition, 3);
 
         for (var candidate : iterablePos)
         {
@@ -112,33 +112,33 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
     }
 
     @Override
-    public void load(CompoundTag nbt)
+    protected void loadAdditional(ValueInput nbt)
     {
-        super.load(nbt);
+        super.loadAdditional(nbt);
 
-        harvestingTickStart = nbt.getLong("harvestingTickStart");
-        harvestingPos = BlockPos.of(nbt.getLong("harvestingPos"));
-        storage = EssenceStorage.CODEC.decode(NbtOps.INSTANCE, nbt.getCompound("storage")).result().get().getFirst();
+        harvestingTickStart = nbt.getLongOr("harvestingTickStart", 0L);
+        harvestingPos = BlockPos.of(nbt.getLongOr("harvestingPos", 0L));
+        storage = nbt.read("storage", EssenceStorage.CODEC).orElse(storage);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag nbt)
+    protected void saveAdditional(ValueOutput nbt)
     {
         super.saveAdditional(nbt);
 
         nbt.putLong("harvestingTickStart", harvestingTickStart);
         nbt.putLong("harvestingPos", harvestingPos.asLong());
-        nbt.put("storage", EssenceStorage.CODEC.encodeStart(NbtOps.INSTANCE, storage).result().get());
+        nbt.store("storage", EssenceStorage.CODEC, storage);
     }
 
     @Override
     public void registerControllers(ControllerRegistrar controllers)
     {
-        var animationController = new AnimationController<>(this, this::deployAnimController);
+        var animationController = new AnimationController<RavenousCollectorTile>("main", this::deployAnimController);
         controllers.add(animationController);
     }
 
-    protected <E extends RavenousCollectorTile> PlayState deployAnimController(AnimationState<E> state)
+    protected <E extends RavenousCollectorTile> PlayState deployAnimController(AnimationTest<E> state)
     {
         return state.setAndContinue(IDLE);
     }
