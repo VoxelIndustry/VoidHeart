@@ -63,25 +63,23 @@ public class ShatterForgeBlock extends Block implements EntityBlock
     @Override
     protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
-        var forge = (ShatterForgeTile) world.getBlockEntity(pos);
+        return takeOutput(world, pos, player);
+    }
 
-        if (forge == null)
-            return InteractionResult.SUCCESS;
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit)
+    {
+        return takeOutput(world, pos, player);
+    }
 
-        if (forge.getStack().isEmpty())
+    private InteractionResult takeOutput(Level world, BlockPos pos, Player player)
+    {
+        if (!(world.getBlockEntity(pos) instanceof ShatterForgeTile forge) || forge.getStack().isEmpty())
+            return InteractionResult.PASS;
+
+        if (!world.isClientSide())
         {
-            var stackInHand = player.getItemInHand(hand);
-            if (!stackInHand.isEmpty())
-            {
-                forge.setStack(stackInHand.copyWithCount(1));
-
-                if (!player.isCreative())
-                    stackInHand.shrink(1);
-            }
-        }
-        else
-        {
-            player.getInventory().placeItemBackInInventory(forge.getStack().copyWithCount(1), Prediction.SERVER_ONLY);
+            player.getInventory().placeItemBackInInventory(forge.getStack(), Prediction.SERVER_ONLY);
             forge.setStack(ItemStack.EMPTY);
         }
 

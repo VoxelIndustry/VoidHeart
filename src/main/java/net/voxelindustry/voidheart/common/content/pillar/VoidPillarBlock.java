@@ -103,7 +103,10 @@ public class VoidPillarBlock extends Block implements EntityBlock
 
         // The neighbor source is no longer given, the item is ejected as soon as the block above is occupied
         if (!tile.get().getStack().isEmpty() && !world.isEmptyBlock(pos.above()))
+        {
             Containers.dropItemStack(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, tile.get().getStack());
+            tile.get().setStack(ItemStack.EMPTY);
+        }
     }
 
     @Override

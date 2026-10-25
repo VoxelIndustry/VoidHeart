@@ -14,9 +14,13 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ShatterForgeRecipeDisplay extends BasicDisplay
@@ -27,7 +31,9 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
                     EntryIngredient.codec().listOf().fieldOf("outputs").forGetter(ShatterForgeRecipeDisplay::getOutputEntries),
                     Identifier.CODEC.optionalFieldOf("location").forGetter(ShatterForgeRecipeDisplay::getDisplayLocation),
                     Codec.INT.fieldOf("time").forGetter(ShatterForgeRecipeDisplay::getTime),
-                    Codec.INT.fieldOf("monolith_count").forGetter(ShatterForgeRecipeDisplay::getMonolithCount)
+                    Codec.INT.fieldOf("monolith_count").forGetter(ShatterForgeRecipeDisplay::getMonolithCount),
+                    Codec.unboundedMap(Identifier.CODEC, Codec.INT).optionalFieldOf("aspects", Map.of()).forGetter(ShatterForgeRecipeDisplay::getAspectIds),
+                    Codec.INT.optionalFieldOf("draw", 0).forGetter(ShatterForgeRecipeDisplay::getDraw)
             ).apply(instance, ShatterForgeRecipeDisplay::new)),
             StreamCodec.composite(
                     EntryIngredient.streamCodec().apply(ByteBufCodecs.list()), ShatterForgeRecipeDisplay::getInputEntries,
@@ -35,19 +41,39 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
                     ByteBufCodecs.optional(Identifier.STREAM_CODEC), ShatterForgeRecipeDisplay::getDisplayLocation,
                     ByteBufCodecs.VAR_INT, ShatterForgeRecipeDisplay::getTime,
                     ByteBufCodecs.VAR_INT, ShatterForgeRecipeDisplay::getMonolithCount,
+                    ByteBufCodecs.map(LinkedHashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.VAR_INT), display -> new LinkedHashMap<Identifier, Integer>(display.getAspectIds()),
+                    ByteBufCodecs.VAR_INT, ShatterForgeRecipeDisplay::getDraw,
                     ShatterForgeRecipeDisplay::new));
 
     @Getter
     private final int time;
     @Getter
     private final int monolithCount;
+    @Getter
+    private final Map<Identifier, Integer> aspectIds;
+    @Getter
+    private final int draw;
 
-    public ShatterForgeRecipeDisplay(List<EntryIngredient> inputs, List<EntryIngredient> outputs, Optional<Identifier> location, int time, int monolithCount)
+    public ShatterForgeRecipeDisplay(List<EntryIngredient> inputs, List<EntryIngredient> outputs, Optional<Identifier> location, int time, int monolithCount,
+                                     Map<Identifier, Integer> aspectIds, int draw)
     {
         super(inputs, outputs, location);
 
         this.time = time;
         this.monolithCount = monolithCount;
+        this.aspectIds = Map.copyOf(aspectIds);
+        this.draw = draw;
+    }
+
+    public Map<EssenceType, Integer> getAspects()
+    {
+        var aspects = new LinkedHashMap<EssenceType, Integer>();
+        aspectIds.forEach((id, amount) ->
+        {
+            if (EssenceRegistry.ESSENCE_REGISTRY.containsKey(id))
+                aspects.put(EssenceRegistry.ESSENCE_REGISTRY.getValue(id), amount);
+        });
+        return aspects;
     }
 
     public ShatterForgeRecipeDisplay(RecipeHolder<ShatterForgeRecipe> holder)
@@ -56,7 +82,16 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
                 CollectionUtils.map(holder.value().getRecipeOutputs(ItemStack.class), ingredient -> EntryIngredients.of(ingredient.getRaw())),
                 Optional.of(holder.id().identifier()),
                 holder.value().getTime(),
-                holder.value().getMonolithCount());
+                holder.value().getMonolithCount(),
+                aspectIds(holder.value().getAspects()),
+                holder.value().getDraw());
+    }
+
+    private static Map<Identifier, Integer> aspectIds(Map<EssenceType, Integer> aspects)
+    {
+        var ids = new LinkedHashMap<Identifier, Integer>();
+        aspects.forEach((type, amount) -> ids.put(type.identifier(), amount));
+        return ids;
     }
 
     @Override

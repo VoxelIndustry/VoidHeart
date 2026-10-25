@@ -20,7 +20,7 @@ public class MultiEssenceStorage implements IEssenceStorage
                     CodecUtil.arrayInt()
                             .fieldOf("amounts")
                             .forGetter(MultiEssenceStorage::amounts),
-                    CodecUtil.<ResourceKey<EssenceType>>array(ResourceKey.codec(EssenceRegistry.ESSENCE_REGISTRY_TYPE), ResourceKey.class)
+                    CodecUtil.<ResourceKey<EssenceType>>array(EssenceRegistry.TYPE_CODEC, ResourceKey.class)
                             .fieldOf("types")
                             .forGetter(MultiEssenceStorage::typeKeys)
             ).apply(instance, (maximumAmount, storageCount, amounts, types) ->

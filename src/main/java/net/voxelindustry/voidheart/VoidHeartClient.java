@@ -53,6 +53,7 @@ import net.voxelindustry.voidheart.client.render.oculus.OculusBeholderLayer;
 import net.voxelindustry.voidheart.client.render.BeholderRender;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
+import net.voxelindustry.voidheart.client.render.ShatterForgeRender;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
@@ -75,7 +76,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.VOID_HEART, VoidHeartRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.EXPERIENCE_SKULL, ExperienceSkullRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.EYE_BOTTLE, EyeBottleRender::new);
-        BlockEntityRenderers.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new FloatingItemRender<>(ctx, ShatterForgeTile::getStack, 1));
+        BlockEntityRenderers.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new ShatterForgeRender(ctx));
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PERMEABLE_BARRIER, PermeableBarrierRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.BEHOLDER, BeholderRender::new);
