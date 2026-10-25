@@ -11,7 +11,9 @@ public class VoidHeartREIPlugin implements REIClientPlugin
     public void registerCategories(CategoryRegistry registry)
     {
         registry.add(new AltarRecipeCategory());
+        registry.add(new ShatterForgeRecipeCategory());
 
         registry.addWorkstations(AltarRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.VOID_ALTAR));
+        registry.addWorkstations(ShatterForgeRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.SHATTER_FORGE));
     }
 }
