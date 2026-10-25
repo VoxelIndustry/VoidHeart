@@ -4,6 +4,9 @@ import net.voxelindustry.voidheart.common.content.beam.BeamComposition;
 import net.voxelindustry.voidheart.common.content.beam.BeamResolver;
 import net.voxelindustry.voidheart.common.content.beam.BeamSegment;
 import net.voxelindustry.voidheart.common.content.beam.FormationError;
+import net.voxelindustry.voidheart.common.content.beam.LevelBeamWorldView;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.Containers;
@@ -70,6 +73,14 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     private int connectedMonolithCount;
     private Direction trackDirection;
+
+    private static final int PREVIEW_DURATION_TICKS = 30 * 20;
+
+    @Getter
+    private int previewPairs = -1;
+    @Getter
+    private Direction previewDirection = Direction.NORTH;
+    private long previewUntil;
 
     private final Collection<Identifier> syncElements = singletonList(ShatterForgeCraftingSyncElement.IDENTIFIER);
 
@@ -384,6 +395,48 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         }
     }
 
+    public boolean isPreviewActive()
+    {
+        return previewPairs >= 0 && !isCrafting && level != null && level.getGameTime() < previewUntil;
+    }
+
+    /**
+     * First use shows the smallest recipe track, or the track already built when it is longer or closed.
+     * Later uses grow an open track by one monolith pair, or shrink it when sneaking.
+     */
+    public void stepPreview(Player player, boolean shrink)
+    {
+        var view = new LevelBeamWorldView(level);
+        var active = isPreviewActive();
+
+        if (!active)
+            previewDirection = ShatterForgeLayout.inferDirection(view, worldPosition, getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS));
+
+        var built = ShatterForgeLayout.completeSegments(view, worldPosition, previewDirection);
+        var closed = ShatterForgeLayout.isEmitter(view, ShatterForgeLayout.endSlot(worldPosition, previewDirection, built));
+
+        if (!active)
+            previewPairs = closed ? built : Math.max(minimumTrackPairs(), built);
+        else if (shrink)
+            previewPairs = Math.max(0, previewPairs - 1);
+        else if (!closed)
+            previewPairs = Math.min(ShatterForgeLayout.MAX_TRACK_PAIRS, previewPairs + 1);
+
+        previewUntil = level.getGameTime() + PREVIEW_DURATION_TICKS;
+        player.sendOverlayMessage(Component.translatable("voidheart.shatter_forge.preview", previewPairs + 1));
+
+        setChanged();
+        sync();
+    }
+
+    private static int minimumTrackPairs()
+    {
+        return VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getRecipes().stream()
+                .mapToInt(recipe -> recipe.getMonolithCount() - 1)
+                .min()
+                .orElse(2);
+    }
+
     public BeamComposition getBeamComposition()
     {
         return beamComposition;
@@ -608,6 +661,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         pillarPos = tag.getBooleanOr("hasPillar", false) ? BlockPos.of(tag.getLongOr("pillarPos", 0L)) : null;
 
+        previewPairs = tag.getIntOr("previewPairs", -1);
+        previewDirection = Direction.from3DDataValue(tag.getByteOr("previewDirection", (byte) Direction.NORTH.get3DDataValue()));
+        previewUntil = tag.getLongOr("previewUntil", 0L);
+
         if (isServer())
         {
             if (isCrafting)
@@ -642,6 +699,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.putBoolean("hasPillar", savedPillarPos != null);
         if (savedPillarPos != null)
             tag.putLong("pillarPos", savedPillarPos.asLong());
+
+        tag.putInt("previewPairs", previewPairs);
+        tag.putByte("previewDirection", (byte) previewDirection.get3DDataValue());
+        tag.putLong("previewUntil", previewUntil);
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));

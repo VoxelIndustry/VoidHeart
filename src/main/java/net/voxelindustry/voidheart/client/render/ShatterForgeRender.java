@@ -46,6 +46,9 @@ public class ShatterForgeRender implements BlockEntityRenderer<ShatterForgeTile,
     {
         itemRender.extractRenderState(forge, state, partialTicks, cameraPosition, breakProgress);
 
+        state.hints.clear();
+        ForgePreviewRender.collectHints(forge, state.hints);
+
         state.beams.clear();
         BlockPos origin = forge.getBlockPos();
         for (var segment : forge.getBeamSegments())
@@ -70,6 +73,7 @@ public class ShatterForgeRender implements BlockEntityRenderer<ShatterForgeTile,
     public void submit(ShatterForgeRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
         itemRender.submit(state, poseStack, collector, camera);
+        ForgePreviewRender.submitHints(state, poseStack, collector);
 
         if (state.beams.isEmpty())
             return;
