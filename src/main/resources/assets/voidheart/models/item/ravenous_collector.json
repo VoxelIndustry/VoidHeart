@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/block",
   "textures": {
-    "all": "voidheart:block/ravenous_collector"
+    "particle": "voidheart:block/ravenous_collector"
   }
 }
