@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "voidheart:block/voidstone_polished",
+    "down": "voidheart:block/voidstone_polished",
+    "up": "voidheart:block/ravenous_gold_block",
+    "north": "voidheart:block/conduit/conduit_lit1",
+    "east": "voidheart:block/voidstone_polished",
+    "south": "voidheart:block/voidstone_polished",
+    "west": "voidheart:block/voidstone_polished"
+  }
+}

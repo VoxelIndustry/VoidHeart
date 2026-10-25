@@ -1,0 +1,26 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:fiery": 6,
+    "voidheart:stillness": 5
+  },
+  "draw": 10000,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:golden_apple"
+      }
+    ]
+  },
+  "monolithCount": 8,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:enchanted_golden_apple"
+      }
+    ]
+  },
+  "time": 200
+}

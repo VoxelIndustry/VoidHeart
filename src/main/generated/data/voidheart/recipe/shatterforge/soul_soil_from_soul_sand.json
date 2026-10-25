@@ -1,0 +1,25 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:stillness": 1
+  },
+  "draw": 500,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:soul_sand"
+      }
+    ]
+  },
+  "monolithCount": 2,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:soul_soil"
+      }
+    ]
+  },
+  "time": 60
+}

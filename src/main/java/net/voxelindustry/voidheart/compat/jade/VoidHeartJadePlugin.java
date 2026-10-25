@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.compat.jade;
 
+import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
@@ -40,5 +41,6 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
 
         registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
+        registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);
     }
 }
