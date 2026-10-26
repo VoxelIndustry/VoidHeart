@@ -12,6 +12,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
+import net.voxelindustry.voidheart.common.content.essence.MultiEssenceStorage;
 
 import java.util.UUID;
 
@@ -60,6 +61,7 @@ public class VoidHeartDataComponents
     public static DataComponentType<Integer>         CORRUPTION;
     public static DataComponentType<Integer>         EXPERIENCE;
     public static DataComponentType<EssenceStorage>  ESSENCE_STORAGE;
+    public static DataComponentType<MultiEssenceStorage> MULTI_ESSENCE_STORAGE;
     public static DataComponentType<BlockPos>        BARRIER_FIRST_POINT;
 
     public static void registerComponents()
@@ -70,6 +72,7 @@ public class VoidHeartDataComponents
         CORRUPTION = register("corruption", Codec.INT);
         EXPERIENCE = register("experience", Codec.INT);
         ESSENCE_STORAGE = register("essence_storage", EssenceStorage.CODEC);
+        MULTI_ESSENCE_STORAGE = register("multi_essence_storage", MultiEssenceStorage.CODEC);
         BARRIER_FIRST_POINT = register("barrier_first_point", BlockPos.CODEC);
     }
 

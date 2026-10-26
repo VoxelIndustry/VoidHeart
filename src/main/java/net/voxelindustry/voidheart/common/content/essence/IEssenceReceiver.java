@@ -1,7 +1,8 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
 /**
- * Destination relays route essence into. It keeps pulling as long as it has room for an aspect.
+ * Storage relays route essence into, as long as it has room for an aspect. The Shatter Forge draws it back out through
+ * the relays when its collectors fall short.
  */
 public interface IEssenceReceiver
 {
@@ -14,4 +15,11 @@ public interface IEssenceReceiver
      * @return amount actually taken in
      */
     int receive(EssenceType type, int amount);
+
+    int amountOf(EssenceType type);
+
+    /**
+     * @return amount actually taken out
+     */
+    int extract(EssenceType type, int amount);
 }

@@ -2,6 +2,8 @@ package net.voxelindustry.voidheart.common.content.essence;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
@@ -12,11 +14,16 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Routes essence across the relays linked together. Collectors are served fullest first: each claims a path of relays
  * free or already carrying its aspect, down to a storage with room for it. A relay carries a single aspect at a time,
  * so a fuller collector of another aspect takes the shared relays over.
+ * <p>
+ * Collectors a Shatter Forge needs more essence from than they hold are served before any other: the forge draws the
+ * shortfall from the storages behind them, and their relays show it flowing back toward the collector.
  */
 public final class RelayNetwork
 {
@@ -57,13 +64,17 @@ public final class RelayNetwork
 
         var flowing = new HashSet<BlockPos>();
         var collectors = new LinkedHashMap<BlockPos, RavenousCollectorTile>();
+        var fed = new LinkedHashMap<BlockPos, RavenousCollectorTile>();
         for (var relay : relays.values())
         {
             flowing.addAll(relay.flowSources());
             for (var pos : relay.linkedCollectors())
             {
-                if (level.isLoaded(pos) && level.getBlockEntity(pos) instanceof RavenousCollectorTile collector
-                        && !collector.storage().isUnattuned() && collector.storage().amount() > 0)
+                if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof RavenousCollectorTile collector) || collector.storage().isUnattuned())
+                    continue;
+                if (collector.isFed())
+                    fed.put(pos, collector);
+                else if (collector.storage().amount() > 0)
                     collectors.put(pos, collector);
             }
         }
@@ -75,10 +86,28 @@ public final class RelayNetwork
         var flows = new HashMap<BlockPos, Flow>();
         relays.keySet().forEach(pos -> flows.put(pos, new Flow()));
 
+        // Only shown, the forge moves the essence itself once its craft completes
+        for (var collector : fed.values())
+        {
+            var aspect = collector.storage().type();
+            var path = findPath(level, relays, flows, collector.getBlockPos(), aspect, receiver -> receiver.amountOf(aspect) > 0);
+            if (path == null)
+                continue;
+
+            for (var i = 0; i < path.relays().size(); i++)
+            {
+                var flow = flows.get(path.relays().get(i).getBlockPos());
+                flow.aspect = aspect;
+                addOnce(flow.targets, i == 0 ? collector.getBlockPos() : path.relays().get(i - 1).getBlockPos());
+                if (i == path.relays().size() - 1)
+                    addOnce(flow.sources, path.receiverPos());
+            }
+        }
+
         for (var collector : byPriority)
         {
             var aspect = collector.storage().type();
-            var path = findPath(level, relays, flows, collector.getBlockPos(), aspect);
+            var path = findPath(level, relays, flows, collector.getBlockPos(), aspect, receiver -> receiver.spaceFor(aspect) > 0);
             if (path == null)
                 continue;
 
@@ -141,12 +170,12 @@ public final class RelayNetwork
     }
 
     /**
-     * Shortest path of relays able to carry the aspect, from one linked to the collector to one linked to a storage
-     * with room for it.
+     * Shortest path of relays able to carry the aspect, from one linked to the collector to one linked to a matching
+     * storage.
      */
     @Nullable
     private static Path findPath(Level level, Map<BlockPos, RavenousRelayTile> relays, Map<BlockPos, Flow> flows,
-                                 BlockPos collectorPos, EssenceType aspect)
+                                 BlockPos collectorPos, EssenceType aspect, Predicate<IEssenceReceiver> matches)
     {
         var parents = new HashMap<BlockPos, BlockPos>();
         var queue = new ArrayDeque<RavenousRelayTile>();
@@ -165,7 +194,7 @@ public final class RelayNetwork
             for (var receiverPos : relay.linkedReceivers())
             {
                 if (level.isLoaded(receiverPos) && level.getBlockEntity(receiverPos) instanceof IEssenceReceiver receiver
-                        && receiver.spaceFor(aspect) > 0)
+                        && matches.test(receiver))
                     return new Path(unwind(relays, parents, relay.getBlockPos()), receiverPos, receiver);
             }
 
@@ -178,6 +207,61 @@ public final class RelayNetwork
             }
         }
         return null;
+    }
+
+    /**
+     * Storages holding the aspect, reachable through the relays linked to a collector. Nearer storages come first.
+     */
+    public static Map<BlockPos, IEssenceReceiver> suppliers(Level level, BlockPos collectorPos, EssenceType aspect)
+    {
+        var suppliers = new LinkedHashMap<BlockPos, IEssenceReceiver>();
+        var visited = new HashSet<BlockPos>();
+        var queue = new ArrayDeque<RavenousRelayTile>();
+        forEachTileInRange(level, collectorPos, RavenousRelayTile.RANGE, tile ->
+        {
+            if (tile instanceof RavenousRelayTile relay && relay.linkedCollectors().contains(collectorPos) && visited.add(relay.getBlockPos()))
+                queue.add(relay);
+        });
+
+        while (!queue.isEmpty())
+        {
+            var relay = queue.poll();
+            for (var pos : relay.linkedReceivers())
+            {
+                if (!suppliers.containsKey(pos) && level.isLoaded(pos) && level.getBlockEntity(pos) instanceof IEssenceReceiver receiver
+                        && receiver.amountOf(aspect) > 0)
+                    suppliers.put(pos, receiver);
+            }
+            for (var pos : relay.linkedRelays())
+            {
+                if (visited.add(pos) && level.isLoaded(pos) && level.getBlockEntity(pos) instanceof RavenousRelayTile next)
+                    queue.add(next);
+            }
+        }
+        return suppliers;
+    }
+
+    /**
+     * Visits the block entities of loaded chunks within range of a block center.
+     */
+    static void forEachTileInRange(Level level, BlockPos origin, int range, Consumer<BlockEntity> action)
+    {
+        var center = Vec3.atCenterOf(origin);
+        for (var chunkX = (origin.getX() - range) >> 4; chunkX <= (origin.getX() + range) >> 4; chunkX++)
+        {
+            for (var chunkZ = (origin.getZ() - range) >> 4; chunkZ <= (origin.getZ() + range) >> 4; chunkZ++)
+            {
+                var chunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
+                if (chunk == null)
+                    continue;
+
+                for (var tile : chunk.getBlockEntities().values())
+                {
+                    if (!tile.isRemoved() && Vec3.atCenterOf(tile.getBlockPos()).distanceTo(center) <= range)
+                        action.accept(tile);
+                }
+            }
+        }
     }
 
     private static boolean canCarry(Flow flow, EssenceType aspect)

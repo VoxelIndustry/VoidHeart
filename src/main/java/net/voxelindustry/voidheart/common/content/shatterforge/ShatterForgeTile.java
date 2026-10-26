@@ -27,7 +27,10 @@ import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
+import org.jetbrains.annotations.Nullable;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
+import net.voxelindustry.voidheart.common.content.essence.RelayNetwork;
 import net.voxelindustry.voidheart.common.content.inventorymover.SingleStackExtractable;
 import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -363,6 +366,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         collectLitBlocks(resolution.structureBlocks());
         updateDrainingCollectors(selected, resolution.collectorContributions());
+        requestCollectorFeeds(selected, resolution.collectorContributions());
 
         var axis = getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS);
         var front = axis == Axis.Z ? Direction.NORTH : Direction.WEST;
@@ -406,6 +410,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         connectedMonolithCount = resolution.totalPairs();
         collectLitBlocks(resolution.structureBlocks());
         updateDrainingCollectors(currentRecipe, resolution.collectorContributions());
+        requestCollectorFeeds(currentRecipe, resolution.collectorContributions());
         for (var pos : connectedBlocks)
         {
             var state = level.getBlockState(pos);
@@ -434,6 +439,17 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     /**
+     * Share of a collector drain taken from a storage behind it, through the relays.
+     */
+    private record SupplyDraw(IEssenceReceiver storage, EssenceType type, int amount)
+    {
+    }
+
+    private record Reservation(IEssenceReceiver storage, EssenceType type)
+    {
+    }
+
+    /**
      * Kept after the craft stops so the beam can dissolve with its collector strands.
      */
     private void updateDrainingCollectors(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
@@ -448,6 +464,18 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         drainingCollectors = collectors;
         setChanged();
         sync();
+    }
+
+    /**
+     * Collectors holding less than their drain show their relays feeding them from storages while the craft goes on.
+     */
+    private void requestCollectorFeeds(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
+    {
+        for (var drain : computeDrains(recipe, contributions))
+        {
+            if (drain.collector().storage().amount() < drain.amount())
+                drain.collector().requestFeed(level.getGameTime() + 40);
+        }
     }
 
     private List<CollectorDrain> computeDrains(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
@@ -484,14 +512,56 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         return drains;
     }
 
+    /**
+     * What each collector lacks is taken from the storages reachable through its relays, nearest first.
+     *
+     * @return null when the storages cannot cover every collector
+     */
+    @Nullable
+    private List<SupplyDraw> planSupply(List<CollectorDrain> drains)
+    {
+        var draws = new ArrayList<SupplyDraw>();
+        var reserved = new HashMap<Reservation, Integer>();
+        for (var drain : drains)
+        {
+            var missing = drain.amount() - drain.collector().storage().amount();
+            if (missing <= 0)
+                continue;
+
+            for (var storage : RelayNetwork.suppliers(level, drain.collector().getBlockPos(), drain.type()).values())
+            {
+                var reservation = new Reservation(storage, drain.type());
+                var taken = Math.min(missing, storage.amountOf(drain.type()) - reserved.getOrDefault(reservation, 0));
+                if (taken <= 0)
+                    continue;
+
+                reserved.merge(reservation, taken, Integer::sum);
+                draws.add(new SupplyDraw(storage, drain.type(), taken));
+                missing -= taken;
+                if (missing == 0)
+                    break;
+            }
+            if (missing > 0)
+                return null;
+        }
+        return draws;
+    }
+
     private boolean hasEnoughEssence(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
     {
-        return computeDrains(recipe, contributions).stream().allMatch(drain -> drain.collector().storage().amount() >= drain.amount());
+        return planSupply(computeDrains(recipe, contributions)) != null;
     }
 
     private void drainEssence(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
     {
-        for (var drain : computeDrains(recipe, contributions))
+        var drains = computeDrains(recipe, contributions);
+        var supply = planSupply(drains);
+        if (supply == null)
+            return;
+
+        for (var draw : supply)
+            draw.storage().extract(draw.type(), draw.amount());
+        for (var drain : drains)
         {
             drain.collector().storage().drain(drain.type(), drain.amount());
             drain.collector().setChanged();

@@ -237,5 +237,10 @@
   "yacl3.config.voidheart:config.shoulderEyeRange": "Range",
   "yacl3.config.voidheart:config.shoulderEyeRange.desc": "How far from its owner a Shoulder Eye fires at the mobs hunting them and the players who hurt them.",
   "yacl3.config.voidheart:config.shoulderEyeRegenSeconds": "Regrowth Seconds",
-  "yacl3.config.voidheart:config.shoulderEyeRegenSeconds.desc": "How many seconds a slain Shoulder Eye takes to grow back before flying back to its owner."
+  "yacl3.config.voidheart:config.shoulderEyeRegenSeconds.desc": "How many seconds a slain Shoulder Eye takes to grow back before flying back to its owner.",
+  "config.jade.plugin_voidheart.ravenous_relay": "Ravenous Relay",
+  "voidheart.jade.relay.transmitting": "Transmitting: %s",
+  "voidheart.jade.relay.idle": "Idle",
+  "voidheart.jade.relay.links": "Linked: %1$s collectors, %2$s storages, %3$s relays",
+  "voidheart.jade.storage.empty": "Empty"
 }
