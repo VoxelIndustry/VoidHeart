@@ -41,7 +41,7 @@ public class ShatterForgeRender implements BlockEntityRenderer<ShatterForgeTile,
     public void submit(ShatterForgeRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
         itemRender.submit(state, poseStack, collector, camera);
-        ForgePreviewRender.submitHints(state, poseStack, collector);
+        ForgePreviewRender.submitHints(state, poseStack, collector, camera);
         VoidBeamRender.submit(state, poseStack, collector);
     }
 

@@ -89,6 +89,17 @@ public final class ShatterForgeLayout
         return out;
     }
 
+    /**
+     * Spots where a collector can retune the track beam: centered one block above each monolith pair of the track.
+     */
+    public static List<BlockPos> optionalCollectors(BlockPos forge, Direction d, int trackPairs)
+    {
+        var out = new ArrayList<BlockPos>();
+        for (var i = 0; i < trackPairs; i++)
+            out.add(at(forge, d, 3 * i + 3, 0, 3));
+        return out;
+    }
+
     public static BlockPos endSlot(BlockPos forge, Direction d, int trackPairs)
     {
         return at(forge, d, 3 * trackPairs + 1, 0, 0);
