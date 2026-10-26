@@ -17,6 +17,7 @@ import net.voxelindustry.voidheart.common.content.beam.BeamComposition;
 import net.voxelindustry.voidheart.common.content.beam.BeamNodeKind;
 import net.voxelindustry.voidheart.common.content.beam.BeamSegment;
 import net.voxelindustry.voidheart.common.content.beam.LevelBeamWorldView;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 
@@ -37,11 +38,11 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  */
 public class VoidBeamRender
 {
-    private static final Identifier VEIL_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/void_veil.png");
+    static final Identifier VEIL_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/void_veil.png");
 
     private static final int FULL_BRIGHT = 15728880;
 
-    private static final int UNATTUNED_COLOR = 0x5EF2A6;
+    static final int UNATTUNED_COLOR = 0x5EF2A6;
     private static final int STILLNESS_COLOR = 0x7FB8FF;
     private static final int FIERY_COLOR     = 0xFF8A3D;
 
@@ -54,6 +55,9 @@ public class VoidBeamRender
     private static final float[] STRAND_HEIGHTS = {0.45F, 1.2F, 1.95F, 2.7F};
     private static final int     STRAND_STEPS   = 10;
 
+    // Corners and vertical edge midpoints of the collector core
+    private static final float[] COLLECTOR_ANCHOR_HEIGHTS = {0.25F, 0.5F, 0.75F};
+
     private static final Vec3 UP = new Vec3(0, 1, 0);
 
     private static final Map<ShatterForgeTile, Layout> LAYOUTS = new WeakHashMap<>();
@@ -63,14 +67,17 @@ public class VoidBeamRender
     {
     }
 
-    private record Pair(Vec3 center, Vec3 side, Vec3 along, float distance, int[] colors, float radius)
+    /**
+     * @param distance beam path distance from the forge to where the strand meets the beam
+     */
+    private record Strand(Vec3 anchor, Vec3 target, int color, float distance, float seed)
     {
     }
 
     /**
      * @param maxDistance longest beam path from a source to the forge
      */
-    private record Layout(List<BeamSegment> source, List<Path> paths, List<Pair> pairs, float maxDistance)
+    private record Layout(List<BeamSegment> source, List<BlockPos> collectors, List<Path> paths, List<Strand> strands, float maxDistance)
     {
     }
 
@@ -88,10 +95,11 @@ public class VoidBeamRender
         if (formation <= 0 || segments.isEmpty())
             return;
 
+        var collectors = forge.getDrainingCollectors();
         var layout = LAYOUTS.get(forge);
-        if (layout == null || layout.source() != segments)
+        if (layout == null || layout.source() != segments || layout.collectors() != collectors)
         {
-            layout = computeLayout(forge.getLevel(), forge.getBlockPos(), segments);
+            layout = computeLayout(forge.getLevel(), forge.getBlockPos(), segments, collectors);
             LAYOUTS.put(forge, layout);
         }
 
@@ -116,12 +124,12 @@ public class VoidBeamRender
                 state.veils.add(veilDraw(path, headOffset, Float.NEGATIVE_INFINITY));
         }
 
-        // Strands start stretching ahead of the front and catch the beam as it passes their pair
-        for (var pair : layout.pairs())
+        // Strands start stretching ahead of the front and catch the beam as it passes them
+        for (var strand : layout.strands())
         {
-            var growth = Math.min(1F, (pair.distance() + STRAND_LEAD - front) / STRAND_LEAD);
+            var growth = Math.min(1F, (strand.distance() + STRAND_LEAD - front) / STRAND_LEAD);
             if (growth > 0)
-                addStrands(state, pair, growth);
+                state.strands.add(strandDraw(strand, growth));
         }
     }
 
@@ -139,13 +147,18 @@ public class VoidBeamRender
                 state.veils.add(veilDraw(path, Float.POSITIVE_INFINITY, tailOffset));
         }
 
-        // Strands let go of the beam and fall back to their monoliths as the tail passes their pair
-        for (var pair : layout.pairs())
+        // Strands let go of the beam and fall back to their anchors as the tail passes them
+        for (var strand : layout.strands())
         {
-            var growth = Math.min(1F, (tail - pair.distance()) / STRAND_LEAD + 0.5F);
+            var growth = Math.min(1F, (tail - strand.distance()) / STRAND_LEAD + 0.5F);
             if (growth > 0)
-                addStrands(state, pair, growth);
+                state.strands.add(strandDraw(strand, growth));
         }
+    }
+
+    private static StrandDraw strandDraw(Strand strand, float growth)
+    {
+        return new StrandDraw(strand.anchor(), strand.target(), strand.color(), growth, strand.seed());
     }
 
     private static VeilDraw veilDraw(Path path, float headOffset, float tailOffset)
@@ -173,7 +186,10 @@ public class VoidBeamRender
     // LAYOUT //
     ////////////
 
-    private static Layout computeLayout(Level level, BlockPos origin, List<BeamSegment> segments)
+    /**
+     * @param collectors collectors the recipe draws from, the only ones lending strands to the beam
+     */
+    private static Layout computeLayout(Level level, BlockPos origin, List<BeamSegment> segments, List<BlockPos> collectors)
     {
         var view = new LevelBeamWorldView(level);
         var trackY = origin.getY();
@@ -193,8 +209,9 @@ public class VoidBeamRender
         }
 
         var paths = new ArrayList<Path>();
-        var pairs = new ArrayList<Pair>();
+        var strands = new ArrayList<Strand>();
         var visitedCells = new HashSet<BlockPos>();
+        var visitedCollectors = new HashSet<BlockPos>();
         var maxDistance = 0F;
 
         for (var segment : segments)
@@ -233,10 +250,25 @@ public class VoidBeamRender
                         || view.kindAt(cell.offset(stepZ * 2, 0, -stepX * 2)) != BeamNodeKind.MONOLITH)
                     continue;
 
-                pairs.add(new Pair(toPoint.lerp(fromPoint, f / length), side, along, toDistance + f, colors, radius));
+                addPairStrands(strands, toPoint.lerp(fromPoint, f / length), side, along, toDistance + f, radius);
+            }
+
+            // Collectors drained by the craft lend their aspect: their strands carry the colour into the beam
+            var travel = along.scale(-1);
+            for (var end : List.of(segment.from(), segment.to()))
+            {
+                if (!collectors.contains(end) || !visitedCollectors.add(end))
+                    continue;
+                var aspect = view.collectorAspect(end);
+                if (aspect == null || aspect == EssenceRegistry.EMPTY)
+                    continue;
+
+                var atFrom = end.equals(segment.from());
+                addCollectorStrands(strands, end, origin, atFrom ? fromPoint : toPoint, travel, end.getY() - trackY >= 2,
+                        atFrom ? startDistance : toDistance, aspectColor(aspect), radius);
             }
         }
-        return new Layout(segments, paths, pairs, maxDistance);
+        return new Layout(segments, collectors, paths, strands, maxDistance);
     }
 
     private static BlockPos onTrack(BlockPos pos, int trackY)
@@ -257,7 +289,10 @@ public class VoidBeamRender
         return new Vec3(pos.getX() - origin.getX() + 0.5, ShatterForgeTile.BEAM_HEIGHT, pos.getZ() - origin.getZ() + 0.5);
     }
 
-    private static void addStrands(ShatterForgeRenderState state, Pair pair, float growth)
+    /**
+     * Monoliths only lend unattuned energy, their strands keep the unattuned colour whatever the beam becomes.
+     */
+    private static void addPairStrands(List<Strand> strands, Vec3 center, Vec3 sideways, Vec3 along, float distance, float radius)
     {
         var index = 0;
         for (var side = -1; side <= 1; side += 2)
@@ -267,13 +302,42 @@ public class VoidBeamRender
                 for (var height : STRAND_HEIGHTS)
                 {
                     // Vertical edges of the inner face of each monolith column
-                    var edgePoint = pair.center().add(pair.side().scale(side * 1.5)).add(pair.along().scale(edge * 0.5));
+                    var edgePoint = center.add(sideways.scale(side * 1.5)).add(along.scale(edge * 0.5));
                     var anchor = new Vec3(edgePoint.x, height, edgePoint.z);
-                    var target = pair.center()
-                            .add(pair.along().scale(edge * 0.18))
-                            .add(anchor.subtract(pair.center()).normalize().scale(pair.radius() * 0.7));
+                    var target = center
+                            .add(along.scale(edge * 0.18))
+                            .add(anchor.subtract(center).normalize().scale(radius * 0.7));
 
-                    state.strands.add(new StrandDraw(anchor, target, pair.colors()[index % VEIL_COUNT], growth, index * 1.7F + pair.distance()));
+                    strands.add(new Strand(anchor, target, UNATTUNED_COLOR, distance, index * 1.7F + distance));
+                    index++;
+                }
+            }
+        }
+    }
+
+    /**
+     * Strands from the corners and vertical edges of a collector core. A collector above a monolith pair hangs its
+     * strands down onto the beam, a collector emitting a track reaches forward along the beam toward the forge.
+     *
+     * @param travel horizontal direction the beam flows in at the collector
+     */
+    private static void addCollectorStrands(List<Strand> strands, BlockPos collector, BlockPos origin, Vec3 beamPoint, Vec3 travel,
+                                            boolean hanging, float distance, int color, float radius)
+    {
+        var base = new Vec3(collector.getX() - origin.getX(), collector.getY() - origin.getY(), collector.getZ() - origin.getZ());
+        var index = 0;
+        for (var y : COLLECTOR_ANCHOR_HEIGHTS)
+        {
+            for (var x = 0; x <= 1; x++)
+            {
+                for (var z = 0; z <= 1; z++)
+                {
+                    var anchor = base.add(0.25 + x * 0.5, y, 0.25 + z * 0.5);
+                    var reach = hanging ? (index % 2 == 0 ? -0.45 : 0.45) : 0.9 + index * 0.12;
+                    var meeting = beamPoint.add(travel.scale(reach));
+                    var target = meeting.add(anchor.subtract(meeting).normalize().scale(radius * 0.7));
+
+                    strands.add(new Strand(anchor, target, color, distance - (float) Math.max(0, reach), index * 2.3F + distance));
                     index++;
                 }
             }
@@ -356,7 +420,7 @@ public class VoidBeamRender
         return colors;
     }
 
-    private static int aspectColor(EssenceType aspect)
+    static int aspectColor(EssenceType aspect)
     {
         return switch (aspect.identifier().getPath())
         {
@@ -523,15 +587,12 @@ public class VoidBeamRender
         var control = anchor.add(target).scale(0.5).add(0, -0.12F * span + sway, 0);
 
         var steps = Math.max(1, Mth.ceil(STRAND_STEPS * strand.growth()));
-        float[] previousSide = null;
-        float[] previousOther = null;
+        float[][] previous = null;
         for (var j = 0; j <= steps; j++)
         {
             var u = strand.growth() * j / steps;
             var point = bezier(anchor, control, target, u);
-            var tangent = control.subtract(anchor).scale(1 - u).add(target.subtract(control).scale(u)).normalize();
-            var side = tangent.cross(Math.abs(tangent.y) > 0.99 ? new Vec3(1, 0, 0) : UP).normalize();
-            var other = tangent.cross(side);
+            var tangent = control.subtract(anchor).scale(1 - u).add(target.subtract(control).scale(u));
 
             var halfWidth = Mth.lerp(u, 0.075F, 0.025F) / 2;
             var alpha = 0.55F * (1 - 0.35F * u);
@@ -539,15 +600,10 @@ public class VoidBeamRender
                 alpha *= Mth.clamp((strand.growth() - u) / 0.15F, 0F, 1F);
             var v = u * span * 0.8F - time * 0.05F + strand.seed();
 
-            var currentSide = edges(point.subtract(side.scale(halfWidth)), point.add(side.scale(halfWidth)), alpha, v);
-            var currentOther = edges(point.subtract(other.scale(halfWidth)), point.add(other.scale(halfWidth)), alpha, v);
-            if (previousSide != null)
-            {
-                strip(pose, buffer, strand.color(), previousSide, currentSide);
-                strip(pose, buffer, strand.color(), previousOther, currentOther);
-            }
-            previousSide = currentSide;
-            previousOther = currentOther;
+            var current = crossedSection(point, tangent, halfWidth, alpha, v);
+            if (previous != null)
+                crossedStrip(pose, buffer, strand.color(), previous, current);
+            previous = current;
         }
     }
 
@@ -555,6 +611,26 @@ public class VoidBeamRender
     {
         var inverse = 1 - u;
         return start.scale(inverse * inverse).add(control.scale(2 * inverse * u)).add(end.scale(u * u));
+    }
+
+    /**
+     * Cross-section of a filament: two crossed bands around the curve, so it reads as round from every side.
+     */
+    static float[][] crossedSection(Vec3 point, Vec3 tangent, float halfWidth, float alpha, float v)
+    {
+        var direction = tangent.normalize();
+        var side = direction.cross(Math.abs(direction.y) > 0.99 ? new Vec3(1, 0, 0) : UP).normalize();
+        var other = direction.cross(side);
+        return new float[][]{
+                edges(point.subtract(side.scale(halfWidth)), point.add(side.scale(halfWidth)), alpha, v),
+                edges(point.subtract(other.scale(halfWidth)), point.add(other.scale(halfWidth)), alpha, v)
+        };
+    }
+
+    static void crossedStrip(PoseStack.Pose pose, VertexConsumer buffer, int color, float[][] a, float[][] b)
+    {
+        strip(pose, buffer, color, a[0], b[0]);
+        strip(pose, buffer, color, a[1], b[1]);
     }
 
     //////////////
