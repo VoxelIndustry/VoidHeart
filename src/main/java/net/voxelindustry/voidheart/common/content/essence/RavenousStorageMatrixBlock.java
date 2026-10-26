@@ -33,7 +33,7 @@ public class RavenousStorageMatrixBlock extends Block implements EntityBlock
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
-        return new RavenousStorageTile(pos, state);
+        return new RavenousStorageMatrixTile(pos, state);
     }
 
     public enum RavenousStorageMatrixPart implements StringRepresentable

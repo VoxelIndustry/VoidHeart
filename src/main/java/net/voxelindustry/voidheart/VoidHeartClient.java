@@ -60,6 +60,7 @@ import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.client.render.ShatterForgeRender;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
+import net.voxelindustry.voidheart.client.render.RavenousRelayRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -103,6 +104,7 @@ public class VoidHeartClient implements ClientModInitializer
         ItemTooltipCallback.EVENT.register(ResearchScreen::appendKnowledgeTooltip);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
+        BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
 
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
 

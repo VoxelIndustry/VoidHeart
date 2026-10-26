@@ -27,8 +27,12 @@ public class MultiEssenceStorage implements IEssenceStorage
             {
                 var storage = new MultiEssenceStorage(maximumAmount, storageCount);
 
+                // Free slots are saved as the empty aspect
                 for (int i = 0; i < amounts.length; i++)
-                    storage.set(i, EssenceRegistry.ESSENCE_REGISTRY.getValue(types[i]), amounts[i]);
+                {
+                    var type = EssenceRegistry.ESSENCE_REGISTRY.getValue(types[i]);
+                    storage.set(i, type == EssenceRegistry.EMPTY ? null : type, amounts[i]);
+                }
 
                 return storage;
             }));
@@ -53,6 +57,7 @@ public class MultiEssenceStorage implements IEssenceStorage
         if (index == -1)
             return 0;
 
+        types[index] = type;
         var previousAmount = this.amounts[index];
         this.amounts[index] = Math.min(maximumAmount, this.amounts[index] + amount);
         return this.amounts[index] - previousAmount;
@@ -72,6 +77,15 @@ public class MultiEssenceStorage implements IEssenceStorage
         var previousAmount = this.amounts[index];
         this.amounts[index] = Math.max(0, this.amounts[index] - amount);
         return previousAmount - this.amounts[index];
+    }
+
+    /**
+     * @return room left in the slot holding this aspect, or in a free slot when none does
+     */
+    public int spaceFor(EssenceType type)
+    {
+        var index = findIndexFor(type);
+        return index == -1 ? 0 : maximumAmount - amounts[index];
     }
 
     public void set(int index, EssenceType type, int amount)
@@ -104,7 +118,7 @@ public class MultiEssenceStorage implements IEssenceStorage
     @SuppressWarnings("unchecked")
     private ResourceKey<EssenceType>[] typeKeys()
     {
-        return Arrays.stream(types).map(type -> EssenceRegistry.ESSENCE_REGISTRY.getResourceKey(type).get()).toArray(ResourceKey[]::new);
+        return Arrays.stream(types).map(type -> EssenceRegistry.ESSENCE_REGISTRY.getResourceKey(type == null ? EssenceRegistry.EMPTY : type).get()).toArray(ResourceKey[]::new);
     }
 
     public int maximumAmount()

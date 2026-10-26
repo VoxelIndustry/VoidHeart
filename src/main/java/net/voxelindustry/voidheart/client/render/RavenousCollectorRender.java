@@ -34,7 +34,6 @@ public class RavenousCollectorRender extends GeoBlockRenderer<RavenousCollectorT
         private static final DataTicket<Harvest> HARVEST = DataTicket.create("voidheart_collector_harvest", Harvest.class);
 
         private static final int   STRANDS      = 6;
-        private static final int   STRAND_STEPS = 16;
         private static final Vec3  CORE_CENTER  = new Vec3(0, 0.5, 0);
 
         /**
@@ -73,59 +72,11 @@ public class RavenousCollectorRender extends GeoBlockRenderer<RavenousCollectorT
             if (harvest == null)
                 return;
 
-            collector.submitCustomGeometry(renderPassInfo.poseStack(), RenderTypes.beaconBeam(VoidBeamRender.VEIL_TEXTURE, true), (pose, buffer) ->
-            {
-                for (var i = 0; i < STRANDS; i++)
-                    renderStrand(pose, buffer, harvest, i);
-            });
-        }
-
-        private static void renderStrand(PoseStack.Pose pose, VertexConsumer buffer, Harvest harvest, int index)
-        {
-            var time = harvest.time();
-            var toCore = CORE_CENTER.subtract(harvest.source());
-            var length = (float) toCore.length();
-            var direction = toCore.normalize();
-            var side = direction.cross(Math.abs(direction.y) > 0.99 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0)).normalize();
-            var other = direction.cross(side);
-
             // Rooted on the harvested block surface facing the collector, converging inside the core
-            var rootAngle = Mth.TWO_PI * index / STRANDS + PlasmaLoopLayer.noise(harvest.seed(), index, 0, 0);
-            var anchor = harvest.source()
-                    .add(direction.scale(0.45))
-                    .add(side.scale(0.32 * Mth.cos(rootAngle)))
-                    .add(other.scale(0.32 * Mth.sin(rootAngle)));
-            var target = CORE_CENTER
-                    .add(side.scale(0.08 * Mth.cos(rootAngle)))
-                    .add(other.scale(0.08 * Mth.sin(rootAngle)));
-
-            // Writhing: each strand bows sideways and its bow slowly rolls around the axis
-            var bowAngle = rootAngle + time * (0.05F + 0.03F * PlasmaLoopLayer.noise(harvest.seed(), index, 0, 1));
-            var bow = side.scale(Mth.cos(bowAngle)).add(other.scale(Mth.sin(bowAngle))).scale(0.18 * length * (0.6 + 0.4 * Mth.sin(time * 0.13F + index)));
-            var control = anchor.add(target).scale(0.5).add(bow);
-
-            var growth = harvest.growth();
-            var steps = Math.max(1, Mth.ceil(STRAND_STEPS * growth));
-            float[][] previous = null;
-            for (var j = 0; j <= steps; j++)
-            {
-                var u = growth * j / steps;
-                var inverse = 1 - u;
-                var point = anchor.scale(inverse * inverse).add(control.scale(2 * inverse * u)).add(target.scale(u * u));
-                var tangent = control.subtract(anchor).scale(inverse).add(target.subtract(control).scale(u));
-
-                // Ripples travel along the strand toward the collector as essence is drawn in
-                var ripple = 0.75F + 0.25F * Mth.sin(u * length * 4 - time * 0.4F + index);
-                var halfWidth = Mth.lerp(u, 0.035F, 0.015F) * ripple;
-                var alpha = 0.6F * ripple;
-                if (growth < 1)
-                    alpha *= Mth.clamp((growth - u) / 0.12F, 0F, 1F);
-
-                var current = VoidBeamRender.crossedSection(point, tangent, halfWidth, alpha, u * length - time * 0.12F + index * 0.37F);
-                if (previous != null)
-                    VoidBeamRender.crossedStrip(pose, buffer, harvest.color(), previous, current);
-                previous = current;
-            }
+            var bundle = new EssenceStrandRender.Bundle(harvest.source(), CORE_CENTER, 0.45F, 0.32F, 0.08F, harvest.growth(), harvest.color(),
+                    harvest.seed(), STRANDS);
+            collector.submitCustomGeometry(renderPassInfo.poseStack(), RenderTypes.beaconBeam(VoidBeamRender.VEIL_TEXTURE, true),
+                    (pose, buffer) -> EssenceStrandRender.render(pose, buffer, bundle, harvest.time()));
         }
     }
 

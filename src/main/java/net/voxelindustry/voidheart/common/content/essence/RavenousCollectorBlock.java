@@ -60,6 +60,8 @@ public class RavenousCollectorBlock extends Block implements EntityBlock
             return InteractionResult.PASS;
 
         collector.storage().attune(essenceType);
+        collector.setChanged();
+        collector.sync();
 
         return InteractionResult.SUCCESS;
     }
