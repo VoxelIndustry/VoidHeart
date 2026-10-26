@@ -71,7 +71,9 @@ public class VoidHeartClient implements ClientModInitializer
     {
         ModelLoadingPlugin.register(new VoidHeartModelLoadingPlugin());
 
-        BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<>(ctx, VoidPillarTile::getStack, 1.1));
+        // A forge source pillar raises its item to the forge item height so the beam runs level
+        BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<VoidPillarTile>(ctx, VoidPillarTile::getStack,
+                pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.VOID_HEART, VoidHeartRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.EXPERIENCE_SKULL, ExperienceSkullRender::new);
