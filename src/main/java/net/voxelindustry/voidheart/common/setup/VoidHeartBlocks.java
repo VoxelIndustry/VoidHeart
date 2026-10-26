@@ -31,6 +31,7 @@ import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlockItem;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageItemBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
@@ -353,13 +354,13 @@ public class VoidHeartBlocks
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
-                .sound(SoundType.STONE), true);
+                .sound(SoundType.STONE), RavenousStorageBlockItem::new);
         RAVENOUS_STORAGE_MATRIX = registerBlock("ravenous_storage_matrix", RavenousStorageMatrixBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
-                .sound(SoundType.STONE), true);
+                .sound(SoundType.STONE), RavenousStorageBlockItem::new);
         RAVENOUS_RELAY = registerBlock("ravenous_relay", RavenousRelayBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
