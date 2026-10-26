@@ -49,6 +49,23 @@ class ShatterForgeLayoutTest
     }
 
     @Test
+    void optionalCollectors_givenCollectorOnEachSpot_thenResolverRetunesWithIt()
+    {
+        build(Direction.SOUTH, 3, true);
+
+        for (var collectorPos : ShatterForgeLayout.optionalCollectors(FORGE, Direction.SOUTH, 3))
+        {
+            view.kinds.put(collectorPos, BeamNodeKind.COLLECTOR);
+
+            var resolution = BeamResolver.resolve(view, FORGE);
+
+            assertThat(resolution.error()).isEmpty();
+            assertThat(resolution.structureBlocks()).contains(collectorPos);
+            view.kinds.remove(collectorPos);
+        }
+    }
+
+    @Test
     void inferDirection_givenNothingBuilt_thenFront()
     {
         assertThat(ShatterForgeLayout.inferDirection(view, FORGE, Direction.Axis.Z)).isEqualTo(Direction.NORTH);
