@@ -44,7 +44,8 @@ public class ShatterForgeItemParticle extends SingleQuadParticle
         start = new Vector3d(x, y, z);
         end = new Vector3d(destinationX, destinationY, destinationZ);
 
-        lifetime = 20;
+        // Same speed on every beam segment
+        lifetime = Math.max(6, (int) (start.distance(end) * 2.5));
 
         quadSize = 0.1F * (random.nextFloat() * 0.5F + 0.5F);
 

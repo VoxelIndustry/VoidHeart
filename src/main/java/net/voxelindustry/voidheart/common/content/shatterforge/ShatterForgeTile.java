@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.shatterforge;
 
 import net.voxelindustry.voidheart.common.content.beam.BeamComposition;
+import net.voxelindustry.voidheart.common.content.beam.BeamResolution;
 import net.voxelindustry.voidheart.common.content.beam.BeamResolver;
 import net.voxelindustry.voidheart.common.content.beam.BeamSegment;
 import net.voxelindustry.voidheart.common.content.beam.FormationError;
@@ -41,6 +42,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static java.util.Collections.singletonList;
@@ -73,6 +75,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     private int connectedMonolithCount;
     private Direction trackDirection;
+    private BlockPos sourcePillarPos;
 
     private static final int PREVIEW_DURATION_TICKS = 30 * 20;
 
@@ -94,6 +97,21 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     private ItemStack clientRecipeOutput = ItemStack.EMPTY;
     private BlockPos pillarPos;
     private final long[] runeHeartbeats = new long[ShatterForgeLayout.MAX_TRACK_PAIRS * 4];
+
+    /**
+     * Height above the forge level at which beams, item particles and source items line up.
+     */
+    public static final float BEAM_HEIGHT = 1.35F;
+
+    private static final int BEAM_FORM_MIN_TICKS = 30;
+
+    private int beamFormTicks;
+    private int previousBeamFormTicks;
+    /**
+     * Last non-empty beam segments, kept so the beam can dissolve after the craft stops.
+     */
+    @Getter
+    private List<BeamSegment> displayedBeamSegments = List.of();
 
     public ShatterForgeTile(BlockPos pos, BlockState state)
     {
@@ -128,22 +146,79 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         if (isCrafting && recipeProgress > 1 && pillarPos != null && !clientRecipeOutput.isEmpty())
         {
-            for (int i = 0; i < 2; i++)
+            var beamY = getBlockPos().getY() + BEAM_HEIGHT;
+            for (var segment : itemPath())
             {
-                getLevel().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
-                        pillarPos.getX() + 0.5,
-                        pillarPos.getY() + 1.3,
-                        pillarPos.getZ() + 0.5,
-                        getBlockPos().getX() + 0.5,
-                        getBlockPos().getY() + 1.3,
-                        getBlockPos().getZ() + 0.5);
+                for (int i = 0; i < 2; i++)
+                {
+                    getLevel().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
+                            segment.from().getX() + 0.5,
+                            beamY,
+                            segment.from().getZ() + 0.5,
+                            segment.to().getX() + 0.5,
+                            beamY,
+                            segment.to().getZ() + 0.5);
+                }
             }
         }
+    }
+
+    /**
+     * Beam segments the input item travels through, from its pillar to the forge.
+     */
+    private List<BeamSegment> itemPath()
+    {
+        var path = new ArrayList<BeamSegment>();
+        var current = pillarPos;
+        while (current != null && !current.equals(getBlockPos()) && path.size() < beamSegments.size())
+        {
+            BeamSegment next = null;
+            for (var segment : beamSegments)
+            {
+                if (segment.from().equals(current))
+                    next = segment;
+            }
+            if (next == null)
+                break;
+            path.add(next);
+            current = next.to();
+        }
+        return path;
     }
 
     public int getWarmingTime()
     {
         return connectedMonolithCount * 25;
+    }
+
+    private int getBeamFormDuration()
+    {
+        return Math.max(BEAM_FORM_MIN_TICKS, getWarmingTime());
+    }
+
+    /**
+     * Beams form over the warm-up while crafting and dissolve at the same pace once it stops.
+     */
+    private void tickBeamFormation()
+    {
+        if (!beamSegments.isEmpty())
+            displayedBeamSegments = beamSegments;
+
+        var duration = getBeamFormDuration();
+        previousBeamFormTicks = Math.min(beamFormTicks, duration);
+        if (isCrafting && !displayedBeamSegments.isEmpty())
+            beamFormTicks = Math.min(duration, beamFormTicks + 1);
+        else
+            beamFormTicks = Math.max(0, beamFormTicks - 1);
+    }
+
+    /**
+     * @return 0 when no beam is shown, 1 once the beam is fully formed
+     */
+    public float getBeamFormation(float partialTicks)
+    {
+        var ticks = previousBeamFormTicks + (beamFormTicks - previousBeamFormTicks) * partialTicks;
+        return Math.clamp(ticks / getBeamFormDuration(), 0F, 1F);
     }
 
     private int litRuneCount()
@@ -224,6 +299,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         currentRecipe = null;
 
         var resolution = BeamResolver.resolve(level, worldPosition);
+        markSourcePillar(resolution);
         if (resolution.error().isPresent())
         {
             updateBeamState(List.of(), BeamComposition.EMPTY, resolution.error().get());
@@ -295,6 +371,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     private boolean isCraftingStillValid()
     {
         var resolution = BeamResolver.resolve(level, worldPosition);
+        markSourcePillar(resolution);
         if (resolution.error().isPresent())
         {
             updateBeamState(List.of(), BeamComposition.EMPTY, resolution.error().get());
@@ -398,6 +475,31 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         }
     }
 
+    /**
+     * Tells the item source pillar of a valid structure to raise its item to the beam height, and the previous one to
+     * lower it back.
+     */
+    private void markSourcePillar(BeamResolution resolution)
+    {
+        BlockPos source = null;
+        if (resolution.isValid() && resolution.itemSource().isPresent() && level.getBlockEntity(resolution.itemSource().get()) instanceof VoidPillarTile)
+            source = resolution.itemSource().get();
+        setSourcePillar(source);
+    }
+
+    private void setSourcePillar(BlockPos source)
+    {
+        if (Objects.equals(source, sourcePillarPos))
+            return;
+
+        if (sourcePillarPos != null && level.getBlockEntity(sourcePillarPos) instanceof VoidPillarTile previous)
+            previous.clearSourceOfForge(worldPosition);
+        sourcePillarPos = source;
+        if (source != null && level.getBlockEntity(source) instanceof VoidPillarTile current)
+            current.setSourceOfForge(worldPosition);
+        setChanged();
+    }
+
     private void updateBeamState(List<BeamSegment> segments, BeamComposition composition, FormationError error)
     {
         var changed = !segments.equals(beamSegments) || !composition.equals(beamComposition) || error != formationError;
@@ -496,6 +598,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     public void removeItself()
     {
         unlinkPillar();
+        setSourcePillar(null);
     }
 
     public void startCrafting()
@@ -557,6 +660,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (forge.isClient())
         {
             forge.playParticleEffects();
+            forge.tickBeamFormation();
 
             if (forge.isCrafting && forge.warmProgress < forge.getWarmingTime())
                 forge.warmProgress++;
@@ -622,6 +726,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
                     return;
 
                 var completionResolution = BeamResolver.resolve(world, pos);
+                forge.markSourcePillar(completionResolution);
                 if (completionResolution.error().isPresent()
                         || !forge.hasEnoughEssence(forge.currentRecipe, completionResolution.collectorContributions()))
                 {
@@ -671,6 +776,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         trackDirection = Direction.from3DDataValue(tag.getByteOr("trackDirection", (byte) 0));
 
         pillarPos = tag.getBooleanOr("hasPillar", false) ? BlockPos.of(tag.getLongOr("pillarPos", 0L)) : null;
+        sourcePillarPos = tag.getBooleanOr("hasSourcePillar", false) ? BlockPos.of(tag.getLongOr("sourcePillarPos", 0L)) : null;
 
         previewPairs = tag.getIntOr("previewPairs", -1);
         previewDirection = Direction.from3DDataValue(tag.getByteOr("previewDirection", (byte) Direction.NORTH.get3DDataValue()));
@@ -710,6 +816,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.putBoolean("hasPillar", savedPillarPos != null);
         if (savedPillarPos != null)
             tag.putLong("pillarPos", savedPillarPos.asLong());
+
+        tag.putBoolean("hasSourcePillar", sourcePillarPos != null);
+        if (sourcePillarPos != null)
+            tag.putLong("sourcePillarPos", sourcePillarPos.asLong());
 
         tag.putInt("previewPairs", previewPairs);
         tag.putByte("previewDirection", (byte) previewDirection.get3DDataValue());

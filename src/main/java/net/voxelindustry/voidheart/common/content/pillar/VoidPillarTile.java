@@ -25,6 +25,11 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
 
     private final List<BlockPos> altars = new ArrayList<>();
 
+    /**
+     * Shatter Forge using this pillar as its item source, its item is raised to the forge beam height.
+     */
+    private BlockPos sourceOfForge;
+
     public VoidPillarTile(BlockPos pos, BlockState state)
     {
         super(VoidHeartTiles.VOID_PILLAR, pos, state);
@@ -50,6 +55,8 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
         int pillarCount = tag.getIntOr("pillarCount", 0);
         for (int index = 0; index < pillarCount; index++)
             altars.add(BlockPos.of(tag.getLongOr("pillar" + index, 0L)));
+
+        sourceOfForge = tag.getBooleanOr("hasSourceOfForge", false) ? BlockPos.of(tag.getLongOr("sourceOfForge", 0L)) : null;
     }
 
     @Override
@@ -61,7 +68,37 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
         for (int index = 0; index < altars.size(); index++)
             tag.putLong("pillar" + index, altars.get(index).asLong());
 
+        tag.putBoolean("hasSourceOfForge", sourceOfForge != null);
+        if (sourceOfForge != null)
+            tag.putLong("sourceOfForge", sourceOfForge.asLong());
+
         super.saveAdditional(tag);
+    }
+
+    public boolean isForgeSource()
+    {
+        return sourceOfForge != null;
+    }
+
+    public void setSourceOfForge(BlockPos forgePos)
+    {
+        if (forgePos.equals(sourceOfForge))
+            return;
+        sourceOfForge = forgePos;
+        setChanged();
+        sync();
+    }
+
+    /**
+     * Only clears when the given forge is the one using this pillar.
+     */
+    public void clearSourceOfForge(BlockPos forgePos)
+    {
+        if (!forgePos.equals(sourceOfForge))
+            return;
+        sourceOfForge = null;
+        setChanged();
+        sync();
     }
 
     public void setStack(ItemStack stack)

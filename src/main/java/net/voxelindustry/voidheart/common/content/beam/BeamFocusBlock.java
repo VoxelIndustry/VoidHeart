@@ -17,7 +17,11 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.List;
 
@@ -26,6 +30,13 @@ import java.util.List;
  */
 public class BeamFocusBlock extends Block
 {
+    // The prism floating above at beam height is left out so it does not block the beam path
+    private static final VoxelShape SHAPE = Shapes.or(
+            box(1, 0, 1, 15, 3, 15),
+            box(4, 3, 4, 12, 10, 12),
+            box(2, 10, 2, 14, 12, 14)
+    );
+
     public BeamFocusBlock(Properties settings)
     {
         super(settings
@@ -43,6 +54,12 @@ public class BeamFocusBlock extends Block
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
         builder.add(BlockStateProperties.HORIZONTAL_FACING);
+    }
+
+    @Override
+    protected VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
+    {
+        return SHAPE;
     }
 
     @Override
