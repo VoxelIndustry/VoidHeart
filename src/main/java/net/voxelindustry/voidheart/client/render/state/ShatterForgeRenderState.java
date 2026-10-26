@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.client.render.state;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.FormattedCharSequence;
+import org.jspecify.annotations.Nullable;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
@@ -26,7 +28,17 @@ public class ShatterForgeRenderState extends FloatingItemRenderState
     {
     }
 
-    public record HintDraw(BlockPos offset, BlockState ghostState, boolean conflict, boolean shrink)
+    public enum HintKind
+    {
+        MISSING,
+        CONFLICT,
+        OPTIONAL
+    }
+
+    /**
+     * @param label text floating above the hint, null for none
+     */
+    public record HintDraw(BlockPos offset, @Nullable BlockState ghostState, HintKind kind, boolean shrink, @Nullable FormattedCharSequence label, int labelWidth)
     {
     }
 
