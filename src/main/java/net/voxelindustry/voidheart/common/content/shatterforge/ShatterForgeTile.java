@@ -72,6 +72,11 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     @Getter
     private List<BeamSegment> beamSegments = List.of();
     private BeamComposition beamComposition = BeamComposition.EMPTY;
+    /**
+     * Collectors the current recipe draws essence from.
+     */
+    @Getter
+    private List<BlockPos> drainingCollectors = List.of();
 
     private int connectedMonolithCount;
     private Direction trackDirection;
@@ -357,6 +362,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         }
 
         collectLitBlocks(resolution.structureBlocks());
+        updateDrainingCollectors(selected, resolution.collectorContributions());
 
         var axis = getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS);
         var front = axis == Axis.Z ? Direction.NORTH : Direction.WEST;
@@ -399,6 +405,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         connectedMonolithCount = resolution.totalPairs();
         collectLitBlocks(resolution.structureBlocks());
+        updateDrainingCollectors(currentRecipe, resolution.collectorContributions());
         for (var pos : connectedBlocks)
         {
             var state = level.getBlockState(pos);
@@ -424,6 +431,23 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     private record CollectorDrain(RavenousCollectorTile collector, EssenceType type, int amount)
     {
+    }
+
+    /**
+     * Kept after the craft stops so the beam can dissolve with its collector strands.
+     */
+    private void updateDrainingCollectors(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
+    {
+        var collectors = computeDrains(recipe, contributions).stream()
+                .map(drain -> drain.collector().getBlockPos().immutable())
+                .sorted()
+                .toList();
+        if (collectors.equals(drainingCollectors))
+            return;
+
+        drainingCollectors = collectors;
+        setChanged();
+        sync();
     }
 
     private List<CollectorDrain> computeDrains(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
@@ -768,6 +792,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         warmProgress = tag.getIntOr("warmProgress", 0);
         beamSegments = tag.read("beamSegments", BeamSegment.CODEC.listOf()).orElse(List.of());
         beamComposition = tag.read("beamComposition", BeamComposition.CODEC).orElse(BeamComposition.EMPTY);
+        drainingCollectors = tag.read("drainingCollectors", BlockPos.CODEC.listOf()).orElse(List.of());
         formationError = tag.getStringOr("formationError", "").isEmpty() ? null : parseError(tag.getStringOr("formationError", ""));
         isCrafting = tag.getBooleanOr("isCrafting", false);
         hasOutputtedResult = tag.getBooleanOr("hasOutputtedResult", false);
@@ -804,6 +829,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.putInt("warmProgress", warmProgress);
         tag.store("beamSegments", BeamSegment.CODEC.listOf(), beamSegments);
         tag.store("beamComposition", BeamComposition.CODEC, beamComposition);
+        tag.store("drainingCollectors", BlockPos.CODEC.listOf(), drainingCollectors);
         tag.putString("formationError", formationError == null ? "" : formationError.name());
         tag.putBoolean("isCrafting", isCrafting);
         tag.putInt("connectedMonolithCount", connectedMonolithCount);
