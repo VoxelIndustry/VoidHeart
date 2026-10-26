@@ -365,6 +365,7 @@ public class VoidHeartBlocks
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
+                .noOcclusion()
                 .sound(SoundType.STONE), true);
 
         VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, "voidstone_pillar");

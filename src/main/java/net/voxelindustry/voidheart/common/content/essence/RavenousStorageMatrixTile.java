@@ -7,7 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
-public class RavenousStorageMatrixTile extends BlockEntity
+public class RavenousStorageMatrixTile extends BlockEntity implements IEssenceReceiver
 {
     public static final int CAPACITY = 32_000;
 
@@ -16,6 +16,21 @@ public class RavenousStorageMatrixTile extends BlockEntity
     public RavenousStorageMatrixTile(BlockPos pos, BlockState state)
     {
         super(VoidHeartTiles.RAVENOUS_STORAGE_MATRIX, pos, state);
+    }
+
+    @Override
+    public int spaceFor(EssenceType type)
+    {
+        return storage.spaceFor(type);
+    }
+
+    @Override
+    public int receive(EssenceType type, int amount)
+    {
+        var received = storage.fill(type, amount);
+        if (received > 0)
+            setChanged();
+        return received;
     }
 
     @Override

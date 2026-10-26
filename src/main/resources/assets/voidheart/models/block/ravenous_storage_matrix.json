@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "voidheart:block/ravenous_gold_block",
+    "side": "voidheart:block/voidstone_tile_small_chiseled"
+  }
+}
