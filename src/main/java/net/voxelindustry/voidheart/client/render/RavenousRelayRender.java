@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import org.jspecify.annotations.Nullable;
 
@@ -17,8 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Strands carrying essence through the relay: from each collector it drains into its core, and from its core into the
- * next relay or storage.
+ * Strands carrying essence through the relay: from each collector or storage it draws from into its core, and from its
+ * core into the next relay, storage, or the collector a Shatter Forge feeds.
  */
 public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTile, RavenousRelayRender.State>
 {
@@ -53,8 +54,10 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
         var color = VoidBeamRender.aspectColor(relay.getDisplayedAspect());
         relay.getIncomingStrands(partialTicks).forEach((source, growth) ->
         {
+            // Rooted on the collector core, or on the face of the storage the forge draws from
+            var inset = relay.getLevel().getBlockEntity(source) instanceof RavenousCollectorTile ? 0.2F : 0.5F;
             if (growth > 0)
-                state.bundles.add(new EssenceStrandRender.Bundle(relative(source, origin), CENTER, 0.2F, 0.1F, 0.05F, growth, color,
+                state.bundles.add(new EssenceStrandRender.Bundle(relative(source, origin), CENTER, inset, 0.1F, 0.05F, growth, color,
                         source.asLong() ^ origin.asLong(), STRANDS));
         });
         relay.getOutgoingStrands(partialTicks).forEach((target, growth) ->

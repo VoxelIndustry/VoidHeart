@@ -88,6 +88,16 @@ public class MultiEssenceStorage implements IEssenceStorage
         return index == -1 ? 0 : maximumAmount - amounts[index];
     }
 
+    public int amountOf(EssenceType type)
+    {
+        for (int i = 0; i < types.length; i++)
+        {
+            if (types[i] == type)
+                return amounts[i];
+        }
+        return 0;
+    }
+
     public void set(int index, EssenceType type, int amount)
     {
         this.amounts[index] = amount;
@@ -108,6 +118,19 @@ public class MultiEssenceStorage implements IEssenceStorage
         }
 
         return firstEmpty;
+    }
+
+    public MultiEssenceStorage copy()
+    {
+        var copy = new MultiEssenceStorage(maximumAmount, storageCount());
+        for (int i = 0; i < amounts.length; i++)
+            copy.set(i, types[i], amounts[i]);
+        return copy;
+    }
+
+    public boolean isEmpty()
+    {
+        return Arrays.stream(amounts).allMatch(amount -> amount == 0);
     }
 
     public EssenceType[] types()

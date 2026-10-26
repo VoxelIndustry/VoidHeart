@@ -34,6 +34,21 @@ public class RavenousStorageMatrixTile extends BlockEntity implements IEssenceRe
     }
 
     @Override
+    public int amountOf(EssenceType type)
+    {
+        return storage.amountOf(type);
+    }
+
+    @Override
+    public int extract(EssenceType type, int amount)
+    {
+        var extracted = storage.drain(type, amount);
+        if (extracted > 0)
+            setChanged();
+        return extracted;
+    }
+
+    @Override
     protected void loadAdditional(ValueInput nbt)
     {
         super.loadAdditional(nbt);
@@ -47,6 +62,12 @@ public class RavenousStorageMatrixTile extends BlockEntity implements IEssenceRe
         super.saveAdditional(nbt);
 
         nbt.store("storage", MultiEssenceStorage.CODEC, storage);
+    }
+
+    public void restoreStorage(MultiEssenceStorage source)
+    {
+        storage = source.copy();
+        setChanged();
     }
 
     public MultiEssenceStorage storage()

@@ -42,6 +42,21 @@ public class RavenousStorageTile extends BlockEntity implements IEssenceReceiver
     }
 
     @Override
+    public int amountOf(EssenceType type)
+    {
+        return type == storage.type() ? storage.amount() : 0;
+    }
+
+    @Override
+    public int extract(EssenceType type, int amount)
+    {
+        var extracted = storage.drain(type, amount);
+        if (extracted > 0)
+            setChanged();
+        return extracted;
+    }
+
+    @Override
     protected void loadAdditional(ValueInput nbt)
     {
         super.loadAdditional(nbt);
@@ -55,6 +70,12 @@ public class RavenousStorageTile extends BlockEntity implements IEssenceReceiver
         super.saveAdditional(nbt);
 
         nbt.store("storage", EssenceStorage.CODEC, storage);
+    }
+
+    public void restoreStorage(EssenceStorage source)
+    {
+        storage = source.copy();
+        setChanged();
     }
 
     public EssenceStorage storage()

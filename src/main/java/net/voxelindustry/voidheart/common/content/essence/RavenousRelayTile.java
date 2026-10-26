@@ -81,36 +81,23 @@ public class RavenousRelayTile extends TileBase
         linkedCollectors.clear();
         linkedReceivers.clear();
 
-        var center = Vec3.atCenterOf(worldPosition);
-        for (var chunkX = (worldPosition.getX() - RANGE) >> 4; chunkX <= (worldPosition.getX() + RANGE) >> 4; chunkX++)
+        RelayNetwork.forEachTileInRange(level, worldPosition, RANGE, tile ->
         {
-            for (var chunkZ = (worldPosition.getZ() - RANGE) >> 4; chunkZ <= (worldPosition.getZ() + RANGE) >> 4; chunkZ++)
-            {
-                var chunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
-                if (chunk == null)
-                    continue;
+            List<BlockPos> links;
+            if (tile == this)
+                return;
+            else if (tile instanceof RavenousRelayTile)
+                links = linkedRelays;
+            else if (tile instanceof RavenousCollectorTile)
+                links = linkedCollectors;
+            else if (tile instanceof IEssenceReceiver)
+                links = linkedReceivers;
+            else
+                return;
 
-                for (var tile : chunk.getBlockEntities().values())
-                {
-                    var pos = tile.getBlockPos();
-                    if (tile == this || tile.isRemoved() || Vec3.atCenterOf(pos).distanceTo(center) > RANGE)
-                        continue;
-
-                    List<BlockPos> links;
-                    if (tile instanceof RavenousRelayTile)
-                        links = linkedRelays;
-                    else if (tile instanceof RavenousCollectorTile)
-                        links = linkedCollectors;
-                    else if (tile instanceof IEssenceReceiver)
-                        links = linkedReceivers;
-                    else
-                        continue;
-
-                    if (hasLineOfSight(pos))
-                        links.add(pos.immutable());
-                }
-            }
-        }
+            if (hasLineOfSight(tile.getBlockPos()))
+                links.add(tile.getBlockPos().immutable());
+        });
     }
 
     /**
@@ -209,17 +196,17 @@ public class RavenousRelayTile extends TileBase
         sync();
     }
 
-    List<BlockPos> linkedRelays()
+    public List<BlockPos> linkedRelays()
     {
         return linkedRelays;
     }
 
-    List<BlockPos> linkedCollectors()
+    public List<BlockPos> linkedCollectors()
     {
         return linkedCollectors;
     }
 
-    List<BlockPos> linkedReceivers()
+    public List<BlockPos> linkedReceivers()
     {
         return linkedReceivers;
     }

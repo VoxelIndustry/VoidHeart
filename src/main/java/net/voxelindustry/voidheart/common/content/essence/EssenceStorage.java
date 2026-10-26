@@ -93,6 +93,11 @@ public class EssenceStorage implements IEssenceStorage
         this.type = type;
     }
 
+    public EssenceStorage copy()
+    {
+        return new EssenceStorage(type, maximumAmount, amount);
+    }
+
     @Override
     public String toString()
     {

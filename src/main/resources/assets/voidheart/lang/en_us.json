@@ -338,5 +338,10 @@
   "yacl3.config.voidheart:config.knowledgeFirstTabletChance": "First Tablet Chance",
   "yacl3.config.voidheart:config.knowledgeFirstTabletChance.desc": "Chance for each broken monolith block to drop a Knowledge Tablet, until the player has held one.",
   "yacl3.config.voidheart:config.knowledgeTabletChance": "Tablet Chance",
-  "yacl3.config.voidheart:config.knowledgeTabletChance.desc": "Chance for each broken monolith block to drop a Knowledge Tablet, once the player has held one."
+  "yacl3.config.voidheart:config.knowledgeTabletChance.desc": "Chance for each broken monolith block to drop a Knowledge Tablet, once the player has held one.",
+  "config.jade.plugin_voidheart.ravenous_relay": "Ravenous Relay",
+  "voidheart.jade.relay.transmitting": "Transmitting: %s",
+  "voidheart.jade.relay.idle": "Idle",
+  "voidheart.jade.relay.links": "Linked: %1$s collectors, %2$s storages, %3$s relays",
+  "voidheart.jade.storage.empty": "Empty"
 }

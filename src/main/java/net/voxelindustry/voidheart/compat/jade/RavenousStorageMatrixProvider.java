@@ -58,12 +58,20 @@ public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockA
     
             var storageCount = accessor.getServerData().getIntOr("storageCount", 0);
     
+            var shown = false;
             for (int index = 0; index < storageCount; index++)
             {
+                if (accessor.getServerData().getIntOr("essenceAmount" + index, 0) == 0)
+                    continue;
+
+                shown = true;
                 tooltip.add(Component.literal(index + ": "));
                 tooltip.append(Component.translatable(accessor.getServerData().getStringOr("essenceTypeName" + index, "")));
                 tooltip.append(Component.literal("  " + accessor.getServerData().getIntOr("essenceAmount" + index, 0) + " / " + accessor.getServerData().getIntOr("essenceMaxAmount", 0)));
             }
+
+            if (!shown)
+                tooltip.add(Component.translatable(MODID + ".jade.storage.empty"));
         }
 
         @Override

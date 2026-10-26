@@ -35,6 +35,12 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
 
     private long searchBackoff = 0L;
 
+    /**
+     * Game time until which a Shatter Forge needs more essence than this collector holds, relays then show it being
+     * fed from storages.
+     */
+    private long fedUntil;
+
     ////////////
     // CLIENT //
     ////////////
@@ -223,6 +229,16 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
 
         controller.reset();
         return state.setAndContinue(COLLECTING);
+    }
+
+    public void requestFeed(long until)
+    {
+        fedUntil = until;
+    }
+
+    public boolean isFed()
+    {
+        return level != null && level.getGameTime() < fedUntil;
     }
 
     public boolean isHarvesting()
