@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.compat.jade;
 
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -34,7 +35,8 @@ public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockA
 
             for (int index = 0; index < storage.storage().storageCount(); index++)
             {
-                tag.putString("essenceTypeName" + index, storage.storage().types()[index].translatableName());
+                var type = storage.storage().types()[index];
+                tag.putString("essenceTypeName" + index, (type == null ? EssenceRegistry.EMPTY : type).translatableName());
                 tag.putInt("essenceAmount" + index, storage.storage().amounts()[index]);
             }
             tag.putInt("essenceMaxAmount", storage.storage().maximumAmount());

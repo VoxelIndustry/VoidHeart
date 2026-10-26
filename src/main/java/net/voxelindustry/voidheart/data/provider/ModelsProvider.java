@@ -41,7 +41,8 @@ public class ModelsProvider extends FabricModelProvider
             "obsidian_shard", "pocket_wall", "portal_core", "portal_frame", "portal_frame_core", "portal_interior",
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
-            "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "shoulder_eye", "permeable_barrier", "beam_focus"
+            "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "shoulder_eye", "permeable_barrier", "beam_focus",
+            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix"
     );
 
     /**

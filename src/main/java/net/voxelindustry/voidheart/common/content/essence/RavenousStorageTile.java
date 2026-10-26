@@ -7,7 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
-public class RavenousStorageTile extends BlockEntity
+public class RavenousStorageTile extends BlockEntity implements IEssenceReceiver
 {
     public static final int CAPACITY = 32_000;
 
@@ -16,6 +16,29 @@ public class RavenousStorageTile extends BlockEntity
     public RavenousStorageTile(BlockPos pos, BlockState state)
     {
         super(VoidHeartTiles.RAVENOUS_STORAGE, pos, state);
+    }
+
+    @Override
+    public int spaceFor(EssenceType type)
+    {
+        if (storage.isUnattuned())
+            return storage.maximumAmount();
+        return type == storage.type() ? storage.spaceLeft() : 0;
+    }
+
+    /**
+     * An unattuned storage attunes to the first aspect it receives.
+     */
+    @Override
+    public int receive(EssenceType type, int amount)
+    {
+        if (storage.isUnattuned())
+            storage.attune(type);
+
+        var received = storage.fill(type, amount);
+        if (received > 0)
+            setChanged();
+        return received;
     }
 
     @Override
