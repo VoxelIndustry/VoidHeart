@@ -56,13 +56,13 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
         // Core block is probably a previously broken portal
         if (tile.isBroken())
         {
-            var portalFormer = PortalFormer.tryForm(world, state, pos, hit.getDirection());
+            // Reform in the original plane whatever the clicked face is
+            var portalFormer = PortalFormer.tryForm(world, state, pos, tile.getFacing());
             if (portalFormer.maySucceed())
             {
                 portalFormer.execute();
                 if (portalFormer.success())
                 {
-                    tile.setBroken(false);
                     if (PortalLinker.tryRelink(player, tile))
                     {
                         player.sendOverlayMessage(Component.translatable(MODID + ".portal_relinked_successful"));
@@ -75,7 +75,7 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
             else
                 player.sendOverlayMessage(Component.translatable(MODID + ".portal_cannot_form_back"));
         }
-        else if (tile.getLinkedWorld() == null && tile.getPreviousLinkedWorld() != null && PortalLinker.tryRelink(player, tile))
+        else if (!tile.isLinked() && tile.getPreviousLink() != null && PortalLinker.tryRelink(player, tile))
         {
             player.sendOverlayMessage(Component.translatable(MODID + ".portal_relinked_successful"));
             VoidHeart.PORTAL_LINK_CRITERION.trigger((ServerPlayer) player);

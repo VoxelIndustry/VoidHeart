@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.portalinterior;
 
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.level.LevelReader;
 import java.util.List;
@@ -50,7 +52,8 @@ public class PortalInteriorBlock extends Block implements EntityBlock
                 .mapColor(MapColor.COLOR_LIGHT_GREEN)
                 .instrument(NoteBlockInstrument.XYLOPHONE)
                 .requiresCorrectToolForDrops()
-                .strength(-1.0F)
+                .strength(-1.0F, 3600000.0F)
+                .randomTicks()
                 .sound(SoundType.GLASS)
                 .lightLevel(unused -> 11));
 
@@ -118,13 +121,26 @@ public class PortalInteriorBlock extends Block implements EntityBlock
                 && Shapes.joinIsNotEmpty(
                 Shapes.create(collider.getBoundingBox().move(-pos.getX(), -pos.getY(), -pos.getZ())), getTeleportShape(state), BooleanOp.AND))
         {
-            PortalInteriorTile tile = (PortalInteriorTile) world.getBlockEntity(pos);
-
-            if (tile == null)
-                return;
-
-            tile.teleport(collider);
+            if (world.getBlockEntity(pos) instanceof PortalInteriorTile tile)
+                tile.teleport(collider);
         }
+    }
+
+    @Override
+    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random)
+    {
+        if (world.getBlockEntity(pos) instanceof PortalInteriorTile tile)
+            tile.validate();
+        else
+            world.removeBlock(pos, false);
+    }
+
+    @Override
+    protected void randomTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random)
+    {
+        // Only the cheap local check, the other side of the link is validated when an entity goes through
+        if (!(world.getBlockEntity(pos) instanceof PortalInteriorTile tile) || tile.isOrphan())
+            world.scheduleTick(pos, this, 1);
     }
 
     @Override

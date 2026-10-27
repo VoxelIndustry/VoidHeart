@@ -15,6 +15,8 @@ import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,32 +38,52 @@ public class PortalFrameTile extends TileBase implements ILoadable
 
     /**
      * Cut link and notify potential linked portal
+     *
+     * @param eventSource the frame that was removed, or null when this tile itself is removed
      */
-    public void breakTile(BlockPos eventSource)
+    public void breakTile(@Nullable BlockPos eventSource)
     {
+        if (level == null || level.isClientSide())
+            return;
+
         setChanged();
 
-        linkedCores.forEach(pos ->
+        for (BlockPos pos : List.copyOf(linkedCores))
         {
             if (pos.equals(eventSource))
-                return;
+                continue;
 
-            var coreFrameOpt = getLevel().getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE);
-            if (!coreFrameOpt.isEmpty())
-                coreFrameOpt.get().removeFrame(getBlockPos());
-        });
+            getLevel().getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE).ifPresent(core -> core.removeFrame(getBlockPos()));
+        }
+        linkedCores.clear();
     }
 
-    void addCore(PortalFrameTile wall)
+    void addCore(PortalFrameTile core)
     {
-        linkedCores.add(wall.getBlockPos());
+        if (!linkedCores.contains(core.getBlockPos()))
+            linkedCores.add(core.getBlockPos().immutable());
         setChanged();
     }
 
-    void removeCore(PortalFrameTile wall)
+    void removeCore(PortalFrameTile core)
     {
-        linkedCores.remove(wall.getBlockPos());
+        linkedCores.remove(core.getBlockPos());
         setChanged();
+    }
+
+    /**
+     * Drop references to cores that do not exist anymore or do not list this frame
+     *
+     * @return true if this frame still belongs to at least one portal
+     */
+    boolean pruneLinkedCores()
+    {
+        boolean changed = linkedCores.removeIf(pos -> getLevel().getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE)
+                .map(core -> !core.getLinkedFrames().contains(getBlockPos()))
+                .orElse(true));
+        if (changed)
+            setChanged();
+        return !linkedCores.isEmpty();
     }
 
     public static Direction[] getAdjacentDirection(Direction facing)
@@ -80,11 +102,9 @@ public class PortalFrameTile extends TileBase implements ILoadable
         if (existingState.getBlock() != VoidHeartBlocks.PORTAL_FRAME)
             return;
 
-        if (linkedCores.isEmpty())
-            level.setBlockAndUpdate(getBlockPos(), existingState.setValue(BlockStateProperties.LIT, false));
-
         var isAnyCoreLit = linkedCores.stream().anyMatch(this::isCoreLit);
-        level.setBlockAndUpdate(getBlockPos(), existingState.setValue(BlockStateProperties.LIT, isAnyCoreLit));
+        if (existingState.getValue(BlockStateProperties.LIT) != isAnyCoreLit)
+            level.setBlockAndUpdate(getBlockPos(), existingState.setValue(BlockStateProperties.LIT, isAnyCoreLit));
     }
 
     private boolean isCoreLit(BlockPos corePos)
@@ -101,9 +121,14 @@ public class PortalFrameTile extends TileBase implements ILoadable
     {
         super.loadAdditional(tag);
 
+        linkedCores.clear();
         var count = tag.getIntOr("linkedCoreCount", 0);
         for (int index = 0; index < count; index++)
-            linkedCores.add(BlockPos.of(tag.getLongOr("linkedCore" + index, 0L)));
+        {
+            var core = tag.getLong("linkedCore" + index).map(BlockPos::of);
+            if (core.isPresent() && !linkedCores.contains(core.get()))
+                linkedCores.add(core.get());
+        }
     }
 
     @Override
@@ -129,7 +154,7 @@ public class PortalFrameTile extends TileBase implements ILoadable
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
-        breakTile(BlockPos.ZERO);
+        breakTile(null);
         super.preRemoveSideEffects(pos, state);
     }
 }

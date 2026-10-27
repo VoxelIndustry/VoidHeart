@@ -35,7 +35,12 @@ public class PortalFormer
         if (world != voidWorld)
             return false;
 
-        BlockPos pocketPos = VoidPocketState.getVoidPocketState((ServerLevel) world).getPosForPlayer(playerUUID);
+        // Looking up the pocket position would reserve a pocket for a player that never created one
+        var heartData = VoidPocketState.getVoidPocketState((ServerLevel) world).getHeartData(playerUUID);
+        if (heartData == null)
+            return false;
+
+        BlockPos pocketPos = heartData.pocketPos();
 
         return abs(pocketPos.getX() - pos.getX()) < 9 &&
                 abs(pocketPos.getY() + 6 - pos.getY()) < 9 &&
@@ -67,23 +72,24 @@ public class PortalFormer
                         return false;
 
                     var coreFrame = coreFrameOpt.get();
+                    coreFrame.detachFrames();
+
                     BlockPos.betweenClosedStream(portalFormerState.getFrom(), portalFormerState.getTo()).forEach(pos ->
                     {
                         BlockState frameState = world.getBlockState(pos);
 
                         setFrameBlockState(world, frameState, pos, portalFormerState);
 
-                        var wall = (PortalFrameTile) world.getBlockEntity(pos);
-
-                        // Core check for corners (it's valid to have a core as a corner but not a wall of the portal)
-                        if (wall == null || wall.isCore())
+                        // Corners can be any block, and it's valid to have a core as a corner but not a wall of the portal
+                        if (!(world.getBlockEntity(pos) instanceof PortalFrameTile wall) || wall.isCore())
                             return;
 
                         wall.addCore(coreFrame);
-                        coreFrame.getLinkedFrames().add(pos.immutable());
+                        coreFrame.addFrame(pos);
                     });
 
                     coreFrame.setPortalState(portalFormerState);
+                    coreFrame.setBroken(false);
                     coreFrame.setChanged();
 
                     return true;
@@ -161,7 +167,11 @@ public class PortalFormer
         if (state.isAir())
             return true;
 
-        return !state.is(VoidHeartTags.PORTAL_FRAME_TAG) && state.getBlock() != VoidHeartBlocks.VOIDSTONE_BRICKS;
+        if (state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
+            return false;
+
+        // The tag can be extended by datapacks, only our frames carry the connection properties
+        return !state.is(VoidHeartTags.PORTAL_FRAME_TAG) || !(state.getBlock() instanceof PortalFrameBlock);
     }
 
     public static void createCoreState(BlockState state, Level world, BlockPos pos, Direction facing)
@@ -170,7 +180,7 @@ public class PortalFormer
 
         coreState = coreState.setValue(BlockStateProperties.FACING, facing);
 
-        if (state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS)
+        if (!(state.getBlock() instanceof PortalFrameBlock))
         {
             world.setBlockAndUpdate(pos, coreState);
             return;
@@ -201,9 +211,7 @@ public class PortalFormer
         if (state.getBlock() != VoidHeartBlocks.PORTAL_FRAME)
             return state.getBlock() == VoidHeartBlocks.VOIDSTONE_BRICKS;
 
-        PortalFrameTile tile = (PortalFrameTile) world.getBlockEntity(pos);
-
-        return tile != null && !tile.isCore();
+        return world.getBlockEntity(pos) instanceof PortalFrameTile tile && !tile.isCore();
     }
 
     public static Pair<BlockPos, BlockPos> excludeBorders(PortalFormerState area)
