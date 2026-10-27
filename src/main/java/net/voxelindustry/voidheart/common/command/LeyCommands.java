@@ -3,10 +3,12 @@ package net.voxelindustry.voidheart.common.command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.storage.LevelResource;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.ley.LeyDebugView;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
 import net.voxelindustry.voidheart.common.ley.LeyLatticeDump;
 
@@ -28,6 +30,7 @@ public class LeyCommands
     {
         builder.then(literal("ley")
                 .then(literal("info").executes(LeyCommands::info))
+                .then(literal("show").executes(LeyCommands::show))
                 .then(literal("dump")
                         .executes(context -> dump(context, DEFAULT_DUMP_RADIUS))
                         .then(argument("radius", IntegerArgumentType.integer(256, 16384))
@@ -59,6 +62,14 @@ public class LeyCommands
         lattice.get().nearestEdge(x, z).ifPresent(edge ->
                 source.sendSuccess(() -> Component.literal(String.format("Nearest line %.0f blocks away, %.0f long, flowing from %d, %d to %d, %d",
                         Math.sqrt(edge.distanceSq(x, z)), edge.length(), edge.fromX(), edge.fromZ(), edge.toX(), edge.toZ())), false));
+        return 1;
+    }
+
+    private static int show(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var source = context.getSource();
+        boolean shown = LeyDebugView.toggle(source.getPlayerOrException());
+        source.sendSuccess(() -> Component.literal(shown ? "Ley lines shown" : "Ley lines hidden"), false);
         return 1;
     }
 

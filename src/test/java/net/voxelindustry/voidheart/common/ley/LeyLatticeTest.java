@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LeyLatticeTest
 {
     private static final long SEED = 42L;
+    private static final LeyHeights FLAT = new LeyHeights((x, z) -> 64);
 
     static class MemoryStore implements LeyLattice.RegionStore
     {
@@ -34,7 +35,7 @@ class LeyLatticeTest
     void reconcileKeepsRegionUntouchedWhenRulesAreUnchanged()
     {
         var store = new MemoryStore();
-        var lattice = new LeyLattice(new LeyLatticeGenerator(SEED, FAKE_STRUCTURES), store);
+        var lattice = new LeyLattice(new LeyLatticeGenerator(SEED, FAKE_STRUCTURES), store, FLAT);
         lattice.region(0, 0);
 
         var expected = new LeyLatticeGenerator(SEED, FAKE_STRUCTURES).generateRegion(1, 0);
@@ -47,9 +48,9 @@ class LeyLatticeTest
     void frozenNeighborWinsOnSharedBorderAfterRulesChange()
     {
         var store = new MemoryStore();
-        var frozen = new LeyLattice(new LeyLatticeGenerator(SEED, LeyAnchorSource.NONE), store).region(0, 0);
+        var frozen = new LeyLattice(new LeyLatticeGenerator(SEED, LeyAnchorSource.NONE), store, FLAT).region(0, 0);
 
-        var reconciled = new LeyLattice(new LeyLatticeGenerator(SEED, FAKE_STRUCTURES), store).region(1, 0);
+        var reconciled = new LeyLattice(new LeyLatticeGenerator(SEED, FAKE_STRUCTURES), store, FLAT).region(1, 0);
 
         var nodeIds = reconciled.nodes().stream().map(LeyNode::id).collect(Collectors.toSet());
         var frozenBorder = frozen.edges().stream()
@@ -69,7 +70,7 @@ class LeyLatticeTest
     void previewDoesNotFreeze()
     {
         var store = new MemoryStore();
-        new LeyLattice(new LeyLatticeGenerator(SEED, FAKE_STRUCTURES), store).preview(3, 3);
+        new LeyLattice(new LeyLatticeGenerator(SEED, FAKE_STRUCTURES), store, FLAT).preview(3, 3);
 
         assertThat(store.regions).isEmpty();
     }

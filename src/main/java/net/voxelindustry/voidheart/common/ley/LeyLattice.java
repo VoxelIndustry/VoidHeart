@@ -29,11 +29,13 @@ public class LeyLattice
 
     private final LeyLatticeGenerator generator;
     private final RegionStore store;
+    private final LeyHeights heights;
 
-    public LeyLattice(LeyLatticeGenerator generator, RegionStore store)
+    public LeyLattice(LeyLatticeGenerator generator, RegionStore store, LeyHeights heights)
     {
         this.generator = generator;
         this.store = store;
+        this.heights = heights;
     }
 
     public static Optional<LeyLattice> get(ServerLevel level)
@@ -42,7 +44,12 @@ public class LeyLattice
             return Optional.empty();
 
         return Optional.of(BY_LEVEL.computeIfAbsent(level, key ->
-                new LeyLattice(new LeyLatticeGenerator(level.getSeed(), new StructureAnchorSource(level)), LeyLatticeState.get(level))));
+                new LeyLattice(new LeyLatticeGenerator(level.getSeed(), new StructureAnchorSource(level)), LeyLatticeState.get(level), LeyHeights.of(level))));
+    }
+
+    public LeyHeights heights()
+    {
+        return heights;
     }
 
     public static void clear()
