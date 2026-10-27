@@ -93,6 +93,21 @@ public class LeyLattice
         return regions;
     }
 
+    public Optional<LeyNode> node(long nodeId)
+    {
+        return regionOf(nodeId).nodes().stream().filter(node -> node.id() == nodeId).findFirst();
+    }
+
+    public List<LeyEdge> edgesOf(long nodeId)
+    {
+        return regionOf(nodeId).edges().stream().filter(edge -> edge.touches(nodeId)).toList();
+    }
+
+    private LeyRegion regionOf(long nodeId)
+    {
+        return region(LeyLatticeGenerator.regionXOf(nodeId), LeyLatticeGenerator.regionZOf(nodeId));
+    }
+
     public Optional<LeyNode> nearestNode(int x, int z)
     {
         return regionsAround(x, z, REGION_SIZE / 2, true).stream()

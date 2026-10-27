@@ -17,14 +17,14 @@ import static net.voxelindustry.voidheart.common.ley.LeyLatticeGenerator.MAX_LIN
 import static net.voxelindustry.voidheart.common.ley.LeyLatticeGenerator.REGION_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class LeyLatticeGeneratorTest
+public class LeyLatticeGeneratorTest
 {
     private static final long SEED = 8_675_309L;
 
     /**
      * Mimics vanilla random spread placement: one candidate per grid cell, kept with a probability standing in for biome checks.
      */
-    static final LeyAnchorSource FAKE_STRUCTURES = (minX, minZ, maxX, maxZ) ->
+    public static final LeyAnchorSource FAKE_STRUCTURES = (minX, minZ, maxX, maxZ) ->
     {
         var anchors = new ArrayList<LeyAnchorSource.Anchor>();
         addSpread(anchors, minX, minZ, maxX, maxZ, 34 * 16, 8 * 16, 11, 0.6F, LeyNodeKind.ANCHOR);

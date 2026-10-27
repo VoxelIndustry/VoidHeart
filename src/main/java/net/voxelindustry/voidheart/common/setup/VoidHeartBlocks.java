@@ -20,7 +20,9 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
+import net.voxelindustry.voidheart.common.ley.anchor.OldAnchorBlock;
 import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.item.LoreBlockItem;
@@ -112,6 +114,7 @@ public class VoidHeartBlocks
     public static Block VOID_MONOLITH_CAP;
 
     public static Block VOID_DOOR;
+    public static Block OLD_ANCHOR;
     public static Block PERMEABLE_BARRIER;
 
     public static Block VOID_BARRIER_EMITTER;
@@ -285,6 +288,15 @@ public class VoidHeartBlocks
         VOID_LAMP = registerBlock("void_lamp", VoidLampBlock::new, BlockBehaviour.Properties.of(), true);
 
         VOID_DOOR = registerBlock("void_door", VoidDoorBlock::new, BlockBehaviour.Properties.of(), true);
+
+        OLD_ANCHOR = registerBlock("old_anchor", OldAnchorBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .strength(-1F, 3600000F)
+                .noLootTable()
+                .noOcclusion()
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.STONE), false);
 
         PERMEABLE_BARRIER = registerBlock("permeable_barrier", PermeableBarrierBlock::new, BlockBehaviour.Properties.of(), true);
 

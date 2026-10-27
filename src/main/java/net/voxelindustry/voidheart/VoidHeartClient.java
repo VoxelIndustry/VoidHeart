@@ -18,7 +18,10 @@ import net.voxelindustry.voidheart.client.particle.ShatterForgeRuneParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
 import net.voxelindustry.voidheart.client.render.EyeBottleRender;
 import net.voxelindustry.voidheart.client.render.FloatingItemRender;
+import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
 import net.voxelindustry.voidheart.client.render.LeyDebugRender;
+import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
+import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
@@ -47,8 +50,16 @@ public class VoidHeartClient implements ClientModInitializer
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
 
         ClientPlayNetworking.registerGlobalReceiver(LeyDebugPayload.TYPE, LeyDebugRender::receive);
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> LeyDebugRender.clear());
+        ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.Waypoints.TYPE, AnchorWaypointRender::receive);
+        ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelMap.TYPE,
+                (payload, context) -> context.client().setScreenAndShow(new TravelMapScreen(payload)));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
+        {
+            LeyDebugRender.clear();
+            AnchorWaypointRender.clear();
+        });
         LevelRenderEvents.COLLECT_SUBMITS.register(LeyDebugRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
 
         var particles = ParticleProviderRegistry.getInstance();
         particles.register(

@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:block/old_anchor_lower",
+  "textures": {
+    "side": "voidheart:block/ley_anchor_side_active"
+  }
+}

@@ -97,6 +97,16 @@ public class LeyLatticeGenerator
         return ((long) cellX & 0xFFFFFFL) << 36 | ((long) cellZ & 0xFFFFFFL) << 12 | index & 0xFFFL;
     }
 
+    public static int regionXOf(long nodeId)
+    {
+        return Math.floorDiv((int) (nodeId >> 36) << 8 >> 8, REGION_CELLS);
+    }
+
+    public static int regionZOf(long nodeId)
+    {
+        return Math.floorDiv((int) (nodeId >> 12) << 8 >> 8, REGION_CELLS);
+    }
+
     private LeyEdge orient(Candidate a, Candidate b)
     {
         float pressureA = pressure(a.x, a.z);

@@ -20,6 +20,7 @@ public class LeyHeights
     private static final int CACHE_SIZE = 2048;
 
     private final IntBinaryOperator surface;
+    private final IntBinaryOperator floor;
 
     private final Map<String, float[]> profiles = new LinkedHashMap<>(256, 0.75F, true)
     {
@@ -32,19 +33,40 @@ public class LeyHeights
 
     public LeyHeights(IntBinaryOperator surface)
     {
+        this(surface, surface);
+    }
+
+    /**
+     * @param surface top of the terrain, fluids included
+     * @param floor   top of the solid terrain, below any fluid
+     */
+    public LeyHeights(IntBinaryOperator surface, IntBinaryOperator floor)
+    {
         this.surface = surface;
+        this.floor = floor;
     }
 
     public static LeyHeights of(ServerLevel level)
     {
         var generator = level.getChunkSource().getGenerator();
         var randomState = level.getChunkSource().randomState();
-        return new LeyHeights((x, z) -> generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, randomState));
+        return new LeyHeights((x, z) -> generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, randomState),
+                (x, z) -> generator.getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, level, randomState));
     }
 
     public int nodeHeight(int x, int z)
     {
         return surface.applyAsInt(x, z) + HOVER;
+    }
+
+    public int groundHeight(int x, int z)
+    {
+        return surface.applyAsInt(x, z);
+    }
+
+    public boolean isSubmerged(int x, int z)
+    {
+        return floor.applyAsInt(x, z) < surface.applyAsInt(x, z);
     }
 
     public static int sampleCount(LeyEdge edge)

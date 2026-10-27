@@ -11,10 +11,14 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.ley.LeyDebugView;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
 import net.voxelindustry.voidheart.common.ley.LeyLatticeDump;
+import net.voxelindustry.voidheart.common.ley.anchor.OldAnchor;
+import net.voxelindustry.voidheart.common.ley.anchor.OldAnchors;
 
 import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import java.util.logging.Level;
 
 import static net.minecraft.commands.Commands.argument;
@@ -25,12 +29,14 @@ public class LeyCommands
 {
     private static final int DEFAULT_DUMP_RADIUS = 4096;
     private static final int DUMP_PIXELS = 2048;
+    private static final int ANCHOR_SEARCH_RADIUS = 2048;
 
     public static void register(LiteralArgumentBuilder<CommandSourceStack> builder)
     {
         builder.then(literal("ley")
                 .then(literal("info").executes(LeyCommands::info))
                 .then(literal("show").executes(LeyCommands::show))
+                .then(literal("anchor").executes(LeyCommands::anchor))
                 .then(literal("dump")
                         .executes(context -> dump(context, DEFAULT_DUMP_RADIUS))
                         .then(argument("radius", IntegerArgumentType.integer(256, 16384))
@@ -70,6 +76,35 @@ public class LeyCommands
         var source = context.getSource();
         boolean shown = LeyDebugView.toggle(source.getPlayerOrException());
         source.sendSuccess(() -> Component.literal(shown ? "Ley lines shown" : "Ley lines hidden"), false);
+        return 1;
+    }
+
+    private static int anchor(CommandContext<CommandSourceStack> context)
+    {
+        var source = context.getSource();
+        var anchors = OldAnchors.get(source.getLevel());
+        if (anchors.isEmpty())
+        {
+            source.sendFailure(Component.literal("Ley lines only exist in the overworld"));
+            return 0;
+        }
+
+        int x = (int) Math.floor(source.getPosition().x);
+        int z = (int) Math.floor(source.getPosition().z);
+        var nearest = anchors.get().network().anchorsWithin(x - ANCHOR_SEARCH_RADIUS, z - ANCHOR_SEARCH_RADIUS, x + ANCHOR_SEARCH_RADIUS, z + ANCHOR_SEARCH_RADIUS).stream()
+                .min(Comparator.comparingDouble(anchor -> Math.hypot(anchor.x() - x, anchor.z() - z)));
+        if (nearest.isEmpty())
+        {
+            source.sendFailure(Component.literal("No Old Anchor within " + ANCHOR_SEARCH_RADIUS + " blocks"));
+            return 0;
+        }
+
+        var anchor = nearest.get();
+        var linked = anchors.get().network().linked(anchor);
+        source.sendSuccess(() -> Component.literal(String.format("%s at %d, %d, %d (%s), %.0f blocks away, linked to %d: %s",
+                anchor.name(), anchor.x(), anchors.get().lowerY(anchor), anchor.z(), anchors.get().isActive(anchor) ? "active" : "dormant",
+                Math.hypot(anchor.x() - x, anchor.z() - z), linked.size(),
+                linked.stream().map(OldAnchor::name).collect(Collectors.joining(", ")))), false);
         return 1;
     }
 
