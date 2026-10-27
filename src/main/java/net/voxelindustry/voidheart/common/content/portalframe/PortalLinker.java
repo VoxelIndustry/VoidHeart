@@ -1,32 +1,33 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
-import net.minecraft.core.GlobalPos;
-import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
-import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents.PortalLinkStart;
+import lombok.extern.log4j.Log4j2;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.VoidHeart;
-import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents.PortalLinkStart;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Optional;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+/**
+ * Every check is done before the world is modified, a link is either fully created on both cores or not at all.
+ */
+@Log4j2
 public class PortalLinker
 {
-    public static boolean voidIronEyeInteract(PortalFrameTile portalFrameTile,
+    public static boolean voidIronEyeInteract(@Nullable PortalFrameTile portalFrameTile,
                                               Level world,
                                               BlockPos pos,
                                               Direction direction,
@@ -35,16 +36,26 @@ public class PortalLinker
     {
         var linkStart = voidIronEye.get(VoidHeartDataComponents.PORTAL_LINK);
 
+        if (portalFrameTile instanceof PortalFrameCoreTile core && core.isLinked())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_already_linked"));
+            return false;
+        }
+
+        // Turning a frame of an existing portal into a new core would break that portal
+        if (portalFrameTile != null && !portalFrameTile.isCore() && portalFrameTile.pruneLinkedCores())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_frame_in_use"));
+            return false;
+        }
+
         Optional<DeferredRollbackWork<PortalFormerState>> portalFormer = Optional.empty();
 
-        // If the block is not a frame OR is a frame but not a core OR is a frame but is not linked to any core
-        // Then it is cleared for frame creation and will act as the core of the new portal
-        if (portalFrameTile == null || !portalFrameTile.isCore() || portalFrameTile.getLinkedCores().isEmpty())
+        // A core that is already formed is reused as is, anything else must form a new portal around the clicked block
+        if (!(portalFrameTile instanceof PortalFrameCoreTile formedCore) || !formedCore.isFormed() || formedCore.isBroken())
         {
-            portalFormer = Optional.of(PortalFormer.tryForm(world,
-                    portalFrameTile == null ? VoidHeartBlocks.PORTAL_FRAME_CORE.defaultBlockState().setValue(BlockStateProperties.FACING, direction) : portalFrameTile.getBlockState(),
-                    pos,
-                    direction));
+            BlockState state = world.getBlockState(pos);
+            portalFormer = Optional.of(PortalFormer.tryForm(world, state, pos, direction));
 
             if (!portalFormer.get().maySucceed())
             {
@@ -53,125 +64,88 @@ public class PortalLinker
             }
         }
 
-        if (linkStart != null)
+        if (linkStart == null)
         {
-            if (!Objects.equals(linkStart.owner(), player.getUUID()))
+            var coreFrame = formCore(world, pos, portalFrameTile, portalFormer);
+            if (coreFrame == null)
             {
-                player.sendOverlayMessage(Component.translatable(MODID + ".portal_not_owner"));
+                player.sendOverlayMessage(Component.translatable(MODID + ".portal_form_error"));
                 return false;
             }
 
-            var firstPos = linkStart.firstPos().pos();
-
-            var externalWorld = world.getServer().getLevel(linkStart.firstPos().dimension());
-            var linkedPortal = externalWorld.getBlockEntity(firstPos);
-            var firstFacing = linkStart.firstFacing();
-
-            return linkPortalCores(world,
-                    pos,
-                    direction,
-                    portalFrameTile,
-                    voidIronEye,
-                    portalFormer,
-                    player,
-                    firstPos,
-                    externalWorld,
-                    linkedPortal,
-                    firstFacing);
-        }
-        else
-        {
-            PortalFrameCoreTile coreFrame = null;
-            if (portalFormer.isPresent())
-            {
-                if (portalFrameTile == null)
-                {
-                    world.setBlockAndUpdate(pos, VoidHeartBlocks.PORTAL_FRAME_CORE.defaultBlockState().setValue(BlockStateProperties.FACING, direction));
-                    coreFrame = (PortalFrameCoreTile) world.getBlockEntity(pos);
-                    portalFrameTile = coreFrame;
-                }
-                else
-                    coreFrame = (PortalFrameCoreTile) portalFrameTile;
-
-                coreFrame.setPortalState(portalFormer.get().getState());
-                portalFormer.get().execute();
-            }
-
-            if (coreFrame == null)
-                coreFrame = ((PortalFrameCoreTile) portalFrameTile);
-
             voidIronEye.set(VoidHeartDataComponents.PORTAL_LINK, new PortalLinkStart(
-                    GlobalPos.of(portalFrameTile.getLevel().dimension(), portalFrameTile.getBlockPos()),
+                    GlobalPos.of(coreFrame.getLevel().dimension(), coreFrame.getBlockPos()),
                     coreFrame.getFacing(),
                     player.getUUID(),
                     player.getScoreboardName()));
+            return true;
         }
-        return true;
+
+        if (!Objects.equals(linkStart.owner(), player.getUUID()))
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_not_owner"));
+            return false;
+        }
+
+        var linkedWorld = world.getServer().getLevel(linkStart.firstPos().dimension());
+        var linkedPortal = linkedWorld == null ? Optional.<PortalFrameCoreTile>empty() :
+                linkedWorld.getBlockEntity(linkStart.firstPos().pos(), VoidHeartTiles.PORTAL_FRAME_CORE);
+
+        return linkPortalCores(world, pos, portalFrameTile, voidIronEye, portalFormer, player, linkedPortal.orElse(null));
     }
 
     public static boolean linkPortalCores(
             Level currentWorld,
             BlockPos currentPos,
-            Direction currentDirection,
-            PortalFrameTile portalFrameTile,
+            @Nullable PortalFrameTile portalFrameTile,
             ItemStack voidPearl,
             Optional<DeferredRollbackWork<PortalFormerState>> portalFormer,
             Player player,
-            BlockPos linkedPos,
-            ServerLevel linkedWorld,
-            BlockEntity linkedPortal,
-            Direction linkedFacing)
+            @Nullable PortalFrameCoreTile linkedPortal)
     {
-        if (!(linkedPortal instanceof PortalFrameTile))
+        if (linkedPortal == null)
         {
             player.sendOverlayMessage(Component.translatable(MODID + ".no_portal_at_pos"));
             return false;
         }
-        if (((PortalFrameTile) linkedPortal).isCore() && ((PortalFrameCoreTile) linkedPortal).isBroken())
+        if (linkedPortal.getLevel() == currentWorld && linkedPortal.getBlockPos().equals(currentPos))
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_link_self"));
+            return false;
+        }
+        if (linkedPortal.isBroken() || !linkedPortal.isFormed())
         {
             player.sendOverlayMessage(Component.translatable(MODID + ".no_portal_at_pos_broken"));
             return false;
         }
-        if (arePortalShapesIncompatible(portalFrameTile, portalFormer, (PortalFrameCoreTile) linkedPortal))
+        if (linkedPortal.isLinked())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_already_linked"));
+            return false;
+        }
+        if (arePortalShapesIncompatible(portalFrameTile, portalFormer, linkedPortal))
         {
             player.sendOverlayMessage(Component.translatable(MODID + ".portal_shape_differ"));
             return false;
         }
-
-        PortalFrameCoreTile coreTile = null;
-        if (portalFormer.isPresent())
+        if (!linkedPortal.canBeLinked() || portalFormer.isEmpty() && !((PortalFrameCoreTile) portalFrameTile).canBeLinked())
         {
-            if (portalFrameTile == null || !portalFrameTile.isCore())
-            {
-                currentWorld.setBlockAndUpdate(currentPos, VoidHeartBlocks.PORTAL_FRAME_CORE.defaultBlockState().setValue(BlockStateProperties.FACING, currentDirection));
-                coreTile = (PortalFrameCoreTile) currentWorld.getBlockEntity(currentPos);
-            }
-            else
-                coreTile = (PortalFrameCoreTile) portalFrameTile;
-
-            coreTile.setPortalState(portalFormer.get().getState());
-            portalFormer.get().execute();
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_interior_obstructed"));
+            return false;
         }
 
-        if (coreTile == null)
-            coreTile = (PortalFrameCoreTile) portalFrameTile;
+        var coreTile = formCore(currentWorld, currentPos, portalFrameTile, portalFormer);
+        if (coreTile == null || !coreTile.canBeLinked())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_form_error"));
+            return false;
+        }
 
-        coreTile.setLinkedPos(linkedPos);
-        coreTile.setLinkedWorld(linkedWorld.dimension().identifier());
-        coreTile.setLinkedFacing(linkedFacing);
         coreTile.setOwnerPlayerUUID(player.getUUID());
-
-        coreTile.linkPortal();
+        linkedPortal.setOwnerPlayerUUID(player.getUUID());
+        connect(coreTile, linkedPortal);
 
         voidPearl.shrink(1);
-
-        var linkedPortalCore = (PortalFrameCoreTile) linkedPortal;
-        linkedPortalCore.setLinkedPos(coreTile.getBlockPos());
-        linkedPortalCore.setLinkedWorld(coreTile.getLevel().dimension().identifier());
-        linkedPortalCore.setLinkedFacing(coreTile.getFacing());
-        linkedPortalCore.setOwnerPlayerUUID(player.getUUID());
-
-        linkedPortalCore.linkPortal();
 
         player.sendOverlayMessage(Component.translatable(MODID + ".link_successful"));
 
@@ -179,7 +153,42 @@ public class PortalLinker
         return true;
     }
 
-    private static boolean arePortalShapesIncompatible(PortalFrameTile portalFrameTile, Optional<DeferredRollbackWork<PortalFormerState>> portalFormer, PortalFrameCoreTile linkedPortal)
+    /**
+     * @return the formed core at pos, or null if the formation failed
+     */
+    @Nullable
+    private static PortalFrameCoreTile formCore(Level world,
+                                                BlockPos pos,
+                                                @Nullable PortalFrameTile portalFrameTile,
+                                                Optional<DeferredRollbackWork<PortalFormerState>> portalFormer)
+    {
+        if (portalFormer.isEmpty())
+            return portalFrameTile instanceof PortalFrameCoreTile core ? core : null;
+
+        portalFormer.get().execute();
+        if (!portalFormer.get().success())
+        {
+            log.error("Portal formation failed after validation. pos={}, state={}", pos, portalFormer.get().getState());
+            return null;
+        }
+
+        return world.getBlockEntity(pos, VoidHeartTiles.PORTAL_FRAME_CORE)
+                .filter(PortalFrameCoreTile::isFormed)
+                .orElse(null);
+    }
+
+    private static void connect(PortalFrameCoreTile first, PortalFrameCoreTile second)
+    {
+        first.setLink(PortalLink.of(second));
+        second.setLink(PortalLink.of(first));
+
+        first.linkPortal();
+        second.linkPortal();
+
+        log.debug("Linked portals {} <-> {}", first, second);
+    }
+
+    private static boolean arePortalShapesIncompatible(@Nullable PortalFrameTile portalFrameTile, Optional<DeferredRollbackWork<PortalFormerState>> portalFormer, PortalFrameCoreTile linkedPortal)
     {
         return portalFormer
                 .map(portalFormerStateDeferredRollbackWork ->
@@ -196,19 +205,19 @@ public class PortalLinker
 
     public static boolean tryRelink(Player player, PortalFrameCoreTile core)
     {
-        if (core.getLinkedWorld() != null || core.getPreviousLinkedWorld() == null)
+        if (core.isLinked() || core.getPreviousLink() == null)
             return false;
 
-        var previouslyLinkedPortalOpt = core.getPreviouslyLinkedPortal();
+        var previouslyLinkedPortalOpt = core.findPreviouslyLinkedPortal();
 
-        if (previouslyLinkedPortalOpt.isEmpty() || previouslyLinkedPortalOpt.get().getLinkedWorld() != null)
+        if (previouslyLinkedPortalOpt.isEmpty())
         {
             player.sendOverlayMessage(Component.translatable(MODID + ".no_portal_at_pos_broken"));
             return false;
         }
 
         var previouslyLinkedPortal = previouslyLinkedPortalOpt.get();
-        if (previouslyLinkedPortal.isBroken())
+        if (previouslyLinkedPortal.isBroken() || !previouslyLinkedPortal.isFormed())
         {
             var portalFormer = PortalFormer.tryForm(
                     previouslyLinkedPortal.getLevel(),
@@ -216,16 +225,14 @@ public class PortalLinker
                     previouslyLinkedPortal.getBlockPos(),
                     previouslyLinkedPortal.getFacing()
             );
-            if (portalFormer.maySucceed())
+            if (!portalFormer.maySucceed())
             {
-                portalFormer.execute();
-                if (!portalFormer.success())
-                {
-                    player.sendOverlayMessage(Component.translatable(MODID + ".no_portal_at_pos_broken"));
-                    return false;
-                }
+                player.sendOverlayMessage(Component.translatable(MODID + ".no_portal_at_pos_broken"));
+                return false;
             }
-            else
+
+            portalFormer.execute();
+            if (!portalFormer.success())
             {
                 player.sendOverlayMessage(Component.translatable(MODID + ".no_portal_at_pos_broken"));
                 return false;
@@ -236,18 +243,14 @@ public class PortalLinker
             player.sendOverlayMessage(Component.translatable(MODID + ".portal_shape_differ"));
             return false;
         }
+        if (!core.canBeLinked() || !previouslyLinkedPortal.canBeLinked())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".portal_interior_obstructed"));
+            return false;
+        }
 
-        core.setLinkedWorld(core.getPreviousLinkedWorld());
-        core.setLinkedPos(core.getPreviousLinkedPos());
-        core.setLinkedFacing(core.getPreviousLinkedFacing());
-
-        previouslyLinkedPortal.setLinkedWorld(core.getLevel().dimension().identifier());
-        previouslyLinkedPortal.setLinkedPos(core.getBlockPos());
-        previouslyLinkedPortal.setLinkedFacing(core.getFacing());
         previouslyLinkedPortal.setOwnerPlayerUUID(core.getOwnerPlayerUUID());
-
-        core.linkPortal();
-        previouslyLinkedPortal.linkPortal();
+        connect(core, previouslyLinkedPortal);
         return true;
     }
 }
