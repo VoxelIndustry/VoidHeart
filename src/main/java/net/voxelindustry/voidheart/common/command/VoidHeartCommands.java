@@ -60,6 +60,7 @@ public class VoidHeartCommands
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS));
 
         registerPocketCommand(builder);
+        LeyCommands.register(builder);
 
         dispatcher.register(builder);
     }
