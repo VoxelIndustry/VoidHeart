@@ -1,19 +1,18 @@
 package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
-import net.minecraft.server.level.ServerLevel;
-import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 
+/**
+ * Fills the rectangle between two clicked points with barrier blocks.
+ */
 public class PermeableBarrierItem extends Item
 {
     public PermeableBarrierItem(Properties properties)
@@ -27,52 +26,44 @@ public class PermeableBarrierItem extends Item
     @Override
     public InteractionResult useOn(UseOnContext context)
     {
-        if (context.getLevel().isClientSide())
+        if (!(context.getLevel() instanceof ServerLevel level) || !(context.getPlayer() instanceof ServerPlayer player))
             return InteractionResult.SUCCESS;
 
-        ItemStack stack = context.getItemInHand();
+        var stack = context.getItemInHand();
+        var second = context.getClickedPos().relative(context.getClickedFace());
         BlockPos first = stack.get(VoidHeartDataComponents.BARRIER_FIRST_POINT);
-        if (first != null)
+        if (first == null)
         {
-            BlockPos second = context.getClickedPos().relative(context.getClickedFace());
-
-            if (arePointsSamePlane(first, second))
-            {
-                Direction direction = /*getDirection(first, second, context.getPlayer())*/ context.getHorizontalDirection();
-
-                for (BlockPos pos : BlockPos.betweenClosed(first, second))
-                {
-                    BlockState existingState = context.getLevel().getBlockState(pos);
-
-                    if (existingState.isAir())
-                    {
-                        context.getLevel().setBlockAndUpdate(pos, VoidHeartBlocks.PERMEABLE_BARRIER.defaultBlockState().setValue(BlockStateProperties.FACING, direction));
-
-                        stack.hurtAndBreak(1, (ServerLevel) context.getLevel(), (ServerPlayer) context.getPlayer(), item -> {});
-                        if (stack.isEmpty())
-                            break;
-                    }
-                }
-
-                stack.remove(VoidHeartDataComponents.BARRIER_FIRST_POINT);
-            }
+            stack.set(VoidHeartDataComponents.BARRIER_FIRST_POINT, second);
+            return InteractionResult.SUCCESS;
         }
-        else
-            stack.set(VoidHeartDataComponents.BARRIER_FIRST_POINT, context.getClickedPos().relative(context.getClickedFace()));
-        return super.useOn(context);
-    }
+        stack.remove(VoidHeartDataComponents.BARRIER_FIRST_POINT);
 
-    private Direction getDirection(BlockPos first, BlockPos second, UseOnContext context)
-    {
-        if (first.equals(second))
-            return context.getHorizontalDirection();
+        if (!arePointsSamePlane(first, second))
+            return InteractionResult.FAIL;
 
-        return null;
+        BlockPos firstPlaced = null;
+        for (var pos : BlockPos.betweenClosed(first, second))
+        {
+            if (!level.getBlockState(pos).isAir() || !PermeableBarrierStructure.canExtend(level, pos, player))
+                continue;
+
+            level.setBlockAndUpdate(pos, VoidHeartBlocks.PERMEABLE_BARRIER.defaultBlockState());
+            if (firstPlaced == null)
+                firstPlaced = pos.immutable();
+
+            stack.hurtAndBreak(1, level, player, item -> {});
+            if (stack.isEmpty())
+                break;
+        }
+
+        if (firstPlaced != null)
+            PermeableBarrierStructure.onBlockAdded(level, firstPlaced, player.getUUID());
+        return InteractionResult.SUCCESS;
     }
 
     private boolean arePointsSamePlane(BlockPos firstPoint, BlockPos secondPoint)
     {
         return firstPoint.getX() == secondPoint.getX() || firstPoint.getY() == secondPoint.getY() || firstPoint.getZ() == secondPoint.getZ();
     }
-
 }

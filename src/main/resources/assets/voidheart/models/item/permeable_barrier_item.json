@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "voidheart:block/permeable_barrier_sigil"
+  }
+}
