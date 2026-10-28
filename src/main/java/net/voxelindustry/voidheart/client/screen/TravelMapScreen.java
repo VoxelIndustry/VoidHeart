@@ -8,7 +8,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.ARGB;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
+import net.voxelindustry.voidheart.common.ley.anchor.AnchorTerrain;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorView;
 
 import java.util.ArrayList;
@@ -21,7 +23,6 @@ import java.util.List;
 public class TravelMapScreen extends Screen
 {
     private static final int MARGIN = 28;
-    private static final int MIN_SPAN = 512;
     private static final int HOVER_RADIUS = 8;
 
     private static final int PANEL_COLOR = 0xE0120E17;
@@ -38,7 +39,17 @@ public class TravelMapScreen extends Screen
     private static final int DORMANT_COLOR = 0xFF6E5478;
     private static final int HOVER_COLOR = 0xFF73D1DF;
 
+    private static final float TERRAIN_OPACITY = 0.5F;
+    private static final float HILL_SHADING = 1.6F;
+    private static final int CONTOUR_INTERVAL = 16;
+    private static final int CONTOUR_COLOR = 0x40000000;
+    private static final int COAST_COLOR = 0x80D9E8F0;
+
     private final AnchorPayloads.TravelMap map;
+
+    private AnchorPayloads.Terrain terrain;
+    private int[] terrainColors;
+    private byte[] terrainEdges;
 
     private int left, top, right, bottom;
     private double centerX, centerZ, scale;
@@ -68,8 +79,8 @@ public class TravelMapScreen extends Screen
         centerX = (minX + maxX) / 2D;
         centerZ = (minZ + maxZ) / 2D;
 
-        double spanX = Math.max(MIN_SPAN, (maxX - minX) * 1.25);
-        double spanZ = Math.max(MIN_SPAN, (maxZ - minZ) * 1.25);
+        double spanX = Math.max(AnchorTerrain.MIN_SPAN, (maxX - minX) * AnchorTerrain.MAP_PADDING);
+        double spanZ = Math.max(AnchorTerrain.MIN_SPAN, (maxZ - minZ) * AnchorTerrain.MAP_PADDING);
         scale = Math.min((right - left) / spanX, (bottom - top) / spanZ);
     }
 
@@ -93,6 +104,10 @@ public class TravelMapScreen extends Screen
         graphics.centeredText(font, title, width / 2, top - 12, 0xFFFFFFFF);
 
         graphics.enableScissor(left, top, right, bottom);
+        if (terrain != null)
+            drawTerrain(graphics);
+        else
+            graphics.text(font, Component.translatable("voidheart.travel_map.surveying"), left + 6, bottom - 12, 0xFF8A7A99);
         drawLeyLines(graphics);
 
         var hovered = hovered(mouseX, mouseY);
@@ -113,6 +128,110 @@ public class TravelMapScreen extends Screen
             graphics.setComponentTooltipForNextFrame(font, List.of(
                     Component.literal(map.source().name()).withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD),
                     Component.translatable("voidheart.travel_map.here").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)), mouseX, mouseY);
+    }
+
+    public long sourceId()
+    {
+        return map.source().id();
+    }
+
+    /**
+     * Shades the sampled terrain once: biome color lit from the north west by the slope and lifted with
+     * elevation, water darkened with depth, then faded into the panel so it stays a background.
+     */
+    public void setTerrain(AnchorPayloads.Terrain terrain)
+    {
+        int sizeX = terrain.sizeX();
+        int sizeZ = terrain.sizeZ();
+        var colors = new int[sizeX * sizeZ];
+        var edges = new byte[sizeX * sizeZ];
+
+        for (int j = 0; j < sizeZ; j++)
+        {
+            for (int i = 0; i < sizeX; i++)
+            {
+                int index = j * sizeX + i;
+                int height = terrain.heights()[index];
+                boolean water = terrain.isWater(index);
+
+                float light;
+                if (water)
+                    light = 1 - Math.min(terrain.seaLevel() - height, 48) / 96F;
+                else
+                {
+                    float slopeX = (heightAt(terrain, i + 1, j) - heightAt(terrain, i - 1, j)) / (2F * terrain.step());
+                    float slopeZ = (heightAt(terrain, i, j + 1) - heightAt(terrain, i, j - 1)) / (2F * terrain.step());
+                    light = Math.clamp(1 - (slopeX + slopeZ) * HILL_SHADING, 0.55F, 1.4F);
+                    light *= 0.85F + 0.3F * Math.clamp((height - terrain.seaLevel()) / 160F, 0, 1);
+                }
+
+                int rgb = terrain.colors()[index];
+                int shaded = ARGB.color(255,
+                        Math.min(255, (int) (ARGB.red(rgb) * light)),
+                        Math.min(255, (int) (ARGB.green(rgb) * light)),
+                        Math.min(255, (int) (ARGB.blue(rgb) * light)));
+                colors[index] = ARGB.srgbLerp(TERRAIN_OPACITY, PANEL_COLOR | 0xFF000000, shaded);
+
+                if (i + 1 < sizeX)
+                    edges[index] |= edgeBetween(terrain, index, index + 1);
+                if (j + 1 < sizeZ)
+                    edges[index] |= (byte) (edgeBetween(terrain, index, index + sizeX) << 2);
+            }
+        }
+
+        this.terrain = terrain;
+        terrainColors = colors;
+        terrainEdges = edges;
+    }
+
+    /**
+     * 1 when a contour line runs between the two cells, 2 for a coastline, 0 otherwise.
+     */
+    private static byte edgeBetween(AnchorPayloads.Terrain terrain, int a, int b)
+    {
+        boolean waterA = terrain.isWater(a);
+        if (waterA != terrain.isWater(b))
+            return 2;
+        if (!waterA && Math.floorDiv(terrain.heights()[a], CONTOUR_INTERVAL) != Math.floorDiv(terrain.heights()[b], CONTOUR_INTERVAL))
+            return 1;
+        return 0;
+    }
+
+    private static int heightAt(AnchorPayloads.Terrain terrain, int i, int j)
+    {
+        int clampedI = Math.clamp(i, 0, terrain.sizeX() - 1);
+        int clampedJ = Math.clamp(j, 0, terrain.sizeZ() - 1);
+        return terrain.heights()[clampedJ * terrain.sizeX() + clampedI];
+    }
+
+    private void drawTerrain(GuiGraphicsExtractor graphics)
+    {
+        int step = terrain.step();
+        for (int j = 0; j < terrain.sizeZ(); j++)
+        {
+            int y0 = Math.round(screenY(terrain.minZ() + j * step));
+            int y1 = Math.round(screenY(terrain.minZ() + (j + 1) * step));
+            if (y1 < top || y0 > bottom)
+                continue;
+
+            for (int i = 0; i < terrain.sizeX(); i++)
+            {
+                int x0 = Math.round(screenX(terrain.minX() + i * step));
+                int x1 = Math.round(screenX(terrain.minX() + (i + 1) * step));
+                if (x1 < left || x0 > right)
+                    continue;
+
+                int index = j * terrain.sizeX() + i;
+                graphics.fill(x0, y0, x1, y1, terrainColors[index]);
+
+                int east = terrainEdges[index] & 3;
+                int south = terrainEdges[index] >> 2 & 3;
+                if (east != 0)
+                    graphics.fill(x1 - 1, y0, x1, y1, east == 2 ? COAST_COLOR : CONTOUR_COLOR);
+                if (south != 0)
+                    graphics.fill(x0, y1 - 1, x1, y1, south == 2 ? COAST_COLOR : CONTOUR_COLOR);
+            }
+        }
     }
 
     /**

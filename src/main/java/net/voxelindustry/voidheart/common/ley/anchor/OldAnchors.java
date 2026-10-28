@@ -42,6 +42,7 @@ public class OldAnchors
     private final LeyLattice lattice;
     private final LeyAnchorNetwork network;
     private final LeyAnchorState state;
+    private final AnchorTerrain terrain;
 
     private OldAnchors(ServerLevel level, LeyLattice lattice)
     {
@@ -49,6 +50,7 @@ public class OldAnchors
         this.lattice = lattice;
         network = new LeyAnchorNetwork(level.getSeed(), lattice);
         state = LeyAnchorState.get(level);
+        terrain = new AnchorTerrain(level);
     }
 
     public static Optional<OldAnchors> get(ServerLevel level)
@@ -133,7 +135,9 @@ public class OldAnchors
             return;
         }
 
-        ServerPlayNetworking.send(player, travelMap(anchor.get()));
+        var map = travelMap(anchor.get());
+        ServerPlayNetworking.send(player, map);
+        terrain.send(player, map);
     }
 
     private void awaken(OldAnchor anchor, BlockPos lowerPos)

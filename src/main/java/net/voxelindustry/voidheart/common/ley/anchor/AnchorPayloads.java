@@ -22,6 +22,7 @@ public final class AnchorPayloads
     {
         PayloadTypeRegistry.clientboundPlay().register(Waypoints.TYPE, Waypoints.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(TravelMap.TYPE, TravelMap.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Terrain.TYPE, Terrain.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(TravelRequest.TYPE, TravelRequest.CODEC);
     }
 
@@ -70,6 +71,45 @@ public final class AnchorPayloads
 
         @Override
         public Type<TravelMap> type()
+        {
+            return TYPE;
+        }
+    }
+
+    /**
+     * Generated terrain under a travel map, sent after the map since it is sampled off-thread.
+     * Cell (i, j) covers {@code minX + i * step, minZ + j * step}. Heights are the ground, or the sea floor
+     * under water; colors are RGB with {@link #WATER_FLAG} set on water cells.
+     */
+    public record Terrain(long source, int minX, int minZ, int step, int sizeX, int sizeZ, int seaLevel, int[] heights, int[] colors) implements CustomPacketPayload
+    {
+        public static final int WATER_FLAG = 0x1000000;
+
+        public static final Type<Terrain> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "anchor_terrain"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Terrain> CODEC = StreamCodec.of(
+                (buf, terrain) ->
+                {
+                    buf.writeVarLong(terrain.source());
+                    buf.writeVarInt(terrain.minX());
+                    buf.writeVarInt(terrain.minZ());
+                    buf.writeVarInt(terrain.step());
+                    buf.writeVarInt(terrain.sizeX());
+                    buf.writeVarInt(terrain.sizeZ());
+                    buf.writeVarInt(terrain.seaLevel());
+                    buf.writeVarIntArray(terrain.heights());
+                    buf.writeVarIntArray(terrain.colors());
+                },
+                buf -> new Terrain(buf.readVarLong(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+                        buf.readVarIntArray(), buf.readVarIntArray()));
+
+        public boolean isWater(int index)
+        {
+            return (colors[index] & WATER_FLAG) != 0;
+        }
+
+        @Override
+        public Type<Terrain> type()
         {
             return TYPE;
         }

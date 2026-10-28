@@ -53,6 +53,11 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.Waypoints.TYPE, AnchorWaypointRender::receive);
         ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelMap.TYPE,
                 (payload, context) -> context.client().setScreenAndShow(new TravelMapScreen(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.Terrain.TYPE, (payload, context) ->
+        {
+            if (context.client().gui.screen() instanceof TravelMapScreen screen && screen.sourceId() == payload.source())
+                screen.setTerrain(payload);
+        });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
         {
             LeyDebugRender.clear();
