@@ -47,11 +47,11 @@ public class TravelMapScreen extends Screen
     private static final int DORMANT_COLOR = 0xFF6E5478;
     private static final int HOVER_COLOR = 0xFF73D1DF;
 
-    private static final float TERRAIN_OPACITY = 0.5F;
+    private static final float TERRAIN_OPACITY = 0.28F;
     private static final float HILL_SHADING = 1.6F;
     private static final int CONTOUR_INTERVAL = 16;
-    private static final int CONTOUR_COLOR = 0x40000000;
-    private static final int COAST_COLOR = 0x80D9E8F0;
+    private static final int CONTOUR_COLOR = 0x28000000;
+    private static final int COAST_COLOR = 0x50D9E8F0;
     private static final int TEXELS_PER_CELL = 4;
     private static final Identifier TERRAIN_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "dynamic/travel_map_terrain");
 
