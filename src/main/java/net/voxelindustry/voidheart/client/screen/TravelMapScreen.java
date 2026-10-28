@@ -42,6 +42,9 @@ public class TravelMapScreen extends Screen
     private static final float MOTE_SPACING = 40;
     private static final float MOTE_SPEED = 12;
     private static final int MOTE_TAIL = 8;
+    private static final float LINE_FADE_BLOCKS = 160;
+    private static final float LINE_MIN_FADE = 0.3F;
+    private static final float LINE_PIECE_LENGTH = 6;
     private static final int SOURCE_COLOR = 0xFFE8F8F5;
     private static final int ACTIVE_COLOR = 0xFF36C5B0;
     private static final int DORMANT_COLOR = 0xFF6E5478;
@@ -50,8 +53,8 @@ public class TravelMapScreen extends Screen
     private static final float TERRAIN_OPACITY = 0.28F;
     private static final float HILL_SHADING = 1.6F;
     private static final int CONTOUR_INTERVAL = 16;
-    private static final int CONTOUR_COLOR = 0x28000000;
-    private static final int COAST_COLOR = 0x50D9E8F0;
+    private static final int CONTOUR_COLOR = 0x14000000;
+    private static final int COAST_COLOR = 0x28B8C8D8;
     private static final int TEXELS_PER_CELL = 4;
     private static final Identifier TERRAIN_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "dynamic/travel_map_terrain");
 
@@ -264,12 +267,12 @@ public class TravelMapScreen extends Screen
         {
             joints.add((long) line.fromX() << 32 | line.fromZ() & 0xFFFFFFFFL);
             joints.add((long) line.toX() << 32 | line.toZ() & 0xFFFFFFFFL);
-            line(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), GLOW_HALF_WIDTH, LINE_GLOW_COLOR);
+            fadingLine(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), GLOW_HALF_WIDTH, LINE_GLOW_COLOR);
         }
         for (long joint : joints)
             joint(graphics, screenX((int) (joint >> 32)), screenY((int) joint), GLOW_HALF_WIDTH, LINE_GLOW_COLOR);
         for (var line : map.lines())
-            line(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), CORE_HALF_WIDTH, LINE_CORE_COLOR);
+            fadingLine(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), CORE_HALF_WIDTH, LINE_CORE_COLOR);
         for (long joint : joints)
             joint(graphics, screenX((int) (joint >> 32)), screenY((int) joint), CORE_HALF_WIDTH + 1, LINE_CORE_COLOR);
 
@@ -277,7 +280,33 @@ public class TravelMapScreen extends Screen
             motes(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), drift);
     }
 
-    private static void motes(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float drift)
+    /**
+     * Opacity along a line: full at its nodes, fading to {@link #LINE_MIN_FADE} once {@link #LINE_FADE_BLOCKS} away from both.
+     */
+    private float lineFade(float along, float length)
+    {
+        float fromNode = Math.min(along, length - along);
+        return LINE_MIN_FADE + (1 - LINE_MIN_FADE) * Math.max(0, 1 - fromNode / (float) (LINE_FADE_BLOCKS * scale));
+    }
+
+    /**
+     * The line drawn in short pieces, each as opaque as {@link #lineFade} at its middle.
+     */
+    private void fadingLine(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float halfWidth, int color)
+    {
+        float length = (float) Math.hypot(x2 - x1, y2 - y1);
+        int pieces = Math.max(1, (int) Math.ceil(length / LINE_PIECE_LENGTH));
+        for (int piece = 0; piece < pieces; piece++)
+        {
+            float t0 = piece / (float) pieces;
+            float t1 = (piece + 1) / (float) pieces;
+            int alpha = (int) (ARGB.alpha(color) * lineFade((t0 + t1) / 2 * length, length));
+            line(graphics, x1 + (x2 - x1) * t0, y1 + (y2 - y1) * t0, x1 + (x2 - x1) * t1, y1 + (y2 - y1) * t1, halfWidth,
+                    ARGB.color(alpha, ARGB.red(color), ARGB.green(color), ARGB.blue(color)));
+        }
+    }
+
+    private void motes(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float drift)
     {
         float length = (float) Math.hypot(x2 - x1, y2 - y1);
         if (length < MOTE_SPACING)
@@ -291,7 +320,7 @@ public class TravelMapScreen extends Screen
             if (fade <= 0)
                 continue;
             float t = along / length;
-            mote(graphics, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, angle, (int) (fade * MOTE_ALPHA));
+            mote(graphics, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, angle, (int) (fade * lineFade(along, length) * MOTE_ALPHA));
         }
     }
 
