@@ -14,6 +14,11 @@ public class AltarRecipe extends RecipeBase
 {
     @Getter
     private int time;
+    /**
+     * Experience points drained from the nearby experience skulls once every ingredient is eaten, least filled first.
+     */
+    @Getter
+    private int experience;
 
     public AltarRecipe(Identifier identifier)
     {
@@ -30,6 +35,24 @@ public class AltarRecipe extends RecipeBase
         this.time = time;
     }
 
+    /**
+     * Recipe without an output, its effect is given by an onCraft callback.
+     */
+    public AltarRecipe(Identifier identifier, ItemStackRecipeIngredient catalyst, int time, ItemStackRecipeIngredient... ingredients)
+    {
+        this(identifier);
+
+        addInputs(ItemStack.class, catalyst, ingredients);
+
+        this.time = time;
+    }
+
+    public AltarRecipe withExperience(int experience)
+    {
+        this.experience = experience;
+        return this;
+    }
+
     public RecipeBase onCraft(RecipeCallback onCraft)
     {
         super.onCraft = onCraft;
@@ -42,6 +65,17 @@ public class AltarRecipe extends RecipeBase
         super.fromJson(json);
 
         this.time = json.get("time").getAsInt();
+        this.experience = json.has("experience") ? json.get("experience").getAsInt() : 0;
+    }
+
+    @Override
+    public void toJson(JsonObject json)
+    {
+        json.addProperty("time", time);
+        if (experience != 0)
+            json.addProperty("experience", experience);
+
+        super.toJson(json);
     }
 
     @Override
@@ -50,6 +84,7 @@ public class AltarRecipe extends RecipeBase
         super.fromByteBuf(buffer);
 
         this.time = buffer.readInt();
+        this.experience = buffer.readInt();
     }
 
     @Override
@@ -58,5 +93,6 @@ public class AltarRecipe extends RecipeBase
         super.toByteBuf(buffer);
 
         buffer.writeInt(time);
+        buffer.writeInt(experience);
     }
 }

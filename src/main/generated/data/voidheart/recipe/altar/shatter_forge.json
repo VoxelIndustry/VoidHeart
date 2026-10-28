@@ -1,23 +1,34 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_conduit"
+        "item": "minecraft:anvil"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_gold_ingot"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_gold_ingot"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_gold_ingot"
+        "item": "voidheart:obsidian_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
@@ -33,9 +44,9 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:beam_focus",
-        "quantity": 1
+        "item": "voidheart:shatter_forge"
       }
     ]
-  }
+  },
+  "time": 20
 }

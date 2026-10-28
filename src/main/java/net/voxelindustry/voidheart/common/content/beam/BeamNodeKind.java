@@ -8,5 +8,6 @@ public enum BeamNodeKind
     PILLAR,
     COLLECTOR,
     FOCUS,
+    EXPERIENCE_SKULL,
     FORGE
 }

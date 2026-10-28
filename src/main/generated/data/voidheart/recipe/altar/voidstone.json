@@ -1,43 +1,42 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:ender_pearl"
+        "item": "minecraft:obsidian"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "voidheart:ender_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:cobblestone"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:cobblestone"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:cobblestone"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:cobblestone"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:cobblestone"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:cobblestone"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:cobblestone"
       }
     ]
   },
@@ -45,8 +44,10 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_amalgam"
+        "item": "voidheart:voidstone",
+        "quantity": 8
       }
     ]
-  }
+  },
+  "time": 20
 }

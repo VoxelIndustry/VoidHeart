@@ -15,6 +15,7 @@ import java.util.Optional;
  * @param itemSource             position of the pillar holding the input item, if any
  * @param totalPairs             monolith pairs on every track of the graph, the forge's own pair excluded
  * @param structureBlocks        conduits, monoliths, foci and collectors that should light up while crafting
+ * @param experienceSources      experience skulls sitting on monolith pairs, where collectors would retune the beam
  * @param error                  first formation error encountered, empty if the graph is valid
  */
 public record BeamResolution(BeamComposition result,
@@ -23,11 +24,12 @@ public record BeamResolution(BeamComposition result,
                              Optional<BlockPos> itemSource,
                              int totalPairs,
                              List<BlockPos> structureBlocks,
+                             List<BlockPos> experienceSources,
                              Optional<FormationError> error)
 {
     public static BeamResolution failed(FormationError error)
     {
-        return new BeamResolution(BeamComposition.EMPTY, List.of(), Map.of(), Optional.empty(), 0, List.of(), Optional.of(error));
+        return new BeamResolution(BeamComposition.EMPTY, List.of(), Map.of(), Optional.empty(), 0, List.of(), List.of(), Optional.of(error));
     }
 
     public boolean isValid()

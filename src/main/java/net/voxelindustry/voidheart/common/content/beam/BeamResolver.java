@@ -30,6 +30,8 @@ import java.util.Set;
  * <li>A collector retunes the whole beam to its aspect: the emitter collector, or a collector centred on top of a
  * pair (f = 3i+3, r 0, y+3). The collector nearest the endpoint wins and owns the whole contribution.</li>
  * <li>A focus has inputs on its back, left and right faces; each input face may start a track.</li>
+ * <li>An experience skull centred on top of a pair (f = 3i+3, r 0, y+3) is an experience source, it does not touch
+ * the beam.</li>
  * <li>The forge needs its own monolith pair and exactly one track (front or back); exactly one item pillar in the
  * whole graph.</li>
  * </ul>
@@ -80,6 +82,7 @@ public final class BeamResolver
         private final Set<BlockPos> structure = new LinkedHashSet<>();
         private final List<BeamSegment> segments = new ArrayList<>();
         private final List<BlockPos> itemSources = new ArrayList<>();
+        private final List<BlockPos> experienceSources = new ArrayList<>();
         private final Set<BlockPos> visitedFoci = new HashSet<>();
         private int totalPairs = 0;
 
@@ -116,6 +119,7 @@ public final class BeamResolver
                     Optional.of(itemSources.get(0)),
                     totalPairs,
                     List.copyOf(structure),
+                    List.copyOf(experienceSources),
                     Optional.empty());
         }
 
@@ -220,6 +224,13 @@ public final class BeamResolver
                     beam = focus.beam();
                     contributions = new HashMap<>(focus.contributions());
                 }
+            }
+
+            for (var i = 0; i < k; i++)
+            {
+                var skull = at(origin, d, 3 * i + 3, 0, 3);
+                if (is(skull, BeamNodeKind.EXPERIENCE_SKULL))
+                    experienceSources.add(skull);
             }
 
             for (var i = 0; i < k; i++)

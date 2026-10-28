@@ -23,7 +23,11 @@ import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
+import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -46,6 +50,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     public static final int WARMING_TIME = 80;
     public static final int COOLING_TIME = 60;
     public static final int ITEM_EATING_TIME = 60;
+    public static final int EXPERIENCE_EATING_TIME = 60;
+    public static final int SKULL_SEARCH_RADIUS = 4;
 
     // Fixes Minecraft world.getRandom() being too coherent in certain conditions
     private final Random actualRandom = new Random();
@@ -68,6 +74,10 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private BlockPos consumingPillarPos = BlockPos.ZERO;
     private ItemStack cachedToConsume = ItemStack.EMPTY;
 
+    private int experienceConsumed;
+    private BlockPos consumingSkullPos = BlockPos.ZERO;
+    private int skullConsumeProgress;
+
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
 
@@ -81,6 +91,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     private Vector3f bezierFirstPoint;
     private Vector3f bezierSecondPoint;
+
+    private Vector3f skullBezierFirstPoint;
+    private Vector3f skullBezierSecondPoint;
 
     @Getter
     private ItemStack clientRecipeOutput = ItemStack.EMPTY;
@@ -126,6 +139,18 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             }
         }
 
+        if (isClient() && tag.read("consumingSkullPos", Codec.PASSTHROUGH).isPresent())
+        {
+            var previousConsumingSkullPos = consumingSkullPos;
+            var savedSkullPos = tag.getLongOr("consumingSkullPos", 0L);
+            consumingSkullPos = savedSkullPos == 0L ? BlockPos.ZERO : BlockPos.of(savedSkullPos);
+
+            if (consumingSkullPos != BlockPos.ZERO && !consumingSkullPos.equals(previousConsumingSkullPos))
+                computeSkullBezier();
+        }
+
+        experienceConsumed = tag.getIntOr("experienceConsumed", 0);
+
         if (isServer())
         {
             if (isCrafting)
@@ -161,7 +186,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             tag.putInt("consumingPillarIndex", consumingPillarIndex);
             tag.putLong("consumingPillarPos", consumingPillarPos.asLong());
             tag.store("cachedToConsumeStack", ItemStack.OPTIONAL_CODEC, cachedToConsume);
+            tag.putLong("consumingSkullPos", consumingSkullPos.asLong());
         }
+        tag.putInt("experienceConsumed", experienceConsumed);
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
@@ -250,6 +277,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
         if (toConsume.isEmpty())
         {
+            if (!computeExperienceConsumption())
+                return;
+
             finishCrafting();
             PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
         }
@@ -282,6 +312,78 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             consumingPillarPos = BlockPos.ZERO;
             cachedToConsume = ItemStack.EMPTY;
         }
+    }
+
+    /**
+     * Once every ingredient is eaten, the altar drains the nearby experience skulls one by one, least filled first.
+     *
+     * @return true once the recipe experience is fully drained
+     */
+    private boolean computeExperienceConsumption()
+    {
+        var remaining = currentRecipe.getExperience() - experienceConsumed;
+        if (remaining <= 0)
+            return true;
+
+        if (consumingSkullPos == BlockPos.ZERO)
+        {
+            var skull = findSkullToDrain();
+            if (skull != null)
+            {
+                consumingSkullPos = skull.getBlockPos().immutable();
+                skullConsumeProgress = 0;
+            }
+            return false;
+        }
+
+        if (!(level.getBlockEntity(consumingSkullPos) instanceof ExperienceSkullTile skull) || skull.getExperience() <= 0)
+        {
+            consumingSkullPos = BlockPos.ZERO;
+            skullConsumeProgress = 0;
+            return false;
+        }
+
+        if (skullConsumeProgress < EXPERIENCE_EATING_TIME)
+        {
+            skullConsumeProgress++;
+            return false;
+        }
+
+        var taken = Math.min(remaining, skull.getExperience());
+        skull.setExperience(skull.getExperience() - taken);
+        skull.setChanged();
+        experienceConsumed += taken;
+        getLevel().playSound(null, getBlockPos(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.BLOCKS, 0.5F, getLevel().getRandom().nextFloat() * 0.4F + 0.8F);
+
+        consumingSkullPos = BlockPos.ZERO;
+        skullConsumeProgress = 0;
+        setChanged();
+        return experienceConsumed >= currentRecipe.getExperience();
+    }
+
+    private ExperienceSkullTile findSkullToDrain()
+    {
+        ExperienceSkullTile leastFilled = null;
+        for (var pos : BlockPos.betweenClosed(getBlockPos().offset(-SKULL_SEARCH_RADIUS, -1, -SKULL_SEARCH_RADIUS), getBlockPos().offset(SKULL_SEARCH_RADIUS, 3, SKULL_SEARCH_RADIUS)))
+        {
+            if (level.getBlockEntity(pos) instanceof ExperienceSkullTile skull && skull.getExperience() > 0
+                    && (leastFilled == null || skull.getExperience() < leastFilled.getExperience()))
+                leastFilled = skull;
+        }
+        return leastFilled;
+    }
+
+    /**
+     * Experience drained for a craft that did not complete is given back as orbs.
+     */
+    private void refundExperience()
+    {
+        if (experienceConsumed > 0 && getLevel() instanceof ServerLevel serverLevel)
+            ExperienceOrb.award(serverLevel, Vec3.atCenterOf(getBlockPos().above()), experienceConsumed);
+
+        experienceConsumed = 0;
+        consumingSkullPos = BlockPos.ZERO;
+        skullConsumeProgress = 0;
     }
 
     private void playParticleEffects()
@@ -317,6 +419,20 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
                             consumingPillarPos.getX() + 0.5,
                             consumingPillarPos.getY() + 1 + 4 / 16D,
                             consumingPillarPos.getZ() + 0.5,
+                            getBlockPos().getX() + 0.5,
+                            getBlockPos().getY() + 1 + 4 / 16D,
+                            getBlockPos().getZ() + 0.5);
+                }
+            }
+
+            if (consumingSkullPos != BlockPos.ZERO && skullBezierFirstPoint != null)
+            {
+                for (int index = 0; index < 2; index++)
+                {
+                    getLevel().addParticle(new AltarExperienceParticleEffect(skullBezierFirstPoint, skullBezierSecondPoint),
+                            consumingSkullPos.getX() + 0.5,
+                            consumingSkullPos.getY() + 0.5,
+                            consumingSkullPos.getZ() + 0.5,
                             getBlockPos().getX() + 0.5,
                             getBlockPos().getY() + 1 + 4 / 16D,
                             getBlockPos().getZ() + 0.5);
@@ -417,6 +533,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private void stopCrafting()
     {
         dropAteItems();
+        refundExperience();
         recipeState = null;
         recipeProgress = 0;
         isCrafting = false;
@@ -437,6 +554,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         recipeProgress = 0;
         coolProgress = COOLING_TIME;
         currentRecipe = null;
+        experienceConsumed = 0;
+        consumingSkullPos = BlockPos.ZERO;
+        skullConsumeProgress = 0;
         isCrafting = false;
         sync();
 
@@ -525,9 +645,29 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     private void computeBezier()
     {
-        var start = new Vector3f(consumingPillarPos.getX() + 0.5F,
+        var points = computeBezier(new Vector3f(consumingPillarPos.getX() + 0.5F,
                 consumingPillarPos.getY() + 1 + 4 / 16F,
-                consumingPillarPos.getZ() + 0.5F);
+                consumingPillarPos.getZ() + 0.5F));
+        bezierFirstPoint = points[0];
+        bezierSecondPoint = points[1];
+    }
+
+    private void computeSkullBezier()
+    {
+        var points = computeBezier(new Vector3f(consumingSkullPos.getX() + 0.5F,
+                consumingSkullPos.getY() + 0.5F,
+                consumingSkullPos.getZ() + 0.5F));
+        skullBezierFirstPoint = points[0];
+        skullBezierSecondPoint = points[1];
+    }
+
+    /**
+     * @return both inner control points of a stream from the given start to the altar item
+     */
+    private Vector3f[] computeBezier(Vector3f start)
+    {
+        Vector3f bezierFirstPoint;
+        Vector3f bezierSecondPoint;
 
         var end = new Vector3f(getBlockPos().getX() + 0.5F,
                 getBlockPos().getY() + 1 + 4 / 16F,
@@ -555,6 +695,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             bezierFirstPoint = bezierFirstPoint.add(0, -getLevel().getRandom().nextFloat() * 1.25F, 0);
             bezierFirstPoint = bezierSecondPoint.add(0, getLevel().getRandom().nextFloat() * 1.25F, 0);
         }
+        return new Vector3f[]{bezierFirstPoint, bezierSecondPoint};
     }
 
     @Override
@@ -602,6 +743,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         removeItself();
         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
         dropAteItems();
+        refundExperience();
         super.preRemoveSideEffects(pos, state);
     }
 }
