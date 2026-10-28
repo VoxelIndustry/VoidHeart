@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.client.screen;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.ChatFormatting;
+import net.minecraft.util.Util;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -9,6 +11,7 @@ import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -22,7 +25,13 @@ public class TravelMapScreen extends Screen
 
     private static final int PANEL_COLOR = 0xE0120E17;
     private static final int BORDER_COLOR = 0xFF3B2C43;
-    private static final int LINE_COLOR = 0x996B4FB8;
+    private static final int LINE_GLOW_COLOR = 0x305B3FA8;
+    private static final int LINE_CORE_COLOR = 0xC08E6BE8;
+    private static final int MOTE_RGB = 0xD9CCFF;
+    private static final float GLOW_HALF_WIDTH = 2.5F;
+    private static final float CORE_HALF_WIDTH = 0.6F;
+    private static final float MOTE_SPACING = 22;
+    private static final float MOTE_SPEED = 9;
     private static final int SOURCE_COLOR = 0xFFE8F8F5;
     private static final int ACTIVE_COLOR = 0xFF36C5B0;
     private static final int DORMANT_COLOR = 0xFF6E5478;
@@ -83,8 +92,7 @@ public class TravelMapScreen extends Screen
         graphics.centeredText(font, title, width / 2, top - 12, 0xFFFFFFFF);
 
         graphics.enableScissor(left, top, right, bottom);
-        for (var line : map.lines())
-            line(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), LINE_COLOR);
+        drawLeyLines(graphics);
 
         var hovered = hovered(mouseX, mouseY);
         for (var anchor : map.linked())
@@ -101,7 +109,62 @@ public class TravelMapScreen extends Screen
         if (hovered != null)
             graphics.setComponentTooltipForNextFrame(font, tooltip(hovered), mouseX, mouseY);
         else if (Math.hypot(mouseX - screenX(map.source().x()), mouseY - screenY(map.source().z())) <= HOVER_RADIUS)
-            graphics.setComponentTooltipForNextFrame(font, List.of(Component.literal(map.source().name()), Component.translatable("voidheart.travel_map.here")), mouseX, mouseY);
+            graphics.setComponentTooltipForNextFrame(font, List.of(
+                    Component.literal(map.source().name()).withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD),
+                    Component.translatable("voidheart.travel_map.here").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)), mouseX, mouseY);
+    }
+
+    /**
+     * Each line is a soft glow under a thin core, with motes drifting along it in its flow direction.
+     * Lines are centered on their path and every node gets a joint so segments meet cleanly.
+     */
+    private void drawLeyLines(GuiGraphicsExtractor graphics)
+    {
+        float drift = (Util.getMillis() % 1_000_000L) / 1000F * MOTE_SPEED;
+        var joints = new HashSet<Long>();
+
+        for (var line : map.lines())
+        {
+            joints.add((long) line.fromX() << 32 | line.fromZ() & 0xFFFFFFFFL);
+            joints.add((long) line.toX() << 32 | line.toZ() & 0xFFFFFFFFL);
+            line(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), GLOW_HALF_WIDTH, LINE_GLOW_COLOR);
+        }
+        for (long joint : joints)
+            joint(graphics, screenX((int) (joint >> 32)), screenY((int) joint), GLOW_HALF_WIDTH, LINE_GLOW_COLOR);
+        for (var line : map.lines())
+            line(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), CORE_HALF_WIDTH, LINE_CORE_COLOR);
+        for (long joint : joints)
+            joint(graphics, screenX((int) (joint >> 32)), screenY((int) joint), CORE_HALF_WIDTH + 1, LINE_CORE_COLOR);
+
+        for (var line : map.lines())
+            motes(graphics, screenX(line.fromX()), screenY(line.fromZ()), screenX(line.toX()), screenY(line.toZ()), drift);
+    }
+
+    private static void motes(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float drift)
+    {
+        float length = (float) Math.hypot(x2 - x1, y2 - y1);
+        if (length < MOTE_SPACING)
+            return;
+
+        for (float along = drift % MOTE_SPACING; along < length; along += MOTE_SPACING)
+        {
+            // Fade in and out near the nodes so motes don't pop at segment ends
+            float fade = Math.min(1, Math.min(along, length - along) / (MOTE_SPACING / 2));
+            int alpha = (int) (fade * 255);
+            float t = along / length;
+            joint(graphics, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, 1, alpha << 24 | MOTE_RGB);
+        }
+    }
+
+    private static void joint(GuiGraphicsExtractor graphics, float x, float y, float radius, int color)
+    {
+        var pose = graphics.pose();
+        pose.pushMatrix();
+        pose.translate(x, y);
+        pose.rotate((float) (Math.PI / 4));
+        pose.scale(radius);
+        graphics.fill(-1, -1, 1, 1, color);
+        pose.popMatrix();
     }
 
     private void marker(GuiGraphicsExtractor graphics, AnchorView anchor, int size, int color, boolean hollow)
@@ -121,7 +184,10 @@ public class TravelMapScreen extends Screen
         graphics.centeredText(font, anchor.name(), (int) x, (int) y + size + 5, color);
     }
 
-    private static void line(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, int color)
+    /**
+     * A band centered on the segment: drawn as a unit square stretched along and across it, so its width is symmetric.
+     */
+    private static void line(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float halfWidth, int color)
     {
         float length = (float) Math.hypot(x2 - x1, y2 - y1);
         if (length < 1)
@@ -131,17 +197,24 @@ public class TravelMapScreen extends Screen
         pose.pushMatrix();
         pose.translate(x1, y1);
         pose.rotate((float) Math.atan2(y2 - y1, x2 - x1));
-        graphics.fill(0, 0, Math.round(length), 1, color);
+        pose.scale(length, halfWidth);
+        graphics.fill(0, -1, 1, 1, color);
         pose.popMatrix();
     }
 
     private List<Component> tooltip(AnchorView anchor)
     {
         var lines = new ArrayList<Component>();
-        lines.add(Component.literal(anchor.name()));
+        lines.add(Component.literal(anchor.name()).withStyle(anchor.active() ? ChatFormatting.AQUA : ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
+
         int distance = (int) Math.hypot(anchor.x() - map.source().x(), anchor.z() - map.source().z());
-        lines.add(Component.translatable("voidheart.anchor.distance", distance));
-        lines.add(Component.translatable(anchor.active() ? "voidheart.travel_map.travel" : "voidheart.travel_map.dormant"));
+        lines.add(Component.translatable("voidheart.travel_map.distance", Component.literal(Integer.toString(distance)).withStyle(ChatFormatting.WHITE))
+                .withStyle(ChatFormatting.GRAY));
+
+        if (anchor.active())
+            lines.add(Component.translatable("voidheart.travel_map.travel").withStyle(ChatFormatting.GREEN));
+        else
+            lines.add(Component.translatable("voidheart.travel_map.dormant").withStyle(ChatFormatting.GOLD));
         return lines;
     }
 
