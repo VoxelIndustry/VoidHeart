@@ -43,7 +43,9 @@ public class ShatterForgeProvider implements StreamServerDataProvider<BlockAcces
                     crafting ? forge.getRecipeState().getOutput(ItemStack.class, 0) : ItemStack.EMPTY,
                     forge.getBeamComposition(),
                     new BeamComposition(crafting ? forge.getRequiredAspects() : Map.of(), 0),
-                    error == null ? "" : error.name());
+                    error == null ? "" : error.name(),
+                    crafting ? forge.getRequiredExperience() : 0,
+                    forge.getAvailableExperience());
         }
         return null;
     }
@@ -57,7 +59,8 @@ public class ShatterForgeProvider implements StreamServerDataProvider<BlockAcces
     /**
      * A negative progress means the forge is not crafting.
      */
-    public record Data(ItemStack input, float progress, ItemStack output, BeamComposition beam, BeamComposition required, String error)
+    public record Data(ItemStack input, float progress, ItemStack output, BeamComposition beam, BeamComposition required, String error,
+                       int requiredExperience, int availableExperience)
     {
         public static final StreamCodec<RegistryFriendlyByteBuf, Data> STREAM_CODEC = StreamCodec.composite(
                 ItemStack.OPTIONAL_STREAM_CODEC, Data::input,
@@ -66,6 +69,8 @@ public class ShatterForgeProvider implements StreamServerDataProvider<BlockAcces
                 BeamComposition.STREAM_CODEC, Data::beam,
                 BeamComposition.STREAM_CODEC, Data::required,
                 ByteBufCodecs.STRING_UTF8, Data::error,
+                ByteBufCodecs.VAR_INT, Data::requiredExperience,
+                ByteBufCodecs.VAR_INT, Data::availableExperience,
                 Data::new);
 
         public boolean crafting()
@@ -131,6 +136,10 @@ public class ShatterForgeProvider implements StreamServerDataProvider<BlockAcces
 
             if (data.beam().unattuned() > 0)
                 tooltip.add(Component.translatable("voidheart.jade.beam.unattuned").append(": " + data.beam().unattuned()));
+
+            if (data.requiredExperience() > 0)
+                tooltip.add(Component.translatable("voidheart.jade.shatter_forge.experience", data.availableExperience(), data.requiredExperience())
+                        .withStyle(data.availableExperience() >= data.requiredExperience() ? ChatFormatting.GREEN : ChatFormatting.RED));
         }
 
         @Override

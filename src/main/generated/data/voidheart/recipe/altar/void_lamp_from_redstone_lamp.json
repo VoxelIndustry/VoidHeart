@@ -1,35 +1,22 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_conduit"
+        "item": "minecraft:redstone_lamp"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_gold_ingot"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_gold_ingot"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_gold_ingot"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_gold_ingot"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:bucket"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ender_shard"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
@@ -41,9 +28,9 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ravenous_collector",
-        "quantity": 1
+        "item": "voidheart:void_lamp"
       }
     ]
-  }
+  },
+  "time": 20
 }

@@ -47,6 +47,15 @@ public class ExperienceUtil
         return level;
     }
 
+    /**
+     * @return levels a player starting from level 0 spends to gather the given points, a started level counting as one
+     */
+    public int getLevelsToGather(int experienceTotal)
+    {
+        var level = getExperienceLevel(experienceTotal);
+        return nextLevelProgress(experienceTotal) > 0 ? level + 1 : level;
+    }
+
     public int getTotalExperienceForLevel(int level)
     {
         int total = 0;

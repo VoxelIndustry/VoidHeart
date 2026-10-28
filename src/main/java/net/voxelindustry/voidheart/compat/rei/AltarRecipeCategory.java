@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.util.ExperienceUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,6 +24,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
 {
     public static final CategoryIdentifier<AltarRecipeDisplay> IDENTIFIER = CategoryIdentifier.of(MODID, "altar_crafting");
+
+    private static final int EXPERIENCE_COLOR = 0xFF5BA51F;
 
     @Override
     public Identifier getIdentifier()
@@ -65,13 +68,21 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
 
         widgets.add(Widgets.createSlot(new Point(bounds.x + startX + 36 + 36, bounds.y + startY)).entries(getOutput(display, 0)).markOutput());
 
+        if (display.getExperience() > 0)
+        {
+            var experience = Component.translatable(MODID + ".rei.altar.experience", display.getExperience(), ExperienceUtil.getLevelsToGather(display.getExperience()));
+            // Centered below the ring
+            widgets.add(Widgets.createLabel(new Point(bounds.getCenterX(), bounds.getMaxY() - 11), experience)
+                    .centered().noShadow().color(EXPERIENCE_COLOR, EXPERIENCE_COLOR));
+        }
+
         return widgets;
     }
 
     @Override
     public int getDisplayHeight()
     {
-        return 100;
+        return 116;
     }
 
     @Override

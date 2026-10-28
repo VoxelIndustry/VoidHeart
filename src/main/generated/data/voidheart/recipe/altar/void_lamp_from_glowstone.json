@@ -1,31 +1,10 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:bone_block"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:rotten_flesh"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:rotten_flesh"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:rotten_flesh"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:diamond"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:diamond"
+        "item": "minecraft:glowstone"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
@@ -38,6 +17,26 @@
       {
         "identifier": "steamlayer:itemstack_ingredient",
         "item": "voidheart:obsidian_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:redstone"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:redstone"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:redstone"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:redstone"
       }
     ]
   },
@@ -45,9 +44,9 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:experience_skull",
-        "quantity": 1
+        "item": "voidheart:void_lamp"
       }
     ]
-  }
+  },
+  "time": 20
 }

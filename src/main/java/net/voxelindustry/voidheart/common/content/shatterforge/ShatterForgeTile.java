@@ -27,6 +27,8 @@ import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
+import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
 import org.jetbrains.annotations.Nullable;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
@@ -80,6 +82,16 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
      */
     @Getter
     private List<BlockPos> drainingCollectors = List.of();
+    /**
+     * Experience skulls the current recipe draws experience from.
+     */
+    @Getter
+    private List<BlockPos> drainingSkulls = List.of();
+    /**
+     * Experience held by the skulls of the last resolved structure.
+     */
+    @Getter
+    private int availableExperience;
 
     private int connectedMonolithCount;
     private Direction trackDirection;
@@ -168,7 +180,52 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
                             segment.to().getZ() + 0.5);
                 }
             }
+
+            for (var skullPos : drainingSkulls)
+                playExperienceParticles(skullPos, beamY);
         }
+    }
+
+    /**
+     * Experience falls from its skull into the beam below, then travels the beam into the forge.
+     */
+    private void playExperienceParticles(BlockPos skullPos, double beamY)
+    {
+        var cell = new BlockPos(skullPos.getX(), getBlockPos().getY(), skullPos.getZ());
+        addExperienceParticle(skullPos.getX() + 0.5, skullPos.getY() + 0.4, skullPos.getZ() + 0.5, cell.getX() + 0.5, beamY, cell.getZ() + 0.5);
+
+        var through = segmentThrough(cell);
+        if (through == null)
+            return;
+        addExperienceParticle(cell.getX() + 0.5, beamY, cell.getZ() + 0.5, through.to().getX() + 0.5, beamY, through.to().getZ() + 0.5);
+        for (var segment : pathFrom(through.to()))
+            addExperienceParticle(segment.from().getX() + 0.5, beamY, segment.from().getZ() + 0.5, segment.to().getX() + 0.5, beamY, segment.to().getZ() + 0.5);
+    }
+
+    private void addExperienceParticle(double fromX, double fromY, double fromZ, double toX, double toY, double toZ)
+    {
+        if (fromX == toX && fromY == toY && fromZ == toZ)
+            return;
+        getLevel().addParticle(VoidHeart.SHATTER_FORGE_EXPERIENCE_PARTICLE, fromX, fromY, fromZ, toX, toY, toZ);
+    }
+
+    /**
+     * @return the beam segment running over the given track cell, null if none does
+     */
+    private BeamSegment segmentThrough(BlockPos cell)
+    {
+        for (var segment : beamSegments)
+        {
+            var from = new BlockPos(segment.from().getX(), cell.getY(), segment.from().getZ());
+            var to = new BlockPos(segment.to().getX(), cell.getY(), segment.to().getZ());
+            var alongZ = cell.getX() == from.getX() && cell.getX() == to.getX()
+                    && cell.getZ() >= Math.min(from.getZ(), to.getZ()) && cell.getZ() <= Math.max(from.getZ(), to.getZ());
+            var alongX = cell.getZ() == from.getZ() && cell.getZ() == to.getZ()
+                    && cell.getX() >= Math.min(from.getX(), to.getX()) && cell.getX() <= Math.max(from.getX(), to.getX());
+            if ((alongZ || alongX) && !cell.equals(from))
+                return segment;
+        }
+        return null;
     }
 
     /**
@@ -176,8 +233,16 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
      */
     private List<BeamSegment> itemPath()
     {
+        return pathFrom(pillarPos);
+    }
+
+    /**
+     * Beam segments chained from the given node to the forge.
+     */
+    private List<BeamSegment> pathFrom(BlockPos start)
+    {
         var path = new ArrayList<BeamSegment>();
-        var current = pillarPos;
+        var current = start;
         while (current != null && !current.equals(getBlockPos()) && path.size() < beamSegments.size())
         {
             BeamSegment next = null;
@@ -348,24 +413,33 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             return false;
         }
 
+        availableExperience = totalExperience(resolution.experienceSources());
+
         ShatterForgeRecipe selected = null;
+        var lackingExperience = false;
         for (var recipe : passing)
         {
-            if (hasEnoughEssence(recipe, resolution.collectorContributions()))
+            if (!hasEnoughEssence(recipe, resolution.collectorContributions()))
+                continue;
+            if (planExperience(recipe, resolution.experienceSources()) == null)
             {
-                selected = recipe;
-                break;
+                lackingExperience = true;
+                continue;
             }
+            selected = recipe;
+            break;
         }
 
         if (selected == null)
         {
-            updateBeamState(resolution.segments(), resolution.result(), FormationError.NOT_ENOUGH_ESSENCE);
+            updateBeamState(resolution.segments(), resolution.result(),
+                    lackingExperience ? FormationError.NOT_ENOUGH_EXPERIENCE : FormationError.NOT_ENOUGH_ESSENCE);
             return false;
         }
 
         collectLitBlocks(resolution.structureBlocks());
         updateDrainingCollectors(selected, resolution.collectorContributions());
+        updateDrainingSkulls(selected, resolution.experienceSources());
         requestCollectorFeeds(selected, resolution.collectorContributions());
 
         var axis = getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS);
@@ -402,7 +476,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             error = FormationError.MISSING_ASPECTS;
         else if (!hasEnoughEssence(currentRecipe, resolution.collectorContributions()))
             error = FormationError.NOT_ENOUGH_ESSENCE;
+        else if (planExperience(currentRecipe, resolution.experienceSources()) == null)
+            error = FormationError.NOT_ENOUGH_EXPERIENCE;
 
+        availableExperience = totalExperience(resolution.experienceSources());
         updateBeamState(resolution.segments(), resolution.result(), error);
         if (error != null)
             return false;
@@ -410,6 +487,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         connectedMonolithCount = resolution.totalPairs();
         collectLitBlocks(resolution.structureBlocks());
         updateDrainingCollectors(currentRecipe, resolution.collectorContributions());
+        updateDrainingSkulls(currentRecipe, resolution.experienceSources());
         requestCollectorFeeds(currentRecipe, resolution.collectorContributions());
         for (var pos : connectedBlocks)
         {
@@ -476,6 +554,85 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             if (drain.collector().storage().amount() < drain.amount())
                 drain.collector().requestFeed(level.getGameTime() + 40);
         }
+    }
+
+    private record ExperienceDraw(ExperienceSkullTile skull, int amount)
+    {
+    }
+
+    private int totalExperience(List<BlockPos> sources)
+    {
+        var total = 0;
+        for (var source : sources)
+        {
+            if (level.getBlockEntity(source) instanceof ExperienceSkullTile skull)
+                total += skull.getExperience();
+        }
+        return total;
+    }
+
+    /**
+     * The least filled skulls are emptied first.
+     *
+     * @return null when the skulls do not hold enough experience
+     */
+    @Nullable
+    private List<ExperienceDraw> planExperience(ShatterForgeRecipe recipe, List<BlockPos> sources)
+    {
+        var missing = recipe.getExperience();
+        var draws = new ArrayList<ExperienceDraw>();
+        if (missing <= 0)
+            return draws;
+
+        var skulls = new ArrayList<ExperienceSkullTile>();
+        for (var source : sources)
+        {
+            if (level.getBlockEntity(source) instanceof ExperienceSkullTile skull && skull.getExperience() > 0)
+                skulls.add(skull);
+        }
+        skulls.sort(Comparator.comparingInt(ExperienceSkullTile::getExperience));
+
+        for (var skull : skulls)
+        {
+            var taken = Math.min(missing, skull.getExperience());
+            draws.add(new ExperienceDraw(skull, taken));
+            missing -= taken;
+            if (missing == 0)
+                return draws;
+        }
+        return null;
+    }
+
+    private void drainExperience(List<ExperienceDraw> plan)
+    {
+        for (var draw : plan)
+        {
+            draw.skull().setExperience(draw.skull().getExperience() - draw.amount());
+            draw.skull().setChanged();
+        }
+    }
+
+    /**
+     * Kept after the craft stops, like the collectors, while the experience flows into the beam.
+     */
+    private void updateDrainingSkulls(ShatterForgeRecipe recipe, List<BlockPos> sources)
+    {
+        var plan = planExperience(recipe, sources);
+        var skulls = plan == null ? List.<BlockPos>of() : plan.stream()
+                .map(draw -> draw.skull().getBlockPos().immutable())
+                .sorted()
+                .toList();
+        if (skulls.equals(drainingSkulls))
+            return;
+
+        drainingSkulls = skulls;
+        setChanged();
+        sync();
+    }
+
+    public int getRequiredExperience()
+    {
+        return currentRecipe == null ? 0 : currentRecipe.getExperience();
     }
 
     private List<CollectorDrain> computeDrains(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
@@ -821,15 +978,18 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
                 var completionResolution = BeamResolver.resolve(world, pos);
                 forge.markSourcePillar(completionResolution);
-                if (completionResolution.error().isPresent()
-                        || !forge.hasEnoughEssence(forge.currentRecipe, completionResolution.collectorContributions()))
+                var enoughEssence = forge.hasEnoughEssence(forge.currentRecipe, completionResolution.collectorContributions());
+                var experiencePlan = forge.planExperience(forge.currentRecipe, completionResolution.experienceSources());
+                if (completionResolution.error().isPresent() || !enoughEssence || experiencePlan == null)
                 {
-                    forge.updateBeamState(List.of(), BeamComposition.EMPTY, completionResolution.error().orElse(FormationError.NOT_ENOUGH_ESSENCE));
+                    var error = completionResolution.error().orElse(enoughEssence ? FormationError.NOT_ENOUGH_EXPERIENCE : FormationError.NOT_ENOUGH_ESSENCE);
+                    forge.updateBeamState(List.of(), BeamComposition.EMPTY, error);
                     forge.stopCrafting();
                     return;
                 }
 
                 forge.drainEssence(forge.currentRecipe, completionResolution.collectorContributions());
+                forge.drainExperience(experiencePlan);
 
                 forge.stack = output.copy();
 
@@ -863,6 +1023,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         beamSegments = tag.read("beamSegments", BeamSegment.CODEC.listOf()).orElse(List.of());
         beamComposition = tag.read("beamComposition", BeamComposition.CODEC).orElse(BeamComposition.EMPTY);
         drainingCollectors = tag.read("drainingCollectors", BlockPos.CODEC.listOf()).orElse(List.of());
+        drainingSkulls = tag.read("drainingSkulls", BlockPos.CODEC.listOf()).orElse(List.of());
         formationError = tag.getStringOr("formationError", "").isEmpty() ? null : parseError(tag.getStringOr("formationError", ""));
         isCrafting = tag.getBooleanOr("isCrafting", false);
         hasOutputtedResult = tag.getBooleanOr("hasOutputtedResult", false);
@@ -900,6 +1061,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.store("beamSegments", BeamSegment.CODEC.listOf(), beamSegments);
         tag.store("beamComposition", BeamComposition.CODEC, beamComposition);
         tag.store("drainingCollectors", BlockPos.CODEC.listOf(), drainingCollectors);
+        tag.store("drainingSkulls", BlockPos.CODEC.listOf(), drainingSkulls);
         tag.putString("formationError", formationError == null ? "" : formationError.name());
         tag.putBoolean("isCrafting", isCrafting);
         tag.putInt("connectedMonolithCount", connectedMonolithCount);

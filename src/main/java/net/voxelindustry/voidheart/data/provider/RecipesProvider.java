@@ -23,6 +23,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.steamlayer.recipe.data.RecipeBaseBuilder;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
+import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
+import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -66,6 +69,8 @@ public class RecipesProvider extends FabricRecipeProvider
 
     private static class VoidHeartRecipeProvider extends RecipeProvider
     {
+        private static final int ALTAR_TIME = 20;
+
         VoidHeartRecipeProvider(BootstrapContext<Recipe<?>> recipes, BootstrapContext<Advancement> advancements)
         {
             super(recipes, advancements);
@@ -133,7 +138,79 @@ public class RecipesProvider extends FabricRecipeProvider
 
             // Tier 3: prestige transmutations, large structures
             offerShatterForgeRecipe(Items.DIAMOND_BLOCK, Items.HEAVY_CORE, 1, 200, 7, 6000, Map.of(EssenceRegistry.STILLNESS, 6, EssenceRegistry.FIERY, 4));
-            offerShatterForgeRecipe(Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE, 1, 200, 8, 10000, Map.of(EssenceRegistry.STILLNESS, 5, EssenceRegistry.FIERY, 6));
+            // A full experience skull, 30 levels
+            offerShatterForgeRecipe(Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE, 1, 200, 8, 10000, Map.of(EssenceRegistry.STILLNESS, 5, EssenceRegistry.FIERY, 6),
+                    ExperienceSkullTile.MAX_EXPERIENCE);
+
+            // Altar: the catalyst sits on the altar, each ingredient on one of the eight pillars
+            offerAltarRecipe("beam_focus", VoidHeartBlocks.BEAM_FOCUS, VoidHeartBlocks.VOID_CONDUIT,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+            offerAltarRecipe("experience_skull", VoidHeartBlocks.EXPERIENCE_SKULL, Blocks.BONE_BLOCK,
+                    Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH,
+                    Items.DIAMOND, Items.DIAMOND,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAltarRecipe("eye_bottle", VoidHeartBlocks.EYE_BOTTLE, Items.GLASS_BOTTLE,
+                    VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAltarRecipe("inventory_inserter", VoidHeartBlocks.INVENTORY_INSERTER, Blocks.HOPPER, eight(VoidHeartItems.OBSIDIAN_SHARD));
+            offerAltarRecipe("ravenous_collector", VoidHeartBlocks.RAVENOUS_COLLECTOR, VoidHeartBlocks.VOID_CONDUIT,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    Items.BUCKET, VoidHeartItems.ENDER_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAltarRecipe("shatter_forge", VoidHeartBlocks.SHATTER_FORGE, Blocks.ANVIL,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+            offerAltarRecipe("void_amalgam", VoidHeartItems.VOID_AMALGAM, Items.ENDER_PEARL, eight(VoidHeartItems.OBSIDIAN_SHARD));
+            offerAltarRecipe("void_lamp_from_glowstone", VoidHeartBlocks.VOID_LAMP, Blocks.GLOWSTONE,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    Items.REDSTONE, Items.REDSTONE, Items.REDSTONE, Items.REDSTONE);
+            offerAltarRecipe("void_lamp_from_redstone_lamp", VoidHeartBlocks.VOID_LAMP, Blocks.REDSTONE_LAMP,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAltarRecipe("void_pearl", VoidHeartItems.VOID_PEARL, VoidHeartItems.ENDER_SHARD, eight(VoidHeartItems.OBSIDIAN_SHARD));
+            offerAltarRecipe("voidstone", new ItemStack(VoidHeartBlocks.VOIDSTONE, 8), Blocks.OBSIDIAN,
+                    VoidHeartItems.ENDER_SHARD,
+                    Blocks.COBBLESTONE, Blocks.COBBLESTONE, Blocks.COBBLESTONE, Blocks.COBBLESTONE, Blocks.COBBLESTONE, Blocks.COBBLESTONE, Blocks.COBBLESTONE);
+
+            // The heart binding is done by an onCraft callback registered on this id, see VoidHeartRecipes
+            saveAltarRecipe(new AltarRecipe(altarRecipeId("voidheart"), ingredient(VoidHeartItems.VOID_HEART), ALTAR_TIME), VoidHeartItems.VOID_HEART);
+        }
+
+        private static ItemLike[] eight(ItemLike ingredient)
+        {
+            return new ItemLike[]{ingredient, ingredient, ingredient, ingredient, ingredient, ingredient, ingredient, ingredient};
+        }
+
+        private static Identifier altarRecipeId(String name)
+        {
+            return Identifier.fromNamespaceAndPath(MODID, "altar/" + name);
+        }
+
+        private static ItemStackRecipeIngredient ingredient(ItemLike item)
+        {
+            return new ItemStackRecipeIngredient(new ItemStack(item), false);
+        }
+
+        private void offerAltarRecipe(String name, ItemLike output, ItemLike catalyst, ItemLike... ingredients)
+        {
+            offerAltarRecipe(name, new ItemStack(output), catalyst, ingredients);
+        }
+
+        private void offerAltarRecipe(String name, ItemStack output, ItemLike catalyst, ItemLike... ingredients)
+        {
+            var ingredientList = new ItemStackRecipeIngredient[ingredients.length];
+            for (var i = 0; i < ingredients.length; i++)
+                ingredientList[i] = ingredient(ingredients[i]);
+
+            saveAltarRecipe(new AltarRecipe(altarRecipeId(name), new ItemStackRecipeIngredient(output, false), ingredient(catalyst), ALTAR_TIME, ingredientList), catalyst);
+        }
+
+        private void saveAltarRecipe(AltarRecipe recipe, ItemLike unlockedBy)
+        {
+            new RecipeBaseBuilder(recipe, RecipeCategory.MISC)
+                    .unlockedBy(getHasName(unlockedBy), has(unlockedBy))
+                    .save(this.output, recipe.getId().toString());
         }
 
         private void offerReversibleStoneCuttingRecipe(ItemLike output, ItemLike input, int outputCount)
@@ -165,9 +242,16 @@ public class RecipesProvider extends FabricRecipeProvider
 
         private void offerShatterForgeRecipe(ItemLike input, ItemLike output, int outputCount, int time, int monolithCount, int draw, Map<EssenceType, Integer> aspects)
         {
+            offerShatterForgeRecipe(input, output, outputCount, time, monolithCount, draw, aspects, 0);
+        }
+
+        private void offerShatterForgeRecipe(ItemLike input, ItemLike output, int outputCount, int time, int monolithCount, int draw, Map<EssenceType, Integer> aspects,
+                                             int experience)
+        {
             var recipeId = Identifier.fromNamespaceAndPath(MODID, "shatterforge/" + getConversionRecipeName(output, input));
 
-            var recipe = new ShatterForgeRecipe(recipeId, new ItemStack(output, outputCount), new ItemStack(input), time, monolithCount, aspects, draw);
+            var recipe = new ShatterForgeRecipe(recipeId, new ItemStack(output, outputCount), new ItemStack(input), time, monolithCount, aspects, draw)
+                    .withExperience(experience);
 
             new RecipeBaseBuilder(recipe, RecipeCategory.MISC)
                     .unlockedBy(getHasName(input), has(input))

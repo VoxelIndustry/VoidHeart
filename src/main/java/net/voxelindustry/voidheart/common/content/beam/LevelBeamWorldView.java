@@ -35,6 +35,8 @@ public class LevelBeamWorldView implements BeamWorldView
             return BeamNodeKind.FOCUS;
         if (block == VoidHeartBlocks.SHATTER_FORGE)
             return BeamNodeKind.FORGE;
+        if (block == VoidHeartBlocks.EXPERIENCE_SKULL)
+            return BeamNodeKind.EXPERIENCE_SKULL;
         return BeamNodeKind.OTHER;
     }
 

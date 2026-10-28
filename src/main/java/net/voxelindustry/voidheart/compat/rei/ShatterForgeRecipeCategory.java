@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.util.ExperienceUtil;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ public class ShatterForgeRecipeCategory implements DisplayCategory<ShatterForgeR
     public static final CategoryIdentifier<ShatterForgeRecipeDisplay> IDENTIFIER = CategoryIdentifier.of(MODID, "shatter_forge_crafting");
 
     private static final DecimalFormat SECONDS_FORMAT = new DecimalFormat("#.##");
+
+    private static final int EXPERIENCE_COLOR = 0xFF5BA51F;
 
     @Override
     public Identifier getIdentifier()
@@ -76,6 +79,13 @@ public class ShatterForgeRecipeCategory implements DisplayCategory<ShatterForgeR
             widgets.add(Widgets.createLabel(new Point(centerX, lineY),
                             Component.translatable(MODID + ".rei.shatter_forge.draw", display.getDraw()))
                     .centered().noShadow().color(0xFF404040, 0xFFBBBBBB));
+            lineY += 12;
+        }
+        if (display.getExperience() > 0)
+        {
+            widgets.add(Widgets.createLabel(new Point(centerX, lineY),
+                            Component.translatable(MODID + ".rei.shatter_forge.experience", display.getExperience(), ExperienceUtil.getLevelsToGather(display.getExperience())))
+                    .centered().noShadow().color(EXPERIENCE_COLOR, EXPERIENCE_COLOR));
         }
 
         return widgets;
@@ -94,7 +104,7 @@ public class ShatterForgeRecipeCategory implements DisplayCategory<ShatterForgeR
     @Override
     public int getDisplayHeight()
     {
-        return 100;
+        return 112;
     }
 
     @Override

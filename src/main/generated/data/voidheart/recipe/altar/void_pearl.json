@@ -1,6 +1,5 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
@@ -48,5 +47,6 @@
         "item": "voidheart:void_pearl"
       }
     ]
-  }
+  },
+  "time": 20
 }
