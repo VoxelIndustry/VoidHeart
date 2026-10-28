@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.util.Util;
@@ -238,7 +239,7 @@ public class TravelMapScreen extends Screen
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
         var target = hovered(event.x(), event.y());
-        if (event.button() == 0 && target != null && target.active())
+        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && target != null && target.active())
         {
             ClientPlayNetworking.send(new AnchorPayloads.TravelRequest(map.source().id(), target.id()));
             onClose();
