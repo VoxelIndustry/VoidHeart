@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "half=lower,active=true": { "model": "voidheart:block/old_anchor_lower_active" },
+    "half=lower,active=false": { "model": "voidheart:block/old_anchor_lower_inactive" },
+    "half=upper,active=true": { "model": "voidheart:block/old_anchor_upper_active" },
+    "half=upper,active=false": { "model": "voidheart:block/old_anchor_upper_inactive" }
+  }
+}

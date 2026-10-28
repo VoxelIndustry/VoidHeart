@@ -127,5 +127,19 @@
   "config.jade.plugin_voidheart.shatter_forge": "Shatter Forge",
   "config.jade.plugin_voidheart.ravenous_collector": "Ravenous Collector",
   "config.jade.plugin_voidheart.ravenous_storage": "Ravenous Storage",
-  "config.jade.plugin_voidheart.ravenous_storage_matrix": "Ravenous Storage Matrix"
+  "config.jade.plugin_voidheart.ravenous_storage_matrix": "Ravenous Storage Matrix",
+  "block.voidheart.old_anchor": "Old Anchor",
+  "voidheart.anchor.silent": "This anchor is silent: no ley line reaches it",
+  "voidheart.anchor.awakened": "%s awakens",
+  "voidheart.anchor.dormant": "%s is dormant: it must be awakened by touching it",
+  "voidheart.anchor.arrived": "Arrived at %s",
+  "voidheart.anchor.distance": "%s blocks",
+  "voidheart.anchor.dormant_tag": "dormant",
+  "voidheart.travel_map.title": "Ley paths from %s",
+  "voidheart.travel_map.travel": "Click to travel here",
+  "voidheart.travel_map.dormant": "Dormant: must be awakened by touching it",
+  "voidheart.travel_map.distance": "%s blocks away",
+  "voidheart.travel_map.here": "You are here",
+  "voidheart.travel_map.surveying": "Surveying the land…",
+  "voidheart.travel_map.empty": "No other anchor answers along these lines"
 }

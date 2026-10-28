@@ -2,6 +2,10 @@ package net.voxelindustry.voidheart;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
@@ -22,6 +26,13 @@ import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
+import net.voxelindustry.voidheart.common.ley.LeyDebugView;
+import net.voxelindustry.voidheart.common.ley.LeyLattice;
+import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
+import net.voxelindustry.voidheart.common.ley.anchor.AnchorTravel;
+import net.voxelindustry.voidheart.common.ley.anchor.AnchorWaypoints;
+import net.voxelindustry.voidheart.common.ley.anchor.OldAnchors;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameParticleEffect;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterion;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeItemParticleEffect;
@@ -79,6 +90,22 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
+        PayloadTypeRegistry.clientboundPlay().register(LeyDebugPayload.TYPE, LeyDebugPayload.CODEC);
+        ServerTickEvents.END_SERVER_TICK.register(LeyDebugView::tickServer);
+
+        AnchorPayloads.register();
+        ServerPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelRequest.TYPE, AnchorTravel::handle);
+        ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) -> OldAnchors.get(level).ifPresent(anchors -> anchors.onChunkLoad(chunk)));
+        ServerTickEvents.END_SERVER_TICK.register(AnchorWaypoints::tickServer);
+
+        ServerLifecycleEvents.SERVER_STOPPED.register(server ->
+        {
+            LeyLattice.clear();
+            LeyDebugView.clear();
+            OldAnchors.clear();
+            AnchorWaypoints.clear();
+            AnchorTravel.clear();
+        });
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
         VOID_DIMENSION_KEY = ResourceKey.create(Registries.DIMENSION_TYPE, Identifier.fromNamespaceAndPath(MODID, "void"));

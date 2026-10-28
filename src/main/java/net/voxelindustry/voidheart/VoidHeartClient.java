@@ -2,6 +2,9 @@ package net.voxelindustry.voidheart;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleGroupRegistry;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
@@ -15,10 +18,15 @@ import net.voxelindustry.voidheart.client.particle.ShatterForgeRuneParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
 import net.voxelindustry.voidheart.client.render.EyeBottleRender;
 import net.voxelindustry.voidheart.client.render.FloatingItemRender;
+import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
+import net.voxelindustry.voidheart.client.render.LeyDebugRender;
+import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
+import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
+import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -40,6 +48,23 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorRender::new);
 
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
+
+        ClientPlayNetworking.registerGlobalReceiver(LeyDebugPayload.TYPE, LeyDebugRender::receive);
+        ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.Waypoints.TYPE, AnchorWaypointRender::receive);
+        ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelMap.TYPE,
+                (payload, context) -> context.client().setScreenAndShow(new TravelMapScreen(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.Terrain.TYPE, (payload, context) ->
+        {
+            if (context.client().gui.screen() instanceof TravelMapScreen screen && screen.sourceId() == payload.source())
+                screen.setTerrain(payload);
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
+        {
+            LeyDebugRender.clear();
+            AnchorWaypointRender.clear();
+        });
+        LevelRenderEvents.COLLECT_SUBMITS.register(LeyDebugRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
 
         var particles = ParticleProviderRegistry.getInstance();
         particles.register(

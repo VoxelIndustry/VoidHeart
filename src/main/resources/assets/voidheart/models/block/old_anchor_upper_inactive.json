@@ -1,0 +1,8 @@
+{
+  "parent": "voidheart:block/old_anchor_upper",
+  "textures": {
+    "side": "voidheart:block/ley_anchor_side_inactive",
+    "top": "voidheart:block/ley_anchor_top_inactive",
+    "crystal": "voidheart:block/ley_anchor_crystal_inactive"
+  }
+}
