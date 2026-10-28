@@ -8,6 +8,10 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorTerrain;
@@ -16,6 +20,8 @@ import net.voxelindustry.voidheart.common.ley.anchor.AnchorView;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Top-down map of the ley lines around an anchor, north up. Clicking an awakened linked anchor travels to it.
@@ -30,10 +36,12 @@ public class TravelMapScreen extends Screen
     private static final int LINE_GLOW_COLOR = 0x305B3FA8;
     private static final int LINE_CORE_COLOR = 0xC08E6BE8;
     private static final int MOTE_RGB = 0xD9CCFF;
+    private static final int MOTE_ALPHA = 110;
     private static final float GLOW_HALF_WIDTH = 2.5F;
     private static final float CORE_HALF_WIDTH = 0.6F;
-    private static final float MOTE_SPACING = 22;
-    private static final float MOTE_SPEED = 9;
+    private static final float MOTE_SPACING = 40;
+    private static final float MOTE_SPEED = 12;
+    private static final int MOTE_TAIL = 8;
     private static final int SOURCE_COLOR = 0xFFE8F8F5;
     private static final int ACTIVE_COLOR = 0xFF36C5B0;
     private static final int DORMANT_COLOR = 0xFF6E5478;
@@ -44,12 +52,12 @@ public class TravelMapScreen extends Screen
     private static final int CONTOUR_INTERVAL = 16;
     private static final int CONTOUR_COLOR = 0x40000000;
     private static final int COAST_COLOR = 0x80D9E8F0;
+    private static final int TEXELS_PER_CELL = 4;
+    private static final Identifier TERRAIN_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "dynamic/travel_map_terrain");
 
     private final AnchorPayloads.TravelMap map;
 
     private AnchorPayloads.Terrain terrain;
-    private int[] terrainColors;
-    private byte[] terrainEdges;
 
     private int left, top, right, bottom;
     private double centerX, centerZ, scale;
@@ -136,15 +144,15 @@ public class TravelMapScreen extends Screen
     }
 
     /**
-     * Shades the sampled terrain once: biome color lit from the north west by the slope and lifted with
-     * elevation, water darkened with depth, then faded into the panel so it stays a background.
+     * Bakes the sampled terrain into a texture once: biome color lit from the north west by the slope and
+     * lifted with elevation, water darkened with depth, faded into the panel so it stays a background,
+     * with contour lines and coastlines drawn on cell edges.
      */
     public void setTerrain(AnchorPayloads.Terrain terrain)
     {
         int sizeX = terrain.sizeX();
         int sizeZ = terrain.sizeZ();
-        var colors = new int[sizeX * sizeZ];
-        var edges = new byte[sizeX * sizeZ];
+        var image = new NativeImage(sizeX * TEXELS_PER_CELL, sizeZ * TEXELS_PER_CELL, false);
 
         for (int j = 0; j < sizeZ; j++)
         {
@@ -170,18 +178,44 @@ public class TravelMapScreen extends Screen
                         Math.min(255, (int) (ARGB.red(rgb) * light)),
                         Math.min(255, (int) (ARGB.green(rgb) * light)),
                         Math.min(255, (int) (ARGB.blue(rgb) * light)));
-                colors[index] = ARGB.srgbLerp(TERRAIN_OPACITY, PANEL_COLOR | 0xFF000000, shaded);
+                int color = ARGB.srgbLerp(TERRAIN_OPACITY, PANEL_COLOR | 0xFF000000, shaded);
 
-                if (i + 1 < sizeX)
-                    edges[index] |= edgeBetween(terrain, index, index + 1);
-                if (j + 1 < sizeZ)
-                    edges[index] |= (byte) (edgeBetween(terrain, index, index + sizeX) << 2);
+                int x0 = i * TEXELS_PER_CELL;
+                int y0 = j * TEXELS_PER_CELL;
+                image.fillRect(x0, y0, TEXELS_PER_CELL, TEXELS_PER_CELL, color);
+
+                int east = i + 1 < sizeX ? edgeBetween(terrain, index, index + 1) : 0;
+                int south = j + 1 < sizeZ ? edgeBetween(terrain, index, index + sizeX) : 0;
+                for (int k = 0; k < TEXELS_PER_CELL; k++)
+                {
+                    if (east != 0)
+                        image.setPixel(x0 + TEXELS_PER_CELL - 1, y0 + k, overlay(color, east));
+                    if (south != 0)
+                        image.setPixel(x0 + k, y0 + TEXELS_PER_CELL - 1, overlay(color, south));
+                }
             }
         }
 
+        var textures = minecraft.getTextureManager();
+        textures.release(TERRAIN_TEXTURE);
+        var texture = new DynamicTexture(() -> "Travel map terrain", image);
+        texture.upload();
+        textures.register(TERRAIN_TEXTURE, texture);
         this.terrain = terrain;
-        terrainColors = colors;
-        terrainEdges = edges;
+    }
+
+    private static int overlay(int color, int edge)
+    {
+        int line = edge == 2 ? COAST_COLOR : CONTOUR_COLOR;
+        return ARGB.srgbLerp(ARGB.alpha(line) / 255F, color, line | 0xFF000000);
+    }
+
+    @Override
+    public void removed()
+    {
+        if (terrain != null)
+            minecraft.getTextureManager().release(TERRAIN_TEXTURE);
+        super.removed();
     }
 
     /**
@@ -206,32 +240,15 @@ public class TravelMapScreen extends Screen
 
     private void drawTerrain(GuiGraphicsExtractor graphics)
     {
-        int step = terrain.step();
-        for (int j = 0; j < terrain.sizeZ(); j++)
-        {
-            int y0 = Math.round(screenY(terrain.minZ() + j * step));
-            int y1 = Math.round(screenY(terrain.minZ() + (j + 1) * step));
-            if (y1 < top || y0 > bottom)
-                continue;
+        int x0 = Math.round(screenX(terrain.minX()));
+        int y0 = Math.round(screenY(terrain.minZ()));
+        int x1 = Math.round(screenX(terrain.minX() + terrain.sizeX() * terrain.step()));
+        int y1 = Math.round(screenY(terrain.minZ() + terrain.sizeZ() * terrain.step()));
+        int textureWidth = terrain.sizeX() * TEXELS_PER_CELL;
+        int textureHeight = terrain.sizeZ() * TEXELS_PER_CELL;
 
-            for (int i = 0; i < terrain.sizeX(); i++)
-            {
-                int x0 = Math.round(screenX(terrain.minX() + i * step));
-                int x1 = Math.round(screenX(terrain.minX() + (i + 1) * step));
-                if (x1 < left || x0 > right)
-                    continue;
-
-                int index = j * terrain.sizeX() + i;
-                graphics.fill(x0, y0, x1, y1, terrainColors[index]);
-
-                int east = terrainEdges[index] & 3;
-                int south = terrainEdges[index] >> 2 & 3;
-                if (east != 0)
-                    graphics.fill(x1 - 1, y0, x1, y1, east == 2 ? COAST_COLOR : CONTOUR_COLOR);
-                if (south != 0)
-                    graphics.fill(x0, y1 - 1, x1, y1, south == 2 ? COAST_COLOR : CONTOUR_COLOR);
-            }
-        }
+        graphics.blit(RenderPipelines.GUI_TEXTURED, TERRAIN_TEXTURE, x0, y0, 0, 0, x1 - x0, y1 - y0,
+                textureWidth, textureHeight, textureWidth, textureHeight);
     }
 
     /**
@@ -266,14 +283,32 @@ public class TravelMapScreen extends Screen
         if (length < MOTE_SPACING)
             return;
 
+        float angle = (float) Math.atan2(y2 - y1, x2 - x1);
         for (float along = drift % MOTE_SPACING; along < length; along += MOTE_SPACING)
         {
             // Fade in and out near the nodes so motes don't pop at segment ends
-            float fade = Math.min(1, Math.min(along, length - along) / (MOTE_SPACING / 2));
-            int alpha = (int) (fade * 255);
+            float fade = Math.min(1, Math.min(along - MOTE_TAIL, length - along) / (MOTE_SPACING / 2));
+            if (fade <= 0)
+                continue;
             float t = along / length;
-            joint(graphics, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, 1, alpha << 24 | MOTE_RGB);
+            mote(graphics, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, angle, (int) (fade * MOTE_ALPHA));
         }
+    }
+
+    /**
+     * A faint comet: bright head with a tail fading behind it along the line. The gradient hides the
+     * pixel to pixel stepping a small solid dot shows when it moves slowly.
+     */
+    private static void mote(GuiGraphicsExtractor graphics, float x, float y, float angle, int alpha)
+    {
+        var pose = graphics.pose();
+        pose.pushMatrix();
+        pose.translate(x, y);
+        // Local +y now points along the flow, so the vertical gradient runs from tail to head
+        pose.rotate(angle - (float) (Math.PI / 2));
+        pose.scale(0.5F, 1);
+        graphics.fillGradient(-1, -MOTE_TAIL, 1, 0, MOTE_RGB, alpha << 24 | MOTE_RGB);
+        pose.popMatrix();
     }
 
     private static void joint(GuiGraphicsExtractor graphics, float x, float y, float radius, int color)
