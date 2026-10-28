@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
@@ -45,7 +44,7 @@ public class LeyDebugRender
         var camera = levelState.cameraRenderState.pos;
         float time = (levelState.gameTime % 24000L) + levelState.worldPartialTicks;
 
-        context.submitNodeCollector().submitCustomGeometry(context.poseStack(), RenderTypes.lightning(), (pose, buffer) ->
+        context.submitNodeCollector().submitCustomGeometry(context.poseStack(), VoidHeartRenderTypes.GLOW, (pose, buffer) ->
         {
             for (var line : current.lines())
                 drawLine(pose, buffer, line, camera, time);
@@ -58,16 +57,14 @@ public class LeyDebugRender
     {
         var heights = line.heights();
         int segments = heights.size() - 1;
-        float stepX = (line.toX() - line.fromX()) / (float) segments;
-        float stepZ = (line.toZ() - line.fromZ()) / (float) segments;
+        double stepX = (line.toX() - line.fromX()) / (double) segments;
+        double stepZ = (line.toZ() - line.fromZ()) / (double) segments;
         float stepLength = (float) Math.sqrt(stepX * stepX + stepZ * stepZ);
 
         for (int i = 0; i < segments; i++)
         {
-            var start = new Vector3f(line.fromX() + 0.5F + stepX * i, heights.get(i) + 0.5F, line.fromZ() + 0.5F + stepZ * i)
-                    .sub((float) camera.x, (float) camera.y, (float) camera.z);
-            var end = new Vector3f(line.fromX() + 0.5F + stepX * (i + 1), heights.get(i + 1) + 0.5F, line.fromZ() + 0.5F + stepZ * (i + 1))
-                    .sub((float) camera.x, (float) camera.y, (float) camera.z);
+            var start = relative(line.fromX() + 0.5 + stepX * i, heights.get(i) + 0.5, line.fromZ() + 0.5 + stepZ * i, camera);
+            var end = relative(line.fromX() + 0.5 + stepX * (i + 1), heights.get(i + 1) + 0.5, line.fromZ() + 0.5 + stepZ * (i + 1), camera);
             if (start.lengthSquared() > DRAW_DISTANCE * DRAW_DISTANCE && end.lengthSquared() > DRAW_DISTANCE * DRAW_DISTANCE)
                 continue;
 
@@ -83,7 +80,7 @@ public class LeyDebugRender
 
     private static void drawNode(PoseStack.Pose pose, VertexConsumer buffer, LeyDebugPayload.Node node, Vec3 camera)
     {
-        var base = new Vector3f(node.x() + 0.5F, node.y() + 0.5F, node.z() + 0.5F).sub((float) camera.x, (float) camera.y, (float) camera.z);
+        var base = relative(node.x() + 0.5, node.y() + 0.5, node.z() + 0.5, camera);
         if (base.lengthSquared() > DRAW_DISTANCE * DRAW_DISTANCE)
             return;
 
@@ -96,6 +93,14 @@ public class LeyDebugRender
         float halfWidth = 0.25F + 0.07F * node.lines();
         drawRibbon(pose, buffer, bottom, top, side, halfWidth * 2.5F, ARGB.color(60, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
         drawRibbon(pose, buffer, bottom, top, side, halfWidth, ARGB.color(200, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
+    }
+
+    /**
+     * Camera relative position, subtracted in double so it stays precise far from the world origin.
+     */
+    private static Vector3f relative(double x, double y, double z, Vec3 camera)
+    {
+        return new Vector3f((float) (x - camera.x), (float) (y - camera.y), (float) (z - camera.z));
     }
 
     /**
@@ -115,15 +120,9 @@ public class LeyDebugRender
         float sy = side.y * halfWidth;
         float sz = side.z * halfWidth;
 
-        // Both windings so the ribbon survives back-face culling from either side
         buffer.addVertex(pose, start.x - sx, start.y - sy, start.z - sz).setColor(color);
         buffer.addVertex(pose, start.x + sx, start.y + sy, start.z + sz).setColor(color);
         buffer.addVertex(pose, end.x + sx, end.y + sy, end.z + sz).setColor(color);
         buffer.addVertex(pose, end.x - sx, end.y - sy, end.z - sz).setColor(color);
-
-        buffer.addVertex(pose, end.x - sx, end.y - sy, end.z - sz).setColor(color);
-        buffer.addVertex(pose, end.x + sx, end.y + sy, end.z + sz).setColor(color);
-        buffer.addVertex(pose, start.x + sx, start.y + sy, start.z + sz).setColor(color);
-        buffer.addVertex(pose, start.x - sx, start.y - sy, start.z - sz).setColor(color);
     }
 }

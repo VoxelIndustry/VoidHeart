@@ -6,7 +6,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
@@ -60,7 +59,7 @@ public class AnchorWaypointRender
             poseStack.translate(marker.x, marker.y, marker.z);
 
             int color = anchor.active() ? ACTIVE_COLOR : DORMANT_COLOR;
-            collector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, buffer) -> drawDiamond(pose, buffer, marker, color));
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> drawDiamond(pose, buffer, marker, color));
 
             poseStack.translate(0, 0.45, 0);
             poseStack.scale(LABEL_SCALE, LABEL_SCALE, LABEL_SCALE);
@@ -98,11 +97,6 @@ public class AnchorWaypointRender
             buffer.addVertex(pose, sx, 0, sz).setColor(color);
             buffer.addVertex(pose, 0, h, 0).setColor(color);
             buffer.addVertex(pose, -sx, 0, -sz).setColor(color);
-
-            buffer.addVertex(pose, -sx, 0, -sz).setColor(color);
-            buffer.addVertex(pose, 0, h, 0).setColor(color);
-            buffer.addVertex(pose, sx, 0, sz).setColor(color);
-            buffer.addVertex(pose, 0, -h, 0).setColor(color);
         }
     }
 }
