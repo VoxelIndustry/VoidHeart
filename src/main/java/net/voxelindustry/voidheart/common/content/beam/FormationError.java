@@ -11,7 +11,8 @@ public enum FormationError
     INVALID_FOCUS_ORIENTATION,
     BEAM_LOOP,
     MISSING_ASPECTS,
-    NOT_ENOUGH_ESSENCE;
+    NOT_ENOUGH_ESSENCE,
+    NOT_ENOUGH_EXPERIENCE;
 
     public String translationKey()
     {

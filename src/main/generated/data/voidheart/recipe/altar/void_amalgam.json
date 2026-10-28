@@ -1,11 +1,10 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:glowstone"
+        "item": "minecraft:ender_pearl"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
@@ -25,19 +24,19 @@
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:redstone"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:redstone"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:redstone"
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:redstone"
+        "item": "voidheart:obsidian_shard"
       }
     ]
   },
@@ -45,8 +44,9 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_lamp"
+        "item": "voidheart:void_amalgam"
       }
     ]
-  }
+  },
+  "time": 20
 }

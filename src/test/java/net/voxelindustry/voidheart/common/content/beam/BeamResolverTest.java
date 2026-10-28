@@ -115,6 +115,30 @@ class BeamResolverTest
     }
 
     @Test
+    void resolve_givenExperienceSkullsOnPairs_thenListsThemWithoutRetuning()
+    {
+        var focus = FORGE.north();
+        view.forge(FORGE);
+        view.track(FORGE, Direction.NORTH, 0);
+        view.focus(focus, Direction.SOUTH);
+
+        view.track(focus, Direction.NORTH, 2);
+        view.emitter(focus, Direction.NORTH, 7, BeamNodeKind.PILLAR);
+        var first = view.skullMid(focus, Direction.NORTH, 1);
+
+        view.track(focus, Direction.EAST, 1);
+        view.collectorEmitter(focus, Direction.EAST, 4, FIERY);
+        var second = view.skullMid(focus, Direction.EAST, 0);
+
+        var resolution = BeamResolver.resolve(view, FORGE);
+
+        assertThat(resolution.error()).isEmpty();
+        assertThat(resolution.experienceSources()).containsExactlyInAnyOrder(first, second);
+        assertThat(resolution.result().unattuned()).isEqualTo(2);
+        assertThat(resolution.result().amount(FIERY)).isEqualTo(1);
+    }
+
+    @Test
     void resolve_givenConduitsBothDirections_thenConduitBothDirection()
     {
         view.forge(FORGE);
@@ -295,6 +319,13 @@ class BeamResolverTest
             var pos = at(origin, d, 3 * pairIndex + 3, 0, 3);
             kinds.put(pos, BeamNodeKind.COLLECTOR);
             aspects.put(pos, aspect);
+            return pos;
+        }
+
+        BlockPos skullMid(BlockPos origin, Direction d, int pairIndex)
+        {
+            var pos = at(origin, d, 3 * pairIndex + 3, 0, 3);
+            kinds.put(pos, BeamNodeKind.EXPERIENCE_SKULL);
             return pos;
         }
 

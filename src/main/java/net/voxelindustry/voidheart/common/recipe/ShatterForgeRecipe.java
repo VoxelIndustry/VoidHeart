@@ -33,6 +33,11 @@ public class ShatterForgeRecipe extends RecipeBase
      */
     @Getter
     private int draw;
+    /**
+     * Experience points drained from the experience skulls sitting on the monolith pairs, least filled first.
+     */
+    @Getter
+    private int experience;
 
     public ShatterForgeRecipe(Identifier identifier)
     {
@@ -77,6 +82,12 @@ public class ShatterForgeRecipe extends RecipeBase
         this.draw = draw;
     }
 
+    public ShatterForgeRecipe withExperience(int experience)
+    {
+        this.experience = experience;
+        return this;
+    }
+
     public int totalAspectRequirement()
     {
         return aspects.values().stream().mapToInt(Integer::intValue).sum();
@@ -101,6 +112,7 @@ public class ShatterForgeRecipe extends RecipeBase
         this.time = json.get("time").getAsInt();
         this.monolithCount = json.get("monolithCount").getAsInt();
         this.draw = json.has("draw") ? json.get("draw").getAsInt() : 0;
+        this.experience = json.has("experience") ? json.get("experience").getAsInt() : 0;
 
         var parsed = new LinkedHashMap<EssenceType, Integer>();
         if (json.has("aspects"))
@@ -123,6 +135,8 @@ public class ShatterForgeRecipe extends RecipeBase
         json.addProperty("monolithCount", monolithCount);
         if (draw != 0)
             json.addProperty("draw", draw);
+        if (experience != 0)
+            json.addProperty("experience", experience);
         if (!aspects.isEmpty())
         {
             var aspectsJson = new JsonObject();
@@ -152,6 +166,7 @@ public class ShatterForgeRecipe extends RecipeBase
         }
         this.aspects = Map.copyOf(parsed);
         this.draw = buffer.readInt();
+        this.experience = buffer.readInt();
     }
 
     @Override
@@ -169,5 +184,6 @@ public class ShatterForgeRecipe extends RecipeBase
             buffer.writeInt(amount);
         });
         buffer.writeInt(draw);
+        buffer.writeInt(experience);
     }
 }

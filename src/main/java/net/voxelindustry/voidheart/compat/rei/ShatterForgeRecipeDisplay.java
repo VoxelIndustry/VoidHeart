@@ -33,7 +33,8 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
                     Codec.INT.fieldOf("time").forGetter(ShatterForgeRecipeDisplay::getTime),
                     Codec.INT.fieldOf("monolith_count").forGetter(ShatterForgeRecipeDisplay::getMonolithCount),
                     Codec.unboundedMap(Identifier.CODEC, Codec.INT).optionalFieldOf("aspects", Map.of()).forGetter(ShatterForgeRecipeDisplay::getAspectIds),
-                    Codec.INT.optionalFieldOf("draw", 0).forGetter(ShatterForgeRecipeDisplay::getDraw)
+                    Codec.INT.optionalFieldOf("draw", 0).forGetter(ShatterForgeRecipeDisplay::getDraw),
+                    Codec.INT.optionalFieldOf("experience", 0).forGetter(ShatterForgeRecipeDisplay::getExperience)
             ).apply(instance, ShatterForgeRecipeDisplay::new)),
             StreamCodec.composite(
                     EntryIngredient.streamCodec().apply(ByteBufCodecs.list()), ShatterForgeRecipeDisplay::getInputEntries,
@@ -43,6 +44,7 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
                     ByteBufCodecs.VAR_INT, ShatterForgeRecipeDisplay::getMonolithCount,
                     ByteBufCodecs.map(LinkedHashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.VAR_INT), display -> new LinkedHashMap<Identifier, Integer>(display.getAspectIds()),
                     ByteBufCodecs.VAR_INT, ShatterForgeRecipeDisplay::getDraw,
+                    ByteBufCodecs.VAR_INT, ShatterForgeRecipeDisplay::getExperience,
                     ShatterForgeRecipeDisplay::new));
 
     @Getter
@@ -53,9 +55,11 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
     private final Map<Identifier, Integer> aspectIds;
     @Getter
     private final int draw;
+    @Getter
+    private final int experience;
 
     public ShatterForgeRecipeDisplay(List<EntryIngredient> inputs, List<EntryIngredient> outputs, Optional<Identifier> location, int time, int monolithCount,
-                                     Map<Identifier, Integer> aspectIds, int draw)
+                                     Map<Identifier, Integer> aspectIds, int draw, int experience)
     {
         super(inputs, outputs, location);
 
@@ -63,6 +67,7 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
         this.monolithCount = monolithCount;
         this.aspectIds = Map.copyOf(aspectIds);
         this.draw = draw;
+        this.experience = experience;
     }
 
     public Map<EssenceType, Integer> getAspects()
@@ -84,7 +89,8 @@ public class ShatterForgeRecipeDisplay extends BasicDisplay
                 holder.value().getTime(),
                 holder.value().getMonolithCount(),
                 aspectIds(holder.value().getAspects()),
-                holder.value().getDraw());
+                holder.value().getDraw(),
+                holder.value().getExperience());
     }
 
     private static Map<Identifier, Integer> aspectIds(Map<EssenceType, Integer> aspects)

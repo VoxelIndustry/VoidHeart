@@ -27,6 +27,7 @@ import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePa
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
+import net.voxelindustry.voidheart.client.particle.AltarExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.particle.EyeBeamParticle;
@@ -37,6 +38,7 @@ import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.client.particle.GeometryParticle;
 import net.voxelindustry.voidheart.client.particle.PortalFrameParticle;
+import net.voxelindustry.voidheart.client.particle.ShatterForgeExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeItemParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeRuneParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
@@ -159,6 +161,12 @@ public class VoidHeartClient implements ClientModInitializer
                         new AltarItemParticle(level, x, y, z, xAux, yAux, zAux, options.getStack(), options.getFirstPointBezier(), options.getSecondPointBezier()));
 
         particles.register(
+                ALTAR_EXPERIENCE_PARTICLE,
+                spriteSet ->
+                        (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                                new AltarExperienceParticle(level, x, y, z, xAux, yAux, zAux, options.firstPointBezier(), options.secondPointBezier(), spriteSet.get(random)));
+
+        particles.register(
                 PORTAL_FRAME_PARTICLE,
                 spriteSet ->
                         (options, level, x, y, z, xAux, yAux, zAux, random) ->
@@ -180,5 +188,11 @@ public class VoidHeartClient implements ClientModInitializer
                 SHATTER_FORGE_ITEM_PARTICLE,
                 (options, level, x, y, z, xAux, yAux, zAux, random) ->
                         new ShatterForgeItemParticle(level, x, y, z, xAux, yAux, zAux, options.input(), options.output()));
+
+        particles.register(
+                SHATTER_FORGE_EXPERIENCE_PARTICLE,
+                spriteSet ->
+                        (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                                new ShatterForgeExperienceParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
     }
 }

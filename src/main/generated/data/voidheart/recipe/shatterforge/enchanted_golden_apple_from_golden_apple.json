@@ -5,6 +5,7 @@
     "voidheart:stillness": 5
   },
   "draw": 10000,
+  "experience": 1395,
   "inputs": {
     "minecraft:itemstack": [
       {

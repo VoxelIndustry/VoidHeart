@@ -1,23 +1,34 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:glass_bottle"
+        "item": "minecraft:bone_block"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:void_pearl"
+        "item": "minecraft:rotten_flesh"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ender_shard"
+        "item": "minecraft:rotten_flesh"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:ender_shard"
+        "item": "minecraft:rotten_flesh"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:diamond"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:diamond"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
@@ -33,9 +44,9 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:eye_bottle",
-        "quantity": 1
+        "item": "voidheart:experience_skull"
       }
     ]
-  }
+  },
+  "time": 20
 }

@@ -1,35 +1,22 @@
 {
   "type": "voidheart:altar",
-  "time": 20,
   "inputs": {
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:anvil"
+        "item": "minecraft:ender_eye"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:spider_eye"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "voidheart:void_pearl"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:obsidian_shard"
+        "item": "minecraft:slime_ball"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",
@@ -45,9 +32,9 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:shatter_forge",
-        "quantity": 1
+        "item": "voidheart:shoulder_eye"
       }
     ]
-  }
+  },
+  "time": 40
 }
