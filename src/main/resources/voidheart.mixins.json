@@ -4,9 +4,12 @@
   "package": "net.voxelindustry.voidheart.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "MixinBarrierFallParticles",
+    "MixinBarrierSprintParticles",
     "MixinStableLifecycle"
   ],
   "client": [
+    "client.MixinBarrierBreakingParticles"
   ],
   "injectors": {
     "defaultRequire": 1

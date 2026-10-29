@@ -38,5 +38,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
 
         registration.registerBlockComponent(new RavenousStorageProvider.Client(), RavenousStorageBlock.class);
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
+
+        registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
     }
 }

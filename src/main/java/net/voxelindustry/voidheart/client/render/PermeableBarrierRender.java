@@ -37,7 +37,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public class PermeableBarrierRender implements BlockEntityRenderer<PermeableBarrierTile, PermeableBarrierRenderState>
 {
     private static final Identifier SIGIL_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/block/permeable_barrier_sigil.png");
-    private static final Identifier WAVE_TEXTURE  = Identifier.fromNamespaceAndPath(MODID, "textures/block/permeable_barrier_wave.png");
+    static final         Identifier WAVE_TEXTURE  = Identifier.fromNamespaceAndPath(MODID, "textures/block/permeable_barrier_wave.png");
+    static final         int        SIGIL_GLOW    = ARGB.color(255, 150, 255, 190);
 
     private static final int GHOST_COLOR       = ARGB.color(90, 200, 170, 255);
     private static final int FAINT_GHOST_COLOR = ARGB.color(35, 200, 170, 255);
@@ -161,57 +162,24 @@ public class PermeableBarrierRender implements BlockEntityRenderer<PermeableBarr
 
     private static void sigilQuad(PoseStack.Pose pose, VertexConsumer buffer, float half, int alpha, int facing)
     {
-        vertex(pose, buffer, -half * facing, -half, 0, 0, 1, alpha, 0, 0, facing);
-        vertex(pose, buffer, half * facing, -half, 0, 1, 1, alpha, 0, 0, facing);
-        vertex(pose, buffer, half * facing, half, 0, 1, 0, alpha, 0, 0, facing);
-        vertex(pose, buffer, -half * facing, half, 0, 0, 0, alpha, 0, 0, facing);
+        int color = ARGB.color(alpha, SIGIL_GLOW);
+        GlowCube.vertex(pose, buffer, -half * facing, -half, 0, 0, 1, color, 0, 0, facing);
+        GlowCube.vertex(pose, buffer, half * facing, -half, 0, 1, 1, color, 0, 0, facing);
+        GlowCube.vertex(pose, buffer, half * facing, half, 0, 1, 0, color, 0, 0, facing);
+        GlowCube.vertex(pose, buffer, -half * facing, half, 0, 0, 0, color, 0, 0, facing);
     }
 
     private static void submitWave(PermeableBarrierRenderState state, PoseStack poseStack, SubmitNodeCollector collector)
     {
-        int alpha = (int) (state.waveIntensity * 220);
-        float min = -0.002F;
-        float max = 1.002F;
+        int color = ARGB.color((int) (state.waveIntensity * 220), SIGIL_GLOW);
         collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucentEmissive(WAVE_TEXTURE), (pose, buffer) ->
         {
             for (var direction : Direction.values())
             {
                 if (state.culledFaces[direction.ordinal()] && state.mode != Mode.SIGIL)
                     continue;
-                waveFace(pose, buffer, direction, min, max, alpha);
+                GlowCube.face(pose, buffer, direction, 0, 0, 0, 0.002F, color);
             }
         });
-    }
-
-    private static void waveFace(PoseStack.Pose pose, VertexConsumer buffer, Direction direction, float min, float max, int alpha)
-    {
-        var normal = direction.getUnitVec3i();
-        int nx = normal.getX();
-        int ny = normal.getY();
-        int nz = normal.getZ();
-
-        // Corners walked counter-clockwise when looking at the face from outside
-        float[][] corners = switch (direction)
-        {
-            case DOWN -> new float[][]{{min, min, max}, {min, min, min}, {max, min, min}, {max, min, max}};
-            case UP -> new float[][]{{min, max, min}, {min, max, max}, {max, max, max}, {max, max, min}};
-            case NORTH -> new float[][]{{max, max, min}, {max, min, min}, {min, min, min}, {min, max, min}};
-            case SOUTH -> new float[][]{{min, max, max}, {min, min, max}, {max, min, max}, {max, max, max}};
-            case WEST -> new float[][]{{min, max, min}, {min, min, min}, {min, min, max}, {min, max, max}};
-            case EAST -> new float[][]{{max, max, max}, {max, min, max}, {max, min, min}, {max, max, min}};
-        };
-        float[][] uvs = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
-        for (int i = 0; i < 4; i++)
-            vertex(pose, buffer, corners[i][0], corners[i][1], corners[i][2], uvs[i][0], uvs[i][1], alpha, nx, ny, nz);
-    }
-
-    private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float z, float u, float v, int alpha, int nx, int ny, int nz)
-    {
-        buffer.addVertex(pose, x, y, z)
-                .setColor(150, 255, 190, alpha)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(FULL_BRIGHT)
-                .setNormal(pose, nx, ny, nz);
     }
 }

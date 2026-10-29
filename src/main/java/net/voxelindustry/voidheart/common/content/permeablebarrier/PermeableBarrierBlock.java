@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
@@ -81,6 +82,30 @@ public class PermeableBarrierBlock extends Block implements EntityBlock
         if (entity instanceof Player player && config.isAlly(player))
             return true;
         return config.isSolidFor(entity, state.getValue(BlockStateProperties.POWERED));
+    }
+
+    /**
+     * The block a configured barrier passes itself off as in particles and pick-block.
+     */
+    public static BlockState disguise(BlockGetter level, BlockPos pos, BlockState state)
+    {
+        if (!state.is(VoidHeartBlocks.PERMEABLE_BARRIER))
+            return state;
+        var tile = PermeableBarrierStructure.getTile(level, pos);
+        return tile != null ? tile.getConfig().appearance().orElse(state) : state;
+    }
+
+    @Override
+    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData)
+    {
+        var disguise = disguise(level, pos, state);
+        return disguise != state ? new ItemStack(disguise.getBlock()) : super.getCloneItemStack(level, pos, state, includeData);
+    }
+
+    @Override
+    public void spawnDestroyByEntityParticles(Level level, @Nullable Entity entity, BlockPos pos, BlockState state)
+    {
+        super.spawnDestroyByEntityParticles(level, entity, pos, disguise(level, pos, state));
     }
 
     @Override

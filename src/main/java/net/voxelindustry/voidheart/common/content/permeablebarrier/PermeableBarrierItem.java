@@ -62,7 +62,7 @@ public class PermeableBarrierItem extends Item
         return InteractionResult.SUCCESS;
     }
 
-    private boolean arePointsSamePlane(BlockPos firstPoint, BlockPos secondPoint)
+    public static boolean arePointsSamePlane(BlockPos firstPoint, BlockPos secondPoint)
     {
         return firstPoint.getX() == secondPoint.getX() || firstPoint.getY() == secondPoint.getY() || firstPoint.getZ() == secondPoint.getZ();
     }
