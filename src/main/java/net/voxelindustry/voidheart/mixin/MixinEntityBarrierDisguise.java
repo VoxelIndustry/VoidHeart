@@ -9,11 +9,20 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
+/**
+ * Sprint dust and footsteps on a barrier are those of the block it pretends to be.
+ */
 @Mixin(Entity.class)
-public class MixinBarrierSprintParticles
+public class MixinEntityBarrierDisguise
 {
     @ModifyVariable(method = "spawnSprintParticle", at = @At("STORE"))
-    private BlockState disguiseBarrier(BlockState state, @Local BlockPos pos)
+    private BlockState disguiseSprintParticle(BlockState state, @Local BlockPos pos)
+    {
+        return PermeableBarrierBlock.disguise(((Entity) (Object) this).level(), pos, state);
+    }
+
+    @ModifyVariable(method = "walkingStepSound", at = @At("HEAD"), argsOnly = true)
+    private BlockState disguiseStepSound(BlockState state, @Local(argsOnly = true) BlockPos pos)
     {
         return PermeableBarrierBlock.disguise(((Entity) (Object) this).level(), pos, state);
     }

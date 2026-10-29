@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
  * Mining cracks and hit sounds of a barrier are those of the block it pretends to be.
  */
 @Mixin(ClientLevel.class)
-public class MixinBarrierBreakingParticles
+public class MixinClientLevelBarrierDisguise
 {
     @ModifyVariable(method = "addBreakingBlockEffects", at = @At("STORE"))
     private BlockState disguiseBarrier(BlockState state, @Local(argsOnly = true) BlockPos pos)
