@@ -39,6 +39,10 @@ repositories {
         url = 'https://maven.shedaniel.me/'
     }
     maven {
+        name = 'YACL'
+        url = 'https://maven.isxander.dev/releases'
+    }
+    maven {
         name = 'ModMenu'
         url = 'https://maven.terraformersmc.com/'
     }
@@ -66,6 +70,7 @@ dependencies {
     implementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
     implementation "maven.modrinth:geckolib:${project.geckolib_version}"
 
+    implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
     implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     compileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
     compileOnly "me.shedaniel.cloth:basic-math:0.6.1"

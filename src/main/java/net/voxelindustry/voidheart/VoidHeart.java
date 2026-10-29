@@ -23,6 +23,7 @@ import net.minecraft.world.level.dimension.DimensionType;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
+import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
@@ -68,6 +69,8 @@ public class VoidHeart implements ModInitializer
     @Override
     public void onInitialize()
     {
+        VoidHeartConfig.load();
+
         VoidHeartDataComponents.registerComponents();
         VoidHeartBlocks.registerBlocks();
         VoidHeartItems.registerItems();
