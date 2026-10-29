@@ -69,6 +69,24 @@ class LeyAnchorNetworkTest
     }
 
     @Test
+    void disabledGenerationHasNoAnchor()
+    {
+        var network = new LeyAnchorNetwork(SEED, lattice(new LeyHeights((x, z) -> 64)), false, LeyAnchorNetwork.DEFAULT_INACTIVE_CHANCE);
+
+        assertThat(anchorsAround(network)).isEmpty();
+    }
+
+    @Test
+    void inactiveRateSetsDormantAnchors()
+    {
+        var allActive = anchorsAround(new LeyAnchorNetwork(SEED, lattice(new LeyHeights((x, z) -> 64)), true, 0));
+        var allDormant = anchorsAround(new LeyAnchorNetwork(SEED, lattice(new LeyHeights((x, z) -> 64)), true, 1));
+
+        assertThat(allActive).isNotEmpty().allMatch(OldAnchor::initiallyActive);
+        assertThat(allDormant).hasSameSizeAs(allActive).noneMatch(OldAnchor::initiallyActive);
+    }
+
+    @Test
     void linksAreSymmetric()
     {
         var network = new LeyAnchorNetwork(SEED, lattice(new LeyHeights((x, z) -> 64)));

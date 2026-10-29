@@ -13,6 +13,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
+import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -48,7 +49,8 @@ public class OldAnchors
     {
         this.level = level;
         this.lattice = lattice;
-        network = new LeyAnchorNetwork(level.getSeed(), lattice);
+        var config = VoidHeartConfig.get();
+        network = new LeyAnchorNetwork(level.getSeed(), lattice, config.leyLineTravelAnchorGenerate, config.leyLineTravelAnchorInactiveRate);
         state = LeyAnchorState.get(level);
         terrain = new AnchorTerrain(level);
     }

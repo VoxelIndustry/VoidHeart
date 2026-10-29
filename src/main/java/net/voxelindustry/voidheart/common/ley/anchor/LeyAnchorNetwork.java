@@ -24,7 +24,7 @@ public class LeyAnchorNetwork
 {
     public static final int MIN_LINES = 5;
     public static final float ANCHOR_CHANCE = 0.8F;
-    public static final float INACTIVE_CHANCE = 0.5F;
+    public static final float DEFAULT_INACTIVE_CHANCE = 0.5F;
     public static final double MAX_DOMAIN_REACH = 1200;
     private static final double MAX_LINE_LENGTH = 3 * LeyLatticeGenerator.CELL_SIZE;
 
@@ -33,14 +33,23 @@ public class LeyAnchorNetwork
 
     private final long seed;
     private final LeyLattice lattice;
+    private final boolean generateAnchors;
+    private final float inactiveChance;
 
     private final Map<Long, List<OldAnchor>> anchorsByRegion = new HashMap<>();
     private final Map<Long, List<OldAnchor>> linkedByNode = new HashMap<>();
 
     public LeyAnchorNetwork(long seed, LeyLattice lattice)
     {
+        this(seed, lattice, true, DEFAULT_INACTIVE_CHANCE);
+    }
+
+    public LeyAnchorNetwork(long seed, LeyLattice lattice, boolean generateAnchors, float inactiveChance)
+    {
         this.seed = seed;
         this.lattice = lattice;
+        this.generateAnchors = generateAnchors;
+        this.inactiveChance = inactiveChance;
     }
 
     public List<OldAnchor> anchorsIn(int regionX, int regionZ)
@@ -52,7 +61,7 @@ public class LeyAnchorNetwork
             {
                 if (hasAnchor(node))
                 {
-                    boolean active = LeyHash.unit(LeyHash.hash(seed, node.id(), 0, SALT_INACTIVE)) >= INACTIVE_CHANCE;
+                    boolean active = LeyHash.unit(LeyHash.hash(seed, node.id(), 0, SALT_INACTIVE)) >= inactiveChance;
                     anchors.add(new OldAnchor(node.id(), node.x(), node.z(), LeyAnchorNames.name(seed, node.id()), active));
                 }
             }
@@ -62,7 +71,8 @@ public class LeyAnchorNetwork
 
     private boolean hasAnchor(LeyNode node)
     {
-        return node.lines() >= MIN_LINES
+        return generateAnchors
+                && node.lines() >= MIN_LINES
                 && LeyHash.unit(LeyHash.hash(seed, node.id(), 0, SALT_ANCHOR)) < ANCHOR_CHANCE
                 && !lattice.heights().isSubmerged(node.x(), node.z());
     }
