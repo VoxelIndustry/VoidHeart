@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The holographic buttons of every table near the player: zoom out, zoom in, follow and ley lines.
+ * The holographic buttons of every table near the player: zoom out, zoom in, follow, ley lines and hollows.
  * Each player sees them on the table edge closest to them, presses are sent to the server.
  */
 public final class OculusControls
@@ -273,6 +273,7 @@ public final class OculusControls
                 case ZOOM_IN -> view.zoom() < OculusView.ZOOM_STEPS - 1;
                 case FOLLOW -> view.follow().isPresent();
                 case LEY_LINES -> view.leyLines();
+                case CAVING -> view.caving();
             };
             drawSymbol(plane, button, x, active || gazed ? SYMBOL_BRIGHT : ARGB.color(SYMBOL_DIM_ALPHA, ARGB.red(SYMBOL_BRIGHT), ARGB.green(SYMBOL_BRIGHT), ARGB.blue(SYMBOL_BRIGHT)));
         }
@@ -314,6 +315,13 @@ public final class OculusControls
                 plane.disc(x - 0.058F, 0, 0.012F, z, color);
                 plane.disc(x + 0.058F, 0, 0.012F, z, color);
             }
+            // The mouth of a cave opening under the ground line, a hollow glowing within
+            case CAVING ->
+            {
+                plane.line(x - 0.065F, 0.03F, x + 0.065F, 0.03F, z, color);
+                plane.arc(x, 0.03F, 0.045F, Math.PI, Math.PI * 2, 7, z, color);
+                plane.disc(x, -0.002F, 0.013F, z, color);
+            }
         }
     }
 
@@ -351,6 +359,8 @@ public final class OculusControls
         view.follow().ifPresentOrElse(
                 target -> status.append("  ").append(Component.translatable("voidheart.oculus.following", playerName(target))),
                 () -> status.append("  ").append(Component.translatable("voidheart.oculus.centered")));
+        if (view.caving())
+            status.append("  ").append(Component.translatable("voidheart.oculus.caving"));
         return status;
     }
 
@@ -362,6 +372,7 @@ public final class OculusControls
             case ZOOM_IN -> Component.translatable("voidheart.oculus.zoom_in");
             case FOLLOW -> Component.translatable("voidheart.oculus.follow");
             case LEY_LINES -> Component.translatable(view.leyLines() ? "voidheart.oculus.ley_lines.hide" : "voidheart.oculus.ley_lines.show");
+            case CAVING -> Component.translatable(view.caving() ? "voidheart.oculus.caving.hide" : "voidheart.oculus.caving.show");
         };
     }
 

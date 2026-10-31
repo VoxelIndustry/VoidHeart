@@ -13,6 +13,7 @@ class OculusMesherTest
 {
     private static final int STONE = 0xFF808080;
     private static final int GRASS = 0xFF40A040;
+    private static final int HOLLOW = OculusMesher.HOLLOW_ALPHA << 24 | 0x60C0E0;
 
     private static final Vector3f[] NORMALS = {
             new Vector3f(0, -1, 0), new Vector3f(0, 1, 0), new Vector3f(0, 0, -1),
@@ -44,7 +45,7 @@ class OculusMesherTest
     }
 
     @Test
-    void emptyWindowBottomGetsAnUpwardVoidFloor()
+    void wholeWindowBottomGetsAnUpwardVoidFloor()
     {
         var volume = Volume.empty(4);
         for (int z = 0; z < 16; z++)
@@ -52,7 +53,7 @@ class OculusMesherTest
 
         var floor = floorQuads(OculusMesher.mesh(volume), true);
 
-        assertThat(quads(floor)).isEqualTo(2);
+        assertThat(quads(floor)).as("under the land too, for when it dissolves").isEqualTo(1);
         for (int quad = 0; quad < quads(floor); quad++)
         {
             var origin = corner(floor, quad, 0);
@@ -148,6 +149,27 @@ class OculusMesherTest
         volume.set(0, 0, 0, STONE);
         volume.set(-1, 0, 0, STONE);
         volume.set(16, 0, 7, STONE);
+
+        assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(5);
+    }
+
+    @Test
+    void hollowAndSolidVoxelsBothShowTheirSharedFace()
+    {
+        var volume = Volume.empty(4);
+        volume.set(0, 0, 0, STONE);
+        volume.set(1, 0, 0, HOLLOW);
+
+        assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(12);
+    }
+
+    @Test
+    void touchingHollowsMergeLikeBlocks()
+    {
+        var volume = Volume.empty(4);
+        volume.set(0, 0, 0, HOLLOW);
+        volume.set(1, 0, 0, HOLLOW);
+        volume.set(-1, 0, 0, OculusMesher.HOLLOW_BORDER);
 
         assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(5);
     }

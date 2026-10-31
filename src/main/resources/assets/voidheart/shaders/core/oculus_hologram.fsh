@@ -16,8 +16,9 @@ layout(location = 0) out vec4 fragColor;
 // Down, up, north, south, west, east
 const float FACE_SHADE[6] = float[](0.45, 1.0, 0.8, 0.8, 0.65, 0.65);
 const uint FLOOR_FACE = 6u;
-// Relief voxels are written half transparent, every block color fully opaque
-const float RELIEF_ALPHA_LIMIT = 0.75;
+const vec3 HOLLOW_GLOW = vec3(0.45, 0.85, 1.0);
+// Share of the land dissolved when the surface and the hollows both show
+const float MIXED_DISSOLVE = 0.45;
 // The land is seen through a violet haze, as in a scrying pool
 const vec3 HAZE = vec3(0.42, 0.24, 0.62);
 const float HAZE_STRENGTH = 0.28;
@@ -66,6 +67,24 @@ void main() {
     }
     float rim = 1.0 - smoothstep(0.0, 1.0, fade);
 
+    // Turning from the surface to the hollows, the land crumbles away in drifting specks as the hollows gather,
+    // until only the hollows remain. Halfway, both show: the hollows through the gaps of the thinned land
+    float caving = HoloState.y;
+    bool hollow = vertexColor.a < HOLLOW_ALPHA_LIMIT;
+    float speck = noise(holoPos * 14.0 + vec3(seconds * 0.05, seconds * 0.12, 0.0));
+    if (hollow) {
+        float gathered = clamp(caving * 2.0, 0.0, 1.0);
+        // Seen from behind, a hollow face is the inside of a cave wall, hidden by the hollow itself
+        if (!gl_FrontFacing || gathered <= 0.0 || speck > gathered * 1.1 - 0.05) {
+            discard;
+        }
+    } else if (face != FLOOR_FACE) {
+        float dissolved = caving <= 0.5 ? caving * 2.0 * MIXED_DISSOLVE : mix(MIXED_DISSOLVE, 1.0, caving * 2.0 - 1.0);
+        if (dissolved >= 1.0 || speck < dissolved * 1.2 - 0.1) {
+            discard;
+        }
+    }
+
     // Back faces are only seen through the cut sides of the land, and the floor lies where the window bottom is empty:
     // both are windows into the void, its stars fixed to the screen
     if (!gl_FrontFacing || face == FLOOR_FACE) {
@@ -77,7 +96,11 @@ void main() {
     }
 
     vec3 color = vertexColor.rgb * FACE_SHADE[face];
-    if (vertexColor.a < RELIEF_ALPHA_LIMIT) {
+    if (hollow) {
+        // A cast of the open space, lit from within and slowly pulsing
+        float pulse = noise(holoPos * 12.0 + vec3(0.0, seconds * 0.3, 0.0));
+        color = color * (0.85 + 0.3 * pulse) + HOLLOW_GLOW * 0.08;
+    } else if (vertexColor.a < RELIEF_ALPHA_LIMIT) {
         // Land no beholder sees is only known by its generated relief: bare strata, stirring faintly
         color *= 0.82 + 0.22 * noise(holoPos * 30.0 + vec3(0.0, seconds * 0.6, 0.0));
     } else {

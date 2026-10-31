@@ -53,7 +53,7 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
             {
                 int step = zoom;
                 server.runOnServer(minecraft -> OculusTableStructure.updateView(minecraft.overworld(), table,
-                        view -> new OculusView(step, view.follow(), view.leyLines(), view.asleep())));
+                        view -> new OculusView(step, view.follow(), view.leyLines(), view.asleep(), view.caving())));
                 context.waitTicks(2);
 
                 int ticks;
@@ -65,7 +65,7 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
                     log(context, "never settled: " + OculusRenderer.summary());
                     throw e;
                 }
-                int scale = new OculusView(zoom, java.util.Optional.empty(), false, false).scale();
+                int scale = new OculusView(zoom, java.util.Optional.empty(), false, false, false).scale();
                 log(context, "1:" + scale + " filled in " + ticks + " ticks | " + OculusRenderer.summary());
                 log(context, "1:" + scale + " while filling: " + OculusRenderer.takeStats());
 

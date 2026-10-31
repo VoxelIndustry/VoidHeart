@@ -6,9 +6,14 @@ layout(std140) uniform OculusProjection {
     mat4 HoloModelView;
     // Footprint width and depth in table blocks, table blocks per world block, window height in table blocks
     vec4 HoloGeometry;
-    // How much of the hologram is there, sinking into the void while the table sleeps
+    // x: how much of the hologram is there, sinking into the void while the table sleeps
+    // y: from 0 showing the surface of the land to 1 showing the hollows inside it, both at 0.5
     vec4 HoloState;
 };
+
+// Voxel kinds written in the color alpha: hollows below the first limit, relief below the second, blocks above
+const float HOLLOW_ALPHA_LIMIT = 0.375;
+const float RELIEF_ALPHA_LIMIT = 0.75;
 
 layout(std140) uniform OculusChunk {
     // Origin of the drawn chunk slice relative to the projected view center, in world blocks

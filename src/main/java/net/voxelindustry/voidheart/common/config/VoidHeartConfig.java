@@ -47,6 +47,11 @@ public class VoidHeartConfig
     @SerialEntry(value = "oculus_table_sight_range", comment = "Horizontal distance around an Oculus Table it sees by itself, at low resolution")
     public int oculusTableSightRange = 16;
 
+    @AutoGen(category = OCULUS_TABLE)
+    @IntSlider(min = 0, max = 30, step = 1)
+    @SerialEntry(value = "oculus_table_mixed_seconds", comment = "Seconds an Oculus Table following a player shows both the surface and the hollows before settling on one, as they go under cover or come out")
+    public int oculusTableMixedSeconds = 4;
+
     @AutoGen(category = BEHOLDER)
     @IntSlider(min = 16, max = 256, step = 8)
     @SerialEntry(value = "beholder_low_range", comment = "Horizontal distance within which a Beholder sees land and anonymous entities")
@@ -63,6 +68,7 @@ public class VoidHeartConfig
         get().leyLineTravelAnchorInactiveRate = Mth.clamp(get().leyLineTravelAnchorInactiveRate, 0, 1);
         get().oculusTableFollowRange = Mth.clamp(get().oculusTableFollowRange, 16, 512);
         get().oculusTableSightRange = Mth.clamp(get().oculusTableSightRange, 0, 64);
+        get().oculusTableMixedSeconds = Mth.clamp(get().oculusTableMixedSeconds, 0, 30);
         get().beholderLowRange = Mth.clamp(get().beholderLowRange, 16, 256);
         get().beholderHighRange = Mth.clamp(get().beholderHighRange, 8, get().beholderLowRange);
     }

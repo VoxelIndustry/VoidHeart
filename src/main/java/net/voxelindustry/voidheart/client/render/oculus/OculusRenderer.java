@@ -82,13 +82,13 @@ public final class OculusRenderer
     {
     }
 
-    private record ProjectionData(Matrix4fc modelView, float width, float depth, float inverseScale, float height, float presence)
+    private record ProjectionData(Matrix4fc modelView, float width, float depth, float inverseScale, float height, float presence, float caving)
             implements DynamicGpuDataStorage.DynamicGpuData
     {
         @Override
         public void write(ByteBuffer buffer)
         {
-            Std140Builder.intoBuffer(buffer).putMat4f(modelView).putVec4(width, depth, inverseScale, height).putVec4(presence, 0, 0, 0);
+            Std140Builder.intoBuffer(buffer).putMat4f(modelView).putVec4(width, depth, inverseScale, height).putVec4(presence, caving, 0, 0);
         }
     }
 
@@ -314,7 +314,7 @@ public final class OculusRenderer
                 continue;
 
             var projection = projectionUbos.writeData(new ProjectionData(projector.modelView(camera.viewRotationMatrix, camera.pos),
-                    projector.width(), projector.depth(), projector.inverseScale(), 1, projector.presence()));
+                    projector.width(), projector.depth(), projector.inverseScale(), 1, projector.presence(), projector.cavingBlend()));
 
             var chunkData = new ChunkData[meshes.size()];
             var draws = new ArrayList<RenderPass.Draw<GpuBufferSlice[]>>(meshes.size());
@@ -429,6 +429,14 @@ public final class OculusRenderer
     public static Optional<Vec3> displayCenter(BlockPos anchor)
     {
         return Optional.ofNullable(PROJECTORS.get(anchor)).map(OculusProjector::displayCenter);
+    }
+
+    /**
+     * How far the hologram anchored there has turned from its surface, 0, to the hollows inside the land, 1.
+     */
+    public static Optional<Float> cavingBlend(BlockPos anchor)
+    {
+        return Optional.ofNullable(PROJECTORS.get(anchor)).map(OculusProjector::cavingBlend);
     }
 
     /**

@@ -16,6 +16,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.oculus.OculusFootprint;
 import net.voxelindustry.voidheart.common.content.oculus.OculusSight;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableBlock;
@@ -74,9 +75,9 @@ final class OculusProjector implements AutoCloseable
     private static final double SNAP_SPANS = 2;
     private static final int SURFACE_SAMPLES = 7;
     /**
-     * Blocks under the ground above them past which a followed player counts as underground.
+     * Share of the window kept above the surface while the hollows show around the table, for the rooms of buildings.
      */
-    private static final int UNDERGROUND_DEPTH = 3;
+    private static final float CAVING_ABOVE_SURFACE = 0.3F;
     /**
      * Share of the window height kept between clamped overlays and the window's top and bottom.
      */
@@ -119,6 +120,7 @@ final class OculusProjector implements AutoCloseable
     private double displayZ;
     private long lastFrameNanos;
     private @Nullable Entity followed;
+    private final OculusCaving caving = new OculusCaving();
     private int windowBottom = Integer.MIN_VALUE;
     private int epoch;
     private boolean closed;
@@ -176,7 +178,11 @@ final class OculusProjector implements AutoCloseable
             displayZ = targetZ;
         }
 
-        int bottom = windowBottom(level, view.scale());
+        long tick = OculusRenderer.ticks();
+        caving.tick(tick, view.caving(), followed != null, followed != null && isCovered(level, followed),
+                VoidHeartConfig.get().oculusTableMixedSeconds * 20);
+
+        int bottom = windowBottom(level, view.scale(), caving.goal(tick) > 0);
         if (view.scale() != scale || Math.abs(bottom - windowBottom) >= view.scale() * WINDOW_HYSTERESIS)
         {
             scale = view.scale();
@@ -201,13 +207,13 @@ final class OculusProjector implements AutoCloseable
     }
 
     /**
-     * Rests the window on the typical ground height of the land shown, or centers it on a followed player
-     * who went underground, so caves they explore show up.
+     * Rests the window on the typical ground height of the land shown. While the hollows show, it centers on a
+     * followed player so the caves or rooms they explore show up, or sinks under the ground around the table.
      */
-    private int windowBottom(ClientLevel level, int height)
+    private int windowBottom(ClientLevel level, int height, boolean hollows)
     {
         int bottom;
-        if (followed != null && isUnderground(level, followed))
+        if (hollows && followed != null)
             bottom = Mth.floor(followed.getY()) - height / 2;
         else
         {
@@ -215,15 +221,19 @@ final class OculusProjector implements AutoCloseable
             if (surface == Integer.MIN_VALUE)
                 return windowBottom == Integer.MIN_VALUE ? footprint.y() - height / 2 : windowBottom;
             // The surface is the first air block: at least the ground layer under it stays in the window
-            bottom = surface - Math.max(1, Math.round(height * SURFACE_HEIGHT));
+            bottom = hollows
+                    ? surface - Math.round(height * (1 - CAVING_ABOVE_SURFACE))
+                    : surface - Math.max(1, Math.round(height * SURFACE_HEIGHT));
         }
         return Mth.clamp(bottom, level.getMinY(), level.getMaxY() + 1 - height);
     }
 
-    private static boolean isUnderground(ClientLevel level, Entity entity)
+    /**
+     * Whether something that blocks motion, leaves aside, stands above the entity's head: a roof, or the ground.
+     */
+    private static boolean isCovered(ClientLevel level, Entity entity)
     {
-        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, entity.getBlockX(), entity.getBlockZ());
-        return entity.getY() < surface - UNDERGROUND_DEPTH;
+        return entity.getEyeY() < level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, entity.getBlockX(), entity.getBlockZ());
     }
 
     /**
@@ -290,6 +300,7 @@ final class OculusProjector implements AutoCloseable
         lastFrameNanos = now;
 
         presence = Mth.clamp(presence + (view.asleep() ? -1 : 1) * seconds * PRESENCE_RATE, 0, 1);
+        caving.advance(OculusRenderer.ticks(), seconds);
 
         // Zooming glides on a logarithmic scale, so each step takes as long whatever the scales involved
         if (displayScale <= 0 || Math.abs(displayScale - scale) < ZOOM_SNAP)
@@ -681,6 +692,14 @@ final class OculusProjector implements AutoCloseable
     float presence()
     {
         return presence;
+    }
+
+    /**
+     * From 0 showing the surface to 1 showing the hollows, as drawn this frame.
+     */
+    float cavingBlend()
+    {
+        return caving.blend();
     }
 
     float drawnScale()

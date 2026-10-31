@@ -18,6 +18,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public final class OculusChunkPayloads
 {
     public static final int MAX_CHUNKS_PER_REQUEST = 32;
+    public static final int COLUMNS = 16 * 16;
 
     private OculusChunkPayloads()
     {
@@ -47,8 +48,12 @@ public final class OculusChunkPayloads
     /**
      * The sections of one chunk within a window, each written as a presence flag then the section in the vanilla
      * network format. An unavailable chunk is one the server has not loaded either.
+     *
+     * @param cover per column along x then z, the first open block above everything that blocks motion, leaves
+     *              aside: what lies below is covered. Empty when unknown
      */
-    public record Sections(int chunkX, int chunkZ, int windowBottom, int windowHeight, boolean available, byte[] data) implements CustomPacketPayload
+    public record Sections(int chunkX, int chunkZ, int windowBottom, int windowHeight, boolean available, byte[] data, List<Integer> cover)
+            implements CustomPacketPayload
     {
         public static final Type<Sections> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "oculus_chunk_sections"));
 
@@ -59,6 +64,7 @@ public final class OculusChunkPayloads
                 ByteBufCodecs.VAR_INT, Sections::windowHeight,
                 ByteBufCodecs.BOOL, Sections::available,
                 ByteBufCodecs.BYTE_ARRAY, Sections::data,
+                ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(COLUMNS)), Sections::cover,
                 Sections::new);
 
         @Override

@@ -40,7 +40,8 @@ public record OculusControlPayload(BlockPos pos, Action action) implements Custo
         ZOOM_IN,
         ZOOM_OUT,
         CYCLE_FOLLOW,
-        TOGGLE_LEY_LINES
+        TOGGLE_LEY_LINES,
+        TOGGLE_CAVING
     }
 
     @Override
@@ -61,6 +62,7 @@ public record OculusControlPayload(BlockPos pos, Action action) implements Custo
             case ZOOM_IN -> OculusTableStructure.updateView(level, payload.pos(), OculusView::zoomIn);
             case ZOOM_OUT -> OculusTableStructure.updateView(level, payload.pos(), OculusView::zoomOut);
             case TOGGLE_LEY_LINES -> OculusTableStructure.updateView(level, payload.pos(), OculusView::toggleLeyLines);
+            case TOGGLE_CAVING -> OculusTableStructure.updateView(level, payload.pos(), OculusView::toggleCaving);
             case CYCLE_FOLLOW -> OculusTableStructure.footprint(level, payload.pos()).ifPresent(footprint ->
             {
                 var candidates = followCandidates(level, footprint).stream().map(ServerPlayer::getUUID).toList();

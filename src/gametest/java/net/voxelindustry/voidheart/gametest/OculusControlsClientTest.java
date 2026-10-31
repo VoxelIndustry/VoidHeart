@@ -26,7 +26,7 @@ public class OculusControlsClientTest implements FabricClientGameTest
     private static final double PANEL_X = 0.5;
     private static final double PANEL_Y = TABLE_Y + 0.5 + 0.5;
     private static final double PANEL_Z = 2.2;
-    private static final double[] BUTTON_OFFSETS = { -0.39, -0.13, 0.13, 0.39 };
+    private static final double[] BUTTON_OFFSETS = { -0.52, -0.26, 0, 0.26, 0.52 };
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -84,6 +84,11 @@ public class OculusControlsClientTest implements FabricClientGameTest
             aimAt(context, server, 3);
             context.getInput().pressKey(options -> options.keyUse);
             expectView(context, world, OculusView::leyLines, "toggle ley lines");
+
+            aimAt(context, server, 4);
+            context.takeScreenshot("oculus-controls-hover-caving");
+            context.getInput().pressKey(options -> options.keyUse);
+            expectView(context, world, OculusView::caving, "show the hollows");
             context.takeScreenshot("oculus-controls-after");
 
             // Following themselves, the player drags the view along as they walk away

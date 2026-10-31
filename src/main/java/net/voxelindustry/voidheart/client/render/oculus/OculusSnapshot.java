@@ -17,15 +17,18 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
+import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusSight;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Copy of the sections a chunk slice needs: its own and the facing sides of its four neighbors, which only decide
  * whether border faces are hidden. Taken on the main thread, read by a mesh builder.
- * Columns the table does not see hold the generated relief instead of their blocks.
+ * Columns the table does not see hold the generated relief instead of their blocks. In the columns it sees, the open
+ * space under cover, caves and rooms alike, is filled with hollow voxels drawn when the hologram shows the hollows.
  * Also stands in for the level when tint sources look up the biome of a block.
  */
 final class OculusSnapshot implements BlockAndTintGetter
@@ -42,6 +45,8 @@ final class OculusSnapshot implements BlockAndTintGetter
     private static final int RELIEF_LOW = 0x24183D;
     private static final int RELIEF_HIGH = 0x8676B8;
     private static final int RELIEF_CONTOUR = 0xC2B0FF;
+    private static final int HOLLOW_DEEP = 0x1C4F6E;
+    private static final int HOLLOW_HIGH = 0x9EE6F2;
 
     final int chunkX;
     final int chunkZ;
@@ -62,10 +67,14 @@ final class OculusSnapshot implements BlockAndTintGetter
      * Per column, the first air block above the generated surface, for the columns not seen.
      */
     private final int[] relief;
+    /**
+     * Per column, the first open block above everything covering it: open space below is hollow.
+     */
+    private final int[] cover;
 
     private OculusSnapshot(int chunkX, int chunkZ, int windowBottom, int windowHeight, int minSection,
                            @Nullable LevelChunkSection[][] sections, Holder<Biome> fallbackBiome, int levelMinY, int levelHeight,
-                           int seaLevel, boolean[] seen, int[] relief)
+                           int seaLevel, boolean[] seen, int[] relief, int[] cover)
     {
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
@@ -79,6 +88,7 @@ final class OculusSnapshot implements BlockAndTintGetter
         this.seaLevel = seaLevel;
         this.seen = seen;
         this.relief = relief;
+        this.cover = cover;
     }
 
     private static int column(int x, int z)
@@ -149,6 +159,7 @@ final class OculusSnapshot implements BlockAndTintGetter
         int minSection = SectionPos.blockToSectionCoord(windowBottom);
         int maxSection = SectionPos.blockToSectionCoord(windowBottom + windowHeight - 1);
         var sections = new LevelChunkSection[CHUNK_OFFSETS.length][maxSection - minSection + 1];
+        var covers = new int[CHUNK_OFFSETS.length][];
 
         for (int chunk = 0; chunk < CHUNK_OFFSETS.length; chunk++)
         {
@@ -176,7 +187,15 @@ final class OculusSnapshot implements BlockAndTintGetter
                         OculusPalette.ensure(remote[i].getStates());
                     sections[chunk][i] = remote[i];
                 }
+                covers[chunk] = OculusRemoteChunks.cover(ChunkPos.pack(x, z));
                 continue;
+            }
+
+            covers[chunk] = new int[OculusChunkPayloads.COLUMNS];
+            for (int columnZ = 0; columnZ < 16; columnZ++)
+            {
+                for (int columnX = 0; columnX < 16; columnX++)
+                    covers[chunk][columnX + columnZ * 16] = levelChunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, columnX, columnZ) + 1;
             }
 
             for (int sectionY = minSection; sectionY <= maxSection; sectionY++)
@@ -196,6 +215,7 @@ final class OculusSnapshot implements BlockAndTintGetter
         }
 
         var relief = new int[SIDE * SIDE];
+        var cover = new int[SIDE * SIDE];
         for (int z = -1; z <= OculusMesher.CHUNK; z++)
         {
             for (int x = -1; x <= OculusMesher.CHUNK; x++)
@@ -204,12 +224,14 @@ final class OculusSnapshot implements BlockAndTintGetter
                     continue;
                 var grid = grids[chunkOf(x, z)];
                 relief[column(x, z)] = grid == null ? NO_RELIEF : OculusRelief.height(grid, x & 15, z & 15);
+                var covered = covers[chunkOf(x, z)];
+                cover[column(x, z)] = covered == null ? NO_RELIEF : covered[(x & 15) + (z & 15) * 16];
             }
         }
 
         var center = new BlockPos(originX + 8, windowBottom + windowHeight / 2, originZ + 8);
         return new OculusSnapshot(chunkX, chunkZ, windowBottom, windowHeight, minSection, sections, level.getBiome(center), level.getMinY(), level.getHeight(),
-                level.getSeaLevel(), seen, relief);
+                level.getSeaLevel(), seen, relief, cover);
     }
 
     /**
@@ -244,7 +266,11 @@ final class OculusSnapshot implements BlockAndTintGetter
                     var state = stateAt(x, windowBottom + y, z);
                     var entry = OculusPalette.get(state);
                     if (!entry.filled())
+                    {
+                        if (windowBottom + y < cover[column])
+                            volume.set(x, y, z, borderX || borderZ ? OculusMesher.HOLLOW_BORDER : hollowColor(windowBottom + y, seaLevel));
                         continue;
+                    }
 
                     volume.set(x, y, z, borderX || borderZ ? 1 : entry.colorAt(state, this, pos.set(originX + x, windowBottom + y, originZ + z)));
                 }
@@ -265,6 +291,18 @@ final class OculusSnapshot implements BlockAndTintGetter
         else if (Math.floorMod(y, 8) >= 4)
             color = ARGB.scaleRGB(color, 0.9F);
         return ARGB.color(RELIEF_ALPHA, color);
+    }
+
+    /**
+     * Pale where the hollows are high, deepening toward the bottom of the world, banded every eight blocks.
+     */
+    static int hollowColor(int y, int seaLevel)
+    {
+        float height = Mth.clamp((y - seaLevel + 64) / 128F, 0, 1);
+        int color = ARGB.srgbLerp(height, HOLLOW_DEEP, HOLLOW_HIGH);
+        if (Math.floorMod(y, 8) >= 4)
+            color = ARGB.scaleRGB(color, 0.88F);
+        return ARGB.color(OculusMesher.HOLLOW_ALPHA, color);
     }
 
     private @Nullable LevelChunkSection sectionAt(int x, int y, int z)

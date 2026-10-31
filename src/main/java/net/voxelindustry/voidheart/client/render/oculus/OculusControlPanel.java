@@ -32,7 +32,8 @@ record OculusControlPanel(BlockPos cell, Direction facing, Vec3 center)
         ZOOM_OUT(Action.ZOOM_OUT),
         ZOOM_IN(Action.ZOOM_IN),
         FOLLOW(Action.CYCLE_FOLLOW),
-        LEY_LINES(Action.TOGGLE_LEY_LINES);
+        LEY_LINES(Action.TOGGLE_LEY_LINES),
+        CAVING(Action.TOGGLE_CAVING);
 
         final Action action;
 

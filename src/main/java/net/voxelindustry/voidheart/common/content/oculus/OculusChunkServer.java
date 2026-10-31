@@ -10,7 +10,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Util;
+import net.minecraft.util.Mth;
+import net.minecraft.util.SimpleBitStorage;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.chunk.storage.SerializableChunkData;
@@ -18,6 +22,8 @@ import net.voxelindustry.voidheart.VoidHeart;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -100,7 +106,7 @@ public final class OculusChunkServer
                 if (chunk != null)
                 {
                     entry.getValue().poll();
-                    ServerPlayNetworking.send(player, encode(pending, sectionY -> sectionOf(pending.level(), chunk.getSections(), sectionY)));
+                    ServerPlayNetworking.send(player, encode(pending, sectionY -> sectionOf(pending.level(), chunk.getSections(), sectionY), loadedCover(chunk)));
                     continue;
                 }
 
@@ -160,7 +166,38 @@ public final class OculusChunkServer
                 sections.put(section.y(), section.chunkSection());
         }
         SAVED_ANSWERS.incrementAndGet();
-        return encode(pending, sections::get);
+        return encode(pending, sections::get, savedCover(level, data.heightmaps().get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES)));
+    }
+
+    private static List<Integer> loadedCover(LevelChunk chunk)
+    {
+        var cover = new ArrayList<Integer>(OculusChunkPayloads.COLUMNS);
+        for (int z = 0; z < 16; z++)
+        {
+            for (int x = 0; x < 16; x++)
+                cover.add(chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + 1);
+        }
+        return cover;
+    }
+
+    /**
+     * Decodes a saved heightmap, stored as heights above the world bottom packed into longs.
+     */
+    private static List<Integer> savedCover(ServerLevel level, long @Nullable [] raw)
+    {
+        if (raw == null)
+            return List.of();
+        try
+        {
+            var storage = new SimpleBitStorage(Mth.ceillog2(level.getHeight() + 1), OculusChunkPayloads.COLUMNS, raw);
+            var cover = new ArrayList<Integer>(OculusChunkPayloads.COLUMNS);
+            for (int column = 0; column < OculusChunkPayloads.COLUMNS; column++)
+                cover.add(storage.get(column) + level.getMinY());
+            return cover;
+        } catch (SimpleBitStorage.InitializationException e)
+        {
+            return List.of();
+        }
     }
 
     /**
@@ -173,10 +210,10 @@ public final class OculusChunkServer
 
     private static OculusChunkPayloads.Sections unavailable(Pending pending)
     {
-        return new OculusChunkPayloads.Sections(ChunkPos.getX(pending.chunk()), ChunkPos.getZ(pending.chunk()), pending.windowBottom(), pending.windowHeight(), false, new byte[0]);
+        return new OculusChunkPayloads.Sections(ChunkPos.getX(pending.chunk()), ChunkPos.getZ(pending.chunk()), pending.windowBottom(), pending.windowHeight(), false, new byte[0], List.of());
     }
 
-    private static OculusChunkPayloads.Sections encode(Pending pending, IntFunction<@Nullable LevelChunkSection> sectionAt)
+    private static OculusChunkPayloads.Sections encode(Pending pending, IntFunction<@Nullable LevelChunkSection> sectionAt, List<Integer> cover)
     {
         var buffer = new FriendlyByteBuf(Unpooled.buffer());
         try
@@ -192,7 +229,7 @@ public final class OculusChunkServer
             }
             var data = new byte[buffer.readableBytes()];
             buffer.readBytes(data);
-            return new OculusChunkPayloads.Sections(ChunkPos.getX(pending.chunk()), ChunkPos.getZ(pending.chunk()), pending.windowBottom(), pending.windowHeight(), true, data);
+            return new OculusChunkPayloads.Sections(ChunkPos.getX(pending.chunk()), ChunkPos.getZ(pending.chunk()), pending.windowBottom(), pending.windowHeight(), true, data, cover);
         } finally
         {
             buffer.release();

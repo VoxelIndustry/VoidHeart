@@ -2,9 +2,12 @@ package net.voxelindustry.voidheart.client.render.oculus;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
+import java.util.Arrays;
+
 /**
  * Turns a chunk column slice of colored voxels into quads, hiding faces between filled voxels
- * and merging touching faces of the same color into a single rectangle.
+ * and merging touching faces of the same color into a single rectangle. Hollow voxels, the open space under cover,
+ * form a layer of their own: between a hollow and a solid voxel, both faces show, each drawn in its turn.
  * <p>
  * Each vertex is two ints: the position bytes x, y, z and the face ordinal, then the color as ABGR,
  * matching {@link OculusHologramPipeline#VERTEX_FORMAT} once written little endian.
@@ -19,6 +22,14 @@ public final class OculusMesher
      */
     public static final int FLOOR_FACE = 6;
     private static final int FLOOR_COLOR = 0xFF000000;
+    /**
+     * Alpha that marks hollow voxels, told apart by the shader.
+     */
+    public static final int HOLLOW_ALPHA = 0x40;
+    /**
+     * Stands for a hollow voxel of a neighboring chunk, which only decides which faces show.
+     */
+    public static final int HOLLOW_BORDER = HOLLOW_ALPHA << 24 | 1;
 
     /**
      * Face ordinals follow {@link net.minecraft.core.Direction}: down, up, north, south, west, east.
@@ -110,7 +121,8 @@ public final class OculusMesher
                         neighbor[1] = position[1];
                         neighbor[2] = position[2];
                         neighbor[axis] += sign;
-                        boolean visible = color != 0 && volume.get(neighbor[0], neighbor[1], neighbor[2]) == 0;
+                        int next = volume.get(neighbor[0], neighbor[1], neighbor[2]);
+                        boolean visible = color != 0 && (next == 0 || isHollow(next) != isHollow(color));
 
                         mask[u + v * sizeU] = visible ? color : 0;
                         any |= visible;
@@ -122,21 +134,17 @@ public final class OculusMesher
             }
         }
 
-        // Where the bottom of the window is empty, a floor facing up keeps the table under the hologram out of sight
+        // A floor facing up under the whole window keeps the table under the hologram out of sight, where the window
+        // bottom is empty and wherever the land dissolves to show the hollows
         var floor = new int[CHUNK * CHUNK];
-        boolean anyFloor = false;
-        for (int x = 0; x < CHUNK; x++)
-        {
-            for (int z = 0; z < CHUNK; z++)
-            {
-                boolean empty = volume.get(x, 0, z) == 0;
-                floor[z + x * CHUNK] = empty ? FLOOR_COLOR : 0;
-                anyFloor |= empty;
-            }
-        }
-        if (anyFloor)
-            mergeSlice(floor, CHUNK, CHUNK, FLOOR_FACE, 1, 0, 2, 0, out);
+        Arrays.fill(floor, FLOOR_COLOR);
+        mergeSlice(floor, CHUNK, CHUNK, FLOOR_FACE, 1, 0, 2, 0, out);
         return out.toIntArray();
+    }
+
+    public static boolean isHollow(int color)
+    {
+        return color >>> 24 == HOLLOW_ALPHA;
     }
 
     private static void mergeSlice(int[] mask, int sizeU, int sizeV, int face, int axis, int plane, int uAxis, int vAxis, IntArrayList out)

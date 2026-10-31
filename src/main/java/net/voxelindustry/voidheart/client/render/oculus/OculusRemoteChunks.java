@@ -33,8 +33,10 @@ final class OculusRemoteChunks
 
     /**
      * @param sections the window's sections from its bottom one up, missing when empty
+     * @param cover    per column, the first open block above what covers it, missing when the server did not know
      */
-    record Remote(int windowBottom, int windowHeight, @Nullable LevelChunkSection @Nullable [] sections, long receivedTick, long lastWantedTick)
+    record Remote(int windowBottom, int windowHeight, @Nullable LevelChunkSection @Nullable [] sections, int @Nullable [] cover,
+                  long receivedTick, long lastWantedTick)
     {
         boolean covers(int bottom, int height)
         {
@@ -43,7 +45,7 @@ final class OculusRemoteChunks
 
         Remote wanted(long tick)
         {
-            return new Remote(windowBottom, windowHeight, sections, receivedTick, tick);
+            return new Remote(windowBottom, windowHeight, sections, cover, receivedTick, tick);
         }
     }
 
@@ -71,6 +73,15 @@ final class OculusRemoteChunks
             return null;
         CHUNKS.put(chunk, remote.wanted(tick));
         return remote.sections();
+    }
+
+    /**
+     * How high each column of a chunk the server sent is covered, if it said.
+     */
+    static int @Nullable [] cover(long chunk)
+    {
+        var remote = CHUNKS.get(chunk);
+        return remote == null ? null : remote.cover();
     }
 
     /**
@@ -156,7 +167,7 @@ final class OculusRemoteChunks
         REQUESTED_AT.remove(chunk);
         if (!payload.available())
         {
-            CHUNKS.put(chunk, new Remote(payload.windowBottom(), payload.windowHeight(), null, tick, tick));
+            CHUNKS.put(chunk, new Remote(payload.windowBottom(), payload.windowHeight(), null, null, tick, tick));
             return;
         }
 
@@ -182,7 +193,8 @@ final class OculusRemoteChunks
             buffer.release();
         }
 
-        CHUNKS.put(chunk, new Remote(payload.windowBottom(), payload.windowHeight(), sections, tick, tick));
+        var cover = payload.cover().size() == OculusChunkPayloads.COLUMNS ? payload.cover().stream().mapToInt(Integer::intValue).toArray() : null;
+        CHUNKS.put(chunk, new Remote(payload.windowBottom(), payload.windowHeight(), sections, cover, tick, tick));
         OculusRenderer.onRemoteChunk(payload.chunkX(), payload.chunkZ());
     }
 
