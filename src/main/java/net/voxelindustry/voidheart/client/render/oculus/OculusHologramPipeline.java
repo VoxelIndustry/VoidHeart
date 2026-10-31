@@ -30,6 +30,9 @@ public final class OculusHologramPipeline
 
     public static final String PROJECTION_UNIFORM = "OculusProjection";
     public static final String CHUNK_UNIFORM = "OculusChunk";
+    /**
+     * Distance field of the table footprint, see {@link OculusProjector#edgeFade}.
+     */
     public static final String FOOTPRINT_SAMPLER = "FootprintMask";
 
     private static final BindGroupLayout BINDINGS = BindGroupLayout.builder()

@@ -10,6 +10,7 @@
   ],
   "client": [
     "client.MixinClientLevelBarrierDisguise",
+    "client.MixinLevelExtractorOculus",
     "client.MixinLevelRendererOculus"
   ],
   "injectors": {

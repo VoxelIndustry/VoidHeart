@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -17,10 +18,14 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Hologram of one table: the window of land it shows and the chunk meshes covering it.
+ * A chunk keeps showing its last mesh until a newer one is built, so changes never leave holes.
  */
 final class OculusProjector implements AutoCloseable
 {
@@ -32,7 +37,22 @@ final class OculusProjector implements AutoCloseable
      * Share of the window kept below the surface at the view center.
      */
     private static final float SURFACE_HEIGHT = 0.6F;
-    private static final int BUILDS_PER_TICK = 8;
+    /**
+     * Fraction of the window height the surface must drift before the window follows it.
+     */
+    private static final float WINDOW_HYSTERESIS = 0.25F;
+    /**
+     * Ticks before a chunk changing again is rebuilt, so flowing water or a busy farm does not rebuild every tick.
+     */
+    private static final int REBUILD_COOLDOWN = 10;
+    /**
+     * Texels of the footprint distance field per table block.
+     */
+    static final int FADE_RESOLUTION = 8;
+    /**
+     * Distance from the table edge, in table blocks, over which the hologram fades out.
+     */
+    private static final float FADE_RANGE = 0.3F;
 
     final BlockPos anchor;
 
@@ -41,12 +61,28 @@ final class OculusProjector implements AutoCloseable
     private double centerX;
     private double centerZ;
     private int windowBottom = Integer.MIN_VALUE;
+    private int epoch;
+    private boolean closed;
 
-    private final Long2ObjectMap<OculusChunkMesh> meshes = new Long2ObjectOpenHashMap<>();
-    private final Long2ObjectMap<int[]> pendingUploads = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectMap<ChunkSlot> slots = new Long2ObjectOpenHashMap<>();
 
     private @Nullable DynamicTexture mask;
     private boolean maskDirty = true;
+
+    private static final class ChunkSlot
+    {
+        @Nullable OculusChunkMesh mesh;
+        boolean dirty = true;
+        boolean building;
+        long lastBuildTick = Long.MIN_VALUE;
+    }
+
+    /**
+     * A chunk slice ready to be meshed off the main thread.
+     */
+    record BuildTask(OculusProjector projector, long chunk, int epoch, OculusSnapshot snapshot)
+    {
+    }
 
     OculusProjector(BlockPos anchor, OculusFootprint footprint)
     {
@@ -65,39 +101,29 @@ final class OculusProjector implements AutoCloseable
         centerX = footprint.centerX();
         centerZ = footprint.centerZ();
 
-        int bottom = windowBottom(level, view.scale());
-        if (view.scale() != scale || bottom != windowBottom)
+        int bottom = surfaceWindowBottom(level, view.scale());
+        if (view.scale() != scale || Math.abs(bottom - windowBottom) >= view.scale() * WINDOW_HYSTERESIS)
         {
             scale = view.scale();
             windowBottom = bottom;
-            discardMeshes();
+            epoch++;
+            slots.values().forEach(slot -> slot.dirty = true);
         }
 
         var wanted = chunksShown();
-        meshes.long2ObjectEntrySet().removeIf(entry ->
+        slots.long2ObjectEntrySet().removeIf(entry ->
         {
             if (wanted.contains(entry.getLongKey()))
                 return false;
-            entry.getValue().close();
+            if (entry.getValue().mesh != null)
+                entry.getValue().mesh.close();
             return true;
         });
-        pendingUploads.keySet().removeIf(key -> !wanted.contains(key));
-
-        int built = 0;
-        for (long key : wanted)
-        {
-            if (built >= BUILDS_PER_TICK)
-                break;
-            if (meshes.containsKey(key) || pendingUploads.containsKey(key))
-                continue;
-
-            var volume = OculusVoxels.snapshot(level, ChunkPos.getX(key), ChunkPos.getZ(key), windowBottom, scale);
-            pendingUploads.put(key, OculusMesher.mesh(volume));
-            built++;
-        }
+        for (long chunk : wanted)
+            slots.computeIfAbsent(chunk, key -> new ChunkSlot());
     }
 
-    private int windowBottom(ClientLevel level, int height)
+    private int surfaceWindowBottom(ClientLevel level, int height)
     {
         int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE, Mth.floor(centerX), Mth.floor(centerZ));
         return Mth.clamp(surface - (int) (height * SURFACE_HEIGHT), level.getMinY(), level.getMaxY() + 1 - height);
@@ -129,40 +155,175 @@ final class OculusProjector implements AutoCloseable
     }
 
     /**
-     * Sends built meshes and the footprint mask to the GPU. Called on the render thread before the frame's passes open.
+     * Marks the chunk slice holding this section for rebuilding, if the section is within the window.
      */
-    void upload()
+    void onSectionDirty(int sectionX, int sectionY, int sectionZ)
     {
-        for (var entry : pendingUploads.long2ObjectEntrySet())
-        {
-            long key = entry.getLongKey();
-            var previous = meshes.put(key, OculusChunkMesh.upload(ChunkPos.getX(key), ChunkPos.getZ(key), windowBottom, entry.getValue()));
-            if (previous != null)
-                previous.close();
-        }
-        pendingUploads.clear();
+        if (sectionY < SectionPos.blockToSectionCoord(windowBottom) || sectionY > SectionPos.blockToSectionCoord(windowBottom + scale - 1))
+            return;
 
-        if (maskDirty)
-            uploadMask();
+        var slot = slots.get(ChunkPos.pack(sectionX, sectionZ));
+        if (slot != null)
+            slot.dirty = true;
     }
 
-    private void uploadMask()
+    void markAllDirty()
     {
-        if (mask == null || mask.getPixels().getWidth() != footprint.width() || mask.getPixels().getHeight() != footprint.depth())
+        epoch++;
+        slots.values().forEach(slot -> slot.dirty = true);
+    }
+
+    /**
+     * Snapshots up to {@code budget} dirty chunk slices, missing ones first then nearest to the view center.
+     *
+     * @return the snapshots taken
+     */
+    int scheduleBuilds(ClientLevel level, long tick, int budget, Consumer<BuildTask> submit)
+    {
+        var candidates = new ArrayList<Long2ObjectMap.Entry<ChunkSlot>>();
+        for (var entry : slots.long2ObjectEntrySet())
+        {
+            var slot = entry.getValue();
+            if (slot.dirty && !slot.building && (slot.mesh == null || tick - slot.lastBuildTick >= REBUILD_COOLDOWN))
+                candidates.add(entry);
+        }
+        candidates.sort(Comparator.<Long2ObjectMap.Entry<ChunkSlot>>comparingInt(entry -> entry.getValue().mesh == null ? 0 : 1)
+                .thenComparingDouble(entry -> distanceSq(entry.getLongKey())));
+
+        int scheduled = 0;
+        for (var entry : candidates)
+        {
+            if (scheduled >= budget)
+                break;
+
+            var slot = entry.getValue();
+            long chunk = entry.getLongKey();
+            // An unloaded chunk is marked dirty again by the level once its data arrives
+            slot.dirty = false;
+            var snapshot = OculusSnapshot.capture(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale);
+            if (snapshot == null)
+                continue;
+
+            slot.building = true;
+            slot.lastBuildTick = tick;
+            submit.accept(new BuildTask(this, chunk, epoch, snapshot));
+            scheduled++;
+        }
+        return scheduled;
+    }
+
+    private double distanceSq(long chunk)
+    {
+        double dx = (ChunkPos.getX(chunk) << 4) + 8 - centerX;
+        double dz = (ChunkPos.getZ(chunk) << 4) + 8 - centerZ;
+        return dx * dx + dz * dz;
+    }
+
+    /**
+     * Takes a finished mesh. Render thread only.
+     */
+    void accept(long chunk, int builtEpoch, int builtWindowBottom, int[] mesh)
+    {
+        var slot = slots.get(chunk);
+        if (closed || slot == null)
+            return;
+
+        slot.building = false;
+        if (builtEpoch != epoch)
+        {
+            slot.dirty = true;
+            return;
+        }
+
+        var previous = slot.mesh;
+        slot.mesh = OculusChunkMesh.upload(ChunkPos.getX(chunk), ChunkPos.getZ(chunk), builtWindowBottom, mesh);
+        if (previous != null)
+            previous.close();
+    }
+
+    void buildFailed(long chunk)
+    {
+        var slot = slots.get(chunk);
+        if (slot != null)
+        {
+            slot.building = false;
+            slot.dirty = true;
+        }
+    }
+
+    boolean isClosed()
+    {
+        return closed;
+    }
+
+    /**
+     * Sends the footprint distance field to the GPU. Render thread only.
+     */
+    void uploadMask()
+    {
+        if (!maskDirty)
+            return;
+
+        int width = footprint.width() * FADE_RESOLUTION;
+        int depth = footprint.depth() * FADE_RESOLUTION;
+        if (mask == null || mask.getPixels().getWidth() != width || mask.getPixels().getHeight() != depth)
         {
             if (mask != null)
                 mask.close();
-            mask = new DynamicTexture(() -> "Oculus footprint " + anchor.toShortString(), footprint.width(), footprint.depth(), true);
+            mask = new DynamicTexture(() -> "Oculus footprint " + anchor.toShortString(), width, depth, true);
         }
 
         var pixels = mask.getPixels();
-        for (int cellZ = 0; cellZ < footprint.depth(); cellZ++)
+        var fade = edgeFade(footprint);
+        for (int z = 0; z < depth; z++)
         {
-            for (int cellX = 0; cellX < footprint.width(); cellX++)
-                pixels.setPixel(cellX, cellZ, footprint.contains(footprint.minX() + cellX, footprint.minZ() + cellZ) ? 0xFFFFFFFF : 0);
+            for (int x = 0; x < width; x++)
+            {
+                int value = Math.round(fade[x + z * width] * 255);
+                pixels.setPixel(x, z, 0xFF000000 | value << 16 | value << 8 | value);
+            }
         }
         mask.upload();
         maskDirty = false;
+    }
+
+    /**
+     * Per texel, how far it is from leaving the footprint relative to the fade range: 0 outside, 1 well inside.
+     */
+    static float[] edgeFade(OculusFootprint footprint)
+    {
+        int width = footprint.width() * FADE_RESOLUTION;
+        int depth = footprint.depth() * FADE_RESOLUTION;
+        var fade = new float[width * depth];
+
+        for (int z = 0; z < depth; z++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float px = (x + 0.5F) / FADE_RESOLUTION;
+                float pz = (z + 0.5F) / FADE_RESOLUTION;
+                int cellX = (int) px;
+                int cellZ = (int) pz;
+                if (!footprint.contains(footprint.minX() + cellX, footprint.minZ() + cellZ))
+                    continue;
+
+                // The fade range is under a block, so only the eight surrounding cells can be the nearest outside
+                float nearest = FADE_RANGE;
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        if (footprint.contains(footprint.minX() + cellX + dx, footprint.minZ() + cellZ + dz))
+                            continue;
+                        float distanceX = Math.max(0, Math.max(cellX + dx - px, px - (cellX + dx + 1)));
+                        float distanceZ = Math.max(0, Math.max(cellZ + dz - pz, pz - (cellZ + dz + 1)));
+                        nearest = Math.min(nearest, (float) Math.sqrt(distanceX * distanceX + distanceZ * distanceZ));
+                    }
+                }
+                fade[x + z * width] = nearest / FADE_RANGE;
+            }
+        }
+        return fade;
     }
 
     @Nullable DynamicTexture mask()
@@ -170,9 +331,39 @@ final class OculusProjector implements AutoCloseable
         return mask;
     }
 
-    Collection<OculusChunkMesh> meshes()
+    List<OculusChunkMesh> meshes()
     {
-        return meshes.values();
+        var meshes = new ArrayList<OculusChunkMesh>(slots.size());
+        for (var slot : slots.values())
+        {
+            if (slot.mesh != null && slot.mesh.vertices() != null)
+                meshes.add(slot.mesh);
+        }
+        return meshes;
+    }
+
+    String describe()
+    {
+        var text = new StringBuilder("table " + anchor.toShortString() + " scale " + scale + " window " + windowBottom + " epoch " + epoch);
+        for (var entry : slots.long2ObjectEntrySet())
+        {
+            var slot = entry.getValue();
+            text.append("\n  chunk ").append(ChunkPos.getX(entry.getLongKey())).append(", ").append(ChunkPos.getZ(entry.getLongKey()))
+                    .append(slot.mesh == null ? " no mesh" : " mesh window " + slot.mesh.windowBottom + " quads " + slot.mesh.quadCount)
+                    .append(slot.dirty ? " dirty" : "").append(slot.building ? " building" : "");
+        }
+        return text.toString();
+    }
+
+    long gpuBytes()
+    {
+        long bytes = 0;
+        for (var slot : slots.values())
+        {
+            if (slot.mesh != null)
+                bytes += slot.mesh.gpuBytes();
+        }
+        return bytes;
     }
 
     /**
@@ -216,17 +407,16 @@ final class OculusProjector implements AutoCloseable
         return (float) ((mesh.chunkZ << 4) - centerZ);
     }
 
-    private void discardMeshes()
-    {
-        meshes.values().forEach(OculusChunkMesh::close);
-        meshes.clear();
-        pendingUploads.clear();
-    }
-
     @Override
     public void close()
     {
-        discardMeshes();
+        closed = true;
+        for (var slot : slots.values())
+        {
+            if (slot.mesh != null)
+                slot.mesh.close();
+        }
+        slots.clear();
         if (mask != null)
         {
             mask.close();
