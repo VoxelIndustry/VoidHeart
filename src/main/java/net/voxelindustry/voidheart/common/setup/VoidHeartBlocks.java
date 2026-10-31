@@ -37,6 +37,7 @@ import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterBlock;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableBlock;
+import net.voxelindustry.voidheart.common.content.beholder.BeholderBlock;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
@@ -117,6 +118,7 @@ public class VoidHeartBlocks
     public static Block OLD_ANCHOR;
     public static Block PERMEABLE_BARRIER;
     public static Block OCULUS_TABLE;
+    public static Block BEHOLDER;
 
     public static Block EXPERIENCE_SKULL;
     public static Block MENDING_ALTAR;
@@ -304,6 +306,15 @@ public class VoidHeartBlocks
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
                 .lightLevel(state -> 7)
+                .sound(SoundType.STONE), true);
+
+        BEHOLDER = registerBlock("beholder", BeholderBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(1.5F, 6.0F)
+                .lightLevel(state -> 5)
+                .noOcclusion()
                 .sound(SoundType.STONE), true);
 
         EXPERIENCE_SKULL = registerBlock("experience_skull", ExperienceSkullBlock::new, BlockBehaviour.Properties.of()

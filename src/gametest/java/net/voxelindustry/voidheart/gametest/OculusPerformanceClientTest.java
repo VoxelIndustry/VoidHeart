@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
+import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 
@@ -32,6 +33,8 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
             server.runCommand("time set noon");
             server.runCommand("gamerule advance_time false");
             server.runCommand("gamemode spectator @a");
+            // The worst case: the table sees all the land it shows, no cheaper relief anywhere
+            server.runOnServer(minecraft -> VoidHeartConfig.get().oculusTableSightRange = 512);
 
             // The spawn is on land and already loaded, unlike an arbitrary spot whose height would read as the world bottom
             var spawn = server.computeOnServer(minecraft -> minecraft.getPlayerList().getPlayers().getFirst().blockPosition());
@@ -85,6 +88,21 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
                 context.waitTicks(10);
             }
             log(context, "1:8 following a moving player: " + OculusRenderer.takeStats() + " | " + OculusRenderer.summary());
+
+            // Back to sight of its own and one beholder, the rest of the generated land shows as relief
+            server.runOnServer(minecraft ->
+            {
+                VoidHeartConfig.get().oculusTableSightRange = 16;
+                OculusTableStructure.updateView(minecraft.overworld(), table, view -> view.following(java.util.Optional.empty()).zoomOut().zoomOut().zoomOut().zoomOut());
+            });
+            int beholderX = x + 40;
+            int beholderY = server.computeOnServer(minecraft -> minecraft.overworld().getHeight(Heightmap.Types.MOTION_BLOCKING, beholderX, z));
+            server.runCommand("setblock " + beholderX + " " + beholderY + " " + z + " voidheart:beholder");
+            server.runCommand("tp @a " + (x + 0.5) + " " + (tableY + 9) + " " + (z + SIZE + 2) + " 180 52");
+            context.waitTicks(40);
+            context.waitFor(minecraft -> OculusRenderer.isSettled(), SETTLE_TIMEOUT);
+            log(context, "1:32 with one beholder: " + OculusRenderer.summary());
+            context.takeScreenshot("oculus-relief-1-32");
         }
     }
 

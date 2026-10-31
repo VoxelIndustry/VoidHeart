@@ -39,6 +39,9 @@ import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
 import net.voxelindustry.voidheart.client.render.oculus.OculusSky;
 import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
+import net.voxelindustry.voidheart.common.content.oculus.OculusSightPayloads;
+import net.voxelindustry.voidheart.client.render.oculus.OculusBeholderLayer;
+import net.voxelindustry.voidheart.client.render.BeholderRender;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
@@ -66,6 +69,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new FloatingItemRender<>(ctx, ShatterForgeTile::getStack, 1));
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PERMEABLE_BARRIER, PermeableBarrierRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.BEHOLDER, BeholderRender::new);
 
         MenuScreens.register(VoidHeartMenus.PERMEABLE_BARRIER, PermeableBarrierScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
@@ -99,6 +103,9 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Markers.TYPE, OculusMarkers::receive);
 
         ClientPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Sections.TYPE, OculusRenderer::receiveSections);
+        ClientPlayNetworking.registerGlobalReceiver(OculusSightPayloads.Relief.TYPE, OculusRenderer::receiveRelief);
+        ClientPlayNetworking.registerGlobalReceiver(OculusSightPayloads.Sight.TYPE, OculusBeholderLayer::receive);
+        LevelRenderEvents.COLLECT_SUBMITS.register(OculusBeholderLayer::collectSubmits);
         ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.register(OculusRenderer::onLoad);
         ClientBlockEntityEvents.BLOCK_ENTITY_UNLOAD.register(OculusRenderer::onUnload);
         ClientTickEvents.END_CLIENT_TICK.register(OculusRenderer::tick);

@@ -32,6 +32,8 @@ public class OculusTableClientTest implements FabricClientGameTest
 
             server.runCommand("fill -1 " + TABLE.getY() + " -1 1 " + TABLE.getY() + " 1 voidheart:oculus_table");
             server.runCommand("fill 2 " + TABLE.getY() + " -1 2 " + TABLE.getY() + " -1 voidheart:oculus_table");
+            // Placed by no one like the table, it sees the whole land around for it
+            server.runCommand("setblock 0 " + TABLE.getY() + " 5 voidheart:beholder");
             // Spectators float where they are teleported and have no hand or hotbar in the shots
             server.runCommand("gamemode spectator @a");
 

@@ -17,6 +17,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.oculus.OculusFootprint;
+import net.voxelindustry.voidheart.common.content.oculus.OculusSight;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableBlock;
 import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 import org.joml.Matrix4f;
@@ -93,6 +94,10 @@ final class OculusProjector implements AutoCloseable
 
     private OculusFootprint footprint;
     private OculusView view = OculusView.DEFAULT;
+    /**
+     * What the table sees, unknown until the server tells. Nothing is built before then.
+     */
+    private @Nullable OculusSight sight;
     private int scale;
     /**
      * World blocks per table block as drawn, gliding toward the scale of the zoom picked.
@@ -344,12 +349,31 @@ final class OculusProjector implements AutoCloseable
     }
 
     /**
+     * A beholder came or went: the land it saw turns to relief or the other way round, everywhere it reaches.
+     */
+    void setSight(OculusSight sight)
+    {
+        if (sight.equals(this.sight))
+            return;
+        this.sight = sight;
+        markAllDirty();
+    }
+
+    @Nullable OculusSight sight()
+    {
+        return sight;
+    }
+
+    /**
      * Snapshots up to {@code budget} dirty chunk slices, missing ones first then nearest to the view center.
      *
      * @return the snapshots taken
      */
     int scheduleBuilds(ClientLevel level, long tick, int budget, long deadlineNanos, Consumer<BuildTask> submit)
     {
+        if (sight == null)
+            return 0;
+
         var candidates = new ArrayList<Long2ObjectMap.Entry<ChunkSlot>>();
         for (var entry : slots.long2ObjectEntrySet())
         {
@@ -368,13 +392,10 @@ final class OculusProjector implements AutoCloseable
 
             var slot = entry.getValue();
             long chunk = entry.getLongKey();
-            var snapshot = OculusSnapshot.capture(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale, tick);
+            // Stays dirty while land or relief is missing: the server is asked, and asked again later if it never answers
+            var snapshot = OculusSnapshot.capture(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale, tick, sight, anchor);
             if (snapshot == null)
-            {
-                // Stays dirty: the server is asked, and asked again later if it never answers
-                OculusRemoteChunks.want(anchor, chunk, windowBottom, scale, tick);
                 continue;
-            }
 
             slot.dirty = false;
             slot.building = true;

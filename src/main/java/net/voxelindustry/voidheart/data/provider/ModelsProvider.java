@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.model.ItemModelUtils;
+import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.client.data.models.blockstates.MultiPartGenerator;
 import net.minecraft.client.data.models.model.ModelTemplate;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -77,6 +78,16 @@ public class ModelsProvider extends FabricModelProvider
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
 
         registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
+        registerBeholder(VoidHeartBlocks.BEHOLDER);
+    }
+
+    /**
+     * The pedestal, its floating eye drawn apart. The hand-written item model holds the eye too.
+     */
+    private void registerBeholder(Block beholder)
+    {
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(beholder, plainVariant(ModelLocationUtils.getModelLocation(beholder))));
+        generator.registerSimpleItemModel(beholder, ModelLocationUtils.getModelLocation(beholder, "_inventory"));
     }
 
     /**

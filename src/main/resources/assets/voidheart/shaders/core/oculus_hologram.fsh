@@ -16,6 +16,8 @@ layout(location = 0) out vec4 fragColor;
 // Down, up, north, south, west, east
 const float FACE_SHADE[6] = float[](0.45, 1.0, 0.8, 0.8, 0.65, 0.65);
 const uint FLOOR_FACE = 6u;
+// Relief voxels are written half transparent, every block color fully opaque
+const float RELIEF_ALPHA_LIMIT = 0.75;
 // The land is seen through a violet haze, as in a scrying pool
 const vec3 HAZE = vec3(0.42, 0.24, 0.62);
 const float HAZE_STRENGTH = 0.28;
@@ -75,17 +77,22 @@ void main() {
     }
 
     vec3 color = vertexColor.rgb * FACE_SHADE[face];
-    color = mix(color, color * HAZE * 1.6, HAZE_STRENGTH);
+    if (vertexColor.a < RELIEF_ALPHA_LIMIT) {
+        // Land no beholder sees is only known by its generated relief: bare strata, stirring faintly
+        color *= 0.82 + 0.22 * noise(holoPos * 30.0 + vec3(0.0, seconds * 0.6, 0.0));
+    } else {
+        color = mix(color, color * HAZE * 1.6, HAZE_STRENGTH);
 
-    // Slow ripples spread from the middle of the table across the land, like a disturbed pool: warped by drifting
-    // noise so they never form clean rings, and fading in and out unevenly along their fronts
-    vec2 flow = holoPos.xz * 1.6;
-    float warp = noise(vec3(flow, seconds * 0.12)) * 1.1 + noise(vec3(flow * 2.7, seconds * 0.21 + 5.0)) * 0.35;
-    float distance = length(holoPos.xz - HoloGeometry.xy * 0.5) + warp;
-    float strength = smoothstep(0.25, 0.8, noise(vec3(flow * 0.9, seconds * 0.08 + 11.0)));
-    float ripple = (sin(distance * 9.0 - seconds * 1.4) * 0.5 + 0.5) * strength;
-    color *= 0.94 + 0.09 * ripple;
-    color += HAZE * pow(ripple, 6.0) * 0.07;
+        // Slow ripples spread from the middle of the table across the land, like a disturbed pool: warped by drifting
+        // noise so they never form clean rings, and fading in and out unevenly along their fronts
+        vec2 flow = holoPos.xz * 1.6;
+        float warp = noise(vec3(flow, seconds * 0.12)) * 1.1 + noise(vec3(flow * 2.7, seconds * 0.21 + 5.0)) * 0.35;
+        float distance = length(holoPos.xz - HoloGeometry.xy * 0.5) + warp;
+        float strength = smoothstep(0.25, 0.8, noise(vec3(flow * 0.9, seconds * 0.08 + 11.0)));
+        float ripple = (sin(distance * 9.0 - seconds * 1.4) * 0.5 + 0.5) * strength;
+        color *= 0.94 + 0.09 * ripple;
+        color += HAZE * pow(ripple, 6.0) * 0.07;
+    }
 
     // Near the edges the land sinks into darkness, lit by sparse violet motes
     color = mix(color, VOID_COLOR, rim * 0.85);

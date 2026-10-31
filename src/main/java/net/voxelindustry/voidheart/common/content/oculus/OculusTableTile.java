@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.content.oculus;
 
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -12,6 +13,7 @@ import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Every block of a table keeps a copy of the shared view, so the table survives losing any of its blocks.
@@ -22,6 +24,12 @@ public class OculusTableTile extends TileBase
 
     @Getter
     private OculusView view = OculusView.DEFAULT;
+    /**
+     * Who placed this block, whose beholders the table looks through. Blocks placed by no one share the beholders
+     * placed by no one.
+     */
+    @Getter
+    private Optional<UUID> owner = Optional.empty();
 
     public OculusTableTile(BlockPos pos, BlockState state)
     {
@@ -61,12 +69,19 @@ public class OculusTableTile extends TileBase
         sync();
     }
 
+    public void setOwner(Optional<UUID> owner)
+    {
+        this.owner = owner;
+        setChanged();
+    }
+
     @Override
     protected void loadAdditional(ValueInput nbt)
     {
         super.loadAdditional(nbt);
 
         view = nbt.read("view", OculusView.CODEC).orElse(OculusView.DEFAULT);
+        owner = nbt.read("owner", UUIDUtil.CODEC);
     }
 
     @Override
@@ -75,5 +90,6 @@ public class OculusTableTile extends TileBase
         super.saveAdditional(nbt);
 
         nbt.store("view", OculusView.CODEC, view);
+        owner.ifPresent(id -> nbt.store("owner", UUIDUtil.CODEC, id));
     }
 }

@@ -12,11 +12,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
 import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads.Kind;
+import net.voxelindustry.voidheart.common.content.oculus.OculusSight;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
@@ -30,7 +32,8 @@ import java.util.UUID;
 
 /**
  * Glowing pins for the players and mobs on the land a table shows. Entities this client tracks are drawn where it
- * sees them, the others where the server last said they were.
+ * sees them, the others where the server last said they were. Only entities within the table's sight show: dimly seen
+ * ones as grey dots, clearly seen ones as colored pins naming who or what they are when looked at.
  */
 public final class OculusMarkers
 {
@@ -53,9 +56,14 @@ public final class OculusMarkers
     private static final int FOLLOWED_COLOR = 0xC77DFF;
     private static final int HOSTILE_COLOR = 0xFF4D4D;
     private static final int PASSIVE_COLOR = 0x7CFF7A;
+    private static final int UNKNOWN_COLOR = 0xC4BCD4;
 
-    private record Pin(Kind kind, Vec3 position, Optional<UUID> player)
+    private record Pin(Kind kind, Vec3 position, Optional<UUID> player, Optional<EntityType<?>> type)
     {
+        boolean named()
+        {
+            return player.isPresent() || type.isPresent();
+        }
     }
 
     /**
@@ -68,6 +76,7 @@ public final class OculusMarkers
     private static final Map<BlockPos, ServerMarkers> FROM_SERVER = new HashMap<>();
 
     private static @Nullable UUID gazedPlayer;
+    private static @Nullable EntityType<?> gazedType;
 
     private OculusMarkers()
     {
@@ -129,7 +138,7 @@ public final class OculusMarkers
                 for (var pin : pins)
                 {
                     double along = gazeDistance(pin, eye, look);
-                    if (pin.player().isPresent() && along < gazedDistance)
+                    if (pin.named() && along < gazedDistance)
                     {
                         gazed = pin;
                         gazedDistance = along;
@@ -148,6 +157,7 @@ public final class OculusMarkers
         }
 
         gazedPlayer = gazed == null ? null : gazed.player().orElse(null);
+        gazedType = gazed == null ? null : gazed.type().orElse(null);
         if (gazed != null)
             drawName(context.poseStack(), context, cameraState, gazed);
     }
@@ -158,6 +168,14 @@ public final class OculusMarkers
     public static Optional<UUID> gazedPlayer()
     {
         return Optional.ofNullable(gazedPlayer);
+    }
+
+    /**
+     * The kind of mob whose pin was looked at last frame, named above it.
+     */
+    public static Optional<EntityType<?>> gazedType()
+    {
+        return Optional.ofNullable(gazedType);
     }
 
     /**
@@ -179,16 +197,21 @@ public final class OculusMarkers
     private static List<Pin> pins(ClientLevel level, OculusProjector projector, float partialTick)
     {
         var pins = new ArrayList<Pin>();
+        var sight = projector.sight();
+        if (sight == null)
+            return pins;
+
         var seen = new HashSet<Integer>();
         for (var entity : level.getEntitiesOfClass(LivingEntity.class, projector.shownArea(), OculusEntityPayloads::isShown))
         {
             seen.add(entity.getId());
             var position = entity.getPosition(partialTick);
-            var holo = projector.toHologram(position.x, position.y, position.z);
+            var resolution = sight.resolutionAt(position.x, position.z);
+            var holo = resolution == OculusSight.Resolution.UNSEEN ? null : projector.toHologram(position.x, position.y, position.z);
             if (holo != null && pins.size() < OculusEntityPayloads.MAX_MARKERS)
             {
-                var kind = OculusEntityPayloads.kindOf(entity);
-                pins.add(new Pin(kind, holo, kind == Kind.PLAYER ? Optional.of(entity.getUUID()) : Optional.empty()));
+                var marker = OculusEntityPayloads.Marker.of(entity, resolution);
+                pins.add(new Pin(marker.kind(), holo, marker.player(), marker.type()));
             }
         }
 
@@ -204,7 +227,7 @@ public final class OculusMarkers
             var before = fromServer.previous().getOrDefault(marker.entityId(), marker);
             var holo = projector.toHologram(Mth.lerp(glide, before.x(), marker.x()), Mth.lerp(glide, before.y(), marker.y()), Mth.lerp(glide, before.z(), marker.z()));
             if (holo != null)
-                pins.add(new Pin(marker.kind(), holo, marker.player()));
+                pins.add(new Pin(marker.kind(), holo, marker.player(), marker.type()));
         }
         return pins;
     }
@@ -220,6 +243,7 @@ public final class OculusMarkers
             case PLAYER -> isFollowed ? FOLLOWED_COLOR : PLAYER_COLOR;
             case HOSTILE -> HOSTILE_COLOR;
             case PASSIVE -> PASSIVE_COLOR;
+            case UNKNOWN -> UNKNOWN_COLOR;
         };
         float size = pin.kind() == Kind.PLAYER ? PLAYER_SIZE : MOB_SIZE;
         var center = pin.position().add(0, size, 0).subtract(camera).toVector3f();
@@ -253,17 +277,17 @@ public final class OculusMarkers
     }
 
     /**
-     * The name of a gazed player, just above their pin. Text hangs down from its anchor, so the anchor sits a line higher.
+     * The name of a gazed player or mob kind, just above its pin. Text hangs down from its anchor, so the anchor sits
+     * a line higher.
      */
     private static void drawName(PoseStack poseStack, LevelRenderContext context, CameraRenderState camera, Pin pin)
     {
-        var connection = Minecraft.getInstance().getConnection();
-        var info = connection == null ? null : connection.getPlayerInfo(pin.player().get());
-        if (info == null)
+        var label = label(pin);
+        if (label == null)
             return;
 
         var font = Minecraft.getInstance().font;
-        var name = Component.literal(info.getProfile().name()).getVisualOrderText();
+        var name = label.getVisualOrderText();
         var offset = pin.position().add(0, PLAYER_SIZE * 2.3 + font.lineHeight * NAME_SCALE, 0).subtract(camera.pos);
 
         poseStack.pushPose();
@@ -272,6 +296,16 @@ public final class OculusMarkers
         poseStack.scale(NAME_SCALE, -NAME_SCALE, NAME_SCALE);
         context.submitNodeCollector().submitText(poseStack, -font.width(name) / 2F, 0, name, false, Font.DisplayMode.NORMAL, FULL_BRIGHT, 0xFFF2FFFE, 0x40000000, 0);
         poseStack.popPose();
+    }
+
+    private static @Nullable Component label(Pin pin)
+    {
+        if (pin.type().isPresent())
+            return pin.type().get().getDescription();
+
+        var connection = Minecraft.getInstance().getConnection();
+        var info = connection == null || pin.player().isEmpty() ? null : connection.getPlayerInfo(pin.player().get());
+        return info == null ? null : Component.literal(info.getProfile().name());
     }
 
     public static void clear()

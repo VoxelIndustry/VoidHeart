@@ -4,12 +4,14 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
@@ -32,7 +34,6 @@ public final class OculusEntityPayloads
 {
     public static final int MAX_MARKERS = 256;
     private static final int REQUEST_INTERVAL = 10;
-    private static final double VIEWER_DISTANCE = 48;
 
     private static final Map<RequestKey, Long> LAST_REQUEST = new HashMap<>();
 
@@ -44,7 +45,11 @@ public final class OculusEntityPayloads
     {
         PLAYER,
         HOSTILE,
-        PASSIVE
+        PASSIVE,
+        /**
+         * Something living, seen too dimly to tell what.
+         */
+        UNKNOWN
     }
 
     public record Request(BlockPos table, int windowBottom, int windowHeight) implements CustomPacketPayload
@@ -64,10 +69,13 @@ public final class OculusEntityPayloads
         }
     }
 
+    private static final StreamCodec<RegistryFriendlyByteBuf, EntityType<?>> ENTITY_TYPE_CODEC = ByteBufCodecs.registry(Registries.ENTITY_TYPE);
+
     /**
-     * @param player for players, who they are so their name can be shown
+     * @param player for players seen clearly, who they are so their name can be shown
+     * @param type   for mobs seen clearly, what they are
      */
-    public record Marker(int entityId, Kind kind, double x, double y, double z, Optional<UUID> player)
+    public record Marker(int entityId, Kind kind, double x, double y, double z, Optional<UUID> player, Optional<EntityType<?>> type)
     {
         public static final StreamCodec<RegistryFriendlyByteBuf, Marker> CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT, Marker::entityId,
@@ -76,7 +84,21 @@ public final class OculusEntityPayloads
                 ByteBufCodecs.DOUBLE, Marker::y,
                 ByteBufCodecs.DOUBLE, Marker::z,
                 ByteBufCodecs.optional(UUIDUtil.STREAM_CODEC), Marker::player,
+                ByteBufCodecs.optional(ENTITY_TYPE_CODEC), Marker::type,
                 Marker::new);
+
+        /**
+         * What a table makes out of an entity at the resolution it is seen with.
+         */
+        public static Marker of(LivingEntity entity, OculusSight.Resolution resolution)
+        {
+            if (resolution != OculusSight.Resolution.HIGH)
+                return new Marker(entity.getId(), Kind.UNKNOWN, entity.getX(), entity.getY(), entity.getZ(), Optional.empty(), Optional.empty());
+            var kind = kindOf(entity);
+            return new Marker(entity.getId(), kind, entity.getX(), entity.getY(), entity.getZ(),
+                    kind == Kind.PLAYER ? Optional.of(entity.getUUID()) : Optional.empty(),
+                    kind == Kind.PLAYER ? Optional.empty() : Optional.of(entity.getType()));
+        }
     }
 
     public record Markers(BlockPos table, List<Marker> markers) implements CustomPacketPayload
@@ -126,7 +148,7 @@ public final class OculusEntityPayloads
         var level = player.level();
         if (request.windowHeight() <= 0 || request.windowHeight() > OculusView.WIDEST_SCALE)
             return;
-        if (player.position().distanceToSqr(Vec3.atCenterOf(request.table())) > VIEWER_DISTANCE * VIEWER_DISTANCE)
+        if (player.position().distanceToSqr(Vec3.atCenterOf(request.table())) > OculusViewed.VIEWER_DISTANCE * OculusViewed.VIEWER_DISTANCE)
             return;
 
         long now = level.getGameTime();
@@ -152,19 +174,22 @@ public final class OculusEntityPayloads
         var area = new AABB(center.x - halfX, request.windowBottom(), center.z - halfZ,
                 center.x + halfX, request.windowBottom() + request.windowHeight(), center.z + halfZ);
 
-        ServerPlayNetworking.send(player, new Markers(request.table(), collect(level, area)));
+        ServerPlayNetworking.send(player, new Markers(request.table(), collect(level, area, OculusSight.of(level, request.table()))));
     }
 
-    private static List<Marker> collect(ServerLevel level, AABB area)
+    /**
+     * Only entities within sight, and only as much of them as the sight makes out.
+     */
+    private static List<Marker> collect(ServerLevel level, AABB area, OculusSight sight)
     {
         var markers = new ArrayList<Marker>();
         for (var entity : level.getEntitiesOfClass(LivingEntity.class, area, OculusEntityPayloads::isShown))
         {
             if (markers.size() >= MAX_MARKERS)
                 break;
-            var kind = kindOf(entity);
-            markers.add(new Marker(entity.getId(), kind, entity.getX(), entity.getY(), entity.getZ(),
-                    kind == Kind.PLAYER ? Optional.of(entity.getUUID()) : Optional.empty()));
+            var resolution = sight.resolutionAt(entity.getX(), entity.getZ());
+            if (resolution != OculusSight.Resolution.UNSEEN)
+                markers.add(Marker.of(entity, resolution));
         }
         return markers;
     }

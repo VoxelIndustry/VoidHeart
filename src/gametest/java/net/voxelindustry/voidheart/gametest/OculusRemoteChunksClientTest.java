@@ -26,6 +26,7 @@ public class OculusRemoteChunksClientTest implements FabricClientGameTest
             server.runCommand("fill -62 " + GROUND + " -8 -50 " + GROUND + " 8 gold_block");
             // Too far for this client to track: its marker can only come from the server
             server.runCommand("summon pig -56 " + (GROUND + 1) + " 0 {NoAI:1b}");
+            server.runCommand("setblock -40 " + (GROUND + 1) + " 0 voidheart:beholder");
 
             context.runOnClient(minecraft -> minecraft.options.renderDistance().set(2));
             server.runCommand("fill -2 " + (GROUND + 1) + " -2 2 " + (GROUND + 1) + " 2 voidheart:oculus_table");

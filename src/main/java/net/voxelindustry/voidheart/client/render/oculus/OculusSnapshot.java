@@ -6,6 +6,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.QuartPos;
+import net.minecraft.util.ARGB;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.CardinalLighting;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ColorResolver;
@@ -17,17 +19,29 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
+import net.voxelindustry.voidheart.common.content.oculus.OculusSight;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Copy of the sections a chunk slice needs: its own and the facing sides of its four neighbors, which only decide
  * whether border faces are hidden. Taken on the main thread, read by a mesh builder.
+ * Columns the table does not see hold the generated relief instead of their blocks.
  * Also stands in for the level when tint sources look up the biome of a block.
  */
 final class OculusSnapshot implements BlockAndTintGetter
 {
     private static final int CENTER = 0;
     private static final int[][] CHUNK_OFFSETS = { { 0, 0 }, { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
+    private static final int SIDE = OculusMesher.Volume.SIDE;
+    private static final int NO_RELIEF = Integer.MIN_VALUE;
+
+    /**
+     * Relief voxels are told apart by the shader through their alpha.
+     */
+    static final int RELIEF_ALPHA = 0x80;
+    private static final int RELIEF_LOW = 0x24183D;
+    private static final int RELIEF_HIGH = 0x8676B8;
+    private static final int RELIEF_CONTOUR = 0xC2B0FF;
 
     final int chunkX;
     final int chunkZ;
@@ -39,9 +53,19 @@ final class OculusSnapshot implements BlockAndTintGetter
     private final Holder<Biome> fallbackBiome;
     private final int levelMinY;
     private final int levelHeight;
+    private final int seaLevel;
+    /**
+     * Per column of the slice and its border, whether the table sees its land.
+     */
+    private final boolean[] seen;
+    /**
+     * Per column, the first air block above the generated surface, for the columns not seen.
+     */
+    private final int[] relief;
 
     private OculusSnapshot(int chunkX, int chunkZ, int windowBottom, int windowHeight, int minSection,
-                           @Nullable LevelChunkSection[][] sections, Holder<Biome> fallbackBiome, int levelMinY, int levelHeight)
+                           @Nullable LevelChunkSection[][] sections, Holder<Biome> fallbackBiome, int levelMinY, int levelHeight,
+                           int seaLevel, boolean[] seen, int[] relief)
     {
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
@@ -52,22 +76,84 @@ final class OculusSnapshot implements BlockAndTintGetter
         this.fallbackBiome = fallbackBiome;
         this.levelMinY = levelMinY;
         this.levelHeight = levelHeight;
+        this.seaLevel = seaLevel;
+        this.seen = seen;
+        this.relief = relief;
+    }
+
+    private static int column(int x, int z)
+    {
+        return x + 1 + (z + 1) * SIDE;
+    }
+
+    private static int chunkOf(int x, int z)
+    {
+        return x < 0 ? 3 : x >= OculusMesher.CHUNK ? 4 : z < 0 ? 1 : z >= OculusMesher.CHUNK ? 2 : CENTER;
+    }
+
+    private static boolean isCorner(int x, int z)
+    {
+        return (x < 0 || x >= OculusMesher.CHUNK) && (z < 0 || z >= OculusMesher.CHUNK);
     }
 
     /**
      * Copies loaded chunks, and falls back on sections the server sent for chunks this client has not loaded.
+     * Missing land or relief is asked for.
      *
-     * @return nothing while neither this client nor the server provided the chunk itself
+     * @return nothing while the land or relief this slice shows has not arrived yet
      */
-    static @Nullable OculusSnapshot capture(ClientLevel level, int chunkX, int chunkZ, int windowBottom, int windowHeight, long tick)
+    static @Nullable OculusSnapshot capture(ClientLevel level, int chunkX, int chunkZ, int windowBottom, int windowHeight, long tick,
+                                            OculusSight sight, BlockPos table)
     {
         var source = level.getChunkSource();
+        int originX = chunkX << 4;
+        int originZ = chunkZ << 4;
+        long centerChunk = ChunkPos.pack(chunkX, chunkZ);
+
+        // Land the server could not find, never generated, is only known by its relief
+        boolean lost = source.getChunk(chunkX, chunkZ, ChunkStatus.FULL, false) == null
+                && OculusRemoteChunks.isUnavailable(centerChunk, windowBottom, windowHeight);
+        var seen = new boolean[SIDE * SIDE];
+        var needed = new boolean[CHUNK_OFFSETS.length];
+        var reliefWanted = new boolean[CHUNK_OFFSETS.length];
+        for (int z = -1; z <= OculusMesher.CHUNK; z++)
+        {
+            for (int x = -1; x <= OculusMesher.CHUNK; x++)
+            {
+                if (isCorner(x, z))
+                    continue;
+                int chunk = chunkOf(x, z);
+                boolean sees = !(lost && chunk == CENTER) && sight.seesColumn(originX + x, originZ + z);
+                seen[column(x, z)] = sees;
+                needed[chunk] |= sees;
+                reliefWanted[chunk] |= !sees;
+            }
+        }
+
+        var grids = new int[CHUNK_OFFSETS.length][];
+        for (int chunk = 0; chunk < CHUNK_OFFSETS.length; chunk++)
+        {
+            if (!reliefWanted[chunk])
+                continue;
+            long pos = ChunkPos.pack(chunkX + CHUNK_OFFSETS[chunk][0], chunkZ + CHUNK_OFFSETS[chunk][1]);
+            grids[chunk] = OculusRelief.get(pos, tick);
+            if (grids[chunk] == null)
+            {
+                OculusRelief.want(table, pos, tick);
+                // Without its neighbors' relief, a slice only shows a few more faces along its edges until it arrives
+                if (chunk == CENTER)
+                    return null;
+            }
+        }
+
         int minSection = SectionPos.blockToSectionCoord(windowBottom);
         int maxSection = SectionPos.blockToSectionCoord(windowBottom + windowHeight - 1);
         var sections = new LevelChunkSection[CHUNK_OFFSETS.length][maxSection - minSection + 1];
 
         for (int chunk = 0; chunk < CHUNK_OFFSETS.length; chunk++)
         {
+            if (!needed[chunk])
+                continue;
             int x = chunkX + CHUNK_OFFSETS[chunk][0];
             int z = chunkZ + CHUNK_OFFSETS[chunk][1];
             var levelChunk = source.getChunk(x, z, ChunkStatus.FULL, false);
@@ -77,7 +163,10 @@ final class OculusSnapshot implements BlockAndTintGetter
                 if (remote == null)
                 {
                     if (chunk == CENTER)
+                    {
+                        OculusRemoteChunks.want(table, centerChunk, windowBottom, windowHeight, tick);
                         return null;
+                    }
                     continue;
                 }
                 // Remote sections are never written once decoded, so builders can share them
@@ -106,8 +195,21 @@ final class OculusSnapshot implements BlockAndTintGetter
             }
         }
 
-        var center = new BlockPos((chunkX << 4) + 8, windowBottom + windowHeight / 2, (chunkZ << 4) + 8);
-        return new OculusSnapshot(chunkX, chunkZ, windowBottom, windowHeight, minSection, sections, level.getBiome(center), level.getMinY(), level.getHeight());
+        var relief = new int[SIDE * SIDE];
+        for (int z = -1; z <= OculusMesher.CHUNK; z++)
+        {
+            for (int x = -1; x <= OculusMesher.CHUNK; x++)
+            {
+                if (isCorner(x, z))
+                    continue;
+                var grid = grids[chunkOf(x, z)];
+                relief[column(x, z)] = grid == null ? NO_RELIEF : OculusRelief.height(grid, x & 15, z & 15);
+            }
+        }
+
+        var center = new BlockPos(originX + 8, windowBottom + windowHeight / 2, originZ + 8);
+        return new OculusSnapshot(chunkX, chunkZ, windowBottom, windowHeight, minSection, sections, level.getBiome(center), level.getMinY(), level.getHeight(),
+                level.getSeaLevel(), seen, relief);
     }
 
     /**
@@ -131,6 +233,14 @@ final class OculusSnapshot implements BlockAndTintGetter
                     if (borderX && borderZ)
                         continue;
 
+                    int column = column(x, z);
+                    if (!seen[column])
+                    {
+                        if (windowBottom + y < relief[column])
+                            volume.set(x, y, z, borderX || borderZ ? 1 : reliefColor(windowBottom + y, seaLevel));
+                        continue;
+                    }
+
                     var state = stateAt(x, windowBottom + y, z);
                     var entry = OculusPalette.get(state);
                     if (!entry.filled())
@@ -143,9 +253,23 @@ final class OculusSnapshot implements BlockAndTintGetter
         return volume;
     }
 
+    /**
+     * Strata of muted violet, paler with height, with a brighter contour every sixteen blocks.
+     */
+    static int reliefColor(int y, int seaLevel)
+    {
+        float height = Mth.clamp((y - seaLevel + 24) / 112F, 0, 1);
+        int color = ARGB.srgbLerp(height, RELIEF_LOW, RELIEF_HIGH);
+        if (Math.floorMod(y, 16) == 15)
+            color = ARGB.srgbLerp(0.45F, color, RELIEF_CONTOUR);
+        else if (Math.floorMod(y, 8) >= 4)
+            color = ARGB.scaleRGB(color, 0.9F);
+        return ARGB.color(RELIEF_ALPHA, color);
+    }
+
     private @Nullable LevelChunkSection sectionAt(int x, int y, int z)
     {
-        int chunk = x < 0 ? 3 : x >= OculusMesher.CHUNK ? 4 : z < 0 ? 1 : z >= OculusMesher.CHUNK ? 2 : CENTER;
+        int chunk = chunkOf(x, z);
         int section = SectionPos.blockToSectionCoord(y) - minSection;
         if (section < 0 || section >= sections[chunk].length)
             return null;

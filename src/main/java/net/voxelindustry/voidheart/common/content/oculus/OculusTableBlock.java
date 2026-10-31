@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -29,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 
@@ -119,8 +121,12 @@ public class OculusTableBlock extends Block implements EntityBlock
     {
         super.setPlacedBy(level, pos, state, placer, itemStack);
 
-        if (!level.isClientSide())
-            OculusTableStructure.onBlockAdded(level, pos);
+        if (level.isClientSide())
+            return;
+        var tile = OculusTableStructure.getTile(level, pos);
+        if (tile != null && placer instanceof Player player)
+            tile.setOwner(Optional.of(player.getUUID()));
+        OculusTableStructure.onBlockAdded(level, pos);
     }
 
     @Override

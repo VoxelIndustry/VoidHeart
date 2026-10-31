@@ -8,9 +8,11 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -80,6 +82,21 @@ public class OculusTableStructure
     public static @Nullable OculusTableTile getTile(BlockGetter level, BlockPos pos)
     {
         return level.getBlockEntity(pos) instanceof OculusTableTile tile ? tile : null;
+    }
+
+    /**
+     * Everyone who placed a block of the table: their beholders all see for it.
+     */
+    public static Set<Optional<UUID>> owners(BlockGetter level, BlockPos start)
+    {
+        var owners = new HashSet<Optional<UUID>>();
+        for (var member : collect(level, start))
+        {
+            var tile = getTile(level, member);
+            if (tile != null)
+                owners.add(tile.getOwner());
+        }
+        return owners;
     }
 
     /**

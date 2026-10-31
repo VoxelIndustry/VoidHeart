@@ -23,6 +23,8 @@ import net.minecraft.world.phys.Vec3;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
+import net.voxelindustry.voidheart.common.content.oculus.OculusSight;
+import net.voxelindustry.voidheart.common.content.oculus.OculusSightPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableTile;
 import org.joml.Matrix4fc;
@@ -156,6 +158,27 @@ public final class OculusRenderer
         OculusRemoteChunks.receive(payload, context);
     }
 
+    public static void receiveRelief(OculusSightPayloads.Relief payload, ClientPlayNetworking.Context context)
+    {
+        OculusRelief.receive(payload, context);
+    }
+
+    /**
+     * How many chunks of generated relief this client holds, for tests.
+     */
+    public static int reliefChunkCount()
+    {
+        return OculusRelief.size();
+    }
+
+    /**
+     * What the table anchored there sees, once the server said.
+     */
+    public static Optional<OculusSight> sight(BlockPos anchor)
+    {
+        return Optional.ofNullable(PROJECTORS.get(anchor)).map(OculusProjector::sight);
+    }
+
     public static void tick(Minecraft client)
     {
         var level = client.level;
@@ -163,6 +186,7 @@ public final class OculusRenderer
         {
             closeProjectors();
             OculusRemoteChunks.clear();
+            OculusRelief.clear();
             lastLevel = level;
         }
         if (level == null)
@@ -176,6 +200,8 @@ public final class OculusRenderer
         updateProjectors(level);
         scheduleBuilds(level);
         OculusRemoteChunks.tick(ticks, chunk -> PROJECTORS.values().forEach(projector -> projector.markChunkDirty(chunk)));
+        OculusRelief.tick(ticks);
+        OculusBeholderLayer.tick(ticks);
         OculusMarkers.tick(level, ticks);
         OculusLeyLayer.tick(ticks);
     }
@@ -470,5 +496,6 @@ public final class OculusRenderer
         closeProjectors();
         TABLES.clear();
         OculusRemoteChunks.clear();
+        OculusRelief.clear();
     }
 }

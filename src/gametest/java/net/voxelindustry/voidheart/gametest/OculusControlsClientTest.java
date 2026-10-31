@@ -37,6 +37,8 @@ public class OculusControlsClientTest implements FabricClientGameTest
             world.getConnection().waitForChunksRender();
             server.runCommand("time set noon");
             server.runCommand("fill -1 " + TABLE_Y + " -1 1 " + TABLE_Y + " 1 voidheart:oculus_table");
+            // Names only show where a beholder sees clearly
+            server.runCommand("setblock 0 " + TABLE_Y + " -5 voidheart:beholder");
             server.runCommand("gamemode creative @a");
 
             aimAt(context, server, 1);
