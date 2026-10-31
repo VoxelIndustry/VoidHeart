@@ -170,6 +170,7 @@ public final class OculusRenderer
         updateProjectors(level);
         scheduleBuilds(level);
         OculusRemoteChunks.tick(ticks, chunk -> PROJECTORS.values().forEach(projector -> projector.markChunkDirty(chunk)));
+        OculusMarkers.tick(level, ticks);
     }
 
     private static void updateProjectors(ClientLevel level)

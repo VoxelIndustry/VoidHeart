@@ -14,6 +14,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.oculus.OculusFootprint;
 import net.voxelindustry.voidheart.common.content.oculus.OculusView;
@@ -526,6 +527,49 @@ final class OculusProjector implements AutoCloseable
     Vec3 displayCenter()
     {
         return new Vec3(displayX, windowBottom, displayZ);
+    }
+
+    /**
+     * Where a point of the land shown floats above the table, in world coordinates.
+     *
+     * @return nothing when the point is outside the window or beyond the footprint
+     */
+    @Nullable Vec3 toHologram(double x, double y, double z)
+    {
+        double holoX = (x - displayX) / scale + footprint.width() / 2D;
+        double holoY = (y - windowBottom) / scale;
+        double holoZ = (z - displayZ) / scale + footprint.depth() / 2D;
+        if (holoY < 0 || holoY > 1 || !footprint.contains(footprint.minX() + Mth.floor(holoX), footprint.minZ() + Mth.floor(holoZ)))
+            return null;
+        return new Vec3(footprint.minX() + holoX, footprint.y() + 1 + LIFT + holoY, footprint.minZ() + holoZ);
+    }
+
+    /**
+     * The land shown, in world coordinates.
+     */
+    AABB shownArea()
+    {
+        double halfX = footprint.width() * scale / 2D;
+        double halfZ = footprint.depth() * scale / 2D;
+        return new AABB(displayX - halfX, windowBottom, displayZ - halfZ, displayX + halfX, windowBottom + scale, displayZ + halfZ);
+    }
+
+    /**
+     * The top of the hologram, in world coordinates.
+     */
+    double hologramTop()
+    {
+        return footprint.y() + 2 + LIFT;
+    }
+
+    int windowBottom()
+    {
+        return windowBottom;
+    }
+
+    int scale()
+    {
+        return scale;
     }
 
     float width()

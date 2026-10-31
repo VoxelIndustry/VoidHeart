@@ -32,6 +32,8 @@ import net.voxelindustry.voidheart.client.render.FloatingItemRender;
 import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
 import net.voxelindustry.voidheart.client.render.LeyDebugRender;
 import net.voxelindustry.voidheart.client.render.oculus.OculusControls;
+import net.voxelindustry.voidheart.client.render.oculus.OculusMarkers;
+import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
 import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
@@ -83,8 +85,11 @@ public class VoidHeartClient implements ClientModInitializer
             AnchorWaypointRender.clear();
             OculusRenderer.clear();
             OculusControls.clear();
+            OculusMarkers.clear();
         });
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusControls::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(OculusMarkers::collectSubmits);
+        ClientPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Markers.TYPE, OculusMarkers::receive);
 
         ClientPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Sections.TYPE, OculusRenderer::receiveSections);
         ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.register(OculusRenderer::onLoad);

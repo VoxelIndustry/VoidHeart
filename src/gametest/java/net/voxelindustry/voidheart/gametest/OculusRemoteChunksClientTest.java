@@ -24,6 +24,8 @@ public class OculusRemoteChunksClientTest implements FabricClientGameTest
             server.runCommand("forceload add -96 -96 96 96");
             // Four chunks west, past a two chunk render distance but within the 1:32 view of a 5x5 table
             server.runCommand("fill -62 " + GROUND + " -8 -50 " + GROUND + " 8 gold_block");
+            // Too far for this client to track: its marker can only come from the server
+            server.runCommand("summon pig -56 " + (GROUND + 1) + " 0 {NoAI:1b}");
 
             context.runOnClient(minecraft -> minecraft.options.renderDistance().set(2));
             server.runCommand("fill -2 " + (GROUND + 1) + " -2 2 " + (GROUND + 1) + " 2 voidheart:oculus_table");

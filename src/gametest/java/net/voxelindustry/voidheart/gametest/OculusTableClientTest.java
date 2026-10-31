@@ -83,5 +83,10 @@ public class OculusTableClientTest implements FabricClientGameTest
         server.runCommand("fill -2 " + (GROUND + 1) + " -36 2 " + (GROUND + 12) + " -32 gold_block");
         for (int tree = 0; tree < 4; tree++)
             server.runCommand("place feature minecraft:oak " + (-12 + tree * 8) + " " + (GROUND + 1) + " " + (14 + tree % 2 * 6));
+        for (int mob = 0; mob < 3; mob++)
+        {
+            server.runCommand("summon cow " + (8 + mob * 3) + " " + (GROUND + 1) + " " + (-12 + mob * 2) + " {NoAI:1b}");
+            server.runCommand("summon husk " + (-8 - mob * 3) + " " + (GROUND + 1) + " " + (-12 + mob * 2) + " {NoAI:1b,PersistenceRequired:1b}");
+        }
     }
 }
