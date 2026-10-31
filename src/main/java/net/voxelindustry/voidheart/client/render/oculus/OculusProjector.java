@@ -59,6 +59,11 @@ final class OculusProjector implements AutoCloseable
      */
     private static final float GLIDE_RATE = 6;
     /**
+     * How quickly the drawn scale catches up with a new zoom, per second.
+     */
+    private static final float ZOOM_RATE = 7;
+    private static final float ZOOM_SNAP = 0.01F;
+    /**
      * Past this many view spans, the view jumps to its target instead of gliding over unbuilt land.
      */
     private static final double SNAP_SPANS = 2;
@@ -85,6 +90,10 @@ final class OculusProjector implements AutoCloseable
     private OculusFootprint footprint;
     private OculusView view = OculusView.DEFAULT;
     private int scale;
+    /**
+     * World blocks per table block as drawn, gliding toward the scale of the zoom picked.
+     */
+    private float displayScale;
     /**
      * Where the view is headed, updated every tick.
      */
@@ -236,6 +245,8 @@ final class OculusProjector implements AutoCloseable
     private LongSet chunksShown(double centerX, double centerZ, int margin)
     {
         var chunks = new LongOpenHashSet();
+        // While zooming in, the land drawn still spans the wider scale it glides from
+        double cellSpan = Math.max(scale, displayScale);
         for (int cellZ = 0; cellZ < footprint.depth(); cellZ++)
         {
             for (int cellX = 0; cellX < footprint.width(); cellX++)
@@ -243,9 +254,9 @@ final class OculusProjector implements AutoCloseable
                 if (!footprint.contains(footprint.minX() + cellX, footprint.minZ() + cellZ))
                     continue;
 
-                double minX = centerX + (cellX - footprint.width() / 2D) * scale - margin;
-                double minZ = centerZ + (cellZ - footprint.depth() / 2D) * scale - margin;
-                double size = scale + margin * 2;
+                double minX = centerX + (cellX - footprint.width() / 2D) * cellSpan - margin;
+                double minZ = centerZ + (cellZ - footprint.depth() / 2D) * cellSpan - margin;
+                double size = cellSpan + margin * 2;
                 for (int chunkX = Mth.floor(minX) >> 4; chunkX <= Mth.floor(minX + size - 1E-3) >> 4; chunkX++)
                 {
                     for (int chunkZ = Mth.floor(minZ) >> 4; chunkZ <= Mth.floor(minZ + size - 1E-3) >> 4; chunkZ++)
@@ -264,6 +275,15 @@ final class OculusProjector implements AutoCloseable
         long now = System.nanoTime();
         float seconds = lastFrameNanos == 0 ? 0 : Math.min((now - lastFrameNanos) / 1E9F, 0.25F);
         lastFrameNanos = now;
+
+        // Zooming glides on a logarithmic scale, so each step takes as long whatever the scales involved
+        if (displayScale <= 0 || Math.abs(displayScale - scale) < ZOOM_SNAP)
+            displayScale = scale;
+        else
+        {
+            float zoomGlide = 1 - (float) Math.exp(-ZOOM_RATE * seconds);
+            displayScale = (float) Math.exp(Mth.lerp(zoomGlide, Math.log(displayScale), Math.log(scale)));
+        }
 
         double desiredX = targetX;
         double desiredZ = targetZ;
@@ -562,9 +582,10 @@ final class OculusProjector implements AutoCloseable
      */
     @Nullable Vec3 toHologram(double x, double y, double z)
     {
-        double holoX = (x - displayX) / scale + footprint.width() / 2D;
-        double holoY = (y - windowBottom) / scale;
-        double holoZ = (z - displayZ) / scale + footprint.depth() / 2D;
+        double drawn = drawnScale();
+        double holoX = (x - displayX) / drawn + footprint.width() / 2D;
+        double holoY = (y - windowBottom) / drawn;
+        double holoZ = (z - displayZ) / drawn + footprint.depth() / 2D;
         if (holoY < 0 || holoY > 1 || !footprint.contains(footprint.minX() + Mth.floor(holoX), footprint.minZ() + Mth.floor(holoZ)))
             return null;
         return new Vec3(footprint.minX() + holoX, footprint.y() + OculusTableBlock.HEIGHT + LIFT + holoY, footprint.minZ() + holoZ);
@@ -576,7 +597,7 @@ final class OculusProjector implements AutoCloseable
      */
     @Nullable Vec3 toHologramClamped(double x, double y, double z)
     {
-        double clampedY = Mth.clamp(y, windowBottom + scale * CLAMP_INSET, windowBottom + scale * (1 - CLAMP_INSET));
+        double clampedY = Mth.clamp(y, windowBottom + drawnScale() * CLAMP_INSET, windowBottom + Math.min(scale, drawnScale()) * (1 - CLAMP_INSET));
         return toHologram(x, clampedY, z);
     }
 
@@ -585,8 +606,8 @@ final class OculusProjector implements AutoCloseable
      */
     AABB shownArea()
     {
-        double halfX = footprint.width() * scale / 2D;
-        double halfZ = footprint.depth() * scale / 2D;
+        double halfX = footprint.width() * Math.max(scale, drawnScale()) / 2D;
+        double halfZ = footprint.depth() * Math.max(scale, drawnScale()) / 2D;
         return new AABB(displayX - halfX, windowBottom, displayZ - halfZ, displayX + halfX, windowBottom + scale, displayZ + halfZ);
     }
 
@@ -620,7 +641,15 @@ final class OculusProjector implements AutoCloseable
 
     float inverseScale()
     {
-        return 1F / scale;
+        return 1F / drawnScale();
+    }
+
+    /**
+     * World blocks per table block as drawn this frame, which differs from {@link #scale} while a zoom glides.
+     */
+    float drawnScale()
+    {
+        return displayScale > 0 ? displayScale : scale;
     }
 
     float offsetX(OculusChunkMesh mesh)

@@ -15,8 +15,12 @@ import java.util.UUID;
  */
 public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines)
 {
-    public static final int ZOOM_STEPS = 4;
-    public static final int WIDEST_SCALE = 32;
+    /**
+     * World blocks per table block at each zoom step, halving every two steps.
+     */
+    private static final int[] SCALES = { 32, 24, 16, 12, 8, 6, 4 };
+    public static final int ZOOM_STEPS = SCALES.length;
+    public static final int WIDEST_SCALE = SCALES[0];
 
     public static final OculusView DEFAULT = new OculusView(0, Optional.empty(), false);
 
@@ -31,7 +35,7 @@ public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines)
      */
     public int scale()
     {
-        return WIDEST_SCALE >> zoom;
+        return SCALES[zoom];
     }
 
     public OculusView zoomIn()

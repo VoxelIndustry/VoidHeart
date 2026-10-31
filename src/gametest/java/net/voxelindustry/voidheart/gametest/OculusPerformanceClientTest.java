@@ -61,7 +61,7 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
                     log(context, "never settled: " + OculusRenderer.summary());
                     throw e;
                 }
-                int scale = OculusView.WIDEST_SCALE >> zoom;
+                int scale = new OculusView(zoom, java.util.Optional.empty(), false).scale();
                 log(context, "1:" + scale + " filled in " + ticks + " ticks | " + OculusRenderer.summary());
                 log(context, "1:" + scale + " while filling: " + OculusRenderer.takeStats());
 

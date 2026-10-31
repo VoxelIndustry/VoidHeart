@@ -110,6 +110,10 @@ class OculusTableStructureTest
     void zoomStaysWithinItsSteps()
     {
         assertThat(OculusView.DEFAULT.zoomOut().scale()).isEqualTo(32);
-        assertThat(OculusView.DEFAULT.zoomIn().zoomIn().zoomIn().zoomIn().scale()).isEqualTo(4);
+        var view = OculusView.DEFAULT;
+        for (int step = 0; step < OculusView.ZOOM_STEPS + 2; step++)
+            view = view.zoomIn();
+        assertThat(view.scale()).isEqualTo(4);
+        assertThat(OculusView.DEFAULT.zoomIn().scale()).as("intermediate step").isEqualTo(24);
     }
 }

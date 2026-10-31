@@ -42,6 +42,11 @@ public final class OculusMarkers
     private static final int REQUEST_INTERVAL = 10;
     private static final int FULL_BRIGHT = 0xF000F0;
     private static final float NAME_SCALE = 1 / 220F;
+    private static final double GAZE_REACH = 8;
+    /**
+     * How far from a pin, in pin sizes, the view ray may pass and still count as looking at it.
+     */
+    private static final double GAZE_TOLERANCE = 1.8;
 
     private static final float PLAYER_SIZE = 0.07F;
     private static final float MOB_SIZE = 0.045F;
@@ -62,6 +67,8 @@ public final class OculusMarkers
     }
 
     private static final Map<BlockPos, ServerMarkers> FROM_SERVER = new HashMap<>();
+
+    private static @Nullable UUID gazedPlayer;
 
     private OculusMarkers()
     {
@@ -103,11 +110,29 @@ public final class OculusMarkers
 
         var cameraState = context.levelState().cameraRenderState;
         float partialTick = cameraState.cameraEntityPartialTicks;
+        var viewer = minecraft.player;
+        Pin gazed = null;
+        double gazedDistance = Double.MAX_VALUE;
         for (var projector : OculusRenderer.projectors())
         {
             var pins = pins(level, projector, partialTick);
             if (pins.isEmpty())
                 continue;
+
+            if (viewer != null)
+            {
+                var eye = viewer.getEyePosition(partialTick);
+                var look = viewer.getViewVector(partialTick);
+                for (var pin : pins)
+                {
+                    double along = gazeDistance(pin, eye, look);
+                    if (pin.player().isPresent() && along < gazedDistance)
+                    {
+                        gazed = pin;
+                        gazedDistance = along;
+                    }
+                }
+            }
 
             var followed = projector.view().follow().orElse(null);
             var right = new Vector3f(1, 0, 0).rotate(cameraState.orientation);
@@ -117,12 +142,35 @@ public final class OculusMarkers
                 for (var pin : pins)
                     drawPin(pose, buffer, pin, cameraState.pos, right, up, followed, projector.hologramTop());
             });
-            for (var pin : pins)
-            {
-                if (pin.player().isPresent())
-                    drawName(context.poseStack(), context, cameraState, pin, projector.hologramTop());
-            }
         }
+
+        gazedPlayer = gazed == null ? null : gazed.player().orElse(null);
+        if (gazed != null)
+            drawName(context.poseStack(), context, cameraState, gazed);
+    }
+
+    /**
+     * The player whose pin was looked at last frame, its name shown above it.
+     */
+    public static Optional<UUID> gazedPlayer()
+    {
+        return Optional.ofNullable(gazedPlayer);
+    }
+
+    /**
+     * How far along the view ray a pin is, if the ray passes close enough to it to count as looking at it.
+     *
+     * @return the distance, or {@link Double#MAX_VALUE} when the pin is not looked at
+     */
+    private static double gazeDistance(Pin pin, Vec3 eye, Vec3 look)
+    {
+        var center = pin.position().add(0, PLAYER_SIZE, 0);
+        var toPin = center.subtract(eye);
+        double along = toPin.dot(look);
+        if (along <= 0 || along > GAZE_REACH)
+            return Double.MAX_VALUE;
+        double off = toPin.subtract(look.scale(along)).length();
+        return off <= PLAYER_SIZE * GAZE_TOLERANCE ? along : Double.MAX_VALUE;
     }
 
     private static List<Pin> pins(ClientLevel level, OculusProjector projector, float partialTick)
@@ -201,7 +249,10 @@ public final class OculusMarkers
         buffer.addVertex(pose, center.x - right.x * width, center.y - right.y * width, center.z - right.z * width).setColor(color);
     }
 
-    private static void drawName(PoseStack poseStack, LevelRenderContext context, CameraRenderState camera, Pin pin, double top)
+    /**
+     * The name of a gazed player, just above their pin. Text hangs down from its anchor, so the anchor sits a line higher.
+     */
+    private static void drawName(PoseStack poseStack, LevelRenderContext context, CameraRenderState camera, Pin pin)
     {
         var connection = Minecraft.getInstance().getConnection();
         var info = connection == null ? null : connection.getPlayerInfo(pin.player().get());
@@ -210,7 +261,7 @@ public final class OculusMarkers
 
         var font = Minecraft.getInstance().font;
         var name = Component.literal(info.getProfile().name()).getVisualOrderText();
-        var offset = new Vec3(pin.position().x, top + 0.04, pin.position().z).subtract(camera.pos);
+        var offset = pin.position().add(0, PLAYER_SIZE * 2.3 + font.lineHeight * NAME_SCALE, 0).subtract(camera.pos);
 
         poseStack.pushPose();
         poseStack.translate(offset.x, offset.y, offset.z);

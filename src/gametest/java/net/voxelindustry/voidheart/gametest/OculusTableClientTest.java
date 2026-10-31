@@ -50,9 +50,12 @@ public class OculusTableClientTest implements FabricClientGameTest
             context.takeScreenshot("oculus-top-1-32-changed");
 
             zoomIn(server);
+            zoomIn(server);
             context.waitTicks(80);
             view(context, server, "oculus-angled-1-16", 1, GROUND + 4, 5, 180, 40);
 
+            zoomIn(server);
+            zoomIn(server);
             zoomIn(server);
             zoomIn(server);
             context.waitTicks(80);

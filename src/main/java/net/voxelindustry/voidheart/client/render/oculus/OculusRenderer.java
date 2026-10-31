@@ -406,6 +406,14 @@ public final class OculusRenderer
     }
 
     /**
+     * World blocks per table block the hologram anchored there is drawn at this frame, gliding after a zoom.
+     */
+    public static Optional<Float> drawnScale(BlockPos anchor)
+    {
+        return Optional.ofNullable(PROJECTORS.get(anchor)).map(OculusProjector::drawnScale);
+    }
+
+    /**
      * One line totals over every projector, for debugging and tests.
      */
     public static String summary()

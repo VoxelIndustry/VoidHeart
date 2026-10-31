@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.core.BlockPos;
+import net.voxelindustry.voidheart.client.render.oculus.OculusMarkers;
 import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
@@ -20,6 +21,7 @@ public class OculusControlsClientTest implements FabricClientGameTest
 {
     private static final int TABLE_Y = -60;
     private static final BlockPos TABLE = new BlockPos(0, TABLE_Y, 0);
+    private static final BlockPos ANCHOR = new BlockPos(-1, TABLE_Y, -1);
     // The viewer stands south of a 3x3 table, so the strip faces south on the middle block's edge, buttons along +x
     private static final double PANEL_X = 0.5;
     private static final double PANEL_Y = TABLE_Y + 0.5 + 0.5;
@@ -41,6 +43,24 @@ public class OculusControlsClientTest implements FabricClientGameTest
             context.takeScreenshot("oculus-controls-hover-zoom-in");
             context.getInput().pressKey(options -> options.keyUse);
             expectView(context, world, view -> view.zoom() == 1, "zoom in by right click");
+            var midGlide = context.computeOnClient(minecraft -> OculusRenderer.drawnScale(ANCHOR).orElse(0F));
+            context.runOnClient(minecraft -> System.out.println("[Oculus zoom] drawn scale right after zooming: " + midGlide));
+            context.waitTicks(40);
+            var settled = context.computeOnClient(minecraft -> OculusRenderer.drawnScale(ANCHOR).orElse(0F));
+            if (Math.abs(settled - 24) > 0.05F)
+                throw new AssertionError("Expected the zoom to glide to 1:24, drawn at 1:" + settled);
+
+            // At 1:24 the player's own pin floats just above the table, toward its south edge
+            aimAtPoint(context, server, 0.5, TABLE_Y + 0.5 + 1 / 16D + 4 / 24D + 0.07, -1 + 1.5 + 4 / 24D);
+            context.takeScreenshot("oculus-gaze-name");
+            var gazed = context.computeOnClient(minecraft -> OculusMarkers.gazedPlayer().orElse(null));
+            var self = context.computeOnClient(minecraft -> minecraft.player.getUUID());
+            if (!self.equals(gazed))
+                throw new AssertionError("Expected the name of the player whose pin is looked at to show, got " + gazed);
+
+            aimAt(context, server, 0);
+            if (context.computeOnClient(minecraft -> OculusMarkers.gazedPlayer().isPresent()))
+                throw new AssertionError("Expected no name once the pin is no longer looked at");
 
             aimAt(context, server, 2);
             context.getInput().pressKey(options -> options.keyAttack);
@@ -85,11 +105,16 @@ public class OculusControlsClientTest implements FabricClientGameTest
      */
     private static void aimAt(ClientGameTestContext context, TestServerContext server, int button)
     {
+        aimAtPoint(context, server, PANEL_X + BUTTON_OFFSETS[button], PANEL_Y, PANEL_Z);
+    }
+
+    private static void aimAtPoint(ClientGameTestContext context, TestServerContext server, double x, double y, double z)
+    {
         double eyeZ = 4.5;
         double eyeY = TABLE_Y + 1.62;
-        double dx = PANEL_X + BUTTON_OFFSETS[button] - PANEL_X;
-        double dy = PANEL_Y - eyeY;
-        double dz = PANEL_Z - eyeZ;
+        double dx = x - PANEL_X;
+        double dy = y - eyeY;
+        double dz = z - eyeZ;
         double yaw = Math.toDegrees(Math.atan2(-dx, dz));
         double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
         server.runCommand("tp @a " + PANEL_X + " " + TABLE_Y + " " + eyeZ + " " + yaw + " " + pitch);
