@@ -293,6 +293,13 @@ final class OculusProjector implements AutoCloseable
             slot.dirty = true;
     }
 
+    void markChunkDirty(long chunk)
+    {
+        var slot = slots.get(chunk);
+        if (slot != null)
+            slot.dirty = true;
+    }
+
     void markAllDirty()
     {
         epoch++;
@@ -324,12 +331,15 @@ final class OculusProjector implements AutoCloseable
 
             var slot = entry.getValue();
             long chunk = entry.getLongKey();
-            // An unloaded chunk is marked dirty again by the level once its data arrives
-            slot.dirty = false;
-            var snapshot = OculusSnapshot.capture(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale);
+            var snapshot = OculusSnapshot.capture(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale, tick);
             if (snapshot == null)
+            {
+                // Stays dirty: the server is asked, and asked again later if it never answers
+                OculusRemoteChunks.want(anchor, chunk, windowBottom, scale, tick);
                 continue;
+            }
 
+            slot.dirty = false;
             slot.building = true;
             slot.lastBuildTick = tick;
             submit.accept(new BuildTask(this, chunk, epoch, snapshot));

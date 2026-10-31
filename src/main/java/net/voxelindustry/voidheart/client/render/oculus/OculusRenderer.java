@@ -15,10 +15,14 @@ import net.minecraft.client.renderer.DynamicGpuDataStorage;
 import net.minecraft.client.renderer.DynamicGpuDataStorageMapped;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Util;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableTile;
 import org.joml.Matrix4fc;
@@ -118,12 +122,41 @@ public final class OculusRenderer
             projector.onSectionDirty(sectionX, sectionY, sectionZ);
     }
 
+    /**
+     * Land arrived from the server: the chunk can be built, and its neighbors may now hide their border faces.
+     */
+    static void onRemoteChunk(int chunkX, int chunkZ)
+    {
+        for (var projector : PROJECTORS.values())
+        {
+            projector.markChunkDirty(ChunkPos.pack(chunkX, chunkZ));
+            for (var direction : Direction.Plane.HORIZONTAL)
+                projector.markChunkDirty(ChunkPos.pack(chunkX + direction.getStepX(), chunkZ + direction.getStepZ()));
+        }
+    }
+
+    static long ticks()
+    {
+        return ticks;
+    }
+
+    public static int remoteChunkCount()
+    {
+        return OculusRemoteChunks.size();
+    }
+
+    public static void receiveSections(OculusChunkPayloads.Sections payload, ClientPlayNetworking.Context context)
+    {
+        OculusRemoteChunks.receive(payload, context);
+    }
+
     public static void tick(Minecraft client)
     {
         var level = client.level;
         if (level != lastLevel)
         {
             closeProjectors();
+            OculusRemoteChunks.clear();
             lastLevel = level;
         }
         if (level == null)
@@ -132,8 +165,11 @@ public final class OculusRenderer
         if (OculusPalette.refresh())
             PROJECTORS.values().forEach(OculusProjector::markAllDirty);
 
+        // Counted here rather than read from the level, whose time stops with /tick freeze
+        ticks++;
         updateProjectors(level);
         scheduleBuilds(level);
+        OculusRemoteChunks.tick(ticks, chunk -> PROJECTORS.values().forEach(projector -> projector.markChunkDirty(chunk)));
     }
 
     private static void updateProjectors(ClientLevel level)
@@ -170,8 +206,7 @@ public final class OculusRenderer
 
     private static void scheduleBuilds(ClientLevel level)
     {
-        // Counted here rather than read from the level, whose time stops with /tick freeze
-        long tick = ++ticks;
+        long tick = ticks;
         int budget = Math.min(SNAPSHOTS_PER_TICK, MAX_BUILDS_IN_FLIGHT - IN_FLIGHT.get());
         for (var projector : PROJECTORS.values())
         {
@@ -304,7 +339,8 @@ public final class OculusRenderer
      */
     public static String describe()
     {
-        var text = new StringBuilder("Oculus: " + PROJECTORS.size() + " projectors, " + IN_FLIGHT.get() + " builds in flight");
+        var text = new StringBuilder("Oculus: " + PROJECTORS.size() + " projectors, " + IN_FLIGHT.get() + " builds in flight, "
+                + OculusRemoteChunks.size() + " remote chunks");
         long bytes = 0;
         for (var projector : PROJECTORS.values())
         {
@@ -325,5 +361,6 @@ public final class OculusRenderer
     {
         closeProjectors();
         TABLES.clear();
+        OculusRemoteChunks.clear();
     }
 }

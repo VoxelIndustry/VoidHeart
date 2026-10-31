@@ -7,6 +7,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.QuartPos;
 import net.minecraft.world.level.CardinalLighting;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
@@ -54,23 +55,40 @@ final class OculusSnapshot implements BlockAndTintGetter
     }
 
     /**
-     * @return nothing while the chunk itself is not loaded on this client
+     * Copies loaded chunks, and falls back on sections the server sent for chunks this client has not loaded.
+     *
+     * @return nothing while neither this client nor the server provided the chunk itself
      */
-    static @Nullable OculusSnapshot capture(ClientLevel level, int chunkX, int chunkZ, int windowBottom, int windowHeight)
+    static @Nullable OculusSnapshot capture(ClientLevel level, int chunkX, int chunkZ, int windowBottom, int windowHeight, long tick)
     {
         var source = level.getChunkSource();
-        if (source.getChunk(chunkX, chunkZ, ChunkStatus.FULL, false) == null)
-            return null;
-
         int minSection = SectionPos.blockToSectionCoord(windowBottom);
         int maxSection = SectionPos.blockToSectionCoord(windowBottom + windowHeight - 1);
         var sections = new LevelChunkSection[CHUNK_OFFSETS.length][maxSection - minSection + 1];
 
         for (int chunk = 0; chunk < CHUNK_OFFSETS.length; chunk++)
         {
-            var levelChunk = source.getChunk(chunkX + CHUNK_OFFSETS[chunk][0], chunkZ + CHUNK_OFFSETS[chunk][1], ChunkStatus.FULL, false);
+            int x = chunkX + CHUNK_OFFSETS[chunk][0];
+            int z = chunkZ + CHUNK_OFFSETS[chunk][1];
+            var levelChunk = source.getChunk(x, z, ChunkStatus.FULL, false);
             if (levelChunk == null)
+            {
+                var remote = OculusRemoteChunks.sections(ChunkPos.pack(x, z), windowBottom, windowHeight, tick);
+                if (remote == null)
+                {
+                    if (chunk == CENTER)
+                        return null;
+                    continue;
+                }
+                // Remote sections are never written once decoded, so builders can share them
+                for (int i = 0; i < remote.length; i++)
+                {
+                    if (remote[i] != null)
+                        OculusPalette.ensure(remote[i].getStates());
+                    sections[chunk][i] = remote[i];
+                }
                 continue;
+            }
 
             for (int sectionY = minSection; sectionY <= maxSection; sectionY++)
             {

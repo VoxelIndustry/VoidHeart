@@ -33,6 +33,7 @@ import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
 import net.voxelindustry.voidheart.client.render.LeyDebugRender;
 import net.voxelindustry.voidheart.client.render.oculus.OculusControls;
 import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
+import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
@@ -85,6 +86,7 @@ public class VoidHeartClient implements ClientModInitializer
         });
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusControls::collectSubmits);
 
+        ClientPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Sections.TYPE, OculusRenderer::receiveSections);
         ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.register(OculusRenderer::onLoad);
         ClientBlockEntityEvents.BLOCK_ENTITY_UNLOAD.register(OculusRenderer::onUnload);
         ClientTickEvents.END_CLIENT_TICK.register(OculusRenderer::tick);
