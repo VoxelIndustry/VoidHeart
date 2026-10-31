@@ -1,0 +1,56 @@
+package net.voxelindustry.voidheart.common.content.oculus;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.UUIDUtil;
+
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * What a table projects, shared by every block of the structure.
+ *
+ * @param zoom   step from the widest view, each one halving the world blocks shown per table block
+ * @param follow player the projection is centered on, the table itself otherwise
+ */
+public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines)
+{
+    public static final int ZOOM_STEPS = 4;
+    public static final int WIDEST_SCALE = 32;
+
+    public static final OculusView DEFAULT = new OculusView(0, Optional.empty(), false);
+
+    public static final Codec<OculusView> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.intRange(0, ZOOM_STEPS - 1).optionalFieldOf("zoom", 0).forGetter(OculusView::zoom),
+            UUIDUtil.CODEC.optionalFieldOf("follow").forGetter(OculusView::follow),
+            Codec.BOOL.optionalFieldOf("ley_lines", false).forGetter(OculusView::leyLines)
+    ).apply(instance, OculusView::new));
+
+    /**
+     * World blocks represented along each axis of a single table block.
+     */
+    public int scale()
+    {
+        return WIDEST_SCALE >> zoom;
+    }
+
+    public OculusView zoomIn()
+    {
+        return new OculusView(Math.min(zoom + 1, ZOOM_STEPS - 1), follow, leyLines);
+    }
+
+    public OculusView zoomOut()
+    {
+        return new OculusView(Math.max(zoom - 1, 0), follow, leyLines);
+    }
+
+    public OculusView following(Optional<UUID> target)
+    {
+        return new OculusView(zoom, target, leyLines);
+    }
+
+    public OculusView toggleLeyLines()
+    {
+        return new OculusView(zoom, follow, !leyLines);
+    }
+}

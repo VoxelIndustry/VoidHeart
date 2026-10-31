@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "voidheart:block/voidstone_polished",
+    "side": "voidheart:block/oculus_table_side",
+    "top": "voidheart:block/oculus_table_top"
+  }
+}

@@ -7,6 +7,8 @@ import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.model.ItemModelUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.data.models.model.TextureSlot;
+import net.minecraft.client.data.models.model.TexturedModel;
 import net.minecraft.client.renderer.item.properties.select.ComponentContents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.BlockFamily;
@@ -56,6 +58,9 @@ public class ModelsProvider extends FabricModelProvider
         registerPillarStairs(VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS);
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
+
+        generator.createTrivialBlock(VoidHeartBlocks.OCULUS_TABLE, TexturedModel.CUBE_BOTTOM_TOP.updateTexture(mapping ->
+                mapping.put(TextureSlot.BOTTOM, TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_POLISHED))));
     }
 
     @Override

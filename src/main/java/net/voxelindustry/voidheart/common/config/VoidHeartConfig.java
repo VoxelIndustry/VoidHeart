@@ -4,6 +4,7 @@ import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
 import dev.isxander.yacl3.config.v2.api.autogen.AutoGen;
 import dev.isxander.yacl3.config.v2.api.autogen.FloatSlider;
+import dev.isxander.yacl3.config.v2.api.autogen.IntSlider;
 import dev.isxander.yacl3.config.v2.api.autogen.TickBox;
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import net.fabricmc.loader.api.FabricLoader;
@@ -23,6 +24,7 @@ public class VoidHeartConfig
             .build();
 
     private static final String LEY_LINES = "ley_lines";
+    private static final String OCULUS_TABLE = "oculus_table";
 
     @AutoGen(category = LEY_LINES)
     @TickBox
@@ -34,10 +36,16 @@ public class VoidHeartConfig
     @SerialEntry(value = "ley_line_travel_anchor_inactive_rate", comment = "Rate of Old Anchors found dormant, from 0 to 1")
     public float leyLineTravelAnchorInactiveRate = 0.5F;
 
+    @AutoGen(category = OCULUS_TABLE)
+    @IntSlider(min = 16, max = 512, step = 16)
+    @SerialEntry(value = "oculus_table_follow_range", comment = "Horizontal distance from an Oculus Table within which players can be followed")
+    public int oculusTableFollowRange = 128;
+
     public static void load()
     {
         HANDLER.load();
         get().leyLineTravelAnchorInactiveRate = Mth.clamp(get().leyLineTravelAnchorInactiveRate, 0, 1);
+        get().oculusTableFollowRange = Mth.clamp(get().oculusTableFollowRange, 16, 512);
     }
 
     public static VoidHeartConfig get()

@@ -27,6 +27,7 @@ import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.oculus.OculusControlPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugView;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
@@ -97,6 +98,9 @@ public class VoidHeart implements ModInitializer
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
         PayloadTypeRegistry.clientboundPlay().register(LeyDebugPayload.TYPE, LeyDebugPayload.CODEC);
         ServerTickEvents.END_SERVER_TICK.register(LeyDebugView::tickServer);
+
+        PayloadTypeRegistry.serverboundPlay().register(OculusControlPayload.TYPE, OculusControlPayload.STREAM_CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(OculusControlPayload.TYPE, OculusControlPayload::handle);
 
         AnchorPayloads.register();
         ServerPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelRequest.TYPE, AnchorTravel::handle);

@@ -36,6 +36,7 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixB
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterBlock;
+import net.voxelindustry.voidheart.common.content.oculus.OculusTableBlock;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
@@ -115,6 +116,7 @@ public class VoidHeartBlocks
     public static Block VOID_DOOR;
     public static Block OLD_ANCHOR;
     public static Block PERMEABLE_BARRIER;
+    public static Block OCULUS_TABLE;
 
     public static Block EXPERIENCE_SKULL;
     public static Block MENDING_ALTAR;
@@ -295,6 +297,14 @@ public class VoidHeartBlocks
                 .sound(SoundType.STONE), false);
 
         PERMEABLE_BARRIER = registerBlock("permeable_barrier", PermeableBarrierBlock::new, BlockBehaviour.Properties.of(), true);
+
+        OCULUS_TABLE = registerBlock("oculus_table", OculusTableBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(1.5F, 6.0F)
+                .lightLevel(state -> 7)
+                .sound(SoundType.STONE), true);
 
         EXPERIENCE_SKULL = registerBlock("experience_skull", ExperienceSkullBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)

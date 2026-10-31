@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GEG",
+    "PPP",
+    "PPP"
+  ],
+  "key": {
+    "G": "minecraft:glass",
+    "E": "voidheart:ender_shard",
+    "P": "voidheart:voidstone_polished"
+  },
+  "result": {
+    "id": "voidheart:oculus_table",
+    "count": 2
+  }
+}
