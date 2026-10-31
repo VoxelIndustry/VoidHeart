@@ -201,6 +201,10 @@ public final class OculusMarkers
         if (sight == null)
             return pins;
 
+        // The followed player's pin floats over their figure
+        var followed = projector.followed();
+        float lift = OculusFigurine.pinLift(projector, partialTick);
+
         var seen = new HashSet<Integer>();
         for (var entity : level.getEntitiesOfClass(LivingEntity.class, projector.shownArea(), OculusEntityPayloads::isShown))
         {
@@ -211,7 +215,7 @@ public final class OculusMarkers
             if (holo != null && pins.size() < OculusEntityPayloads.MAX_MARKERS)
             {
                 var marker = OculusEntityPayloads.Marker.of(entity, resolution);
-                pins.add(new Pin(marker.kind(), holo, marker.player(), marker.type()));
+                pins.add(new Pin(marker.kind(), entity == followed ? holo.add(0, lift, 0) : holo, marker.player(), marker.type()));
             }
         }
 

@@ -12,6 +12,7 @@
       "net.voxelindustry.voidheart.gametest.OculusLeyClientTest",
       "net.voxelindustry.voidheart.gametest.OculusBeholderClientTest",
       "net.voxelindustry.voidheart.gametest.OculusCavingClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusFigurineClientTest",
       "net.voxelindustry.voidheart.gametest.OculusPerformanceClientTest"
     ]
   },

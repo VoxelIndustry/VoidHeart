@@ -695,6 +695,14 @@ final class OculusProjector implements AutoCloseable
     }
 
     /**
+     * The player the view follows, while this client sees them.
+     */
+    @Nullable Entity followed()
+    {
+        return followed;
+    }
+
+    /**
      * From 0 showing the surface to 1 showing the hollows, as drawn this frame.
      */
     float cavingBlend()
