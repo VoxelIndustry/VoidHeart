@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
 import net.minecraft.SharedConstants;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
@@ -11,6 +13,8 @@ import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierConfig
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -102,6 +106,75 @@ class BarrierConfigTest
         assertThat(config.isSolidFor(zombie, true)).isFalse();
         assertThat(config.isSolidFor(cow, true)).isTrue();
         assertThat(config.isSolidFor(stranger, true)).isTrue();
+    }
+
+    @Test
+    void isSolidFor_givenNoFilterInvertedRedstone_thenShouldOpenForEveryoneWhilePowered()
+    {
+        var config = configured(Flag.INVERTED, Flag.REDSTONE);
+
+        assertThat(config.isSolidFor(ownerPlayer, false)).isTrue();
+        assertThat(config.isSolidFor(zombie, false)).isTrue();
+
+        assertThat(config.isSolidFor(ownerPlayer, true)).isFalse();
+        assertThat(config.isSolidFor(stranger, true)).isFalse();
+        assertThat(config.isSolidFor(zombie, true)).isFalse();
+    }
+
+    @Test
+    void isSolidFor_givenNoFilterRedstone_thenShouldCloseForEveryoneWhilePowered()
+    {
+        var config = configured(Flag.REDSTONE);
+
+        assertThat(config.isSolidFor(stranger, false)).isFalse();
+        assertThat(config.isSolidFor(stranger, true)).isTrue();
+        assertThat(config.isSolidFor(cow, true)).isTrue();
+    }
+
+    @Test
+    void merge_givenOnlyBlankBlocks_thenShouldBeEmpty()
+    {
+        assertThat(BarrierConfig.merge(Map.of(), id -> "?")).isEmpty();
+    }
+
+    @Test
+    void merge_givenConfiguredAndUnconfigured_thenShouldKeepConfiguredSettings()
+    {
+        var configured = configured(Flag.HOSTILE_MOBS, Flag.REDSTONE);
+        var sigil = BarrierConfig.ownedBy(owner);
+
+        var merged = BarrierConfig.merge(Map.of(configured, 2, sigil, 40), id -> "?");
+
+        assertThat(merged).contains(configured);
+    }
+
+    @Test
+    void merge_givenTwoConfigured_thenLargestShouldWinAndOwnersBecomeCoOwners()
+    {
+        var otherOwner = UUID.randomUUID();
+        var friend = new CoOwner(UUID.randomUUID(), "Friend");
+        var large = configured(Flag.ALLIES);
+        var small = new BarrierConfig(Optional.of(otherOwner), Optional.empty(), List.of(friend), large.appearance(), Flag.INVERTED.mask());
+
+        var merged = BarrierConfig.merge(Map.of(large, 10, small, 3), id -> "Other").orElseThrow();
+
+        assertThat(merged.owner()).contains(owner);
+        assertThat(merged.flags()).isEqualTo(large.flags());
+        assertThat(merged.coOwners()).containsExactlyInAnyOrder(friend, new CoOwner(otherOwner, "Other"));
+    }
+
+    @Test
+    void codec_givenAppearance_thenShouldRoundTrip()
+    {
+        var config = BarrierConfig.ownedBy(owner)
+                .withAppearance(Optional.of(Blocks.STONE.defaultBlockState()))
+                .toggleCoOwner(new CoOwner(UUID.randomUUID(), "Friend"))
+                .toggle(Flag.REDSTONE);
+
+        var encoded = BarrierConfig.CODEC.encodeStart(NbtOps.INSTANCE, config).getOrThrow();
+        var decoded = BarrierConfig.CODEC.parse(NbtOps.INSTANCE, encoded).getOrThrow();
+
+        assertThat(decoded).isEqualTo(config);
     }
 
     @Test

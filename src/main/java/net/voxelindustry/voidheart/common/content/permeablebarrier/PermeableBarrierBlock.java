@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
@@ -42,6 +43,9 @@ import org.jspecify.annotations.Nullable;
  */
 public class PermeableBarrierBlock extends Block implements EntityBlock
 {
+    public static final IntegerProperty LIGHT_DAMPENING = IntegerProperty.create("light_dampening", 0, 15);
+    public static final IntegerProperty LIGHT_EMISSION  = IntegerProperty.create("light_emission", 0, 15);
+
     public PermeableBarrierBlock(Properties properties)
     {
         super(properties
@@ -51,9 +55,28 @@ public class PermeableBarrierBlock extends Block implements EntityBlock
                 .isSuffocating((state, level, pos) -> false)
                 .isViewBlocking((state, level, pos, box) -> false)
                 .strength(3F, 1200F)
-                .sound(SoundType.AMETHYST));
+                .sound(SoundType.AMETHYST)
+                .lightLevel(state -> state.getValue(LIGHT_EMISSION)));
 
-        registerDefaultState(getStateDefinition().any().setValue(BlockStateProperties.POWERED, false));
+        registerDefaultState(getStateDefinition().any()
+                .setValue(BlockStateProperties.POWERED, false)
+                .setValue(LIGHT_DAMPENING, 0)
+                .setValue(LIGHT_EMISSION, 0));
+    }
+
+    /**
+     * Lighting is shared by all viewers, so it mimics the picked block whenever the barrier looks solid
+     * to entities matching no filter, or is never hidden. A hidden open barrier must not cast shadows.
+     */
+    public static BlockState withDisguisedLight(BlockState state, BarrierConfig config)
+    {
+        var appearance = config.appearance();
+        boolean disguised = appearance.isPresent()
+                && (!config.has(BarrierConfig.Flag.INVISIBLE_WHEN_OPEN) || config.isSolidFor(null, state.getValue(BlockStateProperties.POWERED)));
+
+        return state
+                .setValue(LIGHT_DAMPENING, disguised ? appearance.get().getLightDampening() : 0)
+                .setValue(LIGHT_EMISSION, disguised ? appearance.get().getLightEmission() : 0);
     }
 
     public static @Nullable Entity getEntity(CollisionContext context)
@@ -221,16 +244,25 @@ public class PermeableBarrierBlock extends Block implements EntityBlock
         return Shapes.empty();
     }
 
+    /**
+     * Opaque disguises darken their neighbors with ambient occlusion like a real full block.
+     */
     @Override
     protected float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos)
     {
-        return 1.0F;
+        return state.getValue(LIGHT_DAMPENING) >= 15 ? 0.2F : 1.0F;
+    }
+
+    @Override
+    protected int getLightDampening(BlockState state)
+    {
+        return state.getValue(LIGHT_DAMPENING);
     }
 
     @Override
     protected boolean propagatesSkylightDown(BlockState state)
     {
-        return true;
+        return state.getValue(LIGHT_DAMPENING) == 0;
     }
 
     @Override
@@ -242,7 +274,7 @@ public class PermeableBarrierBlock extends Block implements EntityBlock
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(BlockStateProperties.POWERED);
+        builder.add(BlockStateProperties.POWERED, LIGHT_DAMPENING, LIGHT_EMISSION);
     }
 
     @Override

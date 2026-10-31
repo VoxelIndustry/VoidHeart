@@ -35,7 +35,6 @@ import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterBlock;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
-import net.voxelindustry.voidheart.common.content.permeablebarrier.VoidBarrierEmitterBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
@@ -113,9 +112,6 @@ public class VoidHeartBlocks
 
     public static Block VOID_DOOR;
     public static Block PERMEABLE_BARRIER;
-
-    public static Block VOID_BARRIER_EMITTER;
-    public static Block VOID_BARRIER;
 
     public static Block EXPERIENCE_SKULL;
     public static Block MENDING_ALTAR;
@@ -287,9 +283,6 @@ public class VoidHeartBlocks
         VOID_DOOR = registerBlock("void_door", VoidDoorBlock::new, BlockBehaviour.Properties.of(), true);
 
         PERMEABLE_BARRIER = registerBlock("permeable_barrier", PermeableBarrierBlock::new, BlockBehaviour.Properties.of(), true);
-
-        VOID_BARRIER_EMITTER = registerBlock("void_barrier_emitter", VoidBarrierEmitterBlock::new, BlockBehaviour.Properties.of(), true);
-        //  VOID_BARRIER = registerBlock("void_barrier", VoidBarrierBlock::new, BlockBehaviour.Properties.of(), true);
 
         EXPERIENCE_SKULL = registerBlock("experience_skull", ExperienceSkullBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)

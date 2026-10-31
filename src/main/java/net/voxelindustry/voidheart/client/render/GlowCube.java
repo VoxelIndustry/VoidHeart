@@ -11,7 +11,7 @@ import net.minecraft.util.ARGB;
  */
 public class GlowCube
 {
-    private static final int FULL_BRIGHT = 15728880;
+    static final int FULL_BRIGHT = 15728880;
 
     private static final float[][] UVS = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
 
@@ -21,13 +21,16 @@ public class GlowCube
             face(pose, buffer, direction, x, y, z, inflate, color);
     }
 
-    public static void face(PoseStack.Pose pose, VertexConsumer buffer, Direction direction, float x, float y, float z, float inflate, int color)
+    /**
+     * Corners of a cube face walked counter-clockwise when looking at it from outside,
+     * matching the UVs (0,0), (0,1), (1,1), (1,0).
+     */
+    public static float[][] faceCorners(Direction direction, float x, float y, float z, float inflate)
     {
         float x0 = x - inflate, y0 = y - inflate, z0 = z - inflate;
         float x1 = x + 1 + inflate, y1 = y + 1 + inflate, z1 = z + 1 + inflate;
 
-        // Corners walked counter-clockwise when looking at the face from outside
-        float[][] corners = switch (direction)
+        return switch (direction)
         {
             case DOWN -> new float[][]{{x0, y0, z1}, {x0, y0, z0}, {x1, y0, z0}, {x1, y0, z1}};
             case UP -> new float[][]{{x0, y1, z0}, {x0, y1, z1}, {x1, y1, z1}, {x1, y1, z0}};
@@ -36,7 +39,11 @@ public class GlowCube
             case WEST -> new float[][]{{x0, y1, z0}, {x0, y0, z0}, {x0, y0, z1}, {x0, y1, z1}};
             case EAST -> new float[][]{{x1, y1, z1}, {x1, y0, z1}, {x1, y0, z0}, {x1, y1, z0}};
         };
+    }
 
+    public static void face(PoseStack.Pose pose, VertexConsumer buffer, Direction direction, float x, float y, float z, float inflate, int color)
+    {
+        var corners = faceCorners(direction, x, y, z, inflate);
         var normal = direction.getUnitVec3i();
         for (int i = 0; i < 4; i++)
             vertex(pose, buffer, corners[i][0], corners[i][1], corners[i][2], UVS[i][0], UVS[i][1], color, normal.getX(), normal.getY(), normal.getZ());
@@ -44,11 +51,16 @@ public class GlowCube
 
     public static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float z, float u, float v, int color, int nx, int ny, int nz)
     {
+        vertex(pose, buffer, x, y, z, u, v, color, FULL_BRIGHT, nx, ny, nz);
+    }
+
+    public static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float z, float u, float v, int color, int light, int nx, int ny, int nz)
+    {
         buffer.addVertex(pose, x, y, z)
                 .setColor(ARGB.red(color), ARGB.green(color), ARGB.blue(color), ARGB.alpha(color))
                 .setUv(u, v)
                 .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(FULL_BRIGHT)
+                .setLight(light)
                 .setNormal(pose, nx, ny, nz);
     }
 }

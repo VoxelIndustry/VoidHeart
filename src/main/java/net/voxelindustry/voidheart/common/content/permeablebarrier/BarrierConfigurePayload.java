@@ -8,9 +8,6 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierConfig.CoOwner;
 
 import java.util.Optional;
@@ -74,14 +71,7 @@ public record BarrierConfigurePayload(Action action, int flag, Optional<CoOwner>
                 if (payload.flag() >= 0 && payload.flag() < flags.length)
                     PermeableBarrierStructure.updateConfig(level, menu.getPos(), config -> config.toggle(flags[payload.flag()]));
             }
-            case SET_APPEARANCE ->
-            {
-                if (menu.getCarried().getItem() instanceof BlockItem blockItem && isValidAppearance(blockItem.getBlock()))
-                {
-                    var appearance = Optional.of(blockItem.getBlock().defaultBlockState());
-                    PermeableBarrierStructure.updateConfig(level, menu.getPos(), config -> config.withAppearance(appearance));
-                }
-            }
+            case SET_APPEARANCE -> menu.trySetAppearance(player, menu.getCarried());
             case CLEAR_APPEARANCE -> PermeableBarrierStructure.updateConfig(level, menu.getPos(), config -> config.withAppearance(Optional.empty()));
             case TOGGLE_TEAM ->
             {
@@ -93,10 +83,5 @@ public record BarrierConfigurePayload(Action action, int flag, Optional<CoOwner>
                     .filter(coOwner -> !coOwner.id().equals(player.getUUID()))
                     .ifPresent(coOwner -> PermeableBarrierStructure.updateConfig(level, menu.getPos(), config -> config.toggleCoOwner(coOwner)));
         }
-    }
-
-    private static boolean isValidAppearance(Block block)
-    {
-        return block.defaultBlockState().getRenderShape() == RenderShape.MODEL;
     }
 }

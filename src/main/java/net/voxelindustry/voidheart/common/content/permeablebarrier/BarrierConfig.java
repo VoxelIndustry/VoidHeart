@@ -11,13 +11,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * Shared settings of a whole barrier structure, replicated on every block of it.
- * A barrier is solid for an entity when (active AND entity matches a filter) XOR inverted.
+ * A barrier is solid for an entity when (active AND entity matches a filter) XOR inverted,
+ * where no ticked filter matches every entity.
  */
 public record BarrierConfig(Optional<UUID> owner,
                             Optional<String> ownerTeam,
@@ -63,6 +67,54 @@ public record BarrierConfig(Optional<UUID> owner,
         return new BarrierConfig(Optional.of(owner), Optional.empty(), List.of(), Optional.empty(), Flag.ALLIES.mask());
     }
 
+    /**
+     * A freshly placed block not yet joined to any structure.
+     */
+    public boolean isBlank()
+    {
+        return owner.isEmpty() && appearance.isEmpty();
+    }
+
+    /**
+     * Settings of structures joined into one. The configured structure with the most blocks keeps its look,
+     * behavior and team, while every co-owner is kept and the other owners become co-owners.
+     *
+     * @param blockCounts each distinct non-blank config with how many blocks carry it
+     * @param nameOf      resolves the display name of an owner turned co-owner
+     */
+    public static Optional<BarrierConfig> merge(Map<BarrierConfig, Integer> blockCounts, Function<UUID, String> nameOf)
+    {
+        var primary = blockCounts.entrySet().stream()
+                .max(Comparator.<Map.Entry<BarrierConfig, Integer>, Boolean>comparing(entry -> entry.getKey().isConfigured())
+                        .thenComparing(Map.Entry::getValue))
+                .map(Map.Entry::getKey);
+        if (primary.isEmpty())
+            return Optional.empty();
+
+        var merged = primary.get();
+        for (var config : blockCounts.keySet())
+        {
+            if (config == merged)
+                continue;
+            for (var coOwner : config.coOwners())
+                merged = merged.withCoOwner(coOwner);
+            var otherOwner = config.owner();
+            if (otherOwner.isPresent())
+                merged = merged.withCoOwner(new CoOwner(otherOwner.get(), nameOf.apply(otherOwner.get())));
+        }
+        return Optional.of(merged);
+    }
+
+    /**
+     * Adds a co-owner unless they already own or co-own the barrier.
+     */
+    public BarrierConfig withCoOwner(CoOwner coOwner)
+    {
+        if (owner.filter(coOwner.id()::equals).isPresent() || coOwners.stream().anyMatch(existing -> existing.id().equals(coOwner.id())))
+            return this;
+        return toggleCoOwner(coOwner);
+    }
+
     public boolean has(Flag flag)
     {
         return (flags & flag.mask()) != 0;
@@ -84,8 +136,13 @@ public record BarrierConfig(Optional<UUID> owner,
         return ownerTeam.isPresent() && player.getTeam() != null && ownerTeam.get().equals(player.getTeam().getName());
     }
 
+    /**
+     * With no filter ticked the barrier reacts to every entity, making it a plain redstone wall or door.
+     */
     public boolean matches(@Nullable Entity entity)
     {
+        if (!has(Flag.ALLIES) && !has(Flag.PEACEFUL_MOBS) && !has(Flag.HOSTILE_MOBS))
+            return true;
         if (has(Flag.ALLIES) && entity instanceof Player player && !player.isSpectator() && isAlly(player))
             return true;
         if (has(Flag.HOSTILE_MOBS) && entity instanceof Enemy)

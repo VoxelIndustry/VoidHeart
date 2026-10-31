@@ -39,8 +39,11 @@ public class WeaverPreviewRender
         if (stack == null)
             return;
 
-        var target = getTarget(minecraft.hitResult);
+        var blockHit = getBlockHit(minecraft.hitResult);
         BlockPos first = stack.get(VoidHeartDataComponents.BARRIER_FIRST_POINT);
+        var target = first != null
+                ? PermeableBarrierItem.getSecondPoint(first, player, blockHit)
+                : blockHit != null ? blockHit.getBlockPos().relative(blockHit.getDirection()) : null;
         if (first == null && target == null)
             return;
 
@@ -50,16 +53,12 @@ public class WeaverPreviewRender
         poseStack.pushPose();
         poseStack.translate(origin.getX() - camera.x, origin.getY() - camera.y, origin.getZ() - camera.z);
 
-        context.submitNodeCollector().submitCustomGeometry(poseStack, RenderTypes.entityTranslucentEmissive(PermeableBarrierRender.WAVE_TEXTURE), (pose, buffer) ->
+        // Writes depth, so translucent barriers drawn later behind the preview cannot paint over it
+        context.submitNodeCollector().submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(PermeableBarrierRender.WAVE_TEXTURE), (pose, buffer) ->
         {
             GlowCube.cube(pose, buffer, 0, 0, 0, 0.01F, POINT_COLOR);
             if (first == null || target == null)
                 return;
-            if (!PermeableBarrierItem.arePointsSamePlane(first, target))
-            {
-                cubeAt(pose, buffer, origin, target, REFUSED_COLOR);
-                return;
-            }
 
             int remaining = player.hasInfiniteMaterials() ? Integer.MAX_VALUE : stack.getMaxDamage() - stack.getDamageValue();
             int visited = 0;
@@ -94,13 +93,8 @@ public class WeaverPreviewRender
         return offHand.getItem() instanceof PermeableBarrierItem ? offHand : null;
     }
 
-    /**
-     * The block the weaver would mark when used now, mirroring {@link PermeableBarrierItem#useOn}.
-     */
-    private static @Nullable BlockPos getTarget(@Nullable HitResult hitResult)
+    private static @Nullable BlockHitResult getBlockHit(@Nullable HitResult hitResult)
     {
-        if (!(hitResult instanceof BlockHitResult blockHit) || blockHit.getType() != HitResult.Type.BLOCK)
-            return null;
-        return blockHit.getBlockPos().relative(blockHit.getDirection());
+        return hitResult instanceof BlockHitResult blockHit && blockHit.getType() == HitResult.Type.BLOCK ? blockHit : null;
     }
 }

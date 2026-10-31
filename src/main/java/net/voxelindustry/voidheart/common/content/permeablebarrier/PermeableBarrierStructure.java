@@ -14,6 +14,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -75,34 +76,31 @@ public class PermeableBarrierStructure
     }
 
     /**
-     * Joins a freshly placed block to its structure, adopting the config of an adjacent barrier
-     * or becoming a new unconfigured structure owned by the placer.
+     * Joins freshly placed blocks to the structure they touch. Every structure they connect is merged into one,
+     * keeping their settings; touching none, they become a new unconfigured structure owned by the placer.
      */
     public static void onBlockAdded(ServerLevel level, BlockPos pos, @Nullable UUID placer)
     {
-        BarrierConfig config = null;
-        boolean joined = false;
-        for (var direction : Direction.values())
-        {
-            var neighbor = getTile(level, pos.relative(direction));
-            if (neighbor != null)
-            {
-                config = neighbor.getConfig();
-                joined = true;
-                break;
-            }
-        }
-        if (config == null)
-            config = placer != null ? BarrierConfig.ownedBy(placer) : BarrierConfig.EMPTY;
-
-        var finalConfig = config;
         var structure = collect(level, pos);
-        structure.keySet().forEach(member ->
+
+        var blockCounts = new HashMap<BarrierConfig, Integer>();
+        for (var member : structure.keySet())
+        {
+            var tile = getTile(level, member);
+            if (tile != null && !tile.getConfig().isBlank())
+                blockCounts.merge(tile.getConfig(), 1, Integer::sum);
+        }
+
+        boolean joined = !blockCounts.isEmpty();
+        var config = BarrierConfig.merge(blockCounts, id -> getPlayerName(level, id))
+                .orElseGet(() -> placer != null ? BarrierConfig.ownedBy(placer) : BarrierConfig.EMPTY);
+
+        for (var member : structure.keySet())
         {
             var tile = getTile(level, member);
             if (tile != null)
-                tile.setConfig(finalConfig);
-        });
+                tile.setConfig(config);
+        }
         updatePower(level, structure);
 
         if (joined)
@@ -110,6 +108,12 @@ public class PermeableBarrierStructure
             var payload = new BarrierWavePayload(pos);
             PlayerLookup.tracking(level, pos).forEach(player -> ServerPlayNetworking.send(player, payload));
         }
+    }
+
+    private static String getPlayerName(ServerLevel level, UUID id)
+    {
+        var player = level.getServer().getPlayerList().getPlayer(id);
+        return player != null ? player.getGameProfile().name() : id.toString().substring(0, 8);
     }
 
     public static void updateConfig(Level level, BlockPos start, UnaryOperator<BarrierConfig> change)
@@ -139,8 +143,13 @@ public class PermeableBarrierStructure
         for (var member : structure.keySet())
         {
             var state = level.getBlockState(member);
-            if (state.getValue(BlockStateProperties.POWERED) != powered)
-                level.setBlock(member, state.setValue(BlockStateProperties.POWERED, powered), Block.UPDATE_CLIENTS);
+            if (state.getValue(BlockStateProperties.POWERED) == powered)
+                continue;
+
+            var tile = getTile(level, member);
+            var config = tile != null ? tile.getConfig() : BarrierConfig.EMPTY;
+            var updated = PermeableBarrierBlock.withDisguisedLight(state.setValue(BlockStateProperties.POWERED, powered), config);
+            level.setBlock(member, updated, Block.UPDATE_CLIENTS);
         }
     }
 }

@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -25,6 +26,13 @@ public class PermeableBarrierTile extends TileBase
         this.config = config;
         setChanged();
         sync();
+
+        if (level != null && !level.isClientSide())
+        {
+            var lit = PermeableBarrierBlock.withDisguisedLight(getBlockState(), config);
+            if (lit != getBlockState())
+                level.setBlock(worldPosition, lit, Block.UPDATE_CLIENTS);
+        }
     }
 
     @Override
