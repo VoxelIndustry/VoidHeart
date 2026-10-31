@@ -12,8 +12,9 @@ import java.util.UUID;
  *
  * @param zoom   step from the widest view, each one halving the world blocks shown per table block
  * @param follow player the projection is centered on, the table itself otherwise
+ * @param asleep whether redstone power keeps the table from projecting
  */
-public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines)
+public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep)
 {
     /**
      * World blocks per table block at each zoom step, halving every two steps.
@@ -22,12 +23,13 @@ public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines)
     public static final int ZOOM_STEPS = SCALES.length;
     public static final int WIDEST_SCALE = SCALES[0];
 
-    public static final OculusView DEFAULT = new OculusView(0, Optional.empty(), false);
+    public static final OculusView DEFAULT = new OculusView(0, Optional.empty(), false, false);
 
     public static final Codec<OculusView> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.intRange(0, ZOOM_STEPS - 1).optionalFieldOf("zoom", 0).forGetter(OculusView::zoom),
             UUIDUtil.CODEC.optionalFieldOf("follow").forGetter(OculusView::follow),
-            Codec.BOOL.optionalFieldOf("ley_lines", false).forGetter(OculusView::leyLines)
+            Codec.BOOL.optionalFieldOf("ley_lines", false).forGetter(OculusView::leyLines),
+            Codec.BOOL.optionalFieldOf("asleep", false).forGetter(OculusView::asleep)
     ).apply(instance, OculusView::new));
 
     /**
@@ -40,21 +42,26 @@ public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines)
 
     public OculusView zoomIn()
     {
-        return new OculusView(Math.min(zoom + 1, ZOOM_STEPS - 1), follow, leyLines);
+        return new OculusView(Math.min(zoom + 1, ZOOM_STEPS - 1), follow, leyLines, asleep);
     }
 
     public OculusView zoomOut()
     {
-        return new OculusView(Math.max(zoom - 1, 0), follow, leyLines);
+        return new OculusView(Math.max(zoom - 1, 0), follow, leyLines, asleep);
     }
 
     public OculusView following(Optional<UUID> target)
     {
-        return new OculusView(zoom, target, leyLines);
+        return new OculusView(zoom, target, leyLines, asleep);
     }
 
     public OculusView toggleLeyLines()
     {
-        return new OculusView(zoom, follow, !leyLines);
+        return new OculusView(zoom, follow, !leyLines, asleep);
+    }
+
+    public OculusView sleeping(boolean asleep)
+    {
+        return new OculusView(zoom, follow, leyLines, asleep);
     }
 }

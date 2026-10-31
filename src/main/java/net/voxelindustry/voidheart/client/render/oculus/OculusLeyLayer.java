@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
-import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorView;
@@ -46,7 +45,7 @@ public final class OculusLeyLayer
     private static final int ACTIVE_ANCHOR_COLOR = 0x36C5B0;
     private static final int DORMANT_ANCHOR_COLOR = 0x8A6A94;
     private static final int FULL_BRIGHT = 0xF000F0;
-    private static final float NAME_SCALE = 1 / 260F;
+    private static final float NAME_SCALE = 1 / 110F;
 
     private record Received(OculusLeyPayloads.Layer layer, int scale, long tick)
     {
@@ -66,6 +65,8 @@ public final class OculusLeyLayer
 
         for (var projector : OculusRenderer.projectors())
         {
+            if (projector.view().asleep())
+                continue;
             if (!projector.view().leyLines())
             {
                 LAYERS.remove(projector.anchor);
@@ -102,6 +103,8 @@ public final class OculusLeyLayer
         float time = (levelState.gameTime % 24000L) + levelState.worldPartialTicks;
         for (var projector : OculusRenderer.projectors())
         {
+            if (projector.view().asleep())
+                continue;
             var received = LAYERS.get(projector.anchor);
             if (received == null || !projector.view().leyLines())
                 continue;
@@ -240,7 +243,6 @@ public final class OculusLeyLayer
         poseStack.pushPose();
         poseStack.translate(offset.x, offset.y, offset.z);
         poseStack.rotate(camera.orientation);
-        poseStack.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Y));
         poseStack.scale(NAME_SCALE, -NAME_SCALE, NAME_SCALE);
         context.submitNodeCollector().submitText(poseStack, -font.width(name) / 2F, 0, name, false, Font.DisplayMode.NORMAL, FULL_BRIGHT,
                 anchor.active() ? 0xFF9FF3E8 : 0xFFB8A9C9, 0x40000000, 0);

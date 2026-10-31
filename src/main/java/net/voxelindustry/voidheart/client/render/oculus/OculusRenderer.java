@@ -52,7 +52,7 @@ import java.util.logging.Level;
  */
 public final class OculusRenderer
 {
-    private static final int PROJECTION_UBO_SIZE = new Std140SizeCalculator().putMat4f().putVec4().get();
+    private static final int PROJECTION_UBO_SIZE = new Std140SizeCalculator().putMat4f().putVec4().putVec4().get();
     private static final int CHUNK_UBO_SIZE = new Std140SizeCalculator().putVec4().get();
 
     private static final int SNAPSHOTS_PER_TICK = 16;
@@ -80,13 +80,13 @@ public final class OculusRenderer
     {
     }
 
-    private record ProjectionData(Matrix4fc modelView, float width, float depth, float inverseScale, float height)
+    private record ProjectionData(Matrix4fc modelView, float width, float depth, float inverseScale, float height, float presence)
             implements DynamicGpuDataStorage.DynamicGpuData
     {
         @Override
         public void write(ByteBuffer buffer)
         {
-            Std140Builder.intoBuffer(buffer).putMat4f(modelView).putVec4(width, depth, inverseScale, height);
+            Std140Builder.intoBuffer(buffer).putMat4f(modelView).putVec4(width, depth, inverseScale, height).putVec4(presence, 0, 0, 0);
         }
     }
 
@@ -284,11 +284,11 @@ public final class OculusRenderer
             projector.advance(camera.cameraEntityPartialTicks);
             projector.uploadMask();
             var meshes = projector.meshes();
-            if (projector.mask() == null || meshes.isEmpty())
+            if (projector.mask() == null || meshes.isEmpty() || projector.presence() <= 0)
                 continue;
 
             var projection = projectionUbos.writeData(new ProjectionData(projector.modelView(camera.viewRotationMatrix, camera.pos),
-                    projector.width(), projector.depth(), projector.inverseScale(), 1));
+                    projector.width(), projector.depth(), projector.inverseScale(), 1, projector.presence()));
 
             var chunkData = new ChunkData[meshes.size()];
             var draws = new ArrayList<RenderPass.Draw<GpuBufferSlice[]>>(meshes.size());

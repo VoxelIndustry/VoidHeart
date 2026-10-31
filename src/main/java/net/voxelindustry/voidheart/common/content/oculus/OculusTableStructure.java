@@ -100,6 +100,19 @@ public class OculusTableStructure
 
         var adopted = view;
         updateView(level, pos, current -> adopted);
+        updatePower(level, pos);
+    }
+
+    /**
+     * A table sleeps while any of its blocks is powered.
+     */
+    public static void updatePower(Level level, BlockPos start)
+    {
+        var members = collect(level, start);
+        if (members.isEmpty())
+            return;
+        boolean powered = members.stream().anyMatch(level::hasNeighborSignal);
+        updateView(level, start, view -> view.sleeping(powered));
     }
 
     public static void updateView(Level level, BlockPos start, UnaryOperator<OculusView> change)

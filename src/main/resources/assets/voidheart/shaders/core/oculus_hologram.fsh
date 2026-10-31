@@ -57,7 +57,7 @@ void main() {
     float seconds = GameTime * 1200.0;
 
     // Toward the table edges and the window top, the land frays away along drifting noise: still opaque, no sorting
-    float fade = min(texture(FootprintMask, footprintUv).r, clamp((HoloGeometry.w - holoPos.y) / TOP_FADE, 0.0, 1.0));
+    float fade = min(texture(FootprintMask, footprintUv).r, clamp((HoloGeometry.w - holoPos.y) / TOP_FADE, 0.0, 1.0)) * HoloState.x;
     float drift = noise(holoPos * 24.0 + vec3(0.0, seconds * 0.35, 0.0));
     if (fade * DISSOLVE_REACH < drift) {
         discard;

@@ -15,7 +15,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
-import net.voxelindustry.voidheart.client.util.MathUtil;
 import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads.Kind;
 import org.joml.Vector3f;
@@ -41,7 +40,7 @@ public final class OculusMarkers
     private static final double TRACKED_DISTANCE = 96;
     private static final int REQUEST_INTERVAL = 10;
     private static final int FULL_BRIGHT = 0xF000F0;
-    private static final float NAME_SCALE = 1 / 220F;
+    private static final float NAME_SCALE = 1 / 90F;
     private static final double GAZE_REACH = 8;
     /**
      * How far from a pin, in pin sizes, the view ray may pass and still count as looking at it.
@@ -82,6 +81,8 @@ public final class OculusMarkers
 
         for (var projector : OculusRenderer.projectors())
         {
+            if (projector.view().asleep())
+                continue;
             var area = projector.shownArea();
             double farX = Math.max(Math.abs(area.minX - player.getX()), Math.abs(area.maxX - player.getX()));
             double farZ = Math.max(Math.abs(area.minZ - player.getZ()), Math.abs(area.maxZ - player.getZ()));
@@ -115,6 +116,8 @@ public final class OculusMarkers
         double gazedDistance = Double.MAX_VALUE;
         for (var projector : OculusRenderer.projectors())
         {
+            if (projector.view().asleep())
+                continue;
             var pins = pins(level, projector, partialTick);
             if (pins.isEmpty())
                 continue;
@@ -266,7 +269,6 @@ public final class OculusMarkers
         poseStack.pushPose();
         poseStack.translate(offset.x, offset.y, offset.z);
         poseStack.rotate(camera.orientation);
-        poseStack.rotate(MathUtil.quatFromAngleDegrees(180, MathUtil.POSITIVE_Y));
         poseStack.scale(NAME_SCALE, -NAME_SCALE, NAME_SCALE);
         context.submitNodeCollector().submitText(poseStack, -font.width(name) / 2F, 0, name, false, Font.DisplayMode.NORMAL, FULL_BRIGHT, 0xFFF2FFFE, 0x40000000, 0);
         poseStack.popPose();

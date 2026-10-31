@@ -50,8 +50,16 @@ public class OculusControlsClientTest implements FabricClientGameTest
             if (Math.abs(settled - 24) > 0.05F)
                 throw new AssertionError("Expected the zoom to glide to 1:24, drawn at 1:" + settled);
 
-            // At 1:24 the player's own pin floats just above the table, toward its south edge
-            aimAtPoint(context, server, 0.5, TABLE_Y + 0.5 + 1 / 16D + 4 / 24D + 0.07, -1 + 1.5 + 4 / 24D);
+            // Flying above the table's south side, the player looks down at their own pin, clear of the controls.
+            // At 1:24 with the window resting at -64, the pin sits 9/24 up the hologram and 3/24 south of its middle
+            server.runOnServer(minecraft ->
+            {
+                var player = minecraft.getPlayerList().getPlayers().getFirst();
+                player.getAbilities().flying = true;
+                player.onUpdateAbilities();
+            });
+            double feetY = TABLE_Y + 5;
+            aimFrom(context, server, PANEL_X, feetY, 3.5, 0.5, TABLE_Y + 0.5 + 1 / 16D + 1 / 256D + 9 / 24D + 0.07, -1 + 1.5 + 3 / 24D);
             context.takeScreenshot("oculus-gaze-name");
             var gazed = context.computeOnClient(minecraft -> OculusMarkers.gazedPlayer().orElse(null));
             var self = context.computeOnClient(minecraft -> minecraft.player.getUUID());
@@ -110,14 +118,20 @@ public class OculusControlsClientTest implements FabricClientGameTest
 
     private static void aimAtPoint(ClientGameTestContext context, TestServerContext server, double x, double y, double z)
     {
-        double eyeZ = 4.5;
-        double eyeY = TABLE_Y + 1.62;
-        double dx = x - PANEL_X;
-        double dy = y - eyeY;
-        double dz = z - eyeZ;
+        aimFrom(context, server, PANEL_X, TABLE_Y, 4.5, x, y, z);
+    }
+
+    /**
+     * Places the player's feet there and turns their eyes toward the point.
+     */
+    private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
+    {
+        double dx = x - feetX;
+        double dy = y - (feetY + 1.62);
+        double dz = z - feetZ;
         double yaw = Math.toDegrees(Math.atan2(-dx, dz));
         double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + PANEL_X + " " + TABLE_Y + " " + eyeZ + " " + yaw + " " + pitch);
+        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
         context.waitTicks(10);
     }
 

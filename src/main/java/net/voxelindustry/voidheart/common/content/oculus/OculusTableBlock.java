@@ -2,7 +2,9 @@ package net.voxelindustry.voidheart.common.content.oculus;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
@@ -119,6 +121,26 @@ public class OculusTableBlock extends Block implements EntityBlock
 
         if (!level.isClientSide())
             OculusTableStructure.onBlockAdded(level, pos);
+    }
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, @Nullable Orientation orientation, boolean movedByPiston)
+    {
+        if (level.isClientSide())
+            return;
+        var tile = OculusTableStructure.getTile(level, pos);
+        if (tile != null && tile.getView().asleep() != level.hasNeighborSignal(pos))
+            OculusTableStructure.updatePower(level, pos);
+    }
+
+    /**
+     * The removed block may have been the one keeping what remains of the table asleep.
+     */
+    @Override
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston)
+    {
+        for (var direction : Direction.Plane.HORIZONTAL)
+            OculusTableStructure.updatePower(level, pos.relative(direction));
     }
 
     @Override

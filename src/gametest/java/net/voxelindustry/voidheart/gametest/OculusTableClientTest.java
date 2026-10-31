@@ -49,6 +49,16 @@ public class OculusTableClientTest implements FabricClientGameTest
             context.waitTicks(30);
             context.takeScreenshot("oculus-top-1-32-changed");
 
+            // Powering any block of the table puts it to sleep, unpowering wakes it
+            var powerPos = TABLE.east().east().south();
+            server.runCommand("setblock " + powerPos.getX() + " " + powerPos.getY() + " " + powerPos.getZ() + " redstone_block");
+            context.waitTicks(30);
+            expectAsleep(server, true);
+            view(context, server, "oculus-asleep", 1, GROUND + 4, 5, 180, 40);
+            server.runCommand("setblock " + powerPos.getX() + " " + powerPos.getY() + " " + powerPos.getZ() + " air");
+            context.waitTicks(30);
+            expectAsleep(server, false);
+
             zoomIn(server);
             zoomIn(server);
             context.waitTicks(80);
@@ -71,6 +81,16 @@ public class OculusTableClientTest implements FabricClientGameTest
         server.runCommand("tp @a " + x + " " + y + " " + z + " " + yaw + " " + pitch);
         context.waitTicks(10);
         context.takeScreenshot(name);
+    }
+
+    private static void expectAsleep(TestServerContext server, boolean asleep)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var tile = OculusTableStructure.getTile(minecraft.overworld(), TABLE);
+            if (tile == null || tile.getView().asleep() != asleep)
+                throw new AssertionError("Expected the table " + (asleep ? "asleep" : "awake") + ", got " + (tile == null ? null : tile.getView()));
+        });
     }
 
     private static void zoomIn(TestServerContext server)

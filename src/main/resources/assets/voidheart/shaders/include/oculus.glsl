@@ -6,6 +6,8 @@ layout(std140) uniform OculusProjection {
     mat4 HoloModelView;
     // Footprint width and depth in table blocks, table blocks per world block, window height in table blocks
     vec4 HoloGeometry;
+    // How much of the hologram is there, sinking into the void while the table sleeps
+    vec4 HoloState;
 };
 
 layout(std140) uniform OculusChunk {

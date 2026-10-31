@@ -64,6 +64,10 @@ final class OculusProjector implements AutoCloseable
     private static final float ZOOM_RATE = 7;
     private static final float ZOOM_SNAP = 0.01F;
     /**
+     * Share of the hologram sinking or rising per second as the table falls asleep or wakes.
+     */
+    private static final float PRESENCE_RATE = 2;
+    /**
      * Past this many view spans, the view jumps to its target instead of gliding over unbuilt land.
      */
     private static final double SNAP_SPANS = 2;
@@ -94,6 +98,10 @@ final class OculusProjector implements AutoCloseable
      * World blocks per table block as drawn, gliding toward the scale of the zoom picked.
      */
     private float displayScale;
+    /**
+     * How much of the hologram is there, sinking into the void while the table sleeps and rising back when it wakes.
+     */
+    private float presence = 1;
     /**
      * Where the view is headed, updated every tick.
      */
@@ -275,6 +283,8 @@ final class OculusProjector implements AutoCloseable
         long now = System.nanoTime();
         float seconds = lastFrameNanos == 0 ? 0 : Math.min((now - lastFrameNanos) / 1E9F, 0.25F);
         lastFrameNanos = now;
+
+        presence = Mth.clamp(presence + (view.asleep() ? -1 : 1) * seconds * PRESENCE_RATE, 0, 1);
 
         // Zooming glides on a logarithmic scale, so each step takes as long whatever the scales involved
         if (displayScale <= 0 || Math.abs(displayScale - scale) < ZOOM_SNAP)
@@ -647,6 +657,11 @@ final class OculusProjector implements AutoCloseable
     /**
      * World blocks per table block as drawn this frame, which differs from {@link #scale} while a zoom glides.
      */
+    float presence()
+    {
+        return presence;
+    }
+
     float drawnScale()
     {
         return displayScale > 0 ? displayScale : scale;
