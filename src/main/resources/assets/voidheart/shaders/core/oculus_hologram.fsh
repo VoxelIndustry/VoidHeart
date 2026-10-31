@@ -53,8 +53,11 @@ void main() {
 
     vec3 color = vertexColor.rgb * FACE_SHADE[face] * HOLOGRAM_TINT;
     float ticks = GameTime * 24000.0;
-    float scanline = 1.0 - smoothstep(0.0, 0.04, abs(fract(holoPos.y * 5.0 - ticks * 0.015) - 0.5));
-    color += GLOW_COLOR * scanline * 0.12;
+    // Bands climb the height, so only sides show them as lines: a flat top or bottom would light up whole at once
+    if (face >= 2u) {
+        float scanline = 1.0 - smoothstep(0.0, 0.04, abs(fract(holoPos.y * 5.0 - ticks * 0.015) - 0.5));
+        color += GLOW_COLOR * scanline * 0.12;
+    }
     color = mix(color, GLOW_COLOR, glow * 0.85);
 
     fragColor = vec4(color, 1.0);
