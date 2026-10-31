@@ -27,8 +27,13 @@ public final class OculusBeholderLayer
     private static final int HIGH_RING_COLOR = ARGB.color(220, 199, 125, 255);
     private static final int LOW_RING_COLOR = ARGB.color(140, 150, 110, 210);
 
-    private static final float EYE_WIDTH = 0.11F;
-    private static final float EYE_HEIGHT = 0.055F;
+    private static final float EYE_WIDTH = 0.06F;
+    private static final float EYE_HEIGHT = 0.03F;
+    /**
+     * How far each layer of the eye sits in front of the one below. Quads are sorted by their centers, which spread
+     * across the eye, so layers closer than that spread would trade places as the camera moves.
+     */
+    private static final float EYE_LAYER = 0.012F;
     private static final int EYE_SEGMENTS = 12;
     private static final int EYE_HALO = ARGB.color(150, 10, 6, 18);
     private static final int EYE_WHITE = 0xFFD9C8FF;
@@ -113,14 +118,14 @@ public final class OculusBeholderLayer
     {
         var lifted = new Vector3f(center).add(0, EYE_HEIGHT * 1.6F, 0);
         almond(pose, buffer, lifted, right, up, EYE_WIDTH * 1.35F, EYE_HEIGHT * 1.8F, EYE_HALO, null);
-        almond(pose, buffer, lifted, right, up, EYE_WIDTH, EYE_HEIGHT, EYE_WHITE, new Vector3f(lifted).normalize(-0.002F));
+        almond(pose, buffer, lifted, right, up, EYE_WIDTH, EYE_HEIGHT, EYE_WHITE, new Vector3f(lifted).normalize(-EYE_LAYER));
 
         float lookX = (float) Math.sin(seconds * 0.7F) * EYE_WIDTH * 0.3F;
         float lookY = (float) Math.sin(seconds * 0.45F + 1.3F) * EYE_HEIGHT * 0.2F;
         var iris = new Vector3f(lifted).add(new Vector3f(right).mul(lookX)).add(new Vector3f(up).mul(lookY));
         // Pulled toward the camera, iris and pupil sort in front of the white
-        diamondDisc(pose, buffer, iris.add(new Vector3f(lifted).normalize(-0.004F)), right, up, EYE_HEIGHT * 0.85F, EYE_IRIS);
-        diamondDisc(pose, buffer, iris.add(new Vector3f(lifted).normalize(-0.002F)), right, up, EYE_HEIGHT * 0.38F, EYE_PUPIL);
+        diamondDisc(pose, buffer, iris.add(new Vector3f(lifted).normalize(-EYE_LAYER * 2)), right, up, EYE_HEIGHT * 0.85F, EYE_IRIS);
+        diamondDisc(pose, buffer, iris.add(new Vector3f(lifted).normalize(-EYE_LAYER)), right, up, EYE_HEIGHT * 0.38F, EYE_PUPIL);
     }
 
     /**
