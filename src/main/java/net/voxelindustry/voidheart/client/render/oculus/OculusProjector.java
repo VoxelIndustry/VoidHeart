@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.render.oculus;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -9,7 +10,9 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.oculus.OculusFootprint;
@@ -46,6 +49,23 @@ final class OculusProjector implements AutoCloseable
      */
     private static final int REBUILD_COOLDOWN = 10;
     /**
+     * World blocks built past the shown land while following, so a moving view does not run into missing chunks.
+     */
+    private static final int FOLLOW_MARGIN = 16;
+    /**
+     * How quickly the view catches up with its target, per second.
+     */
+    private static final float GLIDE_RATE = 6;
+    /**
+     * Past this many view spans, the view jumps to its target instead of gliding over unbuilt land.
+     */
+    private static final double SNAP_SPANS = 2;
+    private static final int SURFACE_SAMPLES = 7;
+    /**
+     * Blocks under the ground above them past which a followed player counts as underground.
+     */
+    private static final int UNDERGROUND_DEPTH = 3;
+    /**
      * Texels of the footprint distance field per table block.
      */
     static final int FADE_RESOLUTION = 8;
@@ -59,8 +79,18 @@ final class OculusProjector implements AutoCloseable
     private OculusFootprint footprint;
     private OculusView view = OculusView.DEFAULT;
     private int scale;
-    private double centerX;
-    private double centerZ;
+    /**
+     * Where the view is headed, updated every tick.
+     */
+    private double targetX;
+    private double targetZ;
+    /**
+     * Where the view is drawn, gliding toward the target every frame.
+     */
+    private double displayX = Double.NaN;
+    private double displayZ;
+    private long lastFrameNanos;
+    private @Nullable Entity followed;
     private int windowBottom = Integer.MIN_VALUE;
     private int epoch;
     private boolean closed;
@@ -100,10 +130,25 @@ final class OculusProjector implements AutoCloseable
             maskDirty = true;
         }
 
-        centerX = footprint.centerX();
-        centerZ = footprint.centerZ();
+        followed = view.follow().map(level::getPlayerByUUID).orElse(null);
+        if (followed != null)
+        {
+            targetX = followed.getX();
+            targetZ = followed.getZ();
+        }
+        else if (view.follow().isEmpty())
+        {
+            targetX = footprint.centerX();
+            targetZ = footprint.centerZ();
+        }
+        // Following someone this client does not see yet keeps the last target until their position is known
+        if (Double.isNaN(displayX))
+        {
+            displayX = targetX;
+            displayZ = targetZ;
+        }
 
-        int bottom = surfaceWindowBottom(level, view.scale());
+        int bottom = windowBottom(level, view.scale());
         if (view.scale() != scale || Math.abs(bottom - windowBottom) >= view.scale() * WINDOW_HYSTERESIS)
         {
             scale = view.scale();
@@ -112,7 +157,9 @@ final class OculusProjector implements AutoCloseable
             slots.values().forEach(slot -> slot.dirty = true);
         }
 
-        var wanted = chunksShown();
+        var wanted = chunksShown(displayX, displayZ, followed != null ? FOLLOW_MARGIN : 0);
+        if (Math.abs(targetX - displayX) > 1 || Math.abs(targetZ - displayZ) > 1)
+            wanted.addAll(chunksShown(targetX, targetZ, 0));
         slots.long2ObjectEntrySet().removeIf(entry ->
         {
             if (wanted.contains(entry.getLongKey()))
@@ -125,16 +172,61 @@ final class OculusProjector implements AutoCloseable
             slots.computeIfAbsent(chunk, key -> new ChunkSlot());
     }
 
-    private int surfaceWindowBottom(ClientLevel level, int height)
+    /**
+     * Rests the window on the typical ground height of the land shown, or centers it on a followed player
+     * who went underground, so caves they explore show up.
+     */
+    private int windowBottom(ClientLevel level, int height)
     {
-        int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE, Mth.floor(centerX), Mth.floor(centerZ));
-        return Mth.clamp(surface - (int) (height * SURFACE_HEIGHT), level.getMinY(), level.getMaxY() + 1 - height);
+        int bottom;
+        if (followed != null && isUnderground(level, followed))
+            bottom = Mth.floor(followed.getY()) - height / 2;
+        else
+        {
+            var surface = medianSurface(level, height);
+            if (surface == Integer.MIN_VALUE)
+                return windowBottom == Integer.MIN_VALUE ? footprint.y() - height / 2 : windowBottom;
+            bottom = surface - (int) (height * SURFACE_HEIGHT);
+        }
+        return Mth.clamp(bottom, level.getMinY(), level.getMaxY() + 1 - height);
+    }
+
+    private static boolean isUnderground(ClientLevel level, Entity entity)
+    {
+        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, entity.getBlockX(), entity.getBlockZ());
+        return entity.getY() < surface - UNDERGROUND_DEPTH;
     }
 
     /**
-     * Chunks under at least one table block of the footprint.
+     * Median ground height over a grid spanning the land shown, ignoring trees and chunks this client does not have.
      */
-    private LongSet chunksShown()
+    private int medianSurface(ClientLevel level, int scale)
+    {
+        var heights = new IntArrayList(SURFACE_SAMPLES * SURFACE_SAMPLES);
+        double spanX = footprint.width() * scale;
+        double spanZ = footprint.depth() * scale;
+        for (int i = 0; i < SURFACE_SAMPLES; i++)
+        {
+            for (int j = 0; j < SURFACE_SAMPLES; j++)
+            {
+                int x = Mth.floor(targetX + spanX * ((i + 0.5) / SURFACE_SAMPLES - 0.5));
+                int z = Mth.floor(targetZ + spanZ * ((j + 0.5) / SURFACE_SAMPLES - 0.5));
+                if (level.getChunkSource().getChunk(x >> 4, z >> 4, ChunkStatus.FULL, false) != null)
+                    heights.add(level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z));
+            }
+        }
+        if (heights.isEmpty())
+            return Integer.MIN_VALUE;
+        heights.sort(null);
+        return heights.getInt(heights.size() / 2);
+    }
+
+    /**
+     * Chunks under at least one table block of the footprint, with the view centered there.
+     *
+     * @param margin world blocks shown beyond the edges, built ahead of a moving view
+     */
+    private LongSet chunksShown(double centerX, double centerZ, int margin)
     {
         var chunks = new LongOpenHashSet();
         for (int cellZ = 0; cellZ < footprint.depth(); cellZ++)
@@ -144,16 +236,48 @@ final class OculusProjector implements AutoCloseable
                 if (!footprint.contains(footprint.minX() + cellX, footprint.minZ() + cellZ))
                     continue;
 
-                double minX = centerX + (cellX - footprint.width() / 2D) * scale;
-                double minZ = centerZ + (cellZ - footprint.depth() / 2D) * scale;
-                for (int chunkX = Mth.floor(minX) >> 4; chunkX <= Mth.floor(minX + scale - 1E-3) >> 4; chunkX++)
+                double minX = centerX + (cellX - footprint.width() / 2D) * scale - margin;
+                double minZ = centerZ + (cellZ - footprint.depth() / 2D) * scale - margin;
+                double size = scale + margin * 2;
+                for (int chunkX = Mth.floor(minX) >> 4; chunkX <= Mth.floor(minX + size - 1E-3) >> 4; chunkX++)
                 {
-                    for (int chunkZ = Mth.floor(minZ) >> 4; chunkZ <= Mth.floor(minZ + scale - 1E-3) >> 4; chunkZ++)
+                    for (int chunkZ = Mth.floor(minZ) >> 4; chunkZ <= Mth.floor(minZ + size - 1E-3) >> 4; chunkZ++)
                         chunks.add(ChunkPos.pack(chunkX, chunkZ));
                 }
             }
         }
         return chunks;
+    }
+
+    /**
+     * Glides the drawn view toward its target, exactly onto a followed player. Called once a frame.
+     */
+    void advance(float partialTick)
+    {
+        long now = System.nanoTime();
+        float seconds = lastFrameNanos == 0 ? 0 : Math.min((now - lastFrameNanos) / 1E9F, 0.25F);
+        lastFrameNanos = now;
+
+        double desiredX = targetX;
+        double desiredZ = targetZ;
+        if (followed != null && !followed.isRemoved())
+        {
+            var position = followed.getPosition(partialTick);
+            desiredX = position.x;
+            desiredZ = position.z;
+        }
+
+        double span = Math.max(footprint.width(), footprint.depth()) * scale;
+        if (Math.abs(desiredX - displayX) > span * SNAP_SPANS || Math.abs(desiredZ - displayZ) > span * SNAP_SPANS)
+        {
+            displayX = desiredX;
+            displayZ = desiredZ;
+            return;
+        }
+
+        float glide = 1 - (float) Math.exp(-GLIDE_RATE * seconds);
+        displayX += (desiredX - displayX) * glide;
+        displayZ += (desiredZ - displayZ) * glide;
     }
 
     /**
@@ -216,8 +340,8 @@ final class OculusProjector implements AutoCloseable
 
     private double distanceSq(long chunk)
     {
-        double dx = (ChunkPos.getX(chunk) << 4) + 8 - centerX;
-        double dz = (ChunkPos.getZ(chunk) << 4) + 8 - centerZ;
+        double dx = (ChunkPos.getX(chunk) << 4) + 8 - targetX;
+        double dz = (ChunkPos.getZ(chunk) << 4) + 8 - targetZ;
         return dx * dx + dz * dz;
     }
 
@@ -389,6 +513,11 @@ final class OculusProjector implements AutoCloseable
                 (float) (footprint.minZ() - camera.z));
     }
 
+    Vec3 displayCenter()
+    {
+        return new Vec3(displayX, windowBottom, displayZ);
+    }
+
     float width()
     {
         return footprint.width();
@@ -406,7 +535,7 @@ final class OculusProjector implements AutoCloseable
 
     float offsetX(OculusChunkMesh mesh)
     {
-        return (float) ((mesh.chunkX << 4) - centerX);
+        return (float) ((mesh.chunkX << 4) - displayX);
     }
 
     float offsetY(OculusChunkMesh mesh)
@@ -416,7 +545,7 @@ final class OculusProjector implements AutoCloseable
 
     float offsetZ(OculusChunkMesh mesh)
     {
-        return (float) ((mesh.chunkZ << 4) - centerZ);
+        return (float) ((mesh.chunkZ << 4) - displayZ);
     }
 
     @Override

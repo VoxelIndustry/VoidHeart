@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Util;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableTile;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -213,6 +215,7 @@ public final class OculusRenderer
         int largestIndexCount = 0;
         for (var projector : PROJECTORS.values())
         {
+            projector.advance(camera.cameraEntityPartialTicks);
             projector.uploadMask();
             var meshes = projector.meshes();
             if (projector.mask() == null || meshes.isEmpty())
@@ -286,6 +289,14 @@ public final class OculusRenderer
     static Collection<OculusProjector> projectors()
     {
         return PROJECTORS.values();
+    }
+
+    /**
+     * Where the hologram of the table anchored there is centered: x and z of the land shown, y of the window bottom.
+     */
+    public static Optional<Vec3> displayCenter(BlockPos anchor)
+    {
+        return Optional.ofNullable(PROJECTORS.get(anchor)).map(OculusProjector::displayCenter);
     }
 
     /**

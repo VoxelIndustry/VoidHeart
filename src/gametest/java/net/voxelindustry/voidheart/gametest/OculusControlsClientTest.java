@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.core.BlockPos;
+import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
+import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -53,7 +55,28 @@ public class OculusControlsClientTest implements FabricClientGameTest
             context.getInput().pressKey(options -> options.keyUse);
             expectView(context, world, OculusView::leyLines, "toggle ley lines");
             context.takeScreenshot("oculus-controls-after");
+
+            // Following themselves, the player drags the view along as they walk away
+            server.runCommand("tp @a 40 " + TABLE_Y + " 0.5");
+            context.waitTicks(40);
+            expectCenter(context, 40, "follow the player 40 blocks east");
+
+            // Out of range, the table lets go and its view glides back home. The range is lowered so the table's chunk
+            // keeps ticking, as it would with someone standing at the table
+            server.runOnServer(minecraft -> VoidHeartConfig.get().oculusTableFollowRange = 32);
+            server.runCommand("tp @a 50 " + TABLE_Y + " 0.5");
+            context.waitTicks(40);
+            expectView(context, world, view -> view.follow().isEmpty(), "stop following a player out of range");
+            context.waitTicks(40);
+            expectCenter(context, 0.5, "come back to the table");
         }
+    }
+
+    private static void expectCenter(ClientGameTestContext context, double x, String what)
+    {
+        var center = context.computeOnClient(minecraft -> OculusRenderer.displayCenter(new BlockPos(-1, TABLE_Y, -1)).orElse(null));
+        if (center == null || Math.abs(center.x - x) > 1)
+            throw new AssertionError("Expected the hologram to " + what + ", centered at " + center);
     }
 
     /**

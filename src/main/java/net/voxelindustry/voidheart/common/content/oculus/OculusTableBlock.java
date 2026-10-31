@@ -7,8 +7,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jspecify.annotations.Nullable;
+
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 
 /**
  * Projects the land around it as a hologram. Its controls float above the table and are handled client side.
@@ -33,5 +38,11 @@ public class OculusTableBlock extends Block implements EntityBlock
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new OculusTableTile(pos, state);
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type)
+    {
+        return level.isClientSide() ? null : createTickerHelper(type, VoidHeartTiles.OCULUS_TABLE, OculusTableTile::serverTick);
     }
 }
