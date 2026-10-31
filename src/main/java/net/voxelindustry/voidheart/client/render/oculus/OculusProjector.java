@@ -35,9 +35,9 @@ import java.util.function.Consumer;
 final class OculusProjector implements AutoCloseable
 {
     /**
-     * Keeps the bottom of the hologram from fighting with the table top.
+     * Sets the hologram just above the table border, so its floor never fights with the border top.
      */
-    private static final float LIFT = 1 / 16F;
+    private static final float LIFT = 1 / 16F + 1 / 256F;
     /**
      * Share of the window kept below the surface at the view center.
      */

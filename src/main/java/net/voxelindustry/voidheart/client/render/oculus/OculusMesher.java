@@ -14,6 +14,11 @@ public final class OculusMesher
     public static final int CHUNK = 16;
     public static final int INTS_PER_VERTEX = 2;
     public static final int INTS_PER_QUAD = INTS_PER_VERTEX * 4;
+    /**
+     * Face ordinal past the six directions, for the void floor laid where the window bottom is empty.
+     */
+    public static final int FLOOR_FACE = 6;
+    private static final int FLOOR_COLOR = 0xFF000000;
 
     /**
      * Face ordinals follow {@link net.minecraft.core.Direction}: down, up, north, south, west, east.
@@ -116,6 +121,21 @@ public final class OculusMesher
                     mergeSlice(mask, sizeU, sizeV, face, axis, sign > 0 ? slice + 1 : slice, uAxis, vAxis, out);
             }
         }
+
+        // Where the bottom of the window is empty, a floor facing up keeps the table under the hologram out of sight
+        var floor = new int[CHUNK * CHUNK];
+        boolean anyFloor = false;
+        for (int x = 0; x < CHUNK; x++)
+        {
+            for (int z = 0; z < CHUNK; z++)
+            {
+                boolean empty = volume.get(x, 0, z) == 0;
+                floor[z + x * CHUNK] = empty ? FLOOR_COLOR : 0;
+                anyFloor |= empty;
+            }
+        }
+        if (anyFloor)
+            mergeSlice(floor, CHUNK, CHUNK, FLOOR_FACE, 1, 0, 2, 0, out);
         return out.toIntArray();
     }
 

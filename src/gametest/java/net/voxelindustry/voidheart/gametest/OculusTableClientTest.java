@@ -81,6 +81,8 @@ public class OculusTableClientTest implements FabricClientGameTest
         server.runCommand("fill 14 " + GROUND + " -10 34 " + GROUND + " 10 sand");
         server.runCommand("fill 16 " + GROUND + " -8 32 " + GROUND + " 8 water");
         server.runCommand("fill -2 " + (GROUND + 1) + " -36 2 " + (GROUND + 12) + " -32 gold_block");
+        // A pit leaves the bottom of close windows empty, where the void floor shows
+        server.runCommand("fill -6 " + (GROUND - 2) + " 2 -3 " + GROUND + " 5 air");
         for (int tree = 0; tree < 4; tree++)
             server.runCommand("place feature minecraft:oak " + (-12 + tree * 8) + " " + (GROUND + 1) + " " + (14 + tree % 2 * 6));
         for (int mob = 0; mob < 3; mob++)

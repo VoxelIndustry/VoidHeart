@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.render.oculus;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.voxelindustry.voidheart.client.render.oculus.OculusMesher.Volume;
 import org.joml.Vector3f;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,44 @@ class OculusMesherTest
         return mesh.length / INTS_PER_QUAD;
     }
 
+    /**
+     * The quads of the land itself, leaving out the void floor.
+     */
+    private static int[] land(int[] mesh)
+    {
+        return floorQuads(mesh, false);
+    }
+
+    private static int[] floorQuads(int[] mesh, boolean floor)
+    {
+        var kept = new IntArrayList();
+        for (int quad = 0; quad < quads(mesh); quad++)
+        {
+            if ((face(mesh, quad) == OculusMesher.FLOOR_FACE) == floor)
+                kept.addElements(kept.size(), mesh, quad * INTS_PER_QUAD, INTS_PER_QUAD);
+        }
+        return kept.toIntArray();
+    }
+
+    @Test
+    void emptyWindowBottomGetsAnUpwardVoidFloor()
+    {
+        var volume = Volume.empty(4);
+        for (int z = 0; z < 16; z++)
+            volume.set(3, 0, z, STONE);
+
+        var floor = floorQuads(OculusMesher.mesh(volume), true);
+
+        assertThat(quads(floor)).isEqualTo(2);
+        for (int quad = 0; quad < quads(floor); quad++)
+        {
+            var origin = corner(floor, quad, 0);
+            var normal = corner(floor, quad, 1).sub(origin).cross(corner(floor, quad, 2).sub(origin));
+            assertThat(origin.y).isZero();
+            assertThat(normal.normalize()).isEqualTo(new Vector3f(0, 1, 0));
+        }
+    }
+
     private static Vector3f corner(int[] mesh, int quad, int vertex)
     {
         int packed = mesh[quad * INTS_PER_QUAD + vertex * INTS_PER_VERTEX];
@@ -40,7 +79,7 @@ class OculusMesherTest
         var volume = Volume.empty(4);
         volume.set(3, 1, 5, STONE);
 
-        var mesh = OculusMesher.mesh(volume);
+        var mesh = land(OculusMesher.mesh(volume));
 
         assertThat(quads(mesh)).isEqualTo(6);
         assertThat(mesh[INTS_PER_VERTEX - 1]).as("color stored as ABGR").isEqualTo(0xFF808080);
@@ -52,7 +91,7 @@ class OculusMesherTest
         var volume = Volume.empty(4);
         volume.set(3, 1, 5, STONE);
 
-        var mesh = OculusMesher.mesh(volume);
+        var mesh = land(OculusMesher.mesh(volume));
 
         for (int quad = 0; quad < quads(mesh); quad++)
         {
@@ -69,7 +108,7 @@ class OculusMesherTest
         volume.set(0, 0, 0, STONE);
         volume.set(1, 0, 0, STONE);
 
-        assertThat(quads(OculusMesher.mesh(volume))).isEqualTo(6);
+        assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(6);
     }
 
     @Test
@@ -79,7 +118,7 @@ class OculusMesherTest
         volume.set(0, 0, 0, STONE);
         volume.set(1, 0, 0, GRASS);
 
-        assertThat(quads(OculusMesher.mesh(volume))).isEqualTo(10);
+        assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(10);
     }
 
     @Test
@@ -92,7 +131,7 @@ class OculusMesherTest
                 volume.set(x, 2, z, GRASS);
         }
 
-        var mesh = OculusMesher.mesh(volume);
+        var mesh = land(OculusMesher.mesh(volume));
 
         assertThat(quads(mesh)).isEqualTo(6);
         for (int quad = 0; quad < 6; quad++)
@@ -110,7 +149,7 @@ class OculusMesherTest
         volume.set(-1, 0, 0, STONE);
         volume.set(16, 0, 7, STONE);
 
-        assertThat(quads(OculusMesher.mesh(volume))).isEqualTo(5);
+        assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(5);
     }
 
     @Test
@@ -120,7 +159,7 @@ class OculusMesherTest
         volume.set(0, 0, 0, STONE);
         volume.set(0, 1, 0, STONE);
 
-        var mesh = OculusMesher.mesh(volume);
+        var mesh = land(OculusMesher.mesh(volume));
 
         assertThat(quads(mesh)).isEqualTo(6);
         for (int quad = 0; quad < quads(mesh); quad++)
