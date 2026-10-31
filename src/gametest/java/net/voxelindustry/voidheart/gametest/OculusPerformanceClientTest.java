@@ -51,8 +51,9 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
 
             for (int zoom = 0; zoom < OculusView.ZOOM_STEPS; zoom++)
             {
-                if (zoom > 0)
-                    server.runOnServer(minecraft -> OculusTableStructure.updateView(minecraft.overworld(), table, OculusView::zoomIn));
+                int step = zoom;
+                server.runOnServer(minecraft -> OculusTableStructure.updateView(minecraft.overworld(), table,
+                        view -> new OculusView(step, view.follow(), view.leyLines(), view.asleep())));
                 context.waitTicks(2);
 
                 int ticks;

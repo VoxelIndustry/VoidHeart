@@ -44,7 +44,7 @@ public class OculusControlsClientTest implements FabricClientGameTest
             aimAt(context, server, 1);
             context.takeScreenshot("oculus-controls-hover-zoom-in");
             context.getInput().pressKey(options -> options.keyUse);
-            expectView(context, world, view -> view.zoom() == 1, "zoom in by right click");
+            expectView(context, world, view -> view.zoom() == OculusView.DEFAULT_ZOOM + 1, "zoom in by right click");
             var midGlide = context.computeOnClient(minecraft -> OculusRenderer.drawnScale(ANCHOR).orElse(0F));
             context.runOnClient(minecraft -> System.out.println("[Oculus zoom] drawn scale right after zooming: " + midGlide));
             context.waitTicks(40);

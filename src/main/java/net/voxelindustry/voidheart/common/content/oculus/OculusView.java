@@ -10,23 +10,27 @@ import java.util.UUID;
 /**
  * What a table projects, shared by every block of the structure.
  *
- * @param zoom   step from the widest view, each one halving the world blocks shown per table block
+ * @param zoom   step from the widest view, each one narrowing the world blocks shown per table block
  * @param follow player the projection is centered on, the table itself otherwise
  * @param asleep whether redstone power keeps the table from projecting
  */
 public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep)
 {
     /**
-     * World blocks per table block at each zoom step, halving every two steps.
+     * World blocks per table block at each zoom step, halving every two steps below 1:32 and gentler beyond it.
      */
-    private static final int[] SCALES = { 32, 24, 16, 12, 8, 6, 4 };
+    private static final int[] SCALES = { 48, 40, 32, 24, 16, 12, 8, 6, 4 };
     public static final int ZOOM_STEPS = SCALES.length;
     public static final int WIDEST_SCALE = SCALES[0];
+    /**
+     * A new table opens at 1:32, with room to zoom further out.
+     */
+    public static final int DEFAULT_ZOOM = 2;
 
-    public static final OculusView DEFAULT = new OculusView(0, Optional.empty(), false, false);
+    public static final OculusView DEFAULT = new OculusView(DEFAULT_ZOOM, Optional.empty(), false, false);
 
     public static final Codec<OculusView> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.intRange(0, ZOOM_STEPS - 1).optionalFieldOf("zoom", 0).forGetter(OculusView::zoom),
+            Codec.intRange(0, ZOOM_STEPS - 1).optionalFieldOf("zoom", DEFAULT_ZOOM).forGetter(OculusView::zoom),
             UUIDUtil.CODEC.optionalFieldOf("follow").forGetter(OculusView::follow),
             Codec.BOOL.optionalFieldOf("ley_lines", false).forGetter(OculusView::leyLines),
             Codec.BOOL.optionalFieldOf("asleep", false).forGetter(OculusView::asleep)

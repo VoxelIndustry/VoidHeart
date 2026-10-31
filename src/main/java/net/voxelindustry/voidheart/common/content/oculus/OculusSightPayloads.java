@@ -43,7 +43,7 @@ public final class OculusSightPayloads
 
     private static final int SIGHT_INTERVAL = 10;
     private static final int RELIEF_TASKS_PER_PLAYER = 2;
-    private static final int MAX_QUEUED_RELIEF = 32;
+    private static final int MAX_QUEUED_RELIEF = 96;
     private static final int CACHED_CHUNKS_PER_LEVEL = 1 << 16;
 
     private static final Map<SightKey, Long> LAST_SIGHT = new HashMap<>();
