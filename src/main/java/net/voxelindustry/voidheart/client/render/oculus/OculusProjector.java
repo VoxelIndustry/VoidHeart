@@ -41,7 +41,7 @@ final class OculusProjector implements AutoCloseable
     /**
      * Share of the window kept below the surface at the view center.
      */
-    private static final float SURFACE_HEIGHT = 0.3F;
+    private static final float SURFACE_HEIGHT = 0.15F;
     /**
      * Fraction of the window height the surface must drift before the window follows it.
      */
@@ -192,7 +192,8 @@ final class OculusProjector implements AutoCloseable
             var surface = medianSurface(level, height);
             if (surface == Integer.MIN_VALUE)
                 return windowBottom == Integer.MIN_VALUE ? footprint.y() - height / 2 : windowBottom;
-            bottom = surface - (int) (height * SURFACE_HEIGHT);
+            // The surface is the first air block: at least the ground layer under it stays in the window
+            bottom = surface - Math.max(1, Math.round(height * SURFACE_HEIGHT));
         }
         return Mth.clamp(bottom, level.getMinY(), level.getMaxY() + 1 - height);
     }

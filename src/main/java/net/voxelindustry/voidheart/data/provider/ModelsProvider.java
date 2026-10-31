@@ -5,7 +5,9 @@ import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.model.ItemModelUtils;
+import net.minecraft.client.data.models.blockstates.MultiPartGenerator;
 import net.minecraft.client.data.models.model.ModelTemplate;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.data.models.model.TextureSlot;
@@ -46,6 +48,12 @@ public class ModelsProvider extends FabricModelProvider
     private static final ModelTemplate OCULUS_TABLE_TEMPLATE = new ModelTemplate(
             Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table")), Optional.empty(),
             TextureSlot.TOP, TextureSlot.SIDE, TextureSlot.BOTTOM);
+    private static final ModelTemplate OCULUS_TABLE_BORDER_TEMPLATE = new ModelTemplate(
+            Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table_border")), Optional.of("_border"),
+            TextureSlot.SIDE);
+    private static final ModelTemplate OCULUS_TABLE_ITEM_TEMPLATE = new ModelTemplate(
+            Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table_inventory")), Optional.of("_inventory"),
+            TextureSlot.TOP, TextureSlot.SIDE, TextureSlot.BOTTOM);
 
     private BlockModelGenerators generator;
 
@@ -68,8 +76,26 @@ public class ModelsProvider extends FabricModelProvider
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
 
-        generator.createTrivialBlock(VoidHeartBlocks.OCULUS_TABLE, TexturedModel.createDefault(TextureMapping::cubeBottomTop, OCULUS_TABLE_TEMPLATE).updateTexture(mapping ->
-                mapping.put(TextureSlot.BOTTOM, TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_POLISHED))));
+        registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
+    }
+
+    /**
+     * The table base, with a border along each side no other table block stands against.
+     */
+    private void registerOculusTable(Block table)
+    {
+        var textures = TextureMapping.cubeBottomTop(table).put(TextureSlot.BOTTOM, TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_POLISHED));
+        var base = plainVariant(OCULUS_TABLE_TEMPLATE.create(table, textures, generator.modelOutput));
+        var border = plainVariant(OCULUS_TABLE_BORDER_TEMPLATE.create(table, textures, generator.modelOutput));
+        var item = OCULUS_TABLE_ITEM_TEMPLATE.create(table, textures, generator.modelOutput);
+
+        generator.blockStateOutput.accept(MultiPartGenerator.multiPart(table)
+                .with(base)
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.NORTH, false), border)
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.EAST, false), border.with(BlockModelGenerators.Y_ROT_90))
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.SOUTH, false), border.with(BlockModelGenerators.Y_ROT_180))
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.WEST, false), border.with(BlockModelGenerators.Y_ROT_270)));
+        generator.registerSimpleItemModel(table, item);
     }
 
     @Override
