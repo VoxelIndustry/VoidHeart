@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.oculus.OculusControlPayload.Action;
 import net.voxelindustry.voidheart.common.content.oculus.OculusFootprint;
+import net.voxelindustry.voidheart.common.content.oculus.OculusTableBlock;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -101,7 +102,7 @@ record OculusControlPanel(BlockPos cell, Direction facing, Vec3 center)
                         nearestDistance = distance;
                         nearest = new OculusControlPanel(cell, facing, new Vec3(
                                 edgeX + facing.getStepX() * OUTSET,
-                                footprint.y() + 1 + HEIGHT,
+                                footprint.y() + OculusTableBlock.HEIGHT + HEIGHT,
                                 edgeZ + facing.getStepZ() * OUTSET));
                     }
                 }

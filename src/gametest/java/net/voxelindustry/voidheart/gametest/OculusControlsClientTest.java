@@ -22,7 +22,7 @@ public class OculusControlsClientTest implements FabricClientGameTest
     private static final BlockPos TABLE = new BlockPos(0, TABLE_Y, 0);
     // The viewer stands south of a 3x3 table, so the strip faces south on the middle block's edge, buttons along +x
     private static final double PANEL_X = 0.5;
-    private static final double PANEL_Y = TABLE_Y + 1.5;
+    private static final double PANEL_Y = TABLE_Y + 0.75 + 0.5;
     private static final double PANEL_Z = 2.2;
     private static final double[] BUTTON_OFFSETS = { -0.39, -0.13, 0.13, 0.39 };
 

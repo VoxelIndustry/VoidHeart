@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.model.ItemModelUtils;
+import net.minecraft.client.data.models.model.ModelTemplate;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.data.models.model.TextureSlot;
@@ -21,6 +22,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 
 import java.util.List;
+import java.util.Optional;
 
 import static net.minecraft.client.data.models.BlockModelGenerators.plainVariant;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -37,6 +39,13 @@ public class ModelsProvider extends FabricModelProvider
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "permeable_barrier"
     );
+
+    /**
+     * A cube cut to the table height, hand-written in assets/voidheart/models/block.
+     */
+    private static final ModelTemplate OCULUS_TABLE_TEMPLATE = new ModelTemplate(
+            Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table")), Optional.empty(),
+            TextureSlot.TOP, TextureSlot.SIDE, TextureSlot.BOTTOM);
 
     private BlockModelGenerators generator;
 
@@ -59,7 +68,7 @@ public class ModelsProvider extends FabricModelProvider
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
 
-        generator.createTrivialBlock(VoidHeartBlocks.OCULUS_TABLE, TexturedModel.CUBE_BOTTOM_TOP.updateTexture(mapping ->
+        generator.createTrivialBlock(VoidHeartBlocks.OCULUS_TABLE, TexturedModel.createDefault(TextureMapping::cubeBottomTop, OCULUS_TABLE_TEMPLATE).updateTexture(mapping ->
                 mapping.put(TextureSlot.BOTTOM, TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_POLISHED))));
     }
 

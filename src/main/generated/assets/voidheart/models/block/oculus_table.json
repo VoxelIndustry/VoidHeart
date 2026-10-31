@@ -1,5 +1,5 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "voidheart:block/template_oculus_table",
   "textures": {
     "bottom": "voidheart:block/voidstone_polished",
     "side": "voidheart:block/oculus_table_side",

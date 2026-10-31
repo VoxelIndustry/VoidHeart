@@ -17,6 +17,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.oculus.OculusFootprint;
+import net.voxelindustry.voidheart.common.content.oculus.OculusTableBlock;
 import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -40,7 +41,7 @@ final class OculusProjector implements AutoCloseable
     /**
      * Share of the window kept below the surface at the view center.
      */
-    private static final float SURFACE_HEIGHT = 0.6F;
+    private static final float SURFACE_HEIGHT = 0.3F;
     /**
      * Fraction of the window height the surface must drift before the window follows it.
      */
@@ -544,7 +545,7 @@ final class OculusProjector implements AutoCloseable
     {
         return new Matrix4f(viewRotation).translate(
                 (float) (footprint.minX() - camera.x),
-                (float) (footprint.y() + 1 + LIFT - camera.y),
+                (float) (footprint.y() + OculusTableBlock.HEIGHT + LIFT - camera.y),
                 (float) (footprint.minZ() - camera.z));
     }
 
@@ -565,7 +566,7 @@ final class OculusProjector implements AutoCloseable
         double holoZ = (z - displayZ) / scale + footprint.depth() / 2D;
         if (holoY < 0 || holoY > 1 || !footprint.contains(footprint.minX() + Mth.floor(holoX), footprint.minZ() + Mth.floor(holoZ)))
             return null;
-        return new Vec3(footprint.minX() + holoX, footprint.y() + 1 + LIFT + holoY, footprint.minZ() + holoZ);
+        return new Vec3(footprint.minX() + holoX, footprint.y() + OculusTableBlock.HEIGHT + LIFT + holoY, footprint.minZ() + holoZ);
     }
 
     /**
@@ -593,7 +594,7 @@ final class OculusProjector implements AutoCloseable
      */
     double hologramTop()
     {
-        return footprint.y() + 2 + LIFT;
+        return footprint.y() + OculusTableBlock.HEIGHT + 1 + LIFT;
     }
 
     int windowBottom()
