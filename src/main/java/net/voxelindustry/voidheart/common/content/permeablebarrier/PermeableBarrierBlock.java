@@ -1,168 +1,268 @@
 package net.voxelindustry.voidheart.common.content.permeablebarrier;
 
-import net.minecraft.world.item.ItemStack;
-import com.google.common.collect.Queues;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Set;
-
-public class PermeableBarrierBlock extends Block
+/**
+ * Full block whose collision depends on the entity asking. Its look is drawn by a block entity renderer,
+ * since it also differs for each viewer.
+ */
+public class PermeableBarrierBlock extends Block implements EntityBlock
 {
-    private static final VoxelShape UP    = box(0, 15, 0, 16, 16, 16);
-    private static final VoxelShape DOWN  = box(0, 0, 0, 16, 1, 16);
-    private static final VoxelShape NORTH = box(0, 0, 0, 16, 16, 1);
-    private static final VoxelShape SOUTH = box(0, 0, 15, 16, 16, 16);
-    private static final VoxelShape WEST  = box(0, 0, 0, 1, 16, 16);
-    private static final VoxelShape EAST  = box(15, 0, 0, 16, 16, 16);
+    public static final IntegerProperty LIGHT_DAMPENING = IntegerProperty.create("light_dampening", 0, 15);
+    public static final IntegerProperty LIGHT_EMISSION  = IntegerProperty.create("light_emission", 0, 15);
 
     public PermeableBarrierBlock(Properties properties)
     {
         super(properties
                 .noOcclusion()
                 .isValidSpawn(VoidHeartBlocks::never)
-                .isRedstoneConductor((state, world, pos) -> state.getValue(BlockStateProperties.LIT))
-                .isSuffocating((state, world, pos) -> state.getValue(BlockStateProperties.LIT))
-                .strength(3F)
-                .sound(SoundType.STONE)
-                .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 11 : 0));
+                .isRedstoneConductor((state, level, pos) -> false)
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos, box) -> false)
+                .strength(3F, 1200F)
+                .sound(SoundType.AMETHYST)
+                .lightLevel(state -> state.getValue(LIGHT_EMISSION)));
 
         registerDefaultState(getStateDefinition().any()
-                .setValue(BlockStateProperties.FACING, Direction.UP)
-                .setValue(BlockStateProperties.LIT, true));
+                .setValue(BlockStateProperties.POWERED, false)
+                .setValue(LIGHT_DAMPENING, 0)
+                .setValue(LIGHT_EMISSION, 0));
     }
 
-
-
-    @Override
-    public RenderShape getRenderShape(BlockState state)
+    /**
+     * Lighting is shared by all viewers, so it mimics the picked block whenever the barrier looks solid
+     * to entities matching no filter, or is never hidden. A hidden open barrier must not cast shadows.
+     */
+    public static BlockState withDisguisedLight(BlockState state, BarrierConfig config)
     {
-        return state.getValue(BlockStateProperties.LIT) ? super.getRenderShape(state) : RenderShape.INVISIBLE;
+        var appearance = config.appearance();
+        boolean disguised = appearance.isPresent()
+                && (!config.has(BarrierConfig.Flag.INVISIBLE_WHEN_OPEN) || config.isSolidFor(null, state.getValue(BlockStateProperties.POWERED)));
+
+        return state
+                .setValue(LIGHT_DAMPENING, disguised ? appearance.get().getLightDampening() : 0)
+                .setValue(LIGHT_EMISSION, disguised ? appearance.get().getLightEmission() : 0);
+    }
+
+    public static @Nullable Entity getEntity(CollisionContext context)
+    {
+        return context instanceof EntityCollisionContext entityContext ? entityContext.getEntity() : null;
+    }
+
+    public static boolean isSolidFor(BlockState state, BlockGetter level, BlockPos pos, @Nullable Entity entity)
+    {
+        var tile = PermeableBarrierStructure.getTile(level, pos);
+        return tile != null && tile.getConfig().isSolidFor(entity, state.getValue(BlockStateProperties.POWERED));
+    }
+
+    /**
+     * Whether the barrier can be seen and targeted by this entity.
+     */
+    public static boolean isVisibleFor(BlockState state, BlockGetter level, BlockPos pos, @Nullable Entity entity)
+    {
+        var tile = PermeableBarrierStructure.getTile(level, pos);
+        if (tile == null)
+            return true;
+
+        var config = tile.getConfig();
+        if (!config.isConfigured() || !config.has(BarrierConfig.Flag.INVISIBLE_WHEN_OPEN))
+            return true;
+        if (entity instanceof Player player && config.isAlly(player))
+            return true;
+        return config.isSolidFor(entity, state.getValue(BlockStateProperties.POWERED));
+    }
+
+    /**
+     * The block a configured barrier passes itself off as in particles and pick-block.
+     */
+    public static BlockState disguise(BlockGetter level, BlockPos pos, BlockState state)
+    {
+        if (!state.is(VoidHeartBlocks.PERMEABLE_BARRIER))
+            return state;
+        var tile = PermeableBarrierStructure.getTile(level, pos);
+        return tile != null ? tile.getConfig().appearance().orElse(state) : state;
     }
 
     @Override
-    @Nullable
-    public BlockState getStateForPlacement(BlockPlaceContext ctx)
+    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData)
     {
-        return defaultBlockState().setValue(BlockStateProperties.FACING, ctx.getNearestLookingDirection());
+        var disguise = disguise(level, pos, state);
+        return disguise != state ? new ItemStack(disguise.getBlock()) : super.getCloneItemStack(level, pos, state, includeData);
     }
 
     @Override
-    protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    public void spawnDestroyByEntityParticles(Level level, @Nullable Entity entity, BlockPos pos, BlockState state)
     {
-        if (!player.isShiftKeyDown())
+        super.spawnDestroyByEntityParticles(level, entity, pos, disguise(level, pos, state));
+    }
+
+    @Override
+    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context)
+    {
+        if (!PermeableBarrierStructure.canExtend(context.getLevel(), context.getClickedPos(), context.getPlayer()))
+            return null;
+        return defaultBlockState();
+    }
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack)
+    {
+        super.setPlacedBy(level, pos, state, placer, itemStack);
+
+        if (level instanceof ServerLevel serverLevel)
+            PermeableBarrierStructure.onBlockAdded(serverLevel, pos, placer != null ? placer.getUUID() : null);
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult)
+    {
+        var tile = PermeableBarrierStructure.getTile(level, pos);
+        if (tile == null || !tile.getConfig().isAlly(player))
+            return InteractionResult.PASS;
+
+        if (player instanceof ServerPlayer serverPlayer)
         {
-            switchLit(world, pos, state);
-            return InteractionResult.SUCCESS;
-        }
-
-        return super.useItemOn(heldStack, state, world, pos, player, hand, hit);
-    }
-
-    private void switchLit(Level world, BlockPos pos, BlockState state)
-    {
-        ArrayDeque<BlockPos> frontier = Queues.newArrayDeque();
-        Set<BlockPos> visited = new HashSet<>();
-        frontier.add(pos);
-
-        boolean newState = !state.getValue(BlockStateProperties.LIT);
-
-        while (!frontier.isEmpty())
-        {
-            BlockPos current = frontier.pop();
-            world.setBlockAndUpdate(current, world.getBlockState(current).setValue(BlockStateProperties.LIT, newState));
-
-            BlockPos.MutableBlockPos adjacent = current.mutable();
-            for (Direction facing : Direction.values())
+            serverPlayer.openMenu(new ExtendedMenuProvider<BlockPos>()
             {
-                adjacent.set(current);
-                adjacent.move(facing);
+                @Override
+                public BlockPos getScreenOpeningData(ServerPlayer player)
+                {
+                    return pos;
+                }
 
-                if (visited.contains(adjacent))
-                    continue;
+                @Override
+                public Component getDisplayName()
+                {
+                    return Component.translatable("block.voidheart.permeable_barrier");
+                }
 
-                BlockState adjacentState = world.getBlockState(adjacent);
-                if (adjacentState.getBlock() == this)
-                    frontier.add(adjacent.immutable());
-            }
-            visited.add(current);
+                @Override
+                public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player)
+                {
+                    return new PermeableBarrierMenu(containerId, inventory, pos);
+                }
+            });
         }
+        return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * Owners break it like stone, everyone else as if it were obsidian.
+     */
+    @Override
+    protected float getDestroyProgress(BlockState state, Player player, BlockGetter level, BlockPos pos)
+    {
+        var tile = PermeableBarrierStructure.getTile(level, pos);
+        if (tile != null && !tile.getConfig().isAlly(player))
+            return Blocks.OBSIDIAN.defaultBlockState().getDestroyProgress(player, level, pos);
+        return super.getDestroyProgress(state, player, level, pos);
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, @Nullable Orientation orientation, boolean movedByPiston)
     {
-        switch (state.getValue(BlockStateProperties.FACING))
-        {
-            case DOWN:
-                return DOWN;
-            case NORTH:
-                return NORTH;
-            case SOUTH:
-                return SOUTH;
-            case WEST:
-                return WEST;
-            case EAST:
-                return EAST;
-            case UP:
-            default:
-                return UP;
-        }
+        if (!level.isClientSide() && level.hasNeighborSignal(pos) != state.getValue(BlockStateProperties.POWERED))
+            PermeableBarrierStructure.updatePower(level, pos);
     }
 
     @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston)
     {
-        if(context instanceof EntityCollisionContext entityShapeContext)
-        {
-/*            if(entityShapeContext.getEntity())*/
-        }
+        if (!state.getValue(BlockStateProperties.POWERED))
+            return;
 
-        return state.getValue(BlockStateProperties.LIT) ? state.getShape(world, pos) : Shapes.empty();
+        // The removed block may have been the one powering what remains of the structure
+        for (var direction : Direction.values())
+            PermeableBarrierStructure.updatePower(level, pos.relative(direction));
     }
 
     @Override
-    @Environment(EnvType.CLIENT)
-    public float getShadeBrightness(BlockState state, BlockGetter world, BlockPos pos)
+    protected RenderShape getRenderShape(BlockState state)
     {
-        return 1.0F;
+        return RenderShape.INVISIBLE;
+    }
+
+    @Override
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
+    {
+        return isVisibleFor(state, level, pos, getEntity(context)) ? Shapes.block() : Shapes.empty();
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
+    {
+        return isSolidFor(state, level, pos, getEntity(context)) ? Shapes.block() : Shapes.empty();
+    }
+
+    /**
+     * Lets levers, buttons and torches attach to the barrier whatever its current state.
+     */
+    @Override
+    protected VoxelShape getBlockSupportShape(BlockState state, BlockGetter level, BlockPos pos)
+    {
+        return Shapes.block();
+    }
+
+    @Override
+    protected VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
+    {
+        return Shapes.empty();
+    }
+
+    /**
+     * Opaque disguises darken their neighbors with ambient occlusion like a real full block.
+     */
+    @Override
+    protected float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos)
+    {
+        return state.getValue(LIGHT_DAMPENING) >= 15 ? 0.2F : 1.0F;
+    }
+
+    @Override
+    protected int getLightDampening(BlockState state)
+    {
+        return state.getValue(LIGHT_DAMPENING);
     }
 
     @Override
     protected boolean propagatesSkylightDown(BlockState state)
     {
-        return !state.getValue(BlockStateProperties.LIT);
-    }
-
-    @Override
-    @Environment(EnvType.CLIENT)
-    public boolean skipRendering(BlockState state, BlockState stateFrom, Direction direction)
-    {
-        return stateFrom.is(this) || !state.getValue(BlockStateProperties.LIT);
+        return state.getValue(LIGHT_DAMPENING) == 0;
     }
 
     @Override
@@ -174,6 +274,12 @@ public class PermeableBarrierBlock extends Block
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(BlockStateProperties.FACING, BlockStateProperties.LIT);
+        builder.add(BlockStateProperties.POWERED, LIGHT_DAMPENING, LIGHT_EMISSION);
+    }
+
+    @Override
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state)
+    {
+        return new PermeableBarrierTile(pos, state);
     }
 }

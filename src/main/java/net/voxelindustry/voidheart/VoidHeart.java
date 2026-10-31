@@ -41,6 +41,7 @@ import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeRuneP
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
@@ -76,6 +77,7 @@ public class VoidHeart implements ModInitializer
         VoidHeartItems.registerItems();
 
         VoidHeartTiles.registerTiles();
+        VoidHeartMenus.registerMenus();
 
         ITEMGROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(MODID, "item_group"), FabricCreativeModeTab.builder()
                 .icon(() -> new ItemStack(VoidHeartItems.VOID_HEART))

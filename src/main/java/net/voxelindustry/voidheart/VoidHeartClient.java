@@ -7,7 +7,16 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleGroupRegistry;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
+import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
+import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
+import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
+import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
+import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePayload;
+import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
@@ -46,6 +55,11 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.EYE_BOTTLE, EyeBottleRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new FloatingItemRender<>(ctx, ShatterForgeTile::getStack, 1));
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.PERMEABLE_BARRIER, PermeableBarrierRender::new);
+
+        MenuScreens.register(VoidHeartMenus.PERMEABLE_BARRIER, PermeableBarrierScreen::new);
+        ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
+        LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
 
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
 
