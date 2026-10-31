@@ -316,7 +316,7 @@ final class OculusProjector implements AutoCloseable
      *
      * @return the snapshots taken
      */
-    int scheduleBuilds(ClientLevel level, long tick, int budget, Consumer<BuildTask> submit)
+    int scheduleBuilds(ClientLevel level, long tick, int budget, long deadlineNanos, Consumer<BuildTask> submit)
     {
         var candidates = new ArrayList<Long2ObjectMap.Entry<ChunkSlot>>();
         for (var entry : slots.long2ObjectEntrySet())
@@ -331,7 +331,7 @@ final class OculusProjector implements AutoCloseable
         int scheduled = 0;
         for (var entry : candidates)
         {
-            if (scheduled >= budget)
+            if (scheduled >= budget || System.nanoTime() > deadlineNanos)
                 break;
 
             var slot = entry.getValue();
@@ -491,6 +491,26 @@ final class OculusProjector implements AutoCloseable
                 meshes.add(slot.mesh);
         }
         return meshes;
+    }
+
+    /**
+     * Chunks shown, chunks with a mesh, chunks waiting for one, and quads drawn.
+     */
+    int[] counts()
+    {
+        int meshes = 0, pending = 0, quads = 0;
+        for (var entry : slots.long2ObjectEntrySet())
+        {
+            var slot = entry.getValue();
+            if (slot.mesh != null)
+            {
+                meshes++;
+                quads += slot.mesh.quadCount;
+            }
+            if (slot.building || slot.dirty && !OculusRemoteChunks.isUnavailable(entry.getLongKey(), windowBottom, scale))
+                pending++;
+        }
+        return new int[] { slots.size(), meshes, pending, quads };
     }
 
     String describe()

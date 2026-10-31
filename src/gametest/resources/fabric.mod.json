@@ -9,7 +9,8 @@
       "net.voxelindustry.voidheart.gametest.OculusTableClientTest",
       "net.voxelindustry.voidheart.gametest.OculusControlsClientTest",
       "net.voxelindustry.voidheart.gametest.OculusRemoteChunksClientTest",
-      "net.voxelindustry.voidheart.gametest.OculusLeyClientTest"
+      "net.voxelindustry.voidheart.gametest.OculusLeyClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusPerformanceClientTest"
     ]
   },
   "depends": {

@@ -74,6 +74,15 @@ final class OculusRemoteChunks
     }
 
     /**
+     * Whether the server answered it has not loaded this chunk either, so there is nothing to wait for.
+     */
+    static boolean isUnavailable(long chunk, int windowBottom, int windowHeight)
+    {
+        var remote = CHUNKS.get(chunk);
+        return remote != null && remote.sections() == null && remote.covers(windowBottom, windowHeight);
+    }
+
+    /**
      * Asks the server for a chunk this client lacks, unless it was asked recently or is known to be unloaded there too.
      */
     static void want(BlockPos table, long chunk, int windowBottom, int windowHeight, long tick)
