@@ -37,6 +37,7 @@ import net.voxelindustry.voidheart.client.render.oculus.OculusMarkers;
 import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
+import net.voxelindustry.voidheart.client.render.oculus.OculusSky;
 import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
@@ -94,6 +95,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(OculusLeyPayloads.Layer.TYPE, OculusLeyLayer::receive);
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusControls::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusMarkers::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(OculusSky::collectSubmits);
         ClientPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Markers.TYPE, OculusMarkers::receive);
 
         ClientPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Sections.TYPE, OculusRenderer::receiveSections);

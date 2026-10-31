@@ -38,6 +38,10 @@ public class OculusTableClientTest implements FabricClientGameTest
             context.waitTicks(80);
             connection.waitForChunksRender();
             view(context, server, "oculus-angled-1-32", 1, GROUND + 4, 5, 180, 40);
+            view(context, server, "oculus-sky-noon", 1, GROUND + 3, 7, 180, 10);
+            server.runCommand("time set 20000");
+            view(context, server, "oculus-sky-night", 1, GROUND + 3, 7, 180, 10);
+            server.runCommand("time set noon");
             view(context, server, "oculus-top-1-32", 1, GROUND + 9, 0.5, 180, 90);
 
             // A red slab dropped into the projected land must show up once its chunk is rebuilt
