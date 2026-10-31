@@ -67,6 +67,10 @@ final class OculusProjector implements AutoCloseable
      */
     private static final int UNDERGROUND_DEPTH = 3;
     /**
+     * Share of the window height kept between clamped overlays and the window's top and bottom.
+     */
+    private static final double CLAMP_INSET = 0.02;
+    /**
      * Texels of the footprint distance field per table block.
      */
     static final int FADE_RESOLUTION = 8;
@@ -542,6 +546,16 @@ final class OculusProjector implements AutoCloseable
         if (holoY < 0 || holoY > 1 || !footprint.contains(footprint.minX() + Mth.floor(holoX), footprint.minZ() + Mth.floor(holoZ)))
             return null;
         return new Vec3(footprint.minX() + holoX, footprint.y() + 1 + LIFT + holoY, footprint.minZ() + holoZ);
+    }
+
+    /**
+     * Like {@link #toHologram}, but a point above or below the window is pressed against its top or bottom,
+     * for overlays that must stay visible wherever the window sits.
+     */
+    @Nullable Vec3 toHologramClamped(double x, double y, double z)
+    {
+        double clampedY = Mth.clamp(y, windowBottom + scale * CLAMP_INSET, windowBottom + scale * (1 - CLAMP_INSET));
+        return toHologram(x, clampedY, z);
     }
 
     /**
