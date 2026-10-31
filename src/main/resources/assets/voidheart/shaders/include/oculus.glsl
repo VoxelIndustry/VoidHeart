@@ -11,9 +11,10 @@ layout(std140) uniform OculusProjection {
     vec4 HoloState;
 };
 
-// Voxel kinds written in the color alpha: hollows below the first limit, relief below the second, blocks above
-const float HOLLOW_ALPHA_LIMIT = 0.375;
+// Relief voxels are written half transparent, every block color fully opaque
 const float RELIEF_ALPHA_LIMIT = 0.75;
+// Set in the face byte on faces turned toward the open space under cover
+const uint FACES_HOLLOW = 8u;
 
 layout(std140) uniform OculusChunk {
     // Origin of the drawn chunk slice relative to the projected view center, in world blocks

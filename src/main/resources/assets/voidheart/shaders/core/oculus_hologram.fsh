@@ -67,19 +67,17 @@ void main() {
     }
     float rim = 1.0 - smoothstep(0.0, 1.0, fade);
 
-    // Turning from the surface to the hollows, the land crumbles away in drifting specks as the hollows gather,
-    // until only the hollows remain. Halfway, both show: the hollows through the gaps of the thinned land
+    // Turning from the surface to the hollows, the land crumbles away in drifting specks, laying bare the caves and
+    // rooms as a cutaway: the floors, far walls, pillars and contents facing the viewer from inside the open space
+    // stay, while the ceilings and near walls between go. Halfway, both show: the hollows through the thinned land
+    uint side = face & 7u;
+    bool towardHollow = (face & FACES_HOLLOW) != 0u;
     float caving = HoloState.y;
-    bool hollow = vertexColor.a < HOLLOW_ALPHA_LIMIT;
-    float speck = noise(holoPos * 14.0 + vec3(seconds * 0.05, seconds * 0.12, 0.0));
-    if (hollow) {
-        float gathered = clamp(caving * 2.0, 0.0, 1.0);
-        // Seen from behind, a hollow face is the inside of a cave wall, hidden by the hollow itself
-        if (!gl_FrontFacing || gathered <= 0.0 || speck > gathered * 1.1 - 0.05) {
-            discard;
-        }
-    } else if (face != FLOOR_FACE) {
-        float dissolved = caving <= 0.5 ? caving * 2.0 * MIXED_DISSOLVE : mix(MIXED_DISSOLVE, 1.0, caving * 2.0 - 1.0);
+    float revealed = clamp(caving * 2.0, 0.0, 1.0);
+    if (side != FLOOR_FACE && !(towardHollow && gl_FrontFacing)) {
+        float speck = noise(holoPos * 14.0 + vec3(seconds * 0.05, seconds * 0.12, 0.0));
+        float dissolved = towardHollow ? revealed
+                : caving <= 0.5 ? caving * 2.0 * MIXED_DISSOLVE : mix(MIXED_DISSOLVE, 1.0, caving * 2.0 - 1.0);
         if (dissolved >= 1.0 || speck < dissolved * 1.2 - 0.1) {
             discard;
         }
@@ -87,7 +85,7 @@ void main() {
 
     // Back faces are only seen through the cut sides of the land, and the floor lies where the window bottom is empty:
     // both are windows into the void, its stars fixed to the screen
-    if (!gl_FrontFacing || face == FLOOR_FACE) {
+    if (!gl_FrontFacing || side == FLOOR_FACE) {
         vec2 cell = floor(gl_FragCoord.xy / 2.0);
         float star = step(0.994, hash(vec3(cell, 7.0)));
         float twinkle = 0.5 + 0.5 * sin(seconds * 2.0 + hash(vec3(cell, 3.0)) * 40.0);
@@ -95,12 +93,8 @@ void main() {
         return;
     }
 
-    vec3 color = vertexColor.rgb * FACE_SHADE[face];
-    if (hollow) {
-        // A cast of the open space, lit from within and slowly pulsing
-        float pulse = noise(holoPos * 12.0 + vec3(0.0, seconds * 0.3, 0.0));
-        color = color * (0.85 + 0.3 * pulse) + HOLLOW_GLOW * 0.08;
-    } else if (vertexColor.a < RELIEF_ALPHA_LIMIT) {
+    vec3 color = vertexColor.rgb * FACE_SHADE[side];
+    if (vertexColor.a < RELIEF_ALPHA_LIMIT) {
         // Land no beholder sees is only known by its generated relief: bare strata, stirring faintly
         color *= 0.82 + 0.22 * noise(holoPos * 30.0 + vec3(0.0, seconds * 0.6, 0.0));
     } else {
@@ -115,6 +109,10 @@ void main() {
         float ripple = (sin(distance * 9.0 - seconds * 1.4) * 0.5 + 0.5) * strength;
         color *= 0.94 + 0.09 * ripple;
         color += HAZE * pow(ripple, 6.0) * 0.07;
+    }
+    if (towardHollow) {
+        // The inside of the hollows catches a faint cold light once laid bare
+        color += HOLLOW_GLOW * 0.07 * revealed;
     }
 
     // Near the edges the land sinks into darkness, lit by sparse violet motes

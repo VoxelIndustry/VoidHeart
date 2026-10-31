@@ -13,7 +13,6 @@ class OculusMesherTest
 {
     private static final int STONE = 0xFF808080;
     private static final int GRASS = 0xFF40A040;
-    private static final int HOLLOW = OculusMesher.HOLLOW_ALPHA << 24 | 0x60C0E0;
 
     private static final Vector3f[] NORMALS = {
             new Vector3f(0, -1, 0), new Vector3f(0, 1, 0), new Vector3f(0, 0, -1),
@@ -154,24 +153,58 @@ class OculusMesherTest
     }
 
     @Test
-    void hollowAndSolidVoxelsBothShowTheirSharedFace()
+    void hollowsAreNeverDrawnButMarkTheFacesTurnedToThem()
     {
         var volume = Volume.empty(4);
         volume.set(0, 0, 0, STONE);
-        volume.set(1, 0, 0, HOLLOW);
+        volume.set(1, 0, 0, OculusMesher.HOLLOW);
+        volume.set(2, 0, 0, OculusMesher.HOLLOW);
 
-        assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(12);
+        var mesh = land(OculusMesher.mesh(volume));
+
+        assertThat(quads(mesh)).isEqualTo(6);
+        int marked = 0;
+        for (int quad = 0; quad < quads(mesh); quad++)
+        {
+            if ((face(mesh, quad) & OculusMesher.FACES_HOLLOW) != 0)
+            {
+                marked++;
+                assertThat(face(mesh, quad) & 7).as("the east face, toward the hollow").isEqualTo(5);
+            }
+        }
+        assertThat(marked).isEqualTo(1);
     }
 
     @Test
-    void touchingHollowsMergeLikeBlocks()
+    void facesTowardOpenAirAndTowardHollowsDoNotMerge()
     {
         var volume = Volume.empty(4);
-        volume.set(0, 0, 0, HOLLOW);
-        volume.set(1, 0, 0, HOLLOW);
-        volume.set(-1, 0, 0, OculusMesher.HOLLOW_BORDER);
+        volume.set(0, 0, 0, STONE);
+        volume.set(0, 0, 1, STONE);
+        volume.set(0, 1, 0, OculusMesher.HOLLOW);
 
-        assertThat(quads(land(OculusMesher.mesh(volume)))).isEqualTo(5);
+        var tops = 0;
+        var mesh = land(OculusMesher.mesh(volume));
+        for (int quad = 0; quad < quads(mesh); quad++)
+        {
+            if ((face(mesh, quad) & 7) == 1)
+                tops++;
+        }
+        assertThat(tops).isEqualTo(2);
+    }
+
+    @Test
+    void hollowInTheNeighborBorderMarksTheFaceTurnedToIt()
+    {
+        var volume = Volume.empty(4);
+        volume.set(0, 0, 0, STONE);
+        volume.set(-1, 0, 0, OculusMesher.HOLLOW);
+
+        var mesh = land(OculusMesher.mesh(volume));
+
+        assertThat(quads(mesh)).isEqualTo(6);
+        for (int quad = 0; quad < quads(mesh); quad++)
+            assertThat((face(mesh, quad) & OculusMesher.FACES_HOLLOW) != 0).isEqualTo((face(mesh, quad) & 7) == 4);
     }
 
     @Test

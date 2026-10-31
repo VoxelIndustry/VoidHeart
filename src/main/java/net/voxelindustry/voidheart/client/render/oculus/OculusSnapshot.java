@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * Copy of the sections a chunk slice needs: its own and the facing sides of its four neighbors, which only decide
  * whether border faces are hidden. Taken on the main thread, read by a mesh builder.
  * Columns the table does not see hold the generated relief instead of their blocks. In the columns it sees, the open
- * space under cover, caves and rooms alike, is filled with hollow voxels drawn when the hologram shows the hollows.
+ * space under cover, caves and rooms alike, is marked hollow, so the blocks around it can be shown from inside.
  * Also stands in for the level when tint sources look up the biome of a block.
  */
 final class OculusSnapshot implements BlockAndTintGetter
@@ -45,8 +45,6 @@ final class OculusSnapshot implements BlockAndTintGetter
     private static final int RELIEF_LOW = 0x24183D;
     private static final int RELIEF_HIGH = 0x8676B8;
     private static final int RELIEF_CONTOUR = 0xC2B0FF;
-    private static final int HOLLOW_DEEP = 0x1C4F6E;
-    private static final int HOLLOW_HIGH = 0x9EE6F2;
 
     final int chunkX;
     final int chunkZ;
@@ -268,7 +266,7 @@ final class OculusSnapshot implements BlockAndTintGetter
                     if (!entry.filled())
                     {
                         if (windowBottom + y < cover[column])
-                            volume.set(x, y, z, borderX || borderZ ? OculusMesher.HOLLOW_BORDER : hollowColor(windowBottom + y, seaLevel));
+                            volume.set(x, y, z, OculusMesher.HOLLOW);
                         continue;
                     }
 
@@ -291,18 +289,6 @@ final class OculusSnapshot implements BlockAndTintGetter
         else if (Math.floorMod(y, 8) >= 4)
             color = ARGB.scaleRGB(color, 0.9F);
         return ARGB.color(RELIEF_ALPHA, color);
-    }
-
-    /**
-     * Pale where the hollows are high, deepening toward the bottom of the world, banded every eight blocks.
-     */
-    static int hollowColor(int y, int seaLevel)
-    {
-        float height = Mth.clamp((y - seaLevel + 64) / 128F, 0, 1);
-        int color = ARGB.srgbLerp(height, HOLLOW_DEEP, HOLLOW_HIGH);
-        if (Math.floorMod(y, 8) >= 4)
-            color = ARGB.scaleRGB(color, 0.88F);
-        return ARGB.color(OculusMesher.HOLLOW_ALPHA, color);
     }
 
     private @Nullable LevelChunkSection sectionAt(int x, int y, int z)

@@ -38,8 +38,14 @@ public class OculusCavingClientTest implements FabricClientGameTest
             // A stone house east of the table, and a hill west of it with a tunnel running through
             fill(server, 10, GROUND + 1, -5, 20, GROUND + 7, 5, "stone_bricks");
             fill(server, 11, GROUND + 1, -4, 19, GROUND + 6, 4, "air");
+            // Furnished: a log pillar holding the roof, a chest and a crafting table, a gold floor to tell it apart
+            fill(server, 11, GROUND, -4, 19, GROUND, 4, "gold_block");
+            fill(server, 15, GROUND + 1, 0, 15, GROUND + 6, 0, "oak_log");
+            fill(server, 12, GROUND + 1, -3, 13, GROUND + 1, -3, "chest");
+            fill(server, 12, GROUND + 1, 3, 12, GROUND + 1, 3, "crafting_table");
             fill(server, -24, GROUND + 1, -10, -10, GROUND + 15, 6, "stone");
             fill(server, -22, GROUND + 3, -4, -12, GROUND + 6, 0, "air");
+            server.runCommand("summon cow -17 " + (GROUND + 3) + " -2 {NoAI:1b,PersistenceRequired:1b}");
             fill(server, -2, TABLE.getY(), -2, 2, TABLE.getY(), 2, "voidheart:oculus_table");
             // Sees all the land shown, not just the table's own short sight
             server.runCommand("setblock 0 " + TABLE.getY() + " -12 voidheart:beholder");
@@ -63,6 +69,11 @@ public class OculusCavingClientTest implements FabricClientGameTest
             settle(context);
             expectBlend(context, 1, "the hollows once asked for");
             context.takeScreenshot("oculus-caving-hollows-1-16");
+            server.runOnServer(minecraft -> OculusTableStructure.updateView(minecraft.overworld(), TABLE, view -> view.zoomIn().zoomIn()));
+            settle(context);
+            context.takeScreenshot("oculus-caving-hollows-1-8");
+            server.runOnServer(minecraft -> OculusTableStructure.updateView(minecraft.overworld(), TABLE, view -> view.zoomOut().zoomOut()));
+            settle(context);
 
             // Following the player, out in the open: back to the surface at once
             server.runOnServer(minecraft ->

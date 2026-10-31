@@ -7,10 +7,11 @@ import java.util.Arrays;
 /**
  * Turns a chunk column slice of colored voxels into quads, hiding faces between filled voxels
  * and merging touching faces of the same color into a single rectangle. Hollow voxels, the open space under cover,
- * form a layer of their own: between a hollow and a solid voxel, both faces show, each drawn in its turn.
+ * are never drawn: the faces of blocks bordering them are marked instead, as the walls, floors and contents of the
+ * caves and rooms shown when the hologram turns to the hollows.
  * <p>
- * Each vertex is two ints: the position bytes x, y, z and the face ordinal, then the color as ABGR,
- * matching {@link OculusHologramPipeline#VERTEX_FORMAT} once written little endian.
+ * Each vertex is two ints: the position bytes x, y, z and the face byte, the ordinal plus {@link #FACES_HOLLOW},
+ * then the color as ABGR, matching {@link OculusHologramPipeline#VERTEX_FORMAT} once written little endian.
  */
 public final class OculusMesher
 {
@@ -23,13 +24,14 @@ public final class OculusMesher
     public static final int FLOOR_FACE = 6;
     private static final int FLOOR_COLOR = 0xFF000000;
     /**
-     * Alpha that marks hollow voxels, told apart by the shader.
+     * Bit of the face byte set on faces turned toward a hollow.
      */
-    public static final int HOLLOW_ALPHA = 0x40;
+    public static final int FACES_HOLLOW = 8;
     /**
-     * Stands for a hollow voxel of a neighboring chunk, which only decides which faces show.
+     * Marks open space under cover in a volume, here and in the neighbor border. Only decides which faces are marked,
+     * never drawn. Real colors are never this transparent, and solid border voxels are 1.
      */
-    public static final int HOLLOW_BORDER = HOLLOW_ALPHA << 24 | 1;
+    public static final int HOLLOW = 2;
 
     /**
      * Face ordinals follow {@link net.minecraft.core.Direction}: down, up, north, south, west, east.
@@ -103,11 +105,14 @@ public final class OculusMesher
             int vAxis = FACES[face][3];
             int sizeU = volume.size(uAxis);
             int sizeV = volume.size(vAxis);
-            var mask = new int[sizeU * sizeV];
+            // Faces toward open air and faces toward a hollow never merge together
+            var open = new int[sizeU * sizeV];
+            var hollow = new int[sizeU * sizeV];
 
             for (int slice = 0; slice < volume.size(axis); slice++)
             {
-                boolean any = false;
+                boolean anyOpen = false;
+                boolean anyHollow = false;
                 for (int v = 0; v < sizeV; v++)
                 {
                     for (int u = 0; u < sizeU; u++)
@@ -122,15 +127,22 @@ public final class OculusMesher
                         neighbor[2] = position[2];
                         neighbor[axis] += sign;
                         int next = volume.get(neighbor[0], neighbor[1], neighbor[2]);
-                        boolean visible = color != 0 && (next == 0 || isHollow(next) != isHollow(color));
+                        boolean solid = color != 0 && color != HOLLOW;
+                        boolean towardOpen = solid && next == 0;
+                        boolean towardHollow = solid && next == HOLLOW;
 
-                        mask[u + v * sizeU] = visible ? color : 0;
-                        any |= visible;
+                        open[u + v * sizeU] = towardOpen ? color : 0;
+                        hollow[u + v * sizeU] = towardHollow ? color : 0;
+                        anyOpen |= towardOpen;
+                        anyHollow |= towardHollow;
                     }
                 }
 
-                if (any)
-                    mergeSlice(mask, sizeU, sizeV, face, axis, sign > 0 ? slice + 1 : slice, uAxis, vAxis, out);
+                int plane = sign > 0 ? slice + 1 : slice;
+                if (anyOpen)
+                    mergeSlice(open, sizeU, sizeV, face, axis, plane, uAxis, vAxis, out);
+                if (anyHollow)
+                    mergeSlice(hollow, sizeU, sizeV, face | FACES_HOLLOW, axis, plane, uAxis, vAxis, out);
             }
         }
 
@@ -140,11 +152,6 @@ public final class OculusMesher
         Arrays.fill(floor, FLOOR_COLOR);
         mergeSlice(floor, CHUNK, CHUNK, FLOOR_FACE, 1, 0, 2, 0, out);
         return out.toIntArray();
-    }
-
-    public static boolean isHollow(int color)
-    {
-        return color >>> 24 == HOLLOW_ALPHA;
     }
 
     private static void mergeSlice(int[] mask, int sizeU, int sizeV, int face, int axis, int plane, int uAxis, int vAxis, IntArrayList out)
