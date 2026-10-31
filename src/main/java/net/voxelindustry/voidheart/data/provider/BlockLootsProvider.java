@@ -19,5 +19,7 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
     {
         this.dropSelf(VoidHeartBlocks.CUT_RAVENOUS_GOLD);
         this.dropSelf(VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
+        this.dropSelf(VoidHeartBlocks.OCULUS_TABLE);
+        this.dropSelf(VoidHeartBlocks.BEHOLDER);
     }
 }

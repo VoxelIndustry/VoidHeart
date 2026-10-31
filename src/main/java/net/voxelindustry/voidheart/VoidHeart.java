@@ -27,6 +27,12 @@ import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
+import net.voxelindustry.voidheart.common.content.oculus.OculusChunkServer;
+import net.voxelindustry.voidheart.common.content.oculus.OculusControlPayload;
+import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
+import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
+import net.voxelindustry.voidheart.common.content.oculus.OculusSightPayloads;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugView;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
@@ -98,6 +104,19 @@ public class VoidHeart implements ModInitializer
         PayloadTypeRegistry.clientboundPlay().register(LeyDebugPayload.TYPE, LeyDebugPayload.CODEC);
         ServerTickEvents.END_SERVER_TICK.register(LeyDebugView::tickServer);
 
+        PayloadTypeRegistry.serverboundPlay().register(OculusControlPayload.TYPE, OculusControlPayload.STREAM_CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(OculusControlPayload.TYPE, OculusControlPayload::handle);
+        OculusChunkPayloads.register();
+        ServerPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Request.TYPE, OculusChunkServer::handle);
+        ServerTickEvents.END_SERVER_TICK.register(OculusChunkServer::tick);
+        OculusEntityPayloads.register();
+        ServerPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Request.TYPE, OculusEntityPayloads::handle);
+        OculusLeyPayloads.register();
+        ServerPlayNetworking.registerGlobalReceiver(OculusLeyPayloads.Request.TYPE, OculusLeyPayloads::handle);
+        OculusSightPayloads.register();
+        ServerPlayNetworking.registerGlobalReceiver(OculusSightPayloads.Request.TYPE, OculusSightPayloads::handleSight);
+        ServerPlayNetworking.registerGlobalReceiver(OculusSightPayloads.ReliefRequest.TYPE, OculusSightPayloads::handleRelief);
+
         AnchorPayloads.register();
         ServerPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelRequest.TYPE, AnchorTravel::handle);
         ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) -> OldAnchors.get(level).ifPresent(anchors -> anchors.onChunkLoad(chunk)));
@@ -110,6 +129,10 @@ public class VoidHeart implements ModInitializer
             OldAnchors.clear();
             AnchorWaypoints.clear();
             AnchorTravel.clear();
+            OculusChunkServer.clear();
+            OculusEntityPayloads.clear();
+            OculusLeyPayloads.clear();
+            OculusSightPayloads.clear();
         });
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));

@@ -27,4 +27,16 @@ public class VoidHeartRenderTypes
             .build();
 
     public static final RenderType GLOW = RenderType.create(MODID + "_glow", RenderSetup.builder(GLOW_PIPELINE).createRenderSetup());
+
+    /**
+     * Same quads blended over what is behind instead of added to it, so their hue survives on bright backgrounds.
+     */
+    private static final RenderPipeline MARKER_PIPELINE = RenderPipeline.builder(RenderPipelines.LIGHTNING_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/marker"))
+            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
+            .withCull(false)
+            .build();
+
+    public static final RenderType MARKER = RenderType.create(MODID + "_marker", RenderSetup.builder(MARKER_PIPELINE).sortOnUpload().createRenderSetup());
 }

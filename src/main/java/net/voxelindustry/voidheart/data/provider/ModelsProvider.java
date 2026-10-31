@@ -5,8 +5,14 @@ import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.model.ItemModelUtils;
+import net.minecraft.client.data.models.model.ModelLocationUtils;
+import net.minecraft.client.data.models.blockstates.MultiPartGenerator;
+import net.minecraft.client.data.models.model.ModelTemplate;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.data.models.model.TextureSlot;
+import net.minecraft.client.data.models.model.TexturedModel;
 import net.minecraft.client.renderer.item.properties.select.ComponentContents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.BlockFamily;
@@ -19,6 +25,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 
 import java.util.List;
+import java.util.Optional;
 
 import static net.minecraft.client.data.models.BlockModelGenerators.plainVariant;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -35,6 +42,19 @@ public class ModelsProvider extends FabricModelProvider
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "permeable_barrier"
     );
+
+    /**
+     * A cube cut to the table height, hand-written in assets/voidheart/models/block.
+     */
+    private static final ModelTemplate OCULUS_TABLE_TEMPLATE = new ModelTemplate(
+            Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table")), Optional.empty(),
+            TextureSlot.TOP, TextureSlot.SIDE, TextureSlot.BOTTOM);
+    private static final ModelTemplate OCULUS_TABLE_BORDER_TEMPLATE = new ModelTemplate(
+            Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table_border")), Optional.of("_border"),
+            TextureSlot.SIDE);
+    private static final ModelTemplate OCULUS_TABLE_ITEM_TEMPLATE = new ModelTemplate(
+            Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table_inventory")), Optional.of("_inventory"),
+            TextureSlot.TOP, TextureSlot.SIDE, TextureSlot.BOTTOM);
 
     private BlockModelGenerators generator;
 
@@ -56,6 +76,37 @@ public class ModelsProvider extends FabricModelProvider
         registerPillarStairs(VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS);
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
+
+        registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
+        registerBeholder(VoidHeartBlocks.BEHOLDER);
+    }
+
+    /**
+     * The pedestal, its floating eye drawn apart. The hand-written item model holds the eye too.
+     */
+    private void registerBeholder(Block beholder)
+    {
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(beholder, plainVariant(ModelLocationUtils.getModelLocation(beholder))));
+        generator.registerSimpleItemModel(beholder, ModelLocationUtils.getModelLocation(beholder, "_inventory"));
+    }
+
+    /**
+     * The table base, with a border along each side no other table block stands against.
+     */
+    private void registerOculusTable(Block table)
+    {
+        var textures = TextureMapping.cubeBottomTop(table).put(TextureSlot.BOTTOM, TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_POLISHED));
+        var base = plainVariant(OCULUS_TABLE_TEMPLATE.create(table, textures, generator.modelOutput));
+        var border = plainVariant(OCULUS_TABLE_BORDER_TEMPLATE.create(table, textures, generator.modelOutput));
+        var item = OCULUS_TABLE_ITEM_TEMPLATE.create(table, textures, generator.modelOutput);
+
+        generator.blockStateOutput.accept(MultiPartGenerator.multiPart(table)
+                .with(base)
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.NORTH, false), border)
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.EAST, false), border.with(BlockModelGenerators.Y_ROT_90))
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.SOUTH, false), border.with(BlockModelGenerators.Y_ROT_180))
+                .with(BlockModelGenerators.condition().term(BlockStateProperties.WEST, false), border.with(BlockModelGenerators.Y_ROT_270)));
+        generator.registerSimpleItemModel(table, item);
     }
 
     @Override

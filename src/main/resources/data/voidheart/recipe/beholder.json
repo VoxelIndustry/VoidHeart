@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " E ",
+    " P ",
+    "PPP"
+  ],
+  "key": {
+    "E": "minecraft:ender_eye",
+    "P": "voidheart:voidstone_polished"
+  },
+  "result": {
+    "id": "voidheart:beholder",
+    "count": 1
+  }
+}

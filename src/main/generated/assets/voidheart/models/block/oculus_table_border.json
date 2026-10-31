@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:block/template_oculus_table_border",
+  "textures": {
+    "side": "voidheart:block/oculus_table_side"
+  }
+}

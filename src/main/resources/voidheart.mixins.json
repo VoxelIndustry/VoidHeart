@@ -9,7 +9,10 @@
     "MixinStableLifecycle"
   ],
   "client": [
-    "client.MixinClientLevelBarrierDisguise"
+    "client.MixinClientLevelBarrierDisguise",
+    "client.MixinLevelExtractorOculus",
+    "client.MixinLevelRendererOculus",
+    "client.MixinMinecraftOculusControls"
   ],
   "injectors": {
     "defaultRequire": 1

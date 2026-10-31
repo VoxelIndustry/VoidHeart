@@ -14,6 +14,8 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleTile;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile;
+import net.voxelindustry.voidheart.common.content.oculus.OculusTableTile;
+import net.voxelindustry.voidheart.common.content.beholder.BeholderTile;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
@@ -36,6 +38,8 @@ public class VoidHeartTiles
     public static BlockEntityType<VoidDoorTile> VOID_DOOR;
 
     public static BlockEntityType<PermeableBarrierTile> PERMEABLE_BARRIER;
+    public static BlockEntityType<OculusTableTile>      OCULUS_TABLE;
+    public static BlockEntityType<BeholderTile>         BEHOLDER;
 
     public static BlockEntityType<ExperienceSkullTile> EXPERIENCE_SKULL;
     public static BlockEntityType<MendingAltarTile> MENDING_ALTAR;
@@ -82,6 +86,14 @@ public class VoidHeartTiles
         registerTile(PERMEABLE_BARRIER =
                         FabricBlockEntityTypeBuilder.create(PermeableBarrierTile::new, VoidHeartBlocks.PERMEABLE_BARRIER).build(),
                 "permeable_barrier");
+
+        registerTile(OCULUS_TABLE =
+                        FabricBlockEntityTypeBuilder.create(OculusTableTile::new, VoidHeartBlocks.OCULUS_TABLE).build(),
+                "oculus_table");
+
+        registerTile(BEHOLDER =
+                        FabricBlockEntityTypeBuilder.create(BeholderTile::new, VoidHeartBlocks.BEHOLDER).build(),
+                "beholder");
 
         registerTile(EXPERIENCE_SKULL =
                         FabricBlockEntityTypeBuilder.create(ExperienceSkullTile::new, VoidHeartBlocks.EXPERIENCE_SKULL).build(),

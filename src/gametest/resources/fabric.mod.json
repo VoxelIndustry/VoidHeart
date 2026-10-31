@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "voidheart-gametest",
+  "version": "1.0.0",
+  "name": "VoidHeart Game Tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "net.voxelindustry.voidheart.gametest.OculusTableClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusControlsClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusRemoteChunksClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusLeyClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusBeholderClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusCavingClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusFigurineClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusPerformanceClientTest"
+    ]
+  },
+  "depends": {
+    "voidheart": "*",
+    "fabric-client-gametest-api-v1": "*"
+  }
+}
