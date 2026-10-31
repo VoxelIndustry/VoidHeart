@@ -45,8 +45,8 @@ public final class OculusMarkers
 
     private static final float PLAYER_SIZE = 0.07F;
     private static final float MOB_SIZE = 0.045F;
-    private static final int PLAYER_COLOR = 0xF2FFFE;
-    private static final int FOLLOWED_COLOR = 0xFFD45A;
+    private static final int PLAYER_COLOR = 0xEFE6FF;
+    private static final int FOLLOWED_COLOR = 0xC77DFF;
     private static final int HOSTILE_COLOR = 0xFF4D4D;
     private static final int PASSIVE_COLOR = 0x7CFF7A;
 

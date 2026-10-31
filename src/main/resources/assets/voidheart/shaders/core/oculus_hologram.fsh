@@ -15,14 +15,32 @@ layout(location = 0) out vec4 fragColor;
 
 // Down, up, north, south, west, east
 const float FACE_SHADE[6] = float[](0.45, 1.0, 0.8, 0.8, 0.65, 0.65);
-const vec3 CUT_COLOR = vec3(0.14, 0.36, 0.34);
-const vec3 GLOW_COLOR = vec3(0.45, 0.95, 0.9);
-const vec3 HOLOGRAM_TINT = vec3(0.88, 1.0, 1.06);
-// Table blocks under the window top over which the land fades out
+// The land is seen through a violet haze, as in a scrying pool
+const vec3 HAZE = vec3(0.42, 0.24, 0.62);
+const float HAZE_STRENGTH = 0.28;
+const vec3 VOID_COLOR = vec3(0.035, 0.012, 0.06);
+const vec3 MOTE_COLOR = vec3(0.78, 0.45, 1.0);
+const vec3 STAR_COLOR = vec3(0.85, 0.7, 1.0);
+// Table blocks under the window top over which the land sinks into the void
 const float TOP_FADE = 0.12;
-// Above one, the outer part of the fade keeps all its pixels and only glows
-const float DITHER_REACH = 2.0;
-const float BAYER[16] = float[](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+// Above one, the outer part of the fade keeps all its pixels and only darkens
+const float DISSOLVE_REACH = 1.6;
+
+float hash(vec3 p) {
+    p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yxz + 33.33);
+    return fract((p.x + p.y) * p.z);
+}
+
+float noise(vec3 p) {
+    vec3 cell = floor(p);
+    vec3 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(hash(cell), hash(cell + vec3(1, 0, 0)), f.x),
+                   mix(hash(cell + vec3(0, 1, 0)), hash(cell + vec3(1, 1, 0)), f.x), f.y),
+               mix(mix(hash(cell + vec3(0, 0, 1)), hash(cell + vec3(1, 0, 1)), f.x),
+                   mix(hash(cell + vec3(0, 1, 1)), hash(cell + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
 
 void main() {
     // Meshes still shown from a previous window may reach past the current one
@@ -35,30 +53,38 @@ void main() {
         discard;
     }
 
-    // Fading by discarding a growing share of a fixed pattern keeps the hologram opaque: no sorting, no blending.
-    // The glow starts further in than the holes so the pixels left near the edge carry it
+    float seconds = GameTime * 1200.0;
+
+    // Toward the table edges and the window top, the land frays away along drifting noise: still opaque, no sorting
     float fade = min(texture(FootprintMask, footprintUv).r, clamp((HoloGeometry.w - holoPos.y) / TOP_FADE, 0.0, 1.0));
-    ivec2 pixel = ivec2(gl_FragCoord.xy) & 3;
-    if (fade * DITHER_REACH < (BAYER[pixel.x + pixel.y * 4] + 0.5) / 16.0) {
+    float drift = noise(holoPos * 24.0 + vec3(0.0, seconds * 0.35, 0.0));
+    if (fade * DISSOLVE_REACH < drift) {
         discard;
     }
-    float glow = 1.0 - smoothstep(0.0, 1.0, fade);
+    float rim = 1.0 - smoothstep(0.0, 1.0, fade);
 
-    // Back faces are only seen through the cut sides of the land. They lie deeper than the cut itself, so any shading
-    // from their own position would read as a pit: a flat color reads as a solid cross section at whatever depth
+    // Back faces are only seen through the cut sides of the land: a window into the void, its stars fixed to the screen
     if (!gl_FrontFacing) {
-        fragColor = vec4(CUT_COLOR, 1.0);
+        vec2 cell = floor(gl_FragCoord.xy / 2.0);
+        float star = step(0.994, hash(vec3(cell, 7.0)));
+        float twinkle = 0.5 + 0.5 * sin(seconds * 2.0 + hash(vec3(cell, 3.0)) * 40.0);
+        fragColor = vec4(VOID_COLOR + STAR_COLOR * star * twinkle * 0.8, 1.0);
         return;
     }
 
-    vec3 color = vertexColor.rgb * FACE_SHADE[face] * HOLOGRAM_TINT;
-    float ticks = GameTime * 24000.0;
-    // Bands climb the height, so only sides show them as lines: a flat top or bottom would light up whole at once
-    if (face >= 2u) {
-        float scanline = 1.0 - smoothstep(0.0, 0.04, abs(fract(holoPos.y * 5.0 - ticks * 0.015) - 0.5));
-        color += GLOW_COLOR * scanline * 0.12;
-    }
-    color = mix(color, GLOW_COLOR, glow * 0.85);
+    vec3 color = vertexColor.rgb * FACE_SHADE[face];
+    color = mix(color, color * HAZE * 1.6, HAZE_STRENGTH);
+
+    // Slow ripples spread from the middle of the table across the land, like a disturbed pool
+    float distance = length(holoPos.xz - HoloGeometry.xy * 0.5);
+    float ripple = sin(distance * 9.0 - seconds * 1.4) * 0.5 + 0.5;
+    color *= 0.92 + 0.1 * ripple;
+    color += HAZE * pow(ripple, 8.0) * 0.06;
+
+    // Near the edges the land sinks into darkness, lit by sparse violet motes
+    color = mix(color, VOID_COLOR, rim * 0.85);
+    float mote = step(0.93, noise(holoPos * 60.0 + vec3(seconds * 0.2, seconds * 0.5, 0.0)));
+    color += MOTE_COLOR * mote * rim * 0.9;
 
     fragColor = vec4(color, 1.0);
 }

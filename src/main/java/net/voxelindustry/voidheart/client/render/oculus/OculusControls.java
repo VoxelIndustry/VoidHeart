@@ -37,14 +37,18 @@ public final class OculusControls
     private static final int FULL_BRIGHT = 0xF000F0;
     private static final float TEXT_SCALE = 1 / 110F;
 
-    private static final int TEAL = 0x5BE3D2;
-    private static final int FRAME_ALPHA = 190;
-    private static final int FILL_ALPHA = 40;
-    private static final int HOVER_FILL_ALPHA = 110;
-    private static final int ICON_ALPHA = 150;
-    private static final int ACTIVE_ICON_ALPHA = 255;
-    private static final float FRAME = 0.012F;
-    private static final float STROKE = 0.022F;
+    private static final int VIOLET = 0xB45CFF;
+    private static final int SYMBOL_BRIGHT = 0xFFEAD9FF;
+    private static final int SYMBOL_DIM_ALPHA = 110;
+    private static final int AURA_ALPHA = 30;
+    private static final int AURA_GAZED_ALPHA = 90;
+    private static final int RING_ALPHA = 170;
+    private static final int RUNE_ALPHA = 130;
+    private static final int RUNE_MARKS = 9;
+    private static final int CIRCLE_SEGMENTS = 24;
+    private static final float STROKE = 0.012F;
+    private static final int STATUS_COLOR = 0xFFCDB4FF;
+    private static final int HINT_COLOR = 0xFFF0E6FF;
 
     private static final Map<BlockPos, OculusControlPanel> PANELS = new HashMap<>();
 
@@ -87,8 +91,11 @@ public final class OculusControls
             var offset = panel.center().subtract(cameraState.pos);
             poseStack.translate(offset.x, offset.y, offset.z);
             var hoveredButton = hovered != null && hovered.projector() == projector ? hovered.button() : null;
+            float seconds = (System.nanoTime() % 3_600_000_000_000L) / 1E9F;
             collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
-                    drawButtons(new Plane(pose, buffer, panel), projector.view(), hoveredButton));
+                    drawAuras(new Plane(pose, buffer, panel), hoveredButton));
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.MARKER, (pose, buffer) ->
+                    drawSigils(new Plane(pose, buffer, panel), projector.view(), hoveredButton, seconds));
             drawLabels(poseStack, collector, panel, projector.view(), hoveredButton);
             poseStack.popPose();
         }
@@ -195,21 +202,66 @@ public final class OculusControls
             vertex(x1 + sideX, y1 + sideY, z, color);
             vertex(x0 + sideX, y0 + sideY, z, color);
         }
+
+        /**
+         * A soft disc, as a fan of triangles folded into quads.
+         */
+        void disc(float x, float y, float radius, float z, int color)
+        {
+            for (int i = 0; i < CIRCLE_SEGMENTS; i++)
+            {
+                double from = i * Math.PI * 2 / CIRCLE_SEGMENTS;
+                double to = (i + 1) * Math.PI * 2 / CIRCLE_SEGMENTS;
+                vertex(x, y, z, color);
+                vertex(x, y, z, color);
+                vertex(x + (float) Math.cos(to) * radius, y + (float) Math.sin(to) * radius, z, color);
+                vertex(x + (float) Math.cos(from) * radius, y + (float) Math.sin(from) * radius, z, color);
+            }
+        }
+
+        /**
+         * A stroked arc around a center, angles in radians.
+         */
+        void arc(float x, float y, float radius, double from, double to, int segments, float z, int color)
+        {
+            for (int i = 0; i < segments; i++)
+            {
+                double a0 = from + (to - from) * i / segments;
+                double a1 = from + (to - from) * (i + 1) / segments;
+                line(x + (float) Math.cos(a0) * radius, y + (float) Math.sin(a0) * radius,
+                        x + (float) Math.cos(a1) * radius, y + (float) Math.sin(a1) * radius, z, color);
+            }
+        }
     }
 
-    private static void drawButtons(Plane plane, OculusView view, @Nullable Button hoveredButton)
+    /**
+     * Each button is a sigil: a dim aura, a ring of turning rune marks and a carved symbol in the middle.
+     * Gazing at one makes its aura flare and its runes turn faster.
+     */
+    private static void drawAuras(Plane plane, @Nullable Button hoveredButton)
     {
-        float half = OculusControlPanel.BUTTON / 2;
+        for (var button : Button.values())
+            plane.disc(button.offset(), 0, OculusControlPanel.BUTTON * 0.62F, 0, violet(button == hoveredButton ? AURA_GAZED_ALPHA : AURA_ALPHA));
+    }
+
+    private static void drawSigils(Plane plane, OculusView view, @Nullable Button hoveredButton, float seconds)
+    {
+        float radius = OculusControlPanel.BUTTON / 2;
         for (var button : Button.values())
         {
-            float center = button.offset();
-            plane.rect(center - half, -half, center + half, half, 0, teal(button == hoveredButton ? HOVER_FILL_ALPHA : FILL_ALPHA));
+            float x = button.offset();
+            boolean gazed = button == hoveredButton;
+            plane.arc(x, 0, radius, 0, Math.PI * 2, CIRCLE_SEGMENTS, 0.002F, violet(gazed ? 255 : RING_ALPHA));
 
-            int frame = teal(FRAME_ALPHA);
-            plane.rect(center - half, half - FRAME, center + half, half, 0.002F, frame);
-            plane.rect(center - half, -half, center + half, -half + FRAME, 0.002F, frame);
-            plane.rect(center - half, -half + FRAME, center - half + FRAME, half - FRAME, 0.002F, frame);
-            plane.rect(center + half - FRAME, -half + FRAME, center + half, half - FRAME, 0.002F, frame);
+            // Marks of uneven length, as if carved, turning around the ring
+            double turn = seconds * (gazed ? 1.2 : 0.25) * (button.ordinal() % 2 == 0 ? 1 : -1);
+            for (int mark = 0; mark < RUNE_MARKS; mark++)
+            {
+                double angle = turn + mark * Math.PI * 2 / RUNE_MARKS;
+                float inner = radius * (0.68F + 0.12F * ((mark * 7 + button.ordinal() * 3) % 4) / 3);
+                plane.line(x + (float) Math.cos(angle) * inner, (float) Math.sin(angle) * inner,
+                        x + (float) Math.cos(angle) * radius * 0.88F, (float) Math.sin(angle) * radius * 0.88F, 0.003F, violet(gazed ? 230 : RUNE_ALPHA));
+            }
 
             boolean active = switch (button)
             {
@@ -218,50 +270,52 @@ public final class OculusControls
                 case FOLLOW -> view.follow().isPresent();
                 case LEY_LINES -> view.leyLines();
             };
-            drawIcon(plane, button, center, teal(active ? ACTIVE_ICON_ALPHA : ICON_ALPHA / 2));
+            drawSymbol(plane, button, x, active || gazed ? SYMBOL_BRIGHT : ARGB.color(SYMBOL_DIM_ALPHA, ARGB.red(SYMBOL_BRIGHT), ARGB.green(SYMBOL_BRIGHT), ARGB.blue(SYMBOL_BRIGHT)));
         }
     }
 
-    private static void drawIcon(Plane plane, Button button, float x, int color)
+    private static void drawSymbol(Plane plane, Button button, float x, int color)
     {
         float z = 0.004F;
         switch (button)
         {
-            case ZOOM_OUT -> plane.line(x - 0.06F, 0, x + 0.06F, 0, z, color);
+            // An eye opening wide on the land
             case ZOOM_IN ->
             {
-                plane.line(x - 0.06F, 0, x + 0.06F, 0, z, color);
-                plane.line(x, -0.06F, x, 0.06F, z, color);
+                plane.arc(x, -0.035F, 0.055F, Math.PI * 0.2, Math.PI * 0.8, 6, z, color);
+                plane.arc(x, 0.035F, 0.055F, Math.PI * 1.2, Math.PI * 1.8, 6, z, color);
+                plane.disc(x, 0, 0.016F, z, color);
             }
+            // The same eye closing, its lashes down
+            case ZOOM_OUT ->
+            {
+                plane.arc(x, 0.035F, 0.055F, Math.PI * 1.2, Math.PI * 1.8, 6, z, color);
+                plane.line(x - 0.025F, -0.012F, x - 0.035F, -0.035F, z, color);
+                plane.line(x, -0.017F, x, -0.042F, z, color);
+                plane.line(x + 0.025F, -0.012F, x + 0.035F, -0.035F, z, color);
+            }
+            // A watching sign: a downturned triangle holding an eye's pupil
             case FOLLOW ->
             {
-                // A reticle: four corner ticks around a dot
-                float outer = 0.065F, inner = 0.03F;
-                plane.line(x - outer, outer, x - inner, outer, z, color);
-                plane.line(x + inner, outer, x + outer, outer, z, color);
-                plane.line(x - outer, -outer, x - inner, -outer, z, color);
-                plane.line(x + inner, -outer, x + outer, -outer, z, color);
-                plane.line(x - outer, outer, x - outer, inner, z, color);
-                plane.line(x - outer, -inner, x - outer, -outer, z, color);
-                plane.line(x + outer, outer, x + outer, inner, z, color);
-                plane.line(x + outer, -inner, x + outer, -outer, z, color);
-                plane.rect(x - 0.015F, -0.015F, x + 0.015F, 0.015F, z, color);
+                plane.line(x - 0.05F, 0.035F, x + 0.05F, 0.035F, z, color);
+                plane.line(x + 0.05F, 0.035F, x, -0.05F, z, color);
+                plane.line(x, -0.05F, x - 0.05F, 0.035F, z, color);
+                plane.disc(x, 0.008F, 0.014F, z, color);
             }
+            // A ley line winding between two nodes
             case LEY_LINES ->
             {
-                // A ley line winding between two nodes
-                plane.line(x - 0.07F, -0.04F, x - 0.02F, 0.04F, z, color);
-                plane.line(x - 0.02F, 0.04F, x + 0.02F, -0.04F, z, color);
-                plane.line(x + 0.02F, -0.04F, x + 0.07F, 0.04F, z, color);
-                plane.rect(x - 0.085F, -0.055F, x - 0.055F, -0.025F, z, color);
-                plane.rect(x + 0.055F, 0.025F, x + 0.085F, 0.055F, z, color);
+                plane.arc(x - 0.025F, 0, 0.025F, Math.PI, Math.PI * 2, 5, z, color);
+                plane.arc(x + 0.025F, 0, 0.025F, 0, Math.PI, 5, z, color);
+                plane.disc(x - 0.058F, 0, 0.012F, z, color);
+                plane.disc(x + 0.058F, 0, 0.012F, z, color);
             }
         }
     }
 
-    private static int teal(int alpha)
+    private static int violet(int alpha)
     {
-        return ARGB.color(alpha, ARGB.red(TEAL), ARGB.green(TEAL), ARGB.blue(TEAL));
+        return ARGB.color(alpha, ARGB.red(VIOLET), ARGB.green(VIOLET), ARGB.blue(VIOLET));
     }
 
     private static void drawLabels(PoseStack poseStack, SubmitNodeCollector collector, OculusControlPanel panel, OculusView view, @Nullable Button hoveredButton)
@@ -270,9 +324,9 @@ public final class OculusControls
         poseStack.pushPose();
         poseStack.rotate(new Quaternionf().rotationY((float) Math.atan2(-right.z, right.x)));
 
-        drawText(poseStack, collector, status(view), OculusControlPanel.BUTTON / 2 + 0.07F, 0xFF9FF3E8);
+        drawText(poseStack, collector, status(view), OculusControlPanel.BUTTON / 2 + 0.07F, STATUS_COLOR);
         if (hoveredButton != null)
-            drawText(poseStack, collector, hint(hoveredButton, view), -OculusControlPanel.BUTTON / 2 - 0.05F, 0xFFE8FFFC);
+            drawText(poseStack, collector, hint(hoveredButton, view), -OculusControlPanel.BUTTON / 2 - 0.05F, HINT_COLOR);
         poseStack.popPose();
     }
 
