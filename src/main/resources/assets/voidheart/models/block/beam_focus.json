@@ -1,0 +1,147 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "voidheart:block/voidstone_polished",
+    "stone": "voidheart:block/voidstone_polished",
+    "gold": "voidheart:block/ravenous_gold_block",
+    "output": "voidheart:block/conduit/conduit_lit1",
+    "prism": "voidheart:block/beam_focus_prism"
+  },
+  "elements": [
+    {
+      "name": "plinth",
+      "from": [1, 0, 1],
+      "to": [15, 3, 15],
+      "faces": {
+        "north": {"uv": [1, 13, 15, 16], "texture": "#output"},
+        "east": {"uv": [1, 13, 15, 16], "texture": "#stone"},
+        "south": {"uv": [1, 13, 15, 16], "texture": "#stone"},
+        "west": {"uv": [1, 13, 15, 16], "texture": "#stone"},
+        "up": {"uv": [1, 1, 15, 15], "texture": "#stone"},
+        "down": {"uv": [1, 1, 15, 15], "texture": "#stone", "cullface": "down"}
+      }
+    },
+    {
+      "name": "column",
+      "from": [4, 3, 4],
+      "to": [12, 10, 12],
+      "faces": {
+        "north": {"uv": [4, 6, 12, 13], "texture": "#output"},
+        "east": {"uv": [4, 6, 12, 13], "texture": "#stone"},
+        "south": {"uv": [4, 6, 12, 13], "texture": "#stone"},
+        "west": {"uv": [4, 6, 12, 13], "texture": "#stone"}
+      }
+    },
+    {
+      "name": "cap",
+      "from": [2, 10, 2],
+      "to": [14, 12, 14],
+      "faces": {
+        "north": {"uv": [2, 4, 14, 6], "texture": "#stone"},
+        "east": {"uv": [2, 4, 14, 6], "texture": "#stone"},
+        "south": {"uv": [2, 4, 14, 6], "texture": "#stone"},
+        "west": {"uv": [2, 4, 14, 6], "texture": "#stone"},
+        "up": {"uv": [2, 2, 14, 14], "texture": "#gold"},
+        "down": {"uv": [2, 2, 14, 14], "texture": "#stone"}
+      }
+    },
+    {
+      "name": "claw_nw",
+      "from": [3, 12, 3],
+      "to": [5, 16, 5],
+      "faces": {
+        "north": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "east": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "south": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "west": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "up": {"uv": [3, 3, 5, 5], "texture": "#gold"}
+      }
+    },
+    {
+      "name": "claw_ne",
+      "from": [11, 12, 3],
+      "to": [13, 16, 5],
+      "faces": {
+        "north": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "east": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "south": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "west": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "up": {"uv": [11, 3, 13, 5], "texture": "#gold"}
+      }
+    },
+    {
+      "name": "claw_sw",
+      "from": [3, 12, 11],
+      "to": [5, 16, 13],
+      "faces": {
+        "north": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "east": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "south": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "west": {"uv": [3, 0, 5, 4], "texture": "#gold"},
+        "up": {"uv": [3, 11, 5, 13], "texture": "#gold"}
+      }
+    },
+    {
+      "name": "claw_se",
+      "from": [11, 12, 11],
+      "to": [13, 16, 13],
+      "faces": {
+        "north": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "east": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "south": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "west": {"uv": [11, 0, 13, 4], "texture": "#gold"},
+        "up": {"uv": [11, 11, 13, 13], "texture": "#gold"}
+      }
+    },
+    {
+      "name": "prism",
+      "from": [5.5, 18, 5.5],
+      "to": [10.5, 25.5, 10.5],
+      "rotation": {"angle": 45, "axis": "y", "origin": [8, 21.75, 8]},
+      "light_emission": 12,
+      "faces": {
+        "north": {"uv": [0, 0, 16, 16], "texture": "#prism"},
+        "east": {"uv": [0, 0, 16, 16], "texture": "#prism"},
+        "south": {"uv": [0, 0, 16, 16], "texture": "#prism"},
+        "west": {"uv": [0, 0, 16, 16], "texture": "#prism"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#prism"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#prism"}
+      }
+    },
+    {
+      "name": "prism_top",
+      "from": [6.5, 25.5, 6.5],
+      "to": [9.5, 27, 9.5],
+      "rotation": {"angle": 45, "axis": "y", "origin": [8, 21.75, 8]},
+      "light_emission": 12,
+      "faces": {
+        "north": {"uv": [5, 0, 11, 3], "texture": "#prism"},
+        "east": {"uv": [5, 0, 11, 3], "texture": "#prism"},
+        "south": {"uv": [5, 0, 11, 3], "texture": "#prism"},
+        "west": {"uv": [5, 0, 11, 3], "texture": "#prism"},
+        "up": {"uv": [5, 5, 11, 11], "texture": "#prism"}
+      }
+    },
+    {
+      "name": "prism_bottom",
+      "from": [6.5, 16.5, 6.5],
+      "to": [9.5, 18, 9.5],
+      "rotation": {"angle": 45, "axis": "y", "origin": [8, 21.75, 8]},
+      "light_emission": 12,
+      "faces": {
+        "north": {"uv": [5, 13, 11, 16], "texture": "#prism"},
+        "east": {"uv": [5, 13, 11, 16], "texture": "#prism"},
+        "south": {"uv": [5, 13, 11, 16], "texture": "#prism"},
+        "west": {"uv": [5, 13, 11, 16], "texture": "#prism"},
+        "down": {"uv": [5, 5, 11, 11], "texture": "#prism"}
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, -2.5, 0],
+      "scale": [0.5, 0.5, 0.5]
+    }
+  }
+}

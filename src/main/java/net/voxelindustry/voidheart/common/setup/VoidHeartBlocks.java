@@ -27,9 +27,11 @@ import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.item.LoreBlockItem;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
+import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlockItem;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageItemBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
@@ -125,6 +127,7 @@ public class VoidHeartBlocks
 
     public static Block SHATTER_FORGE;
     public static Block VOID_CONDUIT;
+    public static Block BEAM_FOCUS;
 
     public static Block ARROGANT_IRON_BLOCK;
     public static Block CUT_ARROGANT_IRON;
@@ -317,6 +320,7 @@ public class VoidHeartBlocks
 
         SHATTER_FORGE = registerBlock("shatter_forge", ShatterForgeBlock::new, BlockBehaviour.Properties.of(), true);
         VOID_CONDUIT = registerBlock("void_conduit", VoidConduitBlock::new, BlockBehaviour.Properties.of(), true);
+        BEAM_FOCUS = registerBlock("beam_focus", BeamFocusBlock::new, BlockBehaviour.Properties.of(), true);
 
         ARROGANT_IRON_BLOCK = registerBlock("arrogant_iron_block", Block::new, BlockBehaviour.Properties.of()
                         .mapColor(MapColor.COLOR_PURPLE)
@@ -350,18 +354,19 @@ public class VoidHeartBlocks
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
-                .sound(SoundType.STONE), true);
+                .sound(SoundType.STONE), RavenousStorageBlockItem::new);
         RAVENOUS_STORAGE_MATRIX = registerBlock("ravenous_storage_matrix", RavenousStorageMatrixBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
-                .sound(SoundType.STONE), true);
+                .sound(SoundType.STONE), RavenousStorageBlockItem::new);
         RAVENOUS_RELAY = registerBlock("ravenous_relay", RavenousRelayBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
+                .noOcclusion()
                 .sound(SoundType.STONE), true);
 
         VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, "voidstone_pillar");

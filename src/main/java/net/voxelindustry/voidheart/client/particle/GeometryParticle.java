@@ -15,6 +15,8 @@ import net.minecraft.client.renderer.state.level.ParticleGroupRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Particle writing its own vertices, for shapes that are not a single camera facing square.
@@ -24,7 +26,11 @@ public abstract class GeometryParticle extends Particle
 {
     public static final ParticleRenderType GEOMETRY = new ParticleRenderType("voidheart:geometry", "VHG");
 
-    private static final RenderType RENDER_TYPE = RenderTypes.entityTranslucent(TextureAtlas.LOCATION_PARTICLES);
+    protected static final RenderType TRANSLUCENT = RenderTypes.entityTranslucent(TextureAtlas.LOCATION_PARTICLES);
+    /**
+     * Ignores the world light and face shading, for particles that glow in the dark.
+     */
+    protected static final RenderType EMISSIVE    = RenderTypes.entityTranslucentEmissive(TextureAtlas.LOCATION_PARTICLES);
 
     protected float rCol  = 1.0F;
     protected float gCol  = 1.0F;
@@ -48,6 +54,11 @@ public abstract class GeometryParticle extends Particle
 
     public abstract void render(VertexConsumer buffer, Camera camera, float partialTick);
 
+    protected RenderType renderType()
+    {
+        return TRANSLUCENT;
+    }
+
     @Override
     public ParticleRenderType getGroup()
     {
@@ -69,18 +80,15 @@ public abstract class GeometryParticle extends Particle
         @Override
         public ParticleGroupRenderState extractRenderState(Frustum frustum, Camera camera, float partialTick)
         {
-            var visible = new ArrayList<GeometryParticle>();
+            var visible = new LinkedHashMap<RenderType, List<GeometryParticle>>();
             for (var particle : particles)
             {
                 if (particle.isVisible(frustum))
-                    visible.add(particle);
+                    visible.computeIfAbsent(particle.renderType(), type -> new ArrayList<>()).add(particle);
             }
 
-            return (collector, cameraState) ->
-            {
-                if (!visible.isEmpty())
-                    collector.submitCustomGeometry(new PoseStack(), RENDER_TYPE, (pose, buffer) -> visible.forEach(particle -> particle.render(buffer, camera, partialTick)));
-            };
+            return (collector, cameraState) -> visible.forEach((renderType, group) ->
+                    collector.submitCustomGeometry(new PoseStack(), renderType, (pose, buffer) -> group.forEach(particle -> particle.render(buffer, camera, partialTick))));
         }
     }
 }

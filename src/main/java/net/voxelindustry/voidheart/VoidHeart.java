@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -24,6 +25,7 @@ import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
+import net.voxelindustry.voidheart.common.content.altar.AltarExperienceParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
@@ -61,9 +63,11 @@ public class VoidHeart implements ModInitializer
     public static ResourceKey<DimensionType> VOID_DIMENSION_KEY;
     public static ParticleType<AltarVoidParticleEffect> ALTAR_VOID_PARTICLE;
     public static ParticleType<AltarItemParticleEffect> ALTAR_ITEM_PARTICLE;
+    public static ParticleType<AltarExperienceParticleEffect> ALTAR_EXPERIENCE_PARTICLE;
     public static ParticleType<PortalFrameParticleEffect> PORTAL_FRAME_PARTICLE;
     public static ParticleType<ShatterForgeRuneParticleEffect> SHATTER_FORGE_RUNE_PARTICLE;
     public static ParticleType<ShatterForgeItemParticleEffect> SHATTER_FORGE_ITEM_PARTICLE;
+    public static SimpleParticleType SHATTER_FORGE_EXPERIENCE_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
 
@@ -125,11 +129,15 @@ public class VoidHeart implements ModInitializer
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "altar_item"), ALTAR_ITEM_PARTICLE = FabricParticleTypes.complex(true, AltarItemParticleEffect.CODEC, AltarItemParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
+                Identifier.fromNamespaceAndPath(MODID, "altar_experience"), ALTAR_EXPERIENCE_PARTICLE = FabricParticleTypes.complex(true, AltarExperienceParticleEffect.CODEC, AltarExperienceParticleEffect.STREAM_CODEC));
+        Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "portal_frame"), PORTAL_FRAME_PARTICLE = FabricParticleTypes.complex(true, PortalFrameParticleEffect.CODEC, PortalFrameParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_rune"), SHATTER_FORGE_RUNE_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeRuneParticleEffect.CODEC, ShatterForgeRuneParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_item"), SHATTER_FORGE_ITEM_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeItemParticleEffect.CODEC, ShatterForgeItemParticleEffect.STREAM_CODEC));
+        Registry.register(BuiltInRegistries.PARTICLE_TYPE,
+                Identifier.fromNamespaceAndPath(MODID, "shatter_forge_experience"), SHATTER_FORGE_EXPERIENCE_PARTICLE = FabricParticleTypes.simple(true));
 
         EssenceRegistry.bootstrap();
     }

@@ -1,0 +1,6 @@
+{
+  "replace": false,
+  "sources": [
+    {"type": "single", "resource": "minecraft:entity/experience/experience_orb"}
+  ]
+}
