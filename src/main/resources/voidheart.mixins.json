@@ -9,7 +9,8 @@
     "MixinStableLifecycle"
   ],
   "client": [
-    "client.MixinClientLevelBarrierDisguise"
+    "client.MixinClientLevelBarrierDisguise",
+    "client.MixinLevelRendererOculus"
   ],
   "injectors": {
     "defaultRequire": 1

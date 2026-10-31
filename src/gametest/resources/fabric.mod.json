@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "voidheart-gametest",
+  "version": "1.0.0",
+  "name": "VoidHeart Game Tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "net.voxelindustry.voidheart.gametest.OculusTableClientTest"
+    ]
+  },
+  "depends": {
+    "voidheart": "*",
+    "fabric-client-gametest-api-v1": "*"
+  }
+}
