@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -280,6 +281,11 @@ public final class OculusRenderer
         }
         renderPass.popDebugGroup();
         FRAME_DRAWS.clear();
+    }
+
+    static Collection<OculusProjector> projectors()
+    {
+        return PROJECTORS.values();
     }
 
     /**

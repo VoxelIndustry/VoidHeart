@@ -31,6 +31,7 @@ import net.voxelindustry.voidheart.client.render.EyeBottleRender;
 import net.voxelindustry.voidheart.client.render.FloatingItemRender;
 import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
 import net.voxelindustry.voidheart.client.render.LeyDebugRender;
+import net.voxelindustry.voidheart.client.render.oculus.OculusControls;
 import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
@@ -80,7 +81,9 @@ public class VoidHeartClient implements ClientModInitializer
             LeyDebugRender.clear();
             AnchorWaypointRender.clear();
             OculusRenderer.clear();
+            OculusControls.clear();
         });
+        LevelRenderEvents.COLLECT_SUBMITS.register(OculusControls::collectSubmits);
 
         ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.register(OculusRenderer::onLoad);
         ClientBlockEntityEvents.BLOCK_ENTITY_UNLOAD.register(OculusRenderer::onUnload);

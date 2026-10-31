@@ -11,7 +11,8 @@
   "client": [
     "client.MixinClientLevelBarrierDisguise",
     "client.MixinLevelExtractorOculus",
-    "client.MixinLevelRendererOculus"
+    "client.MixinLevelRendererOculus",
+    "client.MixinMinecraftOculusControls"
   ],
   "injectors": {
     "defaultRequire": 1

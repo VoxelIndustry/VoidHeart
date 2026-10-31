@@ -57,6 +57,7 @@ final class OculusProjector implements AutoCloseable
     final BlockPos anchor;
 
     private OculusFootprint footprint;
+    private OculusView view = OculusView.DEFAULT;
     private int scale;
     private double centerX;
     private double centerZ;
@@ -92,6 +93,7 @@ final class OculusProjector implements AutoCloseable
 
     void update(ClientLevel level, OculusFootprint footprint, OculusView view)
     {
+        this.view = view;
         if (!footprint.equals(this.footprint))
         {
             this.footprint = footprint;
@@ -329,6 +331,16 @@ final class OculusProjector implements AutoCloseable
     @Nullable DynamicTexture mask()
     {
         return mask;
+    }
+
+    OculusFootprint footprint()
+    {
+        return footprint;
+    }
+
+    OculusView view()
+    {
+        return view;
     }
 
     List<OculusChunkMesh> meshes()

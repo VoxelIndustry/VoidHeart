@@ -6,7 +6,8 @@
   "environment": "*",
   "entrypoints": {
     "fabric-client-gametest": [
-      "net.voxelindustry.voidheart.gametest.OculusTableClientTest"
+      "net.voxelindustry.voidheart.gametest.OculusTableClientTest",
+      "net.voxelindustry.voidheart.gametest.OculusControlsClientTest"
     ]
   },
   "depends": {
