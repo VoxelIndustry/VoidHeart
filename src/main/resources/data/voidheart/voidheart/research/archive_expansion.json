@@ -1,0 +1,9 @@
+{
+  "tier": 1,
+  "row": 2,
+  "icon": "minecraft:chiseled_bookshelf",
+  "insight_cost": 1,
+  "knowledge_cost": 20,
+  "knowledge_per_second": 0.25,
+  "cap_bonus": 220
+}

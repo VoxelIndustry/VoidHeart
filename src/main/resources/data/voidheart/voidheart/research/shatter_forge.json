@@ -1,0 +1,15 @@
+{
+  "tier": 2,
+  "row": 0,
+  "icon": "voidheart:shatter_forge",
+  "insight_cost": 6,
+  "knowledge_cost": 150,
+  "knowledge_per_second": 0.75,
+  "requires": [
+    "voidheart:void_flesh"
+  ],
+  "recipes": [
+    "voidheart:altar/shatter_forge",
+    "voidheart:void_monolith"
+  ]
+}

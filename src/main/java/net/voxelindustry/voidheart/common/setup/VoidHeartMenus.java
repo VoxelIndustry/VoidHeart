@@ -10,17 +10,24 @@ import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierConfigurePayload;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePayload;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierMenu;
+import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryMenu;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartMenus
 {
     public static ExtendedMenuType<PermeableBarrierMenu, BlockPos> PERMEABLE_BARRIER;
+    public static ExtendedMenuType<KnowledgeRepositoryMenu, BlockPos> KNOWLEDGE_REPOSITORY;
 
     public static void registerMenus()
     {
         PERMEABLE_BARRIER = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "permeable_barrier"),
                 new ExtendedMenuType<>(PermeableBarrierMenu::new, BlockPos.STREAM_CODEC));
+
+        KNOWLEDGE_REPOSITORY = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "knowledge_repository"),
+                new ExtendedMenuType<>(KnowledgeRepositoryMenu::new, BlockPos.STREAM_CODEC));
+        KnowledgePayloads.register();
 
         PayloadTypeRegistry.clientboundPlay().register(BarrierWavePayload.TYPE, BarrierWavePayload.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(BarrierConfigurePayload.TYPE, BarrierConfigurePayload.STREAM_CODEC);

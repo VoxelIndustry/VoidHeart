@@ -49,6 +49,19 @@ public class AdvancementsProvider extends FabricAdvancementProvider
                 .build(Identifier.fromNamespaceAndPath(MODID, "root"));
         consumer.accept(rootAdvancement);
 
+        consumer.accept(Advancement.Builder.advancement()
+                .parent(rootAdvancement)
+                .display(
+                        VoidHeartItems.KNOWLEDGE_TABLET.asItem(),
+                        Component.literal("Knowledge Tablet"),                        Component.literal("Something was written on the monolith. Place it on a Void Pillar"),
+                        AdvancementType.TASK,
+                        true,
+                        true,
+                        false
+                )
+                .addCriterion("got_knowledge_tablet", InventoryChangeTrigger.TriggerInstance.hasItems(VoidHeartItems.KNOWLEDGE_TABLET))
+                .build(Identifier.fromNamespaceAndPath(MODID, "knowledge_tablet")));
+
         var altarAdvancement = Advancement.Builder.advancement()
                 .parent(rootAdvancement)
                 .display(

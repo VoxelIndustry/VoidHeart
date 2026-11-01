@@ -1,0 +1,20 @@
+{
+  "tier": 1,
+  "row": 1,
+  "icon": "voidheart:void_amalgam",
+  "insight_cost": 2,
+  "knowledge_cost": 30,
+  "knowledge_per_second": 0.25,
+  "requires": [
+    "voidheart:altar_rite"
+  ],
+  "recipes": [
+    "voidheart:altar/void_amalgam",
+    "voidheart:altar/voidheart",
+    "voidheart:altar/void_pearl",
+    "voidheart:altar/eye_bottle",
+    "voidheart:altar/void_lamp_from_glowstone",
+    "voidheart:altar/void_lamp_from_redstone_lamp",
+    "voidheart:altar/voidstone"
+  ]
+}

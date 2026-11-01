@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:nether_star",
+    "minecraft:dragon_egg",
+    "minecraft:elytra",
+    "minecraft:heavy_core",
+    "minecraft:enchanted_golden_apple",
+    "minecraft:ominous_trial_key"
+  ]
+}

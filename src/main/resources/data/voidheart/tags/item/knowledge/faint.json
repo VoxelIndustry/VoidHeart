@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "voidheart:voidstone",
+    "minecraft:ender_pearl",
+    "minecraft:amethyst_shard",
+    "minecraft:phantom_membrane",
+    "minecraft:glow_ink_sac",
+    "minecraft:spider_eye",
+    "minecraft:chorus_fruit"
+  ]
+}

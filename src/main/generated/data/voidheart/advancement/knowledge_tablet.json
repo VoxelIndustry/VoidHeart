@@ -1,0 +1,28 @@
+{
+  "parent": "voidheart:root",
+  "criteria": {
+    "got_knowledge_tablet": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:knowledge_tablet"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "description": "Something was written on the monolith. Place it on a Void Pillar",
+    "icon": {
+      "id": "voidheart:knowledge_tablet"
+    },
+    "title": "Knowledge Tablet"
+  },
+  "requirements": [
+    [
+      "got_knowledge_tablet"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

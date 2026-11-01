@@ -371,7 +371,7 @@ public class TravelMapScreen extends Screen
     /**
      * A band centered on the segment: drawn as a unit square stretched along and across it, so its width is symmetric.
      */
-    private static void line(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float halfWidth, int color)
+    static void line(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float halfWidth, int color)
     {
         float length = (float) Math.hypot(x2 - x1, y2 - y1);
         if (length < 1)
