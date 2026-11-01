@@ -135,6 +135,38 @@ fabricApi {
     }
 }
 
+// -PgameTest=ShatterForge runs only the client game tests whose class name contains that text
+processGametestResources {
+    def gameTest = project.findProperty("gameTest")
+    inputs.property("gameTest", gameTest ?: "")
+
+    doLast {
+        if (!gameTest)
+            return
+
+        def file = new File(destinationDir, "fabric.mod.json")
+        def mod = new groovy.json.JsonSlurper().parse(file)
+        def selected = mod.entrypoints["fabric-client-gametest"].findAll { it.contains(gameTest) }
+        if (selected.isEmpty())
+            throw new GradleException("No client game test matches -PgameTest=${gameTest}")
+
+        mod.entrypoints["fabric-client-gametest"] = selected
+        file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(mod))
+    }
+}
+
+// Lists the jars this build compiles against, so .claude/tools/api.py searches these exact versions
+tasks.register("writeApiClasspath") {
+    def classpath = sourceSets.gametest.compileClasspath
+    def output = layout.buildDirectory.file("api-classpath.txt")
+    outputs.file(output)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        output.get().asFile.text = classpath.files.join("\n")
+    }
+}
+
 processResources {
     inputs.properties "version": project.version, "description": project.description
 
