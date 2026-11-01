@@ -33,6 +33,19 @@ Use these when they apply:
 | `effect-brief` | Agreeing how an effect should look when that's still open |
 | `aseprite-texture` | Any image work, since Pillow isn't installed |
 
+## Looking up APIs
+
+Don't rely on memory for Minecraft, Fabric or mod APIs, because 26.3 has renamed and renumbered a lot. `.claude/tools/api.py` searches the exact versions this build uses:
+
+```bash
+python .claude/tools/api.py classes RenderTypes
+python .claude/tools/api.py grep "submitCustomGeometry\(" --only minecraft
+python .claude/tools/api.py show net.minecraft.client.gui.Hud --lines 200-240
+python .claude/tools/api.py sig net.minecraft.client.Options --match hud
+```
+
+If `python .claude/tools/api.py status` reports no Minecraft sources, run `./gradlew genSources --console=plain`, which takes under a minute. For questions spanning several classes, use the `mc-api-lookup` agent so the search stays out of the main conversation.
+
 ## Rules
 
 - Passing compilation and unit tests doesn't show that gameplay or rendering works. Report what was actually observed and what wasn't.

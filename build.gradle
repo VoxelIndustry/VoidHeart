@@ -155,6 +155,18 @@ processGametestResources {
     }
 }
 
+// Lists the jars this build compiles against, so .claude/tools/api.py searches these exact versions
+tasks.register("writeApiClasspath") {
+    def classpath = sourceSets.gametest.compileClasspath
+    def output = layout.buildDirectory.file("api-classpath.txt")
+    outputs.file(output)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        output.get().asFile.text = classpath.files.join("\n")
+    }
+}
+
 processResources {
     inputs.properties "version": project.version, "description": project.description
 
