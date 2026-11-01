@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.compat.rei;
 
+import com.mojang.serialization.Codec;
+import lombok.Getter;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.DisplaySerializer;
@@ -23,24 +25,32 @@ public class AltarRecipeDisplay extends BasicDisplay
             RecordCodecBuilder.mapCodec(instance -> instance.group(
                     EntryIngredient.codec().listOf().fieldOf("inputs").forGetter(AltarRecipeDisplay::getInputEntries),
                     EntryIngredient.codec().listOf().fieldOf("outputs").forGetter(AltarRecipeDisplay::getOutputEntries),
-                    Identifier.CODEC.optionalFieldOf("location").forGetter(AltarRecipeDisplay::getDisplayLocation)
+                    Identifier.CODEC.optionalFieldOf("location").forGetter(AltarRecipeDisplay::getDisplayLocation),
+                    Codec.INT.optionalFieldOf("experience", 0).forGetter(AltarRecipeDisplay::getExperience)
             ).apply(instance, AltarRecipeDisplay::new)),
             StreamCodec.composite(
                     EntryIngredient.streamCodec().apply(ByteBufCodecs.list()), AltarRecipeDisplay::getInputEntries,
                     EntryIngredient.streamCodec().apply(ByteBufCodecs.list()), AltarRecipeDisplay::getOutputEntries,
                     ByteBufCodecs.optional(Identifier.STREAM_CODEC), AltarRecipeDisplay::getDisplayLocation,
+                    ByteBufCodecs.VAR_INT, AltarRecipeDisplay::getExperience,
                     AltarRecipeDisplay::new));
 
-    public AltarRecipeDisplay(List<EntryIngredient> inputs, List<EntryIngredient> outputs, Optional<Identifier> location)
+    @Getter
+    private final int experience;
+
+    public AltarRecipeDisplay(List<EntryIngredient> inputs, List<EntryIngredient> outputs, Optional<Identifier> location, int experience)
     {
         super(inputs, outputs, location);
+
+        this.experience = experience;
     }
 
     public AltarRecipeDisplay(RecipeHolder<AltarRecipe> holder)
     {
         this(CollectionUtils.map(holder.value().getRecipeInputs(ItemStack.class), ingredient -> EntryIngredients.of(ingredient.getRaw())),
                 CollectionUtils.map(holder.value().getRecipeOutputs(ItemStack.class), ingredient -> EntryIngredients.of(ingredient.getRaw())),
-                Optional.of(holder.id().identifier()));
+                Optional.of(holder.id().identifier()),
+                holder.value().getExperience());
     }
 
     @Override

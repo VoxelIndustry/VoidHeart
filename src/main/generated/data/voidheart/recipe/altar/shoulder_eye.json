@@ -1,0 +1,40 @@
+{
+  "type": "voidheart:altar",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:ender_eye"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:spider_eye"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:void_pearl"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:slime_ball"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ender_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ender_shard"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:shoulder_eye"
+      }
+    ]
+  },
+  "time": 40
+}

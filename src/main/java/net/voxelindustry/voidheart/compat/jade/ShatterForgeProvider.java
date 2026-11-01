@@ -1,11 +1,15 @@
 package net.voxelindustry.voidheart.compat.jade;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.beam.BeamComposition;
+import net.voxelindustry.voidheart.common.content.beam.FormationError;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -13,6 +17,8 @@ import snownee.jade.api.ITooltip;
 import snownee.jade.api.StreamServerDataProvider;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.JadeUI;
+
+import java.util.Map;
 
 public class ShatterForgeProvider implements StreamServerDataProvider<BlockAccessor, ShatterForgeProvider.Data>
 {
@@ -27,11 +33,19 @@ public class ShatterForgeProvider implements StreamServerDataProvider<BlockAcces
     @Override
     public Data streamData(BlockAccessor accessor)
     {
-        if (accessor.getBlockEntity() instanceof ShatterForgeTile forge && forge.getRecipeState() != null)
+        if (accessor.getBlockEntity() instanceof ShatterForgeTile forge)
         {
-            return new Data(forge.getRecipeState().getInput(ItemStack.class, 0),
-                    forge.getRecipeState().completionDelta(),
-                    forge.getRecipeState().getOutput(ItemStack.class, 0));
+            var crafting = forge.getRecipeState() != null;
+            var error = forge.getFormationError();
+
+            return new Data(crafting ? forge.getRecipeState().getInput(ItemStack.class, 0) : ItemStack.EMPTY,
+                    crafting ? forge.getRecipeState().completionDelta() : -1F,
+                    crafting ? forge.getRecipeState().getOutput(ItemStack.class, 0) : ItemStack.EMPTY,
+                    forge.getBeamComposition(),
+                    new BeamComposition(crafting ? forge.getRequiredAspects() : Map.of(), 0),
+                    error == null ? "" : error.name(),
+                    crafting ? forge.getRequiredExperience() : 0,
+                    forge.getAvailableExperience());
         }
         return null;
     }
@@ -42,13 +56,27 @@ public class ShatterForgeProvider implements StreamServerDataProvider<BlockAcces
         return Data.STREAM_CODEC;
     }
 
-    public record Data(ItemStack input, float progress, ItemStack output)
+    /**
+     * A negative progress means the forge is not crafting.
+     */
+    public record Data(ItemStack input, float progress, ItemStack output, BeamComposition beam, BeamComposition required, String error,
+                       int requiredExperience, int availableExperience)
     {
         public static final StreamCodec<RegistryFriendlyByteBuf, Data> STREAM_CODEC = StreamCodec.composite(
                 ItemStack.OPTIONAL_STREAM_CODEC, Data::input,
                 ByteBufCodecs.FLOAT, Data::progress,
                 ItemStack.OPTIONAL_STREAM_CODEC, Data::output,
+                BeamComposition.STREAM_CODEC, Data::beam,
+                BeamComposition.STREAM_CODEC, Data::required,
+                ByteBufCodecs.STRING_UTF8, Data::error,
+                ByteBufCodecs.VAR_INT, Data::requiredExperience,
+                ByteBufCodecs.VAR_INT, Data::availableExperience,
                 Data::new);
+
+        public boolean crafting()
+        {
+            return progress >= 0;
+        }
     }
 
     public static class Client implements IBlockComponentProvider
@@ -69,10 +97,49 @@ public class ShatterForgeProvider implements StreamServerDataProvider<BlockAcces
         {
             provider.decodeFromData(accessor).ifPresent(data ->
             {
-                tooltip.append(JadeUI.item(data.input()));
-                tooltip.append(JadeUI.progressArrow(data.progress()));
-                tooltip.append(JadeUI.item(data.output()));
+                if (data.crafting())
+                {
+                    tooltip.append(JadeUI.item(data.input()));
+                    tooltip.append(JadeUI.progressArrow(data.progress()));
+                    tooltip.append(JadeUI.item(data.output()));
+                }
+                else if (!data.error().isEmpty())
+                {
+                    tooltip.add(Component.translatable(FormationError.valueOf(data.error()).translationKey()).withStyle(ChatFormatting.RED));
+                }
+
+                if (data.crafting())
+                    appendRequirements(tooltip, data);
+                else
+                    appendBeam(tooltip, data.beam());
             });
+        }
+
+        private static void appendBeam(ITooltip tooltip, BeamComposition beam)
+        {
+            beam.attuned().forEach((type, amount) ->
+                    tooltip.add(Component.translatable(type.translatableName()).append(": " + amount)));
+
+            if (beam.unattuned() > 0)
+                tooltip.add(Component.translatable("voidheart.jade.beam.unattuned").append(": " + beam.unattuned()));
+        }
+
+        private static void appendRequirements(ITooltip tooltip, Data data)
+        {
+            data.required().attuned().forEach((type, required) ->
+            {
+                var supplied = data.beam().amount(type);
+                tooltip.add(Component.translatable(type.translatableName())
+                        .append(": " + supplied + "/" + required)
+                        .withStyle(supplied >= required ? ChatFormatting.GREEN : ChatFormatting.RED));
+            });
+
+            if (data.beam().unattuned() > 0)
+                tooltip.add(Component.translatable("voidheart.jade.beam.unattuned").append(": " + data.beam().unattuned()));
+
+            if (data.requiredExperience() > 0)
+                tooltip.add(Component.translatable("voidheart.jade.shatter_forge.experience", data.availableExperience(), data.requiredExperience())
+                        .withStyle(data.availableExperience() >= data.requiredExperience() ? ChatFormatting.GREEN : ChatFormatting.RED));
         }
 
         @Override

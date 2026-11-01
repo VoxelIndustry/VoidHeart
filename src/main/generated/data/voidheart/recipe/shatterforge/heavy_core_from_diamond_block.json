@@ -1,0 +1,26 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:fiery": 4,
+    "voidheart:stillness": 6
+  },
+  "draw": 6000,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:diamond_block"
+      }
+    ]
+  },
+  "monolithCount": 7,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:heavy_core"
+      }
+    ]
+  },
+  "time": 200
+}

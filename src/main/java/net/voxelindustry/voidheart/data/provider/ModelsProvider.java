@@ -19,6 +19,7 @@ import net.minecraft.data.BlockFamily;
 import net.minecraft.data.BlockFamilies;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
+import com.geckolib.renderer.internal.GeckolibItemSpecialRenderer;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -40,7 +41,8 @@ public class ModelsProvider extends FabricModelProvider
             "obsidian_shard", "pocket_wall", "portal_core", "portal_frame", "portal_frame_core", "portal_interior",
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
-            "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "permeable_barrier", "shoulder_eye"
+            "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "shoulder_eye", "permeable_barrier", "beam_focus",
+            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix"
     );
 
     /**
@@ -117,6 +119,10 @@ public class ModelsProvider extends FabricModelProvider
 
         for (var name : HAND_WRITTEN_ITEM_MODELS)
             generator.itemModelOutput.accept(BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(MODID, name)), ItemModelUtils.plainModel(itemModel(name)));
+
+        // Drawn by GeckoLib with the block model, the base model only provides display transforms
+        generator.itemModelOutput.accept(VoidHeartBlocks.RAVENOUS_COLLECTOR.asItem(),
+                ItemModelUtils.specialModel(itemModel("ravenous_collector"), new GeckolibItemSpecialRenderer.Unbaked<>()));
 
         generator.itemModelOutput.accept(VoidHeartBlocks.VOID_LAMP.asItem(), ItemModelUtils.select(
                 new ComponentContents<>(VoidHeartDataComponents.CORRUPTION),

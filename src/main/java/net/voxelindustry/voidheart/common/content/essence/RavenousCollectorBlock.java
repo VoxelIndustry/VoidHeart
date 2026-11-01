@@ -1,6 +1,12 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import java.util.List;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,8 +60,36 @@ public class RavenousCollectorBlock extends Block implements EntityBlock
             return InteractionResult.PASS;
 
         collector.storage().attune(essenceType);
+        collector.setChanged();
+        collector.sync();
 
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder)
+    {
+        var stack = new ItemStack(VoidHeartBlocks.RAVENOUS_COLLECTOR);
+        stack.setDamageValue(RavenousCollectorTile.CAPACITY);
+
+        if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof RavenousCollectorTile collector
+                && !collector.storage().isUnattuned())
+        {
+            stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, RavenousCollectorTile.copyOf(collector.storage()));
+            stack.setDamageValue(RavenousCollectorTile.CAPACITY - collector.storage().amount());
+        }
+
+        return List.of(stack);
+    }
+
+    @Override
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack)
+    {
+        super.setPlacedBy(world, pos, state, placer, stack);
+
+        var storage = stack.get(VoidHeartDataComponents.ESSENCE_STORAGE);
+        if (storage != null && world.getBlockEntity(pos) instanceof RavenousCollectorTile collector)
+            collector.restoreStorage(storage);
     }
 
     @Override

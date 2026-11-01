@@ -1,7 +1,10 @@
 package net.voxelindustry.voidheart.compat.jade;
 
+import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
@@ -19,6 +22,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     private final RavenousCollectorProvider ravenousCollectorProvider = new RavenousCollectorProvider();
     private final RavenousStorageProvider ravenousStorageProvider = new RavenousStorageProvider();
     private final RavenousStorageMatrixProvider ravenousStorageMatrixProvider = new RavenousStorageMatrixProvider();
+    private final RavenousRelayProvider ravenousRelayProvider = new RavenousRelayProvider();
 
     @Override
     public void register(IWailaCommonRegistration registration)
@@ -28,6 +32,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
 
         registration.registerBlockDataProvider(ravenousStorageProvider, RavenousStorageTile.class);
         registration.registerBlockDataProvider(ravenousStorageMatrixProvider, RavenousStorageMatrixTile.class);
+        registration.registerBlockDataProvider(ravenousRelayProvider, RavenousRelayTile.class);
     }
 
     @Override
@@ -38,7 +43,9 @@ public class VoidHeartJadePlugin implements IWailaPlugin
 
         registration.registerBlockComponent(new RavenousStorageProvider.Client(), RavenousStorageBlock.class);
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
+        registration.registerBlockComponent(new RavenousRelayProvider.Client(), RavenousRelayBlock.class);
 
         registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
+        registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);
     }
 }
