@@ -89,9 +89,9 @@ Send the output to a file in the scratchpad, since the log is long:
 ./gradlew runClientGameTest --console=plain > "<scratchpad>/gametest.log" 2>&1
 ```
 
-Run it in the background, because every listed test runs and the full suite takes about 4 minutes. A single test takes under a minute, so while iterating you can reduce the entrypoints in `fabric.mod.json` to its test. Do one full run with the complete list before reporting, so regressions and leftover client settings show up.
+Run it in the background, because the full suite takes about 4 minutes. While iterating, add `-PgameTest=ShatterForge` to run only the tests whose class name contains that text, which takes under a minute. Do one full run without it before reporting, so regressions and leftover client settings show up. Don't edit `fabric.mod.json` to narrow a run.
 
-Other sessions may share this checkout, and its `build/` folder and `fabric.mod.json`. A reduced list would quietly shrink their runs, and their runs can wipe your screenshots. Check with `git worktree list` and your session list, and iterate in your own worktree, which has its own `build/`. Keep temporary source changes there too.
+Other sessions may share this checkout and its `build/` folder, and their runs can wipe your screenshots. Check with `git worktree list` and your session list, and do repeated runs and temporary source changes in your own worktree, which has its own `build/`.
 
 ## 4. Check the results
 
