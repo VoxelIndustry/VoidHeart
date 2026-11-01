@@ -11,6 +11,9 @@ import net.fabricmc.fabric.api.client.particle.v1.ParticleGroupRegistry;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
@@ -22,6 +25,11 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
+import net.voxelindustry.voidheart.client.particle.EyeBeamParticle;
+import net.voxelindustry.voidheart.client.model.ShoulderEyeModel;
+import net.voxelindustry.voidheart.client.render.ShoulderEyeRender;
+import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeEntity;
+import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.client.particle.GeometryParticle;
 import net.voxelindustry.voidheart.client.particle.PortalFrameParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeItemParticle;
@@ -71,6 +79,14 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PERMEABLE_BARRIER, PermeableBarrierRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.BEHOLDER, BeholderRender::new);
+
+        ModelLayerRegistry.registerModelLayer(ShoulderEyeModel.LAYER, ShoulderEyeModel::createBodyLayer);
+        EntityRendererRegistry.register(VoidHeartEntities.SHOULDER_EYE, ShoulderEyeRender::new);
+        ShoulderEyeEntity.hiddenFromLocalPick = eye ->
+        {
+            var player = Minecraft.getInstance().player;
+            return player != null && player.getId() == eye.getOwnerId() && !player.isShiftKeyDown();
+        };
 
         MenuScreens.register(VoidHeartMenus.PERMEABLE_BARRIER, PermeableBarrierScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
@@ -137,6 +153,12 @@ public class VoidHeartClient implements ClientModInitializer
                 spriteSet ->
                         (options, level, x, y, z, xAux, yAux, zAux, random) ->
                                 new ShatterForgeRuneParticle(level, x, y, z, spriteSet, options.axis()));
+
+        particles.register(
+                EYE_BEAM_PARTICLE,
+                spriteSet ->
+                        (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                                new EyeBeamParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
 
         particles.register(
                 SHATTER_FORGE_ITEM_PARTICLE,

@@ -13,7 +13,8 @@
       "net.voxelindustry.voidheart.gametest.OculusBeholderClientTest",
       "net.voxelindustry.voidheart.gametest.OculusCavingClientTest",
       "net.voxelindustry.voidheart.gametest.OculusFigurineClientTest",
-      "net.voxelindustry.voidheart.gametest.OculusPerformanceClientTest"
+      "net.voxelindustry.voidheart.gametest.OculusPerformanceClientTest",
+      "net.voxelindustry.voidheart.gametest.ShoulderEyeClientTest"
     ]
   },
   "depends": {
