@@ -200,5 +200,18 @@
   "voidheart.travel_map.distance": "%s blocks away",
   "voidheart.travel_map.here": "You are here",
   "voidheart.travel_map.surveying": "Surveying the land…",
-  "voidheart.travel_map.empty": "No other anchor answers along these lines"
+  "voidheart.travel_map.empty": "No other anchor answers along these lines",
+  "item.voidheart.shoulder_eye": "Shoulder Eye",
+  "entity.voidheart.shoulder_eye": "Shoulder Eye",
+  "voidheart.shoulder_eye.lore": "Perches on your shoulder and burns those who hunt or hurt you. Sneak with an empty hand on it to take it back.",
+  "voidheart.shoulder_eye.already_bound": "An eye already watches over you",
+  "death.attack.voidheart.shoulder_eye_beam": "%1$s was seared by the eye of %2$s",
+  "death.attack.voidheart.shoulder_eye_beam.item": "%1$s was seared by the eye of %2$s using %3$s",
+  "yacl3.config.voidheart:config.category.shoulder_eye": "Shoulder Eye",
+  "yacl3.config.voidheart:config.shoulderEyeBeamDamage": "Beam Damage",
+  "yacl3.config.voidheart:config.shoulderEyeBeamDamage.desc": "Damage dealt by each beam of a Shoulder Eye.",
+  "yacl3.config.voidheart:config.shoulderEyeRange": "Range",
+  "yacl3.config.voidheart:config.shoulderEyeRange.desc": "How far from its owner a Shoulder Eye fires at the mobs hunting them and the players who hurt them.",
+  "yacl3.config.voidheart:config.shoulderEyeRegenSeconds": "Regrowth Seconds",
+  "yacl3.config.voidheart:config.shoulderEyeRegenSeconds.desc": "How many seconds a slain Shoulder Eye takes to grow back before flying back to its owner."
 }

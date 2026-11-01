@@ -26,6 +26,7 @@ public class VoidHeartConfig
     private static final String LEY_LINES = "ley_lines";
     private static final String OCULUS_TABLE = "oculus_table";
     private static final String BEHOLDER = "beholder";
+    private static final String SHOULDER_EYE = "shoulder_eye";
 
     @AutoGen(category = LEY_LINES)
     @TickBox
@@ -62,6 +63,21 @@ public class VoidHeartConfig
     @SerialEntry(value = "beholder_high_range", comment = "Horizontal distance within which a Beholder makes out player names and mob types")
     public int beholderHighRange = 32;
 
+    @AutoGen(category = SHOULDER_EYE)
+    @FloatSlider(min = 0, max = 20, step = 0.5F, format = "%.1f")
+    @SerialEntry(value = "shoulder_eye_beam_damage", comment = "Damage dealt by each beam of a Shoulder Eye")
+    public float shoulderEyeBeamDamage = 4;
+
+    @AutoGen(category = SHOULDER_EYE)
+    @IntSlider(min = 4, max = 32, step = 1)
+    @SerialEntry(value = "shoulder_eye_range", comment = "Distance from its owner within which a Shoulder Eye fires at enemies")
+    public int shoulderEyeRange = 16;
+
+    @AutoGen(category = SHOULDER_EYE)
+    @IntSlider(min = 5, max = 600, step = 5)
+    @SerialEntry(value = "shoulder_eye_regen_seconds", comment = "Seconds a slain Shoulder Eye takes to grow back before returning to its owner")
+    public int shoulderEyeRegenSeconds = 60;
+
     public static void load()
     {
         HANDLER.load();
@@ -71,6 +87,9 @@ public class VoidHeartConfig
         get().oculusTableMixedSeconds = Mth.clamp(get().oculusTableMixedSeconds, 0, 30);
         get().beholderLowRange = Mth.clamp(get().beholderLowRange, 16, 256);
         get().beholderHighRange = Mth.clamp(get().beholderHighRange, 8, get().beholderLowRange);
+        get().shoulderEyeBeamDamage = Mth.clamp(get().shoulderEyeBeamDamage, 0, 20);
+        get().shoulderEyeRange = Mth.clamp(get().shoulderEyeRange, 4, 32);
+        get().shoulderEyeRegenSeconds = Mth.clamp(get().shoulderEyeRegenSeconds, 5, 600);
     }
 
     public static VoidHeartConfig get()

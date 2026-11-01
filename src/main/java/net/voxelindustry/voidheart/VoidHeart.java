@@ -7,10 +7,13 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -46,6 +49,8 @@ import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeItemP
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeRuneParticleEffect;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
+import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -70,6 +75,7 @@ public class VoidHeart implements ModInitializer
     public static ParticleType<PortalFrameParticleEffect> PORTAL_FRAME_PARTICLE;
     public static ParticleType<ShatterForgeRuneParticleEffect> SHATTER_FORGE_RUNE_PARTICLE;
     public static ParticleType<ShatterForgeItemParticleEffect> SHATTER_FORGE_ITEM_PARTICLE;
+    public static SimpleParticleType EYE_BEAM_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
 
@@ -81,6 +87,8 @@ public class VoidHeart implements ModInitializer
         VoidHeartDataComponents.registerComponents();
         VoidHeartBlocks.registerBlocks();
         VoidHeartItems.registerItems();
+        VoidHeartEntities.registerEntities();
+        ShoulderEyes.register();
 
         VoidHeartTiles.registerTiles();
         VoidHeartMenus.registerMenus();
@@ -99,6 +107,9 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
         ServerTickEvents.START_LEVEL_TICK.register(VoidHeartTicker::tickWorld);
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
+        ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
+        ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
         PayloadTypeRegistry.clientboundPlay().register(LeyDebugPayload.TYPE, LeyDebugPayload.CODEC);
@@ -133,6 +144,7 @@ public class VoidHeart implements ModInitializer
             OculusEntityPayloads.clear();
             OculusLeyPayloads.clear();
             OculusSightPayloads.clear();
+            ShoulderEyes.clear();
         });
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
@@ -153,6 +165,8 @@ public class VoidHeart implements ModInitializer
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_rune"), SHATTER_FORGE_RUNE_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeRuneParticleEffect.CODEC, ShatterForgeRuneParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_item"), SHATTER_FORGE_ITEM_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeItemParticleEffect.CODEC, ShatterForgeItemParticleEffect.STREAM_CODEC));
+        Registry.register(BuiltInRegistries.PARTICLE_TYPE,
+                Identifier.fromNamespaceAndPath(MODID, "eye_beam"), EYE_BEAM_PARTICLE = FabricParticleTypes.simple(true));
 
         EssenceRegistry.bootstrap();
     }

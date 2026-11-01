@@ -10,6 +10,7 @@ import net.minecraft.world.item.Item.Properties;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
+import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeItem;
 import net.voxelindustry.voidheart.common.item.VoidAmalgamItem;
 import net.voxelindustry.voidheart.common.item.VoidHeartItem;
 import net.voxelindustry.voidheart.common.item.PortalCoreItem;
@@ -29,6 +30,7 @@ public class VoidHeartItems
 
     public static VoidKeyItem VOID_KEY;
     public static PermeableBarrierItem PERMEABLE_BARRIER;
+    public static ShoulderEyeItem SHOULDER_EYE;
 
     public static Item OBSIDIAN_SHARD;
     public static Item ENDER_SHARD;
@@ -49,6 +51,7 @@ public class VoidHeartItems
 
         VOID_KEY = registerItem("void_key", VoidKeyItem::new);
         PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
+        SHOULDER_EYE = registerItem("shoulder_eye", ShoulderEyeItem::new);
 
         OBSIDIAN_SHARD = registerItem("obsidian_shard", Item::new);
         ENDER_SHARD = registerItem("ender_shard", Item::new);
