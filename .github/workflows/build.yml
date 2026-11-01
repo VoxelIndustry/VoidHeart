@@ -46,3 +46,42 @@ jobs:
         with:
           name: voidheart-${{ github.sha }}
           path: build/libs/*.jar
+
+  client-game-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # steamlayer is pulled from the private Gitea maven
+      ORG_GRADLE_PROJECT_gitea_token: ${{ secrets.GITEA_TOKEN }}
+      # Runners have no GPU or audio device
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      ALSOFT_DRIVERS: "null"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+
+      - name: Install virtual display and software GL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libgl1-mesa-dri libglx-mesa0 libxcursor1 libxi6 libxinerama1 libxrandr2 libxxf86vm1
+
+      - name: Run client game tests
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" ./gradlew runClientGameTest --stacktrace --console=plain
+
+      - name: Upload game test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-game-test-results
+          path: |
+            build/run/clientGameTest/screenshots/
+            build/run/clientGameTest/logs/latest.log
+            build/run/clientGameTest/crash-reports/
