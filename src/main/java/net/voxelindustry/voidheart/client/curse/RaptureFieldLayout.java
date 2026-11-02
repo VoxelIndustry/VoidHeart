@@ -28,8 +28,8 @@ public final class RaptureFieldLayout
 
     private static final float DOME_RADIUS = 100;
 
-    // Half widths in blocks at the dome's radius, at their widest while staring
-    public static final float WIDTH_LEAST = 0.9F;
+    // Half widths in blocks at the dome's radius, at their widest while staring. The least just fits five texels across, the fewest that read as an eye
+    public static final float WIDTH_LEAST = 1F;
     public static final float WIDTH_MOST  = 8F;
 
     // The same as TEXEL in the field shaders
@@ -47,7 +47,8 @@ public final class RaptureFieldLayout
     private static final float LARGE_WIDTH_LEAST    = 3F;
     private static final float LARGE_WIDTH_MOST     = 5F;
     private static final float LARGE_SPACING        = 12 * Mth.DEG_TO_RAD;
-    // Everything else falls off steeply from the smallest size
+    // Everything else falls off steeply from a little under the smallest size, those under it ending up as the smallest
+    private static final float FILL_WIDTH_LEAST     = 0.9F;
     private static final float FILL_WIDTH_MOST      = 3F;
     private static final float FILL_TAIL            = 1.7F;
 
@@ -62,7 +63,7 @@ public final class RaptureFieldLayout
     public static final float GAP_LEAST             = 0.5F;
     private static final float GAP_SHARE            = 0.5F;
 
-    // Below these the simple shapes are all that can read
+    // Below these the simple shapes are all that can read. The first is the same as SPECK_BELOW in the field vertex shader
     private static final float SIMPLE_BELOW         = 1.5F;
     private static final float WRONG_FROM           = 3F;
     // How often one of the giants of a curse is a wrong one
@@ -80,10 +81,14 @@ public final class RaptureFieldLayout
     // A large eye draws its family and its iris this many times and keeps whichever it has the fewest of around it, for no part of the sky to fill with the same thing
     private static final int   LARGE_DRAWS          = 4;
     private static final float LARGE_NEIGHBOURS     = 50 * Mth.DEG_TO_RAD;
+    // However the draws fall, large eyes are never greener than this share of them
+    private static final float LARGE_GREEN_MOST     = 0.2F;
     private static final float COLOR_JITTER         = 0.07F;
     private static final float VIVID_SHARE          = 0.05F;
     private static final float VIVID_SATURATION     = 1.35F;
     private static final float VIVID_VALUE          = 1.08F;
+    // A goat fills most of its opening with iris, so that much color would be the loudest thing in the sky
+    private static final float GOAT_IRIS_CHROMA     = 0.68F;
     // Small eyes are texture behind the large ones: this dark and this grey at the smallest, in full color from the width below
     private static final float VALUE_AT_SMALLEST    = 0.72F;
     private static final float CHROMA_AT_SMALLEST   = 0.62F;
@@ -95,7 +100,7 @@ public final class RaptureFieldLayout
     private static final int SCLERA_GREY      = 0x8C8C86;
     private static final int SCLERA_BLACK     = 0x120E14;
 
-    private static final int IRIS_AMBER  = 0xB47A26;
+    public static final  int IRIS_AMBER  = 0xB47A26;
     private static final int IRIS_OCHRE  = 0xA47E36;
     private static final int IRIS_RUST   = 0x8C4A2A;
     private static final int IRIS_BLUE   = 0x8CB0C2;
@@ -147,7 +152,7 @@ public final class RaptureFieldLayout
                     new int[][] {{LID_ASH, 3}, {LID_PALE, 2}, {LID_TAN, 2}, {LID_DARK, 2}, {LID_BRUISED, 1}}),
             // Goat
             new Palette(new int[][] {{SCLERA_YELLOWED, 3}, {SCLERA_WHITE, 1}, {SCLERA_GREY, 2}},
-                    new int[][] {{IRIS_AMBER, 5}, {IRIS_OCHRE, 4}, {IRIS_BLUE, 1}, {IRIS_DEAD, 1}},
+                    new int[][] {{IRIS_OCHRE, 5}, {IRIS_DEAD, 3}, {IRIS_AMBER, 2}, {IRIS_BLUE, 1}},
                     new int[][] {{LID_FUR, 3}, {LID_DARK, 3}, {LID_ASH, 1}}),
             // Slit
             new Palette(new int[][] {{SCLERA_YELLOWED, 3}, {SCLERA_WHITE, 2}, {SCLERA_GREY, 2}},
@@ -237,7 +242,7 @@ public final class RaptureFieldLayout
             calmCosines[patch] = Mth.cos(Mth.lerp(random.nextFloat(), CALM_RADIUS_LEAST, CALM_RADIUS_MOST));
         }
 
-        double reach = 1 - Math.pow(WIDTH_LEAST / FILL_WIDTH_MOST, FILL_TAIL);
+        double reach = 1 - Math.pow(FILL_WIDTH_LEAST / FILL_WIDTH_MOST, FILL_TAIL);
         for (int star = 0; star < count; star++)
         {
             if (wanted[star] > 0)
@@ -252,7 +257,7 @@ public final class RaptureFieldLayout
             if (random.nextFloat() >= (calm ? CALM_OPEN_SHARE : OPEN_SHARE))
                 continue;
 
-            wanted[star] = (float) (WIDTH_LEAST / Math.pow(1 - random.nextFloat() * reach, 1 / FILL_TAIL));
+            wanted[star] = Math.max(WIDTH_LEAST, (float) (FILL_WIDTH_LEAST / Math.pow(1 - random.nextFloat() * reach, 1 / FILL_TAIL)));
         }
         return wanted;
     }
@@ -314,6 +319,7 @@ public final class RaptureFieldLayout
 
         var giants = giantFamilies((int) byWidth.stream().filter(star -> widths[star] >= GIANT_WIDTH_LEAST).count(), random);
         var eyes = new ArrayList<Eye>(byWidth.size());
+        int largeGreensLeft = (int) (byWidth.stream().filter(star -> widths[star] >= LARGE_WIDTH_LEAST).count() * LARGE_GREEN_MOST);
         for (int star : byWidth)
         {
             float width = widths[star];
@@ -327,6 +333,11 @@ public final class RaptureFieldLayout
 
             var palette = PALETTES[family.ordinal()];
             int iris = width >= LARGE_WIDTH_LEAST ? rarestNearby(directions, star, eyes, Eye::irisSwatch, () -> pick(palette.iris, random)) : pick(palette.iris, random);
+            if (width >= LARGE_WIDTH_LEAST && iris == IRIS_GREEN && largeGreensLeft-- <= 0)
+            {
+                while (iris == IRIS_GREEN)
+                    iris = pick(palette.iris, random);
+            }
             eyes.add(dressed(star, width, family, iris, random));
         }
         return List.copyOf(eyes);
@@ -387,7 +398,8 @@ public final class RaptureFieldLayout
         float fullness = Mth.clamp((width - WIDTH_LEAST) / (FULL_COLOR_FROM - WIDTH_LEAST), 0, 1);
         float value = Mth.lerp(fullness, VALUE_AT_SMALLEST, 1);
         float chroma = Mth.lerp(fullness, CHROMA_AT_SMALLEST, 1);
-        boolean vivid = random.nextFloat() < VIVID_SHARE;
+        boolean vivid = family != Family.GOAT && random.nextFloat() < VIVID_SHARE;
+        float irisChroma = family == Family.GOAT ? chroma * GOAT_IRIS_CHROMA : chroma;
         float veins = sclera == SCLERA_BLOODSHOT ? VEINS_BLOODSHOT : sclera == SCLERA_YELLOWED ? VEINS_YELLOWED
                 : sclera == SCLERA_WHITE ? VEINS_WHITE : sclera == SCLERA_GREY ? VEINS_GREY : VEINS_BLACK;
 
@@ -398,7 +410,7 @@ public final class RaptureFieldLayout
         return new Eye(star, width, family, tilt, (random.nextFloat() * 2 - 1) * LEAN_MOST, random.nextBoolean(),
                 random.nextFloat(), random.nextFloat(), random.nextFloat(),
                 varied(sclera, value, chroma, random), veins,
-                varied(vivid ? saturated(iris) : iris, value, chroma, random), iris == IRIS_BLIND ? PUPIL_STRENGTH_BLIND : PUPIL_STRENGTH,
+                varied(vivid ? saturated(iris) : iris, value, irisChroma, random), iris == IRIS_BLIND ? PUPIL_STRENGTH_BLIND : PUPIL_STRENGTH,
                 iris,
                 varied(lid, value, chroma, random));
     }

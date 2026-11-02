@@ -19,7 +19,11 @@ class RaptureFieldLayoutTest
     private static final float  DOME_RADIUS = 100;
 
     private static final float GIANT_FROM = 5;
-    private static final float[] HISTOGRAM_FROM = {0.9F, 1.2F, 1.6F, 2.2F, 3, 4, 5, 6};
+    private static final float[] HISTOGRAM_FROM = {1, 1.2F, 1.6F, 2.2F, 3, 4, 5, 6};
+    // Past this between its strongest and weakest color channels, a goat's iris would be as loud as a plain amber one
+    private static final int GOAT_CHROMA_MOST = 115;
+    // Drawn as the plain pattern of the smallest eyes
+    private static final float PLAIN_BELOW = 1.5F;
 
     private static RaptureFieldLayout layout(long seed)
     {
@@ -112,6 +116,22 @@ class RaptureFieldLayoutTest
     }
 
     @Test
+    void smallEyesOutnumberTheRestOverheadAtMidnight()
+    {
+        for (long seed : seeds())
+        {
+            var layout = layout(seed);
+            // At midnight the star field stands upside down
+            var overhead = layout.eyes().stream().filter(eye -> layout.directionY(eye.star()) < 0).toList();
+            long small = overhead.stream().filter(eye -> eye.width() < 1.6F).count();
+            long medium = overhead.stream().filter(eye -> eye.width() >= 1.6F && eye.width() < 3F).count();
+            long large = overhead.stream().filter(eye -> eye.width() >= 3F).count();
+            assertThat(small).as("seed %d", seed).isGreaterThan(medium);
+            assertThat(medium).as("seed %d", seed).isGreaterThan(large);
+        }
+    }
+
+    @Test
     void aReasonableNumberRemainWhereverTheHorizonIs()
     {
         var random = new Random(99);
@@ -175,6 +195,30 @@ class RaptureFieldLayoutTest
     }
 
     @Test
+    void goatsStayMuted()
+    {
+        long amber = 0;
+        long goats = 0;
+        for (long seed : seeds())
+        {
+            for (var eye : layout(seed).eyes())
+            {
+                if (eye.family() != Family.GOAT)
+                    continue;
+
+                goats++;
+                if (eye.irisSwatch() == RaptureFieldLayout.IRIS_AMBER)
+                    amber++;
+                int red = eye.iris() >> 16 & 0xFF;
+                int green = eye.iris() >> 8 & 0xFF;
+                int blue = eye.iris() & 0xFF;
+                assertThat(Math.max(red, Math.max(green, blue)) - Math.min(red, Math.min(green, blue))).as("seed %d", seed).isLessThanOrEqualTo(GOAT_CHROMA_MOST);
+            }
+        }
+        assertThat(amber / (double) goats).isLessThan(0.3);
+    }
+
+    @Test
     void theSicklyGreenIsThereWithoutDominating()
     {
         long green = 0;
@@ -207,6 +251,7 @@ class RaptureFieldLayoutTest
         long stars = 0;
         long green = 0;
         long blackSclera = 0;
+        long plain = 0;
         int leastEyes = Integer.MAX_VALUE;
         int mostEyes = 0;
         for (long seed : seeds())
@@ -222,6 +267,8 @@ class RaptureFieldLayoutTest
                     green++;
                 if (eye.veins() == 0)
                     blackSclera++;
+                if (eye.width() < PLAIN_BELOW)
+                    plain++;
                 families.merge(eye.family(), 1L, Long::sum);
                 int bin = HISTOGRAM_FROM.length - 1;
                 while (eye.width() < HISTOGRAM_FROM[bin] && bin > 0)
@@ -246,6 +293,6 @@ class RaptureFieldLayoutTest
         for (var entry : families.entrySet())
             shares.append(String.format("%s %.1f%%  ", entry.getKey(), entry.getValue() * 100D / eyes));
         System.out.println("Families: " + shares);
-        System.out.println(String.format("Green irises %.1f%%, black scleras %.1f%%", green * 100D / eyes, blackSclera * 100D / eyes));
+        System.out.println(String.format("Green irises %.1f%%, black scleras %.1f%%, of half width under %.1f %.1f%%", green * 100D / eyes, blackSclera * 100D / eyes, PLAIN_BELOW, plain * 100D / eyes));
     }
 }

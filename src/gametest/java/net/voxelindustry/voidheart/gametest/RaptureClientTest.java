@@ -64,6 +64,10 @@ public class RaptureClientTest implements FabricClientGameTest
     private static final int   ABOVE_SCENE  = 150;
     private static final float ABOVE_GROUND = 0.08F;
     private static final int   FLIGHT_FOV_SETTLE_TICKS = 40;
+    private static final float SMALLEST_BELOW = 1.2F;
+    private static final float SMALLEST_CROWD_COSINE = 0.975F;
+    private static final int   CLOSING_EARLY_TICKS = 6;
+    private static final int   CLOSING_LATE_TICKS = 11;
 
     private static final int LARGE_WIDTH  = 1280;
     private static final int LARGE_HEIGHT = 720;
@@ -385,6 +389,10 @@ public class RaptureClientTest implements FabricClientGameTest
         server.runCommand("voidheart curse force rapture @a");
         context.waitFor(minecraft -> CurseDirector.active() instanceof RaptureCurse, 40);
         int endTick = context.computeOnClient(minecraft -> RaptureLift.LIFT_TICK + RaptureLift.liftTicks(curse().height()));
+        waitForAge(context, endTick + CLOSING_EARLY_TICKS);
+        captureClosing(context, server, "early");
+        waitForAge(context, endTick + CLOSING_LATE_TICKS);
+        captureClosing(context, server, "late");
         waitForAge(context, endTick + RaptureLift.EYES_CLOSE_TICKS + 1);
         var closed = context.takeScreenshot(TestScreenshotOptions.of("rapture-field-closed").withSize(LARGE_WIDTH, LARGE_HEIGHT));
         if (context.computeOnClient(minecraft -> CurseDirector.active() == null))
@@ -400,36 +408,109 @@ public class RaptureClientTest implements FabricClientGameTest
 
     private void captureGiants(ClientGameTestContext context, String moment)
     {
-        var view = context.computeOnClient(minecraft ->
-        {
-            var angle = minecraft.gameRenderer.mainCamera().attributeProbe().getValue(EnvironmentAttributes.STAR_ANGLE, 0) * Mth.DEG_TO_RAD;
-            return new Matrix4f().rotate(Axis.YP.rotationDegrees(-90)).rotate(Axis.XP.rotation(angle));
-        });
+        var view = starView(context);
         var layout = context.computeOnClient(minecraft -> curse().field());
         int fov = context.computeOnClient(minecraft -> minecraft.options.fov().get());
         context.runOnClient(minecraft -> minecraft.options.fov().set(ZOOM_FOV));
 
         for (var family : RaptureFieldLayout.Family.values())
-        {
-            // Eyes come largest first
-            for (var eye : layout.eyes())
-            {
-                var direction = view.transformDirection(layout.directionX(eye.star()), layout.directionY(eye.star()), layout.directionZ(eye.star()), new Vector3f());
-                if (eye.family() != family || direction.y < ABOVE_GROUND)
-                    continue;
+            captureLargest(context, view, layout, family, "rapture-giant-" + moment);
+        captureSmallest(context, view, layout, moment);
 
-                look(context, (float) Math.toDegrees(Math.atan2(-direction.x, direction.z)), (float) -Math.toDegrees(Math.asin(direction.y)));
-                context.takeScreenshot(TestScreenshotOptions.of("rapture-giant-" + moment + "-" + family.name().toLowerCase(Locale.ROOT) + "-" + Math.round(eye.width())).withSize(LARGE_WIDTH, LARGE_HEIGHT));
-                break;
+        context.runOnClient(minecraft -> minecraft.options.fov().set(fov));
+    }
+
+    private void captureLargest(ClientGameTestContext context, Matrix4f view, RaptureFieldLayout layout, RaptureFieldLayout.Family family, String name)
+    {
+        // Eyes come largest first
+        for (var eye : layout.eyes())
+        {
+            var direction = directionOf(view, layout, eye.star());
+            if (eye.family() != family || direction.y < ABOVE_GROUND)
+                continue;
+
+            aimAt(context, direction);
+            context.takeScreenshot(TestScreenshotOptions.of(name + "-" + family.name().toLowerCase(Locale.ROOT) + "-" + Math.round(eye.width())).withSize(LARGE_WIDTH, LARGE_HEIGHT));
+            return;
+        }
+    }
+
+    /**
+     * Where the smallest eyes crowd together the most, for as many of them as possible in one zoomed frame.
+     */
+    private void captureSmallest(ClientGameTestContext context, Matrix4f view, RaptureFieldLayout layout, String moment)
+    {
+        Vector3f crowded = null;
+        int most = -1;
+        for (var eye : layout.eyes())
+        {
+            var direction = directionOf(view, layout, eye.star());
+            if (eye.width() >= SMALLEST_BELOW || direction.y < ABOVE_GROUND)
+                continue;
+
+            int near = 0;
+            for (var other : layout.eyes())
+            {
+                if (other.width() < SMALLEST_BELOW && direction.dot(directionOf(view, layout, other.star())) > SMALLEST_CROWD_COSINE)
+                    near++;
+            }
+            if (near > most)
+            {
+                most = near;
+                crowded = direction;
             }
         }
+        if (crowded == null)
+            throw new AssertionError("Expected some of the smallest eyes above the horizon");
+
+        aimAt(context, crowded);
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-smallest-" + moment).withSize(LARGE_WIDTH, LARGE_HEIGHT));
+    }
+
+    /**
+     * Those with no lids to close, zoomed in on as they leave, and the whole sky as it is by then.
+     */
+    private void captureClosing(ClientGameTestContext context, TestServerContext server, String moment)
+    {
+        server.runCommand("tick freeze");
+        context.waitTicks(FREEZE_SETTLE_TICKS);
+        var view = starView(context);
+        var layout = context.computeOnClient(minecraft -> curse().field());
+        int fov = context.computeOnClient(minecraft -> minecraft.options.fov().get());
+
+        context.runOnClient(minecraft -> minecraft.options.fov().set(ZOOM_FOV));
+        captureLargest(context, view, layout, RaptureFieldLayout.Family.ROUND, "rapture-closing-" + moment);
+        captureLargest(context, view, layout, RaptureFieldLayout.Family.WRONG, "rapture-closing-" + moment);
         context.runOnClient(minecraft -> minecraft.options.fov().set(fov));
+
+        look(context, YAW, LOOK_SKY);
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-closing-" + moment + "-sky").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        server.runCommand("tick unfreeze");
+    }
+
+    private static Matrix4f starView(ClientGameTestContext context)
+    {
+        return context.computeOnClient(minecraft ->
+        {
+            var angle = minecraft.gameRenderer.mainCamera().attributeProbe().getValue(EnvironmentAttributes.STAR_ANGLE, 0) * Mth.DEG_TO_RAD;
+            return new Matrix4f().rotate(Axis.YP.rotationDegrees(-90)).rotate(Axis.XP.rotation(angle));
+        });
+    }
+
+    private static Vector3f directionOf(Matrix4f view, RaptureFieldLayout layout, int star)
+    {
+        return view.transformDirection(layout.directionX(star), layout.directionY(star), layout.directionZ(star), new Vector3f());
+    }
+
+    private static void aimAt(ClientGameTestContext context, Vector3f direction)
+    {
+        look(context, (float) Math.toDegrees(Math.atan2(-direction.x, direction.z)), (float) -Math.toDegrees(Math.asin(direction.y)));
     }
 
     private void logField(ClientGameTestContext context)
     {
         var layout = context.computeOnClient(minecraft -> curse().field());
-        float[] from = {0.9F, 1.6F, 3, 5};
+        float[] from = {1, 1.6F, 3, 5};
         int[] above = new int[from.length];
         for (var eye : layout.eyes())
         {

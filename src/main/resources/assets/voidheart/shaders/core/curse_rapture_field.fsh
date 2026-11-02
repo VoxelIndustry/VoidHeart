@@ -21,6 +21,7 @@ layout(location = 6) flat in vec4 vLids;
 layout(location = 7) flat in vec4 vSclera;
 // a: how much the pupil stands out
 layout(location = 8) flat in vec4 vIris;
+// a: whether this eye is only the plain pattern for the smallest
 layout(location = 9) flat in vec4 vLid;
 // x: how far the opening reaches sideways. y: how far all of the eye does, lids included
 layout(location = 10) flat in vec2 vReach;
@@ -103,6 +104,30 @@ const float PUPIL_SOFT = 0.72;
 const float TWIN_SIZE = 0.68;
 const vec2 TWIN_AXIS = vec2(0.6, 0.8);
 
+// A goat's iris goes in these bands from pale around the pupil to dark at its edge
+const float GOAT_BANDS = 4.0;
+const vec3 GOAT_PALE = vec3(0.8, 0.76, 0.6);
+const float GOAT_PALE_SHARE = 0.38;
+const float GOAT_EDGE = 0.52;
+// How round the ends of its pupil are, and the texels high it stays at least up to where it may narrow to its tip
+const float GOAT_PUPIL_ENDS = 0.35;
+const float GOAT_PUPIL_LEAST = 0.55;
+const float GOAT_PUPIL_TIP = 0.9;
+// The dark rim around its opening doubles from this many texels of half width
+const float GOAT_RIM_DOUBLE_FROM = 8.0;
+
+// The smallest eyes: a row of pale texels each side of a dark middle, and a dim shorter row above and below. These only ever darken the eye's own colors, for it to stay in the background
+const float SPECK_SCLERA = 0.85;
+const float SPECK_SHADE = 0.6;
+const float SPECK_IRIS = 0.7;
+const float SPECK_PUPIL = 0.85;
+// A bit of grace for an eye just short of the next texel, and from how many texels out it has room for an iris on both sides of its pupil
+const float SPECK_GRACE = 0.1;
+const float SPECK_RINGED_FROM = 3.0;
+// Lids closer than this, or too few texels of half width for the whole pattern, leave only a dim dash
+const float SPECK_SHUT = 0.5;
+const float SPECK_WHOLE_FROM = 1.9;
+
 float bow(float x, float power)
 {
     return pow(max(1.0 - x * x, 0.0), power);
@@ -122,7 +147,8 @@ vec3 upperLid(int family, vec2 cell, float above, float thickness, float size)
 {
     if (family == ROUND)
         return vLid.rgb * RIM;
-    if (size >= LASH_FROM && above < 1.0)
+    float rim = family == GOAT && size >= GOAT_RIM_DOUBLE_FROM ? 2.0 : 1.0;
+    if (size >= LASH_FROM && above < rim)
         return vLid.rgb * LASH;
 
     float depth = thickness > 0.0 ? above / thickness : 0.0;
@@ -137,7 +163,7 @@ vec3 upperLid(int family, vec2 cell, float above, float thickness, float size)
         else if (mod(scale.x, 4.0) == 2.0 && mod(scale.y, 2.0) >= 1.0)
             color = vLid.rgb * SCALE_LIGHT;
     }
-    if ((family == GOAT || family == SLIT) && hash(cell.x) < 0.4 && above > 1.0)
+    if ((family == GOAT || family == SLIT) && hash(cell.x) < 0.4 && above > rim)
         color *= FUR_DARK;
     return color;
 }
@@ -146,7 +172,8 @@ vec3 lowerLid(int family, vec2 cell, float below, float thickness, float size)
 {
     if (family == ROUND)
         return vLid.rgb * RIM;
-    if (size >= LASH_FROM && below < 1.0)
+    float rim = family == GOAT && size >= GOAT_RIM_DOUBLE_FROM ? 2.0 : 1.0;
+    if (size >= LASH_FROM && below < rim)
         return vLid.rgb * LASH;
 
     float depth = thickness > 0.0 ? below / thickness : 0.0;
@@ -200,6 +227,18 @@ float pupilShape(vec2 relative)
     return max(dot(relative, relative), across * across);
 }
 
+// Below one is inside. A bar rounded off at the ends, where it has the height for it
+float goatPupil(vec2 relative, float size)
+{
+    float along = abs(relative.x);
+    if (along >= 1.0)
+        return 2.0;
+
+    float tall = vPupil.z * size;
+    float high = bow(along, GOAT_PUPIL_ENDS) * tall;
+    return abs(relative.y) * tall / max(high, along < GOAT_PUPIL_TIP ? GOAT_PUPIL_LEAST : 0.001);
+}
+
 vec3 iris(int family, vec2 toIris, vec2 cell, float size, float fromTop)
 {
     float radius = vPupil.x;
@@ -209,7 +248,12 @@ vec3 iris(int family, vec2 toIris, vec2 cell, float size, float fromTop)
     if (radiusTexels < IRIS_SOLID_BELOW)
         return color * IRIS_SOLID_DARK;
 
-    if (radiusTexels >= RING_FROM && length(toIris) > radius - 1.0 / size)
+    if (family == GOAT)
+    {
+        float band = min(floor(length(toIris) / radius * GOAT_BANDS), GOAT_BANDS - 1.0) / (GOAT_BANDS - 1.0);
+        color = mix(mix(vIris.rgb, GOAT_PALE, GOAT_PALE_SHARE), vIris.rgb * GOAT_EDGE, band);
+    }
+    else if (radiusTexels >= RING_FROM && length(toIris) > radius - 1.0 / size)
         color *= IRIS_RING;
     else if (radiusTexels >= BANDS_FROM)
     {
@@ -231,7 +275,7 @@ vec3 iris(int family, vec2 toIris, vec2 cell, float size, float fromTop)
     vec2 fromPupil = (toIris + snap - TWIN_AXIS * vPupil.w) / vPupil.yz;
     float inPupil;
     if (family == GOAT)
-        inPupil = pow(abs(fromPupil.x), 4.0) + pow(abs(fromPupil.y), 4.0);
+        inPupil = goatPupil(fromPupil, size);
     else
         inPupil = pupilShape(fromPupil);
     if (family == WRONG)
@@ -291,6 +335,30 @@ vec4 eye()
     return vec4(sclera(family, unit, cell, x, size, fromTop), 1.0);
 }
 
+vec4 speck()
+{
+    vec2 cell = floor(vTexel + 0.5);
+    float size = vStar.z;
+    float across = abs(cell.x);
+    float row = abs(cell.y);
+    float reach = floor(size + SPECK_GRACE);
+    if (across > reach)
+        return vec4(0.0);
+
+    vec3 sclera = vSclera.rgb * SPECK_SCLERA;
+    if (vLook.z < SPECK_SHUT || size < SPECK_WHOLE_FROM)
+        return row == 0.0 ? vec4(sclera * SPECK_SHADE, 1.0) : vec4(0.0);
+    if (row > 1.0 || row == 1.0 && across >= reach)
+        return vec4(0.0);
+
+    float fromPupil = abs(cell.x - floor(vLook.x * size + 0.5));
+    if (fromPupil == 0.0)
+        return vec4(row == 0.0 ? mix(vIris.rgb, PUPIL, SPECK_PUPIL) : vIris.rgb * SPECK_IRIS, 1.0);
+    if (row == 1.0)
+        return vec4(sclera * SPECK_SHADE, 1.0);
+    return vec4(fromPupil == 1.0 && reach >= SPECK_RINGED_FROM ? vIris.rgb * SPECK_IRIS : sclera, 1.0);
+}
+
 void main() {
     float star = CurseTime.y * CurseTime.y;
     vec4 plainStar = vec4(star, star, star, 0.0);
@@ -303,7 +371,7 @@ void main() {
     }
 
     bool onStar = abs(vTexel.x) < vStar.y && abs(vTexel.y) < vStar.y;
-    fragColor = mix(eye(), onStar ? plainStar : vec4(0.0), vStar.x);
+    fragColor = mix(vLid.a > 0.5 ? speck() : eye(), onStar ? plainStar : vec4(0.0), vStar.x);
     if (fragColor.a <= 0.0 && dot(fragColor.rgb, vec3(1.0)) <= 0.0)
         discard;
 }

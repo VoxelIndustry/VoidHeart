@@ -31,10 +31,17 @@ layout(location = 10) flat out vec2 vReach;
 
 // Blocks at the dome's radius. The same in the fragment shader and in RaptureFieldLayout
 const float TEXEL = 0.5;
-const float WIDTH_LEAST = 0.9;
+const float WIDTH_LEAST = 1.0;
 const float WIDTH_MOST = 8.0;
 // The same as in RaptureFieldMesh
 const float TILT_RANGE = 2.4;
+
+// Texels past the eye the quad reaches, for a texel with its center inside to be there whole
+const float QUAD_PAST_EYE = 0.6;
+// Below this half width an eye is the plain pattern of the fragment shader and nothing else. The same as SIMPLE_BELOW in RaptureFieldLayout
+const float SPECK_BELOW = 1.5;
+// An eye without lids has nothing to close: it shrinks away, losing its rim once it gets below this many texels of half width
+const float LIDLESS_RIM_FROM = 3.0;
 
 // While not staring, as a share of its widest size. The smallest are only a few texels to begin with, and keep them
 const float RELAXED_WIDTH = 0.86;
@@ -89,24 +96,25 @@ const float LID_FROM = 1.4;
 
 // Per family, in the order of RaptureFieldLayout.Family: almond, round, narrow, heavy, goat, slit, wrong.
 // All lengths in half widths, unless they say texels. Openings are measured with the lids at 1
-const float OPEN_TOP[7] = float[7](0.46, 0.84, 0.21, 0.27, 0.42, 0.54, 0.60);
-const float OPEN_BOTTOM[7] = float[7](0.34, 0.84, 0.17, 0.44, 0.36, 0.42, 0.50);
+const float OPEN_TOP[7] = float[7](0.46, 0.84, 0.21, 0.27, 0.52, 0.54, 0.60);
+const float OPEN_BOTTOM[7] = float[7](0.34, 0.84, 0.17, 0.44, 0.44, 0.42, 0.50);
 // How far the opening reaches sideways at most: a round one stays round, the others go as far as their lids let them
-const float OPEN_SIDE[7] = float[7](1.00, 0.84, 1.00, 1.00, 1.00, 1.00, 1.00);
-const float SHARP_TOP[7] = float[7](0.72, 0.50, 0.75, 0.60, 0.32, 0.62, 0.55);
-const float SHARP_BOTTOM[7] = float[7](0.90, 0.50, 0.85, 0.72, 0.40, 0.90, 0.55);
+const float OPEN_SIDE[7] = float[7](1.00, 0.84, 1.00, 1.00, 0.94, 1.00, 1.00);
+const float SHARP_TOP[7] = float[7](0.72, 0.50, 0.75, 0.60, 0.64, 0.62, 0.55);
+const float SHARP_BOTTOM[7] = float[7](0.90, 0.50, 0.85, 0.72, 0.74, 0.90, 0.55);
 // Outer corner up, then both corners falling
 const float SLANT[7] = float[7](0.05, 0.00, 0.44, -0.04, 0.05, 0.24, 0.00);
 const float DROOP[7] = float[7](0.00, 0.00, 0.00, 0.26, 0.03, 0.00, 0.00);
 const float LID_TOP[7] = float[7](3.0, 1.0, 4.0, 7.0, 3.0, 2.0, 2.0);
 const float LID_BOTTOM[7] = float[7](1.0, 1.0, 3.0, 4.0, 2.0, 1.0, 1.0);
-const float LIDS_STARING[7] = float[7](1.20, 1.00, 1.30, 1.16, 1.14, 1.12, 1.10);
+const float LIDS_STARING[7] = float[7](1.20, 1.00, 1.30, 1.16, 1.10, 1.12, 1.10);
+// Zero for those with no lids to close
 const float BLINKS[7] = float[7](1.0, 0.0, 0.7, 1.0, 1.0, 1.0, 0.0);
-const float IRIS_RADIUS[7] = float[7](0.46, 0.60, 0.50, 0.46, 0.74, 0.60, 0.56);
-const float PUPIL_WIDE[7] = float[7](0.42, 0.30, 0.12, 0.42, 0.58, 0.11, 0.30);
-const float PUPIL_TALL[7] = float[7](0.42, 0.30, 0.92, 0.42, 0.14, 0.94, 0.30);
+const float IRIS_RADIUS[7] = float[7](0.46, 0.60, 0.50, 0.46, 0.66, 0.60, 0.56);
+const float PUPIL_WIDE[7] = float[7](0.42, 0.30, 0.12, 0.42, 0.80, 0.11, 0.30);
+const float PUPIL_TALL[7] = float[7](0.42, 0.30, 0.92, 0.42, 0.22, 0.94, 0.30);
 const float PUPIL_TWINS[7] = float[7](0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.40);
-const vec2 WANDER_REACH[7] = vec2[7](vec2(0.44, 0.14), vec2(0.30, 0.22), vec2(0.34, 0.05), vec2(0.40, 0.05), vec2(0.20, 0.04), vec2(0.30, 0.10), vec2(0.34, 0.20));
+const vec2 WANDER_REACH[7] = vec2[7](vec2(0.44, 0.14), vec2(0.30, 0.22), vec2(0.34, 0.05), vec2(0.40, 0.05), vec2(0.24, 0.05), vec2(0.30, 0.10), vec2(0.34, 0.20));
 
 float hash(float value)
 {
@@ -137,7 +145,7 @@ void main() {
     vReach = vec2(1.0);
     vSclera = Sclera;
     vIris = Iris;
-    vLid = Lid;
+    vLid = vec4(Lid.rgb, Width < SPECK_BELOW ? 1.0 : 0.0);
 
     vec3 center = (StarView * vec4(Center, 1.0)).xyz;
     vec3 normal = normalize(center);
@@ -173,7 +181,8 @@ void main() {
     float blinkAt = fract(CurseTime.x / blinkPeriod + seedA) * blinkPeriod;
     float blink = clamp(1.0 - abs(blinkAt - BLINK_SECONDS * 0.5) / (BLINK_SECONDS * 0.5), 0.0, 1.0) * (1.0 - stare) * BLINKS[family];
 
-    float lids = smoothstep(LIDS_PART_FROM, LIDS_PART_TO, grow) * mix(1.0, LIDS_STARING[family], stare) * (1.0 - blink);
+    bool lidless = BLINKS[family] <= 0.0;
+    float lids = (lidless ? 1.0 : smoothstep(LIDS_PART_FROM, LIDS_PART_TO, grow)) * mix(1.0, LIDS_STARING[family], stare) * (1.0 - blink);
     vLook = vec4(iris, lids, stare);
 
     vec3 right = cross(normal, up);
@@ -193,8 +202,7 @@ void main() {
     float turned = mix(angle, Corner.z * TILT_RANGE, smoothstep(0.0, 0.5, grow));
     float scaled = grow * grow * (3.0 - 2.0 * grow);
     float eyeSize = widthNow * scaled;
-    // Half a texel past the eye, for a texel with its center inside to be there whole
-    float size = mix(starSize, widthNow + TEXEL * 0.5, scaled);
+    float size = mix(starSize, widthNow + TEXEL * QUAD_PAST_EYE, scaled);
 
     float widthTexels = max(eyeSize / TEXEL, 0.001);
     vTexel = Corner.xy * size / TEXEL;
@@ -212,11 +220,12 @@ void main() {
     float pupilWide = PUPIL_WIDE[family] * radius * pupilScale;
     float pupilTall = PUPIL_TALL[family] * radius * pupilScale;
     vPupil = vec4(radius, max(pupilWide, (pupilWide < pupilTall * 0.5 ? PUPIL_THIN_LEAST : PUPIL_LEAST) / widthTexels),
-            max(pupilTall, (pupilTall < pupilWide * 0.5 ? PUPIL_THIN_LEAST : PUPIL_LEAST) / widthTexels), PUPIL_TWINS[family] * radius);
+            max(pupilTall, (pupilTall < pupilWide * 0.65 ? PUPIL_THIN_LEAST : PUPIL_LEAST) / widthTexels), PUPIL_TWINS[family] * radius);
 
     float lidGrowth = clamp((Width - LID_FROM) / (WIDTH_MOST - LID_FROM), 0.0, 1.0);
-    vLids = vec4(max(floor(LID_TOP[family] * lidGrowth + 0.5), 1.0), max(floor(LID_BOTTOM[family] * lidGrowth + 0.5), 1.0), seedA, seedB);
-    float aside = 1.0 / widthTexels;
+    bool rimless = lidless && widthTexels < LIDLESS_RIM_FROM;
+    vLids = vec4(rimless ? 0.0 : max(floor(LID_TOP[family] * lidGrowth + 0.5), 1.0), rimless ? 0.0 : max(floor(LID_BOTTOM[family] * lidGrowth + 0.5), 1.0), seedA, seedB);
+    float aside = rimless ? 0.0 : 1.0 / widthTexels;
     vReach = vec2(min(1.0 - aside, OPEN_SIDE[family]), min(1.0 - aside, OPEN_SIDE[family]) + aside);
 
     vec2 local = Corner.xy * size;
