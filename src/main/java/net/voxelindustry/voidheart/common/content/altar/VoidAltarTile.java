@@ -25,6 +25,8 @@ import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
+import net.minecraft.server.level.ServerPlayer;
+import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -169,6 +171,16 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         super.saveAdditional(tag);
     }
 
+    /**
+     * The client doesn't know what its player researched, so on locked recipes it waits for the server to start the craft rather than predict it.
+     */
+    private boolean canStart(Player player, AltarRecipe recipe)
+    {
+        if (player instanceof ServerPlayer serverPlayer)
+            return Knowledge.canUse(serverPlayer, recipe.getId());
+        return Knowledge.lockOf(getLevel().registryAccess(), recipe.getId()).isEmpty();
+    }
+
     public void setStack(Player player, ItemStack stack)
     {
         this.stack = stack;
@@ -179,6 +191,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             if (pillars.size() == 8)
             {
                 retrieveCurrentRecipe();
+                if (currentRecipe != null && !canStart(player, currentRecipe))
+                    currentRecipe = null;
+
                 if (currentRecipe != null)
                 {
                     startCrafting();

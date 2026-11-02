@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "voidheart:voidstone_writhing",
+    "minecraft:ghast_tear",
+    "minecraft:blaze_rod",
+    "minecraft:shulker_shell",
+    "minecraft:prismarine_crystals",
+    "minecraft:echo_shard",
+    "minecraft:rabbit_foot",
+    "minecraft:enchanted_book",
+    "minecraft:disc_fragment_5"
+  ]
+}

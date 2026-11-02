@@ -27,6 +27,7 @@ public class VoidHeartConfig
     private static final String OCULUS_TABLE = "oculus_table";
     private static final String BEHOLDER = "beholder";
     private static final String SHOULDER_EYE = "shoulder_eye";
+    private static final String RESEARCH = "research";
 
     @AutoGen(category = LEY_LINES)
     @TickBox
@@ -78,9 +79,50 @@ public class VoidHeartConfig
     @SerialEntry(value = "shoulder_eye_regen_seconds", comment = "Seconds a slain Shoulder Eye takes to grow back before returning to its owner")
     public int shoulderEyeRegenSeconds = 60;
 
+    @AutoGen(category = RESEARCH)
+    @TickBox
+    @SerialEntry(value = "research_gating", comment = "Refuse the recipes named by research until that research is done")
+    public boolean researchGating = true;
+
+    @AutoGen(category = RESEARCH)
+    @FloatSlider(min = 0.01F, max = 5, step = 0.01F, format = "%.2f")
+    @SerialEntry(value = "knowledge_base_rate", comment = "Knowledge per second a repository gathers, before research")
+    public float knowledgeBaseRate = 0.1F;
+
+    @AutoGen(category = RESEARCH)
+    @IntSlider(min = 10, max = 1000, step = 10)
+    @SerialEntry(value = "knowledge_base_cap", comment = "Knowledge a player can hold, before research")
+    public int knowledgeBaseCap = 30;
+
+    @AutoGen(category = RESEARCH)
+    @FloatSlider(min = 1, max = 100, step = 1, format = "%.0f")
+    @SerialEntry(value = "insight_base_cost", comment = "Knowledge the first insight costs")
+    public float insightBaseCost = 10;
+
+    @AutoGen(category = RESEARCH)
+    @FloatSlider(min = 1, max = 2, step = 0.01F, format = "%.2f")
+    @SerialEntry(value = "insight_cost_growth", comment = "How much pricier each insight is than the one before")
+    public float insightCostGrowth = 1.2F;
+
+    @AutoGen(category = RESEARCH)
+    @FloatSlider(min = 0, max = 1, step = 0.01F, format = "%.2f")
+    @SerialEntry(value = "knowledge_first_tablet_chance", comment = "Chance for a broken monolith block to drop a Knowledge Tablet, until the player has held one")
+    public float knowledgeFirstTabletChance = 0.3F;
+
+    @AutoGen(category = RESEARCH)
+    @FloatSlider(min = 0, max = 1, step = 0.01F, format = "%.2f")
+    @SerialEntry(value = "knowledge_tablet_chance", comment = "Chance for a broken monolith block to drop a Knowledge Tablet, once the player has held one")
+    public float knowledgeTabletChance = 0.05F;
+
     public static void load()
     {
         HANDLER.load();
+        get().knowledgeBaseRate = Mth.clamp(get().knowledgeBaseRate, 0.01F, 5);
+        get().knowledgeBaseCap = Mth.clamp(get().knowledgeBaseCap, 10, 1000);
+        get().insightBaseCost = Mth.clamp(get().insightBaseCost, 1, 100);
+        get().insightCostGrowth = Mth.clamp(get().insightCostGrowth, 1, 2);
+        get().knowledgeFirstTabletChance = Mth.clamp(get().knowledgeFirstTabletChance, 0, 1);
+        get().knowledgeTabletChance = Mth.clamp(get().knowledgeTabletChance, 0, 1);
         get().leyLineTravelAnchorInactiveRate = Mth.clamp(get().leyLineTravelAnchorInactiveRate, 0, 1);
         get().oculusTableFollowRange = Mth.clamp(get().oculusTableFollowRange, 16, 512);
         get().oculusTableSightRange = Mth.clamp(get().oculusTableSightRange, 0, 64);

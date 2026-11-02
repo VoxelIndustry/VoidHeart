@@ -1,0 +1,12 @@
+{
+  "tier": 1,
+  "row": 3,
+  "icon": "minecraft:sculk_sensor",
+  "insight_cost": 2,
+  "knowledge_cost": 30,
+  "knowledge_per_second": 0.25,
+  "requires": [
+    "voidheart:archive_expansion"
+  ],
+  "passive_bonus": 0.05
+}

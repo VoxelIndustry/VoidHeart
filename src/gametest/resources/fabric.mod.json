@@ -18,7 +18,10 @@
       "net.voxelindustry.voidheart.gametest.CurseClientTest",
       "net.voxelindustry.voidheart.gametest.OmenClientTest",
       "net.voxelindustry.voidheart.gametest.RaptureClientTest",
-      "net.voxelindustry.voidheart.gametest.VigilClientTest"
+      "net.voxelindustry.voidheart.gametest.VigilClientTest",
+      "net.voxelindustry.voidheart.gametest.ResearchClientTest",
+      "net.voxelindustry.voidheart.gametest.ResearchScreenClientTest",
+      "net.voxelindustry.voidheart.gametest.KnowledgeTooltipClientTest"
     ]
   },
   "depends": {

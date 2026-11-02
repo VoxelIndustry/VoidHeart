@@ -1,0 +1,16 @@
+{
+  "tier": 2,
+  "row": 2,
+  "icon": "voidheart:experience_skull",
+  "insight_cost": 6,
+  "knowledge_cost": 150,
+  "knowledge_per_second": 0.75,
+  "requires": [
+    "voidheart:void_flesh"
+  ],
+  "recipes": [
+    "voidheart:altar/experience_skull",
+    "voidheart:altar/inventory_inserter",
+    "voidheart:void_conduit"
+  ]
+}
