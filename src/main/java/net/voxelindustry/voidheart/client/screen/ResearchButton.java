@@ -7,10 +7,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Util;
 
-import java.util.function.DoubleSupplier;
-
 /**
- * A plate cut in the stone. It charges up from the left as what it needs comes in, and breathes once it can be pressed.
+ * A plate cut in the stone, which breathes while it can be pressed.
  */
 class ResearchButton extends Button
 {
@@ -24,12 +22,9 @@ class ResearchButton extends Button
     private static final int  DEAD_TEXT       = 0xFF9A8AAE;
     private static final long BREATH_MILLIS   = 2400;
 
-    private final DoubleSupplier charge;
-
-    ResearchButton(int x, int y, int width, int height, DoubleSupplier charge, OnPress onPress)
+    ResearchButton(int x, int y, int width, int height, OnPress onPress)
     {
         super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
-        this.charge = charge;
     }
 
     @Override
@@ -43,11 +38,6 @@ class ResearchButton extends Button
         {
             float breath = 0.5F + 0.5F * (float) Math.sin(Util.getMillis() * Math.PI * 2 / BREATH_MILLIS);
             graphics.fill(x, y, x + width, y + height, ARGB.srgbLerp(breath * 0.6F, CHARGE_COLOR, READY_COLOR));
-        }
-        else
-        {
-            int filled = (int) (width * Math.clamp(charge.getAsDouble(), 0, 1));
-            graphics.fill(x, y, x + filled, y + height, CHARGE_COLOR);
         }
 
         graphics.outline(x, y, width, height, !active ? BORDER_COLOR : isHoveredOrFocused() ? HOVER_COLOR : LIVE_COLOR);

@@ -50,8 +50,11 @@ final class ResearchMapView
     private static final float LOWER_LID_REST = 0.5F;
     private static final float LOWER_LID = 0.86F;
 
-    private static final int  LABEL_MIN_WIDTH = 330;
     private static final int  LABEL_WIDTH     = 78;
+    static final int          BOTTOM_BAND     = 40;
+    private static final int  MOTES_MAX       = 40;
+    private static final int  MOTES_REACH     = 9;
+    private static final float MOTES_SPEED    = 0.00011F;
     private static final int  LABEL_DROP      = 4;
     private static final int  LABEL_BACK_COLOR = 0xC8050308;
     private static final int  TEAR_CLEARANCE  = 18;
@@ -100,6 +103,7 @@ final class ResearchMapView
     private final int                       right;
     private final int                       mapWidth;
     private final int                       eyeScale;
+    private long                            startledAt = -1;
 
     ResearchMapView(Font font, Map<Identifier, Research> tree, int left, int right, int height, long seed)
     {
@@ -110,9 +114,9 @@ final class ResearchMapView
         this.right = right;
         this.mapWidth = right - left;
 
-        double radiusY = Math.min(height / 2D - NODE_SIZE / 2D - 6, 300);
+        double radiusY = Math.min((height - BOTTOM_BAND) / 2D - NODE_SIZE / 2D - 4, 300);
         double radiusX = Math.min(mapWidth / 2D - NODE_SIZE / 2D - 8, radiusY * 1.4);
-        this.projection = new Projection((left + right) / 2D, height / 2D, radiusX, radiusY);
+        this.projection = new Projection((left + right) / 2D, (height - BOTTOM_BAND) / 2D, radiusX, radiusY);
         this.eyeScale = height >= LARGE_EYE_MIN ? 2 : 1;
 
         tree.forEach((id, research) ->
@@ -247,13 +251,21 @@ final class ResearchMapView
                 .findFirst();
     }
 
-    boolean overEye(double mouseX, double mouseY)
+    /**
+     * Where an insight joins the others circling the eye.
+     */
+    int orbitY()
     {
-        return Math.abs(mouseX - projection.centerX()) <= SCLERA_W * eyeScale / 2D && Math.abs(mouseY - projection.centerY()) <= SCLERA_H * eyeScale / 2D;
+        return (int) projection.centerY() - SCLERA_H * eyeScale / 2 - MOTES_REACH;
+    }
+
+    void startle(long at)
+    {
+        startledAt = at;
     }
 
     void extract(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Identifier background, int screenW, int screenH,
-                 float fullness, boolean flowing, Identifier selected, Identifier hovered)
+                 float fullness, boolean flowing, boolean canRefine, Identifier selected, Identifier hovered)
     {
         long now = Util.getMillis();
         var lineage = new HashSet<Identifier>();
@@ -265,10 +277,11 @@ final class ResearchMapView
         extractWatchers(graphics, mouseX, mouseY, now);
         extractEmbers(graphics, now);
         links.forEach(link -> extractLink(graphics, link, lineage, running, flowing, now));
-        extractEye(graphics, running, mouseX, mouseY, background, screenW, screenH, fullness, now);
+        extractEye(graphics, running, mouseX, mouseY, background, screenW, screenH, fullness, canRefine, now);
+        extractInsights(graphics, now);
         tree.forEach((id, research) -> extractNode(graphics, id, research, now));
         extractMarks(graphics, selected, hovered);
-        tree.forEach((id, research) -> extractLabel(graphics, id, research, screenH));
+        tree.forEach((id, research) -> extractLabel(graphics, id, research, selected, hovered, screenH));
         extractBlooms(graphics, screenH, now);
     }
 
@@ -374,7 +387,7 @@ final class ResearchMapView
     /**
      * Lids are the background itself drawn back over the eye a column at a time, so they cut any curve at no more than a few hundred quads.
      */
-    private void extractEye(GuiGraphicsExtractor graphics, Set<Identifier> running, int mouseX, int mouseY, Identifier background, int screenW, int screenH, float fullness, long now)
+    private void extractEye(GuiGraphicsExtractor graphics, Set<Identifier> running, int mouseX, int mouseY, Identifier background, int screenW, int screenH, float fullness, boolean canRefine, long now)
     {
         int centerX = (int) projection.centerX();
         int centerY = (int) projection.centerY();
@@ -389,6 +402,9 @@ final class ResearchMapView
         float startle = 0;
         for (var bloom : blooms)
             startle = Math.max(startle, 1 - (now - bloom.start()) / (float) (bloom.finished() ? FINISH_MILLIS : BLOOM_MILLIS));
+
+        if (startledAt >= 0 && now >= startledAt)
+            startle = Math.max(startle, 1 - (now - startledAt) / (float) BLOOM_MILLIS);
 
         // The upper lid carries the closing, so a hungry eye looks hooded rather than squashed
         float open = Math.clamp(MIN_OPEN + (1 - MIN_OPEN) * fullness + startle * 0.5F, 0, 1);
@@ -409,6 +425,10 @@ final class ResearchMapView
         int pupilH = PUPIL_H * eyeScale;
         graphics.blit(RenderPipelines.GUI_TEXTURED, SPRITES, centerX + (int) gazeX - pupilW / 2, centerY + (int) gazeY - pupilH / 2, PUPIL_U, EYE_ROW, pupilW, pupilH, PUPIL_W, PUPIL_H, ATLAS, ATLAS);
 
+        // Knowledge enough for an insight shows as a lid breathing towards the frontier's colour
+        float ready = canRefine ? 0.5F + 0.5F * (float) Math.sin(now * Math.PI * 2 / BREATH_MILLIS) : 0;
+        int lidColor = ARGB.srgbLerp(ready, ResearchScreen.LID_COLOR, 0xFF000000 | ResearchScreen.FRONTIER_RGB);
+
         for (int column = -halfW; column < halfW; column += eyeScale)
         {
             float across = (column + eyeScale / 2F) / halfW;
@@ -418,11 +438,28 @@ final class ResearchMapView
 
             graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY - halfH - 1, x, centerY - halfH - 1, eyeScale, halfH + 1 - upper, screenW, screenH);
             graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY + lower, x, centerY + lower, eyeScale, halfH + 1 - lower, screenW, screenH);
-            graphics.fill(x, centerY - upper - eyeScale * 2, x + eyeScale, centerY - upper, ResearchScreen.LID_COLOR);
+            graphics.fill(x, centerY - upper - eyeScale * 2, x + eyeScale, centerY - upper, lidColor);
             graphics.fill(x, centerY + lower, x + eyeScale, centerY + lower + eyeScale, ResearchScreen.LID_LOW_COLOR);
         }
 
         extractRoots(graphics, running, centerX, centerY, halfW, halfH, upperOpen, lowerOpen);
+    }
+
+    /**
+     * Insights kept are motes circling the eye, so that having them is seen rather than read.
+     */
+    private void extractInsights(GuiGraphicsExtractor graphics, long now)
+    {
+        int count = Math.min(ResearchScreen.snapshot.insights(), MOTES_MAX);
+        double radiusX = SCLERA_W * eyeScale / 2D + MOTES_REACH;
+        double radiusY = SCLERA_H * eyeScale / 2D + MOTES_REACH;
+        for (int mote = 0; mote < count; mote++)
+        {
+            double angle = mote * Math.PI * 2 / count + now * MOTES_SPEED;
+            int x = (int) (projection.centerX() + Math.cos(angle) * radiusX);
+            int y = (int) (projection.centerY() + Math.sin(angle) * radiusY);
+            graphics.fill(x, y, x + 2, y + 2, ARGB.color(230, ResearchScreen.FRONTIER_RGB));
+        }
     }
 
     private static float lidHeight(float across, int halfH, float open)
@@ -505,20 +542,19 @@ final class ResearchMapView
     }
 
     /**
-     * Names stay on the map when there is room for all of them, otherwise only for what is being worked on.
-     * They never leave the hole in the stone, and never cover another research: a name with nowhere to go is left to the rails.
+     * A name only shows for what is running and for what the cursor is on. It never leaves the hole in the stone,
+     * and the running name gives way rather than cover another research.
      */
-    private void extractLabel(GuiGraphicsExtractor graphics, Identifier id, Research research, int screenH)
+    private void extractLabel(GuiGraphicsExtractor graphics, Identifier id, Research research, Identifier selected, Identifier hovered, int screenH)
     {
         var state = ResearchScreen.stateOf(id, research);
-        if (state == NodeState.HIDDEN || state == NodeState.UNKNOWN)
-            return;
-        if (mapWidth < LABEL_MIN_WIDTH && state == NodeState.DONE)
+        boolean isHovered = id.equals(hovered);
+        if (state == NodeState.HIDDEN || id.equals(selected) || !isHovered && state != NodeState.ACTIVE)
             return;
 
-        var lines = font.split(Component.translatable(Research.nameKey(id)), LABEL_WIDTH);
+        var lines = font.split(state == NodeState.UNKNOWN ? Component.translatable("voidheart.research.unread") : Component.translatable(Research.nameKey(id)), LABEL_WIDTH);
         int shown = Math.min(2, lines.size());
-        int color = state == NodeState.DONE ? ResearchScreen.KNOWN_COLOR : state == NodeState.ACTIVE ? ResearchScreen.ACTIVE_COLOR : ResearchScreen.FRONTIER_COLOR;
+        int color = state == NodeState.UNKNOWN ? ResearchScreen.MUTED_COLOR : state == NodeState.DONE ? ResearchScreen.KNOWN_COLOR : state == NodeState.ACTIVE ? ResearchScreen.ACTIVE_COLOR : ResearchScreen.FRONTIER_COLOR;
         int widest = lines.stream().limit(shown).mapToInt(font::width).max().orElse(0);
         int centerX = Math.clamp(nodeX(id), left + TEAR_CLEARANCE + widest / 2, Math.max(left + TEAR_CLEARANCE + widest / 2, right - TEAR_CLEARANCE - widest / 2));
 
@@ -526,8 +562,10 @@ final class ResearchMapView
         int top = nodeY(id) + NODE_SIZE / 2 + LABEL_DROP;
         if (top + height > screenH - 2 || coversResearch(id, centerX, top, widest, height))
         {
-            top = nodeY(id) - NODE_SIZE / 2 - LABEL_DROP - height;
-            if (top < 2 || coversResearch(id, centerX, top, widest, height))
+            int above = nodeY(id) - NODE_SIZE / 2 - LABEL_DROP - height;
+            if (above >= 2 && !coversResearch(id, centerX, above, widest, height))
+                top = above;
+            else if (!isHovered)
                 return;
         }
 

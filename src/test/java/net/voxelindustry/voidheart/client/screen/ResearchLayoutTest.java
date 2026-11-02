@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ResearchLayoutTest
 {
-    private static final Projection SMALLEST = new Projection(100, 120, 84, 102);
+    private static final Projection SMALLEST = new Projection(213, 100, 126, 84);
     private static final double     EYE_HALF_W = 28;
     private static final double     EYE_HALF_H = 18;
 

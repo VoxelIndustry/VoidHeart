@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.ARGB;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -25,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads.Action;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryMenu;
 import net.voxelindustry.voidheart.common.content.research.Research;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,8 +37,8 @@ import java.util.Optional;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * A dashboard of what a player knows. The map in the middle shows the tree as far as it has been read, the ledger on
- * the left what there is to spend, and the frontier on the right everything that can be done next.
+ * The map is the screen: the eye shows how much is held, the motes around it how many insights, the light what has been reached.
+ * Everything more exact waits to be asked for: details beside a selected research, figures on the knowledge card, feed history behind its glyph.
  */
 public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryMenu>
 {
@@ -57,32 +59,36 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     static final int LID_LOW_COLOR  = 0xFF4A3860;
 
     private static final int RULE_COLOR     = 0xFF4A3860;
-    private static final int RULE_CUT_COLOR = 0xFF08050C;
-    private static final int SPENT_COLOR    = 0xFF8A7A99;
     private static final int BAR_BACK_COLOR = 0xFF08050C;
-    private static final int BAR_COLOR      = 0xFF8E6BE8;
-    private static final int ROW_HOVER      = 0x40FFFFFF;
-    private static final int ROW_SELECTED   = 0x3036C5B0;
+    private static final int TABLET_COLOR   = 0xF40B0810;
     private static final int SPENT_SHADE    = 0xB0100A18;
-    private static final int CARD_TINT      = 0x20F4D670;
-    private static final int CARD_HOVER     = 0x38F4D670;
+    private static final int READOUT_COLOR  = 0xFF8A7A99;
+    private static final int GLYPH_DIM      = 0x58040208;
+    private static final int WHISPER_BACK   = 0xA0050308;
 
-    private static final int LEFT_MIN  = 112;
-    private static final int LEFT_MAX  = 170;
-    private static final int RIGHT_MIN = 124;
-    private static final int RIGHT_MAX = 200;
-    private static final int PAD       = 8;
-    private static final int LINE      = 10;
-    private static final int ROW_H     = 22;
-    private static final int CARD_H    = 42;
-    private static final int BUTTON_H  = 18;
-    private static final int INSPECTOR_MIN = 60;
-    private static final int DONE_GAP  = 5;
-    private static final int FED_PITCH = 18;
-    private static final int FED_CELL  = 46;
+    private static final int RIM_MIN       = 20;
+    private static final int RIM_MAX       = 40;
+    private static final int PAD           = 8;
+    private static final int LINE          = 10;
+    private static final int BUTTON_H      = 18;
+    private static final int FED_PITCH     = 18;
+    private static final int FED_COLUMNS   = 6;
+    private static final int FED_ROWS      = 5;
+    private static final int DETAIL_MIN    = 136;
+    private static final int DETAIL_MAX    = 190;
+    private static final int DETAIL_GAP    = 18;
+    private static final int GLYPH_SIZE    = 16;
+    private static final int CARD_MIN      = 118;
+    private static final int CARD_ROW      = 11;
+    private static final int READOUT_HOVER = 3;
 
     private static final long LEARNED_MILLIS = 7000;
     private static final long FADE_MILLIS    = 1200;
+    private static final long CARD_GROW      = 230;
+    private static final long CARD_SHRINK    = 110;
+    private static final float CARD_FROM     = 0.35F;
+    private static final long FLIGHT_MILLIS  = 850;
+    private static final int  FLIGHT_TRAIL   = 5;
 
     private static final Identifier VOID_A = Identifier.fromNamespaceAndPath(MODID, "dynamic/research_void");
     private static final Identifier VOID_B = Identifier.fromNamespaceAndPath(MODID, "dynamic/research_void_previous");
@@ -96,10 +102,26 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         DONE
     }
 
+    private record Line(FormattedCharSequence text, int color)
+    {
+    }
+
+    private record CardRow(Component label, String value, int valueColor)
+    {
+    }
+
+    private record Bounds(int x, int y, int width, int height)
+    {
+        boolean contains(double px, double py)
+        {
+            return px >= x && px < x + width && py >= y && py < y + height;
+        }
+    }
+
     private Map<Identifier, Research> tree = Map.of();
     private ResearchMapView           map;
-    private ResearchButton            refineButton;
     private ResearchButton            actionButton;
+    private ResearchInsightButton     insightButton;
     private List<Identifier>          frontier = List.of();
 
     private Identifier                 voidCurrent = VOID_A;
@@ -108,12 +130,17 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private Identifier                 selected;
     private Identifier                 lastClicked;
     private Identifier                 learned;
+    private Bounds                     detailBounds;
+    private Bounds                     fedBounds;
+    private Bounds                     cardBounds;
+    private float                      cardOpen;
+    private long                       cardTickedAt;
+    private long                       flightAt = -1;
+    private boolean                    fedOpen;
     private long                       learnedAt;
     private long                       snapshotAt;
     private long                       bakedAt;
     private boolean                    hasPrevious;
-    private boolean                    descriptionCut;
-    private int                        listScroll;
     private int                        fedScroll;
     private int                        left;
     private int                        right;
@@ -129,8 +156,9 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         super.init();
 
         tree = Knowledge.tree(minecraft.level.registryAccess());
-        left = Math.clamp((int) (width * 0.24F), LEFT_MIN, LEFT_MAX);
-        right = width - Math.clamp((int) (width * 0.28F), RIGHT_MIN, RIGHT_MAX);
+        int rim = Math.clamp((int) (width * 0.045F), RIM_MIN, RIM_MAX);
+        left = rim;
+        right = width - rim;
         map = new ResearchMapView(font, tree, left, right, height, seed());
 
         hasPrevious = false;
@@ -142,17 +170,22 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             snapshotAt = Util.getMillis();
         }
 
-        refineButton = addRenderableWidget(new ResearchButton(PAD, 0, left - PAD * 2, BUTTON_H, () -> snapshot.nextInsightCost() > 0 ? shownKnowledge() / snapshot.nextInsightCost() : 0,
-                pressed ->
-                {
-                    setFocused(null);
-                    send(Action.Kind.BUY_INSIGHT, null);
-                }));
-        actionButton = addRenderableWidget(new ResearchButton(right + PAD, height - PAD - BUTTON_H, width - right - PAD * 2, BUTTON_H, () -> 0, pressed ->
+        actionButton = addRenderableWidget(new ResearchButton(0, 0, DETAIL_MIN, BUTTON_H, pressed ->
         {
             setFocused(null);
             act();
         }));
+        actionButton.visible = false;
+
+        insightButton = addRenderableWidget(new ResearchInsightButton((left + right - ResearchInsightButton.WIDTH) / 2, height - PAD - LINE - 3 - ResearchInsightButton.HEIGHT,
+                Component.translatable("voidheart.research.craft"),
+                () -> snapshot.insights(),
+                () -> snapshot.nextInsightCost() > 0 ? shownKnowledge() / snapshot.nextInsightCost() : 0,
+                pressed ->
+                {
+                    setFocused(null);
+                    refine();
+                }));
     }
 
     private long seed()
@@ -200,6 +233,9 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         seen = snapshot;
         snapshotAt = Util.getMillis();
 
+        if (before.nextInsightCost() > 0 && snapshot.nextInsightCost() > before.nextInsightCost())
+            onInsightCrafted();
+
         boolean grew = false;
         for (var id : snapshot.revealed())
         {
@@ -234,6 +270,14 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         rebuildFrontier();
     }
 
+    private void onInsightCrafted()
+    {
+        flightAt = snapshotAt;
+        insightButton.crafted();
+        map.startle(snapshotAt + FLIGHT_MILLIS);
+        minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.BOOK_PAGE_TURN, 0.8F));
+    }
+
     /**
      * The new light goes into the other texture, and the old one stays around to fade out over it.
      */
@@ -258,8 +302,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
                 .map(Map.Entry::getKey)
                 .toList();
 
-        if (selected == null || !tree.containsKey(selected) || stateOf(selected, tree.get(selected)) == NodeState.HIDDEN)
-            selected = snapshot.active().orElse(frontier.isEmpty() ? null : frontier.getFirst());
+        if (selected != null && (!tree.containsKey(selected) || stateOf(selected, tree.get(selected)) == NodeState.HIDDEN))
+            selected = null;
     }
 
     private double secondsSinceSnapshot()
@@ -301,9 +345,9 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return KnowledgeMath.secondsToFinish(shownKnowledge(), snapshot.rate(), research.knowledgeCost() - shownProgress(id, research), research.knowledgePerSecond());
     }
 
-    private static String number(double value)
+    private boolean canRefine()
     {
-        return value >= 100 || Math.abs(value - Math.rint(value)) < 0.05 ? String.format("%.0f", value) : String.format("%.1f", value);
+        return snapshot.nextInsightCost() > 0 && shownKnowledge() >= snapshot.nextInsightCost();
     }
 
     private static String wholeNumber(double value)
@@ -331,21 +375,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return Component.translatableWithFallback("voidheart.research.ring." + research.tier(), "Ring " + research.tier());
     }
 
-    private String fit(String text, int maxWidth)
+    private static void tablet(GuiGraphicsExtractor graphics, Bounds bounds)
     {
-        if (font.width(text) <= maxWidth)
-            return text;
-        return font.plainSubstrByWidth(text, maxWidth - font.width("...")).stripTrailing() + "...";
-    }
-
-    private void bigNumber(GuiGraphicsExtractor graphics, String text, int x, int y, int color)
-    {
-        var pose = graphics.pose();
-        pose.pushMatrix();
-        pose.translate(x, y);
-        pose.scale(2);
-        graphics.text(font, text, 0, 0, color);
-        pose.popMatrix();
+        graphics.fill(bounds.x(), bounds.y(), bounds.x() + bounds.width(), bounds.y() + bounds.height(), TABLET_COLOR);
+        graphics.outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), RULE_COLOR);
     }
 
     @Override
@@ -364,107 +397,237 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         }
 
         float fullness = snapshot.cap() > 0 ? (float) Math.min(1, shownKnowledge() / snapshot.cap()) : 0;
-        map.extract(graphics, mouseX, mouseY, voidCurrent, width, height, fullness, !starving(), selected, hoveredNode(mouseX, mouseY));
+        map.extract(graphics, mouseX, mouseY, voidCurrent, width, height, fullness, !starving(), canRefine(), selected, hoveredNode(mouseX, mouseY));
 
-        extractLedger(graphics, mouseX, mouseY);
-        extractFrontier(graphics, mouseX, mouseY);
-        extractInspector(graphics);
+        insightButton.active = canRefine();
+
+        extractFlight(graphics);
+        extractReadout(graphics, mouseX, mouseY);
+        extractWhisper(graphics);
+        extractFedGlyph(graphics, mouseX, mouseY);
+        extractDetail(graphics);
+        extractFed(graphics);
+        extractCard(graphics, mouseX, mouseY);
+    }
+
+    /**
+     * The insight just crafted, rising from the lantern to join the motes around the eye.
+     */
+    private void extractFlight(GuiGraphicsExtractor graphics)
+    {
+        if (flightAt < 0)
+            return;
+
+        float t = (Util.getMillis() - flightAt) / (float) FLIGHT_MILLIS;
+        if (t >= 1.2F)
+        {
+            flightAt = -1;
+            return;
+        }
+
+        for (int trail = 0; trail < FLIGHT_TRAIL; trail++)
+        {
+            float at = t - trail * 0.035F;
+            if (at <= 0 || at >= 1)
+                continue;
+
+            float eased = at * at * (3 - 2 * at);
+            float sway = (float) Math.sin(at * Math.PI) * 26;
+            int x = (int) (insightButton.lanternX() + ((left + right) / 2F - insightButton.lanternX()) * eased + sway);
+            int y = (int) (insightButton.lanternY() + (map.orbitY() - insightButton.lanternY()) * eased);
+            int size = trail == 0 ? 3 : 2;
+            graphics.fill(x, y, x + size, y + size, ARGB.color(240 - trail * 44, FRONTIER_RGB));
+        }
+    }
+
+    private boolean overTablet(double mouseX, double mouseY)
+    {
+        return detailBounds != null && detailBounds.contains(mouseX, mouseY) || fedOpen && fedBounds != null && fedBounds.contains(mouseX, mouseY);
     }
 
     private Identifier hoveredNode(int mouseX, int mouseY)
     {
-        var row = rowAt(mouseX, mouseY);
-        return row != null ? row : mouseX >= left && mouseX < right ? map.nodeAt(mouseX, mouseY).orElse(null) : null;
-    }
-
-    private void extractLedger(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
-    {
-        int width = left - PAD * 2;
-        int y = PAD;
-
-        graphics.text(font, Component.translatable("voidheart.research.knowledge"), PAD, y, MUTED_COLOR);
-        y += LINE + 1;
-
-        double knowledge = shownKnowledge();
-        var amount = number(knowledge);
-        bigNumber(graphics, amount, PAD, y, TEXT_COLOR);
-        var cap = "/ " + wholeNumber(snapshot.cap());
-        if (PAD + font.width(amount) * 2 + 3 + font.width(cap) <= left - PAD)
-            graphics.text(font, cap, PAD + font.width(amount) * 2 + 3, y + 8, MUTED_COLOR);
-        y += 19;
-
-        double fill = snapshot.cap() > 0 ? Math.min(1, knowledge / snapshot.cap()) : 0;
-        graphics.fill(PAD, y, PAD + width, y + 3, BAR_BACK_COLOR);
-        graphics.fill(PAD, y, PAD + (int) (width * fill), y + 3, BAR_COLOR);
-        y += 6;
-
-        double change = knowledgeChange();
-        boolean full = knowledge >= snapshot.cap() && change >= 0;
-        graphics.text(font, (change >= 0 ? "+" : "") + String.format("%.2f", change) + "/s", PAD, y, change >= 0 ? FRONTIER_COLOR : ACTIVE_COLOR);
-        y += LINE;
-        if (full)
-            graphics.text(font, fit(Component.translatable("voidheart.research.full").getString(), width), PAD, y, LACK_COLOR);
-        else if (change > 0)
-            graphics.text(font, fit(Component.translatable("voidheart.research.full_in", duration((snapshot.cap() - knowledge) / change)).getString(), width), PAD, y, MUTED_COLOR);
-        else if (change < 0 && knowledge > 0)
-            graphics.text(font, fit(Component.translatable("voidheart.research.empty_in", duration(knowledge / -change)).getString(), width), PAD, y, MUTED_COLOR);
-        y += LINE + 4;
-
-        rule(graphics, PAD, y, width);
-        y += 5;
-
-        graphics.text(font, Component.translatable("voidheart.research.insights"), PAD, y, MUTED_COLOR);
-        y += LINE + 1;
-        bigNumber(graphics, Integer.toString(snapshot.insights()), PAD, y, snapshot.insights() > 0 ? FRONTIER_COLOR : TEXT_COLOR);
-        y += 20;
-
-        extractRefine(graphics, y, width, knowledge);
-        y += BUTTON_H + 2 + LINE + 3;
-
-        rule(graphics, PAD, y, width);
-        y += 5;
-
-        extractExtracted(graphics, y, width, mouseX, mouseY);
+        return overTablet(mouseX, mouseY) ? null : map.nodeAt(mouseX, mouseY).orElse(null);
     }
 
     /**
-     * A groove cut in the stone: its dark side, then the lit lip under it.
+     * The only figures on screen at rest, kept low in a corner and whole so that they do not tick.
      */
-    private static void rule(GuiGraphicsExtractor graphics, int x, int y, int width)
+    private void extractReadout(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
     {
-        graphics.fill(x, y - 1, x + width, y, RULE_CUT_COLOR);
-        graphics.fill(x, y, x + width, y + 1, RULE_COLOR);
+        var bounds = readoutBounds();
+        var knowledge = readoutText();
+        graphics.text(font, knowledge, bounds.x() + READOUT_HOVER, bounds.y() + READOUT_HOVER, bounds.contains(mouseX, mouseY) || cardOpen > 0 ? MUTED_COLOR : READOUT_COLOR, false);
     }
 
-    private void extractRefine(GuiGraphicsExtractor graphics, int y, int width, double knowledge)
+    private String readoutText()
     {
-        double cost = snapshot.nextInsightCost();
-        var label = Component.translatable("voidheart.research.refine", number(cost));
-        if (font.width(label) > width - 6)
-            label = Component.translatable("voidheart.research.refine_short", number(cost));
+        return wholeNumber(Math.floor(shownKnowledge())) + " / " + wholeNumber(snapshot.cap());
+    }
 
-        refineButton.setY(y);
-        refineButton.setMessage(label);
-        refineButton.active = knowledge >= cost;
+    private Bounds readoutBounds()
+    {
+        return new Bounds(left + PAD + 3, height - PAD - font.lineHeight - READOUT_HOVER, font.width(readoutText()) + READOUT_HOVER * 2, font.lineHeight + READOUT_HOVER * 2);
+    }
 
-        Component status;
-        int color = MUTED_COLOR;
-        if (knowledge >= cost)
+    /**
+     * Grows out of the readout while the cursor is on either of them, and shrinks back into it afterwards.
+     */
+    private void extractCard(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
+    {
+        long now = Util.getMillis();
+        boolean wanted = readoutBounds().contains(mouseX, mouseY) || cardOpen > 0.5F && cardBounds != null && cardBounds.contains(mouseX, mouseY);
+        float step = (now - cardTickedAt) / (float) (wanted ? CARD_GROW : CARD_SHRINK);
+        cardTickedAt = now;
+        cardOpen = Math.clamp(cardOpen + (wanted ? step : -step), 0, 1);
+
+        if (cardOpen <= 0)
         {
-            status = Component.translatable("voidheart.research.refine_ready");
-            color = FRONTIER_COLOR;
+            cardBounds = null;
+            return;
         }
-        else if (cost > snapshot.cap())
+
+        var rows = cardRows();
+        int widest = rows.stream().filter(row -> row != null).mapToInt(row -> font.width(row.label()) + 10 + font.width(row.value())).max().orElse(0);
+        int boxWidth = Math.max(CARD_MIN, widest + PAD * 2);
+        int boxHeight = PAD * 2 + rows.stream().mapToInt(row -> row == null ? 5 : CARD_ROW).sum();
+
+        var readout = readoutBounds();
+        int x = readout.x();
+        int bottom = readout.y() - 2;
+        cardBounds = new Bounds(x, bottom - boxHeight, boxWidth, boxHeight);
+
+        float eased = 1 - (1 - cardOpen) * (1 - cardOpen) * (1 - cardOpen);
+        float scale = CARD_FROM + (1 - CARD_FROM) * eased;
+
+        var pose = graphics.pose();
+        pose.pushMatrix();
+        if (cardOpen < 1)
         {
-            status = Component.translatable("voidheart.research.refine_capped");
+            pose.translate(x, bottom);
+            pose.scale(scale);
+            pose.translate(-x, -bottom);
+        }
+
+        tablet(graphics, cardBounds);
+        int y = cardBounds.y() + PAD;
+        for (var row : rows)
+        {
+            if (row == null)
+            {
+                graphics.fill(x + PAD, y + 1, x + boxWidth - PAD, y + 2, RULE_COLOR);
+                y += 5;
+                continue;
+            }
+            graphics.text(font, row.label(), x + PAD, y, MUTED_COLOR, false);
+            graphics.text(font, row.value(), x + boxWidth - PAD - font.width(row.value()), y, row.valueColor(), false);
+            y += CARD_ROW;
+        }
+        pose.popMatrix();
+    }
+
+    /**
+     * Names read first and figures stay dim. A null row is a groove between the two groups.
+     */
+    private List<CardRow> cardRows()
+    {
+        double knowledge = shownKnowledge();
+        double change = knowledgeChange();
+        double cost = snapshot.nextInsightCost();
+
+        var rows = new ArrayList<CardRow>();
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.gathering"), String.format("%.2f/s", snapshot.rate()), READOUT_COLOR));
+        activeResearch().ifPresent(research -> rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format("%.2f/s", research.knowledgePerSecond()), READOUT_COLOR)));
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.holds"), wholeNumber(snapshot.cap()), READOUT_COLOR));
+
+        if (knowledge >= snapshot.cap() && change >= 0)
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.full"), "", READOUT_COLOR));
+        else if (change > 0)
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.full_in"), duration((snapshot.cap() - knowledge) / change), READOUT_COLOR));
+        else if (change < 0 && knowledge > 0)
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.empty_in"), duration(knowledge / -change), READOUT_COLOR));
+
+        rows.add(null);
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.next"), nextInsightText(knowledge, cost, change), knowledge >= cost ? FRONTIER_COLOR : READOUT_COLOR));
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.cost"), wholeNumber(Math.ceil(cost)), READOUT_COLOR));
+        return rows;
+    }
+
+    private String nextInsightText(double knowledge, double cost, double change)
+    {
+        if (knowledge >= cost)
+            return Component.translatable("voidheart.research.card.next_now").getString();
+        if (cost > snapshot.cap())
+            return Component.translatable("voidheart.research.card.next_capped").getString();
+
+        double wait = KnowledgeMath.secondsToReach(knowledge, cost, change);
+        return Double.isInfinite(wait) ? Component.translatable("voidheart.research.card.next_blocked").getString() : duration(wait);
+    }
+
+    /**
+     * At most one quiet sentence, about the one thing worth knowing right now.
+     */
+    private void extractWhisper(GuiGraphicsExtractor graphics)
+    {
+        Component text = null;
+        int color = MUTED_COLOR;
+
+        if (learned != null && Util.getMillis() - learnedAt < LEARNED_MILLIS)
+        {
+            text = Component.translatable("voidheart.research.learned", Component.translatable(Research.nameKey(learned)));
+            color = KNOWN_COLOR;
+        }
+        else if (starving())
+        {
+            text = Component.translatable("voidheart.research.whisper.starving");
             color = LACK_COLOR;
         }
-        else
+        else if (selected == null)
         {
-            double wait = KnowledgeMath.secondsToReach(knowledge, cost, knowledgeChange());
-            status = Double.isInfinite(wait) ? Component.translatable("voidheart.research.refine_blocked") : Component.translatable("voidheart.research.refine_wait", duration(wait));
+            int cheapest = frontier.stream().filter(id -> stateOf(id, tree.get(id)) == NodeState.UNKNOWN).mapToInt(id -> tree.get(id).insightCost()).min().orElse(Integer.MAX_VALUE);
+            boolean idle = snapshot.active().isEmpty();
+
+            if (shownKnowledge() >= snapshot.cap() && knowledgeChange() >= 0 && snapshot.cap() > 0)
+            {
+                text = Component.translatable("voidheart.research.full");
+                color = LACK_COLOR;
+            }
+            else if (idle && frontier.stream().anyMatch(id -> stateOf(id, tree.get(id)) == NodeState.REVEALED))
+                text = Component.translatable("voidheart.research.whisper.begin");
+            else if (snapshot.insights() >= cheapest && idle)
+                text = Component.translatable("voidheart.research.whisper.read");
+            else if (canRefine() && snapshot.insights() < cheapest)
+                text = Component.translatable("voidheart.research.whisper.refine");
+            else if (snapshot.fed().isEmpty() && snapshot.insights() == 0)
+                text = Component.translatable("voidheart.research.feed_hint");
+            else if (frontier.isEmpty() && idle)
+                text = Component.translatable("voidheart.research.none");
         }
-        graphics.text(font, fit(status.getString(), width), PAD, y + BUTTON_H + 3, color);
+
+        if (text == null)
+            return;
+
+        int y = height - PAD - LINE + 1;
+        int half = font.width(text) / 2 + 3;
+        int center = (left + right) / 2;
+        graphics.fill(center - half, y - 1, center + half, y + LINE - 1, WHISPER_BACK);
+        graphics.centeredText(font, text, center, y, color);
+    }
+
+    private Bounds fedGlyph()
+    {
+        return new Bounds(right - PAD - 6 - GLYPH_SIZE, height - PAD - GLYPH_SIZE, GLYPH_SIZE, GLYPH_SIZE);
+    }
+
+    private void extractFedGlyph(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
+    {
+        if (snapshot.fed().isEmpty())
+            return;
+
+        var glyph = fedGlyph();
+        graphics.item(new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET), glyph.x(), glyph.y());
+        if (!fedOpen && !glyph.contains(mouseX, mouseY))
+            graphics.fill(glyph.x(), glyph.y(), glyph.x() + GLYPH_SIZE, glyph.y() + GLYPH_SIZE, GLYPH_DIM);
     }
 
     private List<Map.Entry<Identifier, Integer>> fedItems()
@@ -475,90 +638,123 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
                 .toList();
     }
 
-    private int fedColumns()
+    /**
+     * What has been fed, by how much it still has to give: two pips, one, or a darkened icon. The figures are on hover.
+     */
+    private void extractFed(GuiGraphicsExtractor graphics)
     {
-        return Math.max(1, (left - PAD * 2) / FED_CELL);
-    }
-
-    private int fedTop()
-    {
-        return refineButton.getY() + BUTTON_H + 2 + LINE + 3 + 5 + LINE + 1;
-    }
-
-    private void extractExtracted(GuiGraphicsExtractor graphics, int y, int width, int mouseX, int mouseY)
-    {
-        graphics.text(font, Component.translatable("voidheart.research.extracted"), PAD, y, MUTED_COLOR);
-        var fed = fedItems();
-        if (!fed.isEmpty())
-        {
-            var legend = Component.translatable("voidheart.research.next_yield");
-            graphics.text(font, legend, PAD + width - font.width(legend), y, SPENT_COLOR);
-        }
-        y += LINE + 1;
-
-        if (fed.isEmpty())
-        {
-            var lines = font.split(Component.translatable("voidheart.research.feed_hint"), width);
-            for (int line = 0; line < lines.size() && y + LINE <= height - PAD; line++, y += LINE)
-                graphics.text(font, lines.get(line), PAD, y, MUTED_COLOR);
+        fedBounds = null;
+        if (!fedOpen)
             return;
-        }
 
-        int columns = fedColumns();
-        int rows = (height - PAD - y) / FED_PITCH;
+        var fed = fedItems();
+        int columns = Math.clamp(fed.size(), 4, FED_COLUMNS);
+        int rows = Math.min(FED_ROWS, (fed.size() + columns - 1) / columns);
         int totalRows = (fed.size() + columns - 1) / columns;
         fedScroll = Math.clamp(fedScroll, 0, Math.max(0, totalRows - rows));
 
-        for (int index = fedScroll * columns; index < fed.size(); index++)
+        int boxWidth = columns * FED_PITCH + PAD * 2;
+        int boxHeight = LINE + 3 + rows * FED_PITCH + PAD * 2;
+        var glyph = fedGlyph();
+        fedBounds = new Bounds(right - PAD - boxWidth, glyph.y() - 4 - boxHeight, boxWidth, boxHeight);
+        tablet(graphics, fedBounds);
+
+        graphics.text(font, Component.translatable("voidheart.research.extracted"), fedBounds.x() + PAD, fedBounds.y() + PAD, MUTED_COLOR);
+        int top = fedBounds.y() + PAD + LINE + 3;
+        for (int index = fedScroll * columns; index < fed.size() && index / columns - fedScroll < rows; index++)
         {
-            int row = index / columns - fedScroll;
-            if (row >= rows)
-                break;
+            int x = fedBounds.x() + PAD + index % columns * FED_PITCH;
+            int y = top + (index / columns - fedScroll) * FED_PITCH;
+            double next = KnowledgeMath.feedMultiplier(fed.get(index).getValue());
 
-            int x = PAD + index % columns * (width / columns);
-            int cellY = y + row * FED_PITCH;
-            int count = fed.get(index).getValue();
-            var stack = new ItemStack(BuiltInRegistries.ITEM.getValue(fed.get(index).getKey()));
-            double next = KnowledgeMath.feedMultiplier(count);
-
-            graphics.item(stack, x, cellY);
+            graphics.item(new ItemStack(BuiltInRegistries.ITEM.getValue(fed.get(index).getKey())), x, y);
             if (next <= 0)
-                graphics.fill(x, cellY, x + 16, cellY + 16, SPENT_SHADE);
-            if (next > 0)
-                graphics.text(font, String.format("%.0f%%", next * 100), x + 18, cellY + 4, next >= 0.3 ? FRONTIER_COLOR : TEXT_COLOR);
-            else
-                graphics.text(font, Component.translatable("voidheart.research.fed_spent_short"), x + 18, cellY + 4, SPENT_COLOR);
+                graphics.fill(x, y, x + 16, y + 16, SPENT_SHADE);
+            int pips = next >= 0.3 ? 2 : next > 0 ? 1 : 0;
+            for (int pip = 0; pip < pips; pip++)
+                graphics.fill(x + 13 - pip * 3, y + 14, x + 15 - pip * 3, y + 16, 0xFF000000 | FRONTIER_RGB);
         }
     }
 
-    private int listTop()
+    private Map.Entry<Identifier, Integer> fedAt(double mouseX, double mouseY)
     {
-        return PAD + LINE + 2 + (snapshot.active().isPresent() ? CARD_H + 2 : 0);
+        if (fedBounds == null)
+            return null;
+
+        var fed = fedItems();
+        int columns = Math.clamp(fed.size(), 4, FED_COLUMNS);
+        int x = (int) (mouseX - fedBounds.x() - PAD);
+        int y = (int) (mouseY - fedBounds.y() - PAD - LINE - 3);
+        if (x < 0 || y < 0 || x >= columns * FED_PITCH)
+            return null;
+
+        int index = (y / FED_PITCH + fedScroll) * columns + x / FED_PITCH;
+        return index < fed.size() ? fed.get(index) : null;
     }
 
     /**
-     * Only as tall as what it says, so that the frontier keeps the rest of the rail, while the frontier never drops below two rows.
+     * A tablet beside the selected research on the side away from the eye, or against the far edge when there is no room there,
+     * so that it hides neither the eye nor what it talks about. Nothing about a research shows until it is asked about.
      */
-    private int inspectorHeight()
+    private void extractDetail(GuiGraphicsExtractor graphics)
     {
-        return Math.min(inspectorWanted(), height - PAD - listTop() - 2 - Math.min(frontier.size(), 2) * ROW_H);
-    }
-
-    private int inspectorWanted()
-    {
+        detailBounds = null;
+        actionButton.visible = false;
         if (selected == null || !tree.containsKey(selected))
-            return INSPECTOR_MIN;
+            return;
 
-        int width = this.width - right - PAD * 2;
         var research = tree.get(selected);
         var state = stateOf(selected, research);
         boolean unknown = state == NodeState.UNKNOWN;
+        int boxWidth = Math.clamp((int) (width * 0.3F), DETAIL_MIN, DETAIL_MAX);
+        int inner = boxWidth - PAD * 2;
 
-        int lines = 1 + font.split(unknown ? Component.translatable("voidheart.research.unread") : Component.translatable(Research.nameKey(selected)), width).size();
-        lines += font.split(unknown ? Component.translatable("voidheart.research.unread_desc") : Component.translatable(Research.descriptionKey(selected)), width).size();
+        var lines = new ArrayList<Line>();
+        int nameColor = unknown ? MUTED_COLOR : state == NodeState.DONE ? KNOWN_COLOR : state == NodeState.ACTIVE ? ACTIVE_COLOR : FRONTIER_COLOR;
+        font.split(unknown ? Component.translatable("voidheart.research.unread") : Component.translatable(Research.nameKey(selected)), inner).forEach(line -> lines.add(new Line(line, nameColor)));
+        font.split(ringOf(research), inner).forEach(line -> lines.add(new Line(line, MUTED_COLOR)));
+        int spaced = lines.size();
+
+        font.split(unknown ? Component.translatable("voidheart.research.unread_desc") : Component.translatable(Research.descriptionKey(selected)), inner).forEach(line -> lines.add(new Line(line, TEXT_COLOR)));
         if (!unknown)
-            lines += effects(research).stream().mapToInt(effect -> font.split(effect, width).size()).sum();
-        return Math.max(INSPECTOR_MIN, 7 + lines * LINE + 2 + (state == NodeState.DONE ? LINE + DONE_GAP : BUTTON_H + 3));
+            effects(research).forEach(effect -> font.split(effect, inner).forEach(line -> lines.add(new Line(line, FRONTIER_COLOR))));
+        statusOf(selected, research, state).ifPresent(status -> font.split(status, inner).forEach(line -> lines.add(new Line(line, starving() && state == NodeState.ACTIVE ? LACK_COLOR : MUTED_COLOR))));
+
+        double progress = state == NodeState.DONE || unknown ? 0 : shownProgress(selected, research) / research.knowledgeCost();
+        boolean hasButton = state != NodeState.DONE;
+        int boxHeight = PAD * 2 + lines.size() * LINE + 3 + (progress > 0 ? 5 : 0) + (hasButton ? BUTTON_H + 4 : 0);
+
+        int nodeX = map.nodeX(selected);
+        boolean onRight = nodeX >= (left + right) / 2;
+        int x = onRight ? nodeX + DETAIL_GAP : nodeX - DETAIL_GAP - boxWidth;
+        if (x < left + 6 || x + boxWidth > right - 6)
+            x = onRight ? left + 6 : right - 6 - boxWidth;
+        boolean overButton = x < insightButton.getX() + insightButton.getWidth() + 4 && x + boxWidth > insightButton.getX() - 4;
+        int lowest = (overButton ? insightButton.getY() - 4 : height - 6) - boxHeight;
+        int y = Math.clamp(map.nodeY(selected) - boxHeight / 2, 6, Math.max(6, lowest));
+
+        detailBounds = new Bounds(x, y, boxWidth, boxHeight);
+        tablet(graphics, detailBounds);
+
+        int textY = y + PAD;
+        for (int index = 0; index < lines.size(); index++)
+        {
+            if (index == spaced)
+                textY += 3;
+            graphics.text(font, lines.get(index).text(), x + PAD, textY, lines.get(index).color());
+            textY += LINE;
+        }
+
+        if (progress > 0)
+        {
+            int barColor = state == NodeState.ACTIVE ? ACTIVE_COLOR : 0xFF000000 | FRONTIER_RGB;
+            graphics.fill(x + PAD, textY + 1, x + PAD + inner, textY + 3, BAR_BACK_COLOR);
+            graphics.fill(x + PAD, textY + 1, x + PAD + (int) (inner * Math.min(1, progress)), textY + 3, barColor);
+            textY += 5;
+        }
+
+        if (hasButton)
+            placeAction(research, state, x + PAD, textY + 3, inner);
     }
 
     private static List<Component> effects(Research research)
@@ -571,202 +767,45 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return effects;
     }
 
-    private int listBottom()
+    private Optional<Component> statusOf(Identifier id, Research research, NodeState state)
     {
-        return height - PAD - inspectorHeight();
-    }
-
-    private void extractFrontier(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
-    {
-        int x = right + PAD;
-        int width = this.width - right - PAD * 2;
-        long now = Util.getMillis();
-
-        if (learned != null && now - learnedAt < LEARNED_MILLIS)
-            graphics.text(font, fit(Component.translatable("voidheart.research.learned", Component.translatable(Research.nameKey(learned))).getString(), width), x, PAD, KNOWN_COLOR);
-        else
-            graphics.text(font, Component.translatable("voidheart.research.frontier"), x, PAD, MUTED_COLOR);
-
-        activeResearch().ifPresent(research -> extractRunning(graphics, snapshot.active().orElseThrow(), research, x, PAD + LINE + 2, width, mouseX, mouseY));
-
-        int top = listTop();
-        int bottom = listBottom();
-        int visible = (bottom - top) / ROW_H;
-        listScroll = Math.clamp(listScroll, 0, Math.max(0, frontier.size() - visible));
-
-        if (frontier.isEmpty() && activeResearch().isEmpty())
+        double seconds = secondsToFinish(id, research);
+        return switch (state)
         {
-            var lines = font.split(Component.translatable("voidheart.research.none"), width);
-            for (int line = 0; line < lines.size(); line++)
-                graphics.text(font, lines.get(line), x, top + line * LINE, MUTED_COLOR);
-        }
-
-        for (int index = listScroll; index < frontier.size() && index - listScroll < visible; index++)
-            extractRow(graphics, frontier.get(index), x, top + (index - listScroll) * ROW_H, width, mouseX, mouseY);
-
-        if (listScroll > 0)
-            graphics.fill(x, top - 1, x + width, top, FRONTIER_COLOR);
-        if (listScroll + visible < frontier.size())
-            graphics.fill(x, top + visible * ROW_H, x + width, top + visible * ROW_H + 1, FRONTIER_COLOR);
-    }
-
-    private void extractRunning(GuiGraphicsExtractor graphics, Identifier id, Research research, int x, int y, int width, int mouseX, int mouseY)
-    {
-        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + CARD_H;
-        graphics.fill(x - 3, y, x + width + 3, y + CARD_H, hovered ? CARD_HOVER : CARD_TINT);
-        graphics.outline(x - 3, y, width + 6, CARD_H, ACTIVE_COLOR);
-
-        graphics.item(ResearchMapView.iconOf(research), x, y + 3);
-        graphics.text(font, fit(Component.translatable(Research.nameKey(id)).getString(), width - 20), x + 19, y + 4, ACTIVE_COLOR);
-
-        double progress = shownProgress(id, research);
-        graphics.text(font, fit(number(progress) + " / " + wholeNumber(research.knowledgeCost()), width - 20), x + 19, y + 13, TEXT_COLOR);
-
-        graphics.fill(x, y + 22, x + width, y + 26, BAR_BACK_COLOR);
-        graphics.fill(x, y + 22, x + (int) (width * Math.min(1, progress / research.knowledgeCost())), y + 26, ACTIVE_COLOR);
-
-        double left = secondsToFinish(id, research);
-        Component status;
-        int color = TEXT_COLOR;
-        if (starving())
-        {
-            status = Component.translatable("voidheart.research.starving", String.format("%.2f", snapshot.rate()));
-            color = LACK_COLOR;
-        }
-        else
-            status = Double.isInfinite(left) ? Component.translatable("voidheart.research.stalled") : Component.translatable("voidheart.research.left", duration(left));
-        graphics.text(font, fit(status.getString(), width), x, y + 30, color);
-    }
-
-    private void extractRow(GuiGraphicsExtractor graphics, Identifier id, int x, int y, int width, int mouseX, int mouseY)
-    {
-        var research = tree.get(id);
-        var state = stateOf(id, research);
-        boolean hovered = mouseX >= x - 3 && mouseX < x + width + 3 && mouseY >= y && mouseY < y + ROW_H - 1;
-
-        if (id.equals(selected))
-            graphics.fill(x - 3, y, x + width + 3, y + ROW_H - 1, ROW_SELECTED);
-        else if (hovered)
-            graphics.fill(x - 3, y, x + width + 3, y + ROW_H - 1, ROW_HOVER);
-
-        String name;
-        Component detail;
-        int nameColor;
-        int detailColor = MUTED_COLOR;
-
-        if (state == NodeState.UNKNOWN)
-        {
-            boolean affordable = canReveal(research);
-            ResearchMapView.glyph(graphics, affordable, x, y + 2);
-            var parent = ResearchLayout.parentOf(research, tree);
-            name = parent != null
-                    ? Component.translatable("voidheart.research.past", Component.translatable(Research.nameKey(parent))).getString()
-                    : Component.translatable(map.nodeY(id) < height / 2 ? "voidheart.research.above_eye" : "voidheart.research.below_eye").getString();
-            nameColor = affordable ? FRONTIER_COLOR : MUTED_COLOR;
-            detail = Component.translatable("voidheart.research.row_unread", research.insightCost());
-            detailColor = affordable ? TEXT_COLOR : MUTED_COLOR;
-        }
-        else
-        {
-            graphics.item(ResearchMapView.iconOf(research), x, y + 2);
-            name = Component.translatable(Research.nameKey(id)).getString();
-            nameColor = FRONTIER_COLOR;
-            double done = snapshot.progress().getOrDefault(id, 0D);
-            double seconds = secondsToFinish(id, research);
-            detail = done > 0
-                    ? Component.translatable("voidheart.research.row_paused", String.format("%.0f%%", 100 * done / research.knowledgeCost()))
-                    : Double.isInfinite(seconds)
-                    ? Component.translatable("voidheart.research.row_cost", wholeNumber(research.knowledgeCost()))
-                    : Component.translatable("voidheart.research.row_ready", wholeNumber(research.knowledgeCost()), duration(seconds));
-        }
-
-        graphics.text(font, fit(name, width - 19), x + 19, y + 2, nameColor);
-        graphics.text(font, fit(detail.getString(), width - 19), x + 19, y + 11, detailColor);
-    }
-
-    private void extractInspector(GuiGraphicsExtractor graphics)
-    {
-        int x = right + PAD;
-        int width = this.width - right - PAD * 2;
-        int top = listBottom() + 2;
-
-        rule(graphics, x, top, width);
-        int y = top + 5;
-        int bottom = height - PAD - (selected != null && tree.containsKey(selected) && stateOf(selected, tree.get(selected)) == NodeState.DONE ? LINE + DONE_GAP : BUTTON_H + 3);
-        descriptionCut = false;
-
-        actionButton.visible = false;
-        if (selected == null || !tree.containsKey(selected))
-            return;
-
-        var research = tree.get(selected);
-        var state = stateOf(selected, research);
-        boolean unknown = state == NodeState.UNKNOWN;
-
-        var name = unknown ? Component.translatable("voidheart.research.unread") : Component.translatable(Research.nameKey(selected));
-        for (var line : font.split(name, width))
-        {
-            graphics.text(font, line, x, y, unknown ? MUTED_COLOR : state == NodeState.DONE ? KNOWN_COLOR : state == NodeState.ACTIVE ? ACTIVE_COLOR : FRONTIER_COLOR);
-            y += LINE;
-        }
-
-        graphics.text(font, fit(ringOf(research).getString(), width), x, y, MUTED_COLOR);
-        y += LINE + 2;
-
-        if (!unknown)
-        {
-            for (var effect : effects(research))
+            case ACTIVE ->
             {
-                for (var line : font.split(effect, width))
-                {
-                    graphics.text(font, line, x, y, FRONTIER_COLOR);
-                    y += LINE;
-                }
-            }
-        }
-
-        var description = unknown ? Component.translatable("voidheart.research.unread_desc") : Component.translatable(Research.descriptionKey(selected));
-        var lines = font.split(description, width);
-        int room = Math.max(0, (bottom - y) / LINE);
-        descriptionCut = lines.size() > room;
-        for (int line = 0; line < Math.min(room, lines.size()); line++, y += LINE)
-            graphics.text(font, lines.get(line), x, y, descriptionCut && line == room - 1 ? MUTED_COLOR : TEXT_COLOR);
-        if (descriptionCut && room > 0)
-            graphics.text(font, "...", x + width - font.width("..."), y - LINE, MUTED_COLOR);
-
-        extractAction(graphics, research, state);
-    }
-
-    private void extractAction(GuiGraphicsExtractor graphics, Research research, NodeState state)
-    {
-        switch (state)
-        {
-            case UNKNOWN ->
-            {
-                boolean affordable = canReveal(research);
-                actionButton.visible = true;
-                actionButton.active = affordable;
-                actionButton.setMessage(affordable
-                        ? Component.translatable("voidheart.research.reveal", insightCount(research.insightCost()))
-                        : Component.translatable("voidheart.research.needs", insightCount(research.insightCost() - snapshot.insights())));
+                if (starving())
+                    yield Optional.of(Component.translatable("voidheart.research.starving"));
+                yield Optional.of(Double.isInfinite(seconds) ? Component.translatable("voidheart.research.stalled") : Component.translatable("voidheart.research.left", duration(seconds)));
             }
             case REVEALED ->
             {
-                actionButton.visible = true;
-                actionButton.active = true;
-                actionButton.setMessage(Component.translatable(snapshot.progress().getOrDefault(selected, 0D) > 0 ? "voidheart.research.resume" : "voidheart.research.begin"));
+                double done = snapshot.progress().getOrDefault(id, 0D);
+                if (done > 0)
+                    yield Optional.of(Component.translatable("voidheart.research.row_paused", String.format("%.0f%%", 100 * done / research.knowledgeCost())));
+                yield Optional.of(Double.isInfinite(seconds)
+                        ? Component.translatable("voidheart.research.row_cost", wholeNumber(research.knowledgeCost()))
+                        : Component.translatable("voidheart.research.row_ready", wholeNumber(research.knowledgeCost()), duration(seconds)));
             }
-            case ACTIVE ->
-            {
-                actionButton.visible = true;
-                actionButton.active = true;
-                actionButton.setMessage(Component.translatable("voidheart.research.pause"));
-            }
-            case DONE -> graphics.text(font, Component.translatable("voidheart.research.done"), right + PAD, height - PAD - font.lineHeight, KNOWN_COLOR);
-            default ->
-            {
-            }
-        }
+            default -> Optional.empty();
+        };
+    }
+
+    private void placeAction(Research research, NodeState state, int x, int y, int buttonWidth)
+    {
+        actionButton.setX(x);
+        actionButton.setY(y);
+        actionButton.setWidth(buttonWidth);
+        actionButton.visible = true;
+        actionButton.active = state != NodeState.UNKNOWN || canReveal(research);
+        actionButton.setMessage(switch (state)
+        {
+            case UNKNOWN -> canReveal(research)
+                    ? Component.translatable("voidheart.research.reveal", insightCount(research.insightCost()))
+                    : Component.translatable("voidheart.research.needs", insightCount(research.insightCost() - snapshot.insights()));
+            case ACTIVE -> Component.translatable("voidheart.research.pause");
+            default -> Component.translatable(snapshot.progress().getOrDefault(selected, 0D) > 0 ? "voidheart.research.resume" : "voidheart.research.begin");
+        });
     }
 
     private void act()
@@ -781,36 +820,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             send(Action.Kind.TOGGLE, selected);
     }
 
-    private Identifier rowAt(double mouseX, double mouseY)
+    private void refine()
     {
-        int x = right + PAD;
-        int width = this.width - right - PAD * 2;
-        if (mouseX < x - 3 || mouseX >= x + width + 3)
-            return null;
-
-        if (snapshot.active().isPresent() && mouseY >= PAD + LINE + 2 && mouseY < PAD + LINE + 2 + CARD_H)
-            return snapshot.active().get();
-
-        int top = listTop();
-        int visible = (listBottom() - top) / ROW_H;
-        if (mouseY < top || mouseY >= top + visible * ROW_H)
-            return null;
-
-        int index = listScroll + (int) ((mouseY - top) / ROW_H);
-        return index < frontier.size() ? frontier.get(index) : null;
-    }
-
-    private Map.Entry<Identifier, Integer> fedAt(double mouseX, double mouseY)
-    {
-        var fed = fedItems();
-        int columns = fedColumns();
-        int top = fedTop();
-        int cell = (left - PAD * 2) / columns;
-        if (mouseX < PAD || mouseX >= PAD + columns * cell || mouseY < top || mouseY >= height - PAD)
-            return null;
-
-        int index = ((int) (mouseY - top) / FED_PITCH + fedScroll) * columns + (int) (mouseX - PAD) / cell;
-        return index < fed.size() ? fed.get(index) : null;
+        if (canRefine())
+            send(Action.Kind.BUY_INSIGHT, null);
     }
 
     @Override
@@ -824,46 +837,13 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     {
         super.extractTooltip(graphics, mouseX, mouseY);
 
-        if (mouseX >= left && mouseX < right)
-        {
-            var node = map.nodeAt(mouseX, mouseY);
-            if (node.isPresent())
-                graphics.setComponentTooltipForNextFrame(font, nodeTooltip(node.get(), tree.get(node.get())), mouseX, mouseY);
-            else if (map.overEye(mouseX, mouseY))
-                graphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("voidheart.research.eye", number(shownKnowledge()), wholeNumber(snapshot.cap()))), mouseX, mouseY);
-            return;
-        }
-
-        if (descriptionCut && mouseX >= right && mouseY > listBottom() && mouseY < height - PAD - BUTTON_H && tree.containsKey(selected))
-        {
-            var state = stateOf(selected, tree.get(selected));
-            graphics.setComponentTooltipForNextFrame(font, List.of(state == NodeState.UNKNOWN ? Component.translatable("voidheart.research.unread_desc") : Component.translatable(Research.descriptionKey(selected))), mouseX, mouseY);
-            return;
-        }
-
-        var fed = fedAt(mouseX, mouseY);
+        var fed = fedOpen ? fedAt(mouseX, mouseY) : null;
         if (fed != null)
             graphics.setComponentTooltipForNextFrame(font, fedTooltip(fed.getKey(), fed.getValue()), mouseX, mouseY);
-        else if (mouseX < left && mouseY < PAD + 62)
-            graphics.setComponentTooltipForNextFrame(font, economyTooltip(), mouseX, mouseY);
-    }
-
-    private List<Component> nodeTooltip(Identifier id, Research research)
-    {
-        var state = stateOf(id, research);
-        var lines = new ArrayList<Component>();
-        if (state == NodeState.UNKNOWN)
-        {
-            lines.add(Component.translatable("voidheart.research.unread"));
-            lines.add(Component.translatable("voidheart.research.row_unread", insightCount(research.insightCost())).withStyle(canReveal(research) ? ChatFormatting.AQUA : ChatFormatting.RED));
-            return lines;
-        }
-
-        lines.add(Component.translatable(Research.nameKey(id)));
-        lines.add(state == NodeState.DONE
-                ? Component.translatable("voidheart.research.done").withStyle(ChatFormatting.GRAY)
-                : Component.translatable("voidheart.research.row_progress", number(shownProgress(id, research)), wholeNumber(research.knowledgeCost()), String.format("%.2f", research.knowledgePerSecond())).withStyle(ChatFormatting.GRAY));
-        return lines;
+        else if (!snapshot.fed().isEmpty() && fedGlyph().contains(mouseX, mouseY))
+            graphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("voidheart.research.extracted")), mouseX, mouseY);
+        else if (mouseX >= insightButton.getX() && mouseX < insightButton.getX() + insightButton.getWidth() && mouseY >= insightButton.getY() && mouseY < insightButton.getY() + insightButton.getHeight())
+            graphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("voidheart.research.craft")), mouseX, mouseY);
     }
 
     private List<Component> fedTooltip(Identifier id, int count)
@@ -879,56 +859,54 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return lines;
     }
 
-    private List<Component> economyTooltip()
-    {
-        var lines = new ArrayList<Component>();
-        double bonusRate = 0;
-        double bonusCap = 0;
-        for (var id : snapshot.completed())
-        {
-            var research = tree.get(id);
-            if (research == null)
-                continue;
-            bonusRate += research.passiveBonus();
-            bonusCap += research.capBonus();
-        }
-        lines.add(Component.translatable("voidheart.research.economy_rate", String.format("%.2f", snapshot.rate()), String.format("%.2f", bonusRate)));
-        lines.add(Component.translatable("voidheart.research.economy_cap", wholeNumber(snapshot.cap()), wholeNumber(bonusCap)));
-        activeResearch().ifPresent(research -> lines.add(Component.translatable("voidheart.research.economy_drain", String.format("%.2f", research.knowledgePerSecond())).withStyle(ChatFormatting.GOLD)));
-        return lines;
-    }
-
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT)
+        if (event.button() != InputConstants.MOUSE_BUTTON_LEFT)
+            return super.mouseClicked(event, doubleClick);
+
+        if (actionButton.visible && actionButton.isMouseOver(event.x(), event.y()))
         {
-            var row = rowAt(event.x(), event.y());
-            var node = row != null ? Optional.of(row) : event.x() >= left && event.x() < right ? map.nodeAt(event.x(), event.y()) : Optional.<Identifier>empty();
-            if (node.isPresent())
-            {
-                // The game calls any two quick clicks a double click, wherever they landed
-                boolean again = node.get().equals(lastClicked);
-                lastClicked = node.get();
-                selected = node.get();
-                if (doubleClick && again)
-                    act();
-                return true;
-            }
+            lastClicked = null;
+            return super.mouseClicked(event, doubleClick);
         }
+        if (overTablet(event.x(), event.y()))
+            return true;
+
+        if (!snapshot.fed().isEmpty() && fedGlyph().contains(event.x(), event.y()))
+        {
+            fedOpen = !fedOpen;
+            selected = null;
+            lastClicked = null;
+            return true;
+        }
+
+        var node = map.nodeAt(event.x(), event.y());
+        if (node.isPresent())
+        {
+            // The game calls any two quick clicks a double click, wherever they landed
+            boolean again = node.get().equals(lastClicked);
+            lastClicked = node.get();
+            selected = node.get();
+            fedOpen = false;
+            if (doubleClick && again)
+                act();
+            return true;
+        }
+
         lastClicked = null;
+        if (insightButton.isMouseOver(event.x(), event.y()))
+            return super.mouseClicked(event, doubleClick);
+
+        selected = null;
+        fedOpen = false;
         return super.mouseClicked(event, doubleClick);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
     {
-        if (mouseX >= right)
-        {
-            listScroll -= (int) Math.signum(scrollY);
-            return true;
-        }
-        if (mouseX < left)
+        if (fedOpen && fedBounds != null && fedBounds.contains(mouseX, mouseY))
         {
             fedScroll -= (int) Math.signum(scrollY);
             return true;
@@ -937,13 +915,22 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     }
 
     /**
-     * Up and down walk the frontier, Enter acts on what is selected and R refines an insight, so the mouse is never needed.
+     * Up and down walk the frontier, Enter acts on what is selected, R refines an insight, and Escape lets go of a tablet before it leaves the screen.
      */
     @Override
     public boolean keyPressed(KeyEvent event)
     {
         switch (event.key())
         {
+            case InputConstants.KEY_ESCAPE ->
+            {
+                if (selected != null || fedOpen)
+                {
+                    selected = null;
+                    fedOpen = false;
+                    return true;
+                }
+            }
             case InputConstants.KEY_UP ->
             {
                 moveSelection(-1);
@@ -964,8 +951,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             }
             case InputConstants.KEY_R ->
             {
-                if (refineButton.active)
-                    send(Action.Kind.BUY_INSIGHT, null);
+                refine();
                 return true;
             }
             default ->
@@ -980,14 +966,31 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return new int[] { map.nodeX(id), map.nodeY(id) };
     }
 
-    public int[] refinePosition()
+    public int[] insightPosition()
     {
-        return new int[] { refineButton.getX() + refineButton.getWidth() / 2, refineButton.getY() + refineButton.getHeight() / 2 };
+        return new int[] { insightButton.getX() + insightButton.getWidth() / 2, insightButton.getY() + insightButton.getHeight() / 2 };
+    }
+
+    public int[] readoutPosition()
+    {
+        var readout = readoutBounds();
+        return new int[] { readout.x() + readout.width() / 2, readout.y() + readout.height() / 2 };
+    }
+
+    public int[] eyePosition()
+    {
+        return new int[] { (int) map.projection().centerX(), (int) map.projection().centerY() };
     }
 
     public int[] actionPosition()
     {
         return new int[] { actionButton.getX() + actionButton.getWidth() / 2, actionButton.getY() + actionButton.getHeight() / 2 };
+    }
+
+    public int[] extractedPosition()
+    {
+        var glyph = fedGlyph();
+        return new int[] { glyph.x() + GLYPH_SIZE / 2, glyph.y() + GLYPH_SIZE / 2 };
     }
 
     public Identifier selected()
@@ -1003,13 +1006,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         if (order.isEmpty())
             return;
 
-        int next = Math.clamp(order.indexOf(selected) + by, 0, order.size() - 1);
-        selected = order.get(next);
-
-        int index = frontier.indexOf(selected);
-        int visible = Math.max(1, (listBottom() - listTop()) / ROW_H);
-        if (index >= 0)
-            listScroll = Math.clamp(listScroll, index - visible + 1, index);
+        fedOpen = false;
+        selected = order.get(Math.clamp(order.indexOf(selected) + by, 0, order.size() - 1));
     }
 
     @Override

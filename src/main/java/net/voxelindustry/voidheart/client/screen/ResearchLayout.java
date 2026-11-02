@@ -37,7 +37,7 @@ public final class ResearchLayout
 
     public static final double EYE_FRACTION = 0.3;
 
-    private static final double INNER_RING    = 0.5;
+    private static final double INNER_RING    = 0.46;
     private static final double OUTER_GAP     = 0.34;
     private static final int    RELAX_ROUNDS  = 80;
     private static final double CHAIN_NUDGE   = 1E-3;

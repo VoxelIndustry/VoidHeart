@@ -71,11 +71,38 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.waitTicks(30);
             captureSizes(context, "fresh");
 
+            click(context, context.computeOnClient(client -> screen(client).insightPosition()));
+            context.waitTicks(25);
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 0)
+                throw new AssertionError("An insight should not be crafted without the knowledge for it");
+
+            click(context, context.computeOnClient(client -> screen(client).eyePosition()));
+            context.waitTicks(25);
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 0)
+                throw new AssertionError("The eye no longer crafts anything");
+
+            var readout = context.computeOnClient(client -> screen(client).readoutPosition());
+            double scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+            context.getInput().setCursorPos(readout[0] * scale, readout[1] * scale);
+            context.takeScreenshot("research-ui-card-growing");
+            context.waitTicks(10);
+            context.takeScreenshot("research-ui-card");
+            hover(context, new int[] { 5, 5 });
+            context.waitTicks(8);
+
             server.runOnServer(minecraft -> data(minecraft).addKnowledge(21));
             context.waitTicks(25);
+            context.takeScreenshot("research-ui-can-craft");
 
-            click(context, context.computeOnClient(client -> screen(client).refinePosition()));
+            click(context, context.computeOnClient(client -> screen(client).insightPosition()));
             context.waitFor(client -> ResearchScreen.snapshot.insights() == 1, 100);
+            context.getInput().setCursorPos(10, 10);
+            context.takeScreenshot("research-ui-craft-flight");
+            context.waitTicks(20);
+            context.takeScreenshot("research-ui-craft-lit");
+            context.waitTicks(80);
+            context.takeScreenshot("research-ui-craft-out");
+            hover(context, new int[] { 5, 5 });
             context.waitTicks(3);
             context.takeScreenshot("research-ui-can-reveal");
 
@@ -136,7 +163,33 @@ public class ResearchScreenClientTest implements FabricClientGameTest
                 data.addInsights(3 - data.getInsights());
             });
             context.waitTicks(30);
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            context.waitTicks(3);
             captureSizes(context, "midgame");
+
+            hover(context, context.computeOnClient(client -> screen(client).readoutPosition()));
+            context.waitTicks(8);
+            context.takeScreenshot("research-ui-card-burning");
+
+            click(context, context.computeOnClient(client -> screen(client).nodePosition(FORGE)));
+            hover(context, new int[] { 5, 5 });
+            context.takeScreenshot("research-ui-detail-revealed");
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            context.waitTicks(3);
+
+            click(context, context.computeOnClient(client -> screen(client).nodePosition(FAR_SIGHT)));
+            hover(context, new int[] { 5, 5 });
+            context.takeScreenshot("research-ui-detail-running");
+
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            context.waitTicks(3);
+            if (context.computeOnClient(client -> screen(client).selected()) != null)
+                throw new AssertionError("Escape should let go of the selection before leaving the screen");
+
+            click(context, context.computeOnClient(client -> screen(client).extractedPosition()));
+            hover(context, new int[] { 5, 5 });
+            context.takeScreenshot("research-ui-extracted");
+            click(context, new int[] { 5, 5 });
 
             server.runOnServer(minecraft ->
             {
@@ -166,6 +219,8 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.waitTicks(6);
             context.takeScreenshot("research-ui-finish-bloom");
             context.waitTicks(40);
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            context.waitTicks(3);
             captureSizes(context, "lategame");
 
             hover(context, context.computeOnClient(client -> screen(client).nodePosition(VOID_FLESH)));
@@ -197,6 +252,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
     private static void captureSizes(ClientGameTestContext context, String name)
     {
+        context.getInput().setCursorPos(2, 2);
         size(context, 854, 480, 2);
         context.takeScreenshot("research-ui-" + name + "-427x240");
         size(context, 1920, 1080, 4);
