@@ -161,6 +161,7 @@ public class Knowledge
                 player.sendOverlayMessage(Component.translatable(MODID + ".knowledge.gained", String.format("%.1f", data.getKnowledge() - before), stack.getHoverName()));
                 stack.consume(1, player);
                 KnowledgeState.get(server).setDirty();
+                sendSnapshot(player);
 
                 var level = player.level();
                 level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8F, 1.3F);

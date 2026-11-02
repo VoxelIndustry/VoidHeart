@@ -31,6 +31,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -856,23 +857,19 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
         var fed = fedOpen ? fedAt(mouseX, mouseY) : null;
         if (fed != null)
-            graphics.setComponentTooltipForNextFrame(font, fedTooltip(fed.getKey(), fed.getValue()), mouseX, mouseY);
+            graphics.setComponentTooltipForNextFrame(font, fedTooltip(fed.getKey()), mouseX, mouseY);
         else if (!snapshot.fed().isEmpty() && fedGlyph().contains(mouseX, mouseY))
             graphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("voidheart.research.extracted")), mouseX, mouseY);
         else if (mouseX >= insightButton.getX() && mouseX < insightButton.getX() + insightButton.getWidth() && mouseY >= insightButton.getY() && mouseY < insightButton.getY() + insightButton.getHeight())
             graphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("voidheart.research.craft")), mouseX, mouseY);
     }
 
-    private List<Component> fedTooltip(Identifier id, int count)
+    private List<Component> fedTooltip(Identifier id)
     {
-        var item = BuiltInRegistries.ITEM.getValue(id);
-        double next = KnowledgeMath.feedMultiplier(count);
+        var stack = new ItemStack(BuiltInRegistries.ITEM.getValue(id));
         var lines = new ArrayList<Component>();
-        lines.add(item.getName(new ItemStack(item)));
-        lines.add(Component.translatable("voidheart.research.fed", count).withStyle(ChatFormatting.GRAY));
-        lines.add(next > 0
-                ? Component.translatable("voidheart.research.fed_next", String.format("%.0f%%", next * 100)).withStyle(ChatFormatting.AQUA)
-                : Component.translatable("voidheart.research.fed_spent").withStyle(ChatFormatting.DARK_GRAY));
+        lines.add(stack.getHoverName());
+        appendKnowledgeLines(stack, lines);
         return lines;
     }
 
@@ -1036,11 +1033,30 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     }
 
     /**
-     * Points out the items a repository would feed on.
+     * Points out the items a repository would feed on, what the next one would yield and how drained that kind of item is.
      */
     public static void appendKnowledgeTooltip(ItemStack stack, Item.TooltipContext context, TooltipFlag flag, List<Component> lines)
     {
-        if (Knowledge.valueOf(stack) > 0)
-            lines.add(Component.translatable("voidheart.knowledge.embedded").withStyle(ChatFormatting.DARK_PURPLE));
+        appendKnowledgeLines(stack, lines);
+    }
+
+    private static void appendKnowledgeLines(ItemStack stack, List<Component> lines)
+    {
+        double value = Knowledge.valueOf(stack);
+        if (value <= 0)
+            return;
+
+        int fed = snapshot.fed().getOrDefault(BuiltInRegistries.ITEM.getKey(stack.getItem()), 0);
+        var exhaustion = KnowledgeMath.exhaustion(fed);
+        var state = Component.translatable("voidheart.knowledge.exhaustion." + exhaustion.name().toLowerCase(Locale.ROOT));
+        if (exhaustion == KnowledgeMath.Exhaustion.SPENT)
+        {
+            lines.add(state.withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+
+        double yield = Math.round(value * KnowledgeMath.feedMultiplier(fed) * 10) / 10D;
+        lines.add(Component.translatable("voidheart.knowledge.yield", yield == Math.rint(yield) ? wholeNumber(yield) : String.format("%.1f", yield)).withStyle(ChatFormatting.DARK_AQUA));
+        lines.add(state.withStyle(ChatFormatting.GRAY));
     }
 }

@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -112,6 +113,7 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
         ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
 

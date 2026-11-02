@@ -6,16 +6,36 @@ public final class KnowledgeMath
     {
     }
 
-    /** Yield of the next item of a type: 1st = 100%, 2nd-5th = 30%, 6th-8th = 10%, then nothing. */
-    public static double feedMultiplier(int alreadyFed)
+    public enum Exhaustion
+    {
+        UNTOUCHED(1),
+        DRAINED(0.3),
+        FADING(0.1),
+        SPENT(0);
+
+        private final double multiplier;
+
+        Exhaustion(double multiplier)
+        {
+            this.multiplier = multiplier;
+        }
+    }
+
+    /** 1st item of a type = untouched, 2nd-5th = drained, 6th-8th = fading, then spent. */
+    public static Exhaustion exhaustion(int alreadyFed)
     {
         if (alreadyFed <= 0)
-            return 1;
+            return Exhaustion.UNTOUCHED;
         if (alreadyFed <= 4)
-            return 0.3;
+            return Exhaustion.DRAINED;
         if (alreadyFed <= 7)
-            return 0.1;
-        return 0;
+            return Exhaustion.FADING;
+        return Exhaustion.SPENT;
+    }
+
+    public static double feedMultiplier(int alreadyFed)
+    {
+        return exhaustion(alreadyFed).multiplier;
     }
 
     public static double accrue(double knowledge, double cap, double rate, double seconds)

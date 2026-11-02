@@ -17,6 +17,17 @@ class KnowledgeMathTest
     }
 
     @Test
+    void exhaustion_followsTheSameSchedule()
+    {
+        assertThat(KnowledgeMath.exhaustion(0)).isEqualTo(KnowledgeMath.Exhaustion.UNTOUCHED);
+        assertThat(KnowledgeMath.exhaustion(1)).isEqualTo(KnowledgeMath.Exhaustion.DRAINED);
+        assertThat(KnowledgeMath.exhaustion(4)).isEqualTo(KnowledgeMath.Exhaustion.DRAINED);
+        assertThat(KnowledgeMath.exhaustion(5)).isEqualTo(KnowledgeMath.Exhaustion.FADING);
+        assertThat(KnowledgeMath.exhaustion(7)).isEqualTo(KnowledgeMath.Exhaustion.FADING);
+        assertThat(KnowledgeMath.exhaustion(8)).isEqualTo(KnowledgeMath.Exhaustion.SPENT);
+    }
+
+    @Test
     void accrue_givenTimeBeyondCap_thenStopsAtCap()
     {
         assertThat(KnowledgeMath.accrue(10, 30, 0.1, 100)).isEqualTo(20);
