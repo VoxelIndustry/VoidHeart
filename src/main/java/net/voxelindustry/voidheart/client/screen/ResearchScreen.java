@@ -27,6 +27,7 @@ import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads.Act
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryMenu;
 import net.voxelindustry.voidheart.common.content.research.Research;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import org.joml.Vector2i;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -89,6 +90,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private static final int PARCHMENT_H   = 11;
     private static final int PARCHMENT_GAP = 3;
     private static final int PARCHMENT_DIM = 0xFFB4ABBE;
+    private static final int GROOVE        = 5;
+    private static final int TOOLTIP_GAP   = 7;
+    private static final int TOOLTIP_EDGE  = 4;
+
+    private static final double EMPTY_WARNING_SECONDS = 60;
 
     private static final long LEARNED_MILLIS = 7000;
     private static final long FADE_MILLIS    = 1200;
@@ -189,6 +195,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
                 Component.translatable("voidheart.research.craft"),
                 () -> snapshot.insights(),
                 () -> snapshot.nextInsightCost() > 0 ? shownKnowledge() / snapshot.nextInsightCost() : 0,
+                () -> KnowledgeMath.affordableInsights(shownKnowledge(), snapshot.nextInsightCost(), snapshot.insightCostGrowth(), ResearchInsightButton.DASHES_MAX),
                 pressed ->
                 {
                     setFocused(null);
@@ -360,7 +367,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     private static String wholeNumber(double value)
     {
-        return String.format("%.0f", value);
+        return String.format(Locale.ROOT, "%.0f", value);
     }
 
     private static String duration(double seconds)
@@ -503,9 +510,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
         var title = Component.translatable("voidheart.research.card.title");
         var rows = cardRows();
+        var feed = Component.translatable("voidheart.research.card.feed");
         int widest = rows.stream().filter(row -> row != null).mapToInt(row -> font.width(row.label()) + 10 + font.width(row.value())).max().orElse(0);
-        int boxWidth = Math.max(CARD_MIN, Math.max(widest, PARCHMENT_W + PARCHMENT_GAP + font.width(title)) + PAD * 2);
-        int boxHeight = PAD * 2 + CARD_HEADER + rows.stream().mapToInt(row -> row == null ? 5 : CARD_ROW).sum();
+        int boxWidth = Math.max(CARD_MIN, Math.max(Math.max(widest, font.width(feed)), PARCHMENT_W + PARCHMENT_GAP + font.width(title)) + PAD * 2);
+        int boxHeight = PAD * 2 + CARD_HEADER + rows.stream().mapToInt(row -> row == null ? GROOVE : CARD_ROW).sum() + GROOVE + font.lineHeight;
 
         var readout = readoutBounds();
         int x = readout.x();
@@ -527,25 +535,27 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         tablet(graphics, cardBounds);
         int y = cardBounds.y() + PAD;
         extractParchment(graphics, x + PAD, y, 0xFFFFFFFF);
-        graphics.text(font, title, x + PAD + PARCHMENT_W + PARCHMENT_GAP, y + 2, TEXT_COLOR, false);
+        graphics.text(font, title, x + PAD + PARCHMENT_W + PARCHMENT_GAP, y + 2, TEXT_COLOR);
         y += CARD_HEADER;
         for (var row : rows)
         {
             if (row == null)
             {
                 graphics.fill(x + PAD, y + 1, x + boxWidth - PAD, y + 2, RULE_COLOR);
-                y += 5;
+                y += GROOVE;
                 continue;
             }
-            graphics.text(font, row.label(), x + PAD, y, MUTED_COLOR, false);
-            graphics.text(font, row.value(), x + boxWidth - PAD - font.width(row.value()), y, row.valueColor(), false);
+            graphics.text(font, row.label(), x + PAD, y, MUTED_COLOR);
+            graphics.text(font, row.value(), x + boxWidth - PAD - font.width(row.value()), y, row.valueColor());
             y += CARD_ROW;
         }
+        graphics.fill(x + PAD, y + 1, x + boxWidth - PAD, y + 2, RULE_COLOR);
+        graphics.text(font, feed, x + PAD, y + GROOVE, READOUT_COLOR);
         pose.popMatrix();
     }
 
     /**
-     * Names read first and figures stay dim. A null row is a groove between the two groups.
+     * The figures are what the card is opened for, so they outshine their names, and what needs a response is colored. A null row is a groove between the two groups.
      */
     private List<CardRow> cardRows()
     {
@@ -554,20 +564,20 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         double cost = snapshot.nextInsightCost();
 
         var rows = new ArrayList<CardRow>();
-        rows.add(new CardRow(Component.translatable("voidheart.research.card.gathering"), String.format("%.2f/s", snapshot.rate()), READOUT_COLOR));
-        activeResearch().ifPresent(research -> rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format("%.2f/s", research.knowledgePerSecond()), READOUT_COLOR)));
-        rows.add(new CardRow(Component.translatable("voidheart.research.card.holds"), wholeNumber(snapshot.cap()), READOUT_COLOR));
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.gathering"), String.format(Locale.ROOT, "%.2f/s", snapshot.rate()), TEXT_COLOR));
+        activeResearch().ifPresent(research -> rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format(Locale.ROOT, "%.2f/s", research.knowledgePerSecond()), TEXT_COLOR)));
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.holds"), wholeNumber(snapshot.cap()), TEXT_COLOR));
 
         if (knowledge >= snapshot.cap() && change >= 0)
-            rows.add(new CardRow(Component.translatable("voidheart.research.card.full"), "", READOUT_COLOR));
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.full"), Component.translatable("voidheart.research.card.full_lost").getString(), LACK_COLOR));
         else if (change > 0)
-            rows.add(new CardRow(Component.translatable("voidheart.research.card.full_in"), duration((snapshot.cap() - knowledge) / change), READOUT_COLOR));
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.full_in"), duration((snapshot.cap() - knowledge) / change), TEXT_COLOR));
         else if (change < 0 && knowledge > 0)
-            rows.add(new CardRow(Component.translatable("voidheart.research.card.empty_in"), duration(knowledge / -change), READOUT_COLOR));
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.empty_in"), duration(knowledge / -change), knowledge / -change < EMPTY_WARNING_SECONDS ? LACK_COLOR : TEXT_COLOR));
 
         rows.add(null);
-        rows.add(new CardRow(Component.translatable("voidheart.research.card.next"), nextInsightText(knowledge, cost, change), knowledge >= cost ? FRONTIER_COLOR : READOUT_COLOR));
-        rows.add(new CardRow(Component.translatable("voidheart.research.card.cost"), wholeNumber(Math.ceil(cost)), READOUT_COLOR));
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.next"), nextInsightText(knowledge, cost, change), knowledge >= cost ? FRONTIER_COLOR : TEXT_COLOR));
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.cost"), wholeNumber(Math.ceil(cost)), TEXT_COLOR));
         return rows;
     }
 
@@ -579,7 +589,9 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             return Component.translatable("voidheart.research.card.next_capped").getString();
 
         double wait = KnowledgeMath.secondsToReach(knowledge, cost, change);
-        return Double.isInfinite(wait) ? Component.translatable("voidheart.research.card.next_blocked").getString() : duration(wait);
+        if (Double.isFinite(wait))
+            return duration(wait);
+        return Component.translatable(activeResearch().isPresent() ? "voidheart.research.card.next_blocked" : "voidheart.research.card.next_stalled").getString();
     }
 
     /**
@@ -779,7 +791,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     {
         var effects = new ArrayList<Component>();
         if (research.passiveBonus() > 0)
-            effects.add(Component.translatable("voidheart.research.passive_bonus", String.format("%.2f", research.passiveBonus())));
+            effects.add(Component.translatable("voidheart.research.passive_bonus", String.format(Locale.ROOT, "%.2f", research.passiveBonus())));
         if (research.capBonus() > 0)
             effects.add(Component.translatable("voidheart.research.cap_bonus", wholeNumber(research.capBonus())));
         return effects;
@@ -800,7 +812,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             {
                 double done = snapshot.progress().getOrDefault(id, 0D);
                 if (done > 0)
-                    yield Optional.of(Component.translatable("voidheart.research.row_paused", String.format("%.0f%%", 100 * done / research.knowledgeCost())));
+                    yield Optional.of(Component.translatable("voidheart.research.row_paused", String.format(Locale.ROOT, "%.0f%%", 100 * done / research.knowledgeCost())));
                 yield Optional.of(Double.isInfinite(seconds)
                         ? Component.translatable("voidheart.research.row_cost", wholeNumber(research.knowledgeCost()))
                         : Component.translatable("voidheart.research.row_ready", wholeNumber(research.knowledgeCost()), duration(seconds)));
@@ -861,7 +873,44 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         else if (!snapshot.fed().isEmpty() && fedGlyph().contains(mouseX, mouseY))
             graphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("voidheart.research.extracted")), mouseX, mouseY);
         else if (mouseX >= insightButton.getX() && mouseX < insightButton.getX() + insightButton.getWidth() && mouseY >= insightButton.getY() && mouseY < insightButton.getY() + insightButton.getHeight())
-            graphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("voidheart.research.craft")), mouseX, mouseY);
+            extractInsightTooltip(graphics, mouseX, mouseY);
+    }
+
+    /**
+     * Held above the plate rather than at the cursor, where it would cover the count it is there to explain.
+     */
+    private void extractInsightTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
+    {
+        int center = insightButton.getX() + insightButton.getWidth() / 2;
+        int top = insightButton.getY();
+        graphics.setTooltipForNextFrame(font, insightTooltip().stream().map(Component::getVisualOrderText).toList(), Optional.empty(),
+                (screenWidth, screenHeight, x, y, tooltipWidth, tooltipHeight) -> new Vector2i(Math.clamp(center - tooltipWidth / 2, TOOLTIP_EDGE, Math.max(TOOLTIP_EDGE, screenWidth - tooltipWidth - TOOLTIP_EDGE)), top - tooltipHeight - TOOLTIP_GAP),
+                mouseX, mouseY, false, null);
+    }
+
+    private List<Component> insightTooltip()
+    {
+        var cost = wholeNumber(Math.ceil(snapshot.nextInsightCost()));
+        var lines = new ArrayList<Component>();
+        lines.add(Component.translatable("voidheart.research.craft"));
+        lines.add(Component.translatable("voidheart.research.craft.kept", snapshot.insights()).withColor(MUTED_COLOR));
+
+        if (canRefine())
+        {
+            lines.add(Component.translatable("voidheart.research.craft.cost", cost).withColor(FRONTIER_COLOR));
+            lines.add(Component.translatable("voidheart.research.craft.key").withColor(READOUT_COLOR));
+        }
+        else if (snapshot.nextInsightCost() > snapshot.cap())
+            lines.add(Component.translatable("voidheart.research.craft.capped", cost).withColor(LACK_COLOR));
+        else
+        {
+            double wait = KnowledgeMath.secondsToReach(shownKnowledge(), snapshot.nextInsightCost(), knowledgeChange());
+            if (Double.isFinite(wait))
+                lines.add(Component.translatable("voidheart.research.craft.wait", cost, duration(wait)).withColor(MUTED_COLOR));
+            else
+                lines.add(Component.translatable(activeResearch().isPresent() ? "voidheart.research.craft.burning" : "voidheart.research.craft.stalled", cost).withColor(LACK_COLOR));
+        }
+        return lines;
     }
 
     private List<Component> fedTooltip(Identifier id)
@@ -1056,7 +1105,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         }
 
         double yield = Math.round(value * KnowledgeMath.feedMultiplier(fed) * 10) / 10D;
-        lines.add(Component.translatable("voidheart.knowledge.yield", yield == Math.rint(yield) ? wholeNumber(yield) : String.format("%.1f", yield)).withStyle(ChatFormatting.DARK_AQUA));
+        lines.add(Component.translatable("voidheart.knowledge.yield", yield == Math.rint(yield) ? wholeNumber(yield) : String.format(Locale.ROOT, "%.1f", yield)).withStyle(ChatFormatting.DARK_AQUA));
         lines.add(state.withStyle(ChatFormatting.GRAY));
     }
 }

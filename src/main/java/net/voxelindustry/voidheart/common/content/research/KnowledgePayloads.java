@@ -20,10 +20,10 @@ public class KnowledgePayloads
     /**
      * What the repository screen shows, sent every second while it is open and after every action.
      */
-    public record Snapshot(double knowledge, double cap, double rate, int insights, double nextInsightCost, Optional<Identifier> active,
+    public record Snapshot(double knowledge, double cap, double rate, int insights, double nextInsightCost, double insightCostGrowth, Optional<Identifier> active,
                            Map<Identifier, Double> progress, List<Identifier> revealed, List<Identifier> completed, Map<Identifier, Integer> fed) implements CustomPacketPayload
     {
-        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, Optional.empty(), Map.of(), List.of(), List.of(), Map.of());
+        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, 1, Optional.empty(), Map.of(), List.of(), List.of(), Map.of());
 
         public static final Type<Snapshot> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "knowledge_snapshot"));
 
@@ -33,6 +33,7 @@ public class KnowledgePayloads
                 ByteBufCodecs.DOUBLE, Snapshot::rate,
                 ByteBufCodecs.VAR_INT, Snapshot::insights,
                 ByteBufCodecs.DOUBLE, Snapshot::nextInsightCost,
+                ByteBufCodecs.DOUBLE, Snapshot::insightCostGrowth,
                 ByteBufCodecs.optional(Identifier.STREAM_CODEC), Snapshot::active,
                 ByteBufCodecs.<RegistryFriendlyByteBuf, Identifier, Double, Map<Identifier, Double>>map(HashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.DOUBLE), Snapshot::progress,
                 Identifier.STREAM_CODEC.apply(ByteBufCodecs.list()), Snapshot::revealed,

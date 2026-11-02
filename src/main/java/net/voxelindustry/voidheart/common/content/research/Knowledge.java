@@ -108,6 +108,7 @@ public class Knowledge
                 data.rate(rules, tree),
                 data.getInsights(),
                 rules.insightCost(data.getInsightsBought()),
+                rules.insightGrowth(),
                 data.getActive(),
                 new HashMap<>(data.getProgress()),
                 List.copyOf(data.getRevealed()),

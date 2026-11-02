@@ -15,8 +15,9 @@ import static net.voxelindustry.voidheart.client.screen.ResearchMapView.ATLAS;
 import static net.voxelindustry.voidheart.client.screen.ResearchMapView.SPRITES;
 
 /**
- * A quill and an unlit lantern, how many insights are kept, and along the bottom how close the next one is.
- * Crafting one sets the quill writing and lights the lantern for a few moments.
+ * A quill and an unlit lantern, how many insights are kept beside a mote like those around the eye, and along the bottom how close the next one is,
+ * or once it is in reach, a dash for each one the knowledge held would pay for.
+ * Crafting one sets the quill writing and lights the lantern for a few moments. The quill stays dim while there is nothing to write with.
  */
 class ResearchInsightButton extends Button
 {
@@ -31,6 +32,7 @@ class ResearchInsightButton extends Button
     private static final int TRACK_COLOR  = 0xFF1A1424;
     private static final int CHARGE_COLOR = 0xFF2A7F74;
     private static final int COUNT_COLOR  = 0xFFA899BC;
+    private static final int QUILL_DIM    = 0xFF8A7A99;
     private static final int FLAME_RGB    = 0x7CE8D6;
 
     private static final int ROW         = 96;
@@ -50,23 +52,36 @@ class ResearchInsightButton extends Button
     private static final int LANTERN_X   = 5;
     private static final int QUILL_X     = 20;
     private static final int COUNT_RIGHT = 6;
+    private static final int MOTE_SIZE   = 2;
+    private static final int MOTE_GAP    = 2;
+    private static final int MOTE_Y      = 9;
+    private static final int DASH_W      = 4;
+    private static final int DASH_GAP    = 2;
+    static final int         DASHES_MAX  = 11;
 
     private static final long LIT_MILLIS    = 3800;
     private static final long WRITE_MILLIS  = 950;
     private static final long BREATH_MILLIS = 2400;
     private static final float KINDLE       = 0.06F;
     private static final float DYING        = 0.55F;
+    private static final int  READY_BREATHS = 3;
+    private static final float READY_REST   = 0.35F;
+    private static final float READY_SWELL  = 0.35F;
 
     private final IntSupplier    insights;
     private final DoubleSupplier charge;
+    private final IntSupplier    affordable;
 
-    private long craftedAt = -1;
+    private long    craftedAt = -1;
+    private long    readyAt;
+    private boolean wasReady;
 
-    ResearchInsightButton(int x, int y, Component label, IntSupplier insights, DoubleSupplier charge, OnPress onPress)
+    ResearchInsightButton(int x, int y, Component label, IntSupplier insights, DoubleSupplier charge, IntSupplier affordable, OnPress onPress)
     {
         super(x, y, WIDTH, HEIGHT, label, onPress, DEFAULT_NARRATION);
         this.insights = insights;
         this.charge = charge;
+        this.affordable = affordable;
     }
 
     void crafted()
@@ -101,6 +116,21 @@ class ResearchInsightButton extends Button
         return level * flicker;
     }
 
+    /**
+     * Swells a few times as the next insight comes into reach, then holds still: for much of the game there is always one in reach.
+     */
+    private float readiness(long now)
+    {
+        if (!wasReady)
+            readyAt = now;
+        wasReady = active;
+
+        long since = now - readyAt;
+        if (since >= READY_BREATHS * BREATH_MILLIS)
+            return READY_REST;
+        return READY_REST + READY_SWELL * (0.5F - 0.5F * (float) Math.cos(since * Math.PI * 2 / BREATH_MILLIS));
+    }
+
     @Override
     protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a)
     {
@@ -109,24 +139,34 @@ class ResearchInsightButton extends Button
         int y = getY();
 
         graphics.fill(x, y, x + width, y + height, PLATE_COLOR);
+        float readiness = readiness(now);
         if (active)
-        {
-            float breath = 0.5F + 0.5F * (float) Math.sin(now * Math.PI * 2 / BREATH_MILLIS);
-            graphics.fill(x, y, x + width, y + height, ARGB.srgbLerp(breath * 0.7F, PLATE_COLOR, READY_COLOR));
-        }
+            graphics.fill(x, y, x + width, y + height, ARGB.srgbLerp(readiness, PLATE_COLOR, READY_COLOR));
         graphics.outline(x, y, width, height, !active ? BORDER_COLOR : isHoveredOrFocused() ? HOVER_COLOR : LIVE_COLOR);
 
         extractLantern(graphics, x + LANTERN_X, y + 3, flame(now));
-        extractQuill(graphics, x + QUILL_X, y + 3, now);
+        extractQuill(graphics, x + QUILL_X, y + 3, now, active || flame(now) > 0 ? 0xFFFFFFFF : QUILL_DIM);
 
         var font = Minecraft.getInstance().font;
         var count = Integer.toString(insights.getAsInt());
-        graphics.text(font, count, x + width - COUNT_RIGHT - font.width(count), y + 7, active ? HOVER_COLOR : COUNT_COLOR);
+        int countX = x + width - COUNT_RIGHT - font.width(count);
+        graphics.text(font, count, countX, y + 7, active ? HOVER_COLOR : COUNT_COLOR);
+        graphics.fill(countX - MOTE_GAP - MOTE_SIZE, y + MOTE_Y, countX - MOTE_GAP, y + MOTE_Y + MOTE_SIZE, LIVE_COLOR);
 
         int trackLeft = x + 2;
         int trackWidth = width - 4;
+        if (active)
+        {
+            for (int dash = 0; dash < affordable.getAsInt(); dash++)
+            {
+                int dashX = trackLeft + dash * (DASH_W + DASH_GAP);
+                graphics.fill(dashX, y + height - 3, dashX + DASH_W, y + height - 2, LIVE_COLOR);
+            }
+            return;
+        }
+
         graphics.fill(trackLeft, y + height - 3, trackLeft + trackWidth, y + height - 2, TRACK_COLOR);
-        graphics.fill(trackLeft, y + height - 3, trackLeft + (int) (trackWidth * Math.clamp(charge.getAsDouble(), 0, 1)), y + height - 2, active ? LIVE_COLOR : CHARGE_COLOR);
+        graphics.fill(trackLeft, y + height - 3, trackLeft + (int) (trackWidth * Math.clamp(charge.getAsDouble(), 0, 1)), y + height - 2, CHARGE_COLOR);
     }
 
     private static void extractLantern(GuiGraphicsExtractor graphics, int x, int y, float flame)
@@ -150,7 +190,7 @@ class ResearchInsightButton extends Button
     /**
      * Scratches back and forth from the nib while writing, and rests leaning against the lantern otherwise.
      */
-    private void extractQuill(GuiGraphicsExtractor graphics, int x, int y, long now)
+    private void extractQuill(GuiGraphicsExtractor graphics, int x, int y, long now, int tint)
     {
         float writing = craftedAt < 0 ? 0 : 1 - (now - craftedAt) / (float) WRITE_MILLIS;
         var pose = graphics.pose();
@@ -161,7 +201,7 @@ class ResearchInsightButton extends Button
             pose.translate((float) Math.sin(now / 38D) * 1.6F * writing, (float) Math.abs(Math.sin(now / 76D)) * -1.2F * writing);
             pose.rotate((float) Math.sin(now / 38D) * 0.16F * writing);
         }
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SPRITES, 0, -QUILL_H, QUILL_U, ROW, QUILL_W, QUILL_H, ATLAS, ATLAS);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SPRITES, 0, -QUILL_H, QUILL_U, ROW, QUILL_W, QUILL_H, ATLAS, ATLAS, tint);
         pose.popMatrix();
     }
 }

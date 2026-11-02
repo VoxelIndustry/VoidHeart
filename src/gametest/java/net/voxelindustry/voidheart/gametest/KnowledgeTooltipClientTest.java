@@ -58,11 +58,11 @@ public class KnowledgeTooltipClientTest implements FabricClientGameTest
             captureLore(context, "research-lore-untouched");
 
             feed(context, server, 1);
-            expectLore(context, Items.GHAST_TEAR, String.format("Yields %.1f knowledge", 1.5), "Partly drained");
+            expectLore(context, Items.GHAST_TEAR, "Yields 1.5 knowledge", "Partly drained");
             captureLore(context, "research-lore-drained");
 
             feed(context, server, 4);
-            expectLore(context, Items.GHAST_TEAR, String.format("Yields %.1f knowledge", 0.5), "Nearly exhausted");
+            expectLore(context, Items.GHAST_TEAR, "Yields 0.5 knowledge", "Nearly exhausted");
 
             feed(context, server, 3);
             expectLore(context, Items.GHAST_TEAR, "Exhausted: nothing more can be learned from it");
