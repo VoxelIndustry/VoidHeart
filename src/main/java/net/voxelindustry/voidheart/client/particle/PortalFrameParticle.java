@@ -106,20 +106,6 @@ public class PortalFrameParticle extends GeometryParticle
                 .setLight(light)
                     .setOverlay(OverlayTexture.NO_OVERLAY)
                     .setNormal(0, 1, 0);
-
-        vertexConsumer.addVertex(rightBottom.x(), rightBottom.y(), rightBottom.z()).setUv(l, o).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
-                    .setOverlay(OverlayTexture.NO_OVERLAY)
-                    .setNormal(0, 1, 0);
-        vertexConsumer.addVertex(leftBottom.x(), leftBottom.y(), leftBottom.z()).setUv(l, n).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
-                    .setOverlay(OverlayTexture.NO_OVERLAY)
-                    .setNormal(0, 1, 0);
-        vertexConsumer.addVertex(leftTop.x(), leftTop.y(), leftTop.z()).setUv(m, o).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
-                    .setOverlay(OverlayTexture.NO_OVERLAY)
-                    .setNormal(0, 1, 0);
-        vertexConsumer.addVertex(rightTop.x(), rightTop.y(), rightTop.z()).setUv(m, n).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light)
-                    .setOverlay(OverlayTexture.NO_OVERLAY)
-                    .setNormal(0, 1, 0);
-
     }
 
     @Override

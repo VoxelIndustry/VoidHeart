@@ -1,0 +1,13 @@
+{
+  "type": "voidheart:altar",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:void_heart"
+      }
+    ]
+  },
+  "outputs": {},
+  "time": 20
+}

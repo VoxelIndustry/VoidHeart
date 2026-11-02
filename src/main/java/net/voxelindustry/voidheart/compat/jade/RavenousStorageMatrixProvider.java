@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.compat.jade;
 
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -34,7 +35,8 @@ public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockA
 
             for (int index = 0; index < storage.storage().storageCount(); index++)
             {
-                tag.putString("essenceTypeName" + index, storage.storage().types()[index].translatableName());
+                var type = storage.storage().types()[index];
+                tag.putString("essenceTypeName" + index, (type == null ? EssenceRegistry.EMPTY : type).translatableName());
                 tag.putInt("essenceAmount" + index, storage.storage().amounts()[index]);
             }
             tag.putInt("essenceMaxAmount", storage.storage().maximumAmount());
@@ -56,12 +58,20 @@ public class RavenousStorageMatrixProvider implements IServerDataProvider<BlockA
     
             var storageCount = accessor.getServerData().getIntOr("storageCount", 0);
     
+            var shown = false;
             for (int index = 0; index < storageCount; index++)
             {
+                if (accessor.getServerData().getIntOr("essenceAmount" + index, 0) == 0)
+                    continue;
+
+                shown = true;
                 tooltip.add(Component.literal(index + ": "));
                 tooltip.append(Component.translatable(accessor.getServerData().getStringOr("essenceTypeName" + index, "")));
                 tooltip.append(Component.literal("  " + accessor.getServerData().getIntOr("essenceAmount" + index, 0) + " / " + accessor.getServerData().getIntOr("essenceMaxAmount", 0)));
             }
+
+            if (!shown)
+                tooltip.add(Component.translatable(MODID + ".jade.storage.empty"));
         }
 
         @Override

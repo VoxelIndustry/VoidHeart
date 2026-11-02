@@ -40,12 +40,12 @@ public class BlockTagsProvider extends FabricTagsProvider.BlockTagsProvider
                 walls.add(family.get(Variant.WALL).builtInRegistryHolder().key());
         });
 
-        var essenceWater = builder(VoidHeartTags.ESSENCE_WATER_TAG)
+        var aspectStillness = builder(VoidHeartTags.ASPECT_STILLNESS_TAG)
                 .setReplace(false);
-        essenceWater.add(Blocks.WATER.builtInRegistryHolder().key());
+        aspectStillness.add(Blocks.WATER.builtInRegistryHolder().key());
 
-        var essenceLava = builder(VoidHeartTags.ESSENCE_LAVA_TAG)
+        var aspectFiery = builder(VoidHeartTags.ASPECT_FIERY_TAG)
                 .setReplace(false);
-        essenceLava.add(Blocks.LAVA.builtInRegistryHolder().key());
+        aspectFiery.add(Blocks.LAVA.builtInRegistryHolder().key());
     }
 }

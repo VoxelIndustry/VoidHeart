@@ -1,5 +1,13 @@
 package net.voxelindustry.voidheart.common.content.shatterforge;
 
+import net.voxelindustry.voidheart.common.content.beam.BeamComposition;
+import net.voxelindustry.voidheart.common.content.beam.BeamResolution;
+import net.voxelindustry.voidheart.common.content.beam.BeamResolver;
+import net.voxelindustry.voidheart.common.content.beam.BeamSegment;
+import net.voxelindustry.voidheart.common.content.beam.FormationError;
+import net.voxelindustry.voidheart.common.content.beam.LevelBeamWorldView;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.Containers;
@@ -18,8 +26,14 @@ import net.voxelindustry.steamlayer.network.tilesync.PartialTileSync;
 import net.voxelindustry.steamlayer.network.tilesync.TileSyncElement;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.tile.TileBase;
-import net.voxelindustry.voidheart.common.content.altar.AltarCraftingSyncElement;
-import net.voxelindustry.voidheart.common.content.inventorymover.SingleStackInsertable;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
+import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
+import org.jetbrains.annotations.Nullable;
+import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
+import net.voxelindustry.voidheart.common.content.essence.RelayNetwork;
+import net.voxelindustry.voidheart.common.content.inventorymover.SingleStackExtractable;
 import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
@@ -29,17 +43,22 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
-public class ShatterForgeTile extends TileBase implements PillarLinkedTile, PartialSyncedTile, SingleStackInsertable
+public class ShatterForgeTile extends TileBase implements PillarLinkedTile, PartialSyncedTile, SingleStackExtractable
 {
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
 
     private VoidPillarTile pillar;
+    private VoidPillarTile candidatePillar;
 
     private ShatterForgeRecipe currentRecipe;
     @Getter
@@ -55,11 +74,38 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
     private final List<BlockPos> connectedBlocks = new ArrayList<>();
     private FormationError formationError;
+    @Getter
+    private List<BeamSegment> beamSegments = List.of();
+    private BeamComposition beamComposition = BeamComposition.EMPTY;
+    /**
+     * Collectors the current recipe draws essence from.
+     */
+    @Getter
+    private List<BlockPos> drainingCollectors = List.of();
+    /**
+     * Experience skulls the current recipe draws experience from.
+     */
+    @Getter
+    private List<BlockPos> drainingSkulls = List.of();
+    /**
+     * Experience held by the skulls of the last resolved structure.
+     */
+    @Getter
+    private int availableExperience;
 
     private int connectedMonolithCount;
     private Direction trackDirection;
+    private BlockPos sourcePillarPos;
 
-    private final Collection<Identifier> syncElements = singletonList(AltarCraftingSyncElement.IDENTIFIER);
+    private static final int PREVIEW_DURATION_TICKS = 30 * 20;
+
+    @Getter
+    private int previewPairs = -1;
+    @Getter
+    private Direction previewDirection = Direction.NORTH;
+    private long previewUntil;
+
+    private final Collection<Identifier> syncElements = singletonList(ShatterForgeCraftingSyncElement.IDENTIFIER);
 
     ////////////
     // CLIENT //
@@ -70,6 +116,22 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     @Getter
     private ItemStack clientRecipeOutput = ItemStack.EMPTY;
     private BlockPos pillarPos;
+    private final long[] runeHeartbeats = new long[ShatterForgeLayout.MAX_TRACK_PAIRS * 4];
+
+    /**
+     * Height above the forge level at which beams, item particles and source items line up.
+     */
+    public static final float BEAM_HEIGHT = 1.35F;
+
+    private static final int BEAM_FORM_MIN_TICKS = 30;
+
+    private int beamFormTicks;
+    private int previousBeamFormTicks;
+    /**
+     * Last non-empty beam segments, kept so the beam can dissolve after the craft stops.
+     */
+    @Getter
+    private List<BeamSegment> displayedBeamSegments = List.of();
 
     public ShatterForgeTile(BlockPos pos, BlockState state)
     {
@@ -82,46 +144,174 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     {
         if (connectedMonolithCount != 0)
         {
-            if (getLevel().getGameTime() % 20 == 0)
+            var gameTime = getLevel().getGameTime();
+            var litRunes = Math.min(litRuneCount(), runeHeartbeats.length);
+            particlePosCache.set(getBlockPos());
+            for (int i = 0; i < litRunes; i++)
             {
-                particlePosCache.set(getBlockPos());
-                var monolithToLit = (connectedMonolithCount + 1) * (warmProgress / (float) getWarmingTime());
-                for (int i = 0; i < monolithToLit; i++)
+                if (gameTime - runeHeartbeats[i] > 2)
                 {
-                    getLevel().addParticle(new ShatterForgeRuneParticleEffect(getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS)),
+                    runeHeartbeats[i] = gameTime;
+                    getLevel().addParticle(new ShatterForgeRuneParticleEffect(getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS), getBlockPos(), i),
                             particlePosCache.getX() + 0.5,
                             particlePosCache.getY() + 1.5,
                             particlePosCache.getZ() + 0.5,
                             0,
                             0,
                             0);
-                    particlePosCache.move(trackDirection, 3);
                 }
+                particlePosCache.move(trackDirection, 3);
             }
         }
 
-        if (isCrafting && recipeProgress > 1 && getPillar() != null && !clientRecipeOutput.isEmpty())
+        if (isCrafting && recipeProgress > 1 && pillarPos != null && !clientRecipeOutput.isEmpty())
         {
-            getLevel().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
-                    getBlockPos().getX() + 0.5,
-                    getBlockPos().getY() + 1.3,
-                    getBlockPos().getZ() + 0.5,
-                    pillarPos.getX() + 0.5,
-                    pillarPos.getY() + 1.3,
-                    pillarPos.getZ() + 0.5);
-            getLevel().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
-                    getBlockPos().getX() + 0.5,
-                    getBlockPos().getY() + 1.3,
-                    getBlockPos().getZ() + 0.5,
-                    pillarPos.getX() + 0.5,
-                    pillarPos.getY() + 1.3,
-                    pillarPos.getZ() + 0.5);
+            var beamY = getBlockPos().getY() + BEAM_HEIGHT;
+            for (var segment : itemPath())
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    getLevel().addParticle(new ShatterForgeItemParticleEffect(clientRecipeInput, clientRecipeOutput),
+                            segment.from().getX() + 0.5,
+                            beamY,
+                            segment.from().getZ() + 0.5,
+                            segment.to().getX() + 0.5,
+                            beamY,
+                            segment.to().getZ() + 0.5);
+                }
+            }
+
+            for (var skullPos : drainingSkulls)
+                playExperienceParticles(skullPos, beamY);
         }
+    }
+
+    /**
+     * Experience falls from its skull into the beam below, then travels the beam into the forge.
+     */
+    private void playExperienceParticles(BlockPos skullPos, double beamY)
+    {
+        var cell = new BlockPos(skullPos.getX(), getBlockPos().getY(), skullPos.getZ());
+        addExperienceParticle(skullPos.getX() + 0.5, skullPos.getY() + 0.4, skullPos.getZ() + 0.5, cell.getX() + 0.5, beamY, cell.getZ() + 0.5);
+
+        var through = segmentThrough(cell);
+        if (through == null)
+            return;
+        addExperienceParticle(cell.getX() + 0.5, beamY, cell.getZ() + 0.5, through.to().getX() + 0.5, beamY, through.to().getZ() + 0.5);
+        for (var segment : pathFrom(through.to()))
+            addExperienceParticle(segment.from().getX() + 0.5, beamY, segment.from().getZ() + 0.5, segment.to().getX() + 0.5, beamY, segment.to().getZ() + 0.5);
+    }
+
+    private void addExperienceParticle(double fromX, double fromY, double fromZ, double toX, double toY, double toZ)
+    {
+        if (fromX == toX && fromY == toY && fromZ == toZ)
+            return;
+        getLevel().addParticle(VoidHeart.SHATTER_FORGE_EXPERIENCE_PARTICLE, fromX, fromY, fromZ, toX, toY, toZ);
+    }
+
+    /**
+     * @return the beam segment running over the given track cell, null if none does
+     */
+    private BeamSegment segmentThrough(BlockPos cell)
+    {
+        for (var segment : beamSegments)
+        {
+            var from = new BlockPos(segment.from().getX(), cell.getY(), segment.from().getZ());
+            var to = new BlockPos(segment.to().getX(), cell.getY(), segment.to().getZ());
+            var alongZ = cell.getX() == from.getX() && cell.getX() == to.getX()
+                    && cell.getZ() >= Math.min(from.getZ(), to.getZ()) && cell.getZ() <= Math.max(from.getZ(), to.getZ());
+            var alongX = cell.getZ() == from.getZ() && cell.getZ() == to.getZ()
+                    && cell.getX() >= Math.min(from.getX(), to.getX()) && cell.getX() <= Math.max(from.getX(), to.getX());
+            if ((alongZ || alongX) && !cell.equals(from))
+                return segment;
+        }
+        return null;
+    }
+
+    /**
+     * Beam segments the input item travels through, from its pillar to the forge.
+     */
+    private List<BeamSegment> itemPath()
+    {
+        return pathFrom(pillarPos);
+    }
+
+    /**
+     * Beam segments chained from the given node to the forge.
+     */
+    private List<BeamSegment> pathFrom(BlockPos start)
+    {
+        var path = new ArrayList<BeamSegment>();
+        var current = start;
+        while (current != null && !current.equals(getBlockPos()) && path.size() < beamSegments.size())
+        {
+            BeamSegment next = null;
+            for (var segment : beamSegments)
+            {
+                if (segment.from().equals(current))
+                    next = segment;
+            }
+            if (next == null)
+                break;
+            path.add(next);
+            current = next.to();
+        }
+        return path;
     }
 
     public int getWarmingTime()
     {
         return connectedMonolithCount * 25;
+    }
+
+    private int getBeamFormDuration()
+    {
+        return Math.max(BEAM_FORM_MIN_TICKS, getWarmingTime());
+    }
+
+    /**
+     * Beams form over the warm-up while crafting and dissolve at the same pace once it stops.
+     */
+    private void tickBeamFormation()
+    {
+        if (!beamSegments.isEmpty())
+            displayedBeamSegments = beamSegments;
+
+        var duration = getBeamFormDuration();
+        previousBeamFormTicks = Math.min(beamFormTicks, duration);
+        if (isCrafting && !displayedBeamSegments.isEmpty())
+            beamFormTicks = Math.min(duration, beamFormTicks + 1);
+        else
+            beamFormTicks = Math.max(0, beamFormTicks - 1);
+    }
+
+    /**
+     * @return 0 when no beam is shown, 1 once the beam is fully formed
+     */
+    public float getBeamFormation(float partialTicks)
+    {
+        var ticks = previousBeamFormTicks + (beamFormTicks - previousBeamFormTicks) * partialTicks;
+        return Math.clamp(ticks / getBeamFormDuration(), 0F, 1F);
+    }
+
+    private int litRuneCount()
+    {
+        if (!isCrafting || trackDirection == null)
+            return 0;
+        if (getWarmingTime() == 0)
+            return connectedMonolithCount + 1;
+        return (int) Math.ceil((connectedMonolithCount + 1) * Math.min(1F, warmProgress / (float) getWarmingTime()));
+    }
+
+    public boolean isRuneLit(int index)
+    {
+        return index < litRuneCount();
+    }
+
+    public void runeHeartbeat(int index)
+    {
+        if (index < runeHeartbeats.length && level != null)
+            runeHeartbeats[index] = level.getGameTime();
     }
 
     @Override
@@ -136,174 +326,530 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             stopCrafting();
     }
 
+    @Override
+    public void onPillarStackChanged(VoidPillarTile pillar)
+    {
+        if (isServer() && !isCrafting && this.getPillar() == pillar)
+            tryStartCrafting();
+    }
+
+    private void unlinkPillar()
+    {
+        if (pillar != null)
+            pillar.removeAltar(getBlockPos());
+        pillar = null;
+        pillarPos = null;
+    }
+
+    private void tryStartCrafting()
+    {
+        // The output slot must be emptied before the next craft starts
+        if (isCrafting || level == null || !stack.isEmpty())
+            return;
+
+        if (isStructureCorrect())
+        {
+            if (pillar != candidatePillar)
+                unlinkPillar();
+
+            pillar = candidatePillar;
+            pillarPos = pillar.getBlockPos();
+            pillar.addAltar(getBlockPos());
+
+            startCrafting();
+            setChanged();
+            sync();
+        }
+        else
+            unlinkPillar();
+    }
+
+
     private boolean isStructureCorrect()
     {
-        if (this.currentRecipe == null)
-            return false;
-
         connectedBlocks.clear();
+        candidatePillar = null;
+        currentRecipe = null;
 
-        var neededMonoliths = this.currentRecipe.getMonolithCount();
-
-        var mutablePos = worldPosition.mutable();
-        if (!ifConduitThenAdd(mutablePos.move(Direction.DOWN)))
+        var resolution = BeamResolver.resolve(level, worldPosition);
+        markSourcePillar(resolution);
+        if (resolution.error().isPresent())
+        {
+            updateBeamState(List.of(), BeamComposition.EMPTY, resolution.error().get());
             return false;
+        }
+
+        if (resolution.itemSource().isEmpty() || !(level.getBlockEntity(resolution.itemSource().get()) instanceof VoidPillarTile pillarTile))
+        {
+            updateBeamState(List.of(), BeamComposition.EMPTY, FormationError.NO_PILLAR_AT_END);
+            return false;
+        }
+
+        updateBeamState(resolution.segments(), resolution.result(), null);
+
+        var inputStack = pillarTile.getStack();
+        if (inputStack.isEmpty())
+            return false;
+
+        var matching = VoidHeartRecipes.SHATTER_FORGE_CATEGORY.findRecipes(inputStack).toList();
+        if (matching.isEmpty())
+            return false;
+
+        var aspectMatching = matching.stream()
+                .filter(recipe -> resolution.result().satisfies(recipe.getAspects()))
+                .toList();
+        var passing = aspectMatching.stream()
+                .filter(recipe -> resolution.totalPairs() + 1 >= recipe.getMonolithCount())
+                .sorted(Comparator.comparingInt(ShatterForgeRecipe::totalAspectRequirement)
+                        .thenComparingInt(ShatterForgeRecipe::getMonolithCount)
+                        .reversed()
+                        .thenComparing(recipe -> recipe.getId().toString()))
+                .toList();
+
+        if (passing.isEmpty())
+        {
+            updateBeamState(resolution.segments(), resolution.result(),
+                    aspectMatching.isEmpty() ? FormationError.MISSING_ASPECTS : FormationError.TOO_FEW_MONOLITH);
+            return false;
+        }
+
+        availableExperience = totalExperience(resolution.experienceSources());
+
+        ShatterForgeRecipe selected = null;
+        var lackingExperience = false;
+        for (var recipe : passing)
+        {
+            if (!hasEnoughEssence(recipe, resolution.collectorContributions()))
+                continue;
+            if (planExperience(recipe, resolution.experienceSources()) == null)
+            {
+                lackingExperience = true;
+                continue;
+            }
+            selected = recipe;
+            break;
+        }
+
+        if (selected == null)
+        {
+            updateBeamState(resolution.segments(), resolution.result(),
+                    lackingExperience ? FormationError.NOT_ENOUGH_EXPERIENCE : FormationError.NOT_ENOUGH_ESSENCE);
+            return false;
+        }
+
+        collectLitBlocks(resolution.structureBlocks());
+        updateDrainingCollectors(selected, resolution.collectorContributions());
+        updateDrainingSkulls(selected, resolution.experienceSources());
+        requestCollectorFeeds(selected, resolution.collectorContributions());
 
         var axis = getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS);
-
         var front = axis == Axis.Z ? Direction.NORTH : Direction.WEST;
-        var back = axis == Axis.Z ? Direction.SOUTH : Direction.EAST;
-        var left = axis == Axis.Z ? Direction.WEST : Direction.NORTH;
-        var right = axis == Axis.Z ? Direction.EAST : Direction.SOUTH;
+        trackDirection = level.getBlockState(worldPosition.below().relative(front)).is(VoidHeartBlocks.VOID_CONDUIT) ? front : front.getOpposite();
 
-
-        // First Monolith Pair
-        if (!ifConduitThenAdd(mutablePos.move(left))
-                || !ifConduitThenAdd(mutablePos.move(left))
-                || !ifMonolithThenAdd(mutablePos.move(Direction.UP))
-                || !ifMonolithThenAdd(mutablePos.move(Direction.UP))
-                || !ifMonolithThenAdd(mutablePos.move(Direction.UP))
-                || !ifMonolithThenAdd(mutablePos.move(right, 4))
-                || !ifMonolithThenAdd(mutablePos.move(Direction.DOWN))
-                || !ifMonolithThenAdd(mutablePos.move(Direction.DOWN))
-                || !ifConduitThenAdd(mutablePos.move(Direction.DOWN))
-                || !ifConduitThenAdd(mutablePos.move(left))
-        )
-        {
-            formationError = FormationError.NO_MONOLITH_AROUND;
-            return false;
-        }
-
-        var isConduitInFront = ifConduitThenAdd(mutablePos.set(worldPosition).move(Direction.DOWN).move(front));
-        var isConduitInBack = ifConduitThenAdd(mutablePos.move(back, 2));
-
-        if (isConduitInFront && isConduitInBack)
-        {
-            formationError = FormationError.CONDUIT_BOTH_DIRECTION;
-            return false;
-        }
-
-        var actualForward = isConduitInFront ? front : back;
-
-        mutablePos.set(worldPosition);
-        var advance = 0;
-        while (true)
-        {
-            if (advance > 31)
-            {
-                formationError = FormationError.NO_PILLAR_AT_END;
-                return false;
-            }
-
-            if (ifPillarThenAdd(mutablePos.move(actualForward)))
-                break;
-
-            advance++;
-        }
-
-        if (advance % 3 != 0)
-        {
-            formationError = FormationError.NO_PILLAR_AT_END;
-            return false;
-        }
-
-        var availableMonolith = Math.floorDiv(advance, 3);
-        if (availableMonolith < neededMonoliths - 1)
-        {
-            formationError = FormationError.TOO_FEW_MONOLITH;
-            return false;
-        }
-
-        for (int i = 0; i < availableMonolith; i++)
-        {
-            mutablePos.set(worldPosition).move(actualForward, 3 * i + 1).move(Direction.DOWN);
-
-            if (!ifConduitThenAdd(mutablePos)
-                    || !ifConduitThenAdd(mutablePos.move(actualForward))
-                    || !ifConduitThenAdd(mutablePos.move(actualForward))
-                    || !ifConduitThenAdd(mutablePos.move(left))
-                    || !ifConduitThenAdd(mutablePos.move(left))
-                    || !ifMonolithThenAdd(mutablePos.move(Direction.UP))
-                    || !ifMonolithThenAdd(mutablePos.move(Direction.UP))
-                    || !ifMonolithThenAdd(mutablePos.move(Direction.UP))
-                    || !ifMonolithThenAdd(mutablePos.move(right, 4))
-                    || !ifMonolithThenAdd(mutablePos.move(Direction.DOWN))
-                    || !ifMonolithThenAdd(mutablePos.move(Direction.DOWN))
-                    || !ifConduitThenAdd(mutablePos.move(Direction.DOWN))
-                    || !ifConduitThenAdd(mutablePos.move(left))
-            )
-            {
-                formationError = FormationError.TOO_FEW_MONOLITH;
-                return false;
-            }
-        }
-
-        this.connectedMonolithCount = availableMonolith;
-        this.trackDirection = actualForward;
+        candidatePillar = pillarTile;
+        currentRecipe = selected;
+        connectedMonolithCount = resolution.totalPairs();
         return true;
     }
 
-    private boolean ifConduitThenAdd(BlockPos pos)
+    private boolean isCraftingStillValid()
     {
-        var isConduit = level.getBlockState(pos).is(VoidHeartBlocks.VOID_CONDUIT);
-        if (isConduit)
-            this.connectedBlocks.add(pos.immutable());
-        return isConduit;
-    }
-
-    private boolean ifMonolithThenAdd(BlockPos pos)
-    {
-        var isMonolith = level.getBlockState(pos).is(VoidHeartBlocks.VOID_MONOLITH);
-        if (isMonolith)
-            this.connectedBlocks.add(pos.immutable());
-        return isMonolith;
-    }
-
-    private boolean ifPillarThenAdd(BlockPos pos)
-    {
-        var isPillar = level.getBlockState(pos).is(VoidHeartBlocks.VOID_PILLAR);
-        if (isPillar)
+        var resolution = BeamResolver.resolve(level, worldPosition);
+        markSourcePillar(resolution);
+        if (resolution.error().isPresent())
         {
-            pillar = ((VoidPillarTile) level.getBlockEntity(pos));
-            pillar.addAltar(getBlockPos());
+            updateBeamState(List.of(), BeamComposition.EMPTY, resolution.error().get());
+            return false;
         }
-        return isPillar;
+
+        var linkedPillar = getPillar();
+        if (linkedPillar == null || resolution.itemSource().isEmpty() || !resolution.itemSource().get().equals(linkedPillar.getBlockPos()))
+        {
+            updateBeamState(List.of(), BeamComposition.EMPTY, FormationError.NO_PILLAR_AT_END);
+            return false;
+        }
+
+        FormationError error = null;
+        if (resolution.totalPairs() + 1 < currentRecipe.getMonolithCount())
+            error = FormationError.TOO_FEW_MONOLITH;
+        else if (!resolution.result().satisfies(currentRecipe.getAspects()))
+            error = FormationError.MISSING_ASPECTS;
+        else if (!hasEnoughEssence(currentRecipe, resolution.collectorContributions()))
+            error = FormationError.NOT_ENOUGH_ESSENCE;
+        else if (planExperience(currentRecipe, resolution.experienceSources()) == null)
+            error = FormationError.NOT_ENOUGH_EXPERIENCE;
+
+        availableExperience = totalExperience(resolution.experienceSources());
+        updateBeamState(resolution.segments(), resolution.result(), error);
+        if (error != null)
+            return false;
+
+        connectedMonolithCount = resolution.totalPairs();
+        collectLitBlocks(resolution.structureBlocks());
+        updateDrainingCollectors(currentRecipe, resolution.collectorContributions());
+        updateDrainingSkulls(currentRecipe, resolution.experienceSources());
+        requestCollectorFeeds(currentRecipe, resolution.collectorContributions());
+        for (var pos : connectedBlocks)
+        {
+            var state = level.getBlockState(pos);
+            if (!state.getValue(BlockStateProperties.LIT))
+                level.setBlockAndUpdate(pos, state.setValue(BlockStateProperties.LIT, true));
+        }
+        return true;
     }
 
-    public void setStack(ItemStack stack)
+    /**
+     * Also rebuilds the list after a reload mid-craft, where it is not persisted.
+     */
+    private void collectLitBlocks(List<BlockPos> structureBlocks)
     {
-        var previousStack = this.stack;
-        this.stack = stack;
-
-        if (stack.isEmpty())
+        connectedBlocks.clear();
+        for (var structurePos : structureBlocks)
         {
-            if (!previousStack.isEmpty() && isCrafting)
-            {
-                stopCrafting();
-                sync();
-            }
+            var state = level.getBlockState(structurePos);
+            if (state.is(VoidHeartBlocks.VOID_CONDUIT) || state.is(VoidHeartBlocks.VOID_MONOLITH))
+                connectedBlocks.add(structurePos.immutable());
+        }
+    }
+
+    private record CollectorDrain(RavenousCollectorTile collector, EssenceType type, int amount)
+    {
+    }
+
+    /**
+     * Share of a collector drain taken from a storage behind it, through the relays.
+     */
+    private record SupplyDraw(IEssenceReceiver storage, EssenceType type, int amount)
+    {
+    }
+
+    private record Reservation(IEssenceReceiver storage, EssenceType type)
+    {
+    }
+
+    /**
+     * Kept after the craft stops so the beam can dissolve with its collector strands.
+     */
+    private void updateDrainingCollectors(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
+    {
+        var collectors = computeDrains(recipe, contributions).stream()
+                .map(drain -> drain.collector().getBlockPos().immutable())
+                .sorted()
+                .toList();
+        if (collectors.equals(drainingCollectors))
             return;
+
+        drainingCollectors = collectors;
+        setChanged();
+        sync();
+    }
+
+    /**
+     * Collectors holding less than their drain show their relays feeding them from storages while the craft goes on.
+     */
+    private void requestCollectorFeeds(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
+    {
+        for (var drain : computeDrains(recipe, contributions))
+        {
+            if (drain.collector().storage().amount() < drain.amount())
+                drain.collector().requestFeed(level.getGameTime() + 40);
         }
+    }
 
-        retrieveCurrentRecipe();
-        var isStructureCorrect = isStructureCorrect();
+    private record ExperienceDraw(ExperienceSkullTile skull, int amount)
+    {
+    }
 
-        if (isStructureCorrect && !isCrafting())
-            startCrafting();
+    private int totalExperience(List<BlockPos> sources)
+    {
+        var total = 0;
+        for (var source : sources)
+        {
+            if (level.getBlockEntity(source) instanceof ExperienceSkullTile skull)
+                total += skull.getExperience();
+        }
+        return total;
+    }
+
+    /**
+     * The least filled skulls are emptied first.
+     *
+     * @return null when the skulls do not hold enough experience
+     */
+    @Nullable
+    private List<ExperienceDraw> planExperience(ShatterForgeRecipe recipe, List<BlockPos> sources)
+    {
+        var missing = recipe.getExperience();
+        var draws = new ArrayList<ExperienceDraw>();
+        if (missing <= 0)
+            return draws;
+
+        var skulls = new ArrayList<ExperienceSkullTile>();
+        for (var source : sources)
+        {
+            if (level.getBlockEntity(source) instanceof ExperienceSkullTile skull && skull.getExperience() > 0)
+                skulls.add(skull);
+        }
+        skulls.sort(Comparator.comparingInt(ExperienceSkullTile::getExperience));
+
+        for (var skull : skulls)
+        {
+            var taken = Math.min(missing, skull.getExperience());
+            draws.add(new ExperienceDraw(skull, taken));
+            missing -= taken;
+            if (missing == 0)
+                return draws;
+        }
+        return null;
+    }
+
+    private void drainExperience(List<ExperienceDraw> plan)
+    {
+        for (var draw : plan)
+        {
+            draw.skull().setExperience(draw.skull().getExperience() - draw.amount());
+            draw.skull().setChanged();
+        }
+    }
+
+    /**
+     * Kept after the craft stops, like the collectors, while the experience flows into the beam.
+     */
+    private void updateDrainingSkulls(ShatterForgeRecipe recipe, List<BlockPos> sources)
+    {
+        var plan = planExperience(recipe, sources);
+        var skulls = plan == null ? List.<BlockPos>of() : plan.stream()
+                .map(draw -> draw.skull().getBlockPos().immutable())
+                .sorted()
+                .toList();
+        if (skulls.equals(drainingSkulls))
+            return;
+
+        drainingSkulls = skulls;
+        setChanged();
+        sync();
+    }
+
+    public int getRequiredExperience()
+    {
+        return currentRecipe == null ? 0 : currentRecipe.getExperience();
+    }
+
+    private List<CollectorDrain> computeDrains(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
+    {
+        var drains = new ArrayList<CollectorDrain>();
+        var totalRequirement = recipe.totalAspectRequirement();
+        if (recipe.getDraw() == 0 || totalRequirement == 0)
+            return drains;
+
+        var collectors = new HashMap<BlockPos, RavenousCollectorTile>();
+        var aspectTotals = new HashMap<EssenceType, Integer>();
+        contributions.forEach((collectorPos, contribution) ->
+        {
+            if (level.getBlockEntity(collectorPos) instanceof RavenousCollectorTile collector)
+            {
+                collectors.put(collectorPos, collector);
+                aspectTotals.merge(collector.storage().type(), contribution, Integer::sum);
+            }
+        });
+
+        collectors.forEach((collectorPos, collector) ->
+        {
+            var aspect = collector.storage().type();
+            var required = recipe.getAspects().getOrDefault(aspect, 0);
+            var aspectTotal = aspectTotals.getOrDefault(aspect, 0);
+            if (required == 0 || aspectTotal == 0)
+                return;
+
+            var share = contributions.get(collectorPos) / (double) aspectTotal;
+            var amount = (int) Math.ceil(recipe.getDraw() * required / (double) totalRequirement * share);
+            if (amount > 0)
+                drains.add(new CollectorDrain(collector, aspect, amount));
+        });
+        return drains;
+    }
+
+    /**
+     * What each collector lacks is taken from the storages reachable through its relays, nearest first.
+     *
+     * @return null when the storages cannot cover every collector
+     */
+    @Nullable
+    private List<SupplyDraw> planSupply(List<CollectorDrain> drains)
+    {
+        var draws = new ArrayList<SupplyDraw>();
+        var reserved = new HashMap<Reservation, Integer>();
+        for (var drain : drains)
+        {
+            var missing = drain.amount() - drain.collector().storage().amount();
+            if (missing <= 0)
+                continue;
+
+            for (var storage : RelayNetwork.suppliers(level, drain.collector().getBlockPos(), drain.type()).values())
+            {
+                var reservation = new Reservation(storage, drain.type());
+                var taken = Math.min(missing, storage.amountOf(drain.type()) - reserved.getOrDefault(reservation, 0));
+                if (taken <= 0)
+                    continue;
+
+                reserved.merge(reservation, taken, Integer::sum);
+                draws.add(new SupplyDraw(storage, drain.type(), taken));
+                missing -= taken;
+                if (missing == 0)
+                    break;
+            }
+            if (missing > 0)
+                return null;
+        }
+        return draws;
+    }
+
+    private boolean hasEnoughEssence(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
+    {
+        return planSupply(computeDrains(recipe, contributions)) != null;
+    }
+
+    private void drainEssence(ShatterForgeRecipe recipe, Map<BlockPos, Integer> contributions)
+    {
+        var drains = computeDrains(recipe, contributions);
+        var supply = planSupply(drains);
+        if (supply == null)
+            return;
+
+        for (var draw : supply)
+            draw.storage().extract(draw.type(), draw.amount());
+        for (var drain : drains)
+        {
+            drain.collector().storage().drain(drain.type(), drain.amount());
+            drain.collector().setChanged();
+            drain.collector().sync();
+        }
+    }
+
+    /**
+     * Tells the item source pillar of a valid structure to raise its item to the beam height, and the previous one to
+     * lower it back.
+     */
+    private void markSourcePillar(BeamResolution resolution)
+    {
+        BlockPos source = null;
+        if (resolution.isValid() && resolution.itemSource().isPresent() && level.getBlockEntity(resolution.itemSource().get()) instanceof VoidPillarTile)
+            source = resolution.itemSource().get();
+        setSourcePillar(source);
+    }
+
+    private void setSourcePillar(BlockPos source)
+    {
+        if (Objects.equals(source, sourcePillarPos))
+            return;
+
+        if (sourcePillarPos != null && level.getBlockEntity(sourcePillarPos) instanceof VoidPillarTile previous)
+            previous.clearSourceOfForge(worldPosition);
+        sourcePillarPos = source;
+        if (source != null && level.getBlockEntity(source) instanceof VoidPillarTile current)
+            current.setSourceOfForge(worldPosition);
+        setChanged();
+    }
+
+    private void updateBeamState(List<BeamSegment> segments, BeamComposition composition, FormationError error)
+    {
+        var changed = !segments.equals(beamSegments) || !composition.equals(beamComposition) || error != formationError;
+
+        beamSegments = segments;
+        beamComposition = composition;
+        formationError = error;
+
+        if (changed && isServer())
+        {
+            setChanged();
+            sync();
+        }
+    }
+
+    public boolean isPreviewActive()
+    {
+        return previewPairs >= 0 && !isCrafting && level != null && level.getGameTime() < previewUntil;
+    }
+
+    /**
+     * First use shows the smallest recipe track, or the track already built when it is longer or closed.
+     * Later uses grow an open track by one monolith pair, or shrink it when sneaking.
+     */
+    public void stepPreview(Player player, boolean shrink)
+    {
+        var view = new LevelBeamWorldView(level);
+        var active = isPreviewActive();
+
+        if (!active)
+            previewDirection = ShatterForgeLayout.inferDirection(view, worldPosition, getBlockState().getValue(BlockStateProperties.HORIZONTAL_AXIS));
+
+        var built = ShatterForgeLayout.completeSegments(view, worldPosition, previewDirection);
+        var closed = ShatterForgeLayout.isEmitter(view, ShatterForgeLayout.endSlot(worldPosition, previewDirection, built));
+
+        if (!active)
+            previewPairs = closed ? built : Math.max(minimumTrackPairs(), built);
+        else if (shrink)
+            previewPairs = Math.max(0, previewPairs - 1);
+        else if (!closed)
+            previewPairs = Math.min(ShatterForgeLayout.MAX_TRACK_PAIRS, previewPairs + 1);
+
+        previewUntil = level.getGameTime() + PREVIEW_DURATION_TICKS;
+        player.sendOverlayMessage(Component.translatable("voidheart.shatter_forge.preview", previewPairs + 1));
 
         setChanged();
         sync();
     }
 
-    public void removeItself()
+    private static int minimumTrackPairs()
     {
-        if (getPillar() != null)
-            pillar.removeAltar(getBlockPos());
+        return VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getRecipes().stream()
+                .mapToInt(recipe -> recipe.getMonolithCount() - 1)
+                .min()
+                .orElse(2);
     }
 
-    private void retrieveCurrentRecipe()
+    public BeamComposition getBeamComposition()
     {
-        currentRecipe = VoidHeartRecipes.SHATTER_FORGE_CATEGORY.findOneRecipe(stack).orElse(null);
+        return beamComposition;
+    }
+
+    public FormationError getFormationError()
+    {
+        return formationError;
+    }
+
+    public Map<EssenceType, Integer> getRequiredAspects()
+    {
+        return currentRecipe == null ? Map.of() : currentRecipe.getAspects();
+    }
+
+    public ItemStack getInputStack()
+    {
+        var linkedPillar = getPillar();
+        return linkedPillar == null ? ItemStack.EMPTY : linkedPillar.getStack();
+    }
+
+    public ItemStack getOutputStack()
+    {
+        return stack;
+    }
+
+    @Override
+    public void setStack(ItemStack stack)
+    {
+        this.stack = stack;
+
+        setChanged();
+        sync();
+
+        if (isServer() && stack.isEmpty())
+            tryStartCrafting();
+    }
+
+    public void removeItself()
+    {
+        unlinkPillar();
+        setSourcePillar(null);
     }
 
     public void startCrafting()
@@ -342,7 +888,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             {
                 var blockState = getLevel().getBlockState(blockPos);
 
-                if (blockState.is(VoidHeartBlocks.VOID_MONOLITH) || blockState.is(VoidHeartBlocks.VOID_CONDUIT))
+                if (blockState.hasProperty(BlockStateProperties.LIT))
                     getLevel().setBlockAndUpdate(blockPos, blockState.setValue(BlockStateProperties.LIT, false));
             }
 
@@ -354,8 +900,9 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             }
         }
 
-        if (getPillar() != null)
-            pillar.removeAltar(getBlockPos());
+        unlinkPillar();
+        setChanged();
+        sync();
         PartialTileSync.syncPart(this, ShatterForgeCraftingSyncElement.IDENTIFIER);
     }
 
@@ -364,6 +911,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (forge.isClient())
         {
             forge.playParticleEffects();
+            forge.tickBeamFormation();
 
             if (forge.isCrafting && forge.warmProgress < forge.getWarmingTime())
                 forge.warmProgress++;
@@ -372,12 +920,22 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         }
 
         if (!forge.isCrafting)
+        {
+            if (world.getGameTime() % 20 == 0)
+                forge.tryStartCrafting();
             return;
+        }
 
-        if (forge.currentRecipe == null)
+        if (forge.currentRecipe == null || forge.recipeState == null || forge.getPillar() == null)
         {
             forge.stopCrafting();
             forge.sync();
+            return;
+        }
+
+        if (world.getGameTime() % 20 == 0 && !forge.isCraftingStillValid())
+        {
+            forge.stopCrafting();
             return;
         }
 
@@ -388,54 +946,59 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
             return;
         }
 
-        if (forge.recipeState != null && !forge.recipeState.isCompleted())
+        var recipeInput = forge.currentRecipe.getRecipeInputs(ItemStack.class).get(0);
+
+        if (!forge.recipeState.isCompleted())
         {
-            if (forge.getPillar() == null || !forge.pillar.getStack().isEmpty())
+            var inputConsumed = !forge.recipeState.getIngredientConsumed(ItemStack.class, 0).isEmpty();
+
+            if (!inputConsumed && !recipeInput.matchWithQuantity(forge.pillar.getStack()))
+            {
+                forge.stopCrafting();
+                forge.sync();
                 return;
+            }
 
             forge.recipeState.tick(1);
             forge.recipeProgress++;
 
-            if (forge.recipeState.completionDelta() > 0.5F && forge.recipeState.getIngredientConsumed(ItemStack.class, 0).isEmpty())
+            if (!inputConsumed && forge.recipeState.completionDelta() > 0.5F)
             {
-                if (forge.getStack().isEmpty())
-                {
-                    forge.stopCrafting();
-                    forge.sync();
-                    return;
-                }
-                forge.recipeState.consumeSlotless(ItemStack.class, forge.getStack());
-                forge.stack = ItemStack.EMPTY;
+                forge.recipeState.consumeSlotless(ItemStack.class, forge.pillar.getStack());
+                forge.pillar.setStack(ItemStack.EMPTY);
             }
         }
         else
         {
-            if (forge.getPillar() != null)
+            if (!forge.hasOutputtedResult)
             {
-                if (!forge.hasOutputtedResult)
+                var output = forge.recipeState.getOutput(ItemStack.class, 0);
+                if (!forge.stack.isEmpty())
+                    return;
+
+                var completionResolution = BeamResolver.resolve(world, pos);
+                forge.markSourcePillar(completionResolution);
+                var enoughEssence = forge.hasEnoughEssence(forge.currentRecipe, completionResolution.collectorContributions());
+                var experiencePlan = forge.planExperience(forge.currentRecipe, completionResolution.experienceSources());
+                if (completionResolution.error().isPresent() || !enoughEssence || experiencePlan == null)
                 {
-                    forge.pillar.setStack(forge.recipeState.getOutput(ItemStack.class, 0));
-                    forge.recipeState.complete(world, pos, null);
-                    forge.hasOutputtedResult = true;
+                    var error = completionResolution.error().orElse(enoughEssence ? FormationError.NOT_ENOUGH_EXPERIENCE : FormationError.NOT_ENOUGH_ESSENCE);
+                    forge.updateBeamState(List.of(), BeamComposition.EMPTY, error);
+                    forge.stopCrafting();
+                    return;
                 }
 
-                if (!forge.stack.isEmpty() && forge.pillar.getStack().isEmpty())
-                {
-                    if (forge.recipeState.getRecipe().getRecipeInputs(ItemStack.class).get(0).matchWithQuantity(forge.stack))
-                    {
-                        forge.recipeState.reset();
-                        forge.hasOutputtedResult = false;
-                    }
-                    else
-                    {
-                        forge.stopCrafting();
-                        forge.startCrafting();
-                    }
-                }
+                forge.drainEssence(forge.currentRecipe, completionResolution.collectorContributions());
+                forge.drainExperience(experiencePlan);
+
+                forge.stack = output.copy();
+
+                forge.recipeState.complete(world, pos, null);
+                forge.hasOutputtedResult = true;
+                forge.setChanged();
             }
 
-            if (forge.getStack().isEmpty())
-                forge.stopCrafting();
+            forge.stopCrafting();
         }
         forge.sync();
     }
@@ -457,13 +1020,23 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         stack = tag.read("stack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
         recipeProgress = tag.getIntOr("recipeProgress", 0);
         warmProgress = tag.getIntOr("warmProgress", 0);
+        beamSegments = tag.read("beamSegments", BeamSegment.CODEC.listOf()).orElse(List.of());
+        beamComposition = tag.read("beamComposition", BeamComposition.CODEC).orElse(BeamComposition.EMPTY);
+        drainingCollectors = tag.read("drainingCollectors", BlockPos.CODEC.listOf()).orElse(List.of());
+        drainingSkulls = tag.read("drainingSkulls", BlockPos.CODEC.listOf()).orElse(List.of());
+        formationError = tag.getStringOr("formationError", "").isEmpty() ? null : parseError(tag.getStringOr("formationError", ""));
         isCrafting = tag.getBooleanOr("isCrafting", false);
         hasOutputtedResult = tag.getBooleanOr("hasOutputtedResult", false);
 
         connectedMonolithCount = tag.getIntOr("connectedMonolithCount", 0);
         trackDirection = Direction.from3DDataValue(tag.getByteOr("trackDirection", (byte) 0));
 
-        pillarPos = BlockPos.of(tag.getLongOr("pillarPos", 0L));
+        pillarPos = tag.getBooleanOr("hasPillar", false) ? BlockPos.of(tag.getLongOr("pillarPos", 0L)) : null;
+        sourcePillarPos = tag.getBooleanOr("hasSourcePillar", false) ? BlockPos.of(tag.getLongOr("sourcePillarPos", 0L)) : null;
+
+        previewPairs = tag.getIntOr("previewPairs", -1);
+        previewDirection = Direction.from3DDataValue(tag.getByteOr("previewDirection", (byte) Direction.NORTH.get3DDataValue()));
+        previewUntil = tag.getLongOr("previewUntil", 0L);
 
         if (isServer())
         {
@@ -485,6 +1058,11 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.store("stack", ItemStack.OPTIONAL_CODEC, stack);
         tag.putInt("recipeProgress", recipeProgress);
         tag.putInt("warmProgress", warmProgress);
+        tag.store("beamSegments", BeamSegment.CODEC.listOf(), beamSegments);
+        tag.store("beamComposition", BeamComposition.CODEC, beamComposition);
+        tag.store("drainingCollectors", BlockPos.CODEC.listOf(), drainingCollectors);
+        tag.store("drainingSkulls", BlockPos.CODEC.listOf(), drainingSkulls);
+        tag.putString("formationError", formationError == null ? "" : formationError.name());
         tag.putBoolean("isCrafting", isCrafting);
         tag.putInt("connectedMonolithCount", connectedMonolithCount);
         tag.putBoolean("hasOutputtedResult", hasOutputtedResult);
@@ -492,10 +1070,18 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (trackDirection != null)
             tag.putByte("trackDirection", (byte) trackDirection.ordinal());
 
-        if (pillar != null)
-            tag.putLong("pillarPos", pillar.getBlockPos().asLong());
-        else if (pillarPos != null)
-            tag.putLong("pillarPos", pillarPos.asLong());
+        var savedPillarPos = pillar != null ? pillar.getBlockPos() : pillarPos;
+        tag.putBoolean("hasPillar", savedPillarPos != null);
+        if (savedPillarPos != null)
+            tag.putLong("pillarPos", savedPillarPos.asLong());
+
+        tag.putBoolean("hasSourcePillar", sourcePillarPos != null);
+        if (sourcePillarPos != null)
+            tag.putLong("sourcePillarPos", sourcePillarPos.asLong());
+
+        tag.putInt("previewPairs", previewPairs);
+        tag.putByte("previewDirection", (byte) previewDirection.get3DDataValue());
+        tag.putLong("previewUntil", previewUntil);
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
@@ -503,13 +1089,22 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         super.saveAdditional(tag);
     }
 
+    private static FormationError parseError(String name)
+    {
+        try
+        {
+            return FormationError.valueOf(name);
+        }
+        catch (IllegalArgumentException e)
+        {
+            return null;
+        }
+    }
+
     private VoidPillarTile getPillar()
     {
-        if (pillar == null)
-        {
-            if (pillarPos != null)
-                return pillar = (VoidPillarTile) level.getBlockEntity(pillarPos);
-        }
+        if (pillar == null && pillarPos != null && level != null && level.getBlockEntity(pillarPos) instanceof VoidPillarTile pillarTile)
+            pillar = pillarTile;
         return pillar;
     }
 
@@ -552,13 +1147,6 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         return syncElements;
     }
 
-    public enum FormationError
-    {
-        NO_MONOLITH_AROUND,
-        CONDUIT_BOTH_DIRECTION,
-        TOO_FEW_MONOLITH,
-        NO_PILLAR_AT_END
-    }
 
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)

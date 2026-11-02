@@ -1,0 +1,21 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "voidheart:block/cut_ravenous_gold",
+    "core": "voidheart:block/cut_ravenous_gold"
+  },
+  "elements": [
+    {
+      "from": [4, 4, 4],
+      "to": [12, 12, 12],
+      "faces": {
+        "north": { "uv": [4, 4, 12, 12], "texture": "#core" },
+        "east": { "uv": [4, 4, 12, 12], "texture": "#core" },
+        "south": { "uv": [4, 4, 12, 12], "texture": "#core" },
+        "west": { "uv": [4, 4, 12, 12], "texture": "#core" },
+        "up": { "uv": [4, 4, 12, 12], "texture": "#core" },
+        "down": { "uv": [4, 4, 12, 12], "texture": "#core" }
+      }
+    }
+  ]
+}

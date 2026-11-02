@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "voidheart:block/beam_focus" },
+    "facing=east": { "model": "voidheart:block/beam_focus", "y": 90 },
+    "facing=south": { "model": "voidheart:block/beam_focus", "y": 180 },
+    "facing=west": { "model": "voidheart:block/beam_focus", "y": 270 }
+  }
+}

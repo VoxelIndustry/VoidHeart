@@ -17,6 +17,7 @@ import net.voxelindustry.voidheart.client.util.MathUtil;
 import org.jspecify.annotations.Nullable;
 
 import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 
 /**
  * Render the stack of a tile floating and spinning above it.
@@ -25,13 +26,18 @@ public class FloatingItemRender<T extends BlockEntity> implements BlockEntityRen
 {
     private final ItemModelResolver         itemModelResolver;
     private final Function<T, ItemStack>    stackGetter;
-    private final double                    height;
+    private final ToDoubleFunction<T>       heightGetter;
 
     public FloatingItemRender(BlockEntityRendererProvider.Context context, Function<T, ItemStack> stackGetter, double height)
     {
+        this(context, stackGetter, tile -> height);
+    }
+
+    public FloatingItemRender(BlockEntityRendererProvider.Context context, Function<T, ItemStack> stackGetter, ToDoubleFunction<T> heightGetter)
+    {
         this.itemModelResolver = context.itemModelResolver();
         this.stackGetter = stackGetter;
-        this.height = height;
+        this.heightGetter = heightGetter;
     }
 
     @Override
@@ -46,6 +52,7 @@ public class FloatingItemRender<T extends BlockEntity> implements BlockEntityRen
         BlockEntityRenderer.super.extractRenderState(tile, state, partialTicks, cameraPosition, breakProgress);
 
         state.worldTime = tile.getLevel().getGameTime() + partialTicks;
+        state.height = heightGetter.applyAsDouble(tile);
         itemModelResolver.updateForTopItem(state.item, stackGetter.apply(tile), ItemDisplayContext.GROUND, tile.getLevel(), null, (int) tile.getBlockPos().asLong());
     }
 
@@ -59,7 +66,7 @@ public class FloatingItemRender<T extends BlockEntity> implements BlockEntityRen
 
         double offset = Math.abs(Math.sin(state.worldTime / 8.0) / 24.0);
 
-        poseStack.translate(0.5, height + offset, 0.5);
+        poseStack.translate(0.5, state.height + offset, 0.5);
         poseStack.rotate(MathUtil.quatFromAngleDegrees(state.worldTime, MathUtil.NEGATIVE_Y));
 
         state.item.submit(poseStack, collector, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);

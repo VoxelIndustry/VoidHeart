@@ -27,6 +27,7 @@ import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePa
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
+import net.voxelindustry.voidheart.client.particle.AltarExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.particle.EyeBeamParticle;
@@ -37,6 +38,7 @@ import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.client.particle.GeometryParticle;
 import net.voxelindustry.voidheart.client.particle.PortalFrameParticle;
+import net.voxelindustry.voidheart.client.particle.ShatterForgeExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeItemParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeRuneParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
@@ -58,7 +60,9 @@ import net.voxelindustry.voidheart.client.render.oculus.OculusBeholderLayer;
 import net.voxelindustry.voidheart.client.render.BeholderRender;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
+import net.voxelindustry.voidheart.client.render.ShatterForgeRender;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
+import net.voxelindustry.voidheart.client.render.RavenousRelayRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -75,12 +79,14 @@ public class VoidHeartClient implements ClientModInitializer
     {
         ModelLoadingPlugin.register(new VoidHeartModelLoadingPlugin());
 
-        BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<>(ctx, VoidPillarTile::getStack, 1.1));
+        // A forge source pillar raises its item to the forge item height so the beam runs level
+        BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<VoidPillarTile>(ctx, VoidPillarTile::getStack,
+                pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.VOID_HEART, VoidHeartRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.EXPERIENCE_SKULL, ExperienceSkullRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.EYE_BOTTLE, EyeBottleRender::new);
-        BlockEntityRenderers.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new FloatingItemRender<>(ctx, ShatterForgeTile::getStack, 1));
+        BlockEntityRenderers.register(VoidHeartTiles.SHATTER_FORGE, ctx -> new ShatterForgeRender(ctx));
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PERMEABLE_BARRIER, PermeableBarrierRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.BEHOLDER, BeholderRender::new);
@@ -100,6 +106,7 @@ public class VoidHeartClient implements ClientModInitializer
         ItemTooltipCallback.EVENT.register(ResearchScreen::appendKnowledgeTooltip);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
+        BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
 
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
 
@@ -154,6 +161,12 @@ public class VoidHeartClient implements ClientModInitializer
                         new AltarItemParticle(level, x, y, z, xAux, yAux, zAux, options.getStack(), options.getFirstPointBezier(), options.getSecondPointBezier()));
 
         particles.register(
+                ALTAR_EXPERIENCE_PARTICLE,
+                spriteSet ->
+                        (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                                new AltarExperienceParticle(level, x, y, z, xAux, yAux, zAux, options.firstPointBezier(), options.secondPointBezier(), spriteSet.get(random)));
+
+        particles.register(
                 PORTAL_FRAME_PARTICLE,
                 spriteSet ->
                         (options, level, x, y, z, xAux, yAux, zAux, random) ->
@@ -163,7 +176,7 @@ public class VoidHeartClient implements ClientModInitializer
                 SHATTER_FORGE_RUNE_PARTICLE,
                 spriteSet ->
                         (options, level, x, y, z, xAux, yAux, zAux, random) ->
-                                new ShatterForgeRuneParticle(level, x, y, z, spriteSet, options.axis()));
+                                new ShatterForgeRuneParticle(level, x, y, z, spriteSet, options.axis(), options.forge(), options.index()));
 
         particles.register(
                 EYE_BEAM_PARTICLE,
@@ -175,5 +188,11 @@ public class VoidHeartClient implements ClientModInitializer
                 SHATTER_FORGE_ITEM_PARTICLE,
                 (options, level, x, y, z, xAux, yAux, zAux, random) ->
                         new ShatterForgeItemParticle(level, x, y, z, xAux, yAux, zAux, options.input(), options.output()));
+
+        particles.register(
+                SHATTER_FORGE_EXPERIENCE_PARTICLE,
+                spriteSet ->
+                        (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                                new ShatterForgeExperienceParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
     }
 }

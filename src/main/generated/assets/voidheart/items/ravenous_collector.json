@@ -1,0 +1,9 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "voidheart:item/ravenous_collector",
+    "model": {
+      "type": "geckolib:geckolib"
+    }
+  }
+}

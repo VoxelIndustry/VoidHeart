@@ -1,0 +1,26 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:fiery": 2,
+    "voidheart:stillness": 3
+  },
+  "draw": 2500,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:obsidian"
+      }
+    ]
+  },
+  "monolithCount": 5,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:crying_obsidian"
+      }
+    ]
+  },
+  "time": 100
+}

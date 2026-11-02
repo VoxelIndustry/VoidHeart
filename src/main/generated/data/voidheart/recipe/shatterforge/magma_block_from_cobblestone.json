@@ -1,0 +1,25 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:fiery": 2
+  },
+  "draw": 500,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:cobblestone"
+      }
+    ]
+  },
+  "monolithCount": 3,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:magma_block"
+      }
+    ]
+  },
+  "time": 60
+}

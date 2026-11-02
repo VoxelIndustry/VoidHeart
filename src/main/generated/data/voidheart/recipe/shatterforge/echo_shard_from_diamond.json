@@ -1,0 +1,26 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:fiery": 2,
+    "voidheart:stillness": 2
+  },
+  "draw": 3000,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:diamond"
+      }
+    ]
+  },
+  "monolithCount": 5,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:echo_shard"
+      }
+    ]
+  },
+  "time": 100
+}

@@ -15,8 +15,8 @@ public class VoidHeartTags
 
     public static TagKey<Block> PORTAL_FRAME_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "portal_frame"));
 
-    public static TagKey<Block> ESSENCE_WATER_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "essence_water"));
-    public static TagKey<Block> ESSENCE_LAVA_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "essence_lava"));
+    public static TagKey<Block> ASPECT_STILLNESS_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "aspect_stillness"));
+    public static TagKey<Block> ASPECT_FIERY_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "aspect_fiery"));
 
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "pillar_place_instead_of_store"));
 
