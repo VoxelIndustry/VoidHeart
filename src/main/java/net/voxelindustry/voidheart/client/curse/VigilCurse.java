@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -17,6 +18,7 @@ import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.data.AtlasIds;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
@@ -41,9 +43,9 @@ import java.util.List;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Seven hooded pilgrims hang in the air in a half circle around the player, utterly still, watching. They raise their left hands at the player as one,
- * speak in their chat alone, and the dark under their hoods lights up. Then they are gone. They only ever exist in this class: no entity, nothing a
- * crosshair can find, and the player walks right through them.
+ * Seven hooded pilgrims hang in the air in an arc before the player, utterly still, watching, black blood running off them all the while and caves sounding
+ * around the player. They raise their left hands at the player as one, speak in their chat alone, and the dark under their hoods lights up. Then they are
+ * gone. They only ever exist in this class: no entity, nothing a crosshair can find, and the player walks right through them.
  */
 public final class VigilCurse extends ClientCurse
 {
@@ -68,7 +70,8 @@ public final class VigilCurse extends ClientCurse
     private static final float MODEL_UNITS   = 16;
 
     // Placement
-    private static final float ARC_STEP          = 30;
+    // Close enough for all seven to fit on the screen at the default field of view, arms included
+    private static final float ARC_STEP          = 14;
     private static final float RADIUS            = 7.5F;
     private static final float RADIUS_JITTER     = 0.4F;
     private static final float RADIUS_STEP       = 0.5F;
@@ -157,14 +160,61 @@ public final class VigilCurse extends ClientCurse
     private static final int   BURST_LIFETIME_MIN  = 4;
     private static final int   BURST_LIFETIME_MORE = 4;
 
+    // Minecraft's own cave noises from somewhere around the player. The offset only says which side they come from, as they don't fade with distance
+    private static final int   CAVE_FIRST_TICK   = 6;
+    private static final int   CAVE_GAP_MIN      = 48;
+    private static final int   CAVE_GAP_EXTRA    = 24;
+    private static final int   CAVE_LAST_MARGIN  = 30;
+    private static final float CAVE_VOLUME       = 1;
+    private static final float CAVE_PITCH        = 1;
+    private static final float CAVE_OFFSET       = 8;
+
+    // Black blood, from when the bodies have mostly formed until they vanish
+    private static final int   BLOOD_START_TICK  = BODY_FADE_START + BODY_FADE_TICKS / 2;
+    private static final float BLOOD_PER_TICK    = 0.6F;
+    private static final float BLOOD_SHARE_HOOD  = 0.2F;
+    private static final float BLOOD_SHARE_HAND  = 0.2F;
+    // It keeps running off the same few strips of each robe, so that it reads as dripping rather than as a sprinkle
+    private static final int   BLOOD_STRIPS      = 5;
+    private static final float BLOOD_SIZE_MIN    = 0.1F;
+    private static final float BLOOD_SIZE_MAX    = 0.16F;
+    private static final float BLOOD_CLEARANCE   = 0.05F;
+    private static final int   MAX_STAINS        = 150;
+    private static final float STAIN_CHANCE      = 0.2F;
+    private static final float STAIN_SIZE_MIN    = 0.1F;
+    private static final float STAIN_SIZE_MAX    = 0.26F;
+    // Longer than the curse, so that none has dried by the time they all go at once
+    private static final int   STAIN_LIFETIME    = 400;
+    private static final float STAIN_FLOOR_MATCH = 0.001F;
+
+    private static final Identifier[] DROP_SPRITES = {
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_drop0"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_drop1"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_drop2")
+    };
+    private static final Identifier[] SPLASH_SPRITES = {
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_splash0"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_splash1")
+    };
+    private static final Identifier[] STAIN_SPRITES = {
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_stain0"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_stain1"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_stain2"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_vigil_stain3")
+    };
+
     private final List<Figure>   figures = new ArrayList<>(COUNT);
     private final List<Particle> burst   = new ArrayList<>();
+    private final List<SingleQuadParticle> blood  = new ArrayList<>();
+    private final List<OmenStainParticle>  stains = new ArrayList<>();
+    private final List<SoundInstance>      caves  = new ArrayList<>();
     private @Nullable VigilFigureModel model;
     private @Nullable SoundInstance    drone;
     private @Nullable SoundInstance    hold;
 
     private int drawnLastFrame;
     private int shadesLastFrame;
+    private int nextCaveTick = CAVE_FIRST_TICK;
 
     public VigilCurse(long seed, int duration)
     {
@@ -203,6 +253,22 @@ public final class VigilCurse extends ClientCurse
         return burst.stream().filter(Particle::isAlive).count();
     }
 
+    /**
+     * Where each drop still hanging or falling is, for tests.
+     */
+    public List<Vec3> dropPositions()
+    {
+        return blood.stream().filter(Particle::isAlive).filter(VigilDropParticle.class::isInstance).map(drop -> ((VigilDropParticle) drop).position()).toList();
+    }
+
+    /**
+     * How many stains lie on the floor, for tests.
+     */
+    public long stainsAlive()
+    {
+        return stains.stream().filter(Particle::isAlive).count();
+    }
+
     @Override
     protected void tick(Minecraft minecraft, LocalPlayer player)
     {
@@ -217,6 +283,22 @@ public final class VigilCurse extends ClientCurse
         var eye = player.getEyePosition();
         for (var figure : figures)
             figure.tick(level, eye);
+
+        blood.removeIf(particle -> !particle.isAlive());
+        if (age >= BLOOD_START_TICK && age < VANISH_START)
+        {
+            for (var figure : figures)
+                figure.bleed(minecraft, level);
+        }
+        if (age == VANISH_START + VANISH_TICKS)
+            clearBlood();
+
+        if (age >= nextCaveTick && age < VANISH_START - CAVE_LAST_MARGIN)
+        {
+            float around = random.nextFloat() * Mth.TWO_PI;
+            caves.add(playAround(minecraft, SoundEvents.AMBIENT_CAVE.value(), CAVE_VOLUME, CAVE_PITCH, false, Mth.cos(around) * CAVE_OFFSET, Mth.sin(around) * CAVE_OFFSET));
+            nextCaveTick = age + CAVE_GAP_MIN + random.nextInt(CAVE_GAP_EXTRA);
+        }
 
         if (age == MESSAGE_TICK)
             minecraft.gui.hud.getChat().addClientSystemMessage(Component.translatable(MESSAGE_KEY).withColor(MESSAGE_COLOR));
@@ -236,6 +318,15 @@ public final class VigilCurse extends ClientCurse
     {
         stopSounds();
         burst.clear();
+        clearBlood();
+    }
+
+    private void clearBlood()
+    {
+        blood.forEach(SingleQuadParticle::remove);
+        stains.forEach(SingleQuadParticle::remove);
+        blood.clear();
+        stains.clear();
     }
 
     private void stopSounds()
@@ -245,14 +336,21 @@ public final class VigilCurse extends ClientCurse
             sounds.stop(drone);
         if (hold != null)
             sounds.stop(hold);
+        caves.forEach(sounds::stop);
         drone = null;
         hold = null;
+        caves.clear();
     }
 
     private SoundInstance playInsideHead(Minecraft minecraft, SoundEvent sound, float volume, float pitch, boolean looping)
     {
+        return playAround(minecraft, sound, volume, pitch, looping, 0, 0);
+    }
+
+    private SoundInstance playAround(Minecraft minecraft, SoundEvent sound, float volume, float pitch, boolean looping, float x, float z)
+    {
         var instance = new SimpleSoundInstance(sound.location(), SoundSource.HOSTILE, volume, pitch, random,
-                looping, 0, SoundInstance.Attenuation.NONE, 0, 0, 0, true);
+                looping, 0, SoundInstance.Attenuation.NONE, x, 0, z, true);
         minecraft.getSoundManager().play(instance);
         return instance;
     }
@@ -440,6 +538,81 @@ public final class VigilCurse extends ClientCurse
         }
     }
 
+    private void drip(Minecraft minecraft, ClientLevel level, Vec3 from)
+    {
+        // A hand can reach into a wall the figure itself stays out of
+        if (!isOpen(level, from.x, from.y - BLOOD_CLEARANCE, from.z, BLOOD_CLEARANCE, BLOOD_CLEARANCE))
+            return;
+
+        var sprite = minecraft.getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES).getSprite(DROP_SPRITES[random.nextInt(DROP_SPRITES.length)]);
+        double surface = landingBelow(level, new BlockPos.MutableBlockPos(), from.x, from.y, from.z);
+        var drop = new VigilDropParticle(level, from.x, from.y, from.z, surface, Mth.lerp(random.nextFloat(), BLOOD_SIZE_MIN, BLOOD_SIZE_MAX), sprite, this);
+        minecraft.particleEngine.add(drop);
+        blood.add(drop);
+    }
+
+    /**
+     * The top of whatever a drop falling from there lands on, NaN when that is too far down to be worth waiting for.
+     */
+    private static double landingBelow(Level level, BlockPos.MutableBlockPos cursor, double x, double fromY, double z)
+    {
+        cursor.set(Mth.floor(x), Mth.floor(fromY), Mth.floor(z));
+        double insideX = x - cursor.getX();
+        double insideZ = z - cursor.getZ();
+        for (int i = 0; i < SCAN_BLOCKS; i++)
+        {
+            var shape = level.getBlockState(cursor).getCollisionShape(level, cursor);
+            double blockTop = shape.isEmpty() ? 0 : shape.max(Direction.Axis.Y, insideX, insideZ);
+            double top = Math.max(blockTop, level.getFluidState(cursor).getHeight(level, cursor));
+            if (top > 0 && cursor.getY() + top <= fromY)
+                return cursor.getY() + top;
+            cursor.move(Direction.DOWN);
+        }
+        return Double.NaN;
+    }
+
+    /**
+     * A small splash, and now and then a stain that stays until they vanish.
+     */
+    void land(ClientLevel level, double x, double surface, double z)
+    {
+        var minecraft = Minecraft.getInstance();
+        var atlas = minecraft.getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES);
+        var splash = new OmenSplashParticle(level, x, surface, z, atlas.getSprite(SPLASH_SPRITES[random.nextInt(SPLASH_SPRITES.length)]));
+        minecraft.particleEngine.add(splash);
+        blood.add(splash);
+
+        float size = Mth.lerp(random.nextFloat(), STAIN_SIZE_MIN, STAIN_SIZE_MAX);
+        if (stains.size() >= MAX_STAINS || random.nextFloat() >= STAIN_CHANCE || !liesFlat(level, x, surface, z, size))
+            return;
+
+        var stain = new OmenStainParticle(level, x, surface, z, size, random.nextInt(4), STAIN_LIFETIME, atlas.getSprite(STAIN_SPRITES[random.nextInt(STAIN_SPRITES.length)]));
+        minecraft.particleEngine.add(stain);
+        stains.add(stain);
+    }
+
+    /**
+     * Dry ground at the same height under all of it, so that a stain never hangs over an edge, runs into a wall or lies on water.
+     */
+    private static boolean liesFlat(Level level, double x, double surface, double z, float size)
+    {
+        var cursor = new BlockPos.MutableBlockPos();
+        cursor.set(Mth.floor(x), Mth.floor(surface - STAIN_FLOOR_MATCH), Mth.floor(z));
+        if (!level.getFluidState(cursor).isEmpty())
+            return false;
+
+        for (int sideX = -1; sideX <= 1; sideX += 2)
+        {
+            for (int sideZ = -1; sideZ <= 1; sideZ += 2)
+            {
+                double landing = landingBelow(level, cursor, x + sideX * size, surface + 2 * STAIN_FLOOR_MATCH, z + sideZ * size);
+                if (Double.isNaN(landing) || Math.abs(landing - surface) > STAIN_FLOOR_MATCH)
+                    return false;
+            }
+        }
+        return true;
+    }
+
     private static float vanishing(float time, float over)
     {
         return 1 - Mth.clamp((time - VANISH_START) / over, 0, 1);
@@ -490,7 +663,9 @@ public final class VigilCurse extends ClientCurse
         private final VigilFigureModel.State runeState;
         private final VigilFigureModel.State hoodState;
         private final VigilFigureModel.State batonState;
+        private final int[] bloodStrips = new int[BLOOD_STRIPS];
 
+        private float   dripsDue;
         private boolean settled;
         private float   yaw;
         private float   yawO;
@@ -527,6 +702,8 @@ public final class VigilCurse extends ClientCurse
             runeState = new VigilFigureModel.State(pose, VigilFigureModel.Pass.RUNE);
             hoodState = new VigilFigureModel.State(pose, VigilFigureModel.Pass.HOOD);
             batonState = new VigilFigureModel.State(pose, VigilFigureModel.Pass.BATON);
+            for (int i = 0; i < BLOOD_STRIPS; i++)
+                bloodStrips[i] = random.nextInt(VigilFigureModel.stripCount());
         }
 
         public double x()
@@ -776,6 +953,31 @@ public final class VigilCurse extends ClientCurse
                 return 0;
             float flicker = Mth.sin(time * HOOD_FLICKER_FAST + phase) * Mth.sin(time * HOOD_FLICKER_SLOW + phase2);
             return Mth.clamp(ramp * (1 - HOOD_FLICKER / 2 + flicker * HOOD_FLICKER), 0, 1);
+        }
+
+        /**
+         * Off the same few strips of its robe, from under its hood and from the finger of its left hand.
+         */
+        private void bleed(Minecraft minecraft, ClientLevel level)
+        {
+            dripsDue += BLOOD_PER_TICK * scale / FIGURE_SCALE;
+            while (dripsDue >= 1)
+            {
+                dripsDue--;
+                float source = random.nextFloat();
+                Vec3 from;
+                if (source < BLOOD_SHARE_HOOD)
+                {
+                    var fold = VigilFigureModel.hoodFold(headPitch, new Vector3f());
+                    fold.x += (random.nextFloat() - 0.5F) * 2 * VigilFigureModel.FOLD_HALF_WIDTH;
+                    from = toWorld(fold);
+                }
+                else if (source < BLOOD_SHARE_HOOD + BLOOD_SHARE_HAND)
+                    from = fingerEnds()[1];
+                else
+                    from = toWorld(VigilFigureModel.stripEnd(bloodStrips[random.nextInt(BLOOD_STRIPS)], new Vector3f()));
+                drip(minecraft, level, from);
+            }
         }
 
         private void burst(Minecraft minecraft)

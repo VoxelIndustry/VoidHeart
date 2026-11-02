@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Seven figures stand in a half circle, none of them in a wall, point at the player, say their line once and vanish, all without the server knowing.
+ * Seven figures stand in an arc before the player, none of them in a wall, dripping, point at the player, say their line once and vanish, caves sounding all the while and all without the server knowing.
  */
 public class VigilClientTest implements FabricClientGameTest
 {
@@ -51,9 +51,15 @@ public class VigilClientTest implements FabricClientGameTest
     private static final float FINGER_LEAN_MAX = 35;
 
     private static final int    LARGE_HEIGHT        = 720;
-    private static final int    FINGER_PIXELS_LONG  = 20;
+    private static final int    FINGER_PIXELS_LONG  = 9;
     private static final int    FINGER_PIXELS_THICK = 4;
     private static final Logger LOGGER              = LoggerFactory.getLogger(VigilClientTest.class);
+
+    private static final int    ARC_STEP            = 14;
+    // An arm reaching out to the side of the last figure, as seen from the player
+    private static final int    ARM_DEGREES         = 6;
+    private static final double DROP_REACH          = 2.2;
+    private static final int    CAVE_SOUNDS_LEAST   = 3;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -120,6 +126,7 @@ public class VigilClientTest implements FabricClientGameTest
             throw new AssertionError("Expected the seven figures to be drawn");
         if (context.computeOnClient(minecraft -> curse().shadesLastFrame()) != 7)
             throw new AssertionError("Expected a shade on the floor below each of them");
+        expectDripping(context);
 
         waitForAge(context, 80);
         context.takeScreenshot("vigil-" + label + "-04-raising");
@@ -132,12 +139,16 @@ public class VigilClientTest implements FabricClientGameTest
         if (messages(context) != 1)
             throw new AssertionError("Expected the message once the arms are up");
         expectFingersLeanIn(context);
+        expectDripping(context);
 
         waitForAge(context, 113);
         context.takeScreenshot("vigil-" + label + "-06-hoods-lighting");
         waitForAge(context, GLOWING_AGE);
         context.takeScreenshot("vigil-" + label + "-07-hoods-glowing");
         context.takeScreenshot(TestScreenshotOptions.of("vigil-" + label + "-07-large").withSize(1280, 720));
+        expectDripping(context);
+        if (context.computeOnClient(minecraft -> curse().stainsAlive()) == 0)
+            throw new AssertionError("Expected what they drip to have stained the floor by now");
         waitForAge(context, VANISH_AGE - 1);
         context.takeScreenshot("vigil-" + label + "-08-before-vanish");
         waitForAge(context, VANISH_AGE + 2);
@@ -146,6 +157,8 @@ public class VigilClientTest implements FabricClientGameTest
         context.takeScreenshot("vigil-" + label + "-10-after-vanish");
         if (context.computeOnClient(minecraft -> curse().drawnLastFrame() + curse().shadesLastFrame()) != 0)
             throw new AssertionError("Expected nothing drawn once they vanished");
+        if (context.computeOnClient(minecraft -> curse().dropPositions().size() + curse().stainsAlive()) != 0)
+            throw new AssertionError("Expected no drop nor stain left once they vanished");
 
         waitForAge(context, VANISH_AGE + 10);
         long smoke = context.computeOnClient(minecraft -> curse().burstAlive());
@@ -164,6 +177,9 @@ public class VigilClientTest implements FabricClientGameTest
             throw new AssertionError("Expected the appearing drone and the held one, got " + heard);
         if (!heard.contains(SoundEvents.BEACON_DEACTIVATE.location().toString()))
             throw new AssertionError("Expected a low sound as they vanish, got " + heard);
+        var cave = SoundEvents.AMBIENT_CAVE.value().location().toString();
+        if (heard.stream().filter(cave::equals).count() < CAVE_SOUNDS_LEAST)
+            throw new AssertionError("Expected cave sounds all through the scene, got " + heard);
         if (server.computeOnServer(VigilClientTest::entityCount) != entitiesBefore)
             throw new AssertionError("Expected the server to know of no new entity");
         if (context.computeOnClient(minecraft -> minecraft.level.getEntitiesOfClass(Entity.class, new AABB(-40, -80, -40, 40, 0, 40)).size()) != 1)
@@ -396,6 +412,9 @@ public class VigilClientTest implements FabricClientGameTest
         context.takeScreenshot("vigil-over-drop");
         if (context.computeOnClient(minecraft -> curse().shadesLastFrame()) != 0)
             throw new AssertionError("Expected no shade drawn over the drop");
+        expectDripping(context);
+        if (context.computeOnClient(minecraft -> curse().stainsAlive()) != 0)
+            throw new AssertionError("Expected no stain with no floor in reach");
         server.runCommand("voidheart curse stop @a");
         server.runCommand("fill -1 " + top + " -1 2 " + top + " 2 minecraft:air");
         context.waitTicks(3);
@@ -407,10 +426,13 @@ public class VigilClientTest implements FabricClientGameTest
         context.runOnClient(VigilClientTest::clearChat);
         server.runCommand("voidheart curse trigger vigil @a");
         waitForAge(context, 50);
+        var stopped = context.computeOnClient(minecraft -> curse());
         server.runCommand("voidheart curse stop @a");
         context.waitTicks(3);
         if (context.computeOnClient(minecraft -> CurseDirector.active() != null))
             throw new AssertionError("Expected the stopped curse gone at once");
+        if (context.computeOnClient(minecraft -> stopped.dropPositions().size() + stopped.stainsAlive()) != 0)
+            throw new AssertionError("Expected no drop nor stain left by a stopped curse");
         context.takeScreenshot("vigil-after-stop");
         if (messages(context) != 0)
             throw new AssertionError("Expected no message from a curse stopped before it came");
@@ -427,6 +449,16 @@ public class VigilClientTest implements FabricClientGameTest
         context.runOnClient(minecraft ->
         {
             minecraft.getSoundManager().removeListener(listener);
+            var cave = SoundEvents.AMBIENT_CAVE.value().location();
+            var caves = sounds.stream().filter(sound -> sound.getIdentifier().equals(cave)).toList();
+            if (caves.isEmpty())
+                throw new AssertionError("Expected cave sounds before it was stopped, got " + sounds);
+            for (var sound : caves)
+            {
+                if (minecraft.getSoundManager().isActive(sound))
+                    throw new AssertionError("Expected no cave sound still playing once the curse is stopped");
+            }
+
             var hum = SoundEvents.BEACON_AMBIENT.location();
             var held = sounds.stream().filter(sound -> sound.getIdentifier().equals(hum)).toList();
             if (held.size() != 2)
@@ -482,6 +514,25 @@ public class VigilClientTest implements FabricClientGameTest
     }
 
     /**
+     * Something hanging or falling at this very moment, near one of the figures.
+     */
+    private static void expectDripping(ClientGameTestContext context)
+    {
+        context.runOnClient(minecraft ->
+        {
+            var drops = curse().dropPositions();
+            if (drops.isEmpty())
+                throw new AssertionError("Expected drops running off the figures, the whole time they stand there");
+            for (var drop : drops)
+            {
+                boolean near = curse().figures().stream().anyMatch(figure -> Math.hypot(figure.x() - drop.x, figure.z() - drop.z) < DROP_REACH);
+                if (!near)
+                    throw new AssertionError("Expected every drop to come off a figure, got one at " + drop);
+            }
+        });
+    }
+
+    /**
      * From where the player stands the finger must show its length and head for them, never past them.
      */
     private static void expectFingersLeanIn(ClientGameTestContext context)
@@ -521,7 +572,7 @@ public class VigilClientTest implements FabricClientGameTest
     }
 
     /**
-     * On open ground: a half circle in even steps centered on where the player looks, hovering over the ground.
+     * On open ground: an arc in even steps centered on where the player looks and all of it on the screen at once, hovering over the ground.
      */
     private static void expectOnArc(ClientGameTestContext context)
     {
@@ -530,6 +581,10 @@ public class VigilClientTest implements FabricClientGameTest
             var figures = curse().figures();
             var player = minecraft.player.position();
             float look = minecraft.player.getYRot();
+            double aspect = (double) minecraft.getWindow().getWidth() / minecraft.getWindow().getHeight();
+            double halfView = Math.toDegrees(Math.atan(Math.tan(Math.toRadians(minecraft.options.fov().get()) / 2) * aspect));
+            if ((figures.size() - 1) / 2 * ARC_STEP + ARM_DEGREES > halfView)
+                throw new AssertionError("Expected all the figures on the screen at once, the view only reaches " + halfView + " degrees to each side");
             for (int i = 0; i < figures.size(); i++)
             {
                 var figure = figures.get(i);
@@ -540,8 +595,8 @@ public class VigilClientTest implements FabricClientGameTest
                     throw new AssertionError("Expected figure " + i + " 7 to 9 blocks away, got " + distance);
 
                 double angle = Mth.wrapDegrees(Math.toDegrees(Math.atan2(-dx, dz)) - look);
-                if (Math.abs(angle - (i - 3) * 30) > 0.01)
-                    throw new AssertionError("Expected figure " + i + " at " + (i - 3) * 30 + " degrees from the look, got " + angle);
+                if (Math.abs(angle - (i - 3) * ARC_STEP) > 0.01)
+                    throw new AssertionError("Expected figure " + i + " at " + (i - 3) * ARC_STEP + " degrees from the look, got " + angle);
 
                 double hover = figure.y() - (GROUND + 1);
                 if (hover < 1 || hover > 1.3)

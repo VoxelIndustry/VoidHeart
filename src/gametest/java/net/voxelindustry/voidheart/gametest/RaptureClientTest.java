@@ -114,6 +114,8 @@ public class RaptureClientTest implements FabricClientGameTest
     // As a share of the hole, leaving out the sides of the blocks around it
     private static final double ROOF_HOLE_INSIDE = 0.65;
     private static final double ROOF_PIXELS_OFF_SHARE = 0.015;
+    // Lighting can round a level differently between two frames, which is nothing showing through
+    private static final int    ROOF_SAME_WITHIN      = 2;
     private static final double HOLE_PIXELS_OFF_SHARE = 0.7;
 
     private static final int PUPIL_RADIUS      = 2;
@@ -525,7 +527,7 @@ public class RaptureClientTest implements FabricClientGameTest
                 for (int x = 0; x < LARGE_WIDTH; x++)
                 {
                     int fromMiddle = Math.max(Math.abs(x - LARGE_WIDTH / 2), Math.abs(y - LARGE_HEIGHT / 2));
-                    boolean differs = a.getPixel(x, y) != b.getPixel(x, y);
+                    boolean differs = colorStep(a.getPixel(x, y), b.getPixel(x, y)) > ROOF_SAME_WITHIN;
                     if (fromMiddle > hole + ROOF_MARGIN)
                     {
                         roofPixels++;
@@ -547,6 +549,11 @@ public class RaptureClientTest implements FabricClientGameTest
         {
             throw new AssertionError("Could not read the roof captures", e);
         }
+    }
+
+    private static int colorStep(int first, int second)
+    {
+        return Math.max(Math.abs(ARGB.red(first) - ARGB.red(second)), Math.max(Math.abs(ARGB.green(first) - ARGB.green(second)), Math.abs(ARGB.blue(first) - ARGB.blue(second))));
     }
 
     /**

@@ -42,7 +42,7 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
     private static final float PALM_LENGTH  = 4.6F;
     // The index finger grows from the side of the palm toward the thumb
     private static final float FINGER_INSET = 0.95F;
-    public static final float  FINGER_LENGTH = 12;
+    public static final float  FINGER_LENGTH = 6.5F;
     public static final float  FINGER_WIDTH  = 1.5F;
 
     private static final float CUFF_DRAPE_ALONG = 0.6F;
@@ -71,8 +71,6 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
     private static final float REST_HAND_Z       = -0.05F;
     private static final float REST_FINGER_Y     = 0.82F;
     private static final float REST_FINGER_Z     = 0.57F;
-    // A long finger hanging at its full length would reach the hem. At rest it stays half curled
-    private static final float REST_FINGER_SCALE = 0.55F;
 
     // The right arm of the leader, holding the baton out in front of it
     private static final float GRIP_UPPER_X = -0.12F;
@@ -86,6 +84,12 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
     private static final float GRIP_Y       = 9;
     private static final float GRIP_BAND    = 1.05F;
     private static final int   GRIP_BANDS   = 3;
+
+    private static final float COWL_TILT        = 0.14F;
+    // The lower edge of the fold under the chin, from the neck
+    private static final float FOLD_BELOW       = 0.8F;
+    private static final float FOLD_AHEAD       = 6.2F;
+    public static final float  FOLD_HALF_WIDTH  = 3.5F;
 
     private static final float STRIP_SWAY_SPEED   = 0.05F;
     private static final float STRIP_SWAY_ANGLE   = 0.022F;
@@ -182,8 +186,8 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
             var strip = STRIPS[i];
             var kind = STRIP_KINDS[(int) strip[4]];
             int side = (int) strip[2];
-            float x = side == 2 ? -STRIP_SIDE_X : side == 3 ? STRIP_SIDE_X : strip[0];
-            float z = side == 0 ? -STRIP_FRONT_Z : side == 1 ? STRIP_FRONT_Z : strip[3];
+            float x = stripX(strip);
+            float z = stripZ(strip);
             float flareX = side == 0 ? -STRIP_FLARE : side == 1 ? STRIP_FLARE : 0;
             float flareZ = side == 2 ? STRIP_FLARE : side == 3 ? -STRIP_FLARE : 0;
             // The strips on the sides hang edge-on to the front
@@ -209,7 +213,7 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
                         .texOffs(0, 52).addBox(-4.5F, 0.2F, -5, 9, 1, 7)
                         // Back of the hollow, cut to the arch of the roof in the texture
                         .texOffs(36, 52).addBox(-4, -7.5F, 1.4F, 8, 8, 1, Set.of(Direction.NORTH, Direction.SOUTH)),
-                PartPose.rotation(0.14F, 0, 0));
+                PartPose.rotation(COWL_TILT, 0, 0));
 
         // The shell slopes down toward the back: walls and roof plates leaning in to close over the head, their front edges thickening into the rim,
         // a ridge on top and a fold of cloth drooping over the opening
@@ -341,6 +345,41 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
         direction.set(sinX * Mth.sin(finger.yRot), Mth.cos(finger.xRot), sinX * Mth.cos(finger.yRot));
     }
 
+    public static int stripCount()
+    {
+        return STRIPS.length;
+    }
+
+    /**
+     * Where the free end of a strip of the robe hangs, in model space, leaving out its sway.
+     */
+    public static Vector3f stripEnd(int index, Vector3f out)
+    {
+        var strip = STRIPS[index];
+        return out.set(stripX(strip), strip[1] + STRIP_KINDS[(int) strip[4]][3], stripZ(strip));
+    }
+
+    private static float stripX(float[] strip)
+    {
+        return strip[2] == 2 ? -STRIP_SIDE_X : strip[2] == 3 ? STRIP_SIDE_X : strip[0];
+    }
+
+    private static float stripZ(float[] strip)
+    {
+        return strip[2] == 0 ? -STRIP_FRONT_Z : strip[2] == 1 ? STRIP_FRONT_Z : strip[3];
+    }
+
+    /**
+     * The middle of the lower edge of the fold under the opening of the hood, in model space, the head pitched that far.
+     */
+    public static Vector3f hoodFold(float headPitch, Vector3f out)
+    {
+        float tilt = headPitch + COWL_TILT;
+        float cos = Mth.cos(tilt);
+        float sin = Mth.sin(tilt);
+        return out.set(0, NECK_Y + FOLD_BELOW * cos + FOLD_AHEAD * sin, FOLD_BELOW * sin - FOLD_AHEAD * cos);
+    }
+
     /**
      * The arm chain is a flat list of parts placed in model space, since each segment aims at a point of its own.
      */
@@ -387,7 +426,6 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
         leaningToward(goal, pose, x, y, z, POINT_FINGER_IN, POINT_FINGER_DOWN);
         upper.lerp(goal, raise).normalize();
         place(leftArm.finger, x, y, z, upper);
-        leftArm.finger.yScale = Mth.lerp(raise, REST_FINGER_SCALE, 1);
     }
 
     private void poseRest(Arm arm, Pose pose)
@@ -418,7 +456,6 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
 
         goal.set(0, REST_FINGER_Y, REST_FINGER_Z).normalize();
         place(arm.finger, x, y, z, goal);
-        arm.finger.yScale = REST_FINGER_SCALE;
         arm.hand.visible = true;
         arm.finger.visible = true;
     }
@@ -565,11 +602,11 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
                             .texOffs(84, 64).addBox(-thumb * 1.4F - 1, 5.1F, -0.1F, 2, 1, 1, new CubeDeformation(-0.55F, 0.25F, 0.35F))
                             .texOffs(90, 64).addBox(thumb * 2.1F - 0.5F, 1.9F, -0.1F, 1, 2, 1, new CubeDeformation(0.05F, 0.5F, 0.05F)),
                     PartPose.ZERO);
-            // Two long joints, thinning toward the tip
+            // Two joints, thinning toward the tip
             clothing.addOrReplaceChild(name + "_finger",
                     CubeListBuilder.create()
-                            .texOffs(78, 64).addBox(-0.5F, 0.7F, -0.5F, 1, 6, 1, new CubeDeformation((FINGER_WIDTH - 1) / 2, 0.7F, (FINGER_WIDTH - 1) / 2))
-                            .texOffs(78, 64).addBox(-0.5F, 6.5F, -0.5F, 1, 6, 1, new CubeDeformation(0.1F, -0.5F, 0.1F)),
+                            .texOffs(78, 64).addBox(-0.5F, 0.4F, -0.5F, 1, 3, 1, new CubeDeformation((FINGER_WIDTH - 1) / 2, 0.4F, (FINGER_WIDTH - 1) / 2))
+                            .texOffs(78, 64).addBox(-0.5F, 3.5F, -0.5F, 1, 3, 1, new CubeDeformation(0.1F, 0, 0.1F)),
                     PartPose.ZERO);
             clothing.addOrReplaceChild(name + "_wing",
                     CubeListBuilder.create().texOffs(78, 24).addBox(-2.5F, 0, -0.5F, 5, 7, 1, new CubeDeformation(0.9F, 0, -0.1F)),
