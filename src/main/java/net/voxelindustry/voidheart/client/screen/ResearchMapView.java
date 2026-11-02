@@ -48,6 +48,7 @@ final class ResearchMapView
 
     private static final float MIN_OPEN = 0.24F;
     private static final float LOWER_LID_REST = 0.5F;
+    private static final int   UPPER_LID_EDGE = 2;
     private static final float LOWER_LID = 0.86F;
 
     private static final int  LABEL_WIDTH     = 78;
@@ -438,11 +439,21 @@ final class ResearchMapView
 
             graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY - halfH - 1, x, centerY - halfH - 1, eyeScale, halfH + 1 - upper, screenW, screenH);
             graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY + lower, x, centerY + lower, eyeScale, halfH + 1 - lower, screenW, screenH);
-            graphics.fill(x, centerY - upper - eyeScale * 2, x + eyeScale, centerY - upper, lidColor);
-            graphics.fill(x, centerY + lower, x + eyeScale, centerY + lower + eyeScale, ResearchScreen.LID_LOW_COLOR);
         }
 
+        // Between the background and the lids' edges, so that a branch ends tucked under the lid whatever its slant
         extractRoots(graphics, running, centerX, centerY, halfW, halfH, upperOpen, lowerOpen);
+
+        for (int column = -halfW; column < halfW; column += eyeScale)
+        {
+            float across = (column + eyeScale / 2F) / halfW;
+            int upper = Math.round(lidHeight(across, halfH, upperOpen));
+            int lower = Math.round(lidHeight(across, halfH, lowerOpen));
+            int x = centerX + column;
+
+            graphics.fill(x, centerY - upper - eyeScale * UPPER_LID_EDGE, x + eyeScale, centerY - upper, lidColor);
+            graphics.fill(x, centerY + lower, x + eyeScale, centerY + lower + eyeScale, ResearchScreen.LID_LOW_COLOR);
+        }
     }
 
     /**
@@ -481,6 +492,7 @@ final class ResearchMapView
             float dy = Math.abs(link.ys()[0] - centerY);
             float side = link.ys()[0] < centerY ? -1 : 1;
             float open = side < 0 ? upperOpen : lowerOpen;
+            float tuck = side < 0 ? eyeScale * UPPER_LID_EDGE / 2F : eyeScale / 2F;
 
             // Follows the branch's own line in until it meets the lid, which itself depends on where along the eye that is
             float x = centerX + dx * 0.35F;
@@ -490,7 +502,7 @@ final class ResearchMapView
                 height = lidHeight((x - centerX) / halfW, halfH, open);
                 x = centerX + (dy > 1 ? dx * Math.min(1, height / dy) : dx);
             }
-            float y = centerY + height * side;
+            float y = centerY + (height + tuck) * side;
 
             var state = ResearchScreen.stateOf(link.child(), tree.get(link.child()));
             int rgb = running.contains(link.child()) ? ResearchScreen.ACTIVE_RGB : state == NodeState.DONE ? ResearchScreen.KNOWN_RGB : ResearchScreen.FRONTIER_RGB;

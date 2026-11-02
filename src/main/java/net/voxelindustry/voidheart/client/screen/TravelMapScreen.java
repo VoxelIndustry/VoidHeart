@@ -374,7 +374,7 @@ public class TravelMapScreen extends Screen
     static void line(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float halfWidth, int color)
     {
         float length = (float) Math.hypot(x2 - x1, y2 - y1);
-        if (length < 1)
+        if (length <= 0)
             return;
 
         var pose = graphics.pose();
