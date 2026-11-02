@@ -52,17 +52,17 @@ public class VigilFigureModel extends Model<VigilFigureModel.State>
     private static final float DRAPES_SHOW_FROM = 0.02F;
 
     // Pointing: the upper arm goes out and forward so the arm shows beside the body, then the sleeve comes back toward the player
-    private static final float POINT_UPPER_X = 0.85F;
+    private static final float POINT_UPPER_X = 1.05F;
     private static final float POINT_UPPER_Y = 0.02F;
-    private static final float POINT_UPPER_Z = -0.52F;
+    private static final float POINT_UPPER_Z = -0.4F;
     // Exactly at the eye a finger is a dot. Whatever leans off the line to the eye shows on the player's screen as going in the direction of that lean, whatever
     // the distance, so these say in which direction it shows: the sleeve raised and out, then hand and finger heading in and down toward the player
     private static final float POINT_FORE_IN     = -0.03F;
     private static final float POINT_FORE_DOWN   = -0.05F;
-    private static final float POINT_HAND_IN     = 0.2F;
-    private static final float POINT_HAND_DOWN   = 0.2F;
-    private static final float POINT_FINGER_IN   = 0.31F;
-    private static final float POINT_FINGER_DOWN = 0.39F;
+    private static final float POINT_HAND_IN     = 0.03F;
+    private static final float POINT_HAND_DOWN   = 0.06F;
+    private static final float POINT_FINGER_IN   = 0.28F;
+    private static final float POINT_FINGER_DOWN = 0.44F;
 
     private static final float REST_UPPER_X      = 0.03F;
     private static final float REST_UPPER_Z      = 0.03F;
