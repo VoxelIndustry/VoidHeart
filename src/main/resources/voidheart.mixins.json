@@ -12,7 +12,8 @@
     "client.MixinClientLevelBarrierDisguise",
     "client.MixinLevelExtractorOculus",
     "client.MixinLevelRendererOculus",
-    "client.MixinMinecraftOculusControls"
+    "client.MixinMinecraftOculusControls",
+    "client.MixinSkyRendererCurse"
   ],
   "injectors": {
     "defaultRequire": 1

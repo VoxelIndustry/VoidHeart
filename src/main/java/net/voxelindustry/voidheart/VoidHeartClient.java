@@ -22,6 +22,7 @@ import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePayload;
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
+import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
@@ -129,6 +130,8 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(OculusRenderer::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(LeyDebugRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
+
+        CurseDirector.register();
 
         var particles = ParticleProviderRegistry.getInstance();
         particles.register(
