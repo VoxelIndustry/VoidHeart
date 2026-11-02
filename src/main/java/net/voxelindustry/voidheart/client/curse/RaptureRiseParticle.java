@@ -3,11 +3,19 @@ package net.voxelindustry.voidheart.client.curse;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jspecify.annotations.Nullable;
+
+import java.util.ArrayList;
 
 /**
  * A chip of the block it came off, resting on its face, that then falls upward as if gravity had turned over. Its texels are as large as the block's.
@@ -37,9 +45,10 @@ public final class RaptureRiseParticle extends SingleQuadParticle
     private static final int   RELEASE_TICKS  = 8;
     private static final float SMALLEST_DRAWN = 0.005F;
 
+    // On top of the shading of the face it came off, which particles don't get by themselves
     private static final float SHADE               = 1;
-    // Lets chips stay readable in the dark without being lit up. Block light is warm, so much more would stand out from the moonlit world
-    private static final int   LEAST_BLOCK_LIGHT   = 2;
+    // The soil torn up from under a tinted top was in its shade, which also keeps moonlit dirt from reading as pink against the grass
+    private static final float SOIL_SHADE          = 0.72F;
     private static final int   LIGHT_REFRESH_TICKS = 8;
 
     private final float  fullSize;
@@ -60,9 +69,9 @@ public final class RaptureRiseParticle extends SingleQuadParticle
     private int   releasedAt = -1;
     private int   light;
 
-    private RaptureRiseParticle(ClientLevel level, double x, double y, double z, BlockState state, BlockPos pos, float size)
+    private RaptureRiseParticle(ClientLevel level, double x, double y, double z, TextureAtlasSprite sprite, int color, float shade, float size)
     {
-        super(level, x, y, z, Minecraft.getInstance().getModelManager().getBlockStateModelSet().getParticleMaterial(state).sprite());
+        super(level, x, y, z, sprite);
         this.fullSize = size;
         this.quadSize = size;
         this.previousSize = size;
@@ -80,20 +89,50 @@ public final class RaptureRiseParticle extends SingleQuadParticle
         this.spin = (random.nextFloat() * 2 - 1) * SPIN_FASTEST;
         this.lifetime = LONGEST_LIFE;
         this.light = lightAt(BlockPos.containing(x, y, z));
-
-        var tint = Minecraft.getInstance().getBlockColors().getTintSource(state, 0);
-        int color = tint == null ? -1 : tint.colorAsTerrainParticle(state, level, pos);
-        setColor(SHADE * ARGB.redFloat(color), SHADE * ARGB.greenFloat(color), SHADE * ARGB.blueFloat(color));
+        setColor(shade * ARGB.redFloat(color), shade * ARGB.greenFloat(color), shade * ARGB.blueFloat(color));
     }
 
     /**
-     * Rests against a face, given a point on it and its outward direction, without sinking into it. The roll from 0 to 1 picks its size.
+     * Rests against a face, given a point on it, without sinking into it. The roll from 0 to 1 picks its size. Any block gives a chip of the texture vanilla
+     * break particles use, except for a top with a tinted texture of its own, as grass has: {@code turf} picks a chip of that top, or else of the soil under it.
      */
-    public static RaptureRiseParticle onFace(ClientLevel level, double x, double y, double z, float outX, float outY, float outZ, float push, BlockState state, BlockPos pos, float sizeRoll)
+    public static RaptureRiseParticle onFace(ClientLevel level, double x, double y, double z, Direction face, float push, BlockState state, BlockPos pos, float sizeRoll, boolean turf)
     {
         float size = Mth.lerp((float) Math.pow(sizeRoll, SIZE_BIAS), SIZE_SMALLEST, SIZE_LARGEST);
         double reach = push + size;
-        return new RaptureRiseParticle(level, x + outX * reach, y + outY * reach, z + outZ * reach, state, pos, size);
+        float shade = SHADE * level.cardinalLighting().byFace(face);
+        double fromX = x + face.getStepX() * reach;
+        double fromY = y + face.getStepY() * reach;
+        double fromZ = z + face.getStepZ() * reach;
+
+        var colors = Minecraft.getInstance().getBlockColors();
+        var top = face == Direction.UP ? tintedTop(state, level.getRandom()) : null;
+        if (top != null && turf)
+        {
+            var tint = colors.getTintSource(state, top.tintIndex());
+            int color = tint == null ? -1 : tint.colorInWorld(state, level, pos);
+            return new RaptureRiseParticle(level, fromX, fromY, fromZ, top.sprite(), color, shade, size);
+        }
+
+        var sprite = Minecraft.getInstance().getModelManager().getBlockStateModelSet().getParticleMaterial(state).sprite();
+        var tint = colors.getTintSource(state, 0);
+        int color = tint == null ? -1 : tint.colorAsTerrainParticle(state, level, pos);
+        return new RaptureRiseParticle(level, fromX, fromY, fromZ, sprite, color, top != null ? shade * SOIL_SHADE : shade, size);
+    }
+
+    private static BakedQuad.@Nullable MaterialInfo tintedTop(BlockState state, RandomSource random)
+    {
+        var parts = new ArrayList<BlockStateModelPart>();
+        Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(state).collectParts(random, parts);
+        for (var part : parts)
+        {
+            for (var quad : part.getQuads(Direction.UP))
+            {
+                if (quad.materialInfo().isTinted())
+                    return quad.materialInfo();
+            }
+        }
+        return null;
     }
 
     @Override
@@ -149,8 +188,7 @@ public final class RaptureRiseParticle extends SingleQuadParticle
 
     private int lightAt(BlockPos pos)
     {
-        int packed = level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(level, pos) : LightCoordsUtil.FULL_SKY;
-        return LightCoordsUtil.pack(Math.max(LightCoordsUtil.block(packed), LEAST_BLOCK_LIGHT), LightCoordsUtil.sky(packed));
+        return level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(level, pos) : LightCoordsUtil.FULL_SKY;
     }
 
     @Override

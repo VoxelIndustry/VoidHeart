@@ -2,23 +2,29 @@ package net.voxelindustry.voidheart.gametest;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptions;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.CloudStatus;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.resources.sounds.TickableSoundInstance;
 import net.minecraft.client.sounds.SoundEventListener;
 import net.minecraft.client.sounds.WeighedSoundEvents;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.effect.MobEffects;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.curse.RaptureCurse;
+import net.voxelindustry.voidheart.client.curse.RaptureRiseParticle;
 import net.voxelindustry.voidheart.common.curse.CurseKind;
 import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.curse.RaptureLift;
@@ -27,8 +33,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.OptionalLong;
 
 /**
  * The sky opens its eyes and they find the player, the ground comes apart upward, a mouth opens overhead and really lifts them, then it all lets go.
@@ -56,6 +64,15 @@ public class RaptureClientTest implements FabricClientGameTest
     // At the sky frame's size, for stars growing by a part of a pixel on the very first tick
     private static final int PIXELS_OFF_AT_START   = 30;
 
+    private static final int    CHIP_SAMPLES        = 4;
+    private static final float  CHIP_PUSH           = 0.03F;
+    private static final double CHIP_BRIGHTNESS_OFF = 0.15;
+
+    private static final int FREEZE_SETTLE_TICKS = 20;
+
+    private static final int COST_WARMUP_FRAMES = 30;
+    private static final int COST_FRAMES        = 200;
+
     private static final int SWEEP_FRAMES         = 8;
     private static final int RISE_SEQUENCE_FRAMES = 3;
     private static final int RISE_SEQUENCE_TICKS  = 2;
@@ -81,12 +98,14 @@ public class RaptureClientTest implements FabricClientGameTest
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
             context.getInput().pressKey(InputConstants.KEY_F1);
 
+            testChipsLookLikeTheirFace(context, server);
             testFullCurse(context, server);
             testCutShort(context, server);
             testOtherLevitationSurvivesStop(context, server);
             testOtherLevitationSurvivesNaturalEnd(context, server);
             testByDayAndInRain(context, server);
             testCloudsPart(context, server);
+            testFrameCostAndSweeps(context, server);
 
             context.getInput().pressKey(InputConstants.KEY_F1);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
@@ -178,9 +197,6 @@ public class RaptureClientTest implements FabricClientGameTest
         context.takeScreenshot("rapture-zenith-from-sky-look");
         look(context, YAW + 90, LOOK_UP);
         context.takeScreenshot("rapture-zenith-turned");
-
-        sweep(context, "sky");
-        sweep(context, "zenith");
 
         waitForAgeTracking(context, server, Math.min(RaptureLift.LIFT_TICK + 90, endTick - 10), heights);
         captureRisers(context, "lifted");
@@ -274,8 +290,7 @@ public class RaptureClientTest implements FabricClientGameTest
     }
 
     /**
-     * The camera turns in small steps against open sky, with the mouth or only the eyes in frame. No tick passes between screenshots, so the curse holds still
-     * without a {@code tick freeze}, under which the player would go on rising while the lift doesn't count.
+     * The camera turns in small steps against open sky, with the mouth or only the eyes in frame, while the game is frozen so that only the camera moves.
      */
     private void sweep(ClientGameTestContext context, String part)
     {
@@ -426,6 +441,206 @@ public class RaptureClientTest implements FabricClientGameTest
         context.runOnClient(minecraft -> minecraft.options.cloudStatus().set(CloudStatus.OFF));
     }
 
+    /**
+     * A chip resting on its face must look like a piece of that face: each one is put in the middle of the view and compared with the surface right around it.
+     */
+    private void testChipsLookLikeTheirFace(ClientGameTestContext context, TestServerContext server)
+    {
+        String patch = "fill -7 " + GROUND + " 1 -3 " + GROUND + " 5 ";
+        server.runCommand(patch + "stone");
+        context.waitTicks(3);
+
+        sampleChips(context, server, new ChipSite("grass-top", 0.5, 0.5, new BlockPos(0, GROUND, 3), Direction.UP, true), true);
+        sampleChips(context, server, new ChipSite("grass-dirt", 0.5, 0.5, new BlockPos(0, GROUND, 3), Direction.UP, false), false);
+        sampleChips(context, server, new ChipSite("stone-top", -4.5, 0.5, new BlockPos(-5, GROUND, 3), Direction.UP, true), true);
+        sampleChips(context, server, new ChipSite("bricks-north", 0.5, 4.5, new BlockPos(0, GROUND + 2, 7), Direction.NORTH, false), true);
+        sampleChips(context, server, new ChipSite("cobble-east", -5.5, 0.5, new BlockPos(-9, GROUND + 2, 0), Direction.EAST, false), true);
+
+        server.runCommand(patch + "grass_block");
+        server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 0");
+        context.waitTicks(5);
+    }
+
+    private void sampleChips(ClientGameTestContext context, TestServerContext server, ChipSite site, boolean mustMatch)
+    {
+        server.runCommand("tp @a " + site.standX() + " " + (GROUND + 1) + " " + site.standZ());
+        context.waitTicks(3);
+
+        double[] chipTotal = new double[3];
+        double[] surfaceTotal = new double[3];
+        for (int sample = 0; sample < CHIP_SAMPLES; sample++)
+        {
+            var normal = site.face().getUnitVec3();
+            var onFace = net.minecraft.world.phys.Vec3.atCenterOf(site.block()).add(normal.scale(0.5));
+            var chipCenter = onFace.add(normal.scale(CHIP_PUSH + RaptureRiseParticle.SIZE_LARGEST));
+
+            double distance = context.computeOnClient(minecraft ->
+            {
+                var eye = minecraft.player.getEyePosition();
+                var toChip = chipCenter.subtract(eye);
+                float yaw = (float) Math.toDegrees(Math.atan2(-toChip.x, toChip.z));
+                float pitch = (float) -Math.toDegrees(Math.atan2(toChip.y, Math.hypot(toChip.x, toChip.z)));
+                minecraft.player.setYRot(yaw);
+                minecraft.player.setXRot(pitch);
+                minecraft.player.yRotO = yaw;
+                minecraft.player.xRotO = pitch;
+                return toChip.length();
+            });
+            var chip = context.computeOnClient(minecraft ->
+            {
+                var particle = RaptureRiseParticle.onFace(minecraft.level, onFace.x, onFace.y, onFace.z, site.face(), CHIP_PUSH,
+                        minecraft.level.getBlockState(site.block()), site.block(), 1, site.turf());
+                minecraft.particleEngine.add(particle);
+                return particle;
+            });
+            context.waitTick();
+
+            double fov = context.computeOnClient(minecraft -> (double) minecraft.options.fov().get());
+            var shot = context.takeScreenshot("rapture-chip-" + site.name() + "-" + sample);
+            try (var image = NativeImage.read(Files.newInputStream(shot)))
+            {
+                double focal = image.getHeight() / 2D / Math.tan(Math.toRadians(fov / 2));
+                int half = (int) (RaptureRiseParticle.SIZE_LARGEST * focal / distance);
+                int x = image.getWidth() / 2;
+                int y = image.getHeight() / 2;
+                int inner = half * 3 / 5;
+                addMean(image, x - inner, y - inner, x + inner, y + inner, chipTotal, 1);
+                addMean(image, x - half - 16, y - inner, x - half - 4, y + inner, surfaceTotal, 0.5);
+                addMean(image, x + half + 4, y - inner, x + half + 16, y + inner, surfaceTotal, 0.5);
+            } catch (IOException e)
+            {
+                throw new AssertionError("Could not read the chip capture", e);
+            }
+            context.runOnClient(minecraft -> chip.remove());
+            context.waitTick();
+        }
+
+        VoidHeart.LOGGER.info(String.format("Rapture test: chip on %s: chip rgb %.0f %.0f %.0f, surface rgb %.0f %.0f %.0f, brightness x%.2f", site.name(),
+                chipTotal[0] / CHIP_SAMPLES, chipTotal[1] / CHIP_SAMPLES, chipTotal[2] / CHIP_SAMPLES,
+                surfaceTotal[0] / CHIP_SAMPLES, surfaceTotal[1] / CHIP_SAMPLES, surfaceTotal[2] / CHIP_SAMPLES,
+                luma(chipTotal) / luma(surfaceTotal)));
+        double brightness = luma(chipTotal) / luma(surfaceTotal);
+        if (mustMatch && Math.abs(brightness - 1) > CHIP_BRIGHTNESS_OFF)
+            throw new AssertionError("Expected a chip on " + site.name() + " to look like a piece of that face, its brightness is x" + brightness);
+    }
+
+    private static void addMean(NativeImage image, int fromX, int fromY, int toX, int toY, double[] total, double weight)
+    {
+        double[] sum = new double[3];
+        int count = 0;
+        for (int y = fromY; y < toY; y++)
+        {
+            for (int x = fromX; x < toX; x++)
+            {
+                int pixel = image.getPixel(x, y);
+                sum[0] += ARGB.red(pixel);
+                sum[1] += ARGB.green(pixel);
+                sum[2] += ARGB.blue(pixel);
+                count++;
+            }
+        }
+        for (int channel = 0; channel < 3; channel++)
+            total[channel] += sum[channel] / count * weight;
+    }
+
+    private static double luma(double[] rgb)
+    {
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    }
+
+    /**
+     * What a frame costs at the largest size captured here, straight up, against the plain sky from the same view. Timed around the renderer as a screenshot
+     * calls it, then waiting on the GPU, so that neither vsync nor the frame limit hide anything. The curse is then frozen as it stands for the camera sweeps.
+     */
+    private void testFrameCostAndSweeps(ClientGameTestContext context, TestServerContext server)
+    {
+        look(context, YAW, LOOK_UP);
+        context.waitTicks(5);
+        var vanilla = measureFrame(context);
+
+        server.runCommand("voidheart curse trigger rapture @a");
+        context.waitFor(minecraft -> CurseDirector.active() instanceof RaptureCurse, 40);
+        waitForAge(context, RaptureLift.STARE_END_TICK + 2);
+        var eyes = measureFrame(context);
+        waitForAge(context, RaptureLift.MOUTH_TICK + RaptureLift.MOUTH_OPEN_TICKS + 5);
+        var mouth = measureFrame(context);
+        int chips = context.computeOnClient(minecraft -> curse().liveRisers());
+
+        // Players aren't frozen with the rest, so a lifted one would go on rising under the camera. A spectator stays where it is
+        server.runCommand("tick freeze");
+        server.runCommand("gamemode spectator @a");
+        context.waitTicks(FREEZE_SETTLE_TICKS);
+        sweep(context, "sky");
+        sweep(context, "zenith");
+        server.runCommand("gamemode survival @a");
+        server.runCommand("tick unfreeze");
+        look(context, YAW, LOOK_UP);
+
+        VoidHeart.LOGGER.info("Rapture test: frame at " + LARGE_WIDTH + "x" + LARGE_HEIGHT + " straight up, vanilla sky: " + vanilla);
+        VoidHeart.LOGGER.info("Rapture test: frame with every eye staring: " + eyes);
+        VoidHeart.LOGGER.info("Rapture test: frame with the mouth fully open and " + chips + " chips alive: " + mouth);
+
+        server.runCommand("voidheart curse stop @a");
+        waitForLanding(context);
+        heal(server);
+    }
+
+    private static FrameCost measureFrame(ClientGameTestContext context)
+    {
+        return context.computeOnClient(minecraft ->
+        {
+            var window = minecraft.getWindow();
+            int width = window.getWidth();
+            int height = window.getHeight();
+            window.setWidth(LARGE_WIDTH);
+            window.setHeight(LARGE_HEIGHT);
+            minecraft.gameRenderer.resize(LARGE_WIDTH, LARGE_HEIGHT);
+
+            var device = RenderSystem.getDevice();
+            try (var pool = device.createTimestampQueryPool(2))
+            {
+                long[] totals = new long[COST_FRAMES];
+                long[] gpus = new long[COST_FRAMES];
+                for (int frame = -COST_WARMUP_FRAMES; frame < COST_FRAMES; frame++)
+                {
+                    long start = System.nanoTime();
+                    device.createCommandEncoder().writeTimestamp(pool, 0);
+                    minecraft.gameRenderer.update(DeltaTracker.ONE);
+                    minecraft.gameRenderer.extract(DeltaTracker.ONE, true);
+                    minecraft.gameRenderer.render();
+                    var encoder = device.createCommandEncoder();
+                    encoder.writeTimestamp(pool, 1);
+                    encoder.submit();
+
+                    OptionalLong[] stamps;
+                    do
+                    {
+                        stamps = pool.getValues(0, 2);
+                    } while (stamps[0].isEmpty() || stamps[1].isEmpty());
+
+                    if (frame >= 0)
+                    {
+                        totals[frame] = System.nanoTime() - start;
+                        gpus[frame] = (long) ((stamps[1].getAsLong() - stamps[0].getAsLong()) * device.getDeviceInfo().timestampPeriod());
+                    }
+
+                    // As Minecraft.renderFrame ends a frame, short of presenting it
+                    RenderSystem.getDynamicUniforms().reset();
+                    minecraft.levelRenderer.endFrame();
+                }
+                Arrays.sort(totals);
+                Arrays.sort(gpus);
+                return new FrameCost(Arrays.stream(totals).average().orElse(0) / 1E6, totals[COST_FRAMES / 2] / 1E6,
+                        Arrays.stream(gpus).average().orElse(0) / 1E6, gpus[COST_FRAMES / 2] / 1E6);
+            } finally
+            {
+                window.setWidth(width);
+                window.setHeight(height);
+                minecraft.gameRenderer.resize(width, height);
+            }
+        });
+    }
+
     private static void look(ClientGameTestContext context, float yaw, float pitch)
     {
         context.runOnClient(minecraft ->
@@ -485,7 +700,7 @@ public class RaptureClientTest implements FabricClientGameTest
     }
 
     /**
-     * Compared per tick of the curse, because the game catches up on the real time a batch of screenshots took, with several ticks in a row.
+     * Compared per tick of the curse, because taking a screenshot lets a few ticks go by between two samples.
      */
     private static void expectGradual(List<HeightSample> heights)
     {
@@ -601,5 +816,18 @@ public class RaptureClientTest implements FabricClientGameTest
 
     private record HeightSample(int age, double y)
     {
+    }
+
+    private record ChipSite(String name, double standX, double standZ, BlockPos block, Direction face, boolean turf)
+    {
+    }
+
+    private record FrameCost(double totalMs, double medianTotalMs, double gpuMs, double medianGpuMs)
+    {
+        @Override
+        public String toString()
+        {
+            return String.format("mean %.3f ms (median %.3f), of which the GPU mean %.3f ms (median %.3f)", totalMs, medianTotalMs, gpuMs, medianGpuMs);
+        }
     }
 }

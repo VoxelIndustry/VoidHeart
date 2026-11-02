@@ -1,7 +1,9 @@
 package net.voxelindustry.voidheart.client.curse;
 
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.commands.RenderPass;
@@ -9,6 +11,7 @@ import com.mojang.renderpearl.api.pipeline.BlendFunction;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.textures.FilterMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -18,6 +21,7 @@ import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -37,6 +41,7 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -59,10 +64,23 @@ public final class RaptureCurse extends ClientCurse
             .withCull(false)
             .build();
 
+    // The mouth is expensive per pixel but drawn on a coarse grid, so each cell is worked out once a frame into a small texture, however large it is on screen
+    private static final RenderPipeline MOUTH_BAKE_PIPELINE = RenderPipeline.builder(RenderPipelines.GLOBALS_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/curse_rapture_zenith_bake"))
+            .withBindGroupLayout(CurseSkyUniform.BINDINGS)
+            .withVertexShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith_bake"))
+            .withFragmentShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith_bake"))
+            .withVertexBinding(0, DefaultVertexFormat.POSITION)
+            .withPrimitiveTopology(PrimitiveTopology.QUADS)
+            .withColorTargetState(ColorTargetState.DEFAULT)
+            .withCull(false)
+            .build();
+
     private static final RenderPipeline MOUTH_PIPELINE = RenderPipeline.builder(RenderPipelines.GLOBALS_SNIPPET)
             .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/curse_rapture_zenith"))
             .withBindGroupLayout(BindGroupLayouts.PROJECTION)
             .withBindGroupLayout(CurseSkyUniform.BINDINGS)
+            .withBindGroupLayout(BindGroupLayouts.SAMPLER0)
             .withVertexShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith"))
             .withFragmentShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith"))
             .withVertexBinding(0, DefaultVertexFormat.POSITION)
@@ -70,6 +88,9 @@ public final class RaptureCurse extends ClientCurse
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
             .withCull(false)
             .build();
+
+    // The same as BAKED_SIZE in the zenith shaders, one texel to a cell of the mouth's grid: enough for the whole quad at 72 cells per half width of 0.7
+    private static final int MOUTH_BAKED_SIZE = 206;
 
     // Share of the opening spent as a thin seam before the jaws part
     private static final float MOUTH_SEAM_SHARE   = 0.26F;
@@ -101,6 +122,8 @@ public final class RaptureCurse extends ClientCurse
     private static final int   SPAWN_RAMP_TICKS   = 50;
     private static final int   LIVE_MOST          = 900;
     private static final float WALL_SHARE         = 0.45F;
+    // On grass, the rest being the dirt underneath, as vanilla break particles have it
+    private static final float GROUND_TOP_SHARE   = 0.75F;
     private static final float FACE_PUSH          = 0.03F;
     private static final int   GROUND_SCAN_UP     = 3;
     private static final int   GROUND_SCAN_DOWN   = 24;
@@ -112,7 +135,8 @@ public final class RaptureCurse extends ClientCurse
     private static final int CLOUDS_PART_TICKS   = 45;
     private static final int CLOUDS_GATHER_TICKS = RaptureLift.RELEASE_TICKS;
 
-    private static @Nullable GpuBuffer mouthQuad;
+    private static @Nullable GpuBuffer     mouthQuad;
+    private static @Nullable TextureTarget mouthTexture;
 
     private final List<RaptureRiseParticle> risers = new ArrayList<>();
     private final List<RumbleSound>         rumble = new ArrayList<>();
@@ -291,7 +315,7 @@ public final class RaptureCurse extends ClientCurse
                 continue;
             }
             if (openAbove)
-                return RaptureRiseParticle.onFace(level, x, y + 1, z, 0, 1, 0, FACE_PUSH, state, cursor.immutable(), random.nextFloat());
+                return RaptureRiseParticle.onFace(level, x, y + 1, z, Direction.UP, FACE_PUSH, state, cursor.immutable(), random.nextFloat(), random.nextFloat() < GROUND_TOP_SHARE);
         }
         return null;
     }
@@ -347,10 +371,8 @@ public final class RaptureCurse extends ClientCurse
             double hitY = y + random.nextFloat();
             double hitX = startX + dirX * travelled;
             double hitZ = startZ + dirZ * travelled;
-            var pos = cursor.immutable();
-            return alongX
-                    ? RaptureRiseParticle.onFace(level, hitX, hitY, hitZ, -stepX, 0, 0, FACE_PUSH, state, pos, random.nextFloat())
-                    : RaptureRiseParticle.onFace(level, hitX, hitY, hitZ, 0, 0, -stepZ, FACE_PUSH, state, pos, random.nextFloat());
+            var face = alongX ? (stepX > 0 ? Direction.WEST : Direction.EAST) : (stepZ > 0 ? Direction.NORTH : Direction.SOUTH);
+            return RaptureRiseParticle.onFace(level, hitX, hitY, hitZ, face, FACE_PUSH, state, cursor.immutable(), random.nextFloat(), false);
         }
         return null;
     }
@@ -384,6 +406,32 @@ public final class RaptureCurse extends ClientCurse
                 Mth.clamp((now - RaptureLift.MOUTH_TICK) / RaptureLift.MOUTH_OPEN_TICKS, 0, 1),
                 Mth.clamp((now - endTick) / RaptureLift.MOUTH_SNAP_TICKS, 0, 1));
         uniform = CurseSkyUniform.write(frame, now / 20F, stateA, stateB);
+
+        if (mouthShows())
+            bakeMouth();
+    }
+
+    private boolean mouthShows()
+    {
+        return age >= RaptureLift.MOUTH_TICK && age <= endTick + RaptureLift.MOUTH_SNAP_TICKS;
+    }
+
+    private void bakeMouth()
+    {
+        if (mouthTexture == null)
+            mouthTexture = new TextureTarget("Curse zenith", MOUTH_BAKED_SIZE, MOUTH_BAKED_SIZE, GpuFormat.RGBA8_UNORM, null);
+
+        var indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
+        try (var renderPass = RenderSystem.getDevice().createCommandEncoder()
+                .createRenderPass(() -> "Curse zenith", mouthTexture.getColorTextureView(), Optional.of(new Vector4f(0, 0, 0, 0))))
+        {
+            renderPass.setPipeline(RenderSystem.getCompiledPipeline(MOUTH_BAKE_PIPELINE));
+            RenderSystem.bindDefaultUniforms(renderPass);
+            renderPass.setUniform(CurseSkyUniform.NAME, uniform);
+            renderPass.setVertexBuffer(0, mouthQuad.slice());
+            renderPass.setIndexBuffer(indices.getBuffer(6), indices.type());
+            renderPass.drawIndexed(6, 1, 0, 0, 0);
+        }
     }
 
     /**
@@ -448,13 +496,14 @@ public final class RaptureCurse extends ClientCurse
 
         StarField.draw(renderPass, EYES_PIPELINE, uniform);
 
-        if (mouthQuad == null || age < RaptureLift.MOUTH_TICK || age > endTick + RaptureLift.MOUTH_SNAP_TICKS)
+        if (mouthQuad == null || mouthTexture == null || !mouthShows())
             return;
 
         var indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
         renderPass.setPipeline(RenderSystem.getCompiledPipeline(MOUTH_PIPELINE));
         RenderSystem.bindDefaultUniforms(renderPass);
         renderPass.setUniform(CurseSkyUniform.NAME, uniform);
+        renderPass.setUniform("Sampler0", mouthTexture.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
         renderPass.setVertexBuffer(0, mouthQuad.slice());
         renderPass.setIndexBuffer(indices.getBuffer(6), indices.type());
         renderPass.drawIndexed(6, 1, 0, 0, 0);
