@@ -1,0 +1,14 @@
+{
+  "tier": 3,
+  "row": 3,
+  "icon": "voidheart:beholder",
+  "insight_cost": 18,
+  "knowledge_cost": 1500,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:far_sight"
+  ],
+  "recipes": [
+    "voidheart:beholder"
+  ]
+}

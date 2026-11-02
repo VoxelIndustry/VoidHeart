@@ -26,6 +26,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryBlock;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -69,6 +73,16 @@ public class VoidPillarBlock extends Block implements EntityBlock
         {
             var stackInHand = player.getItemInHand(hand);
             var itemInHand = stackInHand.getItem();
+
+            if (stackInHand.is(VoidHeartItems.KNOWLEDGE_TABLET))
+            {
+                if (world instanceof ServerLevel level && player instanceof ServerPlayer serverPlayer)
+                {
+                    KnowledgeRepositoryBlock.awaken(level, pos, serverPlayer);
+                    stackInHand.consume(1, player);
+                }
+                return InteractionResult.SUCCESS;
+            }
 
             if (stackInHand.is(VoidHeartTags.PILLAR_PLACE_INSTEAD_OF_STORE) && itemInHand instanceof BlockItem placeable)
             {

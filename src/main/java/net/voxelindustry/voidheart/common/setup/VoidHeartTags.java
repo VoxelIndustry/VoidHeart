@@ -20,6 +20,11 @@ public class VoidHeartTags
 
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "pillar_place_instead_of_store"));
 
+    public static final TagKey<Item> KNOWLEDGE_FAINT = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/faint"));
+    public static final TagKey<Item> KNOWLEDGE_LUCID = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/lucid"));
+    public static final TagKey<Item> KNOWLEDGE_PROFOUND = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/profound"));
+    public static final TagKey<Item> KNOWLEDGE_TRANSCENDENT = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/transcendent"));
+
     public static final TagKey<Structure> LEY_MINOR_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_minor_anchor"));
     public static final TagKey<Structure> LEY_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_anchor"));
     public static final TagKey<Structure> LEY_MAJOR_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_major_anchor"));

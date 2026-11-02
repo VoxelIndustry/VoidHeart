@@ -1,0 +1,11 @@
+{
+  "tier": 1,
+  "row": 0,
+  "icon": "voidheart:void_altar",
+  "insight_cost": 1,
+  "knowledge_cost": 15,
+  "knowledge_per_second": 0.25,
+  "recipes": [
+    "voidheart:void_altar"
+  ]
+}

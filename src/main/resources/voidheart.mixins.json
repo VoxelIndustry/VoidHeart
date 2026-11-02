@@ -4,15 +4,19 @@
   "package": "net.voxelindustry.voidheart.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "MixinCrafterBlockResearch",
+    "MixinCraftingMenuResearch",
     "MixinEntityBarrierDisguise",
     "MixinLivingEntityBarrierDisguise",
     "MixinStableLifecycle"
   ],
   "client": [
     "client.MixinClientLevelBarrierDisguise",
+    "client.MixinCloudRendererRapture",
     "client.MixinLevelExtractorOculus",
     "client.MixinLevelRendererOculus",
-    "client.MixinMinecraftOculusControls"
+    "client.MixinMinecraftOculusControls",
+    "client.MixinSkyRendererCurse"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,0 +1,15 @@
+{
+  "tier": 2,
+  "row": 1,
+  "icon": "voidheart:portal_core",
+  "insight_cost": 8,
+  "knowledge_cost": 300,
+  "knowledge_per_second": 1,
+  "requires": [
+    "voidheart:shatter_forge"
+  ],
+  "recipes": [
+    "voidheart:portal_core",
+    "voidheart:portal_core_recycle"
+  ]
+}

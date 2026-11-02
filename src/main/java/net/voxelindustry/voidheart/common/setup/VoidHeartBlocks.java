@@ -42,6 +42,7 @@ import net.voxelindustry.voidheart.common.content.oculus.OculusTableBlock;
 import net.voxelindustry.voidheart.common.content.beholder.BeholderBlock;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierBlock;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarBlock;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.VoidStoneBricksBlock;
@@ -110,6 +111,7 @@ public class VoidHeartBlocks
 
     public static Block VOID_ALTAR;
     public static Block VOID_PILLAR;
+    public static Block KNOWLEDGE_REPOSITORY;
 
     public static Block VOID_HEART;
 
@@ -165,6 +167,7 @@ public class VoidHeartBlocks
 
         VOID_ALTAR = registerBlock("void_altar", VoidAltarBlock::new, BlockBehaviour.Properties.of(), true);
         VOID_PILLAR = registerBlock("void_pillar", VoidPillarBlock::new, BlockBehaviour.Properties.of(), true);
+        KNOWLEDGE_REPOSITORY = registerBlock("knowledge_repository", KnowledgeRepositoryBlock::new, BlockBehaviour.Properties.of(), false);
 
         VOID_HEART = registerBlock("void_heart_block", VoidHeartBlock::new, BlockBehaviour.Properties.of(), false);
 

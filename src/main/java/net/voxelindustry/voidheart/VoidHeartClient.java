@@ -20,14 +20,19 @@ import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
 import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
 import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
+import net.voxelindustry.voidheart.client.screen.ResearchScreen;
+import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePayload;
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
+import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.particle.AltarExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.particle.EyeBeamParticle;
 import net.voxelindustry.voidheart.client.model.ShoulderEyeModel;
+import net.voxelindustry.voidheart.client.model.VigilFigureModel;
 import net.voxelindustry.voidheart.client.render.ShoulderEyeRender;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
@@ -87,6 +92,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.BEHOLDER, BeholderRender::new);
 
         ModelLayerRegistry.registerModelLayer(ShoulderEyeModel.LAYER, ShoulderEyeModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(VigilFigureModel.LAYER, VigilFigureModel::createBodyLayer);
         EntityRendererRegistry.register(VoidHeartEntities.SHOULDER_EYE, ShoulderEyeRender::new);
         ShoulderEyeEntity.hiddenFromLocalPick = eye ->
         {
@@ -95,6 +101,9 @@ public class VoidHeartClient implements ClientModInitializer
         };
 
         MenuScreens.register(VoidHeartMenus.PERMEABLE_BARRIER, PermeableBarrierScreen::new);
+        MenuScreens.register(VoidHeartMenus.KNOWLEDGE_REPOSITORY, ResearchScreen::new);
+        ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Snapshot.TYPE, (payload, context) -> ResearchScreen.snapshot = payload);
+        ItemTooltipCallback.EVENT.register(ResearchScreen::appendKnowledgeTooltip);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
@@ -136,6 +145,8 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(OculusRenderer::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(LeyDebugRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
+
+        CurseDirector.register();
 
         var particles = ParticleProviderRegistry.getInstance();
         particles.register(

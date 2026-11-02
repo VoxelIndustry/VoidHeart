@@ -61,6 +61,8 @@ public class VoidHeartCommands
 
         registerPocketCommand(builder);
         LeyCommands.register(builder);
+        CurseCommands.register(builder);
+        ResearchCommands.register(builder);
 
         dispatcher.register(builder);
     }
