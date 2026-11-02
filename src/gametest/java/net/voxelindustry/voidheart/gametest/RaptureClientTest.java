@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.gametest;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.math.Axis;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -20,14 +21,19 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.ARGB;
+import net.minecraft.util.Mth;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.effect.MobEffects;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.curse.RaptureCurse;
+import net.voxelindustry.voidheart.client.curse.RaptureFieldLayout;
 import net.voxelindustry.voidheart.client.curse.RaptureRiseParticle;
 import net.voxelindustry.voidheart.common.curse.CurseKind;
 import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.curse.RaptureLift;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.OptionalLong;
 
 /**
@@ -50,6 +57,13 @@ public class RaptureClientTest implements FabricClientGameTest
     private static final float LOOK_SKY  = -55;
     private static final float LOOK_UP   = -90;
     private static final float LOOK_DOWN = 38;
+    private static final float LOOK_LEVEL = -7;
+
+    // The narrowest the option goes, and from where nothing of the scene can get in the way
+    private static final int   ZOOM_FOV     = 30;
+    private static final int   ABOVE_SCENE  = 150;
+    private static final float ABOVE_GROUND = 0.08F;
+    private static final int   FLIGHT_FOV_SETTLE_TICKS = 40;
 
     private static final int LARGE_WIDTH  = 1280;
     private static final int LARGE_HEIGHT = 720;
@@ -101,6 +115,8 @@ public class RaptureClientTest implements FabricClientGameTest
 
             testChipsLookLikeTheirFace(context, server);
             testFullCurse(context, server);
+            testFieldUpClose(context, server);
+            testFieldClosesIntoVanillaStars(context, server);
             testCutShort(context, server);
             testOtherLevitationSurvivesStop(context, server);
             testOtherLevitationSurvivesNaturalEnd(context, server);
@@ -161,6 +177,13 @@ public class RaptureClientTest implements FabricClientGameTest
         context.takeScreenshot("rapture-sky-staring");
         context.takeScreenshot(TestScreenshotOptions.of("rapture-sky-staring-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
         expectNoRumble(heard, "before the eyes have all found the player");
+        look(context, YAW + 180, LOOK_LEVEL);
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-sky-staring-level-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        look(context, YAW, LOOK_UP);
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-sky-staring-up-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        var field = context.computeOnClient(minecraft -> curse().fieldMesh());
+        if (field == null || field.isClosed())
+            throw new AssertionError("Expected the eyes of this curse to have a mesh of their own");
 
         waitForAge(context, 128);
         captureRisers(context, "early");
@@ -242,6 +265,8 @@ public class RaptureClientTest implements FabricClientGameTest
         context.takeScreenshot("rapture-sky-closing");
         waitForNoCurse(context);
         expectRunning(server, null, "the curse over");
+        if (!field.isClosed())
+            throw new AssertionError("Expected the curse to release its mesh once over");
 
         waitForLanding(context);
         double risen = heights.stream().mapToDouble(HeightSample::y).max().orElse(startY) - startY;
@@ -303,6 +328,122 @@ public class RaptureClientTest implements FabricClientGameTest
                 look(context, YAW + 120 + step * 0.6F, LOOK_SKY + 10 + step * 0.4F);
             context.takeScreenshot(part + "-sweep-" + step);
         }
+    }
+
+    /**
+     * The largest eye of each family above the horizon, zoomed in on while frozen: wandering about, then staring. Then a sweep near the zenith where the eyes
+     * stand at every angle, and that a curse cut short lets go of its mesh.
+     */
+    private void testFieldUpClose(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("voidheart curse trigger rapture @a");
+        context.waitFor(minecraft -> CurseDirector.active() instanceof RaptureCurse, 40);
+        logField(context);
+
+        server.runCommand("gamemode spectator @a");
+        server.runCommand("tp @a 0.5 " + ABOVE_SCENE + " 0.5");
+        waitForAge(context, 64);
+        server.runCommand("tick freeze");
+        context.waitTicks(FREEZE_SETTLE_TICKS);
+        captureGiants(context, "wandering");
+        server.runCommand("tick unfreeze");
+
+        waitForAge(context, RaptureLift.STARE_END_TICK + 2);
+        server.runCommand("tick freeze");
+        context.waitTicks(FREEZE_SETTLE_TICKS);
+        captureGiants(context, "staring");
+        for (int step = 0; step < SWEEP_FRAMES; step++)
+        {
+            look(context, YAW + 40 + step * 0.6F, LOOK_UP + 6 + step * 0.4F);
+            context.takeScreenshot(TestScreenshotOptions.of("field-sweep-" + step).withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        }
+        server.runCommand("tick unfreeze");
+
+        var field = context.computeOnClient(minecraft -> curse().fieldMesh());
+        server.runCommand("voidheart curse stop @a");
+        server.runCommand("gamemode survival @a");
+        server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5");
+        context.waitTicks(2);
+        if (field == null || !field.isClosed())
+            throw new AssertionError("Expected the curse to release its mesh once cut short");
+        waitForLanding(context);
+    }
+
+    /**
+     * Once the eyes have closed, every star is back the way vanilla draws it, those that never opened included, while the curse is still running.
+     * From above the scene, where nothing else can be in the way and a spectator doesn't fall.
+     */
+    private void testFieldClosesIntoVanillaStars(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("gamemode spectator @a");
+        server.runCommand("tp @a 0.5 " + ABOVE_SCENE + " 0.5");
+        look(context, YAW, LOOK_SKY);
+        // A spectator flies, and the field of view takes a moment to ease into that
+        context.waitTicks(FLIGHT_FOV_SETTLE_TICKS);
+        var vanilla = context.takeScreenshot(TestScreenshotOptions.of("rapture-field-before").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+
+        server.runCommand("voidheart curse force rapture @a");
+        context.waitFor(minecraft -> CurseDirector.active() instanceof RaptureCurse, 40);
+        int endTick = context.computeOnClient(minecraft -> RaptureLift.LIFT_TICK + RaptureLift.liftTicks(curse().height()));
+        waitForAge(context, endTick + RaptureLift.EYES_CLOSE_TICKS + 1);
+        var closed = context.takeScreenshot(TestScreenshotOptions.of("rapture-field-closed").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        if (context.computeOnClient(minecraft -> CurseDirector.active() == null))
+            throw new AssertionError("Expected the curse to still be running a few ticks after the eyes have closed");
+        expectSameStars(vanilla, closed, 0);
+
+        waitForNoCurse(context);
+        server.runCommand("gamemode survival @a");
+        server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5");
+        waitForLanding(context);
+        heal(server);
+    }
+
+    private void captureGiants(ClientGameTestContext context, String moment)
+    {
+        var view = context.computeOnClient(minecraft ->
+        {
+            var angle = minecraft.gameRenderer.mainCamera().attributeProbe().getValue(EnvironmentAttributes.STAR_ANGLE, 0) * Mth.DEG_TO_RAD;
+            return new Matrix4f().rotate(Axis.YP.rotationDegrees(-90)).rotate(Axis.XP.rotation(angle));
+        });
+        var layout = context.computeOnClient(minecraft -> curse().field());
+        int fov = context.computeOnClient(minecraft -> minecraft.options.fov().get());
+        context.runOnClient(minecraft -> minecraft.options.fov().set(ZOOM_FOV));
+
+        for (var family : RaptureFieldLayout.Family.values())
+        {
+            // Eyes come largest first
+            for (var eye : layout.eyes())
+            {
+                var direction = view.transformDirection(layout.directionX(eye.star()), layout.directionY(eye.star()), layout.directionZ(eye.star()), new Vector3f());
+                if (eye.family() != family || direction.y < ABOVE_GROUND)
+                    continue;
+
+                look(context, (float) Math.toDegrees(Math.atan2(-direction.x, direction.z)), (float) -Math.toDegrees(Math.asin(direction.y)));
+                context.takeScreenshot(TestScreenshotOptions.of("rapture-giant-" + moment + "-" + family.name().toLowerCase(Locale.ROOT) + "-" + Math.round(eye.width())).withSize(LARGE_WIDTH, LARGE_HEIGHT));
+                break;
+            }
+        }
+        context.runOnClient(minecraft -> minecraft.options.fov().set(fov));
+    }
+
+    private void logField(ClientGameTestContext context)
+    {
+        var layout = context.computeOnClient(minecraft -> curse().field());
+        float[] from = {0.9F, 1.6F, 3, 5};
+        int[] above = new int[from.length];
+        for (var eye : layout.eyes())
+        {
+            // At midnight the star field stands upside down
+            if (layout.directionY(eye.star()) >= 0)
+                continue;
+            int bin = from.length - 1;
+            while (eye.width() < from[bin] && bin > 0)
+                bin--;
+            above[bin]++;
+        }
+        VoidHeart.LOGGER.info("Rapture test: " + layout.eyes().size() + " of " + layout.stars() + " stars open, above the horizon by half widths from " + Arrays.toString(from) + ": " + Arrays.toString(above));
+        if (above[0] <= above[1] || above[1] <= above[2] || above[3] < 2)
+            throw new AssertionError("Expected many small eyes, fewer medium and large ones and at least some giants overhead, got " + Arrays.toString(above));
     }
 
     private void testCutShort(ClientGameTestContext context, TestServerContext server)

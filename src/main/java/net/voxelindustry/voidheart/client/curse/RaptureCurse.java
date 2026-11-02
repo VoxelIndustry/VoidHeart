@@ -57,7 +57,7 @@ public final class RaptureCurse extends ClientCurse
             .withBindGroupLayout(CurseSkyUniform.BINDINGS)
             .withVertexShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_field"))
             .withFragmentShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_field"))
-            .withVertexBinding(0, StarField.VERTEX_FORMAT)
+            .withVertexBinding(0, RaptureFieldMesh.VERTEX_FORMAT)
             .withPrimitiveTopology(PrimitiveTopology.QUADS)
             // With alpha zero this adds up as the vanilla stars do, with alpha one it is solid, so one star can turn into the other
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA))
@@ -154,10 +154,31 @@ public final class RaptureCurse extends ClientCurse
 
     private @Nullable GpuBufferSlice uniform;
 
+    private final RaptureFieldLayout field;
+
+    private @Nullable RaptureFieldMesh fieldMesh;
+
     public RaptureCurse(long seed, int duration)
     {
         super(seed, duration);
         this.endTick = RaptureLift.endTick(seed);
+        this.field = RaptureFieldLayout.of(seed, StarField.vanillaStars());
+    }
+
+    /**
+     * Which star opens into what, for tests.
+     */
+    public RaptureFieldLayout field()
+    {
+        return field;
+    }
+
+    /**
+     * The mesh of this curse once it drew a frame, for tests.
+     */
+    public @Nullable RaptureFieldMesh fieldMesh()
+    {
+        return fieldMesh;
     }
 
     /**
@@ -226,6 +247,8 @@ public final class RaptureCurse extends ClientCurse
         stopRumble(Minecraft.getInstance());
         risers.forEach(RaptureRiseParticle::release);
         risers.clear();
+        if (fieldMesh != null)
+            fieldMesh.close();
     }
 
     private void tickRumble(Minecraft minecraft)
@@ -391,7 +414,8 @@ public final class RaptureCurse extends ClientCurse
     @Override
     public void prepareSky(SkyRenderState state, SkyFrame frame)
     {
-        StarField.prepare();
+        if (fieldMesh == null)
+            fieldMesh = RaptureFieldMesh.of(field, StarField.vanillaStars());
         prepareMouthQuad();
 
         float now = age + frame.partialTicks();
@@ -491,10 +515,10 @@ public final class RaptureCurse extends ClientCurse
     @Override
     public void drawSky(RenderPass renderPass, SkyFrame frame)
     {
-        if (uniform == null)
+        if (uniform == null || fieldMesh == null)
             return;
 
-        StarField.draw(renderPass, EYES_PIPELINE, uniform);
+        fieldMesh.draw(renderPass, EYES_PIPELINE, uniform);
 
         if (mouthQuad == null || mouthTexture == null || !mouthShows())
             return;
