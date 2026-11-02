@@ -144,3 +144,4 @@ fabric.properties
 *.aseprite
 *.ase
 src/main/generated/.cache/
+.impeccable/

@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -36,6 +37,7 @@ import net.voxelindustry.voidheart.common.content.oculus.OculusControlPayload;
 import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusSightPayloads;
+import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugView;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
@@ -101,6 +103,8 @@ public class VoidHeart implements ModInitializer
 
         PORTAL_LINK_CRITERION = Registry.register(BuiltInRegistries.TRIGGER_TYPES, PortalLinkCriterion.ID, new PortalLinkCriterion());
 
+        Knowledge.register();
+
         VoidHeartRecipes.registerRecipes();
         VoidHeartWorld.registerGeneration();
 
@@ -108,6 +112,8 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.START_LEVEL_TICK.register(VoidHeartTicker::tickWorld);
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
         ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
 

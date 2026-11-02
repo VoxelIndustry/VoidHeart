@@ -1,0 +1,12 @@
+{
+  "tier": 2,
+  "row": 5,
+  "icon": "minecraft:recovery_compass",
+  "insight_cost": 7,
+  "knowledge_cost": 200,
+  "knowledge_per_second": 0.75,
+  "requires": [
+    "voidheart:patient_study"
+  ],
+  "passive_bonus": 0.1
+}

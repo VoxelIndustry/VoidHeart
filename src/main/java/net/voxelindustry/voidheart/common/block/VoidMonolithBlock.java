@@ -19,15 +19,25 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
 import static java.util.Collections.singletonList;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.common.block.StateProperties.*;
 
 public class VoidMonolithBlock extends Block
 {
+    private static final Identifier FOUND_TABLET = Identifier.fromNamespaceAndPath(MODID, "knowledge_tablet");
+
     public VoidMonolithBlock(Properties properties)
     {
         super(properties
@@ -55,9 +65,26 @@ public class VoidMonolithBlock extends Block
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder)
     {
-        if (state.getValue(BROKEN))
-            return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE));
-        return singletonList(new ItemStack(VoidHeartBlocks.VOID_MONOLITH));
+        if (!state.getValue(BROKEN))
+            return singletonList(new ItemStack(VoidHeartBlocks.VOID_MONOLITH));
+
+        if (builder.getLevel().getRandom().nextFloat() < tabletChance(builder.getOptionalParameter(LootContextParams.THIS_ENTITY)))
+            return List.of(new ItemStack(VoidHeartBlocks.VOIDSTONE), new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET));
+        return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE));
+    }
+
+    /**
+     * Generous until the breaker has held a first tablet, which starts their research.
+     */
+    private static float tabletChance(@Nullable Entity breaker)
+    {
+        var config = VoidHeartConfig.get();
+        if (!(breaker instanceof ServerPlayer player))
+            return config.knowledgeTabletChance;
+
+        var advancement = player.level().getServer().getAdvancements().get(FOUND_TABLET);
+        boolean found = advancement == null || player.getAdvancements().getOrStartProgress(advancement).isDone();
+        return found ? config.knowledgeTabletChance : config.knowledgeFirstTabletChance;
     }
 
     @Override
