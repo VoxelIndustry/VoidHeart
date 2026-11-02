@@ -5,17 +5,17 @@ import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
 /**
- * The tiny crown a drop leaves where it lands, gone within a few ticks.
+ * The crown a drop throws up where it lands, gone within a few ticks.
  */
 final class OmenSplashParticle extends SingleQuadParticle
 {
     private static final int   LIFETIME_MIN   = 3;
     private static final int   LIFETIME_EXTRA = 3;
-    private static final float SIZE_MIN       = 0.03F;
-    private static final float SIZE_EXTRA     = 0.03F;
-    private static final float GROWTH         = 0.6F;
+    private static final float SIZE_MIN       = 0.07F;
+    private static final float SIZE_EXTRA     = 0.05F;
+    private static final float GROWTH         = 0.5F;
     // Places the bottom of the crown on the surface
-    private static final float LIFT           = 0.75F;
+    private static final float LIFT           = 0.6F;
 
     private final float size;
 

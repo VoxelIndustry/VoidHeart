@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.core.BlockPos;
 import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -35,7 +36,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The night sky falls sick and bleeds. The stars the player was looking at go red one by one and start to tremble, slow waves of red spread
- * between them and light them as they pass, then it rains blood for a few seconds. In the end each star goes back to what it was.
+ * between them and light them as they pass, then it rains blood for a few seconds, spattering the ground. In the end each star goes back to what it was.
  */
 public final class OmenCurse extends ClientCurse
 {
@@ -82,13 +83,13 @@ public final class OmenCurse extends ClientCurse
     private static final float SECONDS_PER_TICK = 1 / 20F;
 
     // The waves step back as the rain takes over
-    private static final float RIPPLE_UNDER_RAIN = 0.3F;
+    private static final float RIPPLE_UNDER_RAIN = 0.15F;
     // The first wave starts about where the player is looking, however low that is
-    private static final float FIRST_WAVE_LOWEST  = 0.3F;
+    private static final float FIRST_WAVE_LOWEST  = 0.42F;
     private static final float FIRST_WAVE_HIGHEST = 0.97F;
     private static final float FIRST_WAVE_OFF_AIM = 0.35F;
 
-    private static final float PEAK_DROPS_PER_TICK = 40;
+    private static final float PEAK_DROPS_PER_TICK = 34;
     private static final float DECREASED_SHARE     = 0.5F;
     private static final float MINIMAL_SHARE       = 0.2F;
     private static final int   MAX_LIVE            = 1400;
@@ -97,7 +98,7 @@ public final class OmenCurse extends ClientCurse
     private static final float GUST_RATE           = 0.13F;
 
     private static final float SPAWN_RADIUS       = 16;
-    private static final float SPAWN_NEAREST      = 1.5F;
+    private static final float SPAWN_NEAREST      = 2;
     // Above 0.5, drops crowd toward the camera rather than spreading evenly over the disc
     private static final float SPAWN_SPREAD       = 0.7F;
     private static final float SPAWN_HEIGHT_MIN   = 8;
@@ -106,14 +107,29 @@ public final class OmenCurse extends ClientCurse
     private static final int   SURFACE_MAX_ABOVE  = 20;
 
     private static final float FALL_SPEED_MIN      = 0.6F;
-    private static final float FALL_SPEED_MAX      = 0.9F;
+    private static final float FALL_SPEED_MAX      = 0.76F;
     private static final float SLANT_MIN           = 0.07F;
     private static final float SLANT_MAX           = 0.13F;
     private static final float SLANT_JITTER        = 0.02F;
-    private static final float DROP_SIZE_MIN       = 0.18F;
-    private static final float DROP_SIZE_MAX       = 0.36F;
+    private static final float DROP_SIZE_MIN       = 0.26F;
+    private static final float DROP_SIZE_MAX       = 0.42F;
     // Above 1, large drops are rare
     private static final float DROP_SIZE_SKEW      = 1.8F;
+
+    public static final  int   MAX_STAINS        = 150;
+    // Landing near the camera, where it shows, a drop is likelier to leave a mark
+    private static final float STAIN_CHANCE_NEAR = 0.14F;
+    private static final float STAIN_CHANCE_FAR  = 0.018F;
+    private static final float STAIN_NEAR        = 6;
+    private static final float STAIN_FAR         = 16;
+    private static final float STAIN_SIZE_MIN    = 0.14F;
+    private static final float STAIN_SIZE_MAX    = 0.4F;
+    private static final float STAIN_SIZE_SKEW   = 1.5F;
+    private static final int   STAIN_LIFE_MIN    = 60;
+    private static final int   STAIN_LIFE_EXTRA  = 40;
+    // All must have dried this many ticks before the end, and a stain this short isn't worth starting
+    private static final int   STAIN_END_MARGIN  = 4;
+    private static final int   STAIN_LIFE_LEAST  = 16;
 
     private static final float PATTER_VOLUME = 0.28F;
     private static final float PATTER_PITCH  = 0.58F;
@@ -129,13 +145,20 @@ public final class OmenCurse extends ClientCurse
             Identifier.fromNamespaceAndPath(MODID, "curse_omen_splash0"),
             Identifier.fromNamespaceAndPath(MODID, "curse_omen_splash1")
     };
+    private static final Identifier[] STAIN_SPRITES = {
+            Identifier.fromNamespaceAndPath(MODID, "curse_omen_stain0"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_omen_stain1"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_omen_stain2"),
+            Identifier.fromNamespaceAndPath(MODID, "curse_omen_stain3")
+    };
 
     private final float skySeed;
     private final float slantX;
     private final float slantZ;
     private final float gustPhase;
 
-    private final List<SingleQuadParticle> live = new ArrayList<>();
+    private final List<SingleQuadParticle> live   = new ArrayList<>();
+    private final List<OmenStainParticle>  stains = new ArrayList<>();
 
     private @Nullable OmenPatterSound patter;
     private @Nullable GpuBufferSlice  uniform;
@@ -180,6 +203,7 @@ public final class OmenCurse extends ClientCurse
             aimFirstWave(player);
 
         live.removeIf(particle -> !particle.isAlive());
+        stains.removeIf(stain -> !stain.isAlive());
 
         float rain = rainLevel(age);
         if (rain > 0)
@@ -256,6 +280,45 @@ public final class OmenCurse extends ClientCurse
         live.add(splash);
     }
 
+    void land(ClientLevel level, double x, double surface, double z)
+    {
+        splash(level, x, surface, z);
+
+        var minecraft = Minecraft.getInstance();
+        int lifetime = Math.min(STAIN_LIFE_MIN + random.nextInt(STAIN_LIFE_EXTRA), duration - age - STAIN_END_MARGIN);
+        if (stains.size() >= MAX_STAINS || lifetime < STAIN_LIFE_LEAST)
+            return;
+
+        var camera = minecraft.gameRenderer.mainCamera().position();
+        float distance = (float) Math.hypot(x - camera.x, z - camera.z);
+        if (random.nextFloat() >= Mth.clampedMap(distance, STAIN_NEAR, STAIN_FAR, STAIN_CHANCE_NEAR, STAIN_CHANCE_FAR))
+            return;
+
+        int blockX = Mth.floor(x);
+        int blockZ = Mth.floor(z);
+        int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
+        if (!level.getFluidState(new BlockPos(blockX, top - 1, blockZ)).isEmpty())
+            return;
+
+        float size = Mth.lerp((float) Math.pow(random.nextFloat(), STAIN_SIZE_SKEW), STAIN_SIZE_MIN, STAIN_SIZE_MAX);
+        // Pulled back from an edge past which the ground is at another height, so that it never hangs in the air or runs into a wall
+        double stainX = x;
+        if (x - size < blockX && level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX - 1, blockZ) != top)
+            stainX = blockX + size;
+        else if (x + size > blockX + 1 && level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX + 1, blockZ) != top)
+            stainX = blockX + 1 - size;
+        double stainZ = z;
+        if (z - size < blockZ && level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ - 1) != top)
+            stainZ = blockZ + size;
+        else if (z + size > blockZ + 1 && level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ + 1) != top)
+            stainZ = blockZ + 1 - size;
+
+        var sprite = minecraft.getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES).getSprite(STAIN_SPRITES[random.nextInt(STAIN_SPRITES.length)]);
+        var stain = new OmenStainParticle(level, stainX, surface, stainZ, size, random.nextInt(4), lifetime, sprite);
+        minecraft.particleEngine.add(stain);
+        stains.add(stain);
+    }
+
     private void tickPatter(Minecraft minecraft, float rain)
     {
         if (rain <= 0)
@@ -287,6 +350,8 @@ public final class OmenCurse extends ClientCurse
         stopPatter(Minecraft.getInstance());
         live.forEach(SingleQuadParticle::remove);
         live.clear();
+        stains.forEach(SingleQuadParticle::remove);
+        stains.clear();
     }
 
     /**
@@ -303,6 +368,14 @@ public final class OmenCurse extends ClientCurse
     public int liveParticles()
     {
         return live.size();
+    }
+
+    /**
+     * For tests.
+     */
+    public int liveStains()
+    {
+        return stains.size();
     }
 
     /**

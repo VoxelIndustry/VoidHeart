@@ -72,7 +72,7 @@ void main() {
     vec3 moved = Center + (Position - Center) * OMEN_STAR_BLOOM + (east * drift.x + north * drift.y) * reach;
 
     float brightness = mix(GLOW_MIN, GLOW_MAX, Seed.z);
-    glow = brightness * (1.0 + GLOW_ON_WAVE * curseOmenWave(skyDir) * CurseStateA.z);
+    glow = brightness * (1.0 + GLOW_ON_WAVE * (CurseStateA.z > 0.0 ? curseOmenWave(skyDir) * CurseStateA.z : 0.0));
     corner = Corner.xy * OMEN_STAR_BLOOM;
     gl_Position = ProjMat * StarView * vec4(moved, 1.0);
 }

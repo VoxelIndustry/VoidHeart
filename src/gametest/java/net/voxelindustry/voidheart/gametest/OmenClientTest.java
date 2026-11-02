@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.gametest;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -24,8 +25,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -49,12 +52,20 @@ public class OmenClientTest implements FabricClientGameTest
     private static final String LOOK_AT_HUT  = "-90 -4";
     private static final String LOOK_AWAY    = "120 3";
     private static final String LOOK_DOWN    = "120 38";
+    private static final String LOOK_GRAZING = "120 9";
+    private static final String ON_THE_ROOF  = "7.5 " + (HUT_ROOF + 1) + " 0.5 ";
+    private static final String LOOK_AT_ROOF = "90 42";
     private static final String BESIDE_HUT   = "1.5 " + FEET + " 0.5 ";
     private static final String FACING_HUT   = "-7.5 " + FEET + " 0.5 ";
     private static final String INSIDE_HUT   = "8.5 " + (FEET + 1) + " 0.5 ";
     private static final String LOOK_OUT     = "90 -8";
 
     private static final int AGE_TIMEOUT = 600;
+
+    private static final int FRAME_COST_BATCHES       = 10;
+    private static final int FRAME_COST_BATCH         = 8;
+    private static final int FRAMES_PER_SECOND_SETTLE = 30;
+    private static final int UNLIMITED_FRAMERATE      = 260;
 
     private int fullRainPeak;
 
@@ -89,6 +100,7 @@ public class OmenClientTest implements FabricClientGameTest
             var vanilla = shot(context, "omen-sky-0-vanilla");
             testFullCourse(context, server, vanilla);
             testCutShort(context, server, vanilla);
+            measureFrameCost(context, server);
 
             context.getInput().pressKey(InputConstants.KEY_F1);
             context.runOnClient(minecraft ->
@@ -144,12 +156,26 @@ public class OmenClientTest implements FabricClientGameTest
         context.waitTicks(2);
         shot(context, "omen-rain-from-inside");
         look(context, server, LOOK_DOWN);
-        shot(context, "omen-rain-ground");
+        shot(context, "omen-ground-early-rain");
         look(context, server, LOOK_UP);
-        shot(context, "omen-rain-up");
+        shot(context, "omen-rain-up-early");
         expectNoneThroughRoof(context);
 
-        waitForAge(context, OmenCurse.RAIN_END - 10);
+        look(context, server, LOOK_DOWN);
+        shot(context, "omen-ground-mid-rain");
+        groundSweep(context, server);
+        server.runCommand("tp @a " + ON_THE_ROOF + LOOK_AT_ROOF);
+        context.waitTicks(2);
+        shot(context, "omen-ground-roof");
+        look(context, server, LOOK_UP);
+        waitForAge(context, OmenCurse.RAIN_END - 28);
+        shot(context, "omen-rain-up-late");
+        look(context, server, LOOK_DOWN);
+        waitForAge(context, OmenCurse.RAIN_END - 12);
+        shot(context, "omen-ground-late-rain");
+        look(context, server, LOOK_GRAZING);
+        shot(context, "omen-ground-grazing");
+        look(context, server, LOOK_UP);
         shot(context, "omen-rain-thinning");
         var duration = CurseTimings.OMEN_TICKS;
         waitForAge(context, duration - 40);
@@ -162,8 +188,7 @@ public class OmenClientTest implements FabricClientGameTest
         context.waitTicks(8);
         expectOver(context, server, "the curse having run its course");
         expectSameSky(vanilla, shot(context, "omen-sky-10-after"), "the sky after the curse");
-        context.waitTicks(30);
-        expectParticles(context, 0, "the rain over");
+        expectParticles(context, 0, "the curse having run its course");
 
         context.runOnClient(minecraft -> minecraft.getSoundManager().removeListener(listener));
         var patter = SoundEvents.WEATHER_RAIN.location().toString();
@@ -188,6 +213,7 @@ public class OmenClientTest implements FabricClientGameTest
         context.waitFor(minecraft -> CurseDirector.active() instanceof OmenCurse, AGE_TIMEOUT);
         waitForAge(context, OmenCurse.RAIN_START + 40);
 
+        var stoppedCurse = context.computeOnClient(minecraft -> curse(minecraft));
         int live = context.computeOnClient(minecraft -> curse(minecraft).liveParticles());
         if (live == 0 || live > fullRainPeak * 0.4F)
             throw new AssertionError("Expected a thin rain on the lowest particle setting, got " + live + " particles alive where a full one reached " + fullRainPeak);
@@ -195,6 +221,8 @@ public class OmenClientTest implements FabricClientGameTest
         if (patter == null)
             throw new AssertionError("Expected the patter before cutting the curse short");
         shot(context, "omen-stop-before");
+        context.waitFor(minecraft -> curse(minecraft).liveStains() > 0, AGE_TIMEOUT);
+        int stainsBeforeStop = context.computeOnClient(minecraft -> curse(minecraft).liveStains());
 
         server.runCommand("voidheart curse stop @a");
         context.waitTicks(3);
@@ -202,6 +230,8 @@ public class OmenClientTest implements FabricClientGameTest
         if (context.computeOnClient(minecraft -> minecraft.getSoundManager().isActive(patter)))
             throw new AssertionError("Expected the patter to stop with the curse");
         expectParticles(context, 0, "a curse cut short");
+        if (context.computeOnClient(minecraft -> stoppedCurse.liveStains()) != 0)
+            throw new AssertionError("Expected none of the " + stainsBeforeStop + " stains to outlive the stop");
         expectSameSky(vanilla, shot(context, "omen-stop-after"), "the sky after a curse cut short");
 
         // The engine keeps reporting a looping sound to its listeners for as long as it plays
@@ -232,15 +262,119 @@ public class OmenClientTest implements FabricClientGameTest
         context.waitTicks(1);
     }
 
+    /**
+     * Stains lie close above the ground, so a low, slowly moving view is where they would fight it.
+     */
+    private void groundSweep(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("tick freeze");
+        context.waitTicks(2);
+        for (int step = 0; step < 6; step++)
+        {
+            server.runCommand("tp @a " + BESIDE_HUT + (120 + step * 0.3) + " " + (9 + step * 0.15));
+            context.waitTicks(2);
+            shot(context, "omen-ground-sweep-" + step);
+        }
+        server.runCommand("tick unfreeze");
+        context.waitTicks(1);
+    }
+
+    /**
+     * Writes the cost of a frame to the log, at the size of a common monitor and in the same view, with the plain sky before and after to show the drift.
+     * The game loop only ticks at its own pace while tests wait, so frames are rendered one after the other here, the way a screenshot does.
+     * A fence closes each of them, so that the time includes what the GPU does with it.
+     */
+    private void measureFrameCost(ClientGameTestContext context, TestServerContext server)
+    {
+        var vsync = context.computeOnClient(minecraft -> minecraft.options.enableVsync().get());
+        var limit = context.computeOnClient(minecraft -> minecraft.options.framerateLimit().get());
+        context.runOnClient(minecraft ->
+        {
+            minecraft.options.enableVsync().set(false);
+            minecraft.options.framerateLimit().set(UNLIMITED_FRAMERATE);
+        });
+        context.getInput().resizeWindow(1920, 1080);
+        look(context, server, LOOK_UP);
+        context.waitTicks(40);
+
+        logFrameCost(context, "plain sky");
+        logFramesPerSecond(context, "plain sky");
+
+        server.runCommand("voidheart curse trigger omen @a");
+        context.waitFor(minecraft -> CurseDirector.active() instanceof OmenCurse, AGE_TIMEOUT);
+        waitForAge(context, 76);
+        logFrameCost(context, "stars and waves, no rain");
+        waitForAge(context, OmenCurse.RAIN_START + 35);
+        logFrameCost(context, "at peak, stars, waves and rain");
+        logFramesPerSecond(context, "at peak");
+
+        server.runCommand("voidheart curse stop @a");
+        context.waitTicks(10);
+        logFrameCost(context, "plain sky again");
+
+        context.getInput().resizeWindow(854, 480);
+        context.runOnClient(minecraft ->
+        {
+            minecraft.options.enableVsync().set(vsync);
+            minecraft.options.framerateLimit().set(limit);
+        });
+        context.waitTicks(5);
+    }
+
+    private static void logFrameCost(ClientGameTestContext context, String what)
+    {
+        var frames = new double[FRAME_COST_BATCHES * FRAME_COST_BATCH];
+        for (int batch = 0; batch < FRAME_COST_BATCHES; batch++)
+        {
+            context.waitTick();
+            int first = batch * FRAME_COST_BATCH;
+            context.runOnClient(minecraft ->
+            {
+                var delta = minecraft.getDeltaTracker();
+                finishFrame();
+                for (int frame = 0; frame < FRAME_COST_BATCH; frame++)
+                {
+                    long start = System.nanoTime();
+                    minecraft.gameRenderer.update(delta);
+                    minecraft.gameRenderer.extract(delta, true);
+                    minecraft.gameRenderer.render();
+                    finishFrame();
+                    frames[first + frame] = (System.nanoTime() - start) / 1E6;
+                }
+            });
+        }
+        Arrays.sort(frames);
+        System.out.printf(Locale.ROOT, "[Omen] frame cost at 1920x1080, %s: mean %.2f ms, median %.2f ms, fastest %.2f ms%n",
+                what, Arrays.stream(frames).average().orElse(0), frames[frames.length / 2], frames[0]);
+    }
+
+    private static void logFramesPerSecond(ClientGameTestContext context, String what)
+    {
+        context.waitTicks(FRAMES_PER_SECOND_SETTLE);
+        System.out.println("[Omen] the free running game loop at 1920x1080, " + what + ": " + context.computeOnClient(Minecraft::getFps) + " fps");
+    }
+
+    private static void finishFrame()
+    {
+        var encoder = RenderSystem.getDevice().createCommandEncoder();
+        try (var fence = encoder.createFence())
+        {
+            encoder.submit();
+            fence.awaitCompletion(TimeUnit.SECONDS.toNanos(1));
+        }
+    }
+
     private void expectNoneThroughRoof(ClientGameTestContext context)
     {
         int above = 0;
         int peak = 0;
+        int stainPeak = 0;
         for (int sample = 0; sample < 40; sample++)
         {
             context.waitTick();
             var drops = context.computeOnClient(minecraft -> curse(minecraft).dropPositions());
             peak = Math.max(peak, context.computeOnClient(minecraft -> curse(minecraft).liveParticles()));
+            stainPeak = Math.max(stainPeak, context.computeOnClient(minecraft -> curse(minecraft).liveStains()));
             for (var drop : drops)
             {
                 if (drop.x < HUT_MIN_X || drop.x >= HUT_MAX_X + 1 || drop.z < HUT_MIN_Z || drop.z >= HUT_MAX_Z + 1)
@@ -255,7 +389,10 @@ public class OmenClientTest implements FabricClientGameTest
 
         fullRainPeak = peak;
         int livePeak = peak;
-        context.runOnClient(minecraft -> System.out.println("[Omen] peak of " + livePeak + " live particles of its own, engine holds " + minecraft.particleEngine.countParticles()));
+        int stains = stainPeak;
+        context.runOnClient(minecraft -> System.out.println("[Omen] peak of " + livePeak + " live drops and splashes and " + stains + " stains of its own, engine holds " + minecraft.particleEngine.countParticles()));
+        if (stains < 30 || stains > OmenCurse.MAX_STAINS)
+            throw new AssertionError("Expected the ground spattered by a bounded number of stains, got " + stains);
         if (peak > 1400)
             throw new AssertionError("Expected a bounded rain, got " + peak + " particles alive");
         if (peak < 100)

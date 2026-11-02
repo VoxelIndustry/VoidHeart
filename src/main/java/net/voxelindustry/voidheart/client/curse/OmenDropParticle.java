@@ -30,14 +30,16 @@ final class OmenDropParticle extends SingleQuadParticle
     private static final int   MAX_LIFETIME   = 70;
     private static final float END_FADE_TICKS = 3;
 
-    // Drops right by the camera would be huge, so that close by they thin out to nothing
-    private static final float NEAR_FADE_FROM = 2;
-    private static final float NEAR_FADE_TO   = 5.5F;
+    // Closer than this a drop stops growing on screen, however near it passes, and only the last of that distance fades it
+    private static final float NEAR_SIZE_FROM = 8;
+    private static final float NEAR_FADE_FROM = 0.8F;
+    private static final float NEAR_FADE_TO   = 1.6F;
 
-    // Share of its height above or below the camera that it leans toward it. Standing straight, a drop seen from below flattens into a wide head
-    private static final float TILT = 0.65F;
+    // Share of its height above or below the camera that it leans toward it. Seen from below a drop mostly stays upright, foreshortening into a round blob
+    private static final float TILT = 0.3F;
 
     private final OmenCurse curse;
+    private final float     size;
     private final float     reach;
 
     OmenDropParticle(ClientLevel level, double x, double y, double z, double xd, double yd, double zd, float size, TextureAtlasSprite sprite, OmenCurse curse)
@@ -51,6 +53,7 @@ final class OmenDropParticle extends SingleQuadParticle
         gravity = 0;
         friction = 1;
         lifetime = MAX_LIFETIME;
+        this.size = size;
         quadSize = size;
         reach = size * HEAD_REACH;
         float shade = randomShade(random);
@@ -106,7 +109,7 @@ final class OmenDropParticle extends SingleQuadParticle
             if (foot <= surface)
             {
                 setPos(nextX, surface + reach, nextZ);
-                curse.splash(level, nextX, surface, nextZ);
+                curse.land(level, nextX, surface, nextZ);
                 remove();
                 return;
             }
@@ -139,6 +142,7 @@ final class OmenDropParticle extends SingleQuadParticle
         float nearFade = Mth.clampedMap(distance, NEAR_FADE_FROM, NEAR_FADE_TO, 0, 1);
         float endFade = Mth.clamp((lifetime - age) / END_FADE_TICKS, 0, 1);
         alpha = nearFade * endFade;
+        quadSize = size * Math.min(distance / NEAR_SIZE_FROM, 1);
 
         extractRotatedQuad(state, camera, rotation, partialTick);
     }

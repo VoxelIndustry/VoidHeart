@@ -19,8 +19,9 @@ import java.nio.ByteOrder;
  */
 final class OmenDome
 {
-    private static final int   RINGS    = 6;
-    private static final int   SEGMENTS = 16;
+    // Fine enough that the slowly varying part of the waves, carried from vertex to vertex, puts no visible corners in the rings
+    private static final int   RINGS    = 36;
+    private static final int   SEGMENTS = 100;
     private static final float RADIUS   = 100;
 
     private static final int VERTEX_COUNT = RINGS * SEGMENTS * 4;
