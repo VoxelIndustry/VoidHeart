@@ -7,7 +7,7 @@ public final class CurseTimings
 {
     public static final int ECHO_TICKS  = 90;
     public static final int OMEN_TICKS  = 300;
-    public static final int VIGIL_TICKS = 260;
+    public static final int VIGIL_TICKS = 212;
 
     private CurseTimings()
     {

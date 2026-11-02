@@ -28,6 +28,7 @@ import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
 import net.voxelindustry.voidheart.client.particle.EyeBeamParticle;
 import net.voxelindustry.voidheart.client.model.ShoulderEyeModel;
+import net.voxelindustry.voidheart.client.model.VigilFigureModel;
 import net.voxelindustry.voidheart.client.render.ShoulderEyeRender;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
@@ -82,6 +83,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.BEHOLDER, BeholderRender::new);
 
         ModelLayerRegistry.registerModelLayer(ShoulderEyeModel.LAYER, ShoulderEyeModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(VigilFigureModel.LAYER, VigilFigureModel::createBodyLayer);
         EntityRendererRegistry.register(VoidHeartEntities.SHOULDER_EYE, ShoulderEyeRender::new);
         ShoulderEyeEntity.hiddenFromLocalPick = eye ->
         {
