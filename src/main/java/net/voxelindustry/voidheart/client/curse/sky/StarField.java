@@ -39,9 +39,13 @@ public final class StarField
             .addAttribute("Seed", GpuFormat.RGBA8_UNORM)
             .build();
 
-    private static final int VERTEX_BYTES = 3 * Float.BYTES + 3 * Float.BYTES + 4 + 4;
+    public static final int VERTEX_BYTES = 3 * Float.BYTES + 3 * Float.BYTES + 4 + 4;
+    public static final int CENTER_OFFSET = 3 * Float.BYTES;
 
     private static final int[][] CORNERS = {{1, -1}, {1, 1}, {-1, 1}, {-1, -1}};
+
+    public static final int STAR_VERTICES = CORNERS.length;
+    public static final int STAR_BYTES    = STAR_VERTICES * VERTEX_BYTES;
 
     private static @Nullable GpuBuffer vertices;
     private static int indexCount;
@@ -69,6 +73,17 @@ public final class StarField
         {
             MemoryUtil.memFree(data);
         }
+    }
+
+    /**
+     * The same data as the shared mesh holds, on the heap, for a curse that needs its own mesh of these stars. Touches nothing on the GPU.
+     */
+    public static ByteBuffer vanillaStars()
+    {
+        var data = ByteBuffer.allocate(VANILLA_ATTEMPTS * STAR_BYTES).order(ByteOrder.LITTLE_ENDIAN);
+        writeStars(data);
+        data.flip();
+        return data;
     }
 
     private static int writeStars(ByteBuffer data)
