@@ -45,10 +45,12 @@ public final class RaptureRiseParticle extends SingleQuadParticle
     private static final int   RELEASE_TICKS  = 8;
     private static final float SMALLEST_DRAWN = 0.005F;
 
-    // On top of the shading of the face it came off, which particles don't get by themselves
+    // On top of the shading of the face it came off, which particles don't get by themselves. Colors above one wrap around rather than saturate
     private static final float SHADE               = 1;
     // The soil torn up from under a tinted top was in its shade, which also keeps moonlit dirt from reading as pink against the grass
     private static final float SOIL_SHADE          = 0.72F;
+    // Lifts a chip slightly above the surface it came off, for it to stand out from it
+    private static final int   LEAST_BLOCK_LIGHT   = 3;
     private static final int   LIGHT_REFRESH_TICKS = 8;
 
     private final float  fullSize;
@@ -188,7 +190,8 @@ public final class RaptureRiseParticle extends SingleQuadParticle
 
     private int lightAt(BlockPos pos)
     {
-        return level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(level, pos) : LightCoordsUtil.FULL_SKY;
+        int packed = level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(level, pos) : LightCoordsUtil.FULL_SKY;
+        return LightCoordsUtil.pack(Math.max(LightCoordsUtil.block(packed), LEAST_BLOCK_LIGHT), LightCoordsUtil.sky(packed));
     }
 
     @Override

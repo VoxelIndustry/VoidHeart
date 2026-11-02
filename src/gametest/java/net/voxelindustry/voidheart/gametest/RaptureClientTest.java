@@ -66,7 +66,8 @@ public class RaptureClientTest implements FabricClientGameTest
 
     private static final int    CHIP_SAMPLES        = 4;
     private static final float  CHIP_PUSH           = 0.03F;
-    private static final double CHIP_BRIGHTNESS_OFF = 0.15;
+    private static final double CHIP_BRIGHTNESS_LEAST = 1.15;
+    private static final double CHIP_BRIGHTNESS_MOST  = 1.6;
 
     private static final int FREEZE_SETTLE_TICKS = 20;
 
@@ -520,8 +521,8 @@ public class RaptureClientTest implements FabricClientGameTest
                 surfaceTotal[0] / CHIP_SAMPLES, surfaceTotal[1] / CHIP_SAMPLES, surfaceTotal[2] / CHIP_SAMPLES,
                 luma(chipTotal) / luma(surfaceTotal)));
         double brightness = luma(chipTotal) / luma(surfaceTotal);
-        if (mustMatch && Math.abs(brightness - 1) > CHIP_BRIGHTNESS_OFF)
-            throw new AssertionError("Expected a chip on " + site.name() + " to look like a piece of that face, its brightness is x" + brightness);
+        if (mustMatch && (brightness < CHIP_BRIGHTNESS_LEAST || brightness > CHIP_BRIGHTNESS_MOST))
+            throw new AssertionError("Expected a chip on " + site.name() + " to stand out from that face without outshining it, its brightness is x" + brightness);
     }
 
     private static void addMean(NativeImage image, int fromX, int fromY, int toX, int toY, double[] total, double weight)
