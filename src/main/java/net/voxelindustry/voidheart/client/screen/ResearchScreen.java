@@ -81,6 +81,13 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private static final int CARD_MIN      = 118;
     private static final int CARD_ROW      = 11;
     private static final int READOUT_HOVER = 3;
+    private static final int CARD_HEADER   = 15;
+    private static final int PARCHMENT_U   = 92;
+    private static final int PARCHMENT_V   = 96;
+    private static final int PARCHMENT_W   = 10;
+    private static final int PARCHMENT_H   = 11;
+    private static final int PARCHMENT_GAP = 3;
+    private static final int PARCHMENT_DIM = 0xFFB4ABBE;
 
     private static final long LEARNED_MILLIS = 7000;
     private static final long FADE_MILLIS    = 1200;
@@ -456,8 +463,14 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private void extractReadout(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
     {
         var bounds = readoutBounds();
-        var knowledge = readoutText();
-        graphics.text(font, knowledge, bounds.x() + READOUT_HOVER, bounds.y() + READOUT_HOVER, bounds.contains(mouseX, mouseY) || cardOpen > 0 ? MUTED_COLOR : READOUT_COLOR, false);
+        boolean lit = bounds.contains(mouseX, mouseY) || cardOpen > 0;
+        extractParchment(graphics, bounds.x() + READOUT_HOVER, bounds.y() + 2, lit ? 0xFFFFFFFF : PARCHMENT_DIM);
+        graphics.text(font, readoutText(), bounds.x() + READOUT_HOVER + PARCHMENT_W + PARCHMENT_GAP, bounds.y() + READOUT_HOVER, lit ? MUTED_COLOR : READOUT_COLOR, false);
+    }
+
+    private static void extractParchment(GuiGraphicsExtractor graphics, int x, int y, int tint)
+    {
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ResearchMapView.SPRITES, x, y, PARCHMENT_U, PARCHMENT_V, PARCHMENT_W, PARCHMENT_H, ResearchMapView.ATLAS, ResearchMapView.ATLAS, tint);
     }
 
     private String readoutText()
@@ -467,7 +480,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     private Bounds readoutBounds()
     {
-        return new Bounds(left + PAD + 3, height - PAD - font.lineHeight - READOUT_HOVER, font.width(readoutText()) + READOUT_HOVER * 2, font.lineHeight + READOUT_HOVER * 2);
+        return new Bounds(left + PAD + 3, height - PAD - font.lineHeight - READOUT_HOVER, PARCHMENT_W + PARCHMENT_GAP + font.width(readoutText()) + READOUT_HOVER * 2, font.lineHeight + READOUT_HOVER * 2);
     }
 
     /**
@@ -487,10 +500,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             return;
         }
 
+        var title = Component.translatable("voidheart.research.card.title");
         var rows = cardRows();
         int widest = rows.stream().filter(row -> row != null).mapToInt(row -> font.width(row.label()) + 10 + font.width(row.value())).max().orElse(0);
-        int boxWidth = Math.max(CARD_MIN, widest + PAD * 2);
-        int boxHeight = PAD * 2 + rows.stream().mapToInt(row -> row == null ? 5 : CARD_ROW).sum();
+        int boxWidth = Math.max(CARD_MIN, Math.max(widest, PARCHMENT_W + PARCHMENT_GAP + font.width(title)) + PAD * 2);
+        int boxHeight = PAD * 2 + CARD_HEADER + rows.stream().mapToInt(row -> row == null ? 5 : CARD_ROW).sum();
 
         var readout = readoutBounds();
         int x = readout.x();
@@ -511,6 +525,9 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
         tablet(graphics, cardBounds);
         int y = cardBounds.y() + PAD;
+        extractParchment(graphics, x + PAD, y, 0xFFFFFFFF);
+        graphics.text(font, title, x + PAD + PARCHMENT_W + PARCHMENT_GAP, y + 2, TEXT_COLOR, false);
+        y += CARD_HEADER;
         for (var row : rows)
         {
             if (row == null)

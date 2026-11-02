@@ -4,6 +4,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.Bootstrap;
@@ -50,6 +51,7 @@ class PlayerKnowledgeTest
     void setUp()
     {
         data = new PlayerKnowledge();
+        data.addInsights(-PlayerKnowledge.STARTING_INSIGHTS);
         data.bind(Optional.of(GlobalPos.of(ResourceKey.create(Registries.DIMENSION, Identifier.withDefaultNamespace("overworld")), BlockPos.ZERO)));
         data.settle(0, RULES, TREE);
     }
@@ -57,6 +59,26 @@ class PlayerKnowledgeTest
     private static long seconds(double seconds)
     {
         return (long) (seconds * 20);
+    }
+
+    @Test
+    void new_thenHoldsOneInsightThatWasNotBought()
+    {
+        var fresh = new PlayerKnowledge();
+
+        assertThat(fresh.getInsights()).isEqualTo(1);
+        assertThat(fresh.getInsightsBought()).isZero();
+    }
+
+    @Test
+    void codec_givenStartingInsightSpent_thenDoesNotComeBack()
+    {
+        var fresh = new PlayerKnowledge();
+        fresh.reveal(ROOT, TREE);
+
+        var saved = PlayerKnowledge.CODEC.encodeStart(NbtOps.INSTANCE, fresh).getOrThrow();
+
+        assertThat(PlayerKnowledge.CODEC.parse(NbtOps.INSTANCE, saved).getOrThrow().getInsights()).isZero();
     }
 
     @Test

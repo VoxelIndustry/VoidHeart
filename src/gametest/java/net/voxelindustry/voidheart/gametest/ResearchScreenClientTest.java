@@ -71,14 +71,17 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.waitTicks(30);
             captureSizes(context, "fresh");
 
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != PlayerKnowledge.STARTING_INSIGHTS)
+                throw new AssertionError("A new player should start with one insight");
+
             click(context, context.computeOnClient(client -> screen(client).insightPosition()));
             context.waitTicks(25);
-            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 0)
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 1)
                 throw new AssertionError("An insight should not be crafted without the knowledge for it");
 
             click(context, context.computeOnClient(client -> screen(client).eyePosition()));
             context.waitTicks(25);
-            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 0)
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 1)
                 throw new AssertionError("The eye no longer crafts anything");
 
             var readout = context.computeOnClient(client -> screen(client).readoutPosition());
@@ -95,7 +98,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.takeScreenshot("research-ui-can-craft");
 
             click(context, context.computeOnClient(client -> screen(client).insightPosition()));
-            context.waitFor(client -> ResearchScreen.snapshot.insights() == 1, 100);
+            context.waitFor(client -> ResearchScreen.snapshot.insights() == 2, 100);
             context.getInput().setCursorPos(10, 10);
             context.takeScreenshot("research-ui-craft-flight");
             context.waitTicks(20);
@@ -110,7 +113,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.waitTicks(5);
             if (!ALTAR_RITE.equals(context.computeOnClient(client -> screen(client).selected())))
                 throw new AssertionError("A click on a node should select it");
-            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 1)
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.insights()) != 2)
                 throw new AssertionError("Selecting must not spend anything");
 
             click(context, context.computeOnClient(client -> screen(client).actionPosition()));
@@ -134,7 +137,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             });
             context.waitTicks(25);
             context.getInput().pressKey(InputConstants.KEY_R);
-            context.waitFor(client -> ResearchScreen.snapshot.insights() == 1, 100);
+            context.waitFor(client -> ResearchScreen.snapshot.insights() == 2, 100);
 
             server.runOnServer(minecraft ->
             {

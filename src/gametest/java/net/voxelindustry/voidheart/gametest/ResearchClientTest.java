@@ -117,7 +117,7 @@ public class ResearchClientTest implements FabricClientGameTest
             context.waitTicks(10);
 
             var bought = context.computeOnClient(client -> ResearchScreen.snapshot);
-            if (bought.insights() != 0 || !bought.revealed().contains(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")) || bought.revealed().contains(PATIENT_STUDY))
+            if (bought.insights() != 1 || !bought.revealed().contains(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")) || bought.revealed().contains(PATIENT_STUDY))
                 throw new AssertionError("Only the root should have been revealed, the other one is not connected yet: " + bought);
             if (Math.abs(bought.nextInsightCost() - 12) > 1E-6)
                 throw new AssertionError("Expected the next insight 20% pricier, got " + bought.nextInsightCost());

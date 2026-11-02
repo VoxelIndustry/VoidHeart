@@ -19,6 +19,8 @@ import java.util.Set;
  */
 public class PlayerKnowledge
 {
+    public static final int STARTING_INSIGHTS = 1;
+
     private static final double FINISHED = 1E-6;
 
     public static final Codec<PlayerKnowledge> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -63,7 +65,7 @@ public class PlayerKnowledge
 
     public PlayerKnowledge()
     {
-        this(0, -1, 0, 0, Map.of(), List.of(), List.of(), Map.of(), Optional.empty(), Optional.empty());
+        this(0, -1, STARTING_INSIGHTS, 0, Map.of(), List.of(), List.of(), Map.of(), Optional.empty(), Optional.empty());
     }
 
     private PlayerKnowledge(double knowledge, long lastSettled, int insights, int insightsBought, Map<Identifier, Integer> fed, List<Identifier> revealed,
