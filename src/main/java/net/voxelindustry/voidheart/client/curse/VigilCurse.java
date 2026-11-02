@@ -1,10 +1,12 @@
 package net.voxelindustry.voidheart.client.curse;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -29,6 +31,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.model.VigilFigureModel;
+import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -50,6 +53,7 @@ public final class VigilCurse extends ClientCurse
 
     private static final RenderType BODY_TYPE = RenderTypes.entityCutoutDissolve(TEXTURE, MASK);
     private static final RenderType GLOW_TYPE = RenderTypes.eyes(GLOW);
+    private static final RenderType SHADE_TYPE = RenderTypes.entityShadow(Identifier.fromNamespaceAndPath(MODID, "textures/entity/curse_vigil_shade.png"));
 
     private static final String MESSAGE_KEY   = "curse.voidheart.vigil.message";
     private static final int    MESSAGE_COLOR = 0x4FC86A;
@@ -57,11 +61,10 @@ public final class VigilCurse extends ClientCurse
     private static final int   COUNT         = 7;
     private static final int   LEADER_INDEX  = 3;
     private static final float LEADER_SCALE  = 1.3F;
-    // The model stands two blocks tall with the point of its hood, this brings it down to the height of a person
-    private static final float FIGURE_SCALE  = 0.95F;
-    private static final float FIGURE_WIDTH  = 0.8F;
-    private static final float FIGURE_HEIGHT = 2;
-    private static final float MODEL_FEET_Y  = 24;
+    // Taller than anyone should be: 2.4 blocks from hem to the point of the hood
+    private static final float FIGURE_SCALE  = 0.86F;
+    private static final float FIGURE_WIDTH  = 0.7F;
+    private static final float FIGURE_HEIGHT = 2.78F;
     private static final float MODEL_UNITS   = 16;
 
     // Placement
@@ -72,9 +75,11 @@ public final class VigilCurse extends ClientCurse
     private static final float RADIUS_MIN        = 2.2F;
     private static final float RADIUS_LEADER_MIN = 1.5F;
     private static final float SPACING           = 0.9F;
-    private static final float HOVER_MIN         = 0.6F;
-    private static final float HOVER_MAX         = 1;
+    private static final float HOVER_MIN         = 1;
+    private static final float HOVER_MAX         = 1.3F;
     private static final float HOVER_CRAMPED     = 0.02F;
+    // Up close they float lower, or their hoods would be above the player's view
+    private static final float HOVER_CLOSE_MIN   = 0.25F;
     private static final float SCAN_FROM_ABOVE   = 2.5F;
     private static final int   SCAN_BLOCKS       = 8;
     private static final float DROP_LIMIT        = 3;
@@ -131,6 +136,11 @@ public final class VigilCurse extends ClientCurse
     // World light, though never so dark that the silhouette is lost
     private static final int BLOCK_LIGHT_FLOOR = 5;
 
+    // Faint shade on the floor below, what shows that they float
+    private static final float SHADE_RADIUS = 0.8F;
+    private static final float SHADE_ALPHA  = 0.5F;
+    private static final float SHADE_LIFT   = 0.02F;
+
     // Sounds
     private static final float DRONE_VOLUME  = 0.35F;
     private static final float DRONE_PITCH   = 0.5F;
@@ -139,18 +149,22 @@ public final class VigilCurse extends ClientCurse
     private static final float VANISH_VOLUME = 0.8F;
     private static final float VANISH_PITCH  = 0.5F;
 
-    // Burst left at each spot
-    private static final int   BURST_INK    = 2;
-    private static final int   BURST_SMOKE  = 12;
-    private static final float BURST_RADIUS = 0.35F;
-    private static final float BURST_SPEED  = 0.06F;
+    // Thin smoke left at each spot, gone almost as soon as they are
+    private static final int   BURST_SMOKE         = 6;
+    private static final float BURST_SIZE          = 0.65F;
+    private static final float BURST_RADIUS        = 0.3F;
+    private static final float BURST_SPEED         = 0.05F;
+    private static final int   BURST_LIFETIME_MIN  = 4;
+    private static final int   BURST_LIFETIME_MORE = 4;
 
-    private final List<Figure> figures = new ArrayList<>(COUNT);
+    private final List<Figure>   figures = new ArrayList<>(COUNT);
+    private final List<Particle> burst   = new ArrayList<>();
     private @Nullable VigilFigureModel model;
     private @Nullable SoundInstance    drone;
     private @Nullable SoundInstance    hold;
 
     private int drawnLastFrame;
+    private int shadesLastFrame;
 
     public VigilCurse(long seed, int duration)
     {
@@ -171,6 +185,22 @@ public final class VigilCurse extends ClientCurse
     public int drawnLastFrame()
     {
         return drawnLastFrame;
+    }
+
+    /**
+     * How many shades were submitted on the floor last frame, for tests.
+     */
+    public int shadesLastFrame()
+    {
+        return shadesLastFrame;
+    }
+
+    /**
+     * How much of the smoke left by the vanishing is still around, for tests.
+     */
+    public long burstAlive()
+    {
+        return burst.stream().filter(Particle::isAlive).count();
     }
 
     @Override
@@ -197,7 +227,7 @@ public final class VigilCurse extends ClientCurse
             stopSounds();
             playInsideHead(minecraft, SoundEvents.BEACON_DEACTIVATE, VANISH_VOLUME, VANISH_PITCH, false);
             for (var figure : figures)
-                figure.burst(level);
+                figure.burst(minecraft);
         }
     }
 
@@ -205,6 +235,7 @@ public final class VigilCurse extends ClientCurse
     protected void onEnd()
     {
         stopSounds();
+        burst.clear();
     }
 
     private void stopSounds()
@@ -238,7 +269,7 @@ public final class VigilCurse extends ClientCurse
         for (int i = runes.size() - 1; i > 0; i--)
             Collections.swap(runes, i, random.nextInt(i + 1));
 
-        var spots = new Vec3[COUNT];
+        var spots = new Spot[COUNT];
         for (int i : PLACING_ORDER)
         {
             float scale = scaleOf(i);
@@ -269,7 +300,7 @@ public final class VigilCurse extends ClientCurse
     /**
      * The farthest spot along a ray from the player where the figure stands in the open, in sight of the player and clear of the others.
      */
-    private static @Nullable Vec3 findOnRay(Level level, LocalPlayer player, Vec3 eye, Vec3[] spots, int index, float dirX, float dirZ, float radius, float hover, float neededHeight)
+    private static @Nullable Spot findOnRay(Level level, LocalPlayer player, Vec3 eye, Spot[] spots, int index, float dirX, float dirZ, float radius, float hover, float neededHeight)
     {
         float scale = scaleOf(index);
         float nearest = index == LEADER_INDEX ? RADIUS_LEADER_MIN : RADIUS_MIN;
@@ -280,29 +311,32 @@ public final class VigilCurse extends ClientCurse
             double z = player.getZ() + dirZ * distance;
             if (!hasRoom(spots, index, x, z))
                 continue;
-            var spot = standAt(level, player, eye, cursor, x, z, hover, scale, neededHeight);
+            float closeness = Mth.clamp(distance / (RADIUS - RADIUS_JITTER), HOVER_CLOSE_MIN, 1);
+            var spot = standAt(level, player, eye, cursor, x, z, hover * closeness, scale, neededHeight);
             if (spot != null)
                 return spot;
         }
         return null;
     }
 
-    private static boolean hasRoom(Vec3[] spots, int index, double x, double z)
+    private static boolean hasRoom(Spot[] spots, int index, double x, double z)
     {
         for (int other = 0; other < spots.length; other++)
         {
             if (other != index && spots[other] != null
-                    && Math.hypot(spots[other].x - x, spots[other].z - z) < FIGURE_WIDTH * SPACING * (scaleOf(index) + scaleOf(other)) / 2)
+                    && Math.hypot(spots[other].x() - x, spots[other].z() - z) < FIGURE_WIDTH * SPACING * (scaleOf(index) + scaleOf(other)) / 2)
                 return false;
         }
         return true;
     }
 
-    private static @Nullable Vec3 standAt(Level level, LocalPlayer player, Vec3 eye, BlockPos.MutableBlockPos cursor, double x, double z, float hover, float scale, float neededHeight)
+    private static @Nullable Spot standAt(Level level, LocalPlayer player, Vec3 eye, BlockPos.MutableBlockPos cursor, double x, double z, float hover, float scale, float neededHeight)
     {
         double floor = floorBelow(level, cursor, x, player.getY() + SCAN_FROM_ABOVE, z);
         // Over a drop they simply hang level with the player
-        double base = Double.isNaN(floor) || player.getY() - floor > DROP_LIMIT ? player.getY() : floor;
+        if (player.getY() - floor > DROP_LIMIT)
+            floor = Double.NaN;
+        double base = Double.isNaN(floor) ? player.getY() : floor;
         float height = FIGURE_HEIGHT * scale;
 
         for (float tryHover : new float[] {hover, HOVER_CRAMPED})
@@ -311,7 +345,7 @@ public final class VigilCurse extends ClientCurse
             if (isOpen(level, x, feet, z, FIGURE_WIDTH * scale, neededHeight)
                     && inSight(level, player, eye, x, feet + height * SIGHT_AT_CHEST, z)
                     && (neededHeight < height || inSight(level, player, eye, x, feet + height * SIGHT_AT_HOOD, z)))
-                return new Vec3(x, feet, z);
+                return new Spot(x, feet, z, floor);
         }
         return null;
     }
@@ -350,7 +384,7 @@ public final class VigilCurse extends ClientCurse
      * A figure whose whole ray is walled off falls in line along the rays of the others, farthest first, the way they would stand in a corridor.
      * With no room left at all they would rather share a spot than stand in a wall.
      */
-    private static Vec3 fallInLine(Level level, LocalPlayer player, Vec3 eye, Vec3[] spots, int index)
+    private static Spot fallInLine(Level level, LocalPlayer player, Vec3 eye, Spot[] spots, int index)
     {
         var cursor = new BlockPos.MutableBlockPos();
         for (float distance = RADIUS; distance >= RADIUS_LEADER_MIN; distance -= RADIUS_STEP)
@@ -360,8 +394,8 @@ public final class VigilCurse extends ClientCurse
                 if (spots[other] == null)
                     continue;
 
-                double dirX = spots[other].x - player.getX();
-                double dirZ = spots[other].z - player.getZ();
+                double dirX = spots[other].x() - player.getX();
+                double dirZ = spots[other].z() - player.getZ();
                 double length = Math.hypot(dirX, dirZ);
                 if (length < 1.0E-3)
                     continue;
@@ -382,13 +416,14 @@ public final class VigilCurse extends ClientCurse
                 return spots[other];
         }
         // Walled in on every side. The only certainly open place left is the one the player stands in
-        return player.position().add(0, HOVER_CRAMPED, 0);
+        return new Spot(player.getX(), player.getY() + HOVER_CRAMPED, player.getZ(), Double.NaN);
     }
 
     @Override
     public void collectSubmits(LevelRenderContext context)
     {
         drawnLastFrame = 0;
+        shadesLastFrame = 0;
         if (model == null)
             return;
 
@@ -417,6 +452,24 @@ public final class VigilCurse extends ClientCurse
     }
 
     /**
+     * Where a figure hangs, and the floor found below it, NaN over a drop.
+     */
+    private record Spot(double x, double y, double z, double floor)
+    {
+    }
+
+    /**
+     * How the pointing finger leans off the exact line to the player's eye.
+     *
+     * @param degrees       how far off
+     * @param inward        how much more it heads for the middle of the body than the line does, in the unit direction
+     * @param acrossTheLine how far it turns past the line, positive when that heads for the player rather than away
+     */
+    public record FingerLean(float degrees, float inward, float acrossTheLine)
+    {
+    }
+
+    /**
      * One figure. Its spot never changes once chosen, but it keeps turning to face the player.
      */
     public final class Figure
@@ -424,6 +477,7 @@ public final class VigilCurse extends ClientCurse
         private final double x;
         private final double y;
         private final double z;
+        private final double floor;
         private final float  scale;
         private final boolean leader;
         private final float  phase;
@@ -452,11 +506,12 @@ public final class VigilCurse extends ClientCurse
         private float   targetZO;
         private int     light;
 
-        private Figure(Vec3 spot, float scale, boolean leader, int rune, float phase, float phase2, float tilt, float splay, int pointDelay, int hoodDelay)
+        private Figure(Spot spot, float scale, boolean leader, int rune, float phase, float phase2, float tilt, float splay, int pointDelay, int hoodDelay)
         {
-            x = spot.x;
-            y = spot.y;
-            z = spot.z;
+            x = spot.x();
+            y = spot.y();
+            z = spot.z();
+            floor = spot.floor();
             this.scale = scale;
             this.leader = leader;
             this.phase = phase;
@@ -489,6 +544,14 @@ public final class VigilCurse extends ClientCurse
             return z;
         }
 
+        /**
+         * The floor found below it, NaN when it hangs over a drop.
+         */
+        public double floor()
+        {
+            return floor;
+        }
+
         public float scale()
         {
             return scale;
@@ -510,6 +573,46 @@ public final class VigilCurse extends ClientCurse
         public float yaw()
         {
             return yaw;
+        }
+
+        /**
+         * Of the pose last drawn.
+         */
+        public FingerLean fingerLean()
+        {
+            var base = new Vector3f();
+            var direction = new Vector3f();
+            model.fingerLine(bodyState, base, direction);
+            var toEye = new Vector3f(pose.targetX, pose.targetY, pose.targetZ).sub(base).normalize();
+            float across = (direction.x - toEye.x) * toEye.x + (direction.y - toEye.y) * toEye.y;
+            return new FingerLean((float) Math.toDegrees(direction.angle(toEye)), toEye.x - direction.x, across);
+        }
+
+        /**
+         * Where the pointing finger of the pose last drawn starts and ends in the world, first the start then the end.
+         */
+        public Vec3[] fingerEnds()
+        {
+            var base = new Vector3f();
+            var direction = new Vector3f();
+            model.fingerLine(bodyState, base, direction);
+            var tip = new Vector3f(direction).mul(VigilFigureModel.FINGER_LENGTH).add(base);
+            return new Vec3[] {toWorld(base), toWorld(tip)};
+        }
+
+        /**
+         * The inverse of what {@link #tick} does to the position of the player's eye.
+         */
+        private Vec3 toWorld(Vector3f inModel)
+        {
+            float radians = yaw * Mth.DEG_TO_RAD;
+            float cos = Mth.cos(radians);
+            float sin = Mth.sin(radians);
+            float blocks = scale / MODEL_UNITS;
+            return new Vec3(
+                    x + (inModel.x * cos + inModel.z * sin) * blocks,
+                    y + (VigilFigureModel.HEM_Y - inModel.y) * blocks,
+                    z + (inModel.x * sin - inModel.z * cos) * blocks);
         }
 
         /**
@@ -546,7 +649,7 @@ public final class VigilCurse extends ClientCurse
             float sin = Mth.sin(radians);
             float units = MODEL_UNITS / scale;
             targetX = (float) (dx * cos + dz * sin) * units;
-            targetY = MODEL_FEET_Y - (float) dy * units;
+            targetY = VigilFigureModel.HEM_Y - (float) dy * units;
             targetZ = (float) (dx * sin - dz * cos) * units;
 
             float neckToTargetY = targetY - VigilFigureModel.NECK_Y;
@@ -602,7 +705,7 @@ public final class VigilCurse extends ClientCurse
             poseStack.rotateDegrees(Axis.YP, 180 - Mth.rotLerp(partialTicks, yawO, yaw));
             poseStack.scale(scale, scale, scale);
             poseStack.scale(-1, -1, 1);
-            poseStack.translate(0, -MODEL_FEET_Y / MODEL_UNITS, 0);
+            poseStack.translate(0, -VigilFigureModel.HEM_Y / MODEL_UNITS, 0);
 
             if (bodyAlpha > 0)
                 collector.submitModel(model, bodyState, poseStack, BODY_TYPE, light, OverlayTexture.NO_OVERLAY, ARGB.white(bodyAlpha), null, 0);
@@ -619,7 +722,43 @@ public final class VigilCurse extends ClientCurse
             }
 
             poseStack.popPose();
+
+            if (bodyAlpha > 0 && !Double.isNaN(floor))
+            {
+                submitShade(poseStack, collector, camera, bodyAlpha);
+                shadesLastFrame++;
+            }
             return true;
+        }
+
+        /**
+         * One soft dark blob on the floor. The shadow render type keeps it off the surface it lies on, and it's drawn once, from above.
+         */
+        private void submitShade(PoseStack poseStack, SubmitNodeCollector collector, Vec3 camera, float fade)
+        {
+            float radius = SHADE_RADIUS * scale;
+            int color = ARGB.white(SHADE_ALPHA * fade);
+
+            poseStack.pushPose();
+            poseStack.translate((float) (x - camera.x), (float) (floor + SHADE_LIFT - camera.y), (float) (z - camera.z));
+            collector.submitCustomGeometry(poseStack, SHADE_TYPE, (entry, buffer) ->
+            {
+                shadeVertex(entry, buffer, color, -radius, -radius, 0, 0);
+                shadeVertex(entry, buffer, color, -radius, radius, 0, 1);
+                shadeVertex(entry, buffer, color, radius, radius, 1, 1);
+                shadeVertex(entry, buffer, color, radius, -radius, 1, 0);
+            });
+            poseStack.popPose();
+        }
+
+        private static void shadeVertex(PoseStack.Pose entry, VertexConsumer buffer, int color, float x, float z, float u, float v)
+        {
+            buffer.addVertex(entry, x, 0, z)
+                    .setColor(color)
+                    .setUv(u, v)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(LightCoordsUtil.FULL_BRIGHT)
+                    .setNormal(entry, 0, 1, 0);
         }
 
         private float runeLevel(float time)
@@ -639,10 +778,10 @@ public final class VigilCurse extends ClientCurse
             return Mth.clamp(ramp * (1 - HOOD_FLICKER / 2 + flicker * HOOD_FLICKER), 0, 1);
         }
 
-        private void burst(ClientLevel level)
+        private void burst(Minecraft minecraft)
         {
             float height = FIGURE_HEIGHT * scale;
-            for (int i = 0; i < BURST_INK + BURST_SMOKE; i++)
+            for (int i = 0; i < BURST_SMOKE; i++)
             {
                 double px = x + (random.nextDouble() - 0.5) * 2 * BURST_RADIUS;
                 double py = y + random.nextDouble() * height;
@@ -650,7 +789,14 @@ public final class VigilCurse extends ClientCurse
                 double vx = (px - x) * BURST_SPEED / BURST_RADIUS;
                 double vy = (random.nextDouble() - 0.3) * BURST_SPEED;
                 double vz = (pz - z) * BURST_SPEED / BURST_RADIUS;
-                level.addParticle(i < BURST_INK ? ParticleTypes.SQUID_INK : ParticleTypes.SMOKE, px, py, pz, vx, vy, vz);
+
+                var particle = minecraft.particleEngine.createParticle(ParticleTypes.SMOKE, px, py, pz, vx, vy, vz);
+                if (particle != null)
+                {
+                    particle.scale(BURST_SIZE);
+                    particle.setLifetime(BURST_LIFETIME_MIN + random.nextInt(BURST_LIFETIME_MORE));
+                    burst.add(particle);
+                }
             }
         }
     }

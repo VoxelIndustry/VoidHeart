@@ -22,7 +22,10 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.curse.VigilCurse;
+import net.voxelindustry.voidheart.client.model.VigilFigureModel;
 import net.voxelindustry.voidheart.common.curse.CurseTimings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +46,14 @@ public class VigilClientTest implements FabricClientGameTest
     private static final int GLOWING_AGE  = 150;
     private static final int VANISH_AGE   = 200;
     private static final int VANISHED_AGE = 205;
+
+    private static final float FINGER_LEAN_MIN = 8;
+    private static final float FINGER_LEAN_MAX = 35;
+
+    private static final int    LARGE_HEIGHT        = 720;
+    private static final int    FINGER_PIXELS_LONG  = 20;
+    private static final int    FINGER_PIXELS_THICK = 4;
+    private static final Logger LOGGER              = LoggerFactory.getLogger(VigilClientTest.class);
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -107,6 +118,8 @@ public class VigilClientTest implements FabricClientGameTest
             throw new AssertionError("Expected the server to know of no new entity");
         if (context.computeOnClient(minecraft -> curse().drawnLastFrame()) != 7)
             throw new AssertionError("Expected the seven figures to be drawn");
+        if (context.computeOnClient(minecraft -> curse().shadesLastFrame()) != 7)
+            throw new AssertionError("Expected a shade on the floor below each of them");
 
         waitForAge(context, 80);
         context.takeScreenshot("vigil-" + label + "-04-raising");
@@ -115,8 +128,10 @@ public class VigilClientTest implements FabricClientGameTest
 
         waitForAge(context, POINTED_AGE);
         context.takeScreenshot("vigil-" + label + "-05-pointing");
+        context.takeScreenshot(TestScreenshotOptions.of("vigil-" + label + "-05-large").withSize(1280, 720));
         if (messages(context) != 1)
             throw new AssertionError("Expected the message once the arms are up");
+        expectFingersLeanIn(context);
 
         waitForAge(context, 113);
         context.takeScreenshot("vigil-" + label + "-06-hoods-lighting");
@@ -129,8 +144,14 @@ public class VigilClientTest implements FabricClientGameTest
         context.takeScreenshot("vigil-" + label + "-09-vanishing");
         waitForAge(context, VANISHED_AGE);
         context.takeScreenshot("vigil-" + label + "-10-after-vanish");
-        if (context.computeOnClient(minecraft -> curse().drawnLastFrame()) != 0)
+        if (context.computeOnClient(minecraft -> curse().drawnLastFrame() + curse().shadesLastFrame()) != 0)
             throw new AssertionError("Expected nothing drawn once they vanished");
+
+        waitForAge(context, VANISH_AGE + 10);
+        long smoke = context.computeOnClient(minecraft -> curse().burstAlive());
+        if (smoke != 0)
+            throw new AssertionError("Expected the view empty 10 ticks after they vanished, " + smoke + " wisps of smoke left");
+        context.takeScreenshot("vigil-" + label + "-11-empty");
 
         context.waitFor(minecraft -> CurseDirector.active() == null, CurseTimings.VIGIL_TICKS);
         context.waitTicks(3);
@@ -365,12 +386,16 @@ public class VigilClientTest implements FabricClientGameTest
             for (var figure : curse().figures())
             {
                 double hover = figure.y() - (top + 1);
-                if (hover < 0.6 || hover > 1)
+                if (hover < 1 || hover > 1.3)
                     throw new AssertionError("Expected a figure hanging level with the player over the drop, got it " + hover + " from their feet");
+                if (!Double.isNaN(figure.floor()))
+                    throw new AssertionError("Expected no floor and so no shade over the drop, got " + figure.floor());
             }
         });
         waitForAge(context, GLOWING_AGE);
         context.takeScreenshot("vigil-over-drop");
+        if (context.computeOnClient(minecraft -> curse().shadesLastFrame()) != 0)
+            throw new AssertionError("Expected no shade drawn over the drop");
         server.runCommand("voidheart curse stop @a");
         server.runCommand("fill -1 " + top + " -1 2 " + top + " 2 minecraft:air");
         context.waitTicks(3);
@@ -457,6 +482,45 @@ public class VigilClientTest implements FabricClientGameTest
     }
 
     /**
+     * From where the player stands the finger must show its length and head for them, never past them.
+     */
+    private static void expectFingersLeanIn(ClientGameTestContext context)
+    {
+        context.runOnClient(minecraft ->
+        {
+            for (var figure : curse().figures())
+            {
+                var lean = figure.fingerLean();
+                if (lean.degrees() < FINGER_LEAN_MIN || lean.degrees() > FINGER_LEAN_MAX)
+                    throw new AssertionError("Expected the finger a little off the line to the eye, got " + lean);
+                if (lean.inward() <= 0 || lean.acrossTheLine() <= 0)
+                    throw new AssertionError("Expected the finger to lean in toward the player, got " + lean);
+
+                var ends = figure.fingerEnds();
+                float focal = (float) (LARGE_HEIGHT / 2D / Math.tan(Math.toRadians(minecraft.options.fov().get()) / 2));
+                double distance = ends[0].distanceTo(minecraft.player.getEyePosition());
+                double length = onScreenLength(minecraft.player.getEyePosition(), ends[0], ends[1], focal);
+                double thickness = VigilFigureModel.FINGER_WIDTH * figure.scale() / 16 / distance * focal;
+                LOGGER.info("Vigil finger at {} blocks: {} px long, {} px thick, leaning {} degrees", distance, length, thickness, lean.degrees());
+                if (length < FINGER_PIXELS_LONG || thickness < FINGER_PIXELS_THICK)
+                    throw new AssertionError("Expected the finger to show clearly at " + LARGE_HEIGHT + " pixels high, got it " + length + " long and " + thickness + " thick");
+            }
+        });
+    }
+
+    /**
+     * How long a segment shows on a screen looking right at its start.
+     */
+    private static double onScreenLength(Vec3 eye, Vec3 from, Vec3 to, float focal)
+    {
+        var forward = from.subtract(eye).normalize();
+        var toEnd = to.subtract(eye);
+        double depth = toEnd.dot(forward);
+        double across = toEnd.subtract(forward.scale(depth)).length();
+        return across / depth * focal;
+    }
+
+    /**
      * On open ground: a half circle in even steps centered on where the player looks, hovering over the ground.
      */
     private static void expectOnArc(ClientGameTestContext context)
@@ -480,8 +544,10 @@ public class VigilClientTest implements FabricClientGameTest
                     throw new AssertionError("Expected figure " + i + " at " + (i - 3) * 30 + " degrees from the look, got " + angle);
 
                 double hover = figure.y() - (GROUND + 1);
-                if (hover < 0.6 || hover > 1)
-                    throw new AssertionError("Expected figure " + i + " hovering 0.6 to 1 block over the ground, got " + hover);
+                if (hover < 1 || hover > 1.3)
+                    throw new AssertionError("Expected figure " + i + " hovering 1 to 1.3 blocks over the ground, got " + hover);
+                if (figure.floor() != GROUND + 1)
+                    throw new AssertionError("Expected figure " + i + " to have found the ground, for its shade, got " + figure.floor());
             }
         });
     }
