@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -223,7 +224,7 @@ public class PermeableBarrierScreen extends AbstractContainerScreen<PermeableBar
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
-        if (isOverAppearance(event.x(), event.y()) && (event.button() == 0 || event.button() == 1))
+        if (isOverAppearance(event.x(), event.y()) && (event.button() == InputConstants.MOUSE_BUTTON_LEFT || event.button() == InputConstants.MOUSE_BUTTON_RIGHT))
         {
             send(BarrierConfigurePayload.of(menu.getCarried().isEmpty() ? Action.CLEAR_APPEARANCE : Action.SET_APPEARANCE));
             return true;
