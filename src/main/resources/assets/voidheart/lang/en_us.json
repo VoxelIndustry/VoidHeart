@@ -214,6 +214,7 @@
   "yacl3.config.voidheart:config.shoulderEyeRange.desc": "How far from its owner a Shoulder Eye fires at the mobs hunting them and the players who hurt them.",
   "yacl3.config.voidheart:config.shoulderEyeRegenSeconds": "Regrowth Seconds",
   "yacl3.config.voidheart:config.shoulderEyeRegenSeconds.desc": "How many seconds a slain Shoulder Eye takes to grow back before flying back to its owner.",
+  "curse.voidheart.vigil.message": "Pilgrims: We were you. You will be us. Bound in the void.",
   "research.voidheart.altar_rite": "Rite of the Altar",
   "research.voidheart.altar_rite.desc": "How to raise an altar to what lies outside. Unlocks the Void Altar.",
   "research.voidheart.void_flesh": "Flesh of the Void",

@@ -26,6 +26,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
+import net.voxelindustry.voidheart.common.curse.Corruption;
+import net.voxelindustry.voidheart.common.curse.CursePayloads;
+import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
@@ -117,6 +120,11 @@ public class VoidHeart implements ModInitializer
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
         ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
 
+        Corruption.register();
+        CursePayloads.register();
+        ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
+        ServerPlayerEvents.LEAVE.register(Curses::onLeave);
+
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
         PayloadTypeRegistry.clientboundPlay().register(LeyDebugPayload.TYPE, LeyDebugPayload.CODEC);
         ServerTickEvents.END_SERVER_TICK.register(LeyDebugView::tickServer);
@@ -151,6 +159,7 @@ public class VoidHeart implements ModInitializer
             OculusLeyPayloads.clear();
             OculusSightPayloads.clear();
             ShoulderEyes.clear();
+            Curses.clear();
         });
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
