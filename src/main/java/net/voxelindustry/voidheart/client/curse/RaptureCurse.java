@@ -1,17 +1,11 @@
 package net.voxelindustry.voidheart.client.curse;
 
-import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import com.mojang.renderpearl.api.textures.FilterMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -36,18 +30,15 @@ import net.voxelindustry.voidheart.client.curse.sky.StarField;
 import net.voxelindustry.voidheart.common.curse.RaptureLift;
 import org.joml.Vector4f;
 import org.jspecify.annotations.Nullable;
-import org.lwjgl.system.MemoryUtil;
 
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The sky notices the player. Every star opens into an eye, all of them come to stare straight at the player, the ground starts coming apart upward,
- * and a mouth opens at the zenith to take them. Only the lift is real, see {@link RaptureLift}.
+ * and the sky tears open at the zenith to take them, see {@link RaptureMass}. Only the lift is real, see {@link RaptureLift}.
  */
 public final class RaptureCurse extends ClientCurse
 {
@@ -63,46 +54,6 @@ public final class RaptureCurse extends ClientCurse
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA))
             .withCull(false)
             .build();
-
-    // The mouth is expensive per pixel but drawn on a coarse grid, so each cell is worked out once a frame into a small texture, however large it is on screen
-    private static final RenderPipeline MOUTH_BAKE_PIPELINE = RenderPipeline.builder(RenderPipelines.GLOBALS_SNIPPET)
-            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/curse_rapture_zenith_bake"))
-            .withBindGroupLayout(CurseSkyUniform.BINDINGS)
-            .withVertexShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith_bake"))
-            .withFragmentShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith_bake"))
-            .withVertexBinding(0, DefaultVertexFormat.POSITION)
-            .withPrimitiveTopology(PrimitiveTopology.QUADS)
-            .withColorTargetState(ColorTargetState.DEFAULT)
-            .withCull(false)
-            .build();
-
-    private static final RenderPipeline MOUTH_PIPELINE = RenderPipeline.builder(RenderPipelines.GLOBALS_SNIPPET)
-            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/curse_rapture_zenith"))
-            .withBindGroupLayout(BindGroupLayouts.PROJECTION)
-            .withBindGroupLayout(CurseSkyUniform.BINDINGS)
-            .withBindGroupLayout(BindGroupLayouts.SAMPLER0)
-            .withVertexShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith"))
-            .withFragmentShader(Identifier.fromNamespaceAndPath(MODID, "core/curse_rapture_zenith"))
-            .withVertexBinding(0, DefaultVertexFormat.POSITION)
-            .withPrimitiveTopology(PrimitiveTopology.QUADS)
-            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-            .withCull(false)
-            .build();
-
-    // The same as BAKED_SIZE in the zenith shaders, one texel to a cell of the mouth's grid: enough for the whole quad at 72 cells per half width of 0.7
-    private static final int MOUTH_BAKED_SIZE = 206;
-
-    // Share of the opening spent as a thin seam before the jaws part
-    private static final float MOUTH_SEAM_SHARE   = 0.26F;
-    // How open the mouth is once split, then how much wider it keeps getting until the lift ends
-    private static final float MOUTH_SPLIT_OPEN   = 0.84F;
-    private static final float MOUTH_WIDENING     = 0.0009F;
-    private static final float MOUTH_WIDEST       = 1.06F;
-    // A share of how open it is, and how many radians a tick
-    private static final float MOUTH_BREATH       = 0.035F;
-    private static final float MOUTH_BREATH_RATE  = 0.075F;
-    private static final float MOUTH_SHUDDER      = 0.012F;
-    private static final float MOUTH_SHUDDER_RATE = 0.31F;
 
     private static final float RUMBLE_VOLUME         = 1;
     // The sound engine doesn't go lower
@@ -135,17 +86,12 @@ public final class RaptureCurse extends ClientCurse
     private static final int CLOUDS_PART_TICKS   = 45;
     private static final int CLOUDS_GATHER_TICKS = RaptureLift.RELEASE_TICKS;
 
-    private static @Nullable GpuBuffer     mouthQuad;
-    private static @Nullable TextureTarget mouthTexture;
-
     private final List<RaptureRiseParticle> risers = new ArrayList<>();
     private final List<RumbleSound>         rumble = new ArrayList<>();
     private final BlockPos.MutableBlockPos  cursor = new BlockPos.MutableBlockPos();
     private final int                       endTick;
+    private final RaptureMass             breach;
 
-    private boolean facingKnown;
-    private float   facingCos = 1;
-    private float   facingSin;
     private double  groundY;
     private int     nextThunder = RaptureLift.RUMBLE_TICK;
     private int     peakRisers;
@@ -158,6 +104,7 @@ public final class RaptureCurse extends ClientCurse
     {
         super(seed, duration);
         this.endTick = RaptureLift.endTick(seed);
+        this.breach = new RaptureMass(seed, endTick);
     }
 
     /**
@@ -191,6 +138,14 @@ public final class RaptureCurse extends ClientCurse
         return List.copyOf(rumble);
     }
 
+    /**
+     * How many quads the breach is made of, once built, for tests.
+     */
+    public int breachQuads()
+    {
+        return breach.quads();
+    }
+
     public int height()
     {
         return RaptureLift.height(seed);
@@ -199,13 +154,6 @@ public final class RaptureCurse extends ClientCurse
     @Override
     protected void tick(Minecraft minecraft, LocalPlayer player)
     {
-        if (!facingKnown)
-        {
-            float yaw = player.getYRot() * Mth.DEG_TO_RAD;
-            facingCos = Mth.cos(yaw);
-            facingSin = Mth.sin(yaw);
-            facingKnown = true;
-        }
         if (player.onGround() || age < RaptureLift.LIFT_TICK)
             groundY = player.getY();
 
@@ -226,6 +174,7 @@ public final class RaptureCurse extends ClientCurse
         stopRumble(Minecraft.getInstance());
         risers.forEach(RaptureRiseParticle::release);
         risers.clear();
+        breach.close();
     }
 
     private void tickRumble(Minecraft minecraft)
@@ -392,66 +341,15 @@ public final class RaptureCurse extends ClientCurse
     public void prepareSky(SkyRenderState state, SkyFrame frame)
     {
         StarField.prepare();
-        prepareMouthQuad();
 
         float now = age + frame.partialTicks();
         var stateA = new Vector4f(
                 now / RaptureLift.EYES_OPEN_TICKS,
                 Mth.clamp((now - RaptureLift.STARE_START_TICK) / (RaptureLift.STARE_END_TICK - RaptureLift.STARE_START_TICK), 0, 1),
                 Mth.clamp((now - endTick) / RaptureLift.EYES_CLOSE_TICKS, 0, 1),
-                mouthOpening(now));
-        var stateB = new Vector4f(
-                facingCos,
-                facingSin,
-                Mth.clamp((now - RaptureLift.MOUTH_TICK) / RaptureLift.MOUTH_OPEN_TICKS, 0, 1),
-                Mth.clamp((now - endTick) / RaptureLift.MOUTH_SNAP_TICKS, 0, 1));
-        uniform = CurseSkyUniform.write(frame, now / 20F, stateA, stateB);
-
-        if (mouthShows())
-            bakeMouth();
-    }
-
-    private boolean mouthShows()
-    {
-        return age >= RaptureLift.MOUTH_TICK && age <= endTick + RaptureLift.MOUTH_SNAP_TICKS;
-    }
-
-    private void bakeMouth()
-    {
-        if (mouthTexture == null)
-            mouthTexture = new TextureTarget("Curse zenith", MOUTH_BAKED_SIZE, MOUTH_BAKED_SIZE, GpuFormat.RGBA8_UNORM, null);
-
-        var indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-        try (var renderPass = RenderSystem.getDevice().createCommandEncoder()
-                .createRenderPass(() -> "Curse zenith", mouthTexture.getColorTextureView(), Optional.of(new Vector4f(0, 0, 0, 0))))
-        {
-            renderPass.setPipeline(RenderSystem.getCompiledPipeline(MOUTH_BAKE_PIPELINE));
-            RenderSystem.bindDefaultUniforms(renderPass);
-            renderPass.setUniform(CurseSkyUniform.NAME, uniform);
-            renderPass.setVertexBuffer(0, mouthQuad.slice());
-            renderPass.setIndexBuffer(indices.getBuffer(6), indices.type());
-            renderPass.drawIndexed(6, 1, 0, 0, 0);
-        }
-    }
-
-    /**
-     * A thin seam runs across first and only then parts, keeps slowly widening and breathing, then snaps shut with its speed still growing.
-     */
-    private float mouthOpening(float now)
-    {
-        float splitting = Mth.clamp((now - RaptureLift.MOUTH_TICK) / RaptureLift.MOUTH_OPEN_TICKS, 0, 1);
-        if (splitting <= 0)
-            return 0;
-
-        float parting = Mth.clamp((splitting - MOUTH_SEAM_SHARE) / (1 - MOUTH_SEAM_SHARE), 0, 1);
-        float eased = 1 - (1 - parting) * (1 - parting);
-        float opened = eased * MOUTH_SPLIT_OPEN;
-        float past = Math.max(0, now - RaptureLift.MOUTH_TICK - RaptureLift.MOUTH_OPEN_TICKS);
-        opened = Math.min(MOUTH_WIDEST, opened + past * MOUTH_WIDENING);
-        opened *= 1 + splitting * (MOUTH_BREATH * Mth.sin(now * MOUTH_BREATH_RATE) + MOUTH_SHUDDER * Mth.sin(now * MOUTH_SHUDDER_RATE));
-
-        float snapping = Mth.clamp((now - endTick) / RaptureLift.MOUTH_SNAP_TICKS, 0, 1);
-        return opened * (1 - snapping * snapping);
+                0);
+        uniform = CurseSkyUniform.write(frame, now / 20F, stateA, new Vector4f());
+        breach.prepare(now);
     }
 
     /**
@@ -468,26 +366,6 @@ public final class RaptureCurse extends ClientCurse
         return ARGB.multiplyAlpha(color, Math.max(1 - parting, gathering));
     }
 
-    private static void prepareMouthQuad()
-    {
-        if (mouthQuad != null)
-            return;
-
-        var data = MemoryUtil.memAlloc(4 * 3 * Float.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-        try
-        {
-            data.putFloat(-1).putFloat(0).putFloat(-1);
-            data.putFloat(1).putFloat(0).putFloat(-1);
-            data.putFloat(1).putFloat(0).putFloat(1);
-            data.putFloat(-1).putFloat(0).putFloat(1);
-            data.flip();
-            mouthQuad = RenderSystem.getDevice().createBuffer(() -> "Curse zenith quad", GpuBuffer.USAGE_VERTEX, data);
-        } finally
-        {
-            MemoryUtil.memFree(data);
-        }
-    }
-
     @Override
     public void drawSky(RenderPass renderPass, SkyFrame frame)
     {
@@ -495,18 +373,7 @@ public final class RaptureCurse extends ClientCurse
             return;
 
         StarField.draw(renderPass, EYES_PIPELINE, uniform);
-
-        if (mouthQuad == null || mouthTexture == null || !mouthShows())
-            return;
-
-        var indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-        renderPass.setPipeline(RenderSystem.getCompiledPipeline(MOUTH_PIPELINE));
-        RenderSystem.bindDefaultUniforms(renderPass);
-        renderPass.setUniform(CurseSkyUniform.NAME, uniform);
-        renderPass.setUniform("Sampler0", mouthTexture.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
-        renderPass.setVertexBuffer(0, mouthQuad.slice());
-        renderPass.setIndexBuffer(indices.getBuffer(6), indices.type());
-        renderPass.drawIndexed(6, 1, 0, 0, 0);
+        breach.draw(renderPass, uniform);
     }
 
     /**

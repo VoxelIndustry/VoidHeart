@@ -6,6 +6,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
+import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptions;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.CloudStatus;
@@ -32,6 +33,7 @@ import net.voxelindustry.voidheart.common.curse.RaptureLift;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,7 +41,7 @@ import java.util.List;
 import java.util.OptionalLong;
 
 /**
- * The sky opens its eyes and they find the player, the ground comes apart upward, a mouth opens overhead and really lifts them, then it all lets go.
+ * The sky opens its eyes and they find the player, the ground comes apart upward, the sky tears open overhead and really lifts them, then it all lets go.
  * Also that the lift lets go at once when cut short and leaves a levitation from anywhere else alone.
  */
 public class RaptureClientTest implements FabricClientGameTest
@@ -74,6 +76,53 @@ public class RaptureClientTest implements FabricClientGameTest
     private static final int COST_WARMUP_FRAMES = 30;
     private static final int COST_FRAMES        = 200;
 
+    private static final float LOOK_BREACH_SIDE = -55;
+    private static final int   CLOSE_FOV        = 30;
+    private static final int   CLOSE_WIDTH      = 1920;
+    private static final int   CLOSE_HEIGHT     = 1080;
+    private static final int   HOLD_TICKS       = 3;
+
+    // Somewhere else in the same flat world, to show it stays straight above wherever the player goes
+    private static final int MOVED_X = 34;
+    private static final int MOVED_Z = -21;
+
+    // A roof with a square hole right above where the player stands, far enough off to have nothing else around it
+    private static final int ROOF_X        = 80;
+    private static final int ROOF_Z        = 80;
+    private static final int ROOF_HEIGHT   = 9;
+    private static final int ROOF_REACH    = 28;
+    private static final int ROOF_HOLE     = 3;
+    private static final int ROOF_MARGIN   = 14;
+    // As a share of the hole, leaving out the sides of the blocks around it
+    private static final double ROOF_HOLE_INSIDE = 0.65;
+    private static final double ROOF_PIXELS_OFF_SHARE = 0.015;
+    private static final double HOLE_PIXELS_OFF_SHARE = 0.7;
+
+    private static final int PUPIL_RADIUS      = 2;
+    private static final int IRIS_FROM         = 12;
+    private static final int IRIS_TO           = 22;
+    private static final int MASS_FROM         = 240;
+    private static final int MASS_TO           = 345;
+    private static final double IRIS_LEAST     = 0.25;
+    private static final double MASS_LEAST     = 0.5;
+    private static final int    DARK_LEAST_SUM = 40;
+    private static final int    CENTER_TRIES   = 4;
+
+    // At the large size: how far around the middle the pupil is followed, and how much taller than wide it must be
+    private static final int    SLIT_REACH        = 34;
+    private static final double SLIT_TALLER_LEAST = 1.5;
+
+    private static final float YAW_OBLIQUE      = 37;
+    private static final float YAW_SIDE_TURNED  = 127;
+    // A pair of frames a few degrees apart, compared at the large size within this radius of the middle, which only holds the eye, and in the ring around it
+    private static final float  YAW_PAIR             = 20;
+    private static final float  YAW_PAIR_APART       = 4;
+    private static final int    EYE_RADIUS           = 34;
+    private static final int    AROUND_FROM          = 90;
+    private static final int    AROUND_TO            = 170;
+    private static final double EYE_CHANGES_MOST     = 0.01;
+    private static final double AROUND_CHANGES_LEAST = 0.3;
+
     private static final int SWEEP_FRAMES         = 8;
     private static final int RISE_SEQUENCE_FRAMES = 3;
     private static final int RISE_SEQUENCE_TICKS  = 2;
@@ -101,6 +150,7 @@ public class RaptureClientTest implements FabricClientGameTest
 
             testChipsLookLikeTheirFace(context, server);
             testFullCurse(context, server);
+            testBreachHeldStill(context, world);
             testCutShort(context, server);
             testOtherLevitationSurvivesStop(context, server);
             testOtherLevitationSurvivesNaturalEnd(context, server);
@@ -176,28 +226,19 @@ public class RaptureClientTest implements FabricClientGameTest
 
         waitForAge(context, 144);
         look(context, YAW, LOOK_UP);
-        context.takeScreenshot("rapture-zenith-seam");
-        context.takeScreenshot(TestScreenshotOptions.of("rapture-zenith-seam-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        context.takeScreenshot("rapture-breach-crack");
 
         var heights = new ArrayList<HeightSample>();
         waitForAgeTracking(context, server, 152, heights);
-        context.takeScreenshot("rapture-zenith-seam-across");
-        context.takeScreenshot(TestScreenshotOptions.of("rapture-zenith-seam-across-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        context.takeScreenshot("rapture-breach-tearing");
 
         waitForAgeTracking(context, server, 163, heights);
-        context.takeScreenshot("rapture-zenith-half");
-        context.takeScreenshot(TestScreenshotOptions.of("rapture-zenith-half-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        context.takeScreenshot("rapture-breach-half");
 
         waitForAgeTracking(context, server, RaptureLift.MOUTH_TICK + RaptureLift.MOUTH_OPEN_TICKS, heights);
-        context.takeScreenshot("rapture-zenith-open");
-        context.takeScreenshot(TestScreenshotOptions.of("rapture-zenith-open-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
-        look(context, YAW, LOOK_SKY - 12);
-        context.takeScreenshot("rapture-zenith-steep");
-        context.takeScreenshot(TestScreenshotOptions.of("rapture-zenith-steep-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        context.takeScreenshot("rapture-breach-open");
         look(context, YAW, LOOK_SKY);
-        context.takeScreenshot("rapture-zenith-from-sky-look");
-        look(context, YAW + 90, LOOK_UP);
-        context.takeScreenshot("rapture-zenith-turned");
+        context.takeScreenshot("rapture-breach-from-sky-look");
 
         waitForAgeTracking(context, server, Math.min(RaptureLift.LIFT_TICK + 90, endTick - 10), heights);
         captureRisers(context, "lifted");
@@ -219,16 +260,14 @@ public class RaptureClientTest implements FabricClientGameTest
         context.takeScreenshot("rapture-lift-peak-third-front");
         context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
         look(context, YAW, LOOK_UP);
-        context.takeScreenshot("rapture-zenith-latest");
-        context.takeScreenshot(TestScreenshotOptions.of("rapture-zenith-latest-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        context.takeScreenshot("rapture-breach-latest");
 
         waitForAgeTracking(context, server, endTick + RaptureLift.MOUTH_SNAP_TICKS / 2, heights);
-        context.takeScreenshot("rapture-zenith-snapping");
+        context.takeScreenshot("rapture-breach-slamming");
         expectRumbleStopped(context, rumble);
 
         waitForAgeTracking(context, server, endTick + RaptureLift.MOUTH_SNAP_TICKS + 2, heights);
-        context.takeScreenshot("rapture-zenith-shut");
-        context.takeScreenshot(TestScreenshotOptions.of("rapture-zenith-shut-large").withSize(LARGE_WIDTH, LARGE_HEIGHT));
+        context.takeScreenshot("rapture-breach-shut");
 
         int peakRisers = context.computeOnClient(minecraft -> curse().peakRisers());
         int groundRisers = context.computeOnClient(minecraft -> curse().risersFromGround());
@@ -291,17 +330,399 @@ public class RaptureClientTest implements FabricClientGameTest
     }
 
     /**
-     * The camera turns in small steps against open sky, with the mouth or only the eyes in frame, while the game is frozen so that only the camera moves.
+     * The camera turns in small steps against open sky, with the breach or only the eyes in frame, while the game is frozen so that only the camera moves.
      */
     private void sweep(ClientGameTestContext context, String part)
     {
         for (int step = 0; step < SWEEP_FRAMES; step++)
         {
-            if (part.equals("zenith"))
+            if (part.equals("breach"))
                 look(context, YAW + step * 0.6F, LOOK_UP + 8 + step * 0.4F);
             else
                 look(context, YAW + 120 + step * 0.6F, LOOK_SKY + 10 + step * 0.4F);
             context.takeScreenshot(part + "-sweep-" + step);
+        }
+    }
+
+    /**
+     * Every moment of the breach, frozen so that nothing moves between the frames. Being a spectator keeps the lift from carrying the camera off.
+     */
+    private void testBreachHeldStill(ClientGameTestContext context, TestSingleplayerContext world)
+    {
+        var server = world.getServer();
+        int usualFov = context.computeOnClient(minecraft -> minecraft.options.fov().get());
+        buildRoof(server);
+        server.runCommand("gamemode spectator @a");
+        standUnderRoof(context, server);
+        world.getConnection().waitForChunksRender();
+        var roofBefore = captureLarge(context, "rapture-breach-roof-before");
+        server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5");
+        context.waitTicks(HOLD_TICKS);
+
+        server.runCommand("voidheart curse force rapture @a");
+        context.waitFor(minecraft -> CurseDirector.active() instanceof RaptureCurse, 40);
+        int endTick = context.computeOnClient(minecraft -> RaptureLift.LIFT_TICK + RaptureLift.liftTicks(curse().height()));
+
+        hold(context, server, RaptureLift.MOUTH_TICK + 3);
+        captureLarge(context, "rapture-breach-held-crack");
+        server.runCommand("tick unfreeze");
+        hold(context, server, RaptureLift.MOUTH_TICK + 9);
+        captureLarge(context, "rapture-breach-held-early");
+        server.runCommand("tick unfreeze");
+        hold(context, server, RaptureLift.MOUTH_TICK + RaptureLift.MOUTH_OPEN_TICKS / 3);
+        captureLarge(context, "rapture-breach-held-third");
+        server.runCommand("tick unfreeze");
+        hold(context, server, RaptureLift.MOUTH_TICK + RaptureLift.MOUTH_OPEN_TICKS * 2 / 3);
+        captureLarge(context, "rapture-breach-held-two-thirds");
+        server.runCommand("tick unfreeze");
+
+        hold(context, server, RaptureLift.MOUTH_TICK + RaptureLift.MOUTH_OPEN_TICKS);
+        expectCoreStaring(context, server, "rapture-breach-held-open");
+        look(context, YAW, LOOK_BREACH_SIDE);
+        captureLarge(context, "rapture-breach-held-side");
+
+        // Turned, then somewhere else, and it stays straight overhead with its pupil dead center and upright
+        look(context, YAW + YAW_OBLIQUE, LOOK_UP);
+        expectCoreStaring(context, server, "rapture-breach-held-turned-oblique");
+        look(context, YAW + YAW_SIDE_TURNED, LOOK_BREACH_SIDE);
+        captureLarge(context, "rapture-breach-held-side-turned");
+        expectEyeRigid(context, server);
+        look(context, YAW + 90, LOOK_UP);
+        expectCoreStaring(context, server, "rapture-breach-held-turned");
+        server.runCommand("tp @a " + MOVED_X + ".5 " + (GROUND + 5) + " " + MOVED_Z + ".5");
+        context.waitTicks(HOLD_TICKS);
+        expectCoreStaring(context, server, "rapture-breach-held-moved");
+
+        standUnderRoof(context, server);
+        var roofAfter = captureLarge(context, "rapture-breach-held-roof");
+        expectRoofHides(context, roofBefore, roofAfter);
+        look(context, YAW, LOOK_BREACH_SIDE);
+        captureLarge(context, "rapture-breach-held-roof-side");
+        look(context, YAW, LOOK_UP);
+        server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5");
+        context.waitTicks(HOLD_TICKS);
+
+        context.runOnClient(minecraft -> minecraft.options.fov().set(CLOSE_FOV));
+        look(context, YAW, LOOK_UP);
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-breach-held-close-middle").withSize(CLOSE_WIDTH, CLOSE_HEIGHT));
+        look(context, YAW + 40, LOOK_UP + 26);
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-breach-held-close-rim").withSize(CLOSE_WIDTH, CLOSE_HEIGHT));
+        look(context, YAW + 200, LOOK_UP + 33);
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-breach-held-close-rim-far").withSize(CLOSE_WIDTH, CLOSE_HEIGHT));
+        context.runOnClient(minecraft -> minecraft.options.fov().set(usualFov));
+        look(context, YAW, LOOK_UP);
+        server.runCommand("tick unfreeze");
+
+        hold(context, server, endTick - 3);
+        captureLarge(context, "rapture-breach-held-late");
+        context.runOnClient(minecraft -> minecraft.options.fov().set(CLOSE_FOV));
+        context.takeScreenshot(TestScreenshotOptions.of("rapture-breach-held-late-middle").withSize(CLOSE_WIDTH, CLOSE_HEIGHT));
+        context.runOnClient(minecraft -> minecraft.options.fov().set(usualFov));
+        server.runCommand("tick unfreeze");
+
+        hold(context, server, endTick + RaptureLift.MOUTH_SNAP_TICKS / 3);
+        captureLarge(context, "rapture-breach-held-slam-early");
+        server.runCommand("tick unfreeze");
+
+        // The clouds only come back once it is slamming shut, so here is where cubes and clouds can meet at all
+        hold(context, server, endTick + RaptureLift.MOUTH_SNAP_TICKS * 2 / 3);
+        var noClouds = captureLarge(context, "rapture-breach-held-slam");
+        context.runOnClient(minecraft -> minecraft.options.cloudStatus().set(CloudStatus.FANCY));
+        context.waitTicks(HOLD_TICKS);
+        var clouds = captureLarge(context, "rapture-breach-held-slam-clouds");
+        VoidHeart.LOGGER.info("Rapture test: " + countDifferent(noClouds, clouds) + " pixels change with clouds on, while it slams shut");
+        context.runOnClient(minecraft -> minecraft.options.cloudStatus().set(CloudStatus.OFF));
+        server.runCommand("tick unfreeze");
+
+        hold(context, server, endTick + RaptureLift.MOUTH_SNAP_TICKS + 2);
+        captureLarge(context, "rapture-breach-held-shut");
+        server.runCommand("tick unfreeze");
+
+        waitForNoCurse(context);
+        server.runCommand("gamemode survival @a");
+        server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 0");
+        look(context, YAW, LOOK_UP);
+        waitForLanding(context);
+        heal(server);
+        server.runCommand("fill " + (ROOF_X - ROOF_REACH) + " " + (GROUND + ROOF_HEIGHT) + " " + (ROOF_Z - ROOF_REACH) + " "
+                + (ROOF_X + ROOF_REACH) + " " + (GROUND + ROOF_HEIGHT) + " " + (ROOF_Z + ROOF_REACH) + " air");
+    }
+
+    private void hold(ClientGameTestContext context, TestServerContext server, int age)
+    {
+        waitForAge(context, age);
+        server.runCommand("tick freeze");
+        context.waitTicks(HOLD_TICKS);
+        look(context, YAW, LOOK_UP);
+    }
+
+    private static Path captureLarge(ClientGameTestContext context, String name)
+    {
+        return context.takeScreenshot(TestScreenshotOptions.of(name).withSize(LARGE_WIDTH, LARGE_HEIGHT));
+    }
+
+    private void buildRoof(TestServerContext server)
+    {
+        int y = GROUND + ROOF_HEIGHT;
+        server.runCommand("fill " + (ROOF_X - ROOF_REACH) + " " + y + " " + (ROOF_Z - ROOF_REACH) + " " + (ROOF_X + ROOF_REACH) + " " + y + " " + (ROOF_Z + ROOF_REACH) + " stone_bricks");
+        server.runCommand("fill " + (ROOF_X - ROOF_HOLE) + " " + y + " " + (ROOF_Z - ROOF_HOLE) + " " + (ROOF_X + ROOF_HOLE - 1) + " " + y + " " + (ROOF_Z + ROOF_HOLE - 1) + " air");
+    }
+
+    private void standUnderRoof(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("tp @a " + ROOF_X + ".0 " + (GROUND + 1) + " " + ROOF_Z + ".0");
+        context.waitTicks(HOLD_TICKS * 3);
+        look(context, YAW, LOOK_UP);
+    }
+
+    /**
+     * Everything of the frame on the roof is what it was without the curse, up to a few pixels for chips drifting by, and the hole in it is not.
+     */
+    private void expectRoofHides(ClientGameTestContext context, Path before, Path after)
+    {
+        double fov = context.computeOnClient(minecraft -> (double) minecraft.options.fov().get());
+        double focal = LARGE_HEIGHT / 2D / Math.tan(Math.toRadians(fov / 2));
+        double eye = ROOF_HEIGHT - 1 - 1.62;
+        int hole = (int) (ROOF_HOLE / eye * focal);
+
+        try (var a = NativeImage.read(Files.newInputStream(before)); var b = NativeImage.read(Files.newInputStream(after)))
+        {
+            int roofPixels = 0;
+            int roofOff = 0;
+            int holePixels = 0;
+            int holeOff = 0;
+            for (int y = 0; y < LARGE_HEIGHT; y++)
+            {
+                for (int x = 0; x < LARGE_WIDTH; x++)
+                {
+                    int fromMiddle = Math.max(Math.abs(x - LARGE_WIDTH / 2), Math.abs(y - LARGE_HEIGHT / 2));
+                    boolean differs = a.getPixel(x, y) != b.getPixel(x, y);
+                    if (fromMiddle > hole + ROOF_MARGIN)
+                    {
+                        roofPixels++;
+                        roofOff += differs ? 1 : 0;
+                    }
+                    else if (fromMiddle < hole * ROOF_HOLE_INSIDE)
+                    {
+                        holePixels++;
+                        holeOff += differs ? 1 : 0;
+                    }
+                }
+            }
+            VoidHeart.LOGGER.info("Rapture test: " + roofOff + " of " + roofPixels + " pixels on the roof changed with the breach open behind it, and " + holeOff + " of " + holePixels + " in the hole");
+            if (roofOff > roofPixels * ROOF_PIXELS_OFF_SHARE)
+                throw new AssertionError("Expected the roof to hide what is behind it, " + roofOff + " of " + roofPixels + " pixels changed");
+            if (holeOff < holePixels * HOLE_PIXELS_OFF_SHARE)
+                throw new AssertionError("Expected the breach to show through the hole in the roof, " + holeOff + " of " + holePixels + " pixels changed");
+        } catch (IOException e)
+        {
+            throw new AssertionError("Could not read the roof captures", e);
+        }
+    }
+
+    /**
+     * Straight up: black in the very middle of the frame and clearly taller than wide, the iris right around it, flesh further out. A chip can drift across for a moment, so it gets a few tries.
+     */
+    private void expectCoreStaring(ClientGameTestContext context, TestServerContext server, String name)
+    {
+        String problem = null;
+        for (int attempt = 0; attempt < CENTER_TRIES; attempt++)
+        {
+            var shot = captureLarge(context, name);
+            try (var image = NativeImage.read(Files.newInputStream(shot)))
+            {
+                problem = coreProblem(image);
+                if (problem == null)
+                    problem = slitProblem(image, name);
+            } catch (IOException e)
+            {
+                throw new AssertionError("Could not read " + name, e);
+            }
+            if (problem == null)
+                return;
+
+            nudge(context, server);
+        }
+        throw new AssertionError("Expected it staring from the middle of " + name + ": " + problem);
+    }
+
+    /**
+     * Lets one tick go by, for chips that happened to be in the way.
+     */
+    private static void nudge(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("tick unfreeze");
+        context.waitTick();
+        server.runCommand("tick freeze");
+        context.waitTicks(HOLD_TICKS);
+    }
+
+    /**
+     * Follows the dark pixels out from the middle of the frame and measures how far they go each way.
+     */
+    private static String slitProblem(NativeImage image, String name)
+    {
+        int middleX = image.getWidth() / 2;
+        int middleY = image.getHeight() / 2;
+        int side = SLIT_REACH * 2 + 1;
+        var seen = new boolean[side * side];
+        var open = new ArrayDeque<int[]>();
+        open.push(new int[]{middleX, middleY});
+        int left = middleX;
+        int right = middleX;
+        int top = middleY;
+        int bottom = middleY;
+        while (!open.isEmpty())
+        {
+            var at = open.pop();
+            int x = at[0];
+            int y = at[1];
+            if (Math.abs(x - middleX) > SLIT_REACH || Math.abs(y - middleY) > SLIT_REACH)
+                continue;
+            int index = (y - middleY + SLIT_REACH) * side + x - middleX + SLIT_REACH;
+            if (seen[index])
+                continue;
+            seen[index] = true;
+
+            int pixel = image.getPixel(x, y);
+            if (ARGB.red(pixel) + ARGB.green(pixel) + ARGB.blue(pixel) >= DARK_LEAST_SUM)
+                continue;
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+            open.push(new int[]{x + 1, y});
+            open.push(new int[]{x - 1, y});
+            open.push(new int[]{x, y + 1});
+            open.push(new int[]{x, y - 1});
+        }
+        int wide = right - left + 1;
+        int tall = bottom - top + 1;
+        VoidHeart.LOGGER.info("Rapture test: the pupil in " + name + " is " + wide + " wide and " + tall + " tall");
+        return tall < wide * SLIT_TALLER_LEAST ? "its pupil is " + wide + " wide and only " + tall + " tall" : null;
+    }
+
+    /**
+     * Two frames a few degrees of yaw apart: the sky turns, and the eye at its center doesn't change, down to the pixel.
+     */
+    private void expectEyeRigid(ClientGameTestContext context, TestServerContext server)
+    {
+        String problem = null;
+        for (int attempt = 0; attempt < CENTER_TRIES; attempt++)
+        {
+            look(context, YAW + YAW_PAIR, LOOK_UP);
+            var first = captureLarge(context, "rapture-breach-held-yaw-pair-a");
+            look(context, YAW + YAW_PAIR + YAW_PAIR_APART, LOOK_UP);
+            var second = captureLarge(context, "rapture-breach-held-yaw-pair-b");
+            problem = rigidProblem(first, second);
+            if (problem == null)
+                return;
+
+            nudge(context, server);
+        }
+        throw new AssertionError("Expected the eye to stay rigid while the player turns: " + problem);
+    }
+
+    private static String rigidProblem(Path first, Path second)
+    {
+        try (var a = NativeImage.read(Files.newInputStream(first)); var b = NativeImage.read(Files.newInputStream(second)))
+        {
+            int eye = 0;
+            int eyeOff = 0;
+            int around = 0;
+            int aroundOff = 0;
+            for (int y = 0; y < a.getHeight(); y++)
+            {
+                for (int x = 0; x < a.getWidth(); x++)
+                {
+                    double from = Math.hypot(x - a.getWidth() / 2, y - a.getHeight() / 2);
+                    boolean differs = a.getPixel(x, y) != b.getPixel(x, y);
+                    if (from <= EYE_RADIUS)
+                    {
+                        eye++;
+                        eyeOff += differs ? 1 : 0;
+                    }
+                    else if (from >= AROUND_FROM && from <= AROUND_TO)
+                    {
+                        around++;
+                        aroundOff += differs ? 1 : 0;
+                    }
+                }
+            }
+            VoidHeart.LOGGER.info("Rapture test: " + YAW_PAIR_APART + " degrees of yaw change " + eyeOff + " of " + eye + " pixels of the eye and " + aroundOff + " of " + around + " around it");
+            if (eyeOff > eye * EYE_CHANGES_MOST)
+                return eyeOff + " of " + eye + " pixels of the eye changed";
+            if (aroundOff < around * AROUND_CHANGES_LEAST)
+                return "only " + aroundOff + " of " + around + " pixels around it changed, so this proves nothing";
+            return null;
+        } catch (IOException e)
+        {
+            throw new AssertionError("Could not read the frame pair", e);
+        }
+    }
+
+    private static String coreProblem(NativeImage image)
+    {
+        int middleX = image.getWidth() / 2;
+        int middleY = image.getHeight() / 2;
+        int pupil = 0;
+        int pupilDark = 0;
+        int iris = 0;
+        int irisLit = 0;
+        int mass = 0;
+        int massLit = 0;
+        for (int y = 0; y < image.getHeight(); y++)
+        {
+            for (int x = 0; x < image.getWidth(); x++)
+            {
+                int pixel = image.getPixel(x, y);
+                int red = ARGB.red(pixel);
+                int green = ARGB.green(pixel);
+                int blue = ARGB.blue(pixel);
+                double from = Math.hypot(x - middleX, y - middleY);
+                if (from <= PUPIL_RADIUS)
+                {
+                    pupil++;
+                    pupilDark += red + green + blue < DARK_LEAST_SUM ? 1 : 0;
+                }
+                else if (from >= IRIS_FROM && from <= IRIS_TO)
+                {
+                    iris++;
+                    irisLit += green > 50 && green > red * 0.75 && blue < green * 0.65 ? 1 : 0;
+                }
+                else if (from >= MASS_FROM && from <= MASS_TO)
+                {
+                    mass++;
+                    massLit += red > 16 && red > green * 1.6 ? 1 : 0;
+                }
+            }
+        }
+        if (pupilDark * 2 < pupil)
+            return "only " + pupilDark + " of " + pupil + " pixels of the pupil are dark";
+        if (irisLit < iris * IRIS_LEAST)
+            return "only " + irisLit + " of " + iris + " pixels around it look like the iris";
+        if (massLit < mass * MASS_LEAST)
+            return "only " + massLit + " of " + mass + " pixels further out look like flesh";
+        return null;
+    }
+
+    private static int countDifferent(Path before, Path after)
+    {
+        try (var a = NativeImage.read(Files.newInputStream(before)); var b = NativeImage.read(Files.newInputStream(after)))
+        {
+            int different = 0;
+            for (int y = 0; y < a.getHeight(); y++)
+            {
+                for (int x = 0; x < a.getWidth(); x++)
+                {
+                    if (a.getPixel(x, y) != b.getPixel(x, y))
+                        different++;
+                }
+            }
+            return different;
+        } catch (IOException e)
+        {
+            throw new AssertionError("Could not read the captures", e);
         }
     }
 
@@ -564,22 +985,23 @@ public class RaptureClientTest implements FabricClientGameTest
         waitForAge(context, RaptureLift.STARE_END_TICK + 2);
         var eyes = measureFrame(context);
         waitForAge(context, RaptureLift.MOUTH_TICK + RaptureLift.MOUTH_OPEN_TICKS + 5);
-        var mouth = measureFrame(context);
+        var breach = measureFrame(context);
         int chips = context.computeOnClient(minecraft -> curse().liveRisers());
+        int quads = context.computeOnClient(minecraft -> curse().breachQuads());
 
         // Players aren't frozen with the rest, so a lifted one would go on rising under the camera. A spectator stays where it is
         server.runCommand("tick freeze");
         server.runCommand("gamemode spectator @a");
         context.waitTicks(FREEZE_SETTLE_TICKS);
         sweep(context, "sky");
-        sweep(context, "zenith");
+        sweep(context, "breach");
         server.runCommand("gamemode survival @a");
         server.runCommand("tick unfreeze");
         look(context, YAW, LOOK_UP);
 
         VoidHeart.LOGGER.info("Rapture test: frame at " + LARGE_WIDTH + "x" + LARGE_HEIGHT + " straight up, vanilla sky: " + vanilla);
         VoidHeart.LOGGER.info("Rapture test: frame with every eye staring: " + eyes);
-        VoidHeart.LOGGER.info("Rapture test: frame with the mouth fully open and " + chips + " chips alive: " + mouth);
+        VoidHeart.LOGGER.info("Rapture test: frame with the breach fully open, " + quads + " quads of it, and " + chips + " chips alive: " + breach);
 
         server.runCommand("voidheart curse stop @a");
         waitForLanding(context);
