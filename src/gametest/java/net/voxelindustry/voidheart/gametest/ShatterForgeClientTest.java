@@ -11,12 +11,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeLayout;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 
 /**
  * A gold ingot clicked onto the source pillar crafts through the forge: the void beams form over the warm-up and
@@ -43,6 +46,7 @@ public class ShatterForgeClientTest implements FabricClientGameTest
             server.runCommand("gamerule advance_time false");
             server.runCommand("gamemode creative @a");
             server.runCommand("give @a gold_ingot");
+            server.runOnServer(ShatterForgeClientTest::assertFirstPreviewCanCraft);
             server.runOnServer(ShatterForgeClientTest::buildForge);
             context.waitTicks(20);
             // The client is shared between tests, an earlier one may have left the camera behind the player
@@ -117,6 +121,31 @@ public class ShatterForgeClientTest implements FabricClientGameTest
                     throw new AssertionError("Expected taking the output to start the next craft");
             });
         }
+    }
+
+    /**
+     * A lone forge's first preview has to be a structure that works when built as shown, for a recipe needing no essence.
+     */
+    private static void assertFirstPreviewCanCraft(MinecraftServer minecraft)
+    {
+        var level = minecraft.overworld();
+        var lone = new BlockPos(30, FORGE_Y, 30);
+        level.setBlockAndUpdate(lone, VoidHeartBlocks.SHATTER_FORGE.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.Z));
+
+        var tile = (ShatterForgeTile) level.getBlockEntity(lone);
+        tile.stepPreview(player(minecraft), false);
+        if (tile.getPreviewPairs() != ShatterForgeTile.STARTING_TRACK_PAIRS)
+            throw new AssertionError("Expected the first preview to show " + ShatterForgeTile.STARTING_TRACK_PAIRS + " track pairs, got " + tile.getPreviewPairs());
+
+        int needed = VoidHeartRecipes.SHATTER_FORGE_CATEGORY.findOneRecipe(new ItemStack(Items.GOLD_INGOT)).orElseThrow().getMonolithCount();
+        if (tile.getPreviewPairs() + 1 < needed)
+            throw new AssertionError("Gold needs " + needed + " monolith pairs, the first preview shows " + (tile.getPreviewPairs() + 1));
+
+        tile.stepPreview(player(minecraft), false);
+        if (tile.getPreviewPairs() != ShatterForgeTile.STARTING_TRACK_PAIRS + 1)
+            throw new AssertionError("Expected a second use to lengthen the preview, got " + tile.getPreviewPairs());
+
+        level.removeBlock(lone, false);
     }
 
     private static void buildForge(MinecraftServer minecraft)

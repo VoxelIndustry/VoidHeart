@@ -475,6 +475,11 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         currentRecipe = VoidHeartRecipes.ALTAR_CATEGORY.findOneRecipe(stack).orElse(null);
     }
 
+    public int foundPillars()
+    {
+        return pillars.size();
+    }
+
     public void searchPillars()
     {
         pillars.clear();

@@ -20,15 +20,19 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.voxelindustry.voidheart.client.scene.ResearchScenes;
+import net.voxelindustry.voidheart.common.content.research.Constellation;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeMath;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads.Action;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryMenu;
+import net.voxelindustry.voidheart.common.content.research.RecipeSheet;
 import net.voxelindustry.voidheart.common.content.research.Research;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import org.joml.Vector2i;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -45,6 +49,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryMenu>
 {
     public static KnowledgePayloads.Snapshot snapshot = KnowledgePayloads.Snapshot.EMPTY;
+    public static List<RecipeSheet> recipeSheets = List.of();
 
     static final int KNOWN_RGB    = 0xD6C9F5;
     static final int FRONTIER_RGB = 0x36C5B0;
@@ -93,6 +98,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private static final int GROOVE        = 5;
     private static final int TOOLTIP_GAP   = 7;
     private static final int TOOLTIP_EDGE  = 4;
+    private static final int UNLOCK_ROW    = 17;
+    private static final int UNLOCK_PITCH  = 18;
+    private static final int UNLOCK_HEAD   = 13;
+    private static final int UNLOCK_GAP    = 4;
+    private static final int UNLOCK_HOVER  = 0x40;
 
     private static final double EMPTY_WARNING_SECONDS = 60;
 
@@ -121,6 +131,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     }
 
     private record CardRow(Component label, String value, int valueColor)
+    {
+    }
+
+    private record Unlock(Identifier item, ItemStack stack, Bounds bounds, boolean named)
     {
     }
 
@@ -158,6 +172,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private int                        fedScroll;
     private int                        left;
     private int                        right;
+    private ResearchSceneView          sceneView;
+    private final List<Unlock>         unlockSlots = new ArrayList<>();
+    private final List<ResearchText.Placed> detailLines = new ArrayList<>();
+    private final ArrayDeque<ResearchItemPage> pages = new ArrayDeque<>();
 
     public ResearchScreen(KnowledgeRepositoryMenu menu, Inventory inventory, Component title)
     {
@@ -210,7 +228,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     private void bake(Identifier target)
     {
-        ResearchVoid.bake(minecraft, target, width, height, left, right, map.lights(), map.rings(), seed());
+        ResearchVoid.bake(minecraft, target, width, height, left, right, map.lights(), seed());
     }
 
     private static void send(Action.Kind kind, Identifier research)
@@ -385,11 +403,6 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return Component.translatable(count == 1 ? "voidheart.research.insight_one" : "voidheart.research.insight_many", count);
     }
 
-    private static Component ringOf(Research research)
-    {
-        return Component.translatableWithFallback("voidheart.research.ring." + research.tier(), "Ring " + research.tier());
-    }
-
     private static void tablet(GuiGraphicsExtractor graphics, Bounds bounds)
     {
         graphics.fill(bounds.x(), bounds.y(), bounds.x() + bounds.width(), bounds.y() + bounds.height(), TABLET_COLOR);
@@ -412,17 +425,109 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         }
 
         float fullness = snapshot.cap() > 0 ? (float) Math.min(1, shownKnowledge() / snapshot.cap()) : 0;
-        map.extract(graphics, mouseX, mouseY, voidCurrent, width, height, fullness, !starving(), canRefine(), selected, hoveredNode(mouseX, mouseY));
+        map.extract(graphics, mouseX, mouseY, voidCurrent, width, height, fullness, !starving(), canRefine(), selected, modal() ? null : hoveredNode(mouseX, mouseY));
 
         insightButton.active = canRefine();
+        insightButton.visible = !modal();
 
         extractFlight(graphics);
         extractReadout(graphics, mouseX, mouseY);
-        extractWhisper(graphics);
+        if (!modal())
+            extractWhisper(graphics);
         extractFedGlyph(graphics, mouseX, mouseY);
-        extractDetail(graphics);
+        extractDetail(graphics, mouseX, mouseY);
         extractFed(graphics);
         extractCard(graphics, mouseX, mouseY);
+
+        int windowBottom = insightButton.getY() + ResearchInsightButton.HEIGHT;
+        if (sceneView != null)
+            sceneView.extract(graphics, mouseX, mouseY, width, height, left, right, windowBottom);
+        else if (!pages.isEmpty())
+            extractPage(graphics, mouseX, mouseY, windowBottom);
+    }
+
+    private boolean modal()
+    {
+        return sceneView != null || !pages.isEmpty();
+    }
+
+    private void extractPage(GuiGraphicsExtractor graphics, int mouseX, int mouseY, int windowBottom)
+    {
+        var scene = sceneOfPage();
+        var at = pages.peek().extract(graphics, mouseX, mouseY, width, left, right, windowBottom, scene.isPresent());
+        if (scene.isEmpty())
+            return;
+
+        actionButton.setX(at.x());
+        actionButton.setY(at.y());
+        actionButton.setWidth(at.width());
+        actionButton.visible = true;
+        actionButton.active = true;
+        actionButton.setMessage(Component.translatable("voidheart.research.see_scene"));
+    }
+
+    /**
+     * A page offers its scene once the research that scene belongs to is done.
+     */
+    private Optional<Identifier> sceneOfPage()
+    {
+        return ResearchScenes.forItem(pages.peek().item()).filter(snapshot.completed()::contains);
+    }
+
+    private Optional<Identifier> ownerOf(Identifier item)
+    {
+        return tree.entrySet().stream()
+                .filter(entry -> entry.getValue().unlocks().contains(item))
+                .map(Map.Entry::getKey)
+                .sorted()
+                .findFirst();
+    }
+
+    private boolean hasPage(Identifier item)
+    {
+        return ownerOf(item).filter(owner -> stateOf(owner, tree.get(owner)) != NodeState.HIDDEN).isPresent();
+    }
+
+    private Component described(String key)
+    {
+        return ResearchText.of(key, new ResearchText.Knowing(tree, id -> stateOf(id, tree.get(id)), this::ownerOf));
+    }
+
+    private Optional<Constellation> concealedIn(Identifier item)
+    {
+        return ownerOf(item).filter(owner -> stateOf(owner, tree.get(owner)) == NodeState.HIDDEN).map(owner -> tree.get(owner).constellation());
+    }
+
+    private void follow(ResearchText.Link link)
+    {
+        if (link.item())
+            openPage(link.id());
+        else
+            showOnMap(link.id());
+    }
+
+    /**
+     * Back to the map, on the research that was named, with the same light it had when it was first found.
+     */
+    private void showOnMap(Identifier research)
+    {
+        sceneView = null;
+        pages.clear();
+        fedOpen = false;
+        lastClicked = null;
+        selected = research;
+        map.bloom(research, stateOf(research, tree.get(research)) == NodeState.DONE);
+        minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.SCULK_CLICKING, 1.4F));
+    }
+
+    private void openPage(Identifier item)
+    {
+        ownerOf(item).ifPresent(owner ->
+        {
+            pages.push(new ResearchItemPage(font, item, owner, tree.get(owner).constellation(), recipeSheets, snapshot.completed(), this::hasPage,
+                    () -> described(ResearchItemPage.pageKey(item)), this::concealedIn));
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.BOOK_PAGE_TURN, 1.1F));
+        });
     }
 
     /**
@@ -726,11 +831,13 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
      * A tablet beside the selected research on the side away from the eye, or against the far edge when there is no room there,
      * so that it hides neither the eye nor what it talks about. Nothing about a research shows until it is asked about.
      */
-    private void extractDetail(GuiGraphicsExtractor graphics)
+    private void extractDetail(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
     {
         detailBounds = null;
         actionButton.visible = false;
-        if (selected == null || !tree.containsKey(selected))
+        unlockSlots.clear();
+        detailLines.clear();
+        if (modal() || selected == null || !tree.containsKey(selected))
             return;
 
         var research = tree.get(selected);
@@ -742,17 +849,26 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         var lines = new ArrayList<Line>();
         int nameColor = unknown ? MUTED_COLOR : state == NodeState.DONE ? KNOWN_COLOR : state == NodeState.ACTIVE ? ACTIVE_COLOR : FRONTIER_COLOR;
         font.split(unknown ? Component.translatable("voidheart.research.unread") : Component.translatable(Research.nameKey(selected)), inner).forEach(line -> lines.add(new Line(line, nameColor)));
-        font.split(ringOf(research), inner).forEach(line -> lines.add(new Line(line, MUTED_COLOR)));
+        int sigilSpace = ResearchMapView.SIGIL_SIZE + ResearchMapView.SIGIL_GAP;
+        int constellationColor = 0xFF000000 | ConstellationLook.of(research.constellation()).rgb();
+        font.split(Component.translatable(research.constellation().nameKey()), inner - sigilSpace).forEach(line -> lines.add(new Line(line, constellationColor)));
         int spaced = lines.size();
 
-        font.split(unknown ? Component.translatable("voidheart.research.unread_desc") : Component.translatable(Research.descriptionKey(selected)), inner).forEach(line -> lines.add(new Line(line, TEXT_COLOR)));
+        font.split(unknown ? Component.translatable("voidheart.research.unread_desc") : described(Research.descriptionKey(selected)), inner).forEach(line -> lines.add(new Line(line, TEXT_COLOR)));
+        int unlocksAt = lines.size();
         if (!unknown)
             effects(research).forEach(effect -> font.split(effect, inner).forEach(line -> lines.add(new Line(line, FRONTIER_COLOR))));
         statusOf(selected, research, state).ifPresent(status -> font.split(status, inner).forEach(line -> lines.add(new Line(line, starving() && state == NodeState.ACTIVE ? LACK_COLOR : MUTED_COLOR))));
 
         double progress = state == NodeState.DONE || unknown ? 0 : shownProgress(selected, research) / research.knowledgeCost();
-        boolean hasButton = state != NodeState.DONE;
-        int boxHeight = PAD * 2 + lines.size() * LINE + 3 + (progress > 0 ? 5 : 0) + (hasButton ? BUTTON_H + 4 : 0);
+        boolean hasButton = state != NodeState.DONE || ResearchScenes.has(selected);
+        int bodyHeight = PAD * 2 + lines.size() * LINE + 3 + (progress > 0 ? 5 : 0) + (hasButton ? BUTTON_H + 4 : 0);
+
+        var unlocks = unknown ? List.<Identifier>of() : unlocksOf(research);
+        int columns = Math.max(1, inner / UNLOCK_PITCH);
+        boolean named = bodyHeight + unlockSpace(unlocks.size(), UNLOCK_ROW, 1) <= height - 12;
+        int unlockHeight = named ? unlockSpace(unlocks.size(), UNLOCK_ROW, 1) : unlockSpace(unlocks.size(), UNLOCK_PITCH, columns);
+        int boxHeight = bodyHeight + unlockHeight;
 
         int nodeX = map.nodeX(selected);
         boolean onRight = nodeX >= (left + right) / 2;
@@ -771,9 +887,18 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         {
             if (index == spaced)
                 textY += 3;
-            graphics.text(font, lines.get(index).text(), x + PAD, textY, lines.get(index).color());
+            if (index == unlocksAt)
+                textY = extractUnlocks(graphics, unlocks, named, columns, x + PAD, textY, inner, mouseX, mouseY, constellationColor);
+            boolean besideSigil = index == spaced - 1;
+            if (besideSigil)
+                ResearchMapView.sigil(graphics, research.constellation(), x + PAD, textY - 1, 255);
+            graphics.text(font, lines.get(index).text(), x + PAD + (besideSigil ? sigilSpace : 0), textY, lines.get(index).color());
+            detailLines.add(new ResearchText.Placed(lines.get(index).text(), x + PAD + (besideSigil ? sigilSpace : 0), textY));
             textY += LINE;
         }
+
+        if (unlocksAt == lines.size())
+            textY = extractUnlocks(graphics, unlocks, named, columns, x + PAD, textY, inner, mouseX, mouseY, constellationColor);
 
         if (progress > 0)
         {
@@ -785,6 +910,45 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
         if (hasButton)
             placeAction(research, state, x + PAD, textY + 3, inner);
+    }
+
+    private static List<Identifier> unlocksOf(Research research)
+    {
+        return research.unlocks().stream().filter(BuiltInRegistries.ITEM::containsKey).toList();
+    }
+
+    private static int unlockSpace(int count, int pitch, int columns)
+    {
+        return count == 0 ? 0 : UNLOCK_GAP + UNLOCK_HEAD + (count + columns - 1) / columns * pitch;
+    }
+
+    /**
+     * Each thing by its name where the tablet has the height for it, otherwise just the icons, whose names wait under the cursor. Each opens its page.
+     */
+    private int extractUnlocks(GuiGraphicsExtractor graphics, List<Identifier> unlocks, boolean named, int columns, int x, int y, int inner, int mouseX, int mouseY, int tint)
+    {
+        if (unlocks.isEmpty())
+            return y;
+
+        y += UNLOCK_GAP;
+        graphics.text(font, Component.translatable("voidheart.research.unlocks"), x, y, MUTED_COLOR);
+        y += UNLOCK_HEAD;
+        for (int index = 0; index < unlocks.size(); index++)
+        {
+            var stack = new ItemStack(BuiltInRegistries.ITEM.getValue(unlocks.get(index)));
+            int itemX = named ? x : x + index % columns * UNLOCK_PITCH;
+            int itemY = named ? y + index * UNLOCK_ROW : y + index / columns * UNLOCK_PITCH;
+            var bounds = new Bounds(itemX, itemY, named ? inner : GLYPH_SIZE, GLYPH_SIZE);
+            boolean hovered = bounds.contains(mouseX, mouseY);
+            graphics.fill(itemX, itemY, itemX + GLYPH_SIZE, itemY + GLYPH_SIZE, ResearchItemPage.SLOT_PLATE);
+            if (hovered)
+                graphics.fill(bounds.x() - 1, bounds.y(), bounds.x() + bounds.width() + 1, bounds.y() + bounds.height(), (UNLOCK_HOVER << 24) | (tint & 0xFFFFFF));
+            graphics.item(stack, itemX, itemY);
+            if (named)
+                graphics.text(font, stack.getHoverName(), itemX + GLYPH_SIZE + 4, itemY + 4, hovered ? TEXT_COLOR : FRONTIER_COLOR);
+            unlockSlots.add(new Unlock(unlocks.get(index), stack, bounds, named));
+        }
+        return y + (named ? unlocks.size() * UNLOCK_ROW : (unlocks.size() + columns - 1) / columns * UNLOCK_PITCH);
     }
 
     private static List<Component> effects(Research research)
@@ -834,12 +998,18 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
                     ? Component.translatable("voidheart.research.reveal", insightCount(research.insightCost()))
                     : Component.translatable("voidheart.research.needs", insightCount(research.insightCost() - snapshot.insights()));
             case ACTIVE -> Component.translatable("voidheart.research.pause");
+            case DONE -> Component.translatable("voidheart.research.see_scene");
             default -> Component.translatable(snapshot.progress().getOrDefault(selected, 0D) > 0 ? "voidheart.research.resume" : "voidheart.research.begin");
         });
     }
 
     private void act()
     {
+        if (!pages.isEmpty())
+        {
+            sceneOfPage().ifPresent(this::openScene);
+            return;
+        }
         if (selected == null || !tree.containsKey(selected))
             return;
 
@@ -848,6 +1018,17 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             send(Action.Kind.REVEAL, selected);
         else if (state == NodeState.REVEALED || state == NodeState.ACTIVE)
             send(Action.Kind.TOGGLE, selected);
+        else if (state == NodeState.DONE)
+            openScene(selected);
+    }
+
+    private void openScene(Identifier research)
+    {
+        ResearchScenes.of(research).ifPresent(scene ->
+        {
+            sceneView = new ResearchSceneView(font, scene, ConstellationLook.of(tree.get(research).constellation()));
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.BOOK_PAGE_TURN, 1F));
+        });
     }
 
     private void refine()
@@ -866,6 +1047,34 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
     {
         super.extractTooltip(graphics, mouseX, mouseY);
+
+        if (sceneView != null)
+        {
+            var hint = sceneView.tooltip(mouseX, mouseY);
+            if (hint != null)
+                graphics.setComponentTooltipForNextFrame(font, List.of(hint), mouseX, mouseY);
+            return;
+        }
+
+        if (!pages.isEmpty())
+        {
+            var lines = pages.peek().tooltip(mouseX, mouseY);
+            if (!lines.isEmpty())
+                graphics.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
+            return;
+        }
+
+        var mention = ResearchText.linkAt(font, detailLines, mouseX, mouseY);
+        if (mention.isPresent())
+        {
+            graphics.setComponentTooltipForNextFrame(font, List.of(mention.get().tooltip().copy().withColor(MUTED_COLOR)), mouseX, mouseY);
+            return;
+        }
+
+        unlockSlots.stream().filter(slot -> slot.bounds().contains(mouseX, mouseY)).findFirst()
+                .ifPresent(slot -> graphics.setComponentTooltipForNextFrame(font, slot.named()
+                        ? List.of(Component.translatable("voidheart.page.read").withColor(MUTED_COLOR))
+                        : List.of(slot.stack().getHoverName(), Component.translatable("voidheart.page.read").withColor(MUTED_COLOR)), mouseX, mouseY));
 
         var fed = fedOpen ? fedAt(mouseX, mouseY) : null;
         if (fed != null)
@@ -922,11 +1131,76 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return lines;
     }
 
+    /**
+     * One step back through what was opened: a scene, then the pages in the order they were read, then the tablet on the map.
+     *
+     * @return false when nothing is left to go back from
+     */
+    private boolean stepBack()
+    {
+        if (sceneView != null)
+            sceneView = null;
+        else if (!pages.isEmpty())
+            pages.pop();
+        else if (selected != null || fedOpen)
+        {
+            selected = null;
+            fedOpen = false;
+        }
+        else
+            return false;
+        return true;
+    }
+
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
+        if (event.button() == InputConstants.MOUSE_BUTTON_4)
+        {
+            stepBack();
+            return true;
+        }
+
+        if (sceneView != null)
+        {
+            if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && sceneView.mouseClicked(event.x(), event.y()))
+                sceneView = null;
+            return true;
+        }
+
+        if (!pages.isEmpty())
+        {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT)
+                return true;
+            if (actionButton.visible && actionButton.isMouseOver(event.x(), event.y()))
+                return super.mouseClicked(event, doubleClick);
+            var mentioned = pages.peek().mentionAt(event.x(), event.y());
+            if (mentioned.isPresent())
+                follow(mentioned.get());
+            else if (pages.peek().overClose(event.x(), event.y()))
+                pages.pop();
+            else
+                pages.peek().linkAt(event.x(), event.y()).ifPresent(this::openPage);
+            return true;
+        }
+
         if (event.button() != InputConstants.MOUSE_BUTTON_LEFT)
             return super.mouseClicked(event, doubleClick);
+
+        var unlock = unlockSlots.stream().filter(slot -> slot.bounds().contains(event.x(), event.y())).findFirst();
+        if (unlock.isPresent())
+        {
+            lastClicked = null;
+            openPage(unlock.get().item());
+            return true;
+        }
+
+        var mentioned = ResearchText.linkAt(font, detailLines, event.x(), event.y());
+        if (mentioned.isPresent())
+        {
+            follow(mentioned.get());
+            return true;
+        }
 
         if (actionButton.visible && actionButton.isMouseOver(event.x(), event.y()))
         {
@@ -983,16 +1257,30 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     @Override
     public boolean keyPressed(KeyEvent event)
     {
+        if (sceneView != null)
+        {
+            if (event.key() == InputConstants.KEY_ESCAPE)
+                stepBack();
+            else
+                sceneView.keyPressed(event.key());
+            return true;
+        }
+
+        if (!pages.isEmpty())
+        {
+            if (event.key() == InputConstants.KEY_ESCAPE)
+                stepBack();
+            else if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER)
+                act();
+            return true;
+        }
+
         switch (event.key())
         {
             case InputConstants.KEY_ESCAPE ->
             {
-                if (selected != null || fedOpen)
-                {
-                    selected = null;
-                    fedOpen = false;
+                if (stepBack())
                     return true;
-                }
             }
             case InputConstants.KEY_UP ->
             {
@@ -1054,6 +1342,85 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     {
         var glyph = fedGlyph();
         return new int[] { glyph.x() + GLYPH_SIZE / 2, glyph.y() + GLYPH_SIZE / 2 };
+    }
+
+    public int[] scenePosition(String part, int step)
+    {
+        return switch (part)
+        {
+            case "expand" -> sceneView.expandPosition();
+            case "close" -> sceneView.closePosition();
+            case "play" -> sceneView.playPosition();
+            case "mark" -> sceneView.markPosition(step);
+            default -> sceneView.stageCenter();
+        };
+    }
+
+    public int[] unlockPosition(int index)
+    {
+        var bounds = unlockSlots.get(index).bounds();
+        return new int[] { bounds.x() + 8, bounds.y() + 8 };
+    }
+
+    public Optional<int[]> pageMentionPosition(Identifier research)
+    {
+        return pages.peek().mentionPosition(new ResearchText.Link(false, research));
+    }
+
+    public Optional<int[]> pageItemMentionPosition(Identifier item)
+    {
+        return pages.peek().mentionPosition(new ResearchText.Link(true, item));
+    }
+
+    public Identifier pageItem()
+    {
+        return pages.isEmpty() ? null : pages.peek().item();
+    }
+
+    public int[] pageSlotPosition(Identifier item)
+    {
+        return pages.peek().slotPosition(item);
+    }
+
+    public int[] pageClosePosition()
+    {
+        return pages.peek().closePosition();
+    }
+
+    public boolean actionVisible()
+    {
+        return actionButton.visible;
+    }
+
+    public boolean sceneOpen()
+    {
+        return sceneView != null;
+    }
+
+    public boolean sceneFullScreen()
+    {
+        return sceneView != null && sceneView.fullScreen();
+    }
+
+    public boolean scenePaused()
+    {
+        return sceneView != null && sceneView.paused();
+    }
+
+    public int sceneStep()
+    {
+        return sceneView == null ? -1 : sceneView.currentStep();
+    }
+
+    public int sceneSteps()
+    {
+        return sceneView == null ? 0 : sceneView.steps();
+    }
+
+    /** Holds the scene still on the end of a step, so that a test can look at it. */
+    public void holdScene(int step)
+    {
+        sceneView.holdAtEndOf(step);
     }
 
     public Identifier selected()

@@ -16,11 +16,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  */
 final class ResearchVoid
 {
-    record Light(double x, double y, double radius, double strength)
-    {
-    }
-
-    record Ring(double centerX, double centerY, double radiusX, double radiusY)
+    record Light(double x, double y, double radius, double strength, int rgb)
     {
     }
 
@@ -31,8 +27,7 @@ final class ResearchVoid
     private static final int   LIP_SHADE_COLOR = 0xFF08050C;
     private static final int   DEEP_COLOR      = 0xFF040208;
     private static final int   MID_COLOR       = 0xFF170E28;
-    private static final int   LIT_COLOR       = 0xFF3A2858;
-    private static final int   RING_COLOR      = 0xFF7A62A8;
+    static final int           LIT_RGB         = 0x3A2858;
     private static final int   STAR_COLOR      = 0xFFB8A8D8;
     private static final float TEAR_DEPTH      = 11;
     private static final float INNER_SHADOW    = 14;
@@ -42,7 +37,6 @@ final class ResearchVoid
     private static final int   LIGHT_LEVELS    = 4;
     private static final int   LIP_BRIGHT      = 0xFF7A62A8;
     private static final float STONE_SHADOW    = 12;
-    private static final float RING_DASH       = 3;
 
     private static final float[][] BAYER = {
             { 0 / 16F, 8 / 16F, 2 / 16F, 10 / 16F },
@@ -55,7 +49,7 @@ final class ResearchVoid
     {
     }
 
-    static void bake(Minecraft minecraft, Identifier target, int width, int height, int left, int right, List<Light> lights, List<Ring> rings, long seed)
+    static void bake(Minecraft minecraft, Identifier target, int width, int height, int left, int right, List<Light> lights, long seed)
     {
         var stone = readStone(minecraft);
         var image = new NativeImage(width, height, false);
@@ -72,7 +66,7 @@ final class ResearchVoid
                 else
                 {
                     float wall = Math.min(x - edgeLeft, edgeRight - 1 - x);
-                    color = voidAt(x, y, wall, lights, rings, seed);
+                    color = voidAt(x, y, wall, lights, seed);
                 }
                 image.setPixel(x, y, color);
             }
@@ -122,15 +116,24 @@ final class ResearchVoid
                 (int) (ARGB.blue(texel) * shade));
     }
 
-    private static int voidAt(int x, int y, float wall, List<Light> lights, List<Ring> rings, long seed)
+    private static int voidAt(int x, int y, float wall, List<Light> lights, long seed)
     {
         float light = 0;
+        float red = 0;
+        float green = 0;
+        float blue = 0;
         for (var source : lights)
         {
             double dx = x - source.x();
             double dy = y - source.y();
-            light += (float) (source.strength() * Math.exp(-(dx * dx + dy * dy) / (source.radius() * source.radius())));
+            float reached = (float) (source.strength() * Math.exp(-(dx * dx + dy * dy) / (source.radius() * source.radius())));
+            light += reached;
+            red += reached * ARGB.red(source.rgb());
+            green += reached * ARGB.green(source.rgb());
+            blue += reached * ARGB.blue(source.rgb());
         }
+        // Each island lights the dark in its own hue, and they mix where they meet
+        int litColor = light > 0 ? ARGB.color(255, (int) (red / light), (int) (green / light), (int) (blue / light)) : 0xFF000000 | LIT_RGB;
         // Stepped and dithered, so the light stops at an edge rather than fading into everything
         light = light < LIGHT_EDGE ? 0 : (float) Math.floor(Math.min(1, light) * LIGHT_LEVELS + BAYER[y & 3][x & 3]) / LIGHT_LEVELS;
 
@@ -139,15 +142,7 @@ final class ResearchVoid
                 + smooth(x * SMOKE_SCALE * 4.1F, y * SMOKE_SCALE * 4.1F + warpX, seed + 43) * 0.35F;
 
         int color = ARGB.srgbLerp(0.45F * smoke + 0.1F, DEEP_COLOR, MID_COLOR);
-        color = ARGB.srgbLerp(light * (0.5F + 0.5F * smoke), color, LIT_COLOR);
-
-        for (var ring : rings)
-        {
-            double dx = (x - ring.centerX()) / ring.radiusX();
-            double dy = (y - ring.centerY()) / ring.radiusY();
-            if (Math.abs(Math.sqrt(dx * dx + dy * dy) - 1) * ring.radiusX() < 0.6 && Math.floorMod((int) (Math.atan2(dy, dx) * ring.radiusX() / RING_DASH), 2) == 0)
-                color = ARGB.srgbLerp(0.24F + light * 0.4F, color, RING_COLOR);
-        }
+        color = ARGB.srgbLerp(light * (0.5F + 0.5F * smoke), color, litColor);
 
         if (hash(x, y, seed) < STAR_CHANCE)
             color = ARGB.srgbLerp((light > 0 ? 0.55F : 0.14F) * (0.4F + hash(y, x, seed) * 0.6F), color, STAR_COLOR);

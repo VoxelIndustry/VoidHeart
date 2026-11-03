@@ -1,6 +1,8 @@
 {
   "tier": 3,
-  "row": 4,
+  "constellation": "archive",
+  "x": 0.84,
+  "y": -0.74,
   "icon": "minecraft:sculk_catalyst",
   "insight_cost": 18,
   "knowledge_cost": 1500,

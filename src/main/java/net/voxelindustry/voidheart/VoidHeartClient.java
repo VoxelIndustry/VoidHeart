@@ -57,6 +57,8 @@ import net.voxelindustry.voidheart.client.render.oculus.OculusSky;
 import net.voxelindustry.voidheart.common.content.oculus.OculusChunkPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusSightPayloads;
 import net.voxelindustry.voidheart.client.render.oculus.OculusBeholderLayer;
+import net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry;
+import net.voxelindustry.voidheart.client.render.ScenePictureRender;
 import net.voxelindustry.voidheart.client.render.BeholderRender;
 import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
@@ -78,6 +80,7 @@ public class VoidHeartClient implements ClientModInitializer
     public void onInitializeClient()
     {
         ModelLoadingPlugin.register(new VoidHeartModelLoadingPlugin());
+        PictureInPictureRendererRegistry.register(context -> new ScenePictureRender());
 
         // A forge source pillar raises its item to the forge item height so the beam runs level
         BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<VoidPillarTile>(ctx, VoidPillarTile::getStack,
@@ -103,6 +106,7 @@ public class VoidHeartClient implements ClientModInitializer
         MenuScreens.register(VoidHeartMenus.PERMEABLE_BARRIER, PermeableBarrierScreen::new);
         MenuScreens.register(VoidHeartMenus.KNOWLEDGE_REPOSITORY, ResearchScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Snapshot.TYPE, (payload, context) -> ResearchScreen.snapshot = payload);
+        ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Recipes.TYPE, (payload, context) -> ResearchScreen.recipeSheets = payload.sheets());
         ItemTooltipCallback.EVENT.register(ResearchScreen::appendKnowledgeTooltip);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);

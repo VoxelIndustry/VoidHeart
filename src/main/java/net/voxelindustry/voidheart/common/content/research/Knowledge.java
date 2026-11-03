@@ -172,6 +172,18 @@ public class Knowledge
     }
 
     /**
+     * The research that names a recipe, whether or not locks are turned on.
+     */
+    static Optional<Identifier> researchNaming(RegistryAccess registries, Identifier recipe)
+    {
+        return tree(registries).entrySet().stream()
+                .filter(entry -> entry.getValue().recipes().contains(recipe))
+                .map(Map.Entry::getKey)
+                .sorted()
+                .findFirst();
+    }
+
+    /**
      * The research a recipe waits for. Recipes no research names stay free.
      */
     public static Optional<Identifier> lockOf(RegistryAccess registries, Identifier recipe)

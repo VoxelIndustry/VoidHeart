@@ -89,7 +89,7 @@ public class ForgePreviewRender
         }
     }
 
-    private static BlockState ghostState(ShatterForgeLayout.Expected block, HashSet<BlockPos> conduits)
+    public static BlockState ghostState(ShatterForgeLayout.Expected block, java.util.Set<BlockPos> conduits)
     {
         return switch (block.part())
         {
@@ -110,7 +110,7 @@ public class ForgePreviewRender
         };
     }
 
-    private static List<BlockStateModelPart> partsOf(BlockState state)
+    static List<BlockStateModelPart> partsOf(BlockState state)
     {
         return PARTS_CACHE.computeIfAbsent(state, key ->
         {

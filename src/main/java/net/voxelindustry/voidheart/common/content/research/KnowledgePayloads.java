@@ -49,6 +49,24 @@ public class KnowledgePayloads
     }
 
     /**
+     * What the repository's pages need to know of recipes, which otherwise never leave the server. Sent when the screen opens.
+     */
+    public record Recipes(List<RecipeSheet> sheets) implements CustomPacketPayload
+    {
+        public static final Type<Recipes> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "knowledge_recipes"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Recipes> STREAM_CODEC = StreamCodec.composite(
+                RecipeSheet.STREAM_CODEC.apply(ByteBufCodecs.list()), Recipes::sheets,
+                Recipes::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type()
+        {
+            return TYPE;
+        }
+    }
+
+    /**
      * Sent when a player presses something on the repository screen.
      */
     public record Action(Kind kind, Optional<Identifier> research) implements CustomPacketPayload
@@ -77,6 +95,7 @@ public class KnowledgePayloads
     public static void register()
     {
         PayloadTypeRegistry.clientboundPlay().register(Snapshot.TYPE, Snapshot.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Recipes.TYPE, Recipes.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Action.TYPE, Action.STREAM_CODEC);
         ServerPlayNetworking.registerGlobalReceiver(Action.TYPE, KnowledgePayloads::handle);
     }

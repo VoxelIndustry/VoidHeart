@@ -126,6 +126,7 @@ public class KnowledgeRepositoryBlock extends Block implements EntityBlock
             }
         });
         Knowledge.sendSnapshot(player);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new KnowledgePayloads.Recipes(RecipeSheet.collect(player.level().getServer())));
     }
 
     @Override

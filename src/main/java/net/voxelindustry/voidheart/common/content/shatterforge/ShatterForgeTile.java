@@ -123,6 +123,11 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
      */
     public static final float BEAM_HEIGHT = 1.35F;
 
+    /**
+     * Two pairs on the track and the forge's own make the three that recipes needing no essence ask for, so a first preview built as shown can craft.
+     */
+    public static final int STARTING_TRACK_PAIRS = 2;
+
     private static final int BEAM_FORM_MIN_TICKS = 30;
 
     private int beamFormTicks;
@@ -772,7 +777,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     /**
-     * First use shows the smallest recipe track, or the track already built when it is longer or closed.
+     * First use shows a track that can run the basic recipes, or the track already built when it is longer or closed.
      * Later uses grow an open track by one monolith pair, or shrink it when sneaking.
      */
     public void stepPreview(Player player, boolean shrink)
@@ -787,7 +792,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         var closed = ShatterForgeLayout.isEmitter(view, ShatterForgeLayout.endSlot(worldPosition, previewDirection, built));
 
         if (!active)
-            previewPairs = closed ? built : Math.max(minimumTrackPairs(), built);
+            previewPairs = closed ? built : Math.max(STARTING_TRACK_PAIRS, built);
         else if (shrink)
             previewPairs = Math.max(0, previewPairs - 1);
         else if (!closed)
@@ -798,14 +803,6 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
         setChanged();
         sync();
-    }
-
-    private static int minimumTrackPairs()
-    {
-        return VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getRecipes().stream()
-                .mapToInt(recipe -> recipe.getMonolithCount() - 1)
-                .min()
-                .orElse(2);
     }
 
     public BeamComposition getBeamComposition()

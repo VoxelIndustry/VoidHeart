@@ -35,7 +35,7 @@ class PlayerKnowledgeTest
 
     private static Research research(int insights, double cost, List<Identifier> requires, double passive, double cap)
     {
-        return new Research(1, 0, ITEM, insights, cost, 1, requires, passive, cap, List.of());
+        return new Research(1, Constellation.RITES, 0, 0, ITEM, insights, cost, 1, requires, passive, cap, List.of(), List.of());
     }
 
     private PlayerKnowledge data;

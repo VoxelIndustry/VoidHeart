@@ -1,12 +1,17 @@
 {
   "tier": 2,
-  "row": 3,
+  "constellation": "artifices",
+  "x": -0.52,
+  "y": 0.52,
   "icon": "voidheart:oculus_table",
   "insight_cost": 7,
   "knowledge_cost": 200,
   "knowledge_per_second": 0.75,
   "requires": [
     "voidheart:void_flesh"
+  ],
+  "unlocks": [
+    "voidheart:oculus_table"
   ],
   "recipes": [
     "voidheart:oculus_table"

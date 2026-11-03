@@ -1,6 +1,8 @@
 {
   "tier": 2,
-  "row": 5,
+  "constellation": "archive",
+  "x": 0.78,
+  "y": 0.72,
   "icon": "minecraft:recovery_compass",
   "insight_cost": 7,
   "knowledge_cost": 200,
