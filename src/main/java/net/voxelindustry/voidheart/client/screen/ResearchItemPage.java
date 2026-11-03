@@ -14,7 +14,6 @@ import net.voxelindustry.voidheart.common.content.research.Research;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -44,6 +43,19 @@ final class ResearchItemPage
     private static final int GRID        = 3;
     private static final int BARE_CELL   = 0xFF241E2C;
 
+    private static final int ALTAR_U       = 70;
+    private static final int ALTAR_WIDTH   = 13;
+    private static final int PILLAR_U      = 84;
+    private static final int PILLAR_WIDTH  = 9;
+    private static final int RITE_ICON_V   = 141;
+    private static final int RITE_ICON_H   = 13;
+    private static final int RITE_ICON_GAP = 2;
+    private static final int RITE_RULE_GAP = 4;
+    private static final int CATALYST_X    = ALTAR_WIDTH + RITE_ICON_GAP;
+    private static final int RITE_RULE_X   = CATALYST_X + SLOT - 1 + RITE_RULE_GAP;
+    private static final int PILLAR_ICON_X = RITE_RULE_X + 1 + RITE_RULE_GAP;
+    private static final int PILLARS_X     = PILLAR_ICON_X + PILLAR_WIDTH + RITE_ICON_GAP;
+
     private static final int  TABLET_COLOR = 0xFF0B0810;
     private static final int  RULE_COLOR   = 0xFF4A3860;
     private static final int  TEXT_COLOR   = 0xFFEDE6FF;
@@ -65,33 +77,58 @@ final class ResearchItemPage
     {
     }
 
+    private record RiteIcon(Component tooltip, Rect bounds)
+    {
+    }
+
     /**
      * One titled group of things, with a line beneath it when there is more to say.
      *
      * @param cells   an empty one is a place left bare, as in a crafting pattern
      * @param columns how many cells make a row, 0 to fill the column's width
      */
-    private record Section(Component label, List<Optional<RecipeSheet.Part>> cells, Optional<Component> note, int columns)
+    private record Section(Component label, List<Optional<RecipeSheet.Part>> cells, Optional<Component> note, int columns, boolean rite)
     {
         static Section flow(Component label, List<RecipeSheet.Part> parts, Optional<Component> note)
         {
-            return new Section(label, parts.stream().map(Optional::of).toList(), note, 0);
+            return new Section(label, parts.stream().map(Optional::of).toList(), note, 0, false);
         }
 
         static Section grid(Component label, List<Optional<Identifier>> cells)
         {
-            return new Section(label, cells.stream().map(cell -> cell.map(item -> new RecipeSheet.Part(item, 1))).toList(), Optional.empty(), GRID);
+            return new Section(label, cells.stream().map(cell -> cell.map(item -> new RecipeSheet.Part(item, 1))).toList(), Optional.empty(), GRID, false);
+        }
+
+        /**
+         * @param parts what goes on the altar first, then what goes on the pillars
+         */
+        static Section rite(Component label, List<RecipeSheet.Part> parts, Optional<Component> note)
+        {
+            return new Section(label, parts.stream().map(Optional::of).toList(), note, 0, true);
         }
 
         int rows(int width)
         {
             int perRow = columnsIn(width);
-            return (cells.size() + perRow - 1) / perRow;
+            int flowing = rite ? cells.size() - 1 : cells.size();
+            return Math.max(rite ? 1 : 0, (flowing + perRow - 1) / perRow);
         }
 
         int columnsIn(int width)
         {
+            if (rite)
+                return Math.max(1, (width - PILLARS_X) / SLOT);
             return columns > 0 ? columns : Math.max(1, width / SLOT);
+        }
+
+        Rect cellBounds(int index, int x, int y, int width)
+        {
+            if (rite && index == 0)
+                return new Rect(x + CATALYST_X, y, SLOT - 1, SLOT - 1);
+
+            int perRow = columnsIn(width);
+            int flowing = rite ? index - 1 : index;
+            return new Rect(x + (rite ? PILLARS_X : 0) + flowing % perRow * SLOT, y + flowing / perRow * SLOT, SLOT - 1, SLOT - 1);
         }
     }
 
@@ -105,6 +142,7 @@ final class ResearchItemPage
     private final List<ResearchText.Placed> placed = new ArrayList<>();
     private final List<Section>     sections = new ArrayList<>();
     private final List<Slot>        slots    = new ArrayList<>();
+    private final List<RiteIcon>    riteIcons = new ArrayList<>();
     private final Component         lockedNote;
 
     private Rect tablet = new Rect(0, 0, 0, 0);
@@ -153,7 +191,7 @@ final class ResearchItemPage
             else if (sheet.kind() == RecipeSheet.Kind.CRAFTING)
                 sections.add(Section.flow(Component.translatable("voidheart.page.made.crafting_any"), sheet.inputs(), noteOf(sheet)));
             else
-                sections.add(Section.flow(Component.translatable("voidheart.page.made." + sheet.kind().name().toLowerCase(Locale.ROOT)), sheet.inputs(), noteOf(sheet)));
+                sections.add(Section.rite(Component.translatable("voidheart.page.made.altar"), sheet.inputs(), noteOf(sheet)));
         }
 
         alternatives.values().forEach(group -> sections.add(Section.flow(
@@ -241,6 +279,7 @@ final class ResearchItemPage
         }
 
         slots.clear();
+        riteIcons.clear();
         if (twoColumns)
             extractSide(graphics, mouseX, mouseY, tablet.x() + width - PAD - sideWidth, tablet.y() + HEADER + PAD, sideWidth, look);
 
@@ -265,7 +304,6 @@ final class ResearchItemPage
 
         for (var section : sections)
         {
-            int columns = section.columnsIn(width);
             int rows = section.rows(width);
             int needed = LABEL + rows * SLOT + (section.note().isPresent() ? LINE : 0);
             if (y + needed > bottom)
@@ -276,9 +314,11 @@ final class ResearchItemPage
 
             graphics.text(font, section.label(), x, y, MUTED_COLOR);
             y += LABEL;
+            if (section.rite())
+                extractRiteFrame(graphics, x, y, rows, section.cells().size() > 1, mouseX, mouseY);
             for (int index = 0; index < section.cells().size(); index++)
             {
-                var bounds = new Rect(x + index % columns * SLOT, y + index / columns * SLOT, SLOT - 1, SLOT - 1);
+                var bounds = section.cellBounds(index, x, y, width);
                 if (section.cells().get(index).isEmpty())
                 {
                     graphics.fill(bounds.x(), bounds.y(), bounds.x() + bounds.width(), bounds.y() + bounds.height(), BARE_CELL);
@@ -313,6 +353,27 @@ final class ResearchItemPage
         }
     }
 
+    /**
+     * The altar's icon before what goes on it, and past a rule the pillar's icon before what goes on them.
+     */
+    private void extractRiteFrame(GuiGraphicsExtractor graphics, int x, int y, int rows, boolean hasPillars, int mouseX, int mouseY)
+    {
+        extractRiteIcon(graphics, x, y, ALTAR_U, ALTAR_WIDTH, "voidheart.page.rite.altar", mouseX, mouseY);
+        if (!hasPillars)
+            return;
+
+        graphics.fill(x + RITE_RULE_X, y, x + RITE_RULE_X + 1, y + rows * SLOT - 1, RULE_COLOR);
+        extractRiteIcon(graphics, x + PILLAR_ICON_X, y, PILLAR_U, PILLAR_WIDTH, "voidheart.page.rite.pillars", mouseX, mouseY);
+    }
+
+    private void extractRiteIcon(GuiGraphicsExtractor graphics, int x, int y, int u, int width, String tooltipKey, int mouseX, int mouseY)
+    {
+        var bounds = new Rect(x, y + (SLOT - 1 - RITE_ICON_H) / 2, width, RITE_ICON_H);
+        int tint = bounds.contains(mouseX, mouseY) ? ICON_HOVER : ICON_COLOR;
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ResearchMapView.SPRITES, bounds.x(), bounds.y(), u, RITE_ICON_V, width, RITE_ICON_H, ResearchMapView.ATLAS, ResearchMapView.ATLAS, tint);
+        riteIcons.add(new RiteIcon(Component.translatable(tooltipKey), bounds));
+    }
+
     static String pageKey(Identifier item)
     {
         return "voidheart.page." + item.getPath();
@@ -344,6 +405,12 @@ final class ResearchItemPage
         if (mention.isPresent())
             return List.of(mention.get().tooltip().copy().withColor(MUTED_COLOR));
 
+        for (var icon : riteIcons)
+        {
+            if (icon.bounds().contains(mouseX, mouseY))
+                return List.of(icon.tooltip());
+        }
+
         for (var slot : slots)
         {
             if (!slot.bounds().contains(mouseX, mouseY))
@@ -369,6 +436,14 @@ final class ResearchItemPage
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * @return the centers of the icons of the altar rites on this page, in the order they are drawn
+     */
+    List<int[]> riteIconPositions()
+    {
+        return riteIcons.stream().map(icon -> new int[] { icon.bounds().x() + icon.bounds().width() / 2, icon.bounds().y() + icon.bounds().height() / 2 }).toList();
     }
 
     int[] closePosition()

@@ -175,6 +175,21 @@ public class ResearchSceneClientTest implements FabricClientGameTest
         if (context.computeOnClient(client -> RecipeSheet.making(ResearchScreen.recipeSheets, id("void_amalgam"), ResearchScreen.snapshot.completed()).isEmpty()))
             throw new AssertionError("The page of something researched should know the altar recipe that makes it");
         context.takeScreenshot("research-page-amalgam");
+
+        var riteIcons = context.computeOnClient(client -> screen(client).pageRiteIconPositions());
+        if (riteIcons.size() != 2)
+            throw new AssertionError("An altar recipe should mark the altar and the pillars, got " + riteIcons.size() + " icons");
+        hover(context, riteIcons.get(0));
+        context.takeScreenshot("research-page-amalgam-altar-tooltip");
+        hover(context, riteIcons.get(1));
+        context.takeScreenshot("research-page-amalgam-pillars-tooltip");
+        hover(context, new int[] { 2, 2 });
+        size(context, 640, 480, 2);
+        context.waitTicks(3);
+        context.takeScreenshot("research-page-amalgam-320x240");
+        size(context, 854, 480, 2);
+        context.waitTicks(3);
+
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(3);
 
