@@ -490,7 +490,20 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     private Component described(String key)
     {
-        return ResearchText.of(key, new ResearchText.Knowing(tree, id -> stateOf(id, tree.get(id)), this::ownerOf));
+        return ResearchText.of(key, new ResearchText.Knowing(tree, id -> stateOf(id, tree.get(id)), this::ownerOf, this::textValue));
+    }
+
+    private String textValue(String name)
+    {
+        var columns = snapshot.columns();
+        return switch (name)
+        {
+            case "column_radius" -> wholeNumber(columns.radius());
+            case "column_capacity" -> wholeNumber(columns.capacity());
+            case "column_count" -> wholeNumber(columns.count());
+            case "column_total" -> wholeNumber(columns.total());
+            default -> name;
+        };
     }
 
     private Optional<Constellation> concealedIn(Identifier item)
@@ -672,6 +685,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         rows.add(new CardRow(Component.translatable("voidheart.research.card.gathering"), String.format(Locale.ROOT, "%.2f/s", snapshot.rate()), TEXT_COLOR));
         activeResearch().ifPresent(research -> rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format(Locale.ROOT, "%.2f/s", research.knowledgePerSecond()), TEXT_COLOR)));
         rows.add(new CardRow(Component.translatable("voidheart.research.card.holds"), wholeNumber(snapshot.cap()), TEXT_COLOR));
+        rows.add(new CardRow(Component.translatable("voidheart.research.card.columns"), wholeNumber(snapshot.columns().count()), TEXT_COLOR));
 
         if (knowledge >= snapshot.cap() && change >= 0)
             rows.add(new CardRow(Component.translatable("voidheart.research.card.full"), Component.translatable("voidheart.research.card.full_lost").getString(), LACK_COLOR));
@@ -956,8 +970,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         var effects = new ArrayList<Component>();
         if (research.passiveBonus() > 0)
             effects.add(Component.translatable("voidheart.research.passive_bonus", String.format(Locale.ROOT, "%.2f", research.passiveBonus())));
-        if (research.capBonus() > 0)
-            effects.add(Component.translatable("voidheart.research.cap_bonus", wholeNumber(research.capBonus())));
+        if (research.columnCapacity() > 0)
+            effects.add(Component.translatable("voidheart.research.column_capacity", wholeNumber(research.columnCapacity())));
         return effects;
     }
 

@@ -123,6 +123,38 @@ class KnowledgeMathTest
     }
 
     @Test
+    void columnQuarter_splitsTheSpaceInFour()
+    {
+        assertThat(KnowledgeMath.columnQuarter(0.25, 0.25)).isEqualTo(0);
+        assertThat(KnowledgeMath.columnQuarter(0.75, 0.25)).isEqualTo(1);
+        assertThat(KnowledgeMath.columnQuarter(0.25, 0.75)).isEqualTo(2);
+        assertThat(KnowledgeMath.columnQuarter(0.75, 0.75)).isEqualTo(3);
+        for (int quarter = 0; quarter < 4; quarter++)
+            assertThat(KnowledgeMath.columnQuarter(KnowledgeMath.columnCenterX(quarter), KnowledgeMath.columnCenterZ(quarter))).isEqualTo(quarter);
+    }
+
+    @Test
+    void columnHeightLevel_neverMatchesATouchingColumn()
+    {
+        for (int x = -12; x <= 12; x++)
+            for (int z = -12; z <= 12; z++)
+                for (int dx = -1; dx <= 1; dx++)
+                    for (int dz = -1; dz <= 1; dz++)
+                        if (dx != 0 || dz != 0)
+                            assertThat(KnowledgeMath.columnHeightLevel(x, z)).as("%s %s against %s %s", x, z, dx, dz).isNotEqualTo(KnowledgeMath.columnHeightLevel(x + dx, z + dz));
+    }
+
+    @Test
+    void columnWave_reachesFurtherColumnsLater()
+    {
+        // At the crest in the center, a column one wavelength away is too, and a quarter of a period later than one a quarter away
+        assertThat(KnowledgeMath.columnWave(35, 0, 140, 5)).isCloseTo(1, within(1E-9));
+        assertThat(KnowledgeMath.columnWave(35, 5, 140, 5)).isCloseTo(1, within(1E-9));
+        assertThat(KnowledgeMath.columnWave(35, 1.25, 140, 5)).isCloseTo(0, within(1E-9));
+        assertThat(KnowledgeMath.columnWave(70, 1.25, 140, 5)).isCloseTo(1, within(1E-9));
+    }
+
+    @Test
     void secondsToReach_coversReachedRisingAndFalling()
     {
         assertThat(KnowledgeMath.secondsToReach(12, 10, 0.1)).isZero();

@@ -2,6 +2,8 @@ package net.voxelindustry.voidheart.common.content.research;
 
 public final class KnowledgeMath
 {
+    private static final int[] COLUMN_HEIGHT_LEVELS = { 2, 0, 3, 1, 4 };
+
     private KnowledgeMath()
     {
     }
@@ -36,6 +38,37 @@ public final class KnowledgeMath
     public static double feedMultiplier(int alreadyFed)
     {
         return exhaustion(alreadyFed).multiplier;
+    }
+
+    /** Which of the four columns of a block space a point falls in: bit 0 for the east half, bit 1 for the south one. */
+    public static int columnQuarter(double x, double z)
+    {
+        return (x >= 0.5 ? 1 : 0) | (z >= 0.5 ? 2 : 0);
+    }
+
+    public static double columnCenterX(int quarter)
+    {
+        return (quarter & 1) == 0 ? 0.25 : 0.75;
+    }
+
+    public static double columnCenterZ(int quarter)
+    {
+        return (quarter & 2) == 0 ? 0.25 : 0.75;
+    }
+
+    /** From -1 to 1, spreading outward: the further from the center of its cluster, the later a column reaches the same height. */
+    public static double columnWave(double ticks, double distance, double periodTicks, double wavelength)
+    {
+        return Math.sin(2 * Math.PI * (ticks / periodTicks - distance / wavelength));
+    }
+
+    /**
+     * Which of five heights a column floats at, from where it stands on the grid of half blocks. Scrambled to look unplanned, yet any two touching columns,
+     * diagonals included, always land on different ones: x + 2z changes by 1, 2 or 3 between them, never by 5.
+     */
+    public static int columnHeightLevel(int halfBlockX, int halfBlockZ)
+    {
+        return COLUMN_HEIGHT_LEVELS[Math.floorMod(halfBlockX + 2 * halfBlockZ, COLUMN_HEIGHT_LEVELS.length)];
     }
 
     public static double accrue(double knowledge, double cap, double rate, double seconds)

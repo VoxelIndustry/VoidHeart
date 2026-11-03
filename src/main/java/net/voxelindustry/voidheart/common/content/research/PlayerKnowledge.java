@@ -33,7 +33,8 @@ public class PlayerKnowledge
             Identifier.CODEC.listOf().optionalFieldOf("completed", List.of()).forGetter(data -> List.copyOf(data.completed)),
             Codec.unboundedMap(Identifier.CODEC, Codec.DOUBLE).optionalFieldOf("progress", Map.of()).forGetter(data -> data.progress),
             Identifier.CODEC.optionalFieldOf("active").forGetter(PlayerKnowledge::getActive),
-            GlobalPos.CODEC.optionalFieldOf("repository").forGetter(PlayerKnowledge::getRepository)
+            GlobalPos.CODEC.optionalFieldOf("repository").forGetter(PlayerKnowledge::getRepository),
+            Codec.INT.optionalFieldOf("columns", 0).forGetter(PlayerKnowledge::getColumns)
     ).apply(instance, PlayerKnowledge::new));
 
     public enum Feed
@@ -62,14 +63,17 @@ public class PlayerKnowledge
     private       Optional<Identifier>     active;
     @Getter
     private       Optional<GlobalPos>      repository;
+    /** Knowledge Columns around the bound repository when it was last looked at, since it may be unloaded when knowledge flows. */
+    @Getter
+    private       int                      columns;
 
     public PlayerKnowledge()
     {
-        this(0, -1, STARTING_INSIGHTS, 0, Map.of(), List.of(), List.of(), Map.of(), Optional.empty(), Optional.empty());
+        this(0, -1, STARTING_INSIGHTS, 0, Map.of(), List.of(), List.of(), Map.of(), Optional.empty(), Optional.empty(), 0);
     }
 
     private PlayerKnowledge(double knowledge, long lastSettled, int insights, int insightsBought, Map<Identifier, Integer> fed, List<Identifier> revealed,
-                            List<Identifier> completed, Map<Identifier, Double> progress, Optional<Identifier> active, Optional<GlobalPos> repository)
+                            List<Identifier> completed, Map<Identifier, Double> progress, Optional<Identifier> active, Optional<GlobalPos> repository, int columns)
     {
         this.knowledge = knowledge;
         this.lastSettled = lastSettled;
@@ -81,6 +85,7 @@ public class PlayerKnowledge
         this.progress = new HashMap<>(progress);
         this.active = active;
         this.repository = repository;
+        this.columns = columns;
     }
 
     /**
@@ -95,7 +100,13 @@ public class PlayerKnowledge
 
     public double cap(KnowledgeRules rules, Map<Identifier, Research> tree)
     {
-        return rules.baseCap() + completedOf(tree).stream().mapToDouble(Research::capBonus).sum();
+        return rules.baseCap() + columns * columnCapacity(tree);
+    }
+
+    /** What each Knowledge Column holds, from the deepest archive researched. */
+    public double columnCapacity(Map<Identifier, Research> tree)
+    {
+        return completedOf(tree).stream().mapToDouble(Research::columnCapacity).max().orElse(0);
     }
 
     private List<Research> completedOf(Map<Identifier, Research> tree)
@@ -200,7 +211,15 @@ public class PlayerKnowledge
 
     public void bind(Optional<GlobalPos> repository)
     {
+        // The columns around another repository are not these ones, it reports its own shortly
+        if (!this.repository.equals(repository))
+            columns = 0;
         this.repository = repository;
+    }
+
+    public void setColumns(int columns)
+    {
+        this.columns = Math.max(0, columns);
     }
 
     public void addKnowledge(double amount)

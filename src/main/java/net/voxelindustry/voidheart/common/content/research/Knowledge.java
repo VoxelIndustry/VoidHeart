@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.research;
 
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.registry.DynamicRegistries;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.GlobalPos;
@@ -48,12 +49,19 @@ public class Knowledge
     public static void register()
     {
         DynamicRegistries.registerSynced(REGISTRY, Research.CODEC);
+        UseBlockCallback.EVENT.register(KnowledgeRepositoryBlock::corruptLectern);
     }
 
     public static KnowledgeRules rules()
     {
         var config = VoidHeartConfig.get();
         return new KnowledgeRules(config.knowledgeBaseRate, config.knowledgeBaseCap, config.insightBaseCost, config.insightCostGrowth);
+    }
+
+    /** How far from a repository its columns count, in every direction. */
+    public static int columnRadius()
+    {
+        return VoidHeartConfig.get().knowledgeColumnRadius;
     }
 
     public static Map<Identifier, Research> tree(RegistryAccess registries)
@@ -113,7 +121,8 @@ public class Knowledge
                 new HashMap<>(data.getProgress()),
                 List.copyOf(data.getRevealed()),
                 List.copyOf(data.getCompleted()),
-                new HashMap<>(data.getFed())));
+                new HashMap<>(data.getFed()),
+                new KnowledgePayloads.ColumnInfo(data.getColumns(), data.columnCapacity(tree), columnRadius())));
     }
 
     public static void bind(MinecraftServer server, UUID player, GlobalPos repository)
@@ -131,6 +140,22 @@ public class Knowledge
             data.bind(Optional.empty());
             KnowledgeState.get(server).setDirty();
         }
+    }
+
+    /**
+     * Called by a repository for its owner, and ignored unless that owner is bound to it.
+     */
+    public static void reportColumns(MinecraftServer server, UUID player, GlobalPos repository, int columns)
+    {
+        var state = KnowledgeState.get(server);
+        var data = state.of(player);
+        if (data.getColumns() == columns || data.getRepository().filter(repository::equals).isEmpty())
+            return;
+
+        // Settled first, so that the time already passed does not count with the new capacity
+        of(server, player);
+        data.setColumns(columns);
+        state.setDirty();
     }
 
     public static double valueOf(ItemStack stack)

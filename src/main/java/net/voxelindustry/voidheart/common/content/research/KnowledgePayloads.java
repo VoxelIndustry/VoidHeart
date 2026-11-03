@@ -20,10 +20,27 @@ public class KnowledgePayloads
     /**
      * What the repository screen shows, sent every second while it is open and after every action.
      */
-    public record Snapshot(double knowledge, double cap, double rate, int insights, double nextInsightCost, double insightCostGrowth, Optional<Identifier> active,
-                           Map<Identifier, Double> progress, List<Identifier> revealed, List<Identifier> completed, Map<Identifier, Integer> fed) implements CustomPacketPayload
+    /** What the columns of a repository come to. Told by the server since research and its config both decide it. */
+    public record ColumnInfo(int count, double capacity, int radius)
     {
-        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, 1, Optional.empty(), Map.of(), List.of(), List.of(), Map.of());
+        public static final ColumnInfo NONE = new ColumnInfo(0, 0, 0);
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, ColumnInfo> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, ColumnInfo::count,
+                ByteBufCodecs.DOUBLE, ColumnInfo::capacity,
+                ByteBufCodecs.VAR_INT, ColumnInfo::radius,
+                ColumnInfo::new);
+
+        public double total()
+        {
+            return count * capacity;
+        }
+    }
+
+    public record Snapshot(double knowledge, double cap, double rate, int insights, double nextInsightCost, double insightCostGrowth, Optional<Identifier> active,
+                           Map<Identifier, Double> progress, List<Identifier> revealed, List<Identifier> completed, Map<Identifier, Integer> fed, ColumnInfo columns) implements CustomPacketPayload
+    {
+        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, 1, Optional.empty(), Map.of(), List.of(), List.of(), Map.of(), ColumnInfo.NONE);
 
         public static final Type<Snapshot> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "knowledge_snapshot"));
 
@@ -39,6 +56,7 @@ public class KnowledgePayloads
                 Identifier.STREAM_CODEC.apply(ByteBufCodecs.list()), Snapshot::revealed,
                 Identifier.STREAM_CODEC.apply(ByteBufCodecs.list()), Snapshot::completed,
                 ByteBufCodecs.<RegistryFriendlyByteBuf, Identifier, Integer, Map<Identifier, Integer>>map(HashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.VAR_INT), Snapshot::fed,
+                ColumnInfo.STREAM_CODEC, Snapshot::columns,
                 Snapshot::new);
 
         @Override

@@ -18,6 +18,8 @@ import net.minecraft.world.inventory.CraftingMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CrafterBlock;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -28,6 +30,8 @@ import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryBlock;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeState;
 import net.voxelindustry.voidheart.common.content.research.PlayerKnowledge;
@@ -72,7 +76,8 @@ public class ResearchClientTest implements FabricClientGameTest
             server.runOnServer(ResearchClientTest::monolithDropsTablets);
             context.waitTicks(5);
             server.runOnServer(ResearchClientTest::monolithDropsFewerTablets);
-            server.runOnServer(ResearchClientTest::tabletAwakensPillar);
+            server.runOnServer(ResearchClientTest::lecternWithBookResistsTablet);
+            server.runOnServer(ResearchClientTest::tabletCorruptsLectern);
             server.runOnServer(ResearchClientTest::craftingWaitsForResearch);
             server.runOnServer(ResearchClientTest::crafterNeverKnowsLockedRecipes);
             server.runOnServer(ResearchClientTest::feedingDiminishes);
@@ -126,8 +131,14 @@ public class ResearchClientTest implements FabricClientGameTest
             context.waitFor(client -> ResearchScreen.snapshot.completed().contains(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")), 400 * 20);
             context.waitTicks(30);
 
-            if (context.computeOnClient(client -> ResearchScreen.snapshot.cap()) != 250)
-                throw new AssertionError("Expected the finished archive to raise the cap to 250");
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.cap()) != 30)
+                throw new AssertionError("Expected the finished archive to do nothing without columns");
+            server.runOnServer(minecraft -> player(minecraft).level().setBlockAndUpdate(REPOSITORY.offset(3, 0, 0), VoidHeartBlocks.KNOWLEDGE_COLUMN.defaultBlockState()
+                    .setValue(KnowledgeColumnBlock.NORTH_EAST, true).setValue(KnowledgeColumnBlock.SOUTH_WEST, true)));
+            context.waitFor(client -> ResearchScreen.snapshot.columns().count() == 3, 100);
+            context.waitTicks(30);
+            if (context.computeOnClient(client -> ResearchScreen.snapshot.cap()) != 150)
+                throw new AssertionError("Expected three columns to raise the cap to 150, got " + context.computeOnClient(client -> ResearchScreen.snapshot.cap()));
             context.takeScreenshot("research-screen-researched");
 
             context.runOnClient(client -> client.player.closeContainer());
@@ -207,17 +218,35 @@ public class ResearchClientTest implements FabricClientGameTest
         player.getInventory().clearContent();
     }
 
-    private static void tabletAwakensPillar(MinecraftServer minecraft)
+    private static void lecternWithBookResistsTablet(MinecraftServer minecraft)
     {
         var player = player(minecraft);
         var level = player.level();
 
-        level.setBlockAndUpdate(REPOSITORY, VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
+        level.setBlockAndUpdate(REPOSITORY, Blocks.LECTERN.defaultBlockState().setValue(LecternBlock.HAS_BOOK, true));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET, 2));
+        use(player, REPOSITORY);
+        player.closeContainer();
+
+        if (!level.getBlockState(REPOSITORY).is(Blocks.LECTERN))
+            throw new AssertionError("A lectern holding a book should stay a lectern, got " + level.getBlockState(REPOSITORY));
+        if (player.getMainHandItem().getCount() != 2)
+            throw new AssertionError("The tablet should not be used up on a lectern holding a book");
+    }
+
+    private static void tabletCorruptsLectern(MinecraftServer minecraft)
+    {
+        var player = player(minecraft);
+        var level = player.level();
+
+        level.setBlockAndUpdate(REPOSITORY, Blocks.LECTERN.defaultBlockState().setValue(LecternBlock.FACING, Direction.EAST));
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET, 2));
         use(player, REPOSITORY);
 
         if (!level.getBlockState(REPOSITORY).is(VoidHeartBlocks.KNOWLEDGE_REPOSITORY))
-            throw new AssertionError("The tablet should turn the pillar into a repository, got " + level.getBlockState(REPOSITORY));
+            throw new AssertionError("The tablet should turn the lectern into a repository, got " + level.getBlockState(REPOSITORY));
+        if (level.getBlockState(REPOSITORY).getValue(KnowledgeRepositoryBlock.FACING) != Direction.EAST)
+            throw new AssertionError("The repository should keep the way the lectern faced");
         if (player.getMainHandItem().getCount() != 1)
             throw new AssertionError("The tablet should be used up, " + player.getMainHandItem().getCount() + " left of 2");
         if (!(level.getBlockEntity(REPOSITORY) instanceof KnowledgeRepositoryTile tile) || tile.getOwner().filter(player.getUUID()::equals).isEmpty())
@@ -227,6 +256,8 @@ public class ResearchClientTest implements FabricClientGameTest
         if (data(minecraft).rate(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())) != (double) 0.1F)
             throw new AssertionError("A bound player should gather at the base rate");
 
+        // The rest of the test looks at it from the north
+        level.setBlockAndUpdate(REPOSITORY, level.getBlockState(REPOSITORY).setValue(KnowledgeRepositoryBlock.FACING, Direction.NORTH));
         player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
     }
 
@@ -366,8 +397,8 @@ public class ResearchClientTest implements FabricClientGameTest
         double knowledge = data(minecraft).getKnowledge();
 
         var drops = Block.getDrops(level.getBlockState(REPOSITORY), level, REPOSITORY, level.getBlockEntity(REPOSITORY), player, new ItemStack(Items.DIAMOND_PICKAXE));
-        if (drops.stream().noneMatch(stack -> stack.is(VoidHeartBlocks.VOID_PILLAR.asItem())) || drops.stream().noneMatch(stack -> stack.is(VoidHeartItems.KNOWLEDGE_TABLET)))
-            throw new AssertionError("A broken repository should give back its pillar and tablet: " + drops);
+        if (drops.stream().noneMatch(stack -> stack.is(Items.LECTERN)) || drops.stream().noneMatch(stack -> stack.is(VoidHeartItems.KNOWLEDGE_TABLET)))
+            throw new AssertionError("A broken repository should give back its lectern and tablet: " + drops);
 
         level.destroyBlock(REPOSITORY, false);
 

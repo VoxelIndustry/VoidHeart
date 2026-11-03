@@ -3,9 +3,15 @@
   "constellation": "archive",
   "x": 0.38,
   "y": 0.0,
-  "icon": "minecraft:chiseled_bookshelf",
+  "icon": "voidheart:knowledge_column",
   "insight_cost": 1,
   "knowledge_cost": 20,
   "knowledge_per_second": 0.25,
-  "cap_bonus": 220
+  "column_capacity": 40,
+  "unlocks": [
+    "voidheart:knowledge_column"
+  ],
+  "recipes": [
+    "voidheart:knowledge_column"
+  ]
 }

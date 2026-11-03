@@ -53,6 +53,7 @@ class PlayerKnowledgeTest
         data = new PlayerKnowledge();
         data.addInsights(-PlayerKnowledge.STARTING_INSIGHTS);
         data.bind(Optional.of(GlobalPos.of(ResourceKey.create(Registries.DIMENSION, Identifier.withDefaultNamespace("overworld")), BlockPos.ZERO)));
+        data.setColumns(1);
         data.settle(0, RULES, TREE);
     }
 
@@ -87,6 +88,31 @@ class PlayerKnowledgeTest
         data.settle(seconds(100), RULES, TREE);
 
         assertThat(data.getKnowledge()).isCloseTo(10, within(1E-9));
+    }
+
+    @Test
+    void cap_countsColumnsAtTheBestResearchDone()
+    {
+        var tree = Map.of(ROOT, research(1, 10, List.of(), 0, 40), CHILD, research(2, 10, List.of(ROOT), 0, 200));
+        data.setColumns(6);
+        assertThat(data.cap(RULES, tree)).isEqualTo(RULES.baseCap());
+
+        data.grant(ROOT);
+        assertThat(data.cap(RULES, tree)).isEqualTo(RULES.baseCap() + 6 * 40);
+
+        data.grant(CHILD);
+        assertThat(data.cap(RULES, tree)).isEqualTo(RULES.baseCap() + 6 * 200);
+    }
+
+    @Test
+    void bind_toAnotherRepository_thenForgetsItsColumns()
+    {
+        data.setColumns(6);
+        data.bind(data.getRepository());
+        assertThat(data.getColumns()).isEqualTo(6);
+
+        data.bind(Optional.empty());
+        assertThat(data.getColumns()).isZero();
     }
 
     @Test

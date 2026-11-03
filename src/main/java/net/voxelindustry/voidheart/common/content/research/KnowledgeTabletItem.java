@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-/** Placed on a void pillar it turns the pillar into a Knowledge Repository, see the pillar block. */
+/** Placed on an empty lectern it corrupts the lectern into a Knowledge Repository, see the repository block. */
 public class KnowledgeTabletItem extends Item
 {
     public KnowledgeTabletItem(Properties properties)

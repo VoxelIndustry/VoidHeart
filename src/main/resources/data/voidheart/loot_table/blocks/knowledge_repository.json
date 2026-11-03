@@ -7,7 +7,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "voidheart:void_pillar"
+          "name": "minecraft:lectern"
         }
       ],
       "conditions": [
