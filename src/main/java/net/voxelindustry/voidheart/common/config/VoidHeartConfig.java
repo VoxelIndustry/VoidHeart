@@ -95,6 +95,11 @@ public class VoidHeartConfig
     public int knowledgeBaseCap = 30;
 
     @AutoGen(category = RESEARCH)
+    @IntSlider(min = 2, max = 16, step = 1)
+    @SerialEntry(value = "knowledge_column_radius", comment = "How many blocks from a repository, in every direction, its Knowledge Columns count")
+    public int knowledgeColumnRadius = 8;
+
+    @AutoGen(category = RESEARCH)
     @FloatSlider(min = 1, max = 100, step = 1, format = "%.0f")
     @SerialEntry(value = "insight_base_cost", comment = "Knowledge the first insight costs")
     public float insightBaseCost = 10;
@@ -119,6 +124,7 @@ public class VoidHeartConfig
         HANDLER.load();
         get().knowledgeBaseRate = Mth.clamp(get().knowledgeBaseRate, 0.01F, 5);
         get().knowledgeBaseCap = Mth.clamp(get().knowledgeBaseCap, 10, 1000);
+        get().knowledgeColumnRadius = Mth.clamp(get().knowledgeColumnRadius, 2, 16);
         get().insightBaseCost = Mth.clamp(get().insightBaseCost, 1, 100);
         get().insightCostGrowth = Mth.clamp(get().insightCostGrowth, 1, 2);
         get().knowledgeFirstTabletChance = Mth.clamp(get().knowledgeFirstTabletChance, 0, 1);

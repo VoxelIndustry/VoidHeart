@@ -9,6 +9,8 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -23,6 +25,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     private final RavenousStorageProvider ravenousStorageProvider = new RavenousStorageProvider();
     private final RavenousStorageMatrixProvider ravenousStorageMatrixProvider = new RavenousStorageMatrixProvider();
     private final RavenousRelayProvider ravenousRelayProvider = new RavenousRelayProvider();
+    private final KnowledgeColumnProvider knowledgeColumnProvider = new KnowledgeColumnProvider();
 
     @Override
     public void register(IWailaCommonRegistration registration)
@@ -33,6 +36,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockDataProvider(ravenousStorageProvider, RavenousStorageTile.class);
         registration.registerBlockDataProvider(ravenousStorageMatrixProvider, RavenousStorageMatrixTile.class);
         registration.registerBlockDataProvider(ravenousRelayProvider, RavenousRelayTile.class);
+        registration.registerBlockDataProvider(knowledgeColumnProvider, KnowledgeColumnTile.class);
     }
 
     @Override
@@ -44,6 +48,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockComponent(new RavenousStorageProvider.Client(), RavenousStorageBlock.class);
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
         registration.registerBlockComponent(new RavenousRelayProvider.Client(), RavenousRelayBlock.class);
+        registration.registerBlockComponent(new KnowledgeColumnProvider.Client(), KnowledgeColumnBlock.class);
 
         registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
         registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);

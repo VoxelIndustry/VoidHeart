@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " V ",
+    "VCV",
+    " V "
+  ],
+  "key": {
+    "V": "voidheart:voidstone",
+    "C": "minecraft:copper_ingot"
+  },
+  "result": {
+    "id": "voidheart:knowledge_column",
+    "count": 4
+  }
+}

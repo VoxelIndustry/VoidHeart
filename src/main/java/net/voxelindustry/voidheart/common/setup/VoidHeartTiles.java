@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
@@ -36,6 +37,7 @@ public class VoidHeartTiles
     public static BlockEntityType<VoidAltarTile> VOID_ALTAR;
     public static BlockEntityType<VoidPillarTile> VOID_PILLAR;
     public static BlockEntityType<KnowledgeRepositoryTile> KNOWLEDGE_REPOSITORY;
+    public static BlockEntityType<KnowledgeColumnTile>     KNOWLEDGE_COLUMN;
     public static BlockEntityType<VoidHeartTile> VOID_HEART;
     public static BlockEntityType<VoidDoorTile> VOID_DOOR;
 
@@ -80,6 +82,9 @@ public class VoidHeartTiles
         registerTile(KNOWLEDGE_REPOSITORY =
                         FabricBlockEntityTypeBuilder.create(KnowledgeRepositoryTile::new, VoidHeartBlocks.KNOWLEDGE_REPOSITORY).build(),
                 "knowledge_repository");
+        registerTile(KNOWLEDGE_COLUMN =
+                        FabricBlockEntityTypeBuilder.create(KnowledgeColumnTile::new, VoidHeartBlocks.KNOWLEDGE_COLUMN).build(),
+                "knowledge_column");
 
         registerTile(VOID_HEART =
                         FabricBlockEntityTypeBuilder.create(VoidHeartTile::new, VoidHeartBlocks.VOID_HEART).build(),

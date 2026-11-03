@@ -17,6 +17,15 @@ class ResearchTextTest
     }
 
     @Test
+    void parse_findsNumbersByName()
+    {
+        assertThat(ResearchText.parse("Within ((column_radius)) blocks")).containsExactly(
+                ResearchText.Segment.plain("Within "),
+                new ResearchText.Segment(null, null, null, "column_radius"),
+                ResearchText.Segment.plain(" blocks"));
+    }
+
+    @Test
     void parse_leavesPlainTextAlone()
     {
         assertThat(ResearchText.parse("Nothing to see.")).containsExactly(ResearchText.Segment.plain("Nothing to see."));

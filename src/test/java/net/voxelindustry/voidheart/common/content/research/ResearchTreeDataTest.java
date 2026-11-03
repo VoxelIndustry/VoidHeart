@@ -26,6 +26,7 @@ class ResearchTreeDataTest
     private static final Path GENERATED = Path.of("src/main/generated/data/voidheart");
 
     private static final KnowledgeRules RULES = new KnowledgeRules(0.1, 30, 10, 1.2);
+    private static final int[] COLUMNS_BUILT_BY_TIER = { 6, 45, 72 };
 
     private static final Map<Identifier, Research> TREE = new HashMap<>();
 
@@ -194,7 +195,7 @@ class ResearchTreeDataTest
     }
 
     /**
-     * The price of insights outgrows the base cap at the 8th one, so every research must stay payable from the archives reachable at its tier.
+     * The price of insights outgrows the base cap at the 8th one, so every research must stay payable from the archives reachable at its tier, with a fair number of columns built by then.
      */
     @Test
     void tree_everyResearchIsPayableWithinTheCapOfItsTier()
@@ -203,12 +204,15 @@ class ResearchTreeDataTest
         {
             var path = chainOf(id);
             TREE.entrySet().stream()
-                    .filter(entry -> entry.getValue().capBonus() > 0 && entry.getValue().tier() < Math.max(research.tier(), 2))
+                    .filter(entry -> entry.getValue().columnCapacity() > 0 && entry.getValue().tier() < Math.max(research.tier(), 2))
                     .map(Map.Entry::getKey)
                     .forEach(archive -> chainOf(archive).stream().filter(step -> !path.contains(step)).forEach(path::add));
 
             int insights = path.stream().mapToInt(step -> TREE.get(step).insightCost()).sum();
-            double cap = RULES.baseCap() + path.stream().filter(step -> !step.equals(id)).mapToDouble(step -> TREE.get(step).capBonus()).sum();
+            double cap = RULES.baseCap() + path.stream().filter(step -> !step.equals(id))
+                    .filter(step -> TREE.get(step).columnCapacity() > 0)
+                    .mapToDouble(step -> TREE.get(step).columnCapacity() * COLUMNS_BUILT_BY_TIER[TREE.get(step).tier() - 1])
+                    .max().orElse(0);
 
             assertThat(RULES.insightCost(insights - 1)).as("last insight towards %s, after %s", id, path).isLessThanOrEqualTo(cap);
         });

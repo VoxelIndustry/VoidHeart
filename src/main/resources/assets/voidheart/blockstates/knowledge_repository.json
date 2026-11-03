@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=north": {
       "model": "voidheart:block/knowledge_repository"
+    },
+    "facing=east": {
+      "model": "voidheart:block/knowledge_repository",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/knowledge_repository",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/knowledge_repository",
+      "y": 270
     }
   }
 }

@@ -14,6 +14,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.client.scene.ResearchScenes;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
@@ -64,7 +65,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
             server.runOnServer(minecraft ->
             {
                 var player = player(minecraft);
-                player.level().setBlockAndUpdate(REPOSITORY, VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
+                player.level().setBlockAndUpdate(REPOSITORY, Blocks.LECTERN.defaultBlockState());
                 player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET));
                 use(player);
                 player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);

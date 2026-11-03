@@ -13,7 +13,7 @@
     }
   },
   "display": {
-    "description": "Something was written on the monolith. Place it on a Void Pillar",
+    "description": "Something was written on the monolith. Place it on a Lectern",
     "icon": {
       "id": "voidheart:knowledge_tablet"
     },

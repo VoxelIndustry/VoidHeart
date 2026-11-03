@@ -53,7 +53,7 @@ public class AdvancementsProvider extends FabricAdvancementProvider
                 .parent(rootAdvancement)
                 .display(
                         VoidHeartItems.KNOWLEDGE_TABLET.asItem(),
-                        Component.literal("Knowledge Tablet"),                        Component.literal("Something was written on the monolith. Place it on a Void Pillar"),
+                        Component.literal("Knowledge Tablet"),                        Component.literal("Something was written on the monolith. Place it on a Lectern"),
                         AdvancementType.TASK,
                         true,
                         true,

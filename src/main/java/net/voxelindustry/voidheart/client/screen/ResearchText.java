@@ -21,6 +21,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Text of the repository that can name things: [[far_sight]] in a translation reads as a link to that research, and {{void_heart}} as a link to that item's page, as much as the player is allowed to know of them.
+ * ((column_radius)) reads as a number the server decides, which a plain translation could only state once and for all.
  * A hidden research is only placed in its constellation, an item it would unlock is only the constellation's sigil and the word Unknown, and a research still to be finished carries a lock beside its name.
  */
 final class ResearchText
@@ -34,14 +35,20 @@ final class ResearchText
     private static final String ITEM_PREFIX     = "item|";
     private static final String RESEARCH_PREFIX = "research|";
 
-    private static final Pattern MENTION = Pattern.compile("\\[\\[([a-z0-9_]+)]]|\\{\\{([a-z0-9_]+)}}");
+    private static final Pattern MENTION = Pattern.compile("\\[\\[([a-z0-9_]+)]]|\\{\\{([a-z0-9_]+)}}|\\(\\(([a-z0-9_]+)\\)\\)");
 
     /**
      * @param research the research named by this piece, null otherwise
      * @param item     the item named by this piece, null otherwise
+     * @param value    the number named by this piece, null otherwise
      */
-    record Segment(String text, String research, String item)
+    record Segment(String text, String research, String item, String value)
     {
+        Segment(String text, String research, String item)
+        {
+            this(text, research, item, null);
+        }
+
         static Segment plain(String text)
         {
             return new Segment(text, null, null);
@@ -81,8 +88,9 @@ final class ResearchText
      * What a text needs to be told about the tree.
      *
      * @param ownerOf the research that unlocks an item
+     * @param valueOf the number a text refers to by name
      */
-    record Knowing(Map<Identifier, Research> tree, Function<Identifier, ResearchScreen.NodeState> stateOf, Function<Identifier, Optional<Identifier>> ownerOf)
+    record Knowing(Map<Identifier, Research> tree, Function<Identifier, ResearchScreen.NodeState> stateOf, Function<Identifier, Optional<Identifier>> ownerOf, Function<String, String> valueOf)
     {
     }
 
@@ -99,7 +107,7 @@ final class ResearchText
         {
             if (matcher.start() > from)
                 segments.add(Segment.plain(text.substring(from, matcher.start())));
-            segments.add(new Segment(null, matcher.group(1), matcher.group(2)));
+            segments.add(new Segment(null, matcher.group(1), matcher.group(2), matcher.group(3)));
             from = matcher.end();
         }
         if (from < text.length())
@@ -116,6 +124,8 @@ final class ResearchText
                 built.append(mention(Identifier.fromNamespaceAndPath(MODID, segment.research()), knowing));
             else if (segment.item() != null)
                 built.append(itemMention(Identifier.fromNamespaceAndPath(MODID, segment.item()), knowing));
+            else if (segment.value() != null)
+                built.append(Component.literal(knowing.valueOf().apply(segment.value())));
             else
                 built.append(Component.literal(segment.text()));
         }

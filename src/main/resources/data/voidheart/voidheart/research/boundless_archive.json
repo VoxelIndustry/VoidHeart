@@ -10,5 +10,5 @@
   "requires": [
     "voidheart:vast_archive"
   ],
-  "cap_bonus": 27000
+  "column_capacity": 500
 }
