@@ -1382,6 +1382,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return pages.peek().slotPosition(item);
     }
 
+    public List<int[]> pageRiteIconPositions()
+    {
+        return pages.peek().riteIconPositions();
+    }
+
     public int[] pageClosePosition()
     {
         return pages.peek().closePosition();
