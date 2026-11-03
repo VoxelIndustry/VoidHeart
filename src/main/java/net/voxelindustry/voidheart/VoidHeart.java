@@ -83,6 +83,8 @@ public class VoidHeart implements ModInitializer
     public static ParticleType<ShatterForgeRuneParticleEffect> SHATTER_FORGE_RUNE_PARTICLE;
     public static ParticleType<ShatterForgeItemParticleEffect> SHATTER_FORGE_ITEM_PARTICLE;
     public static SimpleParticleType EYE_BEAM_PARTICLE;
+    public static SimpleParticleType KNOWLEDGE_MOTE_PARTICLE;
+    public static SimpleParticleType KNOWLEDGE_GLYPH_PARTICLE;
     public static SimpleParticleType SHATTER_FORGE_EXPERIENCE_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
@@ -187,6 +189,10 @@ public class VoidHeart implements ModInitializer
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_item"), SHATTER_FORGE_ITEM_PARTICLE = FabricParticleTypes.complex(true, ShatterForgeItemParticleEffect.CODEC, ShatterForgeItemParticleEffect.STREAM_CODEC));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "eye_beam"), EYE_BEAM_PARTICLE = FabricParticleTypes.simple(true));
+        Registry.register(BuiltInRegistries.PARTICLE_TYPE,
+                Identifier.fromNamespaceAndPath(MODID, "knowledge_mote"), KNOWLEDGE_MOTE_PARTICLE = FabricParticleTypes.simple(false));
+        Registry.register(BuiltInRegistries.PARTICLE_TYPE,
+                Identifier.fromNamespaceAndPath(MODID, "knowledge_glyph"), KNOWLEDGE_GLYPH_PARTICLE = FabricParticleTypes.simple(false));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_experience"), SHATTER_FORGE_EXPERIENCE_PARTICLE = FabricParticleTypes.simple(true));
 
