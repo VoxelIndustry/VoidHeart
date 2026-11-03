@@ -39,6 +39,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.client.particle.GeometryParticle;
 import net.voxelindustry.voidheart.client.particle.PortalFrameParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeExperienceParticle;
+import net.voxelindustry.voidheart.client.particle.KnowledgeGlyphParticle;
+import net.voxelindustry.voidheart.client.particle.KnowledgeMoteParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeItemParticle;
 import net.voxelindustry.voidheart.client.particle.ShatterForgeRuneParticle;
 import net.voxelindustry.voidheart.client.render.ExperienceSkullRender;
@@ -65,6 +67,7 @@ import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.client.render.ShatterForgeRender;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeColumnRender;
+import net.voxelindustry.voidheart.client.render.KnowledgeRepositoryRender;
 import net.voxelindustry.voidheart.client.render.RavenousRelayRender;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
@@ -113,6 +116,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_COLUMN, KnowledgeColumnRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_REPOSITORY, KnowledgeRepositoryRender::new);
 
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
 
@@ -183,6 +187,18 @@ public class VoidHeartClient implements ClientModInitializer
                 spriteSet ->
                         (options, level, x, y, z, xAux, yAux, zAux, random) ->
                                 new ShatterForgeRuneParticle(level, x, y, z, spriteSet, options.axis(), options.forge(), options.index()));
+
+        particles.register(
+                KNOWLEDGE_MOTE_PARTICLE,
+                spriteSet ->
+                        (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                                new KnowledgeMoteParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+
+        particles.register(
+                KNOWLEDGE_GLYPH_PARTICLE,
+                spriteSet ->
+                        (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                                new KnowledgeGlyphParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
 
         particles.register(
                 EYE_BEAM_PARTICLE,

@@ -169,8 +169,10 @@ public class Knowledge
 
     /**
      * Feeds a single item of the held stack, which is left alone when it would be wasted.
+     *
+     * @return whether it was taken
      */
-    public static void feed(ServerPlayer player, ItemStack stack)
+    public static boolean feed(ServerPlayer player, ItemStack stack)
     {
         var server = player.level().getServer();
         var data = of(server, player.getUUID());
@@ -180,8 +182,16 @@ public class Knowledge
 
         switch (data.feed(item, value, data.cap(rules(), tree(server.registryAccess()))))
         {
-            case EXHAUSTED -> player.sendOverlayMessage(Component.translatable(MODID + ".knowledge.exhausted", stack.getHoverName()));
-            case FULL -> player.sendOverlayMessage(Component.translatable(MODID + ".knowledge.full"));
+            case EXHAUSTED ->
+            {
+                player.sendOverlayMessage(Component.translatable(MODID + ".knowledge.exhausted", stack.getHoverName()));
+                return false;
+            }
+            case FULL ->
+            {
+                player.sendOverlayMessage(Component.translatable(MODID + ".knowledge.full"));
+                return false;
+            }
             case ACCEPTED ->
             {
                 player.sendOverlayMessage(Component.translatable(MODID + ".knowledge.gained", String.format("%.1f", data.getKnowledge() - before), stack.getHoverName()));
@@ -192,8 +202,10 @@ public class Knowledge
                 var level = player.level();
                 level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8F, 1.3F);
                 level.sendParticles(ParticleTypes.ENCHANT, player.getX(), player.getY() + 1, player.getZ(), 12, 0.4, 0.4, 0.4, 0.5);
+                return true;
             }
         }
+        return false;
     }
 
     /**

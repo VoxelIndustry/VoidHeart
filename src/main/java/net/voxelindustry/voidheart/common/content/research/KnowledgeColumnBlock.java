@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.research;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -58,6 +60,9 @@ public class KnowledgeColumnBlock extends Block implements EntityBlock
 
     // How far past the clicked face the new column goes, to tell which space and quarter that face looks into
     private static final double CLICK_NUDGE = 0.01;
+
+    private static final float MOTE_LOWEST     = 0.5F;
+    private static final float MOTE_HEIGHT_ADD = 0.8F;
 
     public KnowledgeColumnBlock(Properties properties)
     {
@@ -131,6 +136,20 @@ public class KnowledgeColumnBlock extends Block implements EntityBlock
     protected RenderShape getRenderShape(BlockState state)
     {
         return RenderShape.INVISIBLE;
+    }
+
+    /**
+     * What a column holds flows to its repository, so a larger cluster shows a denser flow.
+     */
+    @Override
+    public void animateTick(BlockState state, Level world, BlockPos pos, RandomSource random)
+    {
+        int quarter = random.nextInt(QUARTERS.length);
+        if ((maskOf(state) & 1 << quarter) == 0 || !(world.getBlockEntity(pos) instanceof KnowledgeColumnTile column) || !column.isActive() || column.getLink().isEmpty())
+            return;
+
+        if (world.getBlockEntity(column.getLink().get().repository()) instanceof KnowledgeRepositoryTile repository)
+            repository.drawMote(new Vec3(pos.getX() + KnowledgeMath.columnCenterX(quarter), pos.getY() + MOTE_LOWEST + random.nextFloat() * MOTE_HEIGHT_ADD, pos.getZ() + KnowledgeMath.columnCenterZ(quarter)));
     }
 
     @Override

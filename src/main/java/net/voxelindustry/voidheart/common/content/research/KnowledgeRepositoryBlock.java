@@ -202,7 +202,10 @@ public class KnowledgeRepositoryBlock extends Block implements EntityBlock
         Knowledge.bind(level.getServer(), player.getUUID(), GlobalPos.of(level.dimension(), pos));
 
         if (Knowledge.valueOf(heldStack) > 0)
-            Knowledge.feed(serverPlayer, heldStack);
+        {
+            if (Knowledge.feed(serverPlayer, heldStack))
+                repository.onFed(level);
+        }
         else
             openScreen(serverPlayer, pos);
         return InteractionResult.SUCCESS;
@@ -237,7 +240,14 @@ public class KnowledgeRepositoryBlock extends Block implements EntityBlock
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
     {
-        return world.isClientSide() ? null : createTickerHelper(type, VoidHeartTiles.KNOWLEDGE_REPOSITORY, KnowledgeRepositoryTile::tick);
+        return createTickerHelper(type, VoidHeartTiles.KNOWLEDGE_REPOSITORY, world.isClientSide() ? KnowledgeRepositoryTile::clientTick : KnowledgeRepositoryTile::tick);
+    }
+
+    @Override
+    protected boolean triggerEvent(BlockState state, Level world, BlockPos pos, int event, int parameter)
+    {
+        var tile = world.getBlockEntity(pos);
+        return tile != null && tile.triggerEvent(event, parameter);
     }
 
     @Override

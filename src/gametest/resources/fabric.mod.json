@@ -25,6 +25,7 @@
       "net.voxelindustry.voidheart.gametest.KnowledgeTooltipClientTest",
       "net.voxelindustry.voidheart.gametest.KnowledgeLecternClientTest",
       "net.voxelindustry.voidheart.gametest.KnowledgeColumnClientTest",
+      "net.voxelindustry.voidheart.gametest.KnowledgeRepositoryFxClientTest",
       "net.voxelindustry.voidheart.gametest.ShatterForgeClientTest",
       "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest"
     ]
