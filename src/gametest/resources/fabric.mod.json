@@ -23,7 +23,8 @@
       "net.voxelindustry.voidheart.gametest.ResearchScreenClientTest",
       "net.voxelindustry.voidheart.gametest.ResearchSceneClientTest",
       "net.voxelindustry.voidheart.gametest.KnowledgeTooltipClientTest",
-      "net.voxelindustry.voidheart.gametest.ShatterForgeClientTest"
+      "net.voxelindustry.voidheart.gametest.ShatterForgeClientTest",
+      "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest"
     ]
   },
   "depends": {
