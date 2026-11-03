@@ -1,6 +1,8 @@
 {
   "tier": 1,
-  "row": 2,
+  "constellation": "archive",
+  "x": 0.38,
+  "y": 0.0,
   "icon": "minecraft:chiseled_bookshelf",
   "insight_cost": 1,
   "knowledge_cost": 20,

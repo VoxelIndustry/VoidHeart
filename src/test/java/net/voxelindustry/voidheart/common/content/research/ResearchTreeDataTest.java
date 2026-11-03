@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -70,11 +71,9 @@ class ResearchTreeDataTest
     }
 
     @Test
-    void tree_nodesNeverShareASpot()
+    void tree_everyConstellationHasResearch()
     {
-        var spots = TREE.values().stream().map(research -> research.tier() + ":" + research.row()).toList();
-
-        assertThat(spots).doesNotHaveDuplicates();
+        assertThat(TREE.values().stream().map(Research::constellation).distinct()).containsExactlyInAnyOrder(Constellation.values());
     }
 
     @Test
@@ -85,6 +84,105 @@ class ResearchTreeDataTest
             var path = "recipe/" + recipe.getPath() + ".json";
             assertThat(Files.exists(DATA.resolve(path)) || Files.exists(GENERATED.resolve(path))).as("recipe %s of %s", recipe, id).isTrue();
         }));
+    }
+
+    /**
+     * Clients are not told recipes, so what a research shows as unlocked is written beside them and has to keep up.
+     */
+    @Test
+    void tree_unlocksNameWhatItsRecipesMake() throws IOException
+    {
+        for (var entry : TREE.entrySet())
+        {
+            var made = new HashSet<String>();
+            for (var recipe : entry.getValue().recipes())
+                made.add(madeBy(recipe));
+
+            assertThat(entry.getValue().unlocks().stream().map(Identifier::toString)).as("unlocks of %s", entry.getKey()).containsExactlyInAnyOrderElementsOf(made);
+        }
+    }
+
+    /**
+     * An altar recipe with no output gives back a block entity's own item through its first input, as the Void Heart does.
+     */
+    private static String madeBy(Identifier recipe) throws IOException
+    {
+        var path = "recipe/" + recipe.getPath() + ".json";
+        var file = Files.exists(DATA.resolve(path)) ? DATA.resolve(path) : GENERATED.resolve(path);
+        var json = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+
+        if (json.has("result"))
+            return json.getAsJsonObject("result").get("id").getAsString();
+
+        var outputs = json.getAsJsonObject("outputs").getAsJsonArray("minecraft:itemstack");
+        if (outputs != null)
+            return outputs.get(0).getAsJsonObject().get("item").getAsString();
+        return json.getAsJsonObject("inputs").getAsJsonArray("minecraft:itemstack").get(0).getAsJsonObject().get("item").getAsString();
+    }
+
+    /**
+     * Whatever a research unlocks can be clicked on, so it needs something to say.
+     */
+    @Test
+    void tree_everyUnlockHasAPage() throws IOException
+    {
+        var lang = JsonParser.parseString(Files.readString(Path.of("src/main/resources/assets/voidheart/lang/en_us.json"))).getAsJsonObject();
+
+        for (var research : TREE.values())
+        {
+            for (var unlock : research.unlocks())
+                assertThat(lang.has("voidheart.page." + unlock.getPath())).as("page of %s", unlock).isTrue();
+        }
+    }
+
+    /**
+     * A mention of a research that does not exist would read as a raw key instead of a link.
+     */
+    @Test
+    void texts_onlyMentionResearchesThatExist() throws IOException
+    {
+        var lang = JsonParser.parseString(Files.readString(Path.of("src/main/resources/assets/voidheart/lang/en_us.json"))).getAsJsonObject();
+        var mention = java.util.regex.Pattern.compile("\\[\\[([a-z0-9_]+)]]");
+
+        for (var entry : lang.entrySet())
+        {
+            var matcher = mention.matcher(entry.getValue().getAsString());
+            while (matcher.find())
+                assertThat(TREE).as("%s mentions %s", entry.getKey(), matcher.group(1)).containsKey(Identifier.fromNamespaceAndPath("voidheart", matcher.group(1)));
+        }
+    }
+
+    /**
+     * A mention of an item links to its page, which only what a research unlocks has.
+     */
+    @Test
+    void texts_onlyMentionItemsWithPages() throws IOException
+    {
+        var lang = JsonParser.parseString(Files.readString(Path.of("src/main/resources/assets/voidheart/lang/en_us.json"))).getAsJsonObject();
+        var mention = java.util.regex.Pattern.compile("\\{\\{([a-z0-9_]+)}}");
+        var unlocked = TREE.values().stream().flatMap(research -> research.unlocks().stream()).toList();
+
+        for (var entry : lang.entrySet())
+        {
+            var matcher = mention.matcher(entry.getValue().getAsString());
+            while (matcher.find())
+                assertThat(unlocked).as("%s mentions %s", entry.getKey(), matcher.group(1)).contains(Identifier.fromNamespaceAndPath("voidheart", matcher.group(1)));
+        }
+    }
+
+    /**
+     * Mouse buttons are shown as icons from the controls font wherever the repository explains something.
+     */
+    @Test
+    void texts_showMouseButtonsAsIcons() throws IOException
+    {
+        var lang = JsonParser.parseString(Files.readString(Path.of("src/main/resources/assets/voidheart/lang/en_us.json"))).getAsJsonObject();
+
+        for (var entry : lang.entrySet())
+        {
+            if (entry.getKey().startsWith("voidheart.page.") || entry.getKey().startsWith("voidheart.scene."))
+                assertThat(entry.getValue().getAsString().toLowerCase(java.util.Locale.ROOT)).as(entry.getKey()).doesNotContain("right-click", "left-click", "middle-click");
+        }
     }
 
     @Test

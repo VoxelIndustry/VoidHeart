@@ -90,12 +90,25 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.takeScreenshot("research-ui-card-growing");
             context.waitTicks(10);
             context.takeScreenshot("research-ui-card");
+            hover(context, context.computeOnClient(client -> screen(client).insightPosition()));
+            context.waitTicks(10);
+            context.takeScreenshot("research-ui-craft-waiting-hover");
             hover(context, new int[] { 5, 5 });
             context.waitTicks(8);
 
             server.runOnServer(minecraft -> data(minecraft).addKnowledge(21));
             context.waitTicks(25);
             context.takeScreenshot("research-ui-can-craft");
+            context.waitTicks(150);
+            context.takeScreenshot("research-ui-can-craft-settled");
+            hover(context, context.computeOnClient(client -> screen(client).insightPosition()));
+            context.waitTicks(10);
+            context.takeScreenshot("research-ui-craft-ready-hover");
+            hover(context, context.computeOnClient(client -> screen(client).readoutPosition()));
+            context.waitTicks(10);
+            context.takeScreenshot("research-ui-card-ready");
+            hover(context, new int[] { 5, 5 });
+            context.waitTicks(8);
 
             click(context, context.computeOnClient(client -> screen(client).insightPosition()));
             context.waitFor(client -> ResearchScreen.snapshot.insights() == 2, 100);
@@ -237,6 +250,12 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.waitTicks(30);
             hover(context, new int[] { 200, 4 });
             context.takeScreenshot("research-ui-full");
+            hover(context, context.computeOnClient(client -> screen(client).readoutPosition()));
+            context.waitTicks(10);
+            context.takeScreenshot("research-ui-card-full");
+            hover(context, context.computeOnClient(client -> screen(client).insightPosition()));
+            context.waitTicks(10);
+            context.takeScreenshot("research-ui-craft-many-hover");
 
             server.runOnServer(minecraft ->
             {

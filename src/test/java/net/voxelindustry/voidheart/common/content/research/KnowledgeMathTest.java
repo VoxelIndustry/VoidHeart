@@ -8,6 +8,16 @@ import static org.assertj.core.api.Assertions.within;
 class KnowledgeMathTest
 {
     @Test
+    void affordableInsights_paysEachDearerInsightUpToTheLimit()
+    {
+        assertThat(KnowledgeMath.affordableInsights(9, 10, 1.5, 10)).isZero();
+        assertThat(KnowledgeMath.affordableInsights(10, 10, 1.5, 10)).isEqualTo(1);
+        assertThat(KnowledgeMath.affordableInsights(25, 10, 1.5, 10)).isEqualTo(2);
+        assertThat(KnowledgeMath.affordableInsights(1000, 10, 1, 4)).isEqualTo(4);
+        assertThat(KnowledgeMath.affordableInsights(1000, 0, 1.5, 10)).isZero();
+    }
+
+    @Test
     void feedMultiplier_followsTheDiminishingSchedule()
     {
         double[] expected = {1, 0.3, 0.3, 0.3, 0.3, 0.1, 0.1, 0.1, 0, 0};

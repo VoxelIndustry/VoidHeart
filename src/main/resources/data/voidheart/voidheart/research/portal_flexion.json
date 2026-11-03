@@ -1,12 +1,17 @@
 {
   "tier": 2,
-  "row": 1,
+  "constellation": "travel",
+  "x": -0.46,
+  "y": -0.86,
   "icon": "voidheart:portal_core",
   "insight_cost": 8,
   "knowledge_cost": 300,
   "knowledge_per_second": 1,
   "requires": [
     "voidheart:shatter_forge"
+  ],
+  "unlocks": [
+    "voidheart:portal_core"
   ],
   "recipes": [
     "voidheart:portal_core",

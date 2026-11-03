@@ -9,9 +9,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Util;
 import net.minecraft.world.item.ItemStack;
-import net.voxelindustry.voidheart.client.screen.ResearchLayout.Polar;
 import net.voxelindustry.voidheart.client.screen.ResearchLayout.Projection;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen.NodeState;
+import net.voxelindustry.voidheart.common.content.research.Constellation;
 import net.voxelindustry.voidheart.common.content.research.Research;
 
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ import java.util.Set;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * The hole in the slab: an eye that opens as knowledge fills, rings of research around it, and the dark beyond them.
+ * The hole in the slab: an eye that opens as knowledge fills, islands of research around it, and the dark between them.
  */
 final class ResearchMapView
 {
@@ -74,13 +74,18 @@ final class ResearchMapView
 
     private static final float GLOW_HALF_WIDTH = 1.6F;
     private static final float CORE_HALF_WIDTH = 0.55F;
-    private static final float WOBBLE          = 2.4F;
-    private static final float RISE            = 0.38F;
-    private static final double LANE           = 0.68;
-    private static final double LANE_SPREAD    = 0.14;
-    private static final double SAME_RING_BOW  = 0.09;
+    private static final float ROOT_STEP       = 1 / 64F;
+    private static final float BOW_SHARE       = 0.12F;
+    private static final float BOW_MAX         = 8;
+    private static final int   DASH_PIECES     = 2;
+    private static final float BRIDGE_STRENGTH = 0.6F;
 
-    private record Link(Identifier parent, Identifier child, float[] xs, float[] ys, float length)
+    static final int           SIGIL_SIZE      = 9;
+    private static final int   SIGIL_V         = 132;
+    static final int           SIGIL_GAP       = 2;
+    private static final int   NAME_REST_ALPHA = 165;
+
+    private record Link(Identifier parent, Identifier child, boolean bridge, float[] xs, float[] ys, float length)
     {
     }
 
@@ -94,7 +99,6 @@ final class ResearchMapView
 
     private final Font                      font;
     private final Map<Identifier, Research> tree;
-    private final Map<Identifier, Polar>    polar;
     private final Projection                projection;
     private final List<Link>                links = new ArrayList<>();
     private final List<Watcher>             watchers = new ArrayList<>();
@@ -110,14 +114,11 @@ final class ResearchMapView
     {
         this.font = font;
         this.tree = tree;
-        this.polar = ResearchLayout.compute(tree);
         this.left = left;
         this.right = right;
         this.mapWidth = right - left;
 
-        double radiusY = Math.min((height - BOTTOM_BAND) / 2D - NODE_SIZE / 2D - 4, 300);
-        double radiusX = Math.min(mapWidth / 2D - NODE_SIZE / 2D - 8, radiusY * 1.4);
-        this.projection = new Projection((left + right) / 2D, (height - BOTTOM_BAND) / 2D, radiusX, radiusY);
+        this.projection = ResearchLayout.projection(left, right, height);
         this.eyeScale = height >= LARGE_EYE_MIN ? 2 : 1;
 
         tree.forEach((id, research) ->
@@ -132,8 +133,8 @@ final class ResearchMapView
         {
             int x = left + 14 + random.nextInt(Math.max(1, mapWidth - 28));
             int y = 12 + random.nextInt(Math.max(1, height - 24));
-            double dx = (x - projection.centerX()) / radiusX;
-            double dy = (y - projection.centerY()) / radiusY;
+            double dx = (x - projection.centerX()) / projection.radiusX();
+            double dy = (y - projection.centerY()) / projection.radiusY();
             if (dx * dx + dy * dy > 0.8)
                 watchers.add(new Watcher(x, y, random.nextFloat()));
         }
@@ -146,15 +147,15 @@ final class ResearchMapView
 
     private Link linkOf(Identifier parent, Identifier child)
     {
-        var to = polar.get(child);
-        var from = parent == null ? new Polar(ResearchLayout.EYE_FRACTION, to.angle()) : polar.get(parent);
-
-        double delta = to.angle() - from.angle();
-        delta = Math.atan2(Math.sin(delta), Math.cos(delta));
+        var to = tree.get(child);
+        double angle = Math.atan2(to.y(), to.x());
+        float startX = (float) projection.x(parent == null ? ResearchLayout.EYE_REACH * Math.cos(angle) : tree.get(parent).x());
+        float startY = (float) projection.y(parent == null ? ResearchLayout.EYE_REACH * Math.sin(angle) : tree.get(parent).y());
+        float acrossX = (float) projection.x(to.x()) - startX;
+        float acrossY = (float) projection.y(to.y()) - startY;
+        float span = Math.max(1, (float) Math.hypot(acrossX, acrossY));
         // A branch leaning the same way along its whole length reads as grown rather than wired
-        float lean = (child.hashCode() & 1) == 0 ? WOBBLE : -WOBBLE;
-        // Branches sharing a stretch of lane are kept on separate tracks, so they can each be followed
-        double spread = LANE_SPREAD * ((Math.floorMod(child.hashCode(), 5) / 4D) - 0.5);
+        float bow = Math.min(BOW_MAX, span * BOW_SHARE) * ((child.hashCode() & 1) == 0 ? 1 : -1);
 
         var xs = new float[LINK_PIECES + 1];
         var ys = new float[LINK_PIECES + 1];
@@ -162,28 +163,15 @@ final class ResearchMapView
         for (int i = 0; i <= LINK_PIECES; i++)
         {
             double t = i / (double) LINK_PIECES;
-            double angle = from.angle() + delta * (t + smooth(t)) / 2;
-            double fraction = laneFraction(from.fraction(), to.fraction(), spread, t);
-            double offset = Math.sin(t * Math.PI) * lean;
-            xs[i] = (float) (projection.x(fraction, angle) + Math.cos(angle) * offset);
-            ys[i] = (float) (projection.y(fraction, angle) + Math.sin(angle) * offset);
+            float along = (float) ((t + smooth(t)) / 2);
+            float offset = (float) Math.sin(t * Math.PI) * bow;
+            xs[i] = startX + acrossX * along - acrossY / span * offset;
+            ys[i] = startY + acrossY * along + acrossX / span * offset;
             if (i > 0)
                 length += (float) Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
         }
-        return new Link(parent, child, xs, ys, length);
-    }
-
-    /**
-     * A branch rises off its research, sweeps around in the lane between two rings where no research sits, then settles onto its target.
-     */
-    private static double laneFraction(double from, double to, double spread, double t)
-    {
-        double lane = to > from ? from + (to - from) * (LANE + spread) : from + SAME_RING_BOW;
-        if (t < RISE)
-            return from + (lane - from) * smooth(t / RISE);
-        if (t > 1 - RISE)
-            return lane + (to - lane) * smooth((t - (1 - RISE)) / RISE);
-        return lane;
+        boolean bridge = parent != null && tree.get(parent).constellation() != to.constellation();
+        return new Link(parent, child, bridge, xs, ys, length);
     }
 
     private static double smooth(double t)
@@ -194,14 +182,12 @@ final class ResearchMapView
 
     int nodeX(Identifier id)
     {
-        var at = polar.get(id);
-        return (int) Math.round(projection.x(at.fraction(), at.angle()));
+        return (int) Math.round(projection.x(tree.get(id).x()));
     }
 
     int nodeY(Identifier id)
     {
-        var at = polar.get(id);
-        return (int) Math.round(projection.y(at.fraction(), at.angle()));
+        return (int) Math.round(projection.y(tree.get(id).y()));
     }
 
     /**
@@ -211,26 +197,14 @@ final class ResearchMapView
     {
         var lights = new ArrayList<ResearchVoid.Light>();
         double reach = Math.max(38, projection.radiusY() * 0.5);
-        lights.add(new ResearchVoid.Light(projection.centerX(), projection.centerY(), reach * 0.9, 0.95));
+        lights.add(new ResearchVoid.Light(projection.centerX(), projection.centerY(), reach * 0.9, 0.95, ResearchVoid.LIT_RGB));
         tree.forEach((id, research) ->
         {
             var state = ResearchScreen.stateOf(id, research);
             if (state != NodeState.HIDDEN)
-                lights.add(new ResearchVoid.Light(nodeX(id), nodeY(id), reach * (state == NodeState.UNKNOWN ? 0.42 : 0.62), state == NodeState.UNKNOWN ? 0.34 : 0.62));
+                lights.add(new ResearchVoid.Light(nodeX(id), nodeY(id), reach * (state == NodeState.UNKNOWN ? 0.42 : 0.62), state == NodeState.UNKNOWN ? 0.34 : 0.62, ConstellationLook.of(research.constellation()).lightRgb()));
         });
         return lights;
-    }
-
-    List<ResearchVoid.Ring> rings()
-    {
-        int tiers = tree.values().stream().mapToInt(Research::tier).max().orElse(1);
-        var rings = new ArrayList<ResearchVoid.Ring>();
-        for (int tier = 1; tier <= tiers; tier++)
-        {
-            double fraction = ResearchLayout.fractionOf(tier, tiers);
-            rings.add(new ResearchVoid.Ring(projection.centerX(), projection.centerY(), projection.radiusX() * fraction, projection.radiusY() * fraction));
-        }
-        return rings;
     }
 
     void bloom(Identifier id, boolean finished)
@@ -280,6 +254,7 @@ final class ResearchMapView
         links.forEach(link -> extractLink(graphics, link, lineage, running, flowing, now));
         extractEye(graphics, running, mouseX, mouseY, background, screenW, screenH, fullness, canRefine, now);
         extractInsights(graphics, now);
+        extractNames(graphics, selected, hovered);
         tree.forEach((id, research) -> extractNode(graphics, id, research, now));
         extractMarks(graphics, selected, hovered);
         tree.forEach((id, research) -> extractLabel(graphics, id, research, selected, hovered, screenH));
@@ -339,10 +314,14 @@ final class ResearchMapView
         boolean burning = running.contains(link.child());
         boolean traced = lineage.contains(link.child());
         int rgb = burning ? ResearchScreen.ACTIVE_RGB : state == NodeState.DONE ? ResearchScreen.KNOWN_RGB : walked ? ResearchScreen.FRONTIER_RGB : ResearchScreen.REVEALED_RGB;
-        float strength = traced || burning ? 1 : state == NodeState.DONE ? 0.62F : walked ? 0.78F : 0.3F;
+        float strength = traced || burning ? 1 : (state == NodeState.DONE ? 0.62F : walked ? 0.78F : 0.3F) * (link.bridge() ? BRIDGE_STRENGTH : 1);
 
         for (int i = 0; i < LINK_PIECES; i++)
         {
+            // Within a constellation its figure is drawn whole, and what crosses to another is only a thread of dashes
+            if (link.bridge() && i / DASH_PIECES % 2 == 1)
+                continue;
+
             float fade = strength;
             // What has not been read yet is only reached for, the branch thinning out before it arrives
             if (state == NodeState.UNKNOWN)
@@ -353,6 +332,8 @@ final class ResearchMapView
 
         if (burning)
             extractMotes(graphics, link, ResearchScreen.ACTIVE_RGB, flowing ? 20 : 34, flowing ? 26 : 5, 230, now);
+        else if (link.bridge())
+            return;
         else if (state == NodeState.DONE)
             extractMotes(graphics, link, ResearchScreen.KNOWN_RGB, 64, 7, 110, now);
         else if (walked)
@@ -495,14 +476,11 @@ final class ResearchMapView
             float tuck = side < 0 ? eyeScale * UPPER_LID_EDGE / 2F : eyeScale / 2F;
 
             // Follows the branch's own line in until it meets the lid, which itself depends on where along the eye that is
-            float x = centerX + dx * 0.35F;
-            float height = 0;
-            for (int step = 0; step < 3; step++)
-            {
-                height = lidHeight((x - centerX) / halfW, halfH, open);
-                x = centerX + (dy > 1 ? dx * Math.min(1, height / dy) : dx);
-            }
-            float y = centerY + (height + tuck) * side;
+            float along = 1;
+            while (along > 0 && (Math.abs(dx * along) >= halfW || dy * along > lidHeight(dx * along / halfW, halfH, open)))
+                along -= ROOT_STEP;
+            float x = centerX + dx * along;
+            float y = centerY + (dy * along + tuck) * side;
 
             var state = ResearchScreen.stateOf(link.child(), tree.get(link.child()));
             int rgb = running.contains(link.child()) ? ResearchScreen.ACTIVE_RGB : state == NodeState.DONE ? ResearchScreen.KNOWN_RGB : ResearchScreen.FRONTIER_RGB;
@@ -551,6 +529,40 @@ final class ResearchMapView
 
         if (state != NodeState.UNKNOWN)
             graphics.item(iconOf(research), x + 4, y + 4);
+        sigil(graphics, research.constellation(), x + NODE_SIZE - SIGIL_SIZE + 1, y + NODE_SIZE - SIGIL_SIZE + 1, (int) (presence * 255));
+    }
+
+    static void sigil(GuiGraphicsExtractor graphics, Constellation constellation, int x, int y, int alpha)
+    {
+        var look = ConstellationLook.of(constellation);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SPRITES, x, y, look.sigilU(), SIGIL_V, SIGIL_SIZE, SIGIL_SIZE, ATLAS, ATLAS, ARGB.color(alpha, look.rgb()));
+    }
+
+    /**
+     * A constellation goes unnamed until one of its researches shows, and its name wakes while the player looks at something in it.
+     */
+    private void extractNames(GuiGraphicsExtractor graphics, Identifier selected, Identifier hovered)
+    {
+        for (var constellation : Constellation.values())
+        {
+            boolean shown = tree.entrySet().stream().anyMatch(entry -> entry.getValue().constellation() == constellation && ResearchScreen.stateOf(entry.getKey(), entry.getValue()) != NodeState.HIDDEN);
+            if (!shown)
+                continue;
+
+            boolean looked = selected != null && tree.get(selected).constellation() == constellation || hovered != null && tree.get(hovered).constellation() == constellation;
+            int alpha = looked ? 255 : NAME_REST_ALPHA;
+            var look = ConstellationLook.of(constellation);
+            if (!tree.containsKey(look.nameAnchor()))
+                continue;
+
+            var name = Component.translatable(constellation.nameKey());
+            int width = SIGIL_SIZE + SIGIL_GAP + font.width(name);
+            int x = Math.clamp(nodeX(look.nameAnchor()) + look.nameX() - width / 2, left + TEAR_CLEARANCE, Math.max(left + TEAR_CLEARANCE, right - TEAR_CLEARANCE - width));
+            int y = nodeY(look.nameAnchor()) + look.nameY() - SIGIL_SIZE / 2;
+
+            sigil(graphics, constellation, x, y, alpha);
+            graphics.text(font, name, x + SIGIL_SIZE + SIGIL_GAP, y + 1, ARGB.color(alpha, look.rgb()));
+        }
     }
 
     /**
@@ -621,9 +633,9 @@ final class ResearchMapView
 
     private void extractMarks(GuiGraphicsExtractor graphics, Identifier selected, Identifier hovered)
     {
-        if (selected != null && polar.containsKey(selected))
+        if (selected != null && tree.containsKey(selected))
             brackets(graphics, selected, ResearchScreen.TEXT_COLOR);
-        if (hovered != null && !hovered.equals(selected) && polar.containsKey(hovered))
+        if (hovered != null && !hovered.equals(selected) && tree.containsKey(hovered))
             brackets(graphics, hovered, ResearchScreen.MUTED_COLOR);
     }
 
@@ -672,7 +684,7 @@ final class ResearchMapView
         graphics.enableScissor(left, 0, right, screenH);
         for (var bloom : blooms)
         {
-            if (!polar.containsKey(bloom.id()))
+            if (!tree.containsKey(bloom.id()))
                 continue;
 
             float t = (now - bloom.start()) / (float) (bloom.finished() ? FINISH_MILLIS : BLOOM_MILLIS);

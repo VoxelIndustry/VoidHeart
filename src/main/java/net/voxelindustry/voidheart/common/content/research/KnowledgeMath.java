@@ -88,4 +88,21 @@ public final class KnowledgeMath
             return 0;
         return change > 0 ? (target - knowledge) / change : Double.POSITIVE_INFINITY;
     }
+
+    /** How many insights in a row this much knowledge pays for, each dearer than the last, counting no further than max. */
+    public static int affordableInsights(double knowledge, double nextCost, double growth, int max)
+    {
+        if (nextCost <= 0)
+            return 0;
+
+        int count = 0;
+        double cost = nextCost;
+        while (count < max && knowledge >= cost)
+        {
+            knowledge -= cost;
+            cost *= growth;
+            count++;
+        }
+        return count;
+    }
 }

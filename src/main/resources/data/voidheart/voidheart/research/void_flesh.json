@@ -1,12 +1,22 @@
 {
   "tier": 1,
-  "row": 1,
+  "constellation": "rites",
+  "x": -0.6,
+  "y": -0.05,
   "icon": "voidheart:void_amalgam",
   "insight_cost": 2,
   "knowledge_cost": 30,
   "knowledge_per_second": 0.25,
   "requires": [
     "voidheart:altar_rite"
+  ],
+  "unlocks": [
+    "voidheart:void_amalgam",
+    "voidheart:void_heart",
+    "voidheart:void_pearl",
+    "voidheart:eye_bottle",
+    "voidheart:void_lamp",
+    "voidheart:voidstone"
   ],
   "recipes": [
     "voidheart:altar/void_amalgam",

@@ -8,7 +8,6 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.state.ShatterForgeRenderState;
 import net.voxelindustry.voidheart.client.render.state.ShatterForgeRenderState.StrandDraw;
@@ -16,6 +15,7 @@ import net.voxelindustry.voidheart.client.render.state.ShatterForgeRenderState.V
 import net.voxelindustry.voidheart.common.content.beam.BeamComposition;
 import net.voxelindustry.voidheart.common.content.beam.BeamNodeKind;
 import net.voxelindustry.voidheart.common.content.beam.BeamSegment;
+import net.voxelindustry.voidheart.common.content.beam.BeamWorldView;
 import net.voxelindustry.voidheart.common.content.beam.LevelBeamWorldView;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
@@ -62,6 +62,8 @@ public class VoidBeamRender
 
     private static final Map<ShatterForgeTile, Layout> LAYOUTS = new WeakHashMap<>();
 
+    private static Layout sceneLayout;
+
     private record Path(Vec3 from, Vec3 to, float length, float startDistance, int[] colors, int coreColor, float radius,
                         boolean taperFrom, boolean taperTo)
     {
@@ -99,7 +101,7 @@ public class VoidBeamRender
         var layout = LAYOUTS.get(forge);
         if (layout == null || layout.source() != segments || layout.collectors() != collectors)
         {
-            layout = computeLayout(forge.getLevel(), forge.getBlockPos(), segments, collectors);
+            layout = computeLayout(new LevelBeamWorldView(forge.getLevel()), forge.getBlockPos(), segments, collectors);
             LAYOUTS.put(forge, layout);
         }
 
@@ -108,6 +110,26 @@ public class VoidBeamRender
             extractForming(state, layout, eased);
         else
             extractDissolving(state, layout, eased);
+    }
+
+    /**
+     * The same beam for a forge at the origin of a scene, which has blocks to look at but no level.
+     */
+    static void extractScene(BeamWorldView view, List<BeamSegment> segments, boolean forming, float formation, ShatterForgeRenderState state)
+    {
+        state.veils.clear();
+        state.strands.clear();
+        if (formation <= 0 || segments.isEmpty())
+            return;
+
+        if (sceneLayout == null || sceneLayout.source() != segments)
+            sceneLayout = computeLayout(view, BlockPos.ZERO, segments, List.of());
+
+        var eased = formation * formation * (3 - 2 * formation);
+        if (forming)
+            extractForming(state, sceneLayout, eased);
+        else
+            extractDissolving(state, sceneLayout, eased);
     }
 
     /**
@@ -189,9 +211,8 @@ public class VoidBeamRender
     /**
      * @param collectors collectors the recipe draws from, the only ones lending strands to the beam
      */
-    private static Layout computeLayout(Level level, BlockPos origin, List<BeamSegment> segments, List<BlockPos> collectors)
+    private static Layout computeLayout(BeamWorldView view, BlockPos origin, List<BeamSegment> segments, List<BlockPos> collectors)
     {
-        var view = new LevelBeamWorldView(level);
         var trackY = origin.getY();
 
         // The whole beam graph lies on the forge level, collectors only sit above it

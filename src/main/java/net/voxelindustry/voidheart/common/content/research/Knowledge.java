@@ -108,6 +108,7 @@ public class Knowledge
                 data.rate(rules, tree),
                 data.getInsights(),
                 rules.insightCost(data.getInsightsBought()),
+                rules.insightGrowth(),
                 data.getActive(),
                 new HashMap<>(data.getProgress()),
                 List.copyOf(data.getRevealed()),
@@ -168,6 +169,18 @@ public class Knowledge
                 level.sendParticles(ParticleTypes.ENCHANT, player.getX(), player.getY() + 1, player.getZ(), 12, 0.4, 0.4, 0.4, 0.5);
             }
         }
+    }
+
+    /**
+     * The research that names a recipe, whether or not locks are turned on.
+     */
+    static Optional<Identifier> researchNaming(RegistryAccess registries, Identifier recipe)
+    {
+        return tree(registries).entrySet().stream()
+                .filter(entry -> entry.getValue().recipes().contains(recipe))
+                .map(Map.Entry::getKey)
+                .sorted()
+                .findFirst();
     }
 
     /**

@@ -1,12 +1,18 @@
 {
   "tier": 2,
-  "row": 0,
+  "constellation": "rites",
+  "x": -0.7,
+  "y": -0.46,
   "icon": "voidheart:shatter_forge",
   "insight_cost": 6,
   "knowledge_cost": 150,
   "knowledge_per_second": 0.75,
   "requires": [
     "voidheart:void_flesh"
+  ],
+  "unlocks": [
+    "voidheart:shatter_forge",
+    "voidheart:void_monolith"
   ],
   "recipes": [
     "voidheart:altar/shatter_forge",

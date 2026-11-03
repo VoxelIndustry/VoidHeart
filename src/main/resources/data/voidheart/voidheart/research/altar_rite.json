@@ -1,10 +1,15 @@
 {
   "tier": 1,
-  "row": 0,
+  "constellation": "rites",
+  "x": -0.36,
+  "y": 0.0,
   "icon": "voidheart:void_altar",
   "insight_cost": 1,
   "knowledge_cost": 15,
   "knowledge_per_second": 0.25,
+  "unlocks": [
+    "voidheart:void_altar"
+  ],
   "recipes": [
     "voidheart:void_altar"
   ]
