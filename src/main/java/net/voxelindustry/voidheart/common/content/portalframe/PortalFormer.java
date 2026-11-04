@@ -40,11 +40,7 @@ public class PortalFormer
         if (heartData == null)
             return false;
 
-        BlockPos pocketPos = heartData.pocketPos();
-
-        return abs(pocketPos.getX() - pos.getX()) < 9 &&
-                abs(pocketPos.getY() + 6 - pos.getY()) < 9 &&
-                abs(pocketPos.getZ() - pos.getZ()) < 9;
+        return heartData.contains(pos);
     }
 
     public static DeferredRollbackWork<PortalFormerState> tryForm(Level world, BlockState state, BlockPos brickPos, Direction direction)

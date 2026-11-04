@@ -9,11 +9,12 @@ import net.minecraft.core.BlockPos.MutableBlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.world.pocket.PocketBlueprint;
+import net.voxelindustry.voidheart.common.world.pocket.PocketBuilder;
 import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
 
 import java.util.HashMap;
@@ -125,25 +126,9 @@ public class VoidPocketState extends SavedData
         voidHeart.setPlayerID(player);
         voidHeart.setChanged();
 
-        placeBlockEmptyVolume(voidWorld, pos.offset(0, 6, 0), 16, 16, 16, VoidHeartBlocks.VOIDSTONE.defaultBlockState());
-        placeBlockEmptyVolume(voidWorld, pos.offset(0, 6, 0), 18, 18, 18, VoidHeartBlocks.POCKET_WALL.defaultBlockState());
-    }
-
-    private void placeBlockEmptyVolume(ServerLevel voidWorld, BlockPos center, int width, int height, int length, BlockState state)
-    {
-        placeBlockArea(voidWorld, center.offset(-width / 2, -height / 2, -length / 2), center.offset(width / 2, -height / 2, length / 2), state);
-        placeBlockArea(voidWorld, center.offset(-width / 2, height / 2, -length / 2), center.offset(width / 2, height / 2, length / 2), state);
-
-        placeBlockArea(voidWorld, center.offset(-width / 2, -height / 2 + 1, -length / 2), center.offset(-width / 2, height / 2 - 1, length / 2), state);
-        placeBlockArea(voidWorld, center.offset(width / 2, -height / 2 + 1, -length / 2), center.offset(width / 2, height / 2 - 1, length / 2), state);
-
-        placeBlockArea(voidWorld, center.offset(-width / 2 + 1, -height / 2 + 1, -length / 2), center.offset(width / 2 - 1, height / 2 - 1, -length / 2), state);
-        placeBlockArea(voidWorld, center.offset(-width / 2 + 1, -height / 2 + 1, length / 2), center.offset(width / 2 - 1, height / 2 - 1, length / 2), state);
-    }
-
-    private void placeBlockArea(Level world, BlockPos from, BlockPos to, BlockState state)
-    {
-        BlockPos.betweenClosed(from, to).forEach(pos -> world.setBlockAndUpdate(pos, state));
+        var blueprint = PocketBlueprint.forPocket(voidWorld.getSeed(), heartDataByUUID.size() - 1, pos);
+        heartDataByUUID.get(player).heartRise(blueprint.variant().profile().heartRise());
+        PocketBuilder.build(voidWorld, pos, blueprint);
     }
 
     public boolean hasPocket(UUID player)
