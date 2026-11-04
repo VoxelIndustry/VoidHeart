@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "voidheart:block/medium_azurium_bundle"
+  }
+}

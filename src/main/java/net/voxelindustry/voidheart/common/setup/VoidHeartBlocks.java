@@ -11,6 +11,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.AmethystClusterBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
@@ -142,6 +143,16 @@ public class VoidHeartBlocks
 
     public static Block MALIGNANT_TORMENTER;
     public static Block MALIGNANT_TORMENTER_PART;
+
+    public static Block SMALL_AZURIUM_BUNDLE;
+    public static Block MEDIUM_AZURIUM_BUNDLE;
+    public static Block LARGE_AZURIUM_BUNDLE;
+    public static Block SMALL_RUBRUM_BUNDLE;
+    public static Block MEDIUM_RUBRUM_BUNDLE;
+    public static Block LARGE_RUBRUM_BUNDLE;
+    public static Block SMALL_MEMORIAM_BUNDLE;
+    public static Block MEDIUM_MEMORIAM_BUNDLE;
+    public static Block LARGE_MEMORIAM_BUNDLE;
 
     public static Block ARROGANT_IRON_BLOCK;
     public static Block CUT_ARROGANT_IRON;
@@ -471,6 +482,16 @@ public class VoidHeartBlocks
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.SLIME_BLOCK)));
 
+        SMALL_AZURIUM_BUNDLE = registerSmallBundle("azurium", MapColor.COLOR_BLUE, 1, 6);
+        MEDIUM_AZURIUM_BUNDLE = registerMediumBundle("azurium", MapColor.COLOR_BLUE, 3, 10);
+        LARGE_AZURIUM_BUNDLE = registerLargeBundle("azurium", MapColor.COLOR_BLUE, 5, 15);
+        SMALL_RUBRUM_BUNDLE = registerSmallBundle("rubrum", MapColor.FIRE, 4, 5);
+        MEDIUM_RUBRUM_BUNDLE = registerMediumBundle("rubrum", MapColor.FIRE, 7, 9);
+        LARGE_RUBRUM_BUNDLE = registerLargeBundle("rubrum", MapColor.FIRE, 10, 14);
+        SMALL_MEMORIAM_BUNDLE = registerSmallBundle("memoriam", MapColor.COLOR_ORANGE, 1, 6);
+        MEDIUM_MEMORIAM_BUNDLE = registerMediumBundle("memoriam", MapColor.COLOR_ORANGE, 3, 10);
+        LARGE_MEMORIAM_BUNDLE = registerLargeBundle("memoriam", MapColor.COLOR_ORANGE, 5, 14);
+
         VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, "voidstone_pillar");
         VOIDSTONE_PILLAR_STAIRS = generateStairs(VOIDSTONE_PILLAR, "voidstone_pillar");
 
@@ -545,6 +566,34 @@ public class VoidHeartBlocks
             MINEABLE_BLOCKS.add(block);
 
         return block;
+    }
+
+    private static Block registerSmallBundle(String crystal, MapColor color, int light, float height)
+    {
+        return registerBundle("small_" + crystal + "_bundle", color, SoundType.SMALL_AMETHYST_BUD, light, height, 4);
+    }
+
+    private static Block registerMediumBundle(String crystal, MapColor color, int light, float height)
+    {
+        return registerBundle("medium_" + crystal + "_bundle", color, SoundType.MEDIUM_AMETHYST_BUD, light, height, 2);
+    }
+
+    private static Block registerLargeBundle(String crystal, MapColor color, int light, float height)
+    {
+        return registerBundle("large_" + crystal + "_bundle", color, SoundType.AMETHYST_CLUSTER, light, height, 2);
+    }
+
+    private static Block registerBundle(String name, MapColor color, SoundType sound, int light, float height, float inset)
+    {
+        return registerBlock(name, properties -> new AmethystClusterBlock(height, inset, properties), BlockBehaviour.Properties.of()
+                .mapColor(color)
+                .forceSolidOn()
+                .noOcclusion()
+                .requiresCorrectToolForDrops()
+                .strength(1.5F)
+                .lightLevel(state -> light)
+                .pushReaction(PushReaction.POPPED)
+                .sound(sound), true);
     }
 
     private static Block generateStairs(Block block, String name)
