@@ -37,6 +37,33 @@ public class VoidHeartDataGenerator implements DataGeneratorEntrypoint
                 .wall(VoidHeartBlocks.CUT_ARROGANT_IRON_WALL)
                 .getFamily();
 
+        BlockFamilies.familyBuilder(VoidHeartBlocks.SEETHING_STEEL_BLOCK)
+                .cut(VoidHeartBlocks.CUT_SEETHING_STEEL)
+                .getFamily();
+        BlockFamilies.familyBuilder(VoidHeartBlocks.CUT_SEETHING_STEEL)
+                .stairs(VoidHeartBlocks.CUT_SEETHING_STEEL_STAIRS)
+                .slab(VoidHeartBlocks.CUT_SEETHING_STEEL_SLAB)
+                .wall(VoidHeartBlocks.CUT_SEETHING_STEEL_WALL)
+                .getFamily();
+
+        BlockFamilies.familyBuilder(VoidHeartBlocks.COVETOUS_COPPER_BLOCK)
+                .cut(VoidHeartBlocks.CUT_COVETOUS_COPPER)
+                .getFamily();
+        BlockFamilies.familyBuilder(VoidHeartBlocks.CUT_COVETOUS_COPPER)
+                .stairs(VoidHeartBlocks.CUT_COVETOUS_COPPER_STAIRS)
+                .slab(VoidHeartBlocks.CUT_COVETOUS_COPPER_SLAB)
+                .wall(VoidHeartBlocks.CUT_COVETOUS_COPPER_WALL)
+                .getFamily();
+
+        BlockFamilies.familyBuilder(VoidHeartBlocks.LISTLESS_LEAD_BLOCK)
+                .cut(VoidHeartBlocks.CUT_LISTLESS_LEAD)
+                .getFamily();
+        BlockFamilies.familyBuilder(VoidHeartBlocks.CUT_LISTLESS_LEAD)
+                .stairs(VoidHeartBlocks.CUT_LISTLESS_LEAD_STAIRS)
+                .slab(VoidHeartBlocks.CUT_LISTLESS_LEAD_SLAB)
+                .wall(VoidHeartBlocks.CUT_LISTLESS_LEAD_WALL)
+                .getFamily();
+
         BlockFamilies.familyBuilder(VoidHeartBlocks.VOIDSTONE)
                 .polished(VoidHeartBlocks.VOIDSTONE_POLISHED)
                 .stairs(VoidHeartBlocks.VOIDSTONE_STAIRS)

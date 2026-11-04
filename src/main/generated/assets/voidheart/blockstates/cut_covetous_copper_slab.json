@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "voidheart:block/cut_covetous_copper_slab"
+    },
+    "type=double": {
+      "model": "voidheart:block/cut_covetous_copper"
+    },
+    "type=top": {
+      "model": "voidheart:block/cut_covetous_copper_slab_top"
+    }
+  }
+}

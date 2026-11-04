@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "voidheart:block/cut_listless_lead_slab"
+    },
+    "type=double": {
+      "model": "voidheart:block/cut_listless_lead"
+    },
+    "type=top": {
+      "model": "voidheart:block/cut_listless_lead_slab_top"
+    }
+  }
+}

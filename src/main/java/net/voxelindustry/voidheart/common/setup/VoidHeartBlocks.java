@@ -155,6 +155,24 @@ public class VoidHeartBlocks
     public static Block CUT_RAVENOUS_GOLD_SLAB;
     public static Block CUT_RAVENOUS_GOLD_WALL;
 
+    public static Block SEETHING_STEEL_BLOCK;
+    public static Block CUT_SEETHING_STEEL;
+    public static Block CUT_SEETHING_STEEL_STAIRS;
+    public static Block CUT_SEETHING_STEEL_SLAB;
+    public static Block CUT_SEETHING_STEEL_WALL;
+
+    public static Block COVETOUS_COPPER_BLOCK;
+    public static Block CUT_COVETOUS_COPPER;
+    public static Block CUT_COVETOUS_COPPER_STAIRS;
+    public static Block CUT_COVETOUS_COPPER_SLAB;
+    public static Block CUT_COVETOUS_COPPER_WALL;
+
+    public static Block LISTLESS_LEAD_BLOCK;
+    public static Block CUT_LISTLESS_LEAD;
+    public static Block CUT_LISTLESS_LEAD_STAIRS;
+    public static Block CUT_LISTLESS_LEAD_SLAB;
+    public static Block CUT_LISTLESS_LEAD_WALL;
+
     public static Block RAVENOUS_COLLECTOR;
     public static Block RAVENOUS_STORAGE;
     public static Block RAVENOUS_STORAGE_MATRIX;
@@ -375,6 +393,38 @@ public class VoidHeartBlocks
                         .instrument(NoteBlockInstrument.IRON_XYLOPHONE)
                         .sound(SoundType.METAL)
                         .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
+        SEETHING_STEEL_BLOCK = registerBlock("seething_steel_block", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.COLOR_RED)
+                        .instrument(NoteBlockInstrument.BASEDRUM)
+                        .sound(SoundType.METAL)
+                        .lightLevel(state -> 4)
+                        .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
+        CUT_SEETHING_STEEL = registerBlock("cut_seething_steel", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.COLOR_RED)
+                        .instrument(NoteBlockInstrument.BASEDRUM)
+                        .sound(SoundType.METAL)
+                        .lightLevel(state -> 4)
+                        .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
+        COVETOUS_COPPER_BLOCK = registerBlock("covetous_copper_block", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.COLOR_ORANGE)
+                        .instrument(NoteBlockInstrument.IRON_XYLOPHONE)
+                        .sound(SoundType.METAL)
+                        .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
+        CUT_COVETOUS_COPPER = registerBlock("cut_covetous_copper", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.COLOR_ORANGE)
+                        .instrument(NoteBlockInstrument.IRON_XYLOPHONE)
+                        .sound(SoundType.METAL)
+                        .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
+        LISTLESS_LEAD_BLOCK = registerBlock("listless_lead_block", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.COLOR_GRAY)
+                        .instrument(NoteBlockInstrument.BASEDRUM)
+                        .sound(SoundType.METAL)
+                        .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
+        CUT_LISTLESS_LEAD = registerBlock("cut_listless_lead", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.COLOR_GRAY)
+                        .instrument(NoteBlockInstrument.BASEDRUM)
+                        .sound(SoundType.METAL)
+                        .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
 
         RAVENOUS_COLLECTOR = registerBlock("ravenous_collector", RavenousCollectorBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
@@ -451,6 +501,18 @@ public class VoidHeartBlocks
         CUT_RAVENOUS_GOLD_STAIRS = generateStairs(CUT_RAVENOUS_GOLD, "cut_ravenous_gold");
         CUT_RAVENOUS_GOLD_SLAB = generateSlab(CUT_RAVENOUS_GOLD, "cut_ravenous_gold");
         CUT_RAVENOUS_GOLD_WALL = generateWall(CUT_RAVENOUS_GOLD, "cut_ravenous_gold");
+
+        CUT_SEETHING_STEEL_STAIRS = generateStairs(CUT_SEETHING_STEEL, "cut_seething_steel");
+        CUT_SEETHING_STEEL_SLAB = generateSlab(CUT_SEETHING_STEEL, "cut_seething_steel");
+        CUT_SEETHING_STEEL_WALL = generateWall(CUT_SEETHING_STEEL, "cut_seething_steel");
+
+        CUT_COVETOUS_COPPER_STAIRS = generateStairs(CUT_COVETOUS_COPPER, "cut_covetous_copper");
+        CUT_COVETOUS_COPPER_SLAB = generateSlab(CUT_COVETOUS_COPPER, "cut_covetous_copper");
+        CUT_COVETOUS_COPPER_WALL = generateWall(CUT_COVETOUS_COPPER, "cut_covetous_copper");
+
+        CUT_LISTLESS_LEAD_STAIRS = generateStairs(CUT_LISTLESS_LEAD, "cut_listless_lead");
+        CUT_LISTLESS_LEAD_SLAB = generateSlab(CUT_LISTLESS_LEAD, "cut_listless_lead");
+        CUT_LISTLESS_LEAD_WALL = generateWall(CUT_LISTLESS_LEAD, "cut_listless_lead");
     }
 
     private static Block registerBlock(String name, Function<BlockBehaviour.Properties, Block> factory, BlockBehaviour.Properties properties, boolean inCreativeTab)

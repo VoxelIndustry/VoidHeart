@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cut_listless_lead": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:cut_listless_lead"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:cut_listless_lead_slab_from_cut_listless_lead_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_cut_listless_lead"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:cut_listless_lead_slab_from_cut_listless_lead_stonecutting"
+    ]
+  }
+}

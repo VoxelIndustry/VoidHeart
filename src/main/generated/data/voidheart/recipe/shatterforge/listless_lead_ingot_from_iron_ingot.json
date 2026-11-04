@@ -1,0 +1,25 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:stillness": 2
+  },
+  "draw": 1000,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:iron_ingot"
+      }
+    ]
+  },
+  "monolithCount": 3,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:listless_lead_ingot"
+      }
+    ]
+  },
+  "time": 60
+}

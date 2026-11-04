@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:seething_steel_block",
+  "result": {
+    "id": "voidheart:cut_seething_steel"
+  }
+}

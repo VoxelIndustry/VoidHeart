@@ -38,6 +38,9 @@ public class VoidHeartItems
     public static Item ENDER_SHARD;
     public static Item ARROGANT_IRON_INGOT;
     public static Item RAVENOUS_GOLD_INGOT;
+    public static Item SEETHING_STEEL_INGOT;
+    public static Item COVETOUS_COPPER_INGOT;
+    public static Item LISTLESS_LEAD_INGOT;
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
 
@@ -60,6 +63,9 @@ public class VoidHeartItems
         ENDER_SHARD = registerItem("ender_shard", Item::new);
         ARROGANT_IRON_INGOT = registerItem("arrogant_iron_ingot", Item::new);
         RAVENOUS_GOLD_INGOT = registerItem("ravenous_gold_ingot", Item::new);
+        SEETHING_STEEL_INGOT = registerItem("seething_steel_ingot", Item::new);
+        COVETOUS_COPPER_INGOT = registerItem("covetous_copper_ingot", Item::new);
+        LISTLESS_LEAD_INGOT = registerItem("listless_lead_ingot", Item::new);
     }
 
     public static <T extends Item> T registerItem(String name, Function<Properties, T> factory)
