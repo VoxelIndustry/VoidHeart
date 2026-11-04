@@ -80,8 +80,27 @@ public class ModelsProvider extends FabricModelProvider
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
 
+        registerBundle(VoidHeartBlocks.SMALL_AZURIUM_BUNDLE);
+        registerBundle(VoidHeartBlocks.MEDIUM_AZURIUM_BUNDLE);
+        registerBundle(VoidHeartBlocks.LARGE_AZURIUM_BUNDLE);
+        registerBundle(VoidHeartBlocks.SMALL_RUBRUM_BUNDLE);
+        registerBundle(VoidHeartBlocks.MEDIUM_RUBRUM_BUNDLE);
+        registerBundle(VoidHeartBlocks.LARGE_RUBRUM_BUNDLE);
+        registerBundle(VoidHeartBlocks.SMALL_MEMORIAM_BUNDLE);
+        registerBundle(VoidHeartBlocks.MEDIUM_MEMORIAM_BUNDLE);
+        registerBundle(VoidHeartBlocks.LARGE_MEMORIAM_BUNDLE);
+
         registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
         registerBeholder(VoidHeartBlocks.BEHOLDER);
+    }
+
+    /**
+     * A cross turned to the face it grows from, shown flat as an item.
+     */
+    private void registerBundle(Block bundle)
+    {
+        generator.createAmethystCluster(bundle);
+        generator.registerSimpleFlatItemModel(bundle);
     }
 
     /**
@@ -117,6 +136,9 @@ public class ModelsProvider extends FabricModelProvider
     {
         generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_INGOT, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.AZURIUM_SHARD, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.RUBRUM_SHARD, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.MEMORIAM_SHARD, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SEETHING_STEEL_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_INGOT, ModelTemplates.FLAT_ITEM);

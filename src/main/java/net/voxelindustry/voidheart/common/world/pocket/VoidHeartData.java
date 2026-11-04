@@ -25,20 +25,27 @@ public final class VoidHeartData
                     BlockPos.CODEC.fieldOf("pocketPos").forGetter(VoidHeartData::pocketPos),
                     Codec.INT.fieldOf("maxFlexion").forGetter(VoidHeartData::maxFlexion),
                     Codec.INT.fieldOf("flexionCountWithoutPortals").orElse(0).forGetter(VoidHeartData::flexionCountWithoutPortals),
-                    Codec.list(PortalKey.CODEC).fieldOf("portalsKeyList").orElse(Collections.emptyList()).forGetter(heartData -> List.copyOf(heartData.portalKeySet()))
-            ).apply(instance, (pocketPos, maxFlexion, flexionCountWithoutPortals, portalKeys) ->
+                    Codec.list(PortalKey.CODEC).fieldOf("portalsKeyList").orElse(Collections.emptyList()).forGetter(heartData -> List.copyOf(heartData.portalKeySet())),
+                    Codec.INT.fieldOf("heartRise").orElse(0).forGetter(VoidHeartData::heartRise)
+            ).apply(instance, (pocketPos, maxFlexion, flexionCountWithoutPortals, portalKeys, heartRise) ->
             {
                 var heartData = new VoidHeartData(pocketPos, maxFlexion);
                 heartData.flexionCountWithoutPortals = flexionCountWithoutPortals;
                 heartData.portalKeyList.addAll(portalKeys);
+                heartData.heartRise = heartRise;
                 return heartData;
             }));
+
+    private static final int POCKET_REACH = 9;
+    private static final int CENTER_ABOVE_HEART = 6;
 
     private final BlockPos pocketPos;
     private final int maxFlexion;
 
     private int flexionCountWithoutPortals;
     private final Set<PortalKey> portalKeyList = new HashSet<>();
+
+    private int heartRise;
 
     private boolean isDirty;
 
@@ -85,6 +92,27 @@ public final class VoidHeartData
     public int maxFlexion()
     {
         return maxFlexion;
+    }
+
+    /**
+     * How many blocks the heart sits above where it would in a pocket without terrain, which lets a lake lie below it. The pocket keeps its size and moves down instead.
+     */
+    public int heartRise()
+    {
+        return heartRise;
+    }
+
+    public void heartRise(int heartRise)
+    {
+        this.heartRise = heartRise;
+        markDirty();
+    }
+
+    public boolean contains(BlockPos pos)
+    {
+        return Math.abs(pocketPos.getX() - pos.getX()) < POCKET_REACH
+                && Math.abs(pocketPos.getY() + CENTER_ABOVE_HEART - heartRise - pos.getY()) < POCKET_REACH
+                && Math.abs(pocketPos.getZ() - pos.getZ()) < POCKET_REACH;
     }
 
     public int currentFlexionCount()

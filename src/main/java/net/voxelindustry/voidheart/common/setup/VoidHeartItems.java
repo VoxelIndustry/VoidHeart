@@ -12,6 +12,7 @@ import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeTabletItem;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeItem;
+import net.voxelindustry.voidheart.common.item.LoreItem;
 import net.voxelindustry.voidheart.common.item.VoidAmalgamItem;
 import net.voxelindustry.voidheart.common.item.VoidHeartItem;
 import net.voxelindustry.voidheart.common.item.PortalCoreItem;
@@ -41,6 +42,9 @@ public class VoidHeartItems
     public static Item SEETHING_STEEL_INGOT;
     public static Item COVETOUS_COPPER_INGOT;
     public static Item LISTLESS_LEAD_INGOT;
+    public static Item AZURIUM_SHARD;
+    public static Item RUBRUM_SHARD;
+    public static Item MEMORIAM_SHARD;
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
 
@@ -66,6 +70,9 @@ public class VoidHeartItems
         SEETHING_STEEL_INGOT = registerItem("seething_steel_ingot", Item::new);
         COVETOUS_COPPER_INGOT = registerItem("covetous_copper_ingot", Item::new);
         LISTLESS_LEAD_INGOT = registerItem("listless_lead_ingot", Item::new);
+        AZURIUM_SHARD = registerItem("azurium_shard", properties -> new LoreItem(properties, "voidheart.azurium_shard.lore"));
+        RUBRUM_SHARD = registerItem("rubrum_shard", properties -> new LoreItem(properties, "voidheart.rubrum_shard.lore"));
+        MEMORIAM_SHARD = registerItem("memoriam_shard", properties -> new LoreItem(properties, "voidheart.memoriam_shard.lore"));
     }
 
     public static <T extends Item> T registerItem(String name, Function<Properties, T> factory)

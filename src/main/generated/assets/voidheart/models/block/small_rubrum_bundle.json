@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "voidheart:block/small_rubrum_bundle"
+  }
+}

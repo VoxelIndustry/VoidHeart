@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "voidheart:block/small_rubrum_bundle",
+      "x": 180
+    },
+    "facing=east": {
+      "model": "voidheart:block/small_rubrum_bundle",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/small_rubrum_bundle",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/small_rubrum_bundle",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up": {
+      "model": "voidheart:block/small_rubrum_bundle"
+    },
+    "facing=west": {
+      "model": "voidheart:block/small_rubrum_bundle",
+      "x": 90,
+      "y": 270
+    }
+  }
+}
