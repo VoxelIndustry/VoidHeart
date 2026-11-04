@@ -1,5 +1,10 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.voxelindustry.voidheart.common.content.mob.VoidSkeletonHeadBlock;
+import net.voxelindustry.voidheart.common.content.mob.BarnacleNestBlock;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.core.component.DataComponents;
 import net.fabricmc.fabric.impl.datagen.FabricDataGenHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -77,6 +82,8 @@ public class VoidHeartBlocks
     public static Block PORTAL_FRAME_CORE;
 
     public static Block POCKET_WALL;
+    public static Block BARNACLE_NEST;
+    public static Block VOID_SKELETON_HEAD;
     public static Block VOIDSTONE;
     public static Block VOIDSTONE_STAIRS;
     public static Block VOIDSTONE_SLAB;
@@ -385,6 +392,22 @@ public class VoidHeartBlocks
                 .lightLevel(state -> 5)
                 .noOcclusion()
                 .sound(SoundType.STONE), true);
+
+        BARNACLE_NEST = registerBlock("barnacle_nest", BarnacleNestBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .requiresCorrectToolForDrops()
+                .strength(10, 3)
+                .noOcclusion()
+                .sound(SoundType.SLIME_BLOCK), true);
+        VOID_SKELETON_HEAD = registerBlock("void_skeleton_head", VoidSkeletonHeadBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.SKELETON)
+                .strength(1)
+                .noOcclusion()
+                .pushReaction(PushReaction.POPPED)
+                .sound(SoundType.BONE_BLOCK),
+                (block, properties) -> new BlockItem(block, properties.component(DataComponents.EQUIPPABLE,
+                        Equippable.builder(EquipmentSlot.HEAD).setSwappable(false).build())));
 
         EXPERIENCE_SKULL = registerBlock("experience_skull", ExperienceSkullBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)

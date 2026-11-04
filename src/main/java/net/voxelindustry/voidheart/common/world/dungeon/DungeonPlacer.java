@@ -41,6 +41,7 @@ final class DungeonPlacer
         var lootTable = lootTable(address.theme());
         boolean hasTemplates = placeTemplates(level, plan, origin, minX, minZ, random, lootTable);
         placeCells(level, chunk, plan, origin, minX, minZ, random, lootTable, hasTemplates);
+        DungeonMobSpawner.spawn(level, plan, origin, minX, minZ);
     }
 
     static ResourceKey<LootTable> lootTable(DungeonTheme theme)

@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "facing=north,wall=false": {
+      "model": "voidheart:block/void_skeleton_head",
+      "y": 0
+    },
+    "facing=north,wall=true": {
+      "model": "voidheart:block/void_skeleton_head_wall",
+      "y": 0
+    },
+    "facing=east,wall=false": {
+      "model": "voidheart:block/void_skeleton_head",
+      "y": 90
+    },
+    "facing=east,wall=true": {
+      "model": "voidheart:block/void_skeleton_head_wall",
+      "y": 90
+    },
+    "facing=south,wall=false": {
+      "model": "voidheart:block/void_skeleton_head",
+      "y": 180
+    },
+    "facing=south,wall=true": {
+      "model": "voidheart:block/void_skeleton_head_wall",
+      "y": 180
+    },
+    "facing=west,wall=false": {
+      "model": "voidheart:block/void_skeleton_head",
+      "y": 270
+    },
+    "facing=west,wall=true": {
+      "model": "voidheart:block/void_skeleton_head_wall",
+      "y": 270
+    }
+  }
+}

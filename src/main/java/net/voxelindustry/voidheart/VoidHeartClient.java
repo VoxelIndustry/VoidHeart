@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
 import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
 import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
+import net.voxelindustry.voidheart.client.render.mob.VoidMobRenderers;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
@@ -112,6 +113,7 @@ public class VoidHeartClient implements ClientModInitializer
         ModelLayerRegistry.registerModelLayer(ShoulderEyeModel.LAYER, ShoulderEyeModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(VigilFigureModel.LAYER, VigilFigureModel::createBodyLayer);
         EntityRendererRegistry.register(VoidHeartEntities.SHOULDER_EYE, ShoulderEyeRender::new);
+        net.voxelindustry.voidheart.client.render.mob.VoidMobRenderers.register();
         ShoulderEyeEntity.hiddenFromLocalPick = eye ->
         {
             var player = Minecraft.getInstance().player;
