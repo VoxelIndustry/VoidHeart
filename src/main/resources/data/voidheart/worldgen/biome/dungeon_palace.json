@@ -1,0 +1,31 @@
+{
+  "attributes": {
+    "minecraft:visual/fog_color": "#241808",
+    "minecraft:visual/ambient_particles": {
+      "argument": [
+        {
+          "particle": {
+            "type": "minecraft:white_ash"
+          },
+          "probability": 0.02
+        }
+      ],
+      "modifier": "append"
+    },
+    "minecraft:audio/background_music": {
+      "default": {
+        "max_delay": 24000,
+        "min_delay": 12000,
+        "sound": "minecraft:music.nether.nether_wastes"
+      }
+    }
+  },
+  "carvers": [],
+  "downfall": 0.0,
+  "effects": {
+    "water_color": "#2fb8c0"
+  },
+  "features": [],
+  "has_precipitation": false,
+  "temperature": 1.5
+}

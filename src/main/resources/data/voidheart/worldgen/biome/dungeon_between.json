@@ -1,0 +1,13 @@
+{
+  "attributes": {
+    "minecraft:visual/fog_color": "#07060c"
+  },
+  "carvers": [],
+  "downfall": 0.0,
+  "effects": {
+    "water_color": "#3f76e4"
+  },
+  "features": [],
+  "has_precipitation": false,
+  "temperature": 0.5
+}

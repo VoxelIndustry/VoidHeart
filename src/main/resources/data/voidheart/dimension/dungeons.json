@@ -1,0 +1,6 @@
+{
+  "type": "voidheart:dungeons",
+  "generator": {
+    "type": "voidheart:dungeon_gen"
+  }
+}

@@ -64,6 +64,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
+import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
 import java.util.logging.Logger;
 
@@ -130,6 +131,7 @@ public class VoidHeart implements ModInitializer
         Corruption.register();
         CursePayloads.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
         ServerPlayerEvents.LEAVE.register(Curses::onLeave);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);

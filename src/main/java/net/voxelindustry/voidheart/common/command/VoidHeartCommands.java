@@ -110,6 +110,7 @@ public class VoidHeartCommands
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS));
 
         registerPocketCommand(builder);
+        DungeonCommands.register(builder);
         LeyCommands.register(builder);
         CurseCommands.register(builder);
         ResearchCommands.register(builder);

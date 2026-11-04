@@ -1,0 +1,35 @@
+{
+  "attributes": {
+    "minecraft:visual/fog_color": "#0c1408",
+    "minecraft:visual/water_fog_color": "#2f4a10",
+    "minecraft:visual/ambient_particles": {
+      "argument": [
+        {
+          "particle": {
+            "type": "minecraft:spore_blossom_air"
+          },
+          "probability": 0.02
+        }
+      ],
+      "modifier": "append"
+    },
+    "minecraft:audio/background_music": {
+      "default": {
+        "max_delay": 24000,
+        "min_delay": 12000,
+        "sound": "minecraft:music.overworld.swamp"
+      }
+    },
+    "minecraft:visual/ambient_light_color": "#3c4a24"
+  },
+  "carvers": [],
+  "downfall": 0.0,
+  "effects": {
+    "water_color": "#7fc22a",
+    "foliage_color": "#6f7a22",
+    "grass_color": "#5a6a2a"
+  },
+  "features": [],
+  "has_precipitation": false,
+  "temperature": 0.5
+}

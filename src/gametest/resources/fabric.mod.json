@@ -31,7 +31,8 @@
       "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest",
       "net.voxelindustry.voidheart.gametest.SinMetalsClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalBundleClientTest",
-      "net.voxelindustry.voidheart.gametest.VoidPocketClientTest"
+      "net.voxelindustry.voidheart.gametest.VoidPocketClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidDungeonClientTest"
     ]
   },
   "depends": {
