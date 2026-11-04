@@ -85,9 +85,15 @@ public class VoidHeartCommands
             if (targetProfile.isPresent())
             {
                 ServerLevel voidWorld = context.getSource().getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
-                BlockPos pocketPos = VoidPocketState.getVoidPocketState(voidWorld).getPosForPlayer(targetProfile.get().id());
+                // Looking up the pocket position would reserve a pocket, and the altar then refuses to create the real one
+                var heartData = VoidPocketState.getVoidPocketState(voidWorld).getHeartData(targetProfile.get().id());
+                if (heartData == null)
+                {
+                    context.getSource().sendFailure(Component.translatable(MODID + ".no_pocket_for_a_player", targetProfile.get().name()));
+                    return 0;
+                }
 
-                Vec3 destinationPos = Vec3.atLowerCornerOf(pocketPos.above()).add(0.5, 0.5, 0.5);
+                Vec3 destinationPos = Vec3.atLowerCornerOf(heartData.pocketPos().above()).add(0.5, 0.5, 0.5);
                 var player = context.getSource().getPlayerOrException();
                 TeleportUtil.teleport(player, voidWorld, destinationPos, player.getYHeadRot(), player.getViewXRot(0));
             }

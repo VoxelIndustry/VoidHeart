@@ -54,6 +54,7 @@ public class VoidPocketClientTest implements FabricClientGameTest
             context.getInput().pressKey(InputConstants.KEY_F1);
 
             checkRealPocket(server);
+            checkPocketCommand(context, server);
 
             for (var variant : PocketVariant.values())
             {
@@ -68,6 +69,35 @@ public class VoidPocketClientTest implements FabricClientGameTest
             context.getInput().pressKey(InputConstants.KEY_F1);
             context.runOnClient(minecraft -> minecraft.options.fov().set(DEFAULT_FOV));
         }
+    }
+
+    /**
+     * Looking up a player without a pocket used to reserve one with nothing built, after which the altar refused to create theirs.
+     */
+    private static void checkPocketCommand(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("execute as @a run voidheart pocket @a");
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var player = minecraft.getPlayerList().getPlayers().getFirst();
+            if (VoidPocketState.getVoidPocketState(voidWorld(minecraft)).hasPocket(player.getUUID()))
+                throw new AssertionError("Looking up a missing pocket should not reserve one");
+            if (player.level() == voidWorld(minecraft))
+                throw new AssertionError("Looking up a missing pocket should not send anyone to the void");
+
+            VoidPocketState.getVoidPocketState(voidWorld(minecraft)).createPocket(voidWorld(minecraft), player.getUUID());
+        });
+
+        server.runCommand("execute as @a run voidheart pocket @a");
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var player = minecraft.getPlayerList().getPlayers().getFirst();
+            var heart = VoidPocketState.getVoidPocketState(voidWorld(minecraft)).getHeartData(player.getUUID()).pocketPos();
+            if (player.level() != voidWorld(minecraft) || player.blockPosition().distManhattan(heart) > 2)
+                throw new AssertionError("The command should send its caller to an existing pocket, got " + player.position() + " for a heart at " + heart);
+        });
     }
 
     private static void checkPreviewCommand(ClientGameTestContext context, TestServerContext server)
