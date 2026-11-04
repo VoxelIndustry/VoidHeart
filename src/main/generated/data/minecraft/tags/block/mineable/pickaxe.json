@@ -37,6 +37,12 @@
     "voidheart:cut_arrogant_iron",
     "voidheart:ravenous_gold_block",
     "voidheart:cut_ravenous_gold",
+    "voidheart:seething_steel_block",
+    "voidheart:cut_seething_steel",
+    "voidheart:covetous_copper_block",
+    "voidheart:cut_covetous_copper",
+    "voidheart:listless_lead_block",
+    "voidheart:cut_listless_lead",
     "voidheart:ravenous_collector",
     "voidheart:ravenous_storage",
     "voidheart:ravenous_storage_matrix",
@@ -63,6 +69,15 @@
     "voidheart:cut_arrogant_iron_wall",
     "voidheart:cut_ravenous_gold_stairs",
     "voidheart:cut_ravenous_gold_slab",
-    "voidheart:cut_ravenous_gold_wall"
+    "voidheart:cut_ravenous_gold_wall",
+    "voidheart:cut_seething_steel_stairs",
+    "voidheart:cut_seething_steel_slab",
+    "voidheart:cut_seething_steel_wall",
+    "voidheart:cut_covetous_copper_stairs",
+    "voidheart:cut_covetous_copper_slab",
+    "voidheart:cut_covetous_copper_wall",
+    "voidheart:cut_listless_lead_stairs",
+    "voidheart:cut_listless_lead_slab",
+    "voidheart:cut_listless_lead_wall"
   ]
 }

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:cut_listless_lead",
+  "result": {
+    "id": "voidheart:cut_listless_lead_wall"
+  }
+}

@@ -116,12 +116,16 @@ public class RecipesProvider extends FabricRecipeProvider
 
             nineBlockStorageRecipes(RecipeCategory.MISC, VoidHeartItems.RAVENOUS_GOLD_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
             nineBlockStorageRecipes(RecipeCategory.MISC, VoidHeartItems.ARROGANT_IRON_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.ARROGANT_IRON_BLOCK);
+            nineBlockStorageRecipes(RecipeCategory.MISC, VoidHeartItems.SEETHING_STEEL_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.SEETHING_STEEL_BLOCK);
+            nineBlockStorageRecipes(RecipeCategory.MISC, VoidHeartItems.COVETOUS_COPPER_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.COVETOUS_COPPER_BLOCK);
+            nineBlockStorageRecipes(RecipeCategory.MISC, VoidHeartItems.LISTLESS_LEAD_INGOT, RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.LISTLESS_LEAD_BLOCK);
 
             smeltingResultFromBase(VoidHeartBlocks.VOIDSTONE_BRICKS_CRACKED, VoidHeartBlocks.VOIDSTONE_BRICKS);
             smeltingResultFromBase(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR);
 
             offerShatterForgeRecipe(Items.GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
             offerShatterForgeRecipe(Items.IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT);
+            offerShatterForgeRecipe(Items.COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT);
             offerShatterForgeRecipe(Blocks.COBBLESTONE, VoidHeartBlocks.VOIDSTONE);
             offerShatterForgeRecipe(Blocks.DEEPSLATE, VoidHeartBlocks.VOIDSTONE);
 
@@ -131,6 +135,8 @@ public class RecipesProvider extends FabricRecipeProvider
             offerShatterForgeRecipe(Blocks.MAGMA_BLOCK, Blocks.OBSIDIAN, 1, 2, 3, 60, 1000, EssenceRegistry.STILLNESS);
             offerShatterForgeRecipe(Blocks.COBBLESTONE, Blocks.MAGMA_BLOCK, 1, 2, 3, 60, 500, EssenceRegistry.FIERY);
             offerShatterForgeRecipe(Items.RAW_IRON, Items.IRON_INGOT, 2, 2, 3, 60, 1000, EssenceRegistry.FIERY);
+            offerShatterForgeRecipe(Items.IRON_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, 1, 2, 3, 60, 1000, EssenceRegistry.FIERY);
+            offerShatterForgeRecipe(Items.IRON_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, 1, 2, 3, 60, 1000, EssenceRegistry.STILLNESS);
 
             // Tier 2: mixed aspects, requires a Beam Focus
             offerShatterForgeRecipe(Items.DIAMOND, Items.ECHO_SHARD, 1, 100, 5, 3000, Map.of(EssenceRegistry.STILLNESS, 2, EssenceRegistry.FIERY, 2));

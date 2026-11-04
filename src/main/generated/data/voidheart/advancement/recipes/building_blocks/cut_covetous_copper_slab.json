@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cut_covetous_copper": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:cut_covetous_copper"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:cut_covetous_copper_slab"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_cut_covetous_copper"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:cut_covetous_copper_slab"
+    ]
+  }
+}

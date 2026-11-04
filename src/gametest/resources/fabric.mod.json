@@ -28,7 +28,8 @@
       "net.voxelindustry.voidheart.gametest.KnowledgeRepositoryFxClientTest",
       "net.voxelindustry.voidheart.gametest.ShatterForgeClientTest",
       "net.voxelindustry.voidheart.gametest.MalignantTormenterClientTest",
-      "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest"
+      "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest",
+      "net.voxelindustry.voidheart.gametest.SinMetalsClientTest"
     ]
   },
   "depends": {

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:cut_covetous_copper",
+  "result": {
+    "id": "voidheart:cut_covetous_copper_wall"
+  }
+}
