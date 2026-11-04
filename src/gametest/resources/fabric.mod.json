@@ -27,6 +27,7 @@
       "net.voxelindustry.voidheart.gametest.KnowledgeColumnClientTest",
       "net.voxelindustry.voidheart.gametest.KnowledgeRepositoryFxClientTest",
       "net.voxelindustry.voidheart.gametest.ShatterForgeClientTest",
+      "net.voxelindustry.voidheart.gametest.MalignantTormenterClientTest",
       "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest"
     ]
   },

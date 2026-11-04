@@ -53,6 +53,9 @@ import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBloc
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.VoidConduitBlock;
+import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBlock;
+import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBlockItem;
+import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterPartBlock;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -136,6 +139,9 @@ public class VoidHeartBlocks
     public static Block SHATTER_FORGE;
     public static Block VOID_CONDUIT;
     public static Block BEAM_FOCUS;
+
+    public static Block MALIGNANT_TORMENTER;
+    public static Block MALIGNANT_TORMENTER_PART;
 
     public static Block ARROGANT_IRON_BLOCK;
     public static Block CUT_ARROGANT_IRON;
@@ -395,6 +401,25 @@ public class VoidHeartBlocks
                 .strength(1.5F, 6.0F)
                 .noOcclusion()
                 .sound(SoundType.STONE), true);
+
+        MALIGNANT_TORMENTER = registerBlock("malignant_tormenter", MalignantTormenterBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_RED)
+                .strength(1.5F, 6.0F)
+                .noOcclusion()
+                .sound(SoundType.SLIME_BLOCK), MalignantTormenterBlockItem::new);
+        // Only ever placed by a tormenter, so it has no item
+        var tormenterPart = Identifier.fromNamespaceAndPath(MODID, "malignant_tormenter_part");
+        MALIGNANT_TORMENTER_PART = Registry.register(BuiltInRegistries.BLOCK, tormenterPart, new MalignantTormenterPartBlock(BlockBehaviour.Properties.of()
+                .setId(ResourceKey.create(Registries.BLOCK, tormenterPart))
+                .mapColor(MapColor.COLOR_RED)
+                .strength(1.5F, 6.0F)
+                .noOcclusion()
+                .noLootTable()
+                .isValidSpawn(VoidHeartBlocks::never)
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos, box) -> false)
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.SLIME_BLOCK)));
 
         VOIDSTONE_PILLAR_SLAB = generateSlab(VOIDSTONE_PILLAR, "voidstone_pillar");
         VOIDSTONE_PILLAR_STAIRS = generateStairs(VOIDSTONE_PILLAR, "voidstone_pillar");

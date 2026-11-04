@@ -21,6 +21,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import com.geckolib.renderer.internal.GeckolibItemSpecialRenderer;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
@@ -123,6 +124,10 @@ public class ModelsProvider extends FabricModelProvider
         // Drawn by GeckoLib with the block model, the base model only provides display transforms
         generator.itemModelOutput.accept(VoidHeartBlocks.RAVENOUS_COLLECTOR.asItem(),
                 ItemModelUtils.specialModel(itemModel("ravenous_collector"), new GeckolibItemSpecialRenderer.Unbaked<>()));
+
+        // Drawn like the placed block, the base model only provides display transforms
+        generator.itemModelOutput.accept(VoidHeartBlocks.MALIGNANT_TORMENTER.asItem(),
+                ItemModelUtils.specialModel(itemModel("malignant_tormenter"), new MalignantTormenterItemRender.Unbaked()));
 
         generator.itemModelOutput.accept(VoidHeartBlocks.VOID_LAMP.asItem(), ItemModelUtils.select(
                 new ComponentContents<>(VoidHeartDataComponents.CORRUPTION),

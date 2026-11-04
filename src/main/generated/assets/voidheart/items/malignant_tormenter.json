@@ -1,0 +1,9 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "voidheart:item/malignant_tormenter",
+    "model": {
+      "type": "voidheart:malignant_tormenter"
+    }
+  }
+}

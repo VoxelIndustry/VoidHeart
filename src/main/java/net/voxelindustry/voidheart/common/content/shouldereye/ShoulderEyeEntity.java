@@ -527,13 +527,13 @@ public class ShoulderEyeEntity extends Mob
     }
 
     @Override
-    protected @Nullable SoundEvent getHurtSound(DamageSource source)
+    public @Nullable SoundEvent getHurtSound(DamageSource source)
     {
         return SoundEvents.SLIME_HURT_SMALL;
     }
 
     @Override
-    protected @Nullable SoundEvent getDeathSound()
+    public @Nullable SoundEvent getDeathSound()
     {
         return SoundEvents.SLIME_DEATH_SMALL;
     }

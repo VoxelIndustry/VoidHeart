@@ -32,6 +32,7 @@ Keep sizes, colors, alphas and timings in named constants at the top of the clas
 | Large, mostly static geometry | Cached GPU meshes built off-thread | `client/render/oculus/OculusRenderer` |
 | Expensive, unchanging GUI content | Bake once into a texture and blit it | `TravelMapScreen` |
 | A block item that shows its GeckoLib block model | Special item model and `GeoItemRenderer` | `RavenousCollectorItemRender` |
+| A block item drawn like its block entity renderer | `SpecialModelRenderer` with a record argument, one new draw state per submit since geometry is built later in the frame. Slots cache what they first drew, so it stays still | `MalignantTormenterItemRender` |
 
 Block entity renderers read the world in `extractRenderState` and only draw from that state when submitting. `RavenousRelayRender` is a short example. World-level drawing goes through `LevelRenderEvents`, registered in `VoidHeartClient`.
 
@@ -52,6 +53,9 @@ If nothing in the table fits, copy the closest vanilla pipeline as `VoidHeartRen
 | GeckoLib block item sits too high | GeckoLib centers item models, but block models stand on their bottom | Override `adjustRenderPose` | `07440ce` |
 | Screen slows the game | About ten thousand GUI elements rebuilt each frame | Bake into a texture | `90eff0f` |
 | Clicks in a screen are ignored | 26.3 renumbered mouse buttons, so left is no longer `0` | Compare with `InputConstants.MOUSE_BUTTON_LEFT`, never a literal | `6137f55` |
+| An entity kept out of the world draws nothing or throws "Tried to access entity ID before ID assignment" | Its render state reads an id only joining a world assigns | Call `setId` on it before `createRenderState` (`TormenterHeads`) | |
+| No cracks while a block entity is being mined | The game passes `breakProgress` as null to anything with `shouldRenderOffScreen()` true | Look it up in `ClientLevel.destructionProgress()` while extracting (`MalignantTormenterRender.crumbling`) | |
+| Model parts drawn apart from their entity shift or twitch | Renderers share parts between entities and move them when flushing | Copy the cubes and their poses once, then compile the cubes yourself (`TormenterHeads`) | |
 
 Run `git show <commit>` when you need the full change. If a fix teaches something new, add a row here in the same change, so the next renderer benefits from it.
 

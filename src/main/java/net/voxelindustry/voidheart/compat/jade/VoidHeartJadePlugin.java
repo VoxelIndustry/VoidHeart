@@ -13,6 +13,8 @@ import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
+import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBlock;
+import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
@@ -26,6 +28,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     private final RavenousStorageMatrixProvider ravenousStorageMatrixProvider = new RavenousStorageMatrixProvider();
     private final RavenousRelayProvider ravenousRelayProvider = new RavenousRelayProvider();
     private final KnowledgeColumnProvider knowledgeColumnProvider = new KnowledgeColumnProvider();
+    private final MalignantTormenterProvider malignantTormenterProvider = new MalignantTormenterProvider();
 
     @Override
     public void register(IWailaCommonRegistration registration)
@@ -37,6 +40,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockDataProvider(ravenousStorageMatrixProvider, RavenousStorageMatrixTile.class);
         registration.registerBlockDataProvider(ravenousRelayProvider, RavenousRelayTile.class);
         registration.registerBlockDataProvider(knowledgeColumnProvider, KnowledgeColumnTile.class);
+        registration.registerBlockDataProvider(malignantTormenterProvider, MalignantTormenterTile.class);
     }
 
     @Override
@@ -49,8 +53,10 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
         registration.registerBlockComponent(new RavenousRelayProvider.Client(), RavenousRelayBlock.class);
         registration.registerBlockComponent(new KnowledgeColumnProvider.Client(), KnowledgeColumnBlock.class);
+        registration.registerBlockComponent(new MalignantTormenterProvider.Client(), MalignantTormenterBlock.class);
 
         registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
+        registration.addRayTraceCallback(new MalignantTormenterPartRedirect(registration));
         registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);
     }
 }
