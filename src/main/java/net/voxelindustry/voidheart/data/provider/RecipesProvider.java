@@ -152,7 +152,7 @@ public class RecipesProvider extends FabricRecipeProvider
             offerAltarRecipe("beam_focus", VoidHeartBlocks.BEAM_FOCUS, VoidHeartBlocks.VOID_CONDUIT,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
-            offerAltarRecipe("experience_skull", VoidHeartBlocks.EXPERIENCE_SKULL, Blocks.BONE_BLOCK,
+            offerAltarRecipe("experience_skull", VoidHeartBlocks.EXPERIENCE_SKULL, VoidHeartBlocks.VOID_SKELETON_HEAD,
                     Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH,
                     Items.DIAMOND, Items.DIAMOND,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);

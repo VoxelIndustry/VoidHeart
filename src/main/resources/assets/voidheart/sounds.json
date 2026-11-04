@@ -1,0 +1,432 @@
+{
+  "entity.void_skeleton.ambient": {
+    "subtitle": "subtitles.voidheart.entity.void_skeleton.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton.ambient",
+        "type": "event",
+        "pitch": 0.75
+      }
+    ]
+  },
+  "entity.void_skeleton.hurt": {
+    "subtitle": "subtitles.voidheart.entity.void_skeleton.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton.hurt",
+        "type": "event",
+        "pitch": 0.75
+      }
+    ]
+  },
+  "entity.void_skeleton.death": {
+    "subtitle": "subtitles.voidheart.entity.void_skeleton.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton.death",
+        "type": "event",
+        "pitch": 0.75
+      }
+    ]
+  },
+  "entity.void_skeleton.step": {
+    "subtitle": "subtitles.voidheart.entity.void_skeleton.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton.step",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.void_ghoul.ambient": {
+    "subtitle": "subtitles.voidheart.entity.void_ghoul.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.husk.ambient",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.void_ghoul.hurt": {
+    "subtitle": "subtitles.voidheart.entity.void_ghoul.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.husk.hurt",
+        "type": "event",
+        "pitch": 0.75
+      }
+    ]
+  },
+  "entity.void_ghoul.death": {
+    "subtitle": "subtitles.voidheart.entity.void_ghoul.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.husk.death",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.void_ghoul.step": {
+    "subtitle": "subtitles.voidheart.entity.void_ghoul.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.husk.step",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.wraith.ambient": {
+    "subtitle": "subtitles.voidheart.entity.wraith.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.vex.ambient",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.wraith.hurt": {
+    "subtitle": "subtitles.voidheart.entity.wraith.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.hurt",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.wraith.death": {
+    "subtitle": "subtitles.voidheart.entity.wraith.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.death",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.wraith.step": {
+    "subtitle": "subtitles.voidheart.entity.wraith.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton.step",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.corrupted_crab.ambient": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_crab.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.ambient",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.corrupted_crab.hurt": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_crab.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.spider.hurt",
+        "type": "event",
+        "pitch": 1.4
+      }
+    ]
+  },
+  "entity.corrupted_crab.death": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_crab.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.spider.death",
+        "type": "event",
+        "pitch": 1.2
+      }
+    ]
+  },
+  "entity.corrupted_crab.step": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_crab.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.spider.step",
+        "type": "event",
+        "pitch": 1.3
+      }
+    ]
+  },
+  "entity.corrupted_barnacle.ambient": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.ambient",
+        "type": "event",
+        "pitch": 0.45
+      }
+    ]
+  },
+  "entity.corrupted_barnacle.hurt": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.hurt",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.corrupted_barnacle.death": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.death",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.corrupted_barnacle.step": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.step",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.fallen_novice.ambient": {
+    "subtitle": "subtitles.voidheart.entity.fallen_novice.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.pillager.ambient",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.fallen_novice.hurt": {
+    "subtitle": "subtitles.voidheart.entity.fallen_novice.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.pillager.hurt",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.fallen_novice.death": {
+    "subtitle": "subtitles.voidheart.entity.fallen_novice.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.pillager.death",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.fallen_novice.step": {
+    "subtitle": "subtitles.voidheart.entity.fallen_novice.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton.step",
+        "type": "event",
+        "pitch": 0.9
+      }
+    ]
+  },
+  "entity.fallen_adept.ambient": {
+    "subtitle": "subtitles.voidheart.entity.fallen_adept.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.vindicator.ambient",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.fallen_adept.hurt": {
+    "subtitle": "subtitles.voidheart.entity.fallen_adept.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.vindicator.hurt",
+        "type": "event",
+        "pitch": 0.65
+      }
+    ]
+  },
+  "entity.fallen_adept.death": {
+    "subtitle": "subtitles.voidheart.entity.fallen_adept.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.vindicator.death",
+        "type": "event",
+        "pitch": 0.65
+      }
+    ]
+  },
+  "entity.fallen_adept.step": {
+    "subtitle": "subtitles.voidheart.entity.fallen_adept.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.wither_skeleton.step",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.fallen_elder.ambient": {
+    "subtitle": "subtitles.voidheart.entity.fallen_elder.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker.ambient",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.fallen_elder.hurt": {
+    "subtitle": "subtitles.voidheart.entity.fallen_elder.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker.hurt",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.fallen_elder.death": {
+    "subtitle": "subtitles.voidheart.entity.fallen_elder.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker.death",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.fallen_elder.step": {
+    "subtitle": "subtitles.voidheart.entity.fallen_elder.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton.step",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.void_ghoul.lunge": {
+    "subtitle": "subtitles.voidheart.entity.void_ghoul.lunge",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.roar",
+        "type": "event",
+        "pitch": 1.7
+      }
+    ]
+  },
+  "entity.wraith.whisper": {
+    "subtitle": "subtitles.voidheart.entity.wraith.whisper",
+    "sounds": [
+      {
+        "name": "minecraft:particle.soul_escape",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.wraith.emerge": {
+    "subtitle": "subtitles.voidheart.entity.wraith.emerge",
+    "sounds": [
+      {
+        "name": "minecraft:block.sculk.spread",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.corrupted_barnacle.infect": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.infect",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.squish",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.corrupted_barnacle.stir": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.stir",
+    "sounds": [
+      {
+        "name": "minecraft:block.sculk.spread",
+        "type": "event",
+        "pitch": 1.4
+      }
+    ]
+  },
+  "entity.corrupted_barnacle.burst": {
+    "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.burst",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.egg_hatch",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "block.barnacle_nest.release": {
+    "subtitle": "subtitles.voidheart.block.barnacle_nest.release",
+    "sounds": [
+      {
+        "name": "minecraft:block.chorus_flower.grow",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.fallen_elder.cast": {
+    "subtitle": "subtitles.voidheart.entity.fallen_elder.cast",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker.cast_spell",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.fallen_elder.raise": {
+    "subtitle": "subtitles.voidheart.entity.fallen_elder.raise",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker.prepare_summon",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.void_orb.hit": {
+    "subtitle": "subtitles.voidheart.entity.void_orb.hit",
+    "sounds": [
+      {
+        "name": "minecraft:entity.shulker_bullet.hit",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.void_orb.deflect": {
+    "subtitle": "subtitles.voidheart.entity.void_orb.deflect",
+    "sounds": [
+      {
+        "name": "minecraft:entity.shulker_bullet.hurt",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  }
+}

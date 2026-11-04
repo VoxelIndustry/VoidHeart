@@ -275,6 +275,7 @@ public final class DungeonPalette
         set(VEIN_BLOSSOM, VoidHeartBlocks.VOIDSTONE_WRITHING_BLOSSOM);
         set(VEIN_MAW, VoidHeartBlocks.VOIDSTONE_WRITHING_MAW);
         set(POOL_BED, VoidHeartBlocks.VOIDSTONE_POLISHED);
+        set(NEST, VoidHeartBlocks.BARNACLE_NEST);
 
         set(LANTERN, Blocks.LANTERN);
         set(CANDLE, Blocks.CANDLE);

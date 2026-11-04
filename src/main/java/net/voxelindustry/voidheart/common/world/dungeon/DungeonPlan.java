@@ -51,6 +51,7 @@ public final class DungeonPlan
     private final DungeonPlanner layout;
     private final List<DungeonTemplate.Placement> templates = new ArrayList<>();
     private final List<int[]> chests = new ArrayList<>();
+    private final List<DungeonMobTable.Placement> mobs = new ArrayList<>();
     private final SimplexNoise warpX;
     private final SimplexNoise warpY;
     private final SimplexNoise warpZ;
@@ -82,8 +83,10 @@ public final class DungeonPlan
         settleEntry();
         growCrystals();
         placeChests();
+        placeNests();
         spreadFillLight();
         sealShell();
+        placeMobs();
     }
 
     public static DungeonPlan generate(DungeonBlueprint blueprint)
@@ -114,6 +117,11 @@ public final class DungeonPlan
     public List<int[]> chests()
     {
         return chests;
+    }
+
+    public List<DungeonMobTable.Placement> mobs()
+    {
+        return mobs;
     }
 
     /**
@@ -889,6 +897,40 @@ public final class DungeonPlan
             if (isInner(x, y, z) && grid.material(x, y, z).isOpen() && !isSafe(x, y, z) && anchored)
                 grid.set(x, y, z, DungeonMaterial.crystal(kind, random.nextInt(3)), facing);
         }
+    }
+
+    /**
+     * Fleshy growths on the rock of the rooms pests live in, on top of the mobs placed afterwards.
+     */
+    private void placeNests()
+    {
+        int wanted = DungeonMobTable.nests(blueprint.theme(), blueprint.size(), blueprint.difficulty());
+        var rooms = layout.rooms.stream().filter(room -> room != layout.entry).toList();
+        if (rooms.isEmpty())
+            return;
+
+        for (int nest = 0; nest < wanted; nest++)
+        {
+            var room = rooms.get(random.nextInt(rooms.size()));
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                int x = room.minX() + random.nextInt(room.maxX() - room.minX() + 1);
+                int y = room.minY() + random.nextInt(room.maxY() - room.minY() + 1);
+                int z = room.minZ() + random.nextInt(room.maxZ() - room.minZ() + 1);
+                var facing = Direction.values()[random.nextInt(Direction.values().length)];
+                if (isInner(x, y, z) && !isSafe(x, y, z) && grid.material(x, y, z).isOpen()
+                    && grid.material(x - facing.getStepX(), y - facing.getStepY(), z - facing.getStepZ()).isAnchor())
+                {
+                    grid.set(x, y, z, NEST, facing);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void placeMobs()
+    {
+        new DungeonMobPlacer(blueprint, grid, random, mobs, entry).place(layout.rooms, layout.entry, layout.flats.values());
     }
 
     private void placeChests()

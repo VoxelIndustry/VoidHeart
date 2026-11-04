@@ -23,6 +23,7 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
+import net.voxelindustry.voidheart.common.content.mob.BarnacleNestTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
@@ -47,6 +48,7 @@ public class VoidHeartTiles
     public static BlockEntityType<BeholderTile>         BEHOLDER;
 
     public static BlockEntityType<ExperienceSkullTile> EXPERIENCE_SKULL;
+    public static BlockEntityType<BarnacleNestTile> BARNACLE_NEST;
     public static BlockEntityType<MendingAltarTile> MENDING_ALTAR;
 
     public static BlockEntityType<InventoryInserterTile> INVENTORY_INSERTER;
@@ -137,6 +139,8 @@ public class VoidHeartTiles
                 "ravenous_relay");
         registerTile(MALIGNANT_TORMENTER = FabricBlockEntityTypeBuilder.create(MalignantTormenterTile::new, VoidHeartBlocks.MALIGNANT_TORMENTER).build(),
                 "malignant_tormenter");
+        registerTile(BARNACLE_NEST = FabricBlockEntityTypeBuilder.create(BarnacleNestTile::new, VoidHeartBlocks.BARNACLE_NEST).build(),
+                "barnacle_nest");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)

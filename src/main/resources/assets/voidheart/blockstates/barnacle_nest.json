@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "voidheart:block/barnacle_nest"
+    },
+    "facing=down": {
+      "model": "voidheart:block/barnacle_nest",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "voidheart:block/barnacle_nest",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/barnacle_nest",
+      "x": 90,
+      "y": 180
+    },
+    "facing=east": {
+      "model": "voidheart:block/barnacle_nest",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west": {
+      "model": "voidheart:block/barnacle_nest",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

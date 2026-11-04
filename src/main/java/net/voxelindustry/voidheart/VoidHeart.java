@@ -58,7 +58,10 @@ import net.voxelindustry.voidheart.common.content.tormenter.TormenterSoulHarvest
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
+import net.voxelindustry.voidheart.common.content.mob.BarnacleInfection;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyes;
+import net.voxelindustry.voidheart.common.setup.VoidHeartEffects;
+import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -101,7 +104,11 @@ public class VoidHeart implements ModInitializer
         VoidHeartDataComponents.registerComponents();
         VoidHeartBlocks.registerBlocks();
         VoidHeartItems.registerItems();
+        VoidHeartSounds.register();
+        VoidHeartEffects.register();
         VoidHeartEntities.registerEntities();
+        VoidHeartItems.registerSpawnEggs();
+        BarnacleInfection.register();
         ShoulderEyes.register();
 
         VoidHeartTiles.registerTiles();
@@ -124,6 +131,7 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.START_LEVEL_TICK.register(VoidHeartTicker::tickWorld);
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(BarnacleInfection::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);

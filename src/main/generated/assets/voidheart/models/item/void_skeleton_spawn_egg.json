@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "voidheart:item/void_skeleton_spawn_egg"
+  }
+}

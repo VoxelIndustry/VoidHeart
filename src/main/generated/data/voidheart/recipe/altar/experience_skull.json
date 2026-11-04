@@ -4,7 +4,7 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemstack_ingredient",
-        "item": "minecraft:bone_block"
+        "item": "voidheart:void_skeleton_head"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",

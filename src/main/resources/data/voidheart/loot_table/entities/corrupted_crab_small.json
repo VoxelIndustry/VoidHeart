@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.25
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:obsidian_shard"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "voidheart:entities/corrupted_crab_small"
+}
