@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
@@ -64,6 +65,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
 import java.util.logging.Logger;
@@ -132,6 +134,7 @@ public class VoidHeart implements ModInitializer
         CursePayloads.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
+        UseItemCallback.EVENT.register(DungeonTeleportLock::onUseItem);
         ServerPlayerEvents.LEAVE.register(Curses::onLeave);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
@@ -169,6 +172,7 @@ public class VoidHeart implements ModInitializer
             OculusSightPayloads.clear();
             ShoulderEyes.clear();
             Curses.clear();
+            DungeonTeleportLock.clear();
         });
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));

@@ -24,6 +24,7 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.voxelindustry.voidheart.common.item.PortalCoreItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -83,6 +84,8 @@ public class PortalFrameBlock extends Block implements EntityBlock
         if (stack.getItem() == VoidHeartItems.PORTAL_CORE)
         {
             if (world.isClientSide())
+                return InteractionResult.SUCCESS;
+            if (DungeonTeleportLock.refuse(player))
                 return InteractionResult.SUCCESS;
 
             boolean isInPocket = PortalFormer.isInPocket(world, pos, player.getUUID());

@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -44,7 +45,7 @@ public class VoidPearlItem extends Item
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level world, LivingEntity user)
     {
-        if (!world.isClientSide() && user instanceof ServerPlayer)
+        if (!world.isClientSide() && user instanceof ServerPlayer player && !DungeonTeleportLock.refuse(player))
         {
             ServerLevel voidWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
             VoidPocketState voidPocketState = getVoidPocketState(voidWorld);
@@ -54,7 +55,10 @@ public class VoidPearlItem extends Item
                 Vec3 destinationPos = Vec3.atCenterOf(voidPocketState.getPosForPlayer(user.getUUID()).above());
 
                 VoidHeartTicker.addDelayedTask(world.getServer(), 100, () ->
-                        TeleportUtil.teleport((ServerPlayer) user, voidWorld, destinationPos, user.getYHeadRot(), user.getViewXRot(0)));
+                {
+                    if (!DungeonTeleportLock.refuse(player))
+                        TeleportUtil.teleport(player, voidWorld, destinationPos, user.getYHeadRot(), user.getViewXRot(0));
+                });
                 stack.shrink(1);
                 ((Player) user).sendOverlayMessage(Component.translatable(MODID + ".teleport_in_progress", 5));
             }

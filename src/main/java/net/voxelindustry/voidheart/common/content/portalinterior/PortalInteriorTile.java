@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.portalinterior;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
@@ -51,7 +52,7 @@ public class PortalInteriorTile extends BlockEntity
 
     public void teleport(Entity collider)
     {
-        if (!(collider instanceof ServerPlayer) || corePos == null)
+        if (!(collider instanceof ServerPlayer player) || corePos == null || DungeonTeleportLock.refuse(player))
             return;
 
         var core = getCore();

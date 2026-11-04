@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.door;
 
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
@@ -51,7 +52,8 @@ public class VoidKeyItem extends Item
                 pos = pos.below();
             if (!isBlank(stack) && world instanceof ServerLevel serverLevel)
             {
-                linkDoor(stack, serverLevel, pos, context.getPlayer());
+                if (context.getPlayer() == null || !DungeonTeleportLock.refuse(context.getPlayer()))
+                    linkDoor(stack, serverLevel, pos, context.getPlayer());
                 return InteractionResult.SUCCESS;
             }
         }

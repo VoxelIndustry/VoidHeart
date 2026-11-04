@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.heart;
 import com.mojang.serialization.Codec;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.voxelindustry.voidheart.common.util.ProfileUtil;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -141,6 +142,8 @@ public class VoidHeartTile extends TileBase implements PartialSyncedTile
         if (lastPlayerHitCache.containsKey(hitPlayerID))
         {
             var serverPlayer = (ServerPlayer) player;
+            if (DungeonTeleportLock.refuse(serverPlayer))
+                return;
             serverPlayer.teleport(serverPlayer.findRespawnPositionAndUseSpawnBlock(true, TeleportTransition.DO_NOTHING));
         }
         else

@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.eyebottle;
 
 import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.voxelindustry.voidheart.common.util.ProfileUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -73,6 +74,8 @@ public class EyeBottleBlock extends Block implements EntityBlock
     {
         if (world.isClientSide())
             return InteractionResult.SUCCESS;
+        if (DungeonTeleportLock.refuse(user))
+            return InteractionResult.SUCCESS;
 
         var voidWorld = world.getServer().getLevel(VoidHeart.VOID_WORLD_KEY);
         var voidPocketState = getVoidPocketState(voidWorld);
@@ -89,7 +92,8 @@ public class EyeBottleBlock extends Block implements EntityBlock
 
                 VoidHeartTicker.addDelayedTask(world.getServer(), 100, () ->
                 {
-                    TeleportUtil.teleport((ServerPlayer) user, voidWorld, destinationPos, user.getYHeadRot(), user.getViewXRot(0));
+                    if (!DungeonTeleportLock.refuse(user))
+                        TeleportUtil.teleport((ServerPlayer) user, voidWorld, destinationPos, user.getYHeadRot(), user.getViewXRot(0));
                 });
                 user.sendOverlayMessage(Component.translatable(MODID + ".teleport_in_progress", 5));
             }
