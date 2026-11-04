@@ -176,6 +176,10 @@ public class RecipesProvider extends FabricRecipeProvider
                     Items.SPIDER_EYE, VoidHeartItems.VOID_PEARL, Items.SLIME_BALL,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
 
+            offerAltarRecipe("malignant_tormenter", VoidHeartBlocks.MALIGNANT_TORMENTER, Blocks.SOUL_SAND,
+                    Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+
             // The heart binding is done by an onCraft callback registered on this id, see VoidHeartRecipes
             saveAltarRecipe(new AltarRecipe(altarRecipeId("voidheart"), ingredient(VoidHeartItems.VOID_HEART), ALTAR_TIME), VoidHeartItems.VOID_HEART);
         }

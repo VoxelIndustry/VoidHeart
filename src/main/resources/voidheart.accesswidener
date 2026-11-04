@@ -6,3 +6,7 @@ accessible	field	net/minecraft/client/renderer/RenderPipelines	LIGHTNING_SNIPPET
 accessible	method	net/minecraft/client/renderer/rendertype/RenderType	create	(Ljava/lang/String;Lnet/minecraft/client/renderer/rendertype/RenderSetup;)Lnet/minecraft/client/renderer/rendertype/RenderType;
 
 accessible	field	net/minecraft/client/renderer/texture/SpriteContents	originalImage	Lcom/mojang/blaze3d/platform/NativeImage;
+
+accessible	method	net/minecraft/world/entity/LivingEntity	getHurtSound	(Lnet/minecraft/world/damagesource/DamageSource;)Lnet/minecraft/sounds/SoundEvent;
+accessible	method	net/minecraft/world/entity/LivingEntity	getDeathSound	()Lnet/minecraft/sounds/SoundEvent;
+accessible	method	net/minecraft/world/entity/Mob	getAmbientSound	()Lnet/minecraft/sounds/SoundEvent;

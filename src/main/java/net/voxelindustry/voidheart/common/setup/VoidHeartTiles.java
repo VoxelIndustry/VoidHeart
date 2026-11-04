@@ -26,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTi
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
+import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterTile;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -57,6 +58,8 @@ public class VoidHeartTiles
     public static BlockEntityType<RavenousStorageTile> RAVENOUS_STORAGE;
     public static BlockEntityType<RavenousStorageMatrixTile> RAVENOUS_STORAGE_MATRIX;
     public static BlockEntityType<RavenousRelayTile> RAVENOUS_RELAY;
+
+    public static BlockEntityType<MalignantTormenterTile> MALIGNANT_TORMENTER;
 
     public static void registerTiles()
     {
@@ -132,6 +135,8 @@ public class VoidHeartTiles
                 "ravenous_storage_matrix");
         registerTile(RAVENOUS_RELAY = FabricBlockEntityTypeBuilder.create(RavenousRelayTile::new, VoidHeartBlocks.RAVENOUS_RELAY).build(),
                 "ravenous_relay");
+        registerTile(MALIGNANT_TORMENTER = FabricBlockEntityTypeBuilder.create(MalignantTormenterTile::new, VoidHeartBlocks.MALIGNANT_TORMENTER).build(),
+                "malignant_tormenter");
     }
 
     private static void registerTile(BlockEntityType<?> type, String name)

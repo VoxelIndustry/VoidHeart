@@ -53,6 +53,7 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameParticl
 import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterion;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeRuneParticleEffect;
+import net.voxelindustry.voidheart.common.content.tormenter.TormenterSoulHarvest;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
@@ -123,6 +124,7 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
+        ServerLivingEntityEvents.AFTER_DEATH.register(TormenterSoulHarvest::onDeath);
         ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
 
         Corruption.register();

@@ -69,6 +69,12 @@ import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeColumnRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeRepositoryRender;
 import net.voxelindustry.voidheart.client.render.RavenousRelayRender;
+import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterRender;
+import net.minecraft.client.renderer.special.SpecialModelRenderers;
+import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
+import net.voxelindustry.voidheart.client.render.tormenter.TormenterHeads;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -115,6 +121,8 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.MALIGNANT_TORMENTER, MalignantTormenterRender::new);
+        SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "malignant_tormenter"), MalignantTormenterItemRender.Unbaked.MAP_CODEC);
         BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_COLUMN, KnowledgeColumnRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_REPOSITORY, KnowledgeRepositoryRender::new);
 
@@ -137,6 +145,7 @@ public class VoidHeartClient implements ClientModInitializer
             OculusControls.clear();
             OculusMarkers.clear();
             OculusLeyLayer.clear();
+            TormenterHeads.clear();
         });
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusLeyLayer::collectSubmits);
         ClientPlayNetworking.registerGlobalReceiver(OculusLeyPayloads.Layer.TYPE, OculusLeyLayer::receive);

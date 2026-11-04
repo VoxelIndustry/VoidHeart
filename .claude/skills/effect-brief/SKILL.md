@@ -44,6 +44,7 @@ Check each brief against these, since they're what the user has sent back before
 | Motes "too visible", movement "not smooth" | Slow small dots show pixel stepping, so soften them or give them tails | `TravelMapScreen`, `90eff0f` |
 | Beam should "form with an animation" and disappear "from the sources to the target forge" | The direction of motion carries the meaning: energy flows toward what uses it | `VoidBeamRender`, `faadddf` |
 | Only the focused beam takes the attuned color, and collector strands carry theirs | Color marks what something is, so apply it selectively | `VoidBeamRender`, `EssenceStrandRender` |
+| "Not right for minecraft, too detailed", then heads "more embedded" and "a huge droplet" | Smooth meshes and noisy skins read as foreign, and separate parts read as a bundle. Use plain cuboids and sink parts into one mass | `TormenterDroplet` |
 
 These are lessons, not rules to apply everywhere. The user's request wins where they conflict. When new feedback teaches something else, add a row here.
 

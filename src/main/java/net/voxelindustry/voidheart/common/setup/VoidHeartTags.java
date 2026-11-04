@@ -5,6 +5,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -24,6 +25,8 @@ public class VoidHeartTags
     public static final TagKey<Item> KNOWLEDGE_LUCID = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/lucid"));
     public static final TagKey<Item> KNOWLEDGE_PROFOUND = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/profound"));
     public static final TagKey<Item> KNOWLEDGE_TRANSCENDENT = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/transcendent"));
+
+    public static final TagKey<EntityType<?>> TORMENTER_REFUSES = TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "tormenter_refuses"));
 
     public static final TagKey<Structure> LEY_MINOR_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_minor_anchor"));
     public static final TagKey<Structure> LEY_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_anchor"));
