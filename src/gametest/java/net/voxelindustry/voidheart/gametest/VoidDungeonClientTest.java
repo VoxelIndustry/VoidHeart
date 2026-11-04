@@ -10,11 +10,14 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonAddress;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonBlueprint;
@@ -44,6 +47,7 @@ public class VoidDungeonClientTest implements FabricClientGameTest
     private static final int EASY = 1;
     private static final int HARD = 5;
     private static final int MAX_SEARCH = 64;
+    private static final int MONOLITH_ROLLS = 2000;
     private static final int KEEP_START = 6;
     private static final int KEEP_MAX_DROP = 3;
     private static final int KEEP_TOP_HEIGHT = 50;
@@ -74,6 +78,7 @@ public class VoidDungeonClientTest implements FabricClientGameTest
             context.getInput().pressKey(InputConstants.KEY_F1);
 
             checkCommands(context, server);
+            server.runOnServer(VoidDungeonClientTest::checkMonolithDrops);
 
             for (var theme : DungeonTheme.values())
             {
@@ -117,6 +122,33 @@ public class VoidDungeonClientTest implements FabricClientGameTest
             if (other.equals(address))
                 throw new AssertionError("Two dungeons were handed the same place: " + other);
         });
+    }
+
+    /**
+     * The same broken monolith yields tablets in the overworld and never in a dungeon. At the configured chance, this many rolls can't all miss by luck.
+     */
+    private static void checkMonolithDrops(MinecraftServer minecraft)
+    {
+        var broken = VoidHeartBlocks.VOID_MONOLITH.defaultBlockState().setValue(StateProperties.BROKEN, true);
+        if (tabletsDropped(level(minecraft), broken) != 0)
+            throw new AssertionError("Monoliths in a dungeon should not drop knowledge tablets");
+        if (tabletsDropped(minecraft.overworld(), broken) == 0)
+            throw new AssertionError("Monoliths outside dungeons should still drop knowledge tablets");
+    }
+
+    private static int tabletsDropped(ServerLevel level, BlockState monolith)
+    {
+        int tablets = 0;
+        var pos = new BlockPos(0, 100, 0);
+        for (int roll = 0; roll < MONOLITH_ROLLS; roll++)
+        {
+            for (var drop : Block.getDrops(monolith, level, pos, null))
+            {
+                if (drop.is(VoidHeartItems.KNOWLEDGE_TABLET))
+                    tablets += drop.getCount();
+            }
+        }
+        return tablets;
     }
 
     private static ServerLevel level(MinecraftServer server)

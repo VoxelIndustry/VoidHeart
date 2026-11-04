@@ -26,6 +26,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -67,6 +68,10 @@ public class VoidMonolithBlock extends Block
     {
         if (!state.getValue(BROKEN))
             return singletonList(new ItemStack(VoidHeartBlocks.VOID_MONOLITH));
+
+        // Dungeons hold hundreds of monoliths, which would make tablets too easy to farm
+        if (builder.getLevel().dimension().equals(VoidDungeons.WORLD_KEY))
+            return singletonList(new ItemStack(VoidHeartBlocks.VOIDSTONE));
 
         if (builder.getLevel().getRandom().nextFloat() < tabletChance(builder.getOptionalParameter(LootContextParams.THIS_ENTITY)))
             return List.of(new ItemStack(VoidHeartBlocks.VOIDSTONE), new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET));
