@@ -2,12 +2,11 @@
   "type": "minecraft:entity",
   "pools": [
     {
-      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",
           "name": "voidheart:obsidian_shard",
-          "functions": [
+          "modifier": [
             {
               "type": "minecraft:set_count",
               "count": {
@@ -27,7 +26,8 @@
             }
           ]
         }
-      ]
+      ],
+      "rolls": 1
     }
   ],
   "random_sequence": "voidheart:entities/corrupted_crab_large"

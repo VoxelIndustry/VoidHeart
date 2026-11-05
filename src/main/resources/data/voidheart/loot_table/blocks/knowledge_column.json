@@ -4,38 +4,102 @@
     {
       "rolls": 1,
       "bonus_rolls": 0,
-      "entries": [{ "type": "minecraft:item", "name": "voidheart:knowledge_column" }],
-      "conditions": [
-        { "condition": "minecraft:survives_explosion" },
-        { "condition": "minecraft:block_state_property", "block": "voidheart:knowledge_column", "properties": { "north_west": "true" } }
-      ]
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:knowledge_column"
+        }
+      ],
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:survives_explosion"
+          },
+          {
+            "type": "minecraft:match_block",
+            "blocks": "voidheart:knowledge_column",
+            "state": {
+              "north_west": "true"
+            }
+          }
+        ]
+      }
     },
     {
       "rolls": 1,
       "bonus_rolls": 0,
-      "entries": [{ "type": "minecraft:item", "name": "voidheart:knowledge_column" }],
-      "conditions": [
-        { "condition": "minecraft:survives_explosion" },
-        { "condition": "minecraft:block_state_property", "block": "voidheart:knowledge_column", "properties": { "north_east": "true" } }
-      ]
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:knowledge_column"
+        }
+      ],
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:survives_explosion"
+          },
+          {
+            "type": "minecraft:match_block",
+            "blocks": "voidheart:knowledge_column",
+            "state": {
+              "north_east": "true"
+            }
+          }
+        ]
+      }
     },
     {
       "rolls": 1,
       "bonus_rolls": 0,
-      "entries": [{ "type": "minecraft:item", "name": "voidheart:knowledge_column" }],
-      "conditions": [
-        { "condition": "minecraft:survives_explosion" },
-        { "condition": "minecraft:block_state_property", "block": "voidheart:knowledge_column", "properties": { "south_west": "true" } }
-      ]
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:knowledge_column"
+        }
+      ],
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:survives_explosion"
+          },
+          {
+            "type": "minecraft:match_block",
+            "blocks": "voidheart:knowledge_column",
+            "state": {
+              "south_west": "true"
+            }
+          }
+        ]
+      }
     },
     {
       "rolls": 1,
       "bonus_rolls": 0,
-      "entries": [{ "type": "minecraft:item", "name": "voidheart:knowledge_column" }],
-      "conditions": [
-        { "condition": "minecraft:survives_explosion" },
-        { "condition": "minecraft:block_state_property", "block": "voidheart:knowledge_column", "properties": { "south_east": "true" } }
-      ]
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:knowledge_column"
+        }
+      ],
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:survives_explosion"
+          },
+          {
+            "type": "minecraft:match_block",
+            "blocks": "voidheart:knowledge_column",
+            "state": {
+              "south_east": "true"
+            }
+          }
+        ]
+      }
     }
   ]
 }
