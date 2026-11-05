@@ -89,8 +89,9 @@ public class MalignantTormenterClientTest implements FabricClientGameTest
             context.getInput().pressKey(InputConstants.KEY_F1);
 
             // Jade names the tormenter when looking at a part of its droplet
-            aimFrom(context, server, ZOMBIES.getX() + 0.5, GROUND + 2, ZOMBIES.getZ() - 3, ZOMBIES.getX() + 0.5, GROUND + 3.6, ZOMBIES.getZ() + 0.5, 10);
-            context.takeScreenshot("tormenter-jade-part");
+            // Loot that popped out near the player may have been picked up, so the hand is emptied first
+            server.runOnServer(minecraft -> player(minecraft).getInventory().clearContent());
+            shot(context, server, "tormenter-jade-part", ZOMBIES.getX() + 0.5, GROUND + 2, ZOMBIES.getZ() - 3, ZOMBIES.getX() + 0.5, GROUND + 3.6, ZOMBIES.getZ() + 0.5, 10);
         }
     }
 

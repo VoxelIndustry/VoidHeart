@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.voxelindustry.voidheart.gametest.fast.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "ChunkMapAccessor",
+    "GameOptionsMixin",
+    "JadeClockMixin",
+    "JadeStaticClockMixin",
+    "MinecraftClockMixin",
+    "ScreenshotPacingMixin",
+    "ServerTickMixin",
+    "UtilClockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
