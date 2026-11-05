@@ -33,6 +33,7 @@ public final class DungeonPlan
     private static final double WARP_FADE_DISTANCE = 7;
     private static final double[] WARP_STRENGTHS = { 0, 0.5, 1, 1, 1.5 };
     private static final int FILL_LIGHT_SPACING = 7;
+    private static final int RETURN_RIFT_DISTANCE = 2;
     private static final int CAVITY_LIGHT_SPACING = 9;
     private static final int LIGHT_EVERY_CELLS = 3;
     private static final double ENCLOSED_BRIDGE_CHANCE = 0.25;
@@ -62,6 +63,7 @@ public final class DungeonPlan
     private final SimplexNoise warpY;
     private final SimplexNoise warpZ;
     private int[] entry;
+    private int[] returnRift;
 
     private DungeonPlan(DungeonBlueprint blueprint)
     {
@@ -143,6 +145,14 @@ public final class DungeonPlan
     DungeonPlanner layout()
     {
         return layout;
+    }
+
+    /**
+     * Where the way back floats: x, y, z of its cell, local to the dungeon's corner.
+     */
+    public int[] returnRift()
+    {
+        return returnRift;
     }
 
     public DungeonRoom entryRoom()
@@ -872,6 +882,41 @@ public final class DungeonPlan
             markSafe(x, y + up, z);
         }
         entry = new int[] { x, y, z };
+        placeReturnRift(x, y, z);
+    }
+
+    /**
+     * Beside the arrival spot, floating at head height over walkable floor. Above the spot itself if nothing nearby will do.
+     */
+    private void placeReturnRift(int x, int y, int z)
+    {
+        returnRift = new int[] { x, y + 1, z };
+        for (var direction : Direction.Plane.HORIZONTAL)
+        {
+            int riftX = x + direction.getStepX() * RETURN_RIFT_DISTANCE;
+            int riftZ = z + direction.getStepZ() * RETURN_RIFT_DISTANCE;
+            if (canHoldRift(riftX, y, riftZ))
+            {
+                returnRift = new int[] { riftX, y + 1, riftZ };
+                break;
+            }
+        }
+        grid.set(returnRift[0], returnRift[1], returnRift[2], RETURN_RIFT);
+        markSafe(returnRift[0], returnRift[1], returnRift[2]);
+    }
+
+    private boolean canHoldRift(int x, int y, int z)
+    {
+        if (x < SHELL || z < SHELL || x >= edge - SHELL || z >= edge - SHELL)
+            return false;
+        if (grid.material(x, y - 1, z).isPassable())
+            return false;
+        for (int up = 0; up < RoomCanvas.WALKWAY_HEIGHT; up++)
+        {
+            if (!grid.material(x, y + up, z).isOpen())
+                return false;
+        }
+        return true;
     }
 
     private void growCrystals()

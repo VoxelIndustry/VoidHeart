@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.world.dungeon;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import org.jspecify.annotations.Nullable;
 
@@ -13,6 +16,15 @@ public record DungeonAddress(DungeonSize size, DungeonTheme theme, int difficult
     public static final int MAX_DIFFICULTY = 5;
     public static final int BASE_Y = 64;
     public static final int MAX_INDEX = 29_000;
+
+    public static final Codec<DungeonAddress> CODEC = RecordCodecBuilder.<int[]>create(instance -> instance.group(
+            Codec.INT.fieldOf("x").forGetter(corner -> corner[0]),
+            Codec.INT.fieldOf("z").forGetter(corner -> corner[1])
+    ).apply(instance, (x, z) -> new int[] { x, z })).comapFlatMap(corner ->
+    {
+        var address = at(corner[0], corner[1]);
+        return address == null ? DataResult.error(() -> "No dungeon lies at " + corner[0] + ", " + corner[1]) : DataResult.success(address);
+    }, address -> new int[] { address.origin().getX(), address.origin().getZ() });
 
     private static final int SPACING_BITS = 10;
     private static final int SPACING = 1 << SPACING_BITS;

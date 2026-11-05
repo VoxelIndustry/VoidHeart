@@ -22,23 +22,29 @@ final class ResearchVoid
 
     private static final Identifier STONE = Identifier.fromNamespaceAndPath(MODID, "textures/block/voidstone.png");
 
+    /** How much darker the unlit void is at a point, from 0 to 1. */
+    interface Shade
+    {
+        float at(int x, int y);
+    }
+
     private static final float STONE_LIGHT     = 0.42F;
-    private static final int   LIP_COLOR       = 0xFF4A3860;
-    private static final int   LIP_SHADE_COLOR = 0xFF08050C;
-    private static final int   DEEP_COLOR      = 0xFF040208;
+    static final int           LIP_COLOR       = 0xFF4A3860;
+    static final int           LIP_SHADE_COLOR = 0xFF08050C;
+    static final int           DEEP_COLOR      = 0xFF040208;
     private static final int   MID_COLOR       = 0xFF170E28;
     static final int           LIT_RGB         = 0x3A2858;
     private static final int   STAR_COLOR      = 0xFFB8A8D8;
     private static final float TEAR_DEPTH      = 11;
-    private static final float INNER_SHADOW    = 14;
+    static final float         INNER_SHADOW    = 14;
     private static final float STAR_CHANCE     = 0.0022F;
     private static final float SMOKE_SCALE     = 0.022F;
     private static final float LIGHT_EDGE      = 0.16F;
     private static final int   LIGHT_LEVELS    = 4;
-    private static final int   LIP_BRIGHT      = 0xFF7A62A8;
+    static final int           LIP_BRIGHT      = 0xFF7A62A8;
     private static final float STONE_SHADOW    = 12;
 
-    private static final float[][] BAYER = {
+    static final float[][] BAYER = {
             { 0 / 16F, 8 / 16F, 2 / 16F, 10 / 16F },
             { 12 / 16F, 4 / 16F, 14 / 16F, 6 / 16F },
             { 3 / 16F, 11 / 16F, 1 / 16F, 9 / 16F },
@@ -51,13 +57,18 @@ final class ResearchVoid
 
     static void bake(Minecraft minecraft, Identifier target, int width, int height, int left, int right, List<Light> lights, long seed)
     {
+        upload(minecraft, target, paint(minecraft, width, height, left, right, lights, seed, (x, y) -> 0));
+    }
+
+    static NativeImage paint(Minecraft minecraft, int width, int height, int left, int right, List<Light> lights, long seed, Shade shade)
+    {
         var stone = readStone(minecraft);
         var image = new NativeImage(width, height, false);
 
         for (int y = 0; y < height; y++)
         {
-            int edgeLeft = left + tear(y, seed);
-            int edgeRight = right - tear(y, seed + 91);
+            int edgeLeft = edgeLeft(y, left, seed);
+            int edgeRight = edgeRight(y, right, seed);
             for (int x = 0; x < width; x++)
             {
                 int color;
@@ -66,7 +77,7 @@ final class ResearchVoid
                 else
                 {
                     float wall = Math.min(x - edgeLeft, edgeRight - 1 - x);
-                    color = voidAt(x, y, wall, lights, seed);
+                    color = voidAt(x, y, wall, shade.at(x, y), lights, seed);
                 }
                 image.setPixel(x, y, color);
             }
@@ -74,7 +85,21 @@ final class ResearchVoid
 
         if (stone != null)
             stone.close();
+        return image;
+    }
 
+    static int edgeLeft(int y, int left, long seed)
+    {
+        return left + tear(y, seed);
+    }
+
+    static int edgeRight(int y, int right, long seed)
+    {
+        return right - tear(y, seed + 91);
+    }
+
+    static void upload(Minecraft minecraft, Identifier target, NativeImage image)
+    {
         var textures = minecraft.getTextureManager();
         textures.release(target);
         var texture = new DynamicTexture(() -> "Research void", image);
@@ -116,7 +141,7 @@ final class ResearchVoid
                 (int) (ARGB.blue(texel) * shade));
     }
 
-    private static int voidAt(int x, int y, float wall, List<Light> lights, long seed)
+    private static int voidAt(int x, int y, float wall, float dark, List<Light> lights, long seed)
     {
         float light = 0;
         float red = 0;
@@ -142,6 +167,8 @@ final class ResearchVoid
                 + smooth(x * SMOKE_SCALE * 4.1F, y * SMOKE_SCALE * 4.1F + warpX, seed + 43) * 0.35F;
 
         int color = ARGB.srgbLerp(0.45F * smoke + 0.1F, DEEP_COLOR, MID_COLOR);
+        if (dark > 0)
+            color = ARGB.srgbLerp(dark, color, DEEP_COLOR);
         color = ARGB.srgbLerp(light * (0.5F + 0.5F * smoke), color, litColor);
 
         if (hash(x, y, seed) < STAR_CHANCE)
@@ -152,7 +179,7 @@ final class ResearchVoid
         return color;
     }
 
-    private static float hash(int x, int y, long seed)
+    static float hash(int x, int y, long seed)
     {
         long h = x * 73856093L ^ y * 19349663L ^ seed * 83492791L;
         h ^= h >>> 13;
@@ -161,7 +188,7 @@ final class ResearchVoid
         return (h & 0xFFFFF) / (float) 0x100000;
     }
 
-    private static float smooth(float x, float y, long seed)
+    static float smooth(float x, float y, long seed)
     {
         int cellX = (int) Math.floor(x);
         int cellY = (int) Math.floor(y);

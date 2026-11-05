@@ -12,6 +12,7 @@
     "MixinThrownEnderpearlDungeon"
   ],
   "client": [
+    "client.MixinCameraTremor",
     "client.MixinClientLevelBarrierDisguise",
     "client.MixinCloudRendererRapture",
     "client.MixinLevelExtractorOculus",

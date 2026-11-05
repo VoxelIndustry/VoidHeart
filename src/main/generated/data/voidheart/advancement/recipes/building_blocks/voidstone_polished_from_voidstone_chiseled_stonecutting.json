@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:voidstone_polished_from_voidstone_chiseled_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone_chiseled": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:voidstone_chiseled"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_voidstone_chiseled"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:voidstone_polished_from_voidstone_chiseled_stonecutting"
+    ]
+  }
+}

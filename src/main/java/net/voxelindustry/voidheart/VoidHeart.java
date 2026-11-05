@@ -66,6 +66,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryConnections;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
@@ -108,9 +109,9 @@ public class VoidHeart implements ModInitializer
         VoidHeartConfig.load();
 
         VoidHeartDataComponents.registerComponents();
+        VoidHeartSounds.register();
         VoidHeartBlocks.registerBlocks();
         VoidHeartItems.registerItems();
-        VoidHeartSounds.register();
         VoidHeartEffects.register();
         VoidHeartEntities.registerEntities();
         VoidHeartItems.registerSpawnEggs();
@@ -148,6 +149,8 @@ public class VoidHeart implements ModInitializer
         CursePayloads.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(ArmillaryConnections::tickServer);
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ArmillaryConnections.onJoin(handler.getPlayer()));
         UseItemCallback.EVENT.register(DungeonTeleportLock::onUseItem);
         ServerPlayerEvents.LEAVE.register(Curses::onLeave);
 

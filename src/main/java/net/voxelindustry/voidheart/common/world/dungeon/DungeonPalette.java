@@ -343,6 +343,7 @@ public final class DungeonPalette
         set(WHALE_BONE, Blocks.BONE_BLOCK);
         set(VENT_CHIMNEY, Blocks.AIR);
         set(SMOKER_VENT, Blocks.AIR);
+        set(RETURN_RIFT, VoidHeartBlocks.ARMILLARY_RIFT);
 
         set(AZURIUM_SMALL, VoidHeartBlocks.SMALL_AZURIUM_BUNDLE);
         set(AZURIUM_MEDIUM, VoidHeartBlocks.MEDIUM_AZURIUM_BUNDLE);

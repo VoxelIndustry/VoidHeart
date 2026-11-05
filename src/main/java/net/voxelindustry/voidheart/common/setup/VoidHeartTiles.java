@@ -6,6 +6,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftTile;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.depths.SmokerVentTile;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
@@ -42,6 +44,8 @@ public class VoidHeartTiles
     public static BlockEntityType<KnowledgeRepositoryTile> KNOWLEDGE_REPOSITORY;
     public static BlockEntityType<KnowledgeColumnTile>     KNOWLEDGE_COLUMN;
     public static BlockEntityType<VoidHeartTile> VOID_HEART;
+    public static BlockEntityType<ArmillaryTile> ARMILLARY;
+    public static BlockEntityType<ArmillaryRiftTile> ARMILLARY_RIFT;
     public static BlockEntityType<VoidDoorTile> VOID_DOOR;
 
     public static BlockEntityType<PermeableBarrierTile> PERMEABLE_BARRIER;
@@ -80,6 +84,13 @@ public class VoidHeartTiles
         registerTile(PORTAL_FRAME_CORE =
                         FabricBlockEntityTypeBuilder.create(PortalFrameCoreTile::new, VoidHeartBlocks.PORTAL_FRAME_CORE).build(),
                 "portal_frame_core");
+
+        registerTile(ARMILLARY =
+                        FabricBlockEntityTypeBuilder.create(ArmillaryTile::new, VoidHeartBlocks.ARMILLARY_CORE).build(),
+                "armillary");
+        registerTile(ARMILLARY_RIFT =
+                        FabricBlockEntityTypeBuilder.create(ArmillaryRiftTile::new, VoidHeartBlocks.ARMILLARY_RIFT).build(),
+                "armillary_rift");
 
         registerTile(VOID_ALTAR =
                         FabricBlockEntityTypeBuilder.create(VoidAltarTile::new, VoidHeartBlocks.VOID_ALTAR).build(),

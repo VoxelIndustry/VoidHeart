@@ -62,6 +62,9 @@ import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorB
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBlock;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryHubBlock;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.VoidConduitBlock;
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBlock;
@@ -72,11 +75,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartBlocks
 {
+    private static final int RIFT_LIGHT = 10;
+
     public static Block PORTAL_INTERIOR;
     public static Block PORTAL_FRAME;
     public static Block PORTAL_FRAME_CORE;
@@ -150,6 +156,9 @@ public class VoidHeartBlocks
     public static Block EYE_BOTTLE;
 
     public static Block SHATTER_FORGE;
+    public static Block ARMILLARY_CORE;
+    public static Block ARMILLARY_HUB;
+    public static Block ARMILLARY_RIFT;
     public static Block VOID_CONDUIT;
     public static Block BEAM_FOCUS;
 
@@ -429,6 +438,9 @@ public class VoidHeartBlocks
                 (block, properties) -> new LoreBlockItem(block, properties, MODID + ".eye_bottle.lore"));
 
         SHATTER_FORGE = registerBlock("shatter_forge", ShatterForgeBlock::new, BlockBehaviour.Properties.of(), true);
+        ARMILLARY_CORE = registerBlock("armillary_core", ArmillaryCoreBlock::new, BlockBehaviour.Properties.of(), true);
+        ARMILLARY_HUB = registerArmillaryPart("armillary_hub", ArmillaryHubBlock::new, ArmillaryHubBlock::lightLevel);
+        ARMILLARY_RIFT = registerArmillaryPart("armillary_rift", ArmillaryRiftBlock::new, state -> RIFT_LIGHT);
         VOID_CONDUIT = registerBlock("void_conduit", VoidConduitBlock::new, BlockBehaviour.Properties.of(), true);
         BEAM_FOCUS = registerBlock("beam_focus", BeamFocusBlock::new, BlockBehaviour.Properties.of(), true);
 
@@ -658,6 +670,26 @@ public class VoidHeartBlocks
                 .lightLevel(state -> light)
                 .pushReaction(PushReaction.POPPED)
                 .sound(SoundType.WET_GRASS);
+    }
+
+    /**
+     * Nothing a player can stand on, push, or take home.
+     */
+    private static Block registerArmillaryPart(String name, Function<BlockBehaviour.Properties, Block> factory, ToIntFunction<BlockState> light)
+    {
+        var id = Identifier.fromNamespaceAndPath(MODID, name);
+        return Registry.register(BuiltInRegistries.BLOCK, id, factory.apply(BlockBehaviour.Properties.of()
+                .setId(ResourceKey.create(Registries.BLOCK, id))
+                .mapColor(MapColor.COLOR_BLACK)
+                .strength(-1, 3600000)
+                .noCollision()
+                .noOcclusion()
+                .noLootTable()
+                .lightLevel(light)
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .isValidSpawn(VoidHeartBlocks::never)
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos, box) -> false)));
     }
 
     private static Block registerBlock(String name, Function<BlockBehaviour.Properties, Block> factory, BlockBehaviour.Properties properties, boolean inCreativeTab)
