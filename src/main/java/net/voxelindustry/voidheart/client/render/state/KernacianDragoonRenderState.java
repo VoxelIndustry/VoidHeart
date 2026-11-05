@@ -12,6 +12,8 @@ public class KernacianDragoonRenderState extends LivingEntityRenderState
     public float swell;
     public float recoil;
     public float kick;
+    public float climb;
+    public float climbCycle;
     public final float[] grown = new float[DragoonAdaptation.Kind.values().length];
     public @Nullable Vec3 beamFrom;
     public @Nullable Vec3 beamTo;

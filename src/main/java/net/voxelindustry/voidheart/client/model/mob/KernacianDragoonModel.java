@@ -25,7 +25,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 /**
  * A heavy plated figure under a faceless helm, cut by one narrow eye slit and swept back by crest blades. To fire, the faceplate splits down the middle and its
  * halves slide apart, then four shutters behind them fold open onto a furnace whose core swells until the beam leaves it. What hurts it shows on it: blades leave
- * it plated, blunt hits spiked, arrows shielded, fire finned, explosions bulked out and magic ringed with runes, each in three steps.
+ * it plated, blunt hits spiked, arrows shielded, fire finned, explosions bulked out and magic ringed with runes, each in three steps. On a wall it climbs hand over
+ * hand, and strikes over the edge with its right arm where on the ground it would kick.
  */
 public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderState>
 {
@@ -48,7 +49,19 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
     private static final float KICK_WINDUP_PITCH = 0.55F;
     private static final float KICK_PITCH = -1.35F;
     private static final float RING_SPIN = 0.02F;
+    // Its hands swing between gripping the face and lifting off it, its shoulders hunching as they pull, and the diagonal foot pushes
+    private static final float CLIMB_ARM_PITCH = -2.8F;
+    private static final float CLIMB_ARM_SWING = 0.18F;
+    private static final float CLIMB_ARM_SPREAD = 0.18F;
+    private static final float CLIMB_SHRUG = 1.5F;
+    private static final float CLIMB_LEG_PITCH = -0.25F;
+    private static final float CLIMB_LEG_SWING = 0.25F;
+    // Drawn this far back from the face it climbs, so its hands and feet meet the face rather than sink into it
+    private static final float CLIMB_BACK = 2.5F;
+    private static final float SWIPE_WINDUP_PITCH = -3.4F;
+    private static final float SWIPE_PITCH = -1.95F;
 
+    private final ModelPart body;
     private final ModelPart head;
     private final ModelPart rightArm;
     private final ModelPart leftArm;
@@ -68,7 +81,7 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
     public KernacianDragoonModel(ModelPart root)
     {
         super(root);
-        var body = root.getChild("body");
+        body = root.getChild("body");
         head = root.getChild("head");
         rightArm = root.getChild("right_arm");
         leftArm = root.getChild("left_arm");
@@ -260,7 +273,11 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
         rightArm.zRot = 0.06F;
         leftArm.zRot = -0.06F;
 
-        rightLeg.xRot = Mth.lerp(kickPose(state.kick), rightLeg.xRot, kickPitch(state.kick));
+        // On the ground it kicks, and on a wall it strikes with its right arm instead
+        float strike = kickPose(state.kick);
+        rightLeg.xRot = Mth.lerp(strike * (1 - state.climb), rightLeg.xRot, kickPitch(state.kick));
+        if (state.climb > 0)
+            climbPose(state, strike);
 
         innerRing.zRot = state.ageInTicks * RING_SPIN;
         outerRing.zRot = -state.ageInTicks * RING_SPIN * 0.7F;
@@ -282,6 +299,41 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
                 }
             }
         }
+    }
+
+    /**
+     * Hand over hand up the face in front, each hand gripping as the other lifts, with the foot opposite the gripping hand pushing.
+     */
+    private void climbPose(KernacianDragoonRenderState state, float strike)
+    {
+        float climb = state.climb;
+        float reach = Mth.sin(state.climbCycle);
+        rightArm.xRot = Mth.lerp(climb, rightArm.xRot, CLIMB_ARM_PITCH + CLIMB_ARM_SWING * reach);
+        leftArm.xRot = Mth.lerp(climb, leftArm.xRot, CLIMB_ARM_PITCH - CLIMB_ARM_SWING * reach);
+        rightArm.zRot = Mth.lerp(climb, rightArm.zRot, -CLIMB_ARM_SPREAD);
+        leftArm.zRot = Mth.lerp(climb, leftArm.zRot, CLIMB_ARM_SPREAD);
+        rightArm.y += CLIMB_SHRUG * reach * climb;
+        leftArm.y -= CLIMB_SHRUG * reach * climb;
+        rightLeg.xRot = Mth.lerp(climb, rightLeg.xRot, CLIMB_LEG_PITCH + CLIMB_LEG_SWING * reach);
+        leftLeg.xRot = Mth.lerp(climb, leftLeg.xRot, CLIMB_LEG_PITCH - CLIMB_LEG_SWING * reach);
+        rightArm.xRot = Mth.lerp(strike * climb, rightArm.xRot, swipePitch(state.kick));
+
+        float back = CLIMB_BACK * climb;
+        for (var part : List.of(body, head, rightArm, leftArm, rightLeg, leftLeg))
+            part.z += back;
+    }
+
+    /**
+     * The arm draws back overhead during the wind-up and smashes forward over the edge on the blow.
+     */
+    private static float swipePitch(float ticks)
+    {
+        int windup = KernacianDragoon.KICK_WINDUP_TICKS;
+        if (ticks < windup - 2)
+            return Mth.lerp(Mth.clamp(ticks / (windup - 2), 0, 1), CLIMB_ARM_PITCH, SWIPE_WINDUP_PITCH);
+        if (ticks < windup)
+            return Mth.lerp((ticks - (windup - 2)) / 2, SWIPE_WINDUP_PITCH, SWIPE_PITCH);
+        return SWIPE_PITCH;
     }
 
     /**

@@ -40,7 +40,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * The Kernacian Dragoon: what each hit teaches it and how that shows, its beam and kick against a netherite player, its boss bar and what it drops.
+ * The Kernacian Dragoon: what each hit teaches it and how that shows, its beam and kick against a netherite player, how it climbs after a player out of its
+ * reach, its boss bar and what it drops.
  */
 public class KernacianDragoonClientTest implements FabricClientGameTest
 {
@@ -88,6 +89,10 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
             checkAdaptation(context, server);
             checkBeam(context, server);
             checkKick(context, server);
+            checkClimbPoses(context, server);
+            checkClimbPile(context, server);
+            checkClimbLip(context, server);
+            checkClimbLedge(context, server);
             checkDrops(context, server);
 
             context.getInput().pressKey(InputConstants.KEY_F1);
@@ -495,6 +500,155 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
     }
 
     // ---------------------------------------------------------------------------------------------
+    // Climbing
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double CLIMB_X = 700;
+
+    /**
+     * Posed on a wall with the game running, as the climbing pose blends in over a few ticks: hand over hand from the side and from below, then the strike over
+     * the edge.
+     */
+    private static void checkClimbPoses(ClientGameTestContext context, TestServerContext server)
+    {
+        double x = CLIMB_X;
+        arrive(context, server, x);
+        clearArea(server, x);
+        server.runCommand("fill " + ((int) x - 2) + " " + FEET + " 0 " + ((int) x + 2) + " " + (FEET + 5) + " 0 voidheart:voidstone_bricks");
+        server.runOnServer(minecraft ->
+        {
+            var dragoon = spawn(minecraft, x + 0.5, 1.5);
+            dragoon.setNoAi(true);
+            dragoon.setPos(x + 0.5, FEET + 1.5, 1.5);
+            dragoon.setYRot(180);
+            dragoon.setYBodyRot(180);
+            dragoon.setYHeadRot(180);
+            dragoon.showClimb(true);
+        });
+        context.waitTicks(10);
+        // Midway through a reach, so that one hand grips as the other lifts
+        context.runOnClient(minecraft -> minecraft.level.getEntitiesOfClass(KernacianDragoon.class, new AABB(x - 3, FEET - 2, -3, x + 3, FEET + 8, 5))
+                .forEach(dragoon -> dragoon.climbCycle = dragoon.climbCycleO = (float) (Math.PI / 2)));
+        aimFrom(context, server, x + 5, FEET + 2, 3.5, x + 0.5, FEET + 2.8, 1.5);
+        context.takeScreenshot("dragoon-climb-side");
+        aimFrom(context, server, x - 1.5, FEET, 6, x + 0.5, FEET + 3, 1.5);
+        context.takeScreenshot("dragoon-climb-below");
+        for (var moment : List.of(new Object[] { "climb-swipe-windup", KernacianDragoon.KICK_WINDUP_TICKS - 3 }, new Object[] { "climb-swipe", KernacianDragoon.KICK_WINDUP_TICKS + 1 }))
+        {
+            server.runOnServer(minecraft -> first(minecraft).showKick((Integer) moment[1]));
+            aimFrom(context, server, x + 5, FEET + 2, 3.5, x + 0.5, FEET + 2.8, 1.5);
+            context.takeScreenshot("dragoon-" + moment[0] + "-side");
+        }
+        clearScene(server);
+    }
+
+    /**
+     * A pile three high keeps a player out of its kick, so it climbs onto the pile's face and strikes them off the top.
+     */
+    private static void checkClimbPile(ClientGameTestContext context, TestServerContext server)
+    {
+        double x = CLIMB_X + 60;
+        int column = (int) x;
+        arrive(context, server, x);
+        clearArea(server, x);
+        server.runCommand("fill " + column + " " + FEET + " 0 " + column + " " + (FEET + 2) + " 0 voidheart:voidstone_bricks");
+        stand(server, x + 0.5, FEET + 3, 0.5, 0, 45);
+        server.runOnServer(minecraft ->
+        {
+            heal(minecraft);
+            calm(spawn(minecraft, x + 0.5, 5.5));
+        });
+
+        waitFor(context, server, 200, "The dragoon should climb the pile", minecraft -> first(minecraft).isClimbing());
+        context.waitTicks(4);
+        context.takeScreenshot("dragoon-climbing-pile");
+        waitFor(context, server, 100, "The dragoon should strike from the pile's face", minecraft -> first(minecraft).isClimbing() && first(minecraft).kickTicks() > 0);
+        waitFor(context, server, 60, "The strike should throw the player off the pile", minecraft -> player(minecraft).getY() < FEET + 2);
+        server.runOnServer(minecraft -> expect(player(minecraft).getHealth() < player(minecraft).getMaxHealth(), "The strike should hurt"));
+        clearScene(server);
+    }
+
+    /**
+     * A pillar five high whose top juts out toward it: it edges out from under the lip, climbs its outer face and strikes over it. With the player thrown down
+     * below it, it lets go and drops unhurt.
+     */
+    private static void checkClimbLip(ClientGameTestContext context, TestServerContext server)
+    {
+        double x = CLIMB_X + 120;
+        int column = (int) x;
+        arrive(context, server, x);
+        clearArea(server, x);
+        server.runCommand("fill " + column + " " + FEET + " 0 " + column + " " + (FEET + 4) + " 0 voidheart:voidstone_bricks");
+        server.runCommand("setblock " + column + " " + (FEET + 4) + " 1 voidheart:voidstone_bricks");
+        stand(server, x + 0.5, FEET + 5, 0.5, 0, 50);
+        server.runOnServer(minecraft ->
+        {
+            heal(minecraft);
+            calm(spawn(minecraft, x + 0.5, 6.5));
+        });
+
+        waitFor(context, server, 200, "The dragoon should climb the pillar", minecraft -> first(minecraft).isClimbing());
+        waitFor(context, server, 160, "The dragoon should get out from under the lip and strike over it", minecraft -> first(minecraft).isClimbing() && first(minecraft).kickTicks() > 0);
+        double height = server.computeOnServer(minecraft -> first(minecraft).getY());
+        expect(height > FEET + 3, "The dragoon should strike from above the lip's underside, at " + (height - FEET));
+        context.takeScreenshot("dragoon-climb-over-lip");
+        waitFor(context, server, 60, "The strike should throw the player off the pillar", minecraft -> player(minecraft).getY() < FEET + 4);
+
+        waitFor(context, server, 100, "With the player below it, the dragoon should let go and land", minecraft -> !first(minecraft).isClimbing() && first(minecraft).onGround());
+        server.runOnServer(minecraft -> expect(first(minecraft).getHealth() == first(minecraft).getMaxHealth(), "The drop must not hurt it"));
+        clearScene(server);
+    }
+
+    /**
+     * A player well back from the edge of a wall is out of reach from its face, so it hauls itself over the top and walks on to kick them.
+     */
+    private static void checkClimbLedge(ClientGameTestContext context, TestServerContext server)
+    {
+        double x = CLIMB_X + 180;
+        int column = (int) x;
+        arrive(context, server, x);
+        clearArea(server, x);
+        // Deep enough that the face it comes up is the nearest way to the player
+        server.runCommand("fill " + (column - 3) + " " + FEET + " -8 " + (column + 3) + " " + (FEET + 3) + " 0 voidheart:voidstone_bricks");
+        stand(server, x + 0.5, FEET + 4, -2.5, 0, 25);
+        server.runOnServer(minecraft ->
+        {
+            heal(minecraft);
+            calm(spawn(minecraft, x + 0.5, 6.5));
+        });
+
+        waitFor(context, server, 200, "The dragoon should climb the wall", minecraft -> first(minecraft).isClimbing());
+        waitFor(context, server, 100, "The dragoon's head should come over the edge", minecraft -> first(minecraft).getY() > FEET + 2);
+        context.takeScreenshot("dragoon-climb-over-ledge");
+        waitFor(context, server, 100, "The dragoon should haul itself onto the top", minecraft ->
+        {
+            var dragoon = first(minecraft);
+            return !dragoon.isClimbing() && dragoon.onGround() && dragoon.getY() > FEET + 3.9;
+        });
+        waitFor(context, server, 120, "The dragoon should kick the player on the top", minecraft -> !first(minecraft).isClimbing() && first(minecraft).kickTicks() >= KernacianDragoon.KICK_WINDUP_TICKS);
+        clearScene(server);
+    }
+
+    /**
+     * Keeps its beam shut, so that it has to come to the player.
+     */
+    private static void calm(KernacianDragoon dragoon)
+    {
+        set(dragoon, KernacianDragoon.class, "beamCooldown", 100000);
+    }
+
+    private static void stand(TestServerContext server, double x, double y, double z, float yaw, float pitch)
+    {
+        face(server, x, y, z, yaw, pitch);
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+        });
+    }
+
+    // ---------------------------------------------------------------------------------------------
     // Drops and saved state
     // ---------------------------------------------------------------------------------------------
 
@@ -650,7 +804,20 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
                 return;
             context.waitTick();
         }
-        throw new AssertionError(message + " within " + maxTicks + " ticks");
+        throw new AssertionError(message + " within " + maxTicks + " ticks (" + server.computeOnServer(KernacianDragoonClientTest::describe) + ")");
+    }
+
+    private static String describe(MinecraftServer minecraft)
+    {
+        var found = minecraft.overworld().getEntities(VoidHeartEntities.KERNACIAN_DRAGOON, Entity::isAlive);
+        if (found.isEmpty())
+            return "no dragoon";
+        var dragoon = found.getFirst();
+        var path = dragoon.getNavigation().getPath();
+        var target = dragoon.getTarget();
+        return String.format("dragoon at %.2f %.2f %.2f, target %s, navigation done %s, path %s, climbing %s, on ground %s, against a wall %s",
+                dragoon.getX(), dragoon.getY() - FEET, dragoon.getZ(), target == null ? "none" : target.position(), dragoon.getNavigation().isDone(),
+                path == null ? "none" : (path.canReach() ? "reaching " : "short of target at ") + path.getEndNode(), dragoon.isClimbing(), dragoon.onGround(), dragoon.horizontalCollision);
     }
 
     private static void heal(MinecraftServer minecraft)

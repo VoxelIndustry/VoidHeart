@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -38,6 +39,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.mob.DragoonAdaptation.Kind;
+import net.voxelindustry.voidheart.common.content.mob.DragoonClimb.Probe;
+import net.voxelindustry.voidheart.common.content.mob.DragoonClimb.Step;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 import org.joml.Vector3f;
@@ -50,7 +53,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * An ancient war machine. It walks slowly toward whatever it fights, kicks away anything that comes too close, and from range opens its head to pour out a beam of
- * void fire that follows its target. Every hit teaches it: each kind of damage does less the more it has been used on it.
+ * void fire that follows its target. Every hit teaches it: each kind of damage does less the more it has been used on it. Nothing it can't walk to is out of its
+ * reach: it climbs pillars and walls after its target, edges out from under overhangs, and strikes from the wall at anything on the ledge above it.
  */
 public class KernacianDragoon extends Automaton
 {
@@ -72,6 +76,7 @@ public class KernacianDragoon extends Automaton
     private static final EntityDataAccessor<Integer> DATA_BEAM = SynchedEntityData.defineId(KernacianDragoon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Vector3fc> DATA_BEAM_END = SynchedEntityData.defineId(KernacianDragoon.class, EntityDataSerializers.VECTOR3);
     private static final EntityDataAccessor<Integer> DATA_KICK = SynchedEntityData.defineId(KernacianDragoon.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> DATA_CLIMBING = SynchedEntityData.defineId(KernacianDragoon.class, EntityDataSerializers.BOOLEAN);
 
     private static final int EXPERIENCE = 200;
     private static final double SPEED = 0.17;
@@ -97,17 +102,35 @@ public class KernacianDragoon extends Automaton
     private static final int STEP_TICKS = 18;
     private static final float WALKING_SPEED = 0.15F;
     private static final int SPARKS_PER_HIT = 8;
+    // A hand meets the face each time it climbs this far, alternating right and left
+    private static final float CLIMB_CYCLE_PER_BLOCK = Mth.TWO_PI / 1.6F;
+    private static final float CLIMB_POSE_PER_TICK = 0.2F;
+    private static final double[] GRIP = { 0.6, 2.75, 0.5 };
+    private static final int GRIP_CRUMBS = 5;
+    // Within this of facing its target, a face it bumps into is one worth climbing
+    private static final double CLIMB_FACING = 0.4;
+    private static final int TARGET_MEMORY_TICKS = 600;
 
     private final ServerBossEvent bossEvent = new ServerBossEvent(getUUID(), getDisplayName(), BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.NOTCHED_10);
 
     private Vec3 beamDirection = Vec3.ZERO;
     private int beamCooldown = BEAM_COOLDOWN_TICKS / 2;
     private int kickCooldown;
+    private int climbCooldown;
 
     public int closingTicks = CLOSE_TICKS;
     private int lastBeamTicks;
     private int steamDelay = IDLE_STEAM_MIN_TICKS;
     private int stepDelay;
+
+    /**
+     * How far into its climbing pose it is, and how far its hands have gone hand over hand, on the client.
+     */
+    public float climbPose;
+    public float climbPoseO;
+    public float climbCycle;
+    public float climbCycleO;
+    private int lastGrip = Integer.MIN_VALUE;
 
     /**
      * How far each kind's parts have grown on the client, following the hit counts so that new parts grow in rather than pop.
@@ -153,6 +176,19 @@ public class KernacianDragoon extends Automaton
         return entityData.get(DATA_KICK);
     }
 
+    public boolean isClimbing()
+    {
+        return entityData.get(DATA_CLIMBING);
+    }
+
+    /**
+     * Shows it clinging to a wall, without climbing, to pose it.
+     */
+    public void showClimb(boolean climbing)
+    {
+        entityData.set(DATA_CLIMBING, climbing);
+    }
+
     public boolean isFiring()
     {
         return beamTicks() > BEAM_CHARGE_TICKS;
@@ -196,6 +232,7 @@ public class KernacianDragoon extends Automaton
         builder.define(DATA_BEAM, 0);
         builder.define(DATA_BEAM_END, new Vector3f());
         builder.define(DATA_KICK, 0);
+        builder.define(DATA_CLIMBING, false);
     }
 
     @Override
@@ -203,9 +240,11 @@ public class KernacianDragoon extends Automaton
     {
         goalSelector.addGoal(1, new KickGoal());
         goalSelector.addGoal(2, new BeamGoal());
+        goalSelector.addGoal(2, new ClimbGoal());
         goalSelector.addGoal(3, new AdvanceGoal());
         addIdleGoals(6);
-        targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        // It keeps after a player who climbs or hides out of its sight, rather than forgetting them as most mobs do
+        targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true).setUnseenMemoryTicks(TARGET_MEMORY_TICKS));
     }
 
     @Override
@@ -225,6 +264,12 @@ public class KernacianDragoon extends Automaton
         {
             sparks(SPARKS_PER_HIT * 2);
             steam(6);
+        }
+        // Clamping onto a wall and letting go of it jolt its joints
+        if (DATA_CLIMBING.equals(accessor) && level().isClientSide() && tickCount > 0)
+        {
+            sparks(SPARKS_PER_HIT / 2);
+            steam(4);
         }
         if (DATA_ADAPTATION.equals(accessor) && level().isClientSide() && tickCount == 0)
         {
@@ -250,8 +295,58 @@ public class KernacianDragoon extends Automaton
                 grownO[i] = grown[i];
                 grown[i] = Mth.approach(grown[i], DragoonAdaptation.count(packed, kind), GROW_PER_TICK);
             }
+            climbing();
             clientEffects();
         }
+    }
+
+    /**
+     * On a wall it faces the wall, whatever its head follows.
+     */
+    @Override
+    protected void tickHeadTurn(float yBodyRotT)
+    {
+        if (isClimbing())
+            yBodyRot = getYRot();
+        else
+            super.tickHeadTurn(yBodyRotT);
+    }
+
+    private void climbing()
+    {
+        climbPoseO = climbPose;
+        climbPose = Mth.approach(climbPose, isClimbing() ? 1 : 0, CLIMB_POSE_PER_TICK);
+        climbCycleO = climbCycle;
+        if (!isClimbing())
+        {
+            lastGrip = Integer.MIN_VALUE;
+            return;
+        }
+        climbCycle += (float) position().distanceTo(new Vec3(xo, yo, zo)) * CLIMB_CYCLE_PER_BLOCK;
+        // A hand grips each time it swings to the face
+        int grip = Mth.floor((climbCycle - Mth.HALF_PI) / Mth.PI);
+        if (grip != lastGrip && lastGrip != Integer.MIN_VALUE)
+            grip((grip & 1) == 0 ? 1 : -1);
+        lastGrip = grip;
+    }
+
+    /**
+     * A hand bites into the face: it clanks, and what it grips crumbles from under its fingers.
+     *
+     * @param side 1 for its right hand, -1 for its left
+     */
+    private void grip(int side)
+    {
+        var hand = at(GRIP[0] * side, GRIP[1], GRIP[2]);
+        var gripped = level().getBlockState(BlockPos.containing(hand.add(facing().scale(0.2))));
+        if (!gripped.isAir())
+        {
+            var crumbs = new BlockParticleOption(ParticleTypes.BLOCK, gripped);
+            for (int i = 0; i < GRIP_CRUMBS; i++)
+                level().addParticle(crumbs, hand.x + spread(0.15), hand.y + spread(0.15), hand.z + spread(0.15), spread(0.05), -0.05, spread(0.05));
+        }
+        level().addParticle(ParticleTypes.ELECTRIC_SPARK, hand.x, hand.y, hand.z, spread(0.15), 0.05, spread(0.15));
+        level().playLocalSound(hand.x, hand.y, hand.z, sounds().step(), getSoundSource(), 0.8F, 0.55F + random.nextFloat() * 0.1F, false);
     }
 
     @Override
@@ -406,6 +501,8 @@ public class KernacianDragoon extends Automaton
             beamCooldown--;
         if (kickCooldown > 0)
             kickCooldown--;
+        if (climbCooldown > 0)
+            climbCooldown--;
         bossEvent.setProgress(getHealth() / getMaxHealth());
         bossEvent.setVisible(getTarget() != null && !isDormant());
     }
@@ -633,16 +730,11 @@ public class KernacianDragoon extends Automaton
             setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
         }
 
-        private boolean inReach(LivingEntity target)
-        {
-            return getBoundingBox().inflate(KICK_REACH, 0, KICK_REACH).intersects(target.getBoundingBox());
-        }
-
         @Override
         public boolean canUse()
         {
             var target = getTarget();
-            return target != null && target.isAlive() && kickCooldown == 0 && beamTicks() == 0 && inReach(target);
+            return target != null && target.isAlive() && kickCooldown == 0 && beamTicks() == 0 && inKickReach(target);
         }
 
         @Override
@@ -675,19 +767,205 @@ public class KernacianDragoon extends Automaton
         public void tick()
         {
             getNavigation().stop();
+            advanceKick();
+        }
+    }
+
+    private boolean inKickReach(LivingEntity target)
+    {
+        return getBoundingBox().inflate(KICK_REACH, 0, KICK_REACH).intersects(target.getBoundingBox());
+    }
+
+    /**
+     * One tick of a kick, or of the strike it throws from a wall, which hit and throw alike.
+     */
+    private void advanceKick()
+    {
+        var target = getTarget();
+        int ticks = kickTicks() + 1;
+        if (target != null && ticks < KICK_WINDUP_TICKS)
+            getLookControl().setLookAt(target, 30, 30);
+
+        if (ticks == KICK_WINDUP_TICKS && target != null && inKickReach(target))
+        {
+            var level = (ServerLevel) level();
+            playSound(VoidHeartSounds.DRAGOON_KICK, 2, 1);
+            target.hurtServer(level, damageSources().mobAttack(this), KICK_DAMAGE);
+            target.knockback(KICK_POWER, getX() - target.getX(), getZ() - target.getZ(), damageSources().mobAttack(this), KICK_DAMAGE);
+        }
+        if (ticks >= KICK_WINDUP_TICKS + KICK_FOLLOW_TICKS)
+        {
+            entityData.set(DATA_KICK, 0);
+            kickCooldown = KICK_COOLDOWN_TICKS;
+        }
+        else
+            entityData.set(DATA_KICK, ticks);
+    }
+
+    private boolean blocked(AABB box)
+    {
+        return !level().noCollision(this, box);
+    }
+
+    /**
+     * The face in front of it on the side its target is, if there is one.
+     */
+    private @Nullable Direction faceToward(LivingEntity target)
+    {
+        var toward = new Vec3(target.getX() - getX(), 0, target.getZ() - getZ());
+        if (toward.lengthSqr() < 1e-6)
+            return null;
+        toward = toward.normalize();
+        Direction best = null;
+        double bestFacing = CLIMB_FACING;
+        for (var direction : Direction.Plane.HORIZONTAL)
+        {
+            double facing = direction.getStepX() * toward.x + direction.getStepZ() * toward.z;
+            if (facing > bestFacing && blocked(getBoundingBox().move(direction.getStepX() * DragoonClimb.PROBE, 0, direction.getStepZ() * DragoonClimb.PROBE)))
+            {
+                best = direction;
+                bestFacing = facing;
+            }
+        }
+        return best;
+    }
+
+    private Probe probe(Direction face)
+    {
+        var box = getBoundingBox();
+        double forwardX = face.getStepX();
+        double forwardZ = face.getStepZ();
+        double probe = DragoonClimb.PROBE;
+        var footing = face.getAxis() == Direction.Axis.X ? box.deflate(DragoonClimb.FOOTING, 0, 0) : box.deflate(0, 0, DragoonClimb.FOOTING);
+        return new Probe(
+                blocked(box.move(forwardX * probe, 0, forwardZ * probe)),
+                blocked(box.move(forwardX * probe, -DragoonClimb.LEDGE_PROBE, forwardZ * probe)),
+                blocked(footing.move(0, -DragoonClimb.LEDGE_PROBE, 0)),
+                !blocked(box.move(0, DragoonClimb.SPEED, 0)),
+                !blocked(box.move(-forwardX * DragoonClimb.SPEED, 0, -forwardZ * DragoonClimb.SPEED)));
+    }
+
+    /**
+     * Climbs after a target it can't walk to, so that no pillar, pile or ledge keeps a player out of its reach, and strikes from the wall at what is on the edge
+     * above it. It holds on by moving itself each tick, so gravity never takes it while it climbs.
+     */
+    private final class ClimbGoal extends Goal
+    {
+        private @Nullable Direction face;
+        private Step last = Step.RISE;
+        private int lipTicks;
+        private int ticks;
+
+        private ClimbGoal()
+        {
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
+        }
+
+        @Override
+        public boolean canUse()
+        {
             var target = getTarget();
-            int ticks = kickTicks() + 1;
-            if (target != null && ticks < KICK_WINDUP_TICKS)
+            if (target == null || !target.isAlive() || climbCooldown > 0 || beamTicks() > 0 || kickTicks() > 0 || !getNavigation().isDone())
+                return false;
+            var path = getNavigation().getPath();
+            if (!DragoonClimb.wantsToClimb(target.getY() - getY(), path != null && path.canReach()))
+                return false;
+            face = faceToward(target);
+            return face != null;
+        }
+
+        @Override
+        public boolean canContinueToUse()
+        {
+            var target = getTarget();
+            return face != null && target != null && target.isAlive() && DragoonClimb.keepsClimbing(target.getY() - getY(), ticks)
+                    && last != Step.DONE && last != Step.LET_GO && last != Step.STUCK;
+        }
+
+        @Override
+        public boolean isInterruptable()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick()
+        {
+            return true;
+        }
+
+        @Override
+        public void start()
+        {
+            getNavigation().stop();
+            last = Step.RISE;
+            lipTicks = 0;
+            ticks = 0;
+            entityData.set(DATA_CLIMBING, true);
+            playSound(sounds().step(), 1.6F, 0.4F);
+        }
+
+        @Override
+        public void stop()
+        {
+            entityData.set(DATA_CLIMBING, false);
+            if (kickTicks() > 0)
+            {
+                entityData.set(DATA_KICK, 0);
+                kickCooldown = KICK_COOLDOWN_TICKS;
+            }
+            if (last != Step.DONE)
+                climbCooldown = DragoonClimb.RETRY_TICKS;
+            face = null;
+        }
+
+        @Override
+        public void tick()
+        {
+            if (face == null)
+                return;
+            ticks++;
+            getNavigation().stop();
+            getMoveControl().setWait();
+            resetFallDistance();
+            setYRot(face.toYRot());
+            setYBodyRot(face.toYRot());
+
+            var target = getTarget();
+            if (target != null)
                 getLookControl().setLookAt(target, 30, 30);
 
-            if (ticks == KICK_WINDUP_TICKS && target != null && inReach(target))
+            // It holds on to strike at a target on the edge above it
+            if (kickTicks() > 0)
             {
-                var level = (ServerLevel) level();
-                playSound(VoidHeartSounds.DRAGOON_KICK, 2, 1);
-                target.hurtServer(level, damageSources().mobAttack(KernacianDragoon.this), KICK_DAMAGE);
-                target.knockback(KICK_POWER, getX() - target.getX(), getZ() - target.getZ(), damageSources().mobAttack(KernacianDragoon.this), KICK_DAMAGE);
+                advanceKick();
+                hold(0, 0);
+                return;
             }
-            entityData.set(DATA_KICK, ticks >= KICK_WINDUP_TICKS + KICK_FOLLOW_TICKS ? 0 : ticks);
+            if (target != null && kickCooldown == 0 && DragoonClimb.canSwipe(target.getY() - getY()) && inKickReach(target))
+            {
+                entityData.set(DATA_KICK, 1);
+                hold(0, 0);
+                return;
+            }
+
+            var step = DragoonClimb.next(probe(face), last, lipTicks);
+            lipTicks = step == Step.LIP_OUT ? lipTicks + 1 : 0;
+            last = step;
+            var motion = DragoonClimb.motion(step);
+            hold(motion[0], motion[1]);
+        }
+
+        /**
+         * Moves it this tick, as forward toward the face and up, replacing whatever gravity left it with.
+         */
+        private void hold(double forward, double up)
+        {
+            if (face == null)
+                return;
+            if (forward == 0 && up == 0)
+                forward = DragoonClimb.PUSH;
+            setDeltaMovement(face.getStepX() * forward, up, face.getStepZ() * forward);
         }
     }
 
@@ -739,6 +1017,9 @@ public class KernacianDragoon extends Automaton
                 repathDelay = 20;
                 getNavigation().moveTo(target, 1);
             }
+            var path = getNavigation().getPath();
+            if (getNavigation().isDone() && (path == null || !path.canReach()) && target.getY() - getY() > DragoonClimb.MIN_RISE)
+                getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1);
         }
     }
 }

@@ -82,6 +82,8 @@ public class KernacianDragoonRender extends MobRenderer<KernacianDragoon, Kernac
         KernacianDragoonModel.open(state, beam, dragoon.closingTicks, partialTicks);
         int kick = dragoon.kickTicks();
         state.kick = kick > 0 ? kick + partialTicks : 0;
+        state.climb = Mth.lerp(partialTicks, dragoon.climbPoseO, dragoon.climbPose);
+        state.climbCycle = Mth.lerp(partialTicks, dragoon.climbCycleO, dragoon.climbCycle);
         for (int i = 0; i < state.grown.length; i++)
             state.grown[i] = Mth.lerp(partialTicks, dragoon.grownO[i], dragoon.grown[i]);
 
