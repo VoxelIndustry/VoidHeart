@@ -6,9 +6,11 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.client.model.mob.ArcaneEyeModel;
 import net.voxelindustry.voidheart.client.model.mob.BarnacleGrowthModel;
 import net.voxelindustry.voidheart.client.model.mob.CorruptedBarnacleModel;
 import net.voxelindustry.voidheart.client.model.mob.CorruptedCrabModel;
+import net.voxelindustry.voidheart.client.model.mob.EyeMawModel;
 import net.voxelindustry.voidheart.client.model.mob.FallenElderModel;
 import net.voxelindustry.voidheart.client.model.mob.FallenModel;
 import net.voxelindustry.voidheart.client.model.mob.VoidGhoulModel;
@@ -36,6 +38,9 @@ public final class VoidMobRenderers
         ModelLayerRegistry.registerModelLayer(FallenModel.NOVICE, FallenModel::createNoviceLayer);
         ModelLayerRegistry.registerModelLayer(FallenModel.ADEPT, FallenModel::createAdeptLayer);
         ModelLayerRegistry.registerModelLayer(FallenElderModel.LAYER, FallenElderModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EyeMawModel.SMALL, EyeMawModel::createSmallLayer);
+        ModelLayerRegistry.registerModelLayer(EyeMawModel.LARGE, EyeMawModel::createLargeLayer);
+        ModelLayerRegistry.registerModelLayer(ArcaneEyeModel.LAYER, ArcaneEyeModel::createBodyLayer);
 
         EntityRenderers.register(VoidHeartEntities.VOID_SKELETON, VoidSkeletonRender::new);
         EntityRenderers.register(VoidHeartEntities.VOID_GHOUL, VoidGhoulRender::new);
@@ -50,7 +55,13 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.FALLEN_ADEPT,
                 context -> new FallenRender<>(context, FallenModel.ADEPT, texture("fallen_adept"), texture("fallen_adept_glow")));
         EntityRenderers.register(VoidHeartEntities.FALLEN_ELDER, FallenElderRender::new);
-        EntityRenderers.register(VoidHeartEntities.VOID_ORB, VoidOrbRender::new);
+        EntityRenderers.register(VoidHeartEntities.VOID_ORB, context -> new GlowQuadRender<>(context, texture("void_orb"), 0.42F));
+        EntityRenderers.register(VoidHeartEntities.EYE_MAW,
+                context -> new EyeMawRender<>(context, EyeMawModel.SMALL, 1, texture("eye_maw"), texture("eye_maw_glow"), 1, 0.3F));
+        EntityRenderers.register(VoidHeartEntities.LARGE_EYE_MAW,
+                context -> new EyeMawRender<>(context, EyeMawModel.LARGE, 2, texture("large_eye_maw"), texture("large_eye_maw_glow"), 2.25F, 1.1F));
+        EntityRenderers.register(VoidHeartEntities.ARCANE_EYE, ArcaneEyeRender::new);
+        EntityRenderers.register(VoidHeartEntities.ARCANE_BOLT, context -> new GlowQuadRender<>(context, texture("arcane_bolt"), 0.24F));
 
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) ->
         {

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:random_chance",
+        "chance": 0.25
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:ender_shard"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "voidheart:entities/eye_maw"
+}

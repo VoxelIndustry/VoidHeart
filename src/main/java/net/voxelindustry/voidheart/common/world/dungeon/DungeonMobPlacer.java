@@ -25,6 +25,8 @@ final class DungeonMobPlacer
     private static final double CLING_CHANCE = 0.4;
     private static final double ENTRY_CLEARANCE = 10;
     private static final int FLOOR_SEARCH_BELOW = 2;
+    private static final int FLOCK_SPREAD = 3;
+    private static final int FLOCK_SIZE_SPREAD = 3;
     private static final Direction[] CLING_SURFACES = { Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST };
 
     private final DungeonBlueprint blueprint;
@@ -33,6 +35,7 @@ final class DungeonMobPlacer
     private final List<DungeonMobTable.Placement> placed;
     private final int[] entry;
     private final List<DungeonMob> roster;
+    private final List<DungeonMob> walkers;
     private final Set<Long> taken = new HashSet<>();
 
     DungeonMobPlacer(DungeonBlueprint blueprint, DungeonGrid grid, RandomSource random, List<DungeonMobTable.Placement> placed, int[] entry)
@@ -43,6 +46,7 @@ final class DungeonMobPlacer
         this.placed = placed;
         this.entry = entry;
         roster = DungeonMobTable.roster(blueprint.theme(), blueprint.difficulty());
+        walkers = roster.stream().filter(mob -> !mob.flies).toList();
     }
 
     void place(List<DungeonRoom> rooms, DungeonRoom entryRoom, Collection<DungeonPlanner.Flat> flats)
@@ -58,11 +62,11 @@ final class DungeonMobPlacer
             {
                 if (budget <= 0)
                     break;
-                budget -= placeInRoom(room, Math.min(budget, quota(room)));
+                budget -= placeInRoom(room, Math.min(budget, quota(room)), budget);
             }
         }
         if (budget > 0)
-            placeInRoom(entryRoom, budget);
+            placeInRoom(entryRoom, budget, budget);
     }
 
     private int quota(DungeonRoom room)
@@ -85,31 +89,76 @@ final class DungeonMobPlacer
             int y = floorIn(x, plane(flat.j), plane(flat.j) + CELL, z, DungeonMob.VOID_SKELETON);
             if (y >= 0)
             {
-                add(new DungeonMobTable.Placement(DungeonMobTable.pick(roster, random), x, y, z, Direction.UP, 0));
+                add(new DungeonMobTable.Placement(DungeonMobTable.pick(walkers, random), x, y, z, Direction.UP, 0));
                 count++;
             }
         }
         return count;
     }
 
-    private int placeInRoom(DungeonRoom room, int wanted)
+    private int placeInRoom(DungeonRoom room, int wanted, int budget)
     {
         int count = 0;
         while (count < wanted)
         {
             var mob = DungeonMobTable.pick(roster, random);
-            int group = Math.min(mob.groupSize, wanted - count);
-            int inGroup = 0;
-            for (int i = 0; i < group; i++)
-            {
-                if (placeOne(room, mob))
-                    inGroup++;
-            }
+            int inGroup = mob.flies ? placeInAir(room, mob, budget - count) : placeGroup(room, mob, Math.min(mob.groupSize, wanted - count));
             if (inGroup == 0)
                 return count;
             count += inGroup;
         }
         return count;
+    }
+
+    private int placeGroup(DungeonRoom room, DungeonMob mob, int group)
+    {
+        int placed = 0;
+        for (int i = 0; i < group; i++)
+        {
+            if (placeOne(room, mob))
+                placed++;
+        }
+        return placed;
+    }
+
+    /**
+     * A flock stays whole even past what the room would otherwise hold, as one of them alone is no flock.
+     */
+    private int placeInAir(DungeonRoom room, DungeonMob mob, int budget)
+    {
+        int size = mob.groupSize > 1 ? mob.groupSize - FLOCK_SIZE_SPREAD / 2 + random.nextInt(FLOCK_SIZE_SPREAD) : 1;
+        int wanted = Math.min(size, budget);
+        for (int attempt = 0; attempt < SPOT_ATTEMPTS; attempt++)
+        {
+            int x = room.minX() + random.nextInt(room.maxX() - room.minX() + 1);
+            int y = room.minY() + random.nextInt(room.maxY() - room.minY() + 1);
+            int z = room.minZ() + random.nextInt(room.maxZ() - room.minZ() + 1);
+            if (!isFreeInAir(x, y, z, mob))
+                continue;
+
+            taken.add(pack(x, y, z));
+            add(new DungeonMobTable.Placement(mob, x, y, z, Direction.UP, 0));
+            int placed = 1;
+            for (int tries = 0; placed < wanted && tries < SPOT_ATTEMPTS; tries++)
+            {
+                int mateX = x - FLOCK_SPREAD + random.nextInt(FLOCK_SPREAD * 2 + 1);
+                int mateY = y - FLOCK_SPREAD + random.nextInt(FLOCK_SPREAD * 2 + 1);
+                int mateZ = z - FLOCK_SPREAD + random.nextInt(FLOCK_SPREAD * 2 + 1);
+                if (isFreeInAir(mateX, mateY, mateZ, mob))
+                {
+                    taken.add(pack(mateX, mateY, mateZ));
+                    add(new DungeonMobTable.Placement(mob, mateX, mateY, mateZ, Direction.UP, 0));
+                    placed++;
+                }
+            }
+            return placed;
+        }
+        return 0;
+    }
+
+    private boolean isFreeInAir(int x, int y, int z, DungeonMob mob)
+    {
+        return fits(x, y, z, mob) && farFromEntry(x, y, z) && !taken.contains(pack(x, y, z));
     }
 
     private boolean placeOne(DungeonRoom room, DungeonMob mob)

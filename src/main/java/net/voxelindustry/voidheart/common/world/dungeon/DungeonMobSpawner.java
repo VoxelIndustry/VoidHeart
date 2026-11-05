@@ -111,6 +111,9 @@ final class DungeonMobSpawner
             case FALLEN_NOVICE -> VoidHeartEntities.FALLEN_NOVICE;
             case FALLEN_ADEPT -> VoidHeartEntities.FALLEN_ADEPT;
             case FALLEN_ELDER -> VoidHeartEntities.FALLEN_ELDER;
+            case EYE_MAW -> VoidHeartEntities.EYE_MAW;
+            case ARCANE_EYE -> VoidHeartEntities.ARCANE_EYE;
+            case LARGE_EYE_MAW -> VoidHeartEntities.LARGE_EYE_MAW;
         };
     }
 }

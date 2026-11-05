@@ -20,6 +20,7 @@ import net.voxelindustry.voidheart.common.content.mob.BarnacleInfection;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleNestBlock;
 import net.voxelindustry.voidheart.common.content.mob.CorruptedBarnacle;
 import net.voxelindustry.voidheart.common.content.mob.CrawlerMonster;
+import net.voxelindustry.voidheart.common.content.mob.FloatingEye;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeletonHeadBlock;
 import net.voxelindustry.voidheart.common.content.mob.WraithStain;
@@ -80,7 +81,12 @@ public class VoidMobLooksClientTest implements FabricClientGameTest
                     new Pose("fallen-novice", VoidHeartEntities.FALLEN_NOVICE, 0.8, mob -> {}),
                     new Pose("fallen-novice-aggressive", VoidHeartEntities.FALLEN_NOVICE, 0.8, mob -> mob.setAggressive(true)),
                     new Pose("fallen-adept", VoidHeartEntities.FALLEN_ADEPT, 0.8, mob -> {}),
-                    new Pose("fallen-elder", VoidHeartEntities.FALLEN_ELDER, 1.4, mob -> {}));
+                    new Pose("fallen-elder", VoidHeartEntities.FALLEN_ELDER, 1.4, mob -> {}),
+                    new Pose("eye-maw", VoidHeartEntities.EYE_MAW, 0.3, mob -> {}),
+                    new Pose("eye-maw-open", VoidHeartEntities.EYE_MAW, 0.3, mob -> ((FloatingEye) mob).setJawsOpen(true)),
+                    new Pose("eye-maw-large", VoidHeartEntities.LARGE_EYE_MAW, 1.1, mob -> {}),
+                    new Pose("eye-maw-large-open", VoidHeartEntities.LARGE_EYE_MAW, 1.1, mob -> ((FloatingEye) mob).setJawsOpen(true)),
+                    new Pose("arcane-eye", VoidHeartEntities.ARCANE_EYE, 0.4, mob -> {}));
 
             server.runCommand("fill -40 " + GROUND + " -6 60 " + GROUND + " 14 voidheart:voidstone_tile");
             for (int i = 0; i < poses.size(); i++)

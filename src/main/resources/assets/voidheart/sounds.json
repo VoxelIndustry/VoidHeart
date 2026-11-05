@@ -428,5 +428,205 @@
         "pitch": 0.6
       }
     ]
+  },
+  "entity.eye_maw.ambient": {
+    "subtitle": "subtitles.voidheart.entity.eye_maw.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.ambient",
+        "type": "event",
+        "pitch": 1.6
+      }
+    ]
+  },
+  "entity.eye_maw.hurt": {
+    "subtitle": "subtitles.voidheart.entity.eye_maw.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.hurt",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.eye_maw.death": {
+    "subtitle": "subtitles.voidheart.entity.eye_maw.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.death",
+        "type": "event",
+        "pitch": 1.7
+      }
+    ]
+  },
+  "entity.eye_maw.step": {
+    "subtitle": "subtitles.voidheart.entity.eye_maw.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.flap",
+        "type": "event",
+        "pitch": 1.6
+      }
+    ]
+  },
+  "entity.large_eye_maw.ambient": {
+    "subtitle": "subtitles.voidheart.entity.large_eye_maw.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.elder_guardian.ambient",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.large_eye_maw.hurt": {
+    "subtitle": "subtitles.voidheart.entity.large_eye_maw.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.elder_guardian.hurt",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.large_eye_maw.death": {
+    "subtitle": "subtitles.voidheart.entity.large_eye_maw.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.elder_guardian.death",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.large_eye_maw.step": {
+    "subtitle": "subtitles.voidheart.entity.large_eye_maw.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.flap",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.arcane_eye.ambient": {
+    "subtitle": "subtitles.voidheart.entity.arcane_eye.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.guardian.ambient_land",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.arcane_eye.hurt": {
+    "subtitle": "subtitles.voidheart.entity.arcane_eye.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.guardian.hurt",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.arcane_eye.death": {
+    "subtitle": "subtitles.voidheart.entity.arcane_eye.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.guardian.death",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.arcane_eye.step": {
+    "subtitle": "subtitles.voidheart.entity.arcane_eye.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.flap",
+        "type": "event",
+        "pitch": 1.2
+      }
+    ]
+  },
+  "entity.eye_maw.open": {
+    "subtitle": "subtitles.voidheart.entity.eye_maw.open",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker_fangs.attack",
+        "type": "event",
+        "pitch": 1.5
+      }
+    ]
+  },
+  "entity.eye_maw.lunge": {
+    "subtitle": "subtitles.voidheart.entity.eye_maw.lunge",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.swoop",
+        "type": "event",
+        "pitch": 1.5
+      }
+    ]
+  },
+  "entity.eye_maw.bite": {
+    "subtitle": "subtitles.voidheart.entity.eye_maw.bite",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker_fangs.attack",
+        "type": "event",
+        "pitch": 0.9
+      }
+    ]
+  },
+  "entity.large_eye_maw.open": {
+    "subtitle": "subtitles.voidheart.entity.large_eye_maw.open",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.roar",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.large_eye_maw.spit": {
+    "subtitle": "subtitles.voidheart.entity.large_eye_maw.spit",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.egg_break",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.arcane_eye.charge": {
+    "subtitle": "subtitles.voidheart.entity.arcane_eye.charge",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.activate",
+        "type": "event",
+        "pitch": 1.9
+      }
+    ]
+  },
+  "entity.arcane_eye.fire": {
+    "subtitle": "subtitles.voidheart.entity.arcane_eye.fire",
+    "sounds": [
+      {
+        "name": "minecraft:entity.shulker.shoot",
+        "type": "event",
+        "pitch": 1.3
+      }
+    ]
+  },
+  "entity.arcane_bolt.hit": {
+    "subtitle": "subtitles.voidheart.entity.arcane_bolt.hit",
+    "sounds": [
+      {
+        "name": "minecraft:entity.shulker_bullet.hit",
+        "type": "event",
+        "pitch": 1.4
+      }
+    ]
   }
 }

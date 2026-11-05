@@ -9,11 +9,15 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.voxelindustry.voidheart.common.content.mob.ArcaneBolt;
+import net.voxelindustry.voidheart.common.content.mob.ArcaneEye;
 import net.voxelindustry.voidheart.common.content.mob.CorruptedBarnacle;
 import net.voxelindustry.voidheart.common.content.mob.CorruptedCrab;
+import net.voxelindustry.voidheart.common.content.mob.EyeMaw;
 import net.voxelindustry.voidheart.common.content.mob.FallenAdept;
 import net.voxelindustry.voidheart.common.content.mob.FallenElder;
 import net.voxelindustry.voidheart.common.content.mob.FallenNovice;
+import net.voxelindustry.voidheart.common.content.mob.LargeEyeMaw;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeleton;
@@ -39,6 +43,10 @@ public class VoidHeartEntities
     public static EntityType<FallenAdept> FALLEN_ADEPT;
     public static EntityType<FallenElder> FALLEN_ELDER;
     public static EntityType<VoidOrb> VOID_ORB;
+    public static EntityType<EyeMaw> EYE_MAW;
+    public static EntityType<LargeEyeMaw> LARGE_EYE_MAW;
+    public static EntityType<ArcaneEye> ARCANE_EYE;
+    public static EntityType<ArcaneBolt> ARCANE_BOLT;
 
     public static void registerEntities()
     {
@@ -113,6 +121,41 @@ public class VoidHeartEntities
 
         VOID_ORB = register("void_orb", EntityType.Builder.<VoidOrb>of(VoidOrb::new, MobCategory.MISC)
                 .sized(0.5F, 0.5F)
+                .clientTrackingRange(8)
+                .updateInterval(1)
+                .fireImmune()
+                .noSave()
+                .noSummon()
+                .noLootTable());
+
+        registerEyes();
+    }
+
+    private static void registerEyes()
+    {
+        EYE_MAW = register("eye_maw", EntityType.Builder.of(EyeMaw::new, MobCategory.MONSTER)
+                .sized(0.6F, 0.6F)
+                .eyeHeight(0.3F)
+                .clientTrackingRange(8)
+                .updateInterval(2));
+        FabricDefaultAttributeRegistry.register(EYE_MAW, EyeMaw.createAttributes());
+
+        LARGE_EYE_MAW = register("large_eye_maw", EntityType.Builder.of(LargeEyeMaw::new, MobCategory.MONSTER)
+                .sized(2.25F, 2.25F)
+                .eyeHeight(1.125F)
+                .clientTrackingRange(10)
+                .updateInterval(2));
+        FabricDefaultAttributeRegistry.register(LARGE_EYE_MAW, LargeEyeMaw.createAttributes());
+
+        ARCANE_EYE = register("arcane_eye", EntityType.Builder.of(ArcaneEye::new, MobCategory.MONSTER)
+                .sized(0.75F, 0.75F)
+                .eyeHeight(0.375F)
+                .clientTrackingRange(8)
+                .updateInterval(2));
+        FabricDefaultAttributeRegistry.register(ARCANE_EYE, ArcaneEye.createAttributes());
+
+        ARCANE_BOLT = register("arcane_bolt", EntityType.Builder.<ArcaneBolt>of(ArcaneBolt::new, MobCategory.MISC)
+                .sized(0.3F, 0.3F)
                 .clientTrackingRange(8)
                 .updateInterval(1)
                 .fireImmune()

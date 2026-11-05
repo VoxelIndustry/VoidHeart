@@ -36,6 +36,7 @@ import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEffects;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonAddress;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonMob;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonSize;
@@ -58,6 +59,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
     private static final int CLEARED_RADIUS = 32;
     private static final int MOB_CLOSE_UPS = 3;
     private static final int CHANCE_ROLLS = 400;
+    private static final int LOOT_RANGE_ROLLS = 60;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -88,6 +90,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
             checkNest(context, server);
             checkElder(context, server);
             checkChances(context, server);
+            checkLoot(context, server);
             checkDungeons(context, server, world);
 
             context.getInput().pressKey(InputConstants.KEY_F1);
@@ -146,6 +149,84 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
             heal(minecraft);
         });
         clearScene(server);
+    }
+
+    /**
+     * What the tables really hand out, as a field the game does not read fails silently and leaves a table dropping everything every time.
+     */
+    private static void checkLoot(ClientGameTestContext context, TestServerContext server)
+    {
+        tp(server, 700.5, FEET, 0.5);
+        context.waitTicks(10);
+        server.runOnServer(minecraft ->
+        {
+            expectRange(minecraft, VoidHeartEntities.CORRUPTED_CRAB_MEDIUM, VoidHeartItems.OBSIDIAN_SHARD, 1, 2);
+            expectRange(minecraft, VoidHeartEntities.CORRUPTED_CRAB_LARGE, VoidHeartItems.OBSIDIAN_SHARD, 2, 4);
+            expectRange(minecraft, VoidHeartEntities.WRAITH, VoidHeartItems.ENDER_SHARD, 1, 2);
+            expectRange(minecraft, VoidHeartEntities.FALLEN_NOVICE, VoidHeartItems.ENDER_SHARD, 0, 1);
+            expectRange(minecraft, VoidHeartEntities.FALLEN_ADEPT, VoidHeartItems.ENDER_SHARD, 1, 2);
+            expectRange(minecraft, VoidHeartEntities.FALLEN_ELDER, VoidHeartItems.ENDER_SHARD, 2, 4);
+            expectRange(minecraft, VoidHeartEntities.VOID_SKELETON, Items.BONE, 0, 2);
+            expectRange(minecraft, VoidHeartEntities.VOID_GHOUL, Items.ROTTEN_FLESH, 0, 2);
+            expectRange(minecraft, VoidHeartEntities.CORRUPTED_BARNACLE, VoidHeartItems.OBSIDIAN_SHARD, 0, 0);
+
+            expectDropShare(minecraft, VoidHeartEntities.CORRUPTED_CRAB_SMALL, VoidHeartItems.OBSIDIAN_SHARD, false, 0.25);
+            expectDropShare(minecraft, VoidHeartEntities.VOID_SKELETON, VoidHeartBlocks.VOID_SKELETON_HEAD.asItem(), true, 0.08);
+            expectDropShare(minecraft, VoidHeartEntities.VOID_GHOUL, VoidHeartItems.WRIGGLING_BRAIN, true, 0.1);
+            expectDropShare(minecraft, VoidHeartEntities.VOID_SKELETON, VoidHeartBlocks.VOID_SKELETON_HEAD.asItem(), false, 0);
+            expectDropShare(minecraft, VoidHeartEntities.VOID_GHOUL, VoidHeartItems.WRIGGLING_BRAIN, false, 0);
+        });
+        clearScene(server);
+    }
+
+    private static void expectRange(MinecraftServer minecraft, EntityType<? extends Mob> type, net.minecraft.world.item.Item item, int min, int max)
+    {
+        int lowest = Integer.MAX_VALUE;
+        int highest = 0;
+        for (int roll = 0; roll < LOOT_RANGE_ROLLS; roll++)
+        {
+            int count = dropsOf(minecraft, type, item, false);
+            lowest = Math.min(lowest, count);
+            highest = Math.max(highest, count);
+        }
+        expect(lowest == min && highest == max, type + " should drop " + min + "-" + max + " " + item + ", dropped " + lowest + "-" + highest);
+    }
+
+    private static void expectDropShare(MinecraftServer minecraft, EntityType<? extends Mob> type, net.minecraft.world.item.Item item, boolean byPlayer, double chance)
+    {
+        int dropped = 0;
+        for (int roll = 0; roll < CHANCE_ROLLS; roll++)
+        {
+            if (dropsOf(minecraft, type, item, byPlayer) > 0)
+                dropped++;
+        }
+        if (chance == 0)
+            expect(dropped == 0, type + " should not drop " + item + " unless killed by a player, dropped " + dropped);
+        else
+            expectShare(dropped, chance, type + " dropping " + item);
+    }
+
+    private static int dropsOf(MinecraftServer minecraft, EntityType<? extends Mob> type, net.minecraft.world.item.Item item, boolean byPlayer)
+    {
+        var level = minecraft.overworld();
+        var player = player(minecraft);
+        var mob = spawn(minecraft, type, 700.5, FEET + 30, 30.5);
+        mob.setNoAi(true);
+        if (byPlayer)
+            mob.hurtServer(level, player.damageSources().playerAttack(player), 100000);
+        else
+            mob.kill(level);
+
+        int count = 0;
+        for (var drop : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(690, FEET + 20, 20, 710, FEET + 40, 40)))
+        {
+            if (drop.getItem().is(item))
+                count += drop.getItem().getCount();
+            drop.discard();
+        }
+        for (var left : level.getEntitiesOfClass(VoidMonster.class, new net.minecraft.world.phys.AABB(690, FEET + 20, 20, 710, FEET + 40, 40)))
+            left.discard();
+        return count;
     }
 
     private static void expectShare(int count, double chance, String name)
@@ -796,6 +877,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         checkDungeon(context, server, world, DungeonSize.MEDIUM, DungeonTheme.FOREST, "medium_forest", 3, DungeonMob.Family.PEST);
         checkDungeon(context, server, world, DungeonSize.MEDIUM, DungeonTheme.TEMPLE, "medium_temple", 4, DungeonMob.Family.FALLEN);
         checkDungeon(context, server, world, DungeonSize.MEDIUM, DungeonTheme.FOUNDRY, "medium_foundry", 2, DungeonMob.Family.GENERIC);
+        checkDungeon(context, server, world, DungeonSize.MEDIUM, DungeonTheme.DEPTHS, "medium_depths", 3, DungeonMob.Family.PEST);
         server.runCommand("gamemode survival @a");
     }
 
@@ -840,6 +922,12 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         {
             boolean pest = type.contains("crab") || type.contains("barnacle");
             boolean fallen = type.contains("fallen");
+            boolean generic = type.contains("void_skeleton") || type.contains("void_ghoul") || type.contains("wraith");
+            boolean eye = type.contains("eye");
+            if (generic && theme == DungeonTheme.DEPTHS)
+                throw new AssertionError("Generic mobs should not live in " + theme + ", found " + type);
+            if (eye && theme != DungeonTheme.DEPTHS)
+                throw new AssertionError("Eyes should not live in " + theme + ", found " + type);
             if (pest && family != DungeonMob.Family.PEST)
                 throw new AssertionError("Pests should not live in " + theme + ", found " + type);
             if (fallen && family != DungeonMob.Family.FALLEN)

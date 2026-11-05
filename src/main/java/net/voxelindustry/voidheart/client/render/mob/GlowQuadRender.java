@@ -14,25 +14,24 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
-import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
-
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
+import net.minecraft.world.entity.Entity;
 
 /**
- * One camera facing quad that ignores world light, so its teal rim shows in the dark around a black core. A single quad never overlaps itself.
+ * One camera facing quad that ignores world light, so it shows in the dark. A single quad never overlaps itself.
  */
-public class VoidOrbRender extends EntityRenderer<VoidOrb, EntityRenderState>
+public class GlowQuadRender<T extends Entity> extends EntityRenderer<T, EntityRenderState>
 {
-    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/void_orb.png");
-    private static final RenderType RENDER_TYPE = RenderTypes.entityTranslucentEmissive(TEXTURE);
-
-    private static final float RADIUS = 0.42F;
     private static final float PULSE_RATE = 0.4F;
-    private static final float PULSE_RANGE = 0.05F;
+    private static final float PULSE_SHARE = 0.12F;
 
-    public VoidOrbRender(EntityRendererProvider.Context context)
+    private final RenderType renderType;
+    private final float baseRadius;
+
+    public GlowQuadRender(EntityRendererProvider.Context context, Identifier texture, float radius)
     {
         super(context);
+        renderType = RenderTypes.entityTranslucentEmissive(texture);
+        baseRadius = radius;
     }
 
     @Override
@@ -42,7 +41,7 @@ public class VoidOrbRender extends EntityRenderer<VoidOrb, EntityRenderState>
     }
 
     @Override
-    protected int getBlockLightLevel(VoidOrb orb, BlockPos pos)
+    protected int getBlockLightLevel(T entity, BlockPos pos)
     {
         return 15;
     }
@@ -50,12 +49,12 @@ public class VoidOrbRender extends EntityRenderer<VoidOrb, EntityRenderState>
     @Override
     public void submit(EntityRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
-        float radius = RADIUS + Mth.sin(state.ageInTicks * PULSE_RATE) * PULSE_RANGE;
+        float radius = baseRadius * (1 + Mth.sin(state.ageInTicks * PULSE_RATE) * PULSE_SHARE);
 
         poseStack.pushPose();
         poseStack.translate(0, state.boundingBoxHeight / 2, 0);
         poseStack.rotate(camera.orientation);
-        collector.submitCustomGeometry(poseStack, RENDER_TYPE, (pose, buffer) ->
+        collector.submitCustomGeometry(poseStack, renderType, (pose, buffer) ->
         {
             vertex(pose, buffer, -radius, -radius, 0, 1);
             vertex(pose, buffer, radius, -radius, 1, 1);

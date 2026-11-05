@@ -94,6 +94,9 @@ public class VoidHeartItems
         registerSpawnEgg("fallen_novice", VoidHeartEntities.FALLEN_NOVICE);
         registerSpawnEgg("fallen_adept", VoidHeartEntities.FALLEN_ADEPT);
         registerSpawnEgg("fallen_elder", VoidHeartEntities.FALLEN_ELDER);
+        registerSpawnEgg("eye_maw", VoidHeartEntities.EYE_MAW);
+        registerSpawnEgg("large_eye_maw", VoidHeartEntities.LARGE_EYE_MAW);
+        registerSpawnEgg("arcane_eye", VoidHeartEntities.ARCANE_EYE);
     }
 
     private static void registerSpawnEgg(String mob, EntityType<?> type)

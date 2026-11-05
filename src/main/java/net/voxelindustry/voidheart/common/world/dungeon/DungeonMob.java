@@ -17,21 +17,27 @@ public enum DungeonMob
 
     FALLEN_NOVICE(Family.FALLEN, 1, 14, 0, 2, 1, false),
     FALLEN_ADEPT(Family.FALLEN, 3, 6, 0, 2, 1, false),
-    FALLEN_ELDER(Family.FALLEN, 4, 3, 1, 3, 1, false);
+    FALLEN_ELDER(Family.FALLEN, 4, 3, 1, 3, 1, false),
+
+    EYE_MAW(Family.EYE, 1, 5, 0, 1, 6, false, true),
+    ARCANE_EYE(Family.EYE, 2, 14, 0, 1, 1, false, true),
+    LARGE_EYE_MAW(Family.EYE, 3, 3, 1, 3, 1, false, true);
 
     public enum Family
     {
         GENERIC,
         PEST,
-        FALLEN;
+        FALLEN,
+        EYE;
 
         public boolean livesIn(DungeonTheme theme)
         {
             return switch (this)
             {
-                case GENERIC -> true;
-                case PEST -> theme == DungeonTheme.FOREST || theme == DungeonTheme.MYCOSIS;
+                case GENERIC -> theme != DungeonTheme.DEPTHS;
+                case PEST -> theme == DungeonTheme.FOREST || theme == DungeonTheme.MYCOSIS || theme == DungeonTheme.DEPTHS;
                 case FALLEN -> theme == DungeonTheme.TEMPLE || theme == DungeonTheme.CATHEDRAL;
+                case EYE -> theme == DungeonTheme.DEPTHS;
             };
         }
     }
@@ -43,8 +49,14 @@ public enum DungeonMob
     public final int height;
     public final int groupSize;
     public final boolean clings;
+    public final boolean flies;
 
     DungeonMob(Family family, int minDifficulty, int weight, int halfWidth, int height, int groupSize, boolean clings)
+    {
+        this(family, minDifficulty, weight, halfWidth, height, groupSize, clings, false);
+    }
+
+    DungeonMob(Family family, int minDifficulty, int weight, int halfWidth, int height, int groupSize, boolean clings, boolean flies)
     {
         this.family = family;
         this.minDifficulty = minDifficulty;
@@ -53,5 +65,6 @@ public enum DungeonMob
         this.height = height;
         this.groupSize = groupSize;
         this.clings = clings;
+        this.flies = flies;
     }
 }

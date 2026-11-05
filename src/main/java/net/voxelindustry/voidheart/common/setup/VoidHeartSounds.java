@@ -24,6 +24,9 @@ public final class VoidHeartSounds
     public static final MobSounds FALLEN_NOVICE = mob("fallen_novice");
     public static final MobSounds FALLEN_ADEPT  = mob("fallen_adept");
     public static final MobSounds FALLEN_ELDER  = mob("fallen_elder");
+    public static final MobSounds EYE_MAW       = mob("eye_maw");
+    public static final MobSounds LARGE_EYE_MAW = mob("large_eye_maw");
+    public static final MobSounds ARCANE_EYE    = mob("arcane_eye");
 
     public static final SoundEvent GHOUL_LUNGE      = register("entity.void_ghoul.lunge");
     public static final SoundEvent WRAITH_WHISPER   = register("entity.wraith.whisper");
@@ -36,6 +39,14 @@ public final class VoidHeartSounds
     public static final SoundEvent ELDER_RAISE      = register("entity.fallen_elder.raise");
     public static final SoundEvent ORB_HIT          = register("entity.void_orb.hit");
     public static final SoundEvent ORB_DEFLECT      = register("entity.void_orb.deflect");
+    public static final SoundEvent EYE_MAW_OPEN     = register("entity.eye_maw.open");
+    public static final SoundEvent EYE_MAW_LUNGE    = register("entity.eye_maw.lunge");
+    public static final SoundEvent EYE_MAW_BITE     = register("entity.eye_maw.bite");
+    public static final SoundEvent LARGE_EYE_MAW_OPEN = register("entity.large_eye_maw.open");
+    public static final SoundEvent LARGE_EYE_MAW_SPIT = register("entity.large_eye_maw.spit");
+    public static final SoundEvent ARCANE_EYE_CHARGE = register("entity.arcane_eye.charge");
+    public static final SoundEvent ARCANE_EYE_FIRE  = register("entity.arcane_eye.fire");
+    public static final SoundEvent ARCANE_BOLT_HIT  = register("entity.arcane_bolt.hit");
 
     private VoidHeartSounds()
     {
