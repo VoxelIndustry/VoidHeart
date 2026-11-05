@@ -30,7 +30,7 @@ final class ArmillaryDialRender
     private static final float PLATE_DEPTH = 0.012F;
 
     private static final float HEIGHT = 1.38F;
-    private static final float OUT    = 1.7F;
+    private static final float OUT    = 2F;
 
     private static final float RING_OUTER    = 0.175F;
     private static final float RING_INNER    = 0.15F;
@@ -46,8 +46,8 @@ final class ArmillaryDialRender
 
     private static final float FADE_NEAR  = 18;
     private static final float FADE_FAR   = 24;
-    private static final float HIDE_CLOSE = 2.8F;
-    private static final float SHOW_CLOSE = 3.6F;
+    private static final float HIDE_CLOSE = 3.1F;
+    private static final float SHOW_CLOSE = 3.9F;
 
     private static final float BREATH_RATE = 0.07F;
     private static final float BREATH_LOW  = 0.65F;

@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -41,6 +42,7 @@ public class ArmillaryTile extends TileBase
     private static final int VIEW_INTERVAL      = 20;
     private static final int PREVIEW_TICKS      = 20 * 30;
     private static final int TICKS_PER_MINUTE   = 20 * 60;
+    private static final int RESHAPE_PARTICLES  = 40;
 
     public static final int RINGS = 3;
 
@@ -149,6 +151,24 @@ public class ArmillaryTile extends TileBase
             sync();
         }
         placeHub(level);
+        shapeBase(level);
+    }
+
+    /**
+     * Kept in line with the state of the armillary too, which also brings a world saved before the base had a model up to date.
+     */
+    private void shapeBase(ServerLevel level)
+    {
+        boolean reshaped = ArmillaryLayout.shapeBase(level, worldPosition, formed);
+        if (getBlockState().getValue(ArmillaryCoreBlock.FORMED) != formed)
+        {
+            var state = getBlockState().setValue(ArmillaryCoreBlock.FORMED, formed);
+            level.setBlockAndUpdate(worldPosition, state);
+            setBlockState(state);
+            reshaped = true;
+        }
+        if (reshaped)
+            level.sendParticles(ParticleTypes.REVERSE_PORTAL, worldPosition.getX() + 0.5, worldPosition.getY() + 0.8, worldPosition.getZ() + 0.5, RESHAPE_PARTICLES, 0.9, 0.2, 0.9, 0.02);
     }
 
     /**

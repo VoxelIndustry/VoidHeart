@@ -129,9 +129,8 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         var origin = armillary.getBlockPos();
         for (var part : ArmillaryLayout.base(origin))
         {
-            var actual = level.getBlockState(part.pos());
-            if (!actual.is(part.block()))
-                hints.add(new Hint(part.pos().subtract(origin), part.block().defaultBlockState(), !actual.canBeReplaced()));
+            if (!part.isPresentIn(level))
+                hints.add(new Hint(part.pos().subtract(origin), part.block().defaultBlockState(), !level.getBlockState(part.pos()).canBeReplaced()));
         }
         for (var blocker : ArmillaryLayout.blockers(level, origin))
             hints.add(new Hint(blocker.subtract(origin), level.getBlockState(blocker), true));

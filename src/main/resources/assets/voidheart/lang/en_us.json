@@ -66,6 +66,8 @@
   "block.voidheart.inventory_inserter": "Inventory inserter",
   "block.voidheart.eye_bottle": "Eye in a Bottle",
   "block.voidheart.shatter_forge": "Shatter Forge",
+  "block.voidheart.armillary_base_corner": "Armillary Base",
+  "block.voidheart.armillary_base_side": "Armillary Base",
   "block.voidheart.armillary_core": "Armillary Core",
   "voidheart.armillary.incomplete": "An armillary stands on chiseled voidstone at its corners and cut ravenous gold at its sides",
   "voidheart.armillary.blocked": "The rings need the three layers above the base left free",
