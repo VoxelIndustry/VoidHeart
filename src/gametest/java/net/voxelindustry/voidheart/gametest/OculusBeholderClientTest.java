@@ -53,6 +53,7 @@ public class OculusBeholderClientTest implements FabricClientGameTest
 
             int savedBefore = OculusChunkServer.savedAnswers();
             setBlock(server, BEHOLDER, "voidheart:beholder");
+            context.waitFor(minecraft -> OculusChunkServer.savedAnswers() > savedBefore, 2400);
             context.waitTicks(120);
             context.takeScreenshot("oculus-beholder-1-32");
 

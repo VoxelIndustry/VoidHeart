@@ -13,6 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.ARGB;
+import net.minecraft.util.Util;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
@@ -93,7 +94,7 @@ public final class OculusControls
             var offset = panel.center().subtract(cameraState.pos);
             poseStack.translate(offset.x, offset.y, offset.z);
             var hoveredButton = hovered != null && hovered.projector() == projector ? hovered.button() : null;
-            float seconds = (System.nanoTime() % 3_600_000_000_000L) / 1E9F;
+            float seconds = (Util.getNanos() % 3_600_000_000_000L) / 1E9F;
             collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
                     drawAuras(new Plane(pose, buffer, panel), hoveredButton));
             collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.MARKER, (pose, buffer) ->

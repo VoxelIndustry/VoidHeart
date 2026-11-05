@@ -51,6 +51,7 @@ These details have spoiled scenes before:
 - **All tests share one client.** Settings like the camera type carry over from earlier tests, so a scene can look right alone and wrong in the full suite. Set what the scene needs and restore what you change.
 - **Landing ends creative flight.** Set `getAbilities().flying` and call `onUpdateAbilities()` after each `tp` into the air, or the player falls out of frame. Spectator mode avoids this when the test doesn't need clicks.
 - **`server.runCommand` runs as the server, not the player.** Use `execute as @a run ...` for commands that need a player.
+- **Ticks are faster than real time.** Work off the game thread, such as reading saved chunks, generating far terrain or Jade's tooltip data, gets about a tenth of the real time per tick it would at real speed. Wait for its result with `context.waitFor(...)` rather than a fixed `waitTicks`. In mod code, time animations with `Util.getNanos()` or `Util.getMillis()`, which follow the test clock, never `System.nanoTime()`.
 
 Use real input where the bug could be in the input path. Setting state directly would have missed the travel map's ignored clicks.
 
@@ -89,7 +90,13 @@ Send the output to a file in the scratchpad, since the log is long:
 ./gradlew runClientGameTest --console=plain > "<scratchpad>/gametest.log" 2>&1
 ```
 
-Run it in the background, because the full suite takes about 4 minutes. While iterating, add `-PgameTest=ShatterForge` to run only the tests whose class name contains that text, which takes under a minute. Do one full run without it before reporting, so regressions and leftover client settings show up. Don't edit `fabric.mod.json` to narrow a run.
+The tests run on a virtual clock (see `FastGameTests`): each tick is one frame and exactly 50 ms of game time, about ten times faster than real time. The full suite takes about 4 minutes and one test class usually under a minute, Gradle included. Run the full suite in the background.
+
+- **While iterating,** run the tests for what you changed: `-PgameTest=ShatterForge`, or several with `-PgameTest=Omen,Vigil`.
+- **Before reporting,** run the full suite if the change touches anything shared, such as render types, registration, mixins, curses or the void dimension, so regressions and leftover client settings show up. A change confined to one feature needs only that feature's tests. Always run the full suite before opening a PR, and say in the report which runs you did.
+- **At real speed,** add `-PgameTestRealtime`, on the tests involved only, since the full suite takes over 30 minutes that way. Use it when judging a scene that depends on work off the game thread: shots framed off whatever loaded first, such as the nearest mobs of a freshly opened dungeon, can differ from real speed. A test that passes at real speed and fails fast is waiting a fixed number of ticks for real-time work, so make it wait for the condition instead.
+
+Don't edit `fabric.mod.json` to narrow a run.
 
 Other sessions may share this checkout and its `build/` folder, and their runs can wipe your screenshots. Check with `git worktree list` and your session list, and do repeated runs and temporary source changes in your own worktree, which has its own `build/`.
 

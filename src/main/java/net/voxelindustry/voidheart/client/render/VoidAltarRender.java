@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.item.ItemModelResolver;
+import net.minecraft.util.Util;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -51,7 +52,7 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
 
         state.missingPillarOffsets.clear();
         state.pillarParts.clear();
-        if (!altar.getStack().isEmpty() || System.currentTimeMillis() - lastTouchedMillis < HINT_DURATION_MILLIS)
+        if (!altar.getStack().isEmpty() || Util.getMillis() - lastTouchedMillis < HINT_DURATION_MILLIS)
         {
             PillarPlacementRender.collectMissingPillars(altar, state.missingPillarOffsets);
             if (!state.missingPillarOffsets.isEmpty())

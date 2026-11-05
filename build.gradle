@@ -135,7 +135,7 @@ fabricApi {
     }
 }
 
-// -PgameTest=ShatterForge runs only the client game tests whose class name contains that text
+// -PgameTest=ShatterForge runs only the client game tests whose class name contains that text, -PgameTest=Omen,Vigil either
 processGametestResources {
     def gameTest = project.findProperty("gameTest")
     inputs.property("gameTest", gameTest ?: "")
@@ -146,13 +146,20 @@ processGametestResources {
 
         def file = new File(destinationDir, "fabric.mod.json")
         def mod = new groovy.json.JsonSlurper().parse(file)
-        def selected = mod.entrypoints["fabric-client-gametest"].findAll { it.contains(gameTest) }
+        def names = gameTest.split(",")*.trim()
+        def selected = mod.entrypoints["fabric-client-gametest"].findAll { test -> names.any { test.contains(it) } }
         if (selected.isEmpty())
             throw new GradleException("No client game test matches -PgameTest=${gameTest}")
 
         mod.entrypoints["fabric-client-gametest"] = selected
         file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(mod))
     }
+}
+
+// Client game tests run on a virtual clock, see FastGameTests. -PgameTestRealtime runs them at real speed
+tasks.matching { it.name == "runClientGameTest" }.configureEach {
+    if (project.hasProperty("gameTestRealtime"))
+        systemProperty "voidheart.gametest.realtime", "true"
 }
 
 // Lists the jars this build compiles against, so .claude/tools/api.py searches these exact versions

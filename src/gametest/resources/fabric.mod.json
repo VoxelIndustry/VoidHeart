@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "name": "VoidHeart Game Tests",
   "environment": "*",
+  "mixins": [
+    "voidheart-gametest.mixins.json"
+  ],
   "entrypoints": {
     "fabric-client-gametest": [
       "net.voxelindustry.voidheart.gametest.OculusTableClientTest",

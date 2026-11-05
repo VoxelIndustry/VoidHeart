@@ -10,6 +10,10 @@ KNOWN_BUGS = [
     (re.compile(r"RenderTypes\.lightning\("),
      "RenderTypes.lightning() writes depth and re-sorts its quads, which flickers as the camera moves. "
      "Use VoidHeartRenderTypes.GLOW. See 27f73ad."),
+    (re.compile(r"System\.(nanoTime|currentTimeMillis)\(\)"),
+     "wall clock. If this times an animation, fade or glide, use Util.getNanos() or Util.getMillis(): client game "
+     "tests run on a virtual clock through Util, and a wall-clock animation falls behind there. Measuring real cost "
+     "is fine."),
 ]
 
 
