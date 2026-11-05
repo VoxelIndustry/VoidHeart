@@ -13,7 +13,7 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -27,6 +27,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -207,10 +208,10 @@ public final class VigilCurse extends ClientCurse
     private final List<Particle> burst   = new ArrayList<>();
     private final List<SingleQuadParticle> blood  = new ArrayList<>();
     private final List<OmenStainParticle>  stains = new ArrayList<>();
-    private final List<SoundInstance>      caves  = new ArrayList<>();
+    private final List<VigilSound>         caves  = new ArrayList<>();
     private @Nullable VigilFigureModel model;
-    private @Nullable SoundInstance    drone;
-    private @Nullable SoundInstance    hold;
+    private @Nullable VigilSound       drone;
+    private @Nullable VigilSound       hold;
 
     private int drawnLastFrame;
     private int shadesLastFrame;
@@ -331,26 +332,24 @@ public final class VigilCurse extends ClientCurse
 
     private void stopSounds()
     {
-        var sounds = Minecraft.getInstance().getSoundManager();
         if (drone != null)
-            sounds.stop(drone);
+            drone.cut();
         if (hold != null)
-            sounds.stop(hold);
-        caves.forEach(sounds::stop);
+            hold.cut();
+        caves.forEach(VigilSound::cut);
         drone = null;
         hold = null;
         caves.clear();
     }
 
-    private SoundInstance playInsideHead(Minecraft minecraft, SoundEvent sound, float volume, float pitch, boolean looping)
+    private VigilSound playInsideHead(Minecraft minecraft, SoundEvent sound, float volume, float pitch, boolean looping)
     {
         return playAround(minecraft, sound, volume, pitch, looping, 0, 0);
     }
 
-    private SoundInstance playAround(Minecraft minecraft, SoundEvent sound, float volume, float pitch, boolean looping, float x, float z)
+    private VigilSound playAround(Minecraft minecraft, SoundEvent sound, float volume, float pitch, boolean looping, float x, float z)
     {
-        var instance = new SimpleSoundInstance(sound.location(), SoundSource.HOSTILE, volume, pitch, random,
-                looping, 0, SoundInstance.Attenuation.NONE, x, 0, z, true);
+        var instance = new VigilSound(sound, random, volume, pitch, looping, x, z);
         minecraft.getSoundManager().play(instance);
         return instance;
     }
@@ -640,6 +639,32 @@ public final class VigilCurse extends ClientCurse
      */
     public record FingerLean(float degrees, float inward, float acrossTheLine)
     {
+    }
+
+    private static final class VigilSound extends AbstractTickableSoundInstance
+    {
+        private VigilSound(SoundEvent event, RandomSource random, float volume, float pitch, boolean loop, float x, float z)
+        {
+            super(event, SoundSource.HOSTILE, random);
+            this.volume = volume;
+            this.pitch = pitch;
+            this.looping = loop;
+            this.delay = 0;
+            this.relative = true;
+            this.attenuation = SoundInstance.Attenuation.NONE;
+            this.x = x;
+            this.z = z;
+        }
+
+        @Override
+        public void tick()
+        {
+        }
+
+        private void cut()
+        {
+            stop();
+        }
     }
 
     /**
