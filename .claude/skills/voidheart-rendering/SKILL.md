@@ -55,6 +55,7 @@ If nothing in the table fits, copy the closest vanilla pipeline as `VoidHeartRen
 | Clicks in a screen are ignored | 26.3 renumbered mouse buttons, so left is no longer `0` | Compare with `InputConstants.MOUSE_BUTTON_LEFT`, never a literal | `6137f55` |
 | An entity kept out of the world draws nothing or throws "Tried to access entity ID before ID assignment" | Its render state reads an id only joining a world assigns | Call `setId` on it before `createRenderState` (`TormenterHeads`) | |
 | No cracks while a block entity is being mined | The game passes `breakProgress` as null to anything with `shouldRenderOffScreen()` true | Look it up in `ClientLevel.destructionProgress()` while extracting (`MalignantTormenterRender.crumbling`) | |
+| Pinholes showing the sky through a model split across several blocks | `cullface` on a face between two pieces of it, which a neighbour's simplified shape hides though the neighbour's model doesn't cover it | Only put `cullface` on faces of the structure's outside (`armillary_base_corner.json`) | |
 | Model parts drawn apart from their entity shift or twitch | Renderers share parts between entities and move them when flushing | Copy the cubes and their poses once, then compile the cubes yourself (`TormenterHeads`) | |
 
 Run `git show <commit>` when you need the full change. If a fix teaches something new, add a row here in the same change, so the next renderer benefits from it.

@@ -1,8 +1,11 @@
 package net.voxelindustry.voidheart.common.content.armillary;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.ArrayList;
@@ -16,8 +19,17 @@ public final class ArmillaryLayout
     public static final int RING_LAYERS = 3;
     public static final int HUB_HEIGHT  = 2;
 
-    public record BasePart(BlockPos pos, Block block)
+    /**
+     * @param block  what the player places
+     * @param formed the piece of the sculpted base that takes its place while the armillary is formed
+     */
+    public record BasePart(BlockPos pos, Block block, BlockState formed)
     {
+        public boolean isPresentIn(BlockGetter level)
+        {
+            var state = level.getBlockState(pos);
+            return state.is(block) || state == formed;
+        }
     }
 
     private ArmillaryLayout()
@@ -32,14 +44,11 @@ public final class ArmillaryLayout
     public static List<BasePart> base(BlockPos core)
     {
         var parts = new ArrayList<BasePart>(8);
-        for (int x = -1; x <= 1; x++)
+        for (var facing : Direction.Plane.HORIZONTAL)
         {
-            for (int z = -1; z <= 1; z++)
-            {
-                if (x == 0 && z == 0)
-                    continue;
-                parts.add(new BasePart(core.offset(x, 0, z), x != 0 && z != 0 ? VoidHeartBlocks.VOIDSTONE_CHISELED : VoidHeartBlocks.CUT_RAVENOUS_GOLD));
-            }
+            var side = core.relative(facing);
+            parts.add(new BasePart(side, VoidHeartBlocks.CUT_RAVENOUS_GOLD, VoidHeartBlocks.ARMILLARY_BASE_SIDE.defaultBlockState().setValue(ArmillaryBaseBlock.FACING, facing)));
+            parts.add(new BasePart(side.relative(facing.getClockWise()), VoidHeartBlocks.VOIDSTONE_CHISELED, VoidHeartBlocks.ARMILLARY_BASE_CORNER.defaultBlockState().setValue(ArmillaryBaseBlock.FACING, facing)));
         }
         return parts;
     }
@@ -48,10 +57,30 @@ public final class ArmillaryLayout
     {
         for (var part : base(core))
         {
-            if (!level.getBlockState(part.pos()).is(part.block()))
+            if (!part.isPresentIn(level))
                 return false;
         }
         return true;
+    }
+
+    /**
+     * Turns the blocks around a core into the sculpted base, or back into what the player placed. Anything else standing there is left alone.
+     *
+     * @return whether anything changed
+     */
+    public static boolean shapeBase(Level level, BlockPos core, boolean formed)
+    {
+        boolean changed = false;
+        for (var part : base(core))
+        {
+            var wanted = formed ? part.formed() : part.block().defaultBlockState();
+            if (part.isPresentIn(level) && level.getBlockState(part.pos()) != wanted)
+            {
+                level.setBlockAndUpdate(part.pos(), wanted);
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     /**

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/armillary_base_side"
+    },
+    "facing=east": {
+      "model": "voidheart:block/armillary_base_side",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/armillary_base_side",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/armillary_base_side",
+      "y": 270
+    }
+  }
+}
