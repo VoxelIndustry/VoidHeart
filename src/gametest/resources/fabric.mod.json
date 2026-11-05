@@ -33,6 +33,10 @@
       "net.voxelindustry.voidheart.gametest.CrystalBundleClientTest",
       "net.voxelindustry.voidheart.gametest.VoidPocketClientTest",
       "net.voxelindustry.voidheart.gametest.VoidDungeonClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidMobBehaviourClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidMobLooksClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidEyeBehaviourClientTest",
+      "net.voxelindustry.voidheart.gametest.LootTablesClientTest",
       "net.voxelindustry.voidheart.gametest.DungeonTeleportClientTest",
       "net.voxelindustry.voidheart.gametest.StillDepthsClientTest"
     ]

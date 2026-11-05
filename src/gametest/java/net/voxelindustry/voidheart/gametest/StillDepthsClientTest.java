@@ -184,13 +184,13 @@ public class StillDepthsClientTest implements FabricClientGameTest
         // Clearing the arena pops every plant that grew on what was removed
         server.runCommand("kill @e[type=item]");
 
-        server.runCommand("gamemode survival @a");
         place(server, vent.getX() + 0.5, vent.getY() + 1, vent.getZ() + 0.5);
         context.waitTicks(10);
         waitForChunks.run();
 
         waitForPhase(context, server, ventSeed, SmokerCycle.Phase.QUIET);
         heal(server);
+        server.runCommand("gamemode survival @a");
         place(server, vent.getX() + 0.5, vent.getY() + 1, vent.getZ() + 0.5);
         context.waitTicks(10);
         float afterQuiet = health(server);
@@ -271,8 +271,12 @@ public class StillDepthsClientTest implements FabricClientGameTest
         server.runCommand("execute in voidheart:dungeons run tp @a " + x + " " + y + " " + z);
     }
 
+    /**
+     * Also clears the dungeon's mobs, which only load once the player is near and would otherwise kill a player standing still.
+     */
     private static void heal(TestServerContext server)
     {
+        server.runCommand("kill @e[type=!player]");
         server.runOnServer(minecraft ->
         {
             var player = minecraft.getPlayerList().getPlayers().getFirst();

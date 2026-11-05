@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -24,6 +26,8 @@ import java.util.function.Function;
 
 public class VoidHeartItems
 {
+    public static final List<Item> SPAWN_EGGS = new ArrayList<>();
+
     public static VoidHeartItem VOID_HEART;
     public static VoidAmalgamItem VOID_AMALGAM;
     public static VoidPearlItem VOID_PEARL;
@@ -34,6 +38,8 @@ public class VoidHeartItems
     public static PermeableBarrierItem PERMEABLE_BARRIER;
     public static ShoulderEyeItem SHOULDER_EYE;
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
+
+    public static Item WRIGGLING_BRAIN;
 
     public static Item OBSIDIAN_SHARD;
     public static Item ENDER_SHARD;
@@ -70,9 +76,32 @@ public class VoidHeartItems
         SEETHING_STEEL_INGOT = registerItem("seething_steel_ingot", Item::new);
         COVETOUS_COPPER_INGOT = registerItem("covetous_copper_ingot", Item::new);
         LISTLESS_LEAD_INGOT = registerItem("listless_lead_ingot", Item::new);
+        WRIGGLING_BRAIN = registerItem("wriggling_brain", Item::new);
         AZURIUM_SHARD = registerItem("azurium_shard", properties -> new LoreItem(properties, "voidheart.azurium_shard.lore"));
         RUBRUM_SHARD = registerItem("rubrum_shard", properties -> new LoreItem(properties, "voidheart.rubrum_shard.lore"));
         MEMORIAM_SHARD = registerItem("memoriam_shard", properties -> new LoreItem(properties, "voidheart.memoriam_shard.lore"));
+    }
+
+    public static void registerSpawnEggs()
+    {
+        registerSpawnEgg("void_skeleton", VoidHeartEntities.VOID_SKELETON);
+        registerSpawnEgg("void_ghoul", VoidHeartEntities.VOID_GHOUL);
+        registerSpawnEgg("wraith", VoidHeartEntities.WRAITH);
+        registerSpawnEgg("corrupted_crab_small", VoidHeartEntities.CORRUPTED_CRAB_SMALL);
+        registerSpawnEgg("corrupted_crab_medium", VoidHeartEntities.CORRUPTED_CRAB_MEDIUM);
+        registerSpawnEgg("corrupted_crab_large", VoidHeartEntities.CORRUPTED_CRAB_LARGE);
+        registerSpawnEgg("corrupted_barnacle", VoidHeartEntities.CORRUPTED_BARNACLE);
+        registerSpawnEgg("fallen_novice", VoidHeartEntities.FALLEN_NOVICE);
+        registerSpawnEgg("fallen_adept", VoidHeartEntities.FALLEN_ADEPT);
+        registerSpawnEgg("fallen_elder", VoidHeartEntities.FALLEN_ELDER);
+        registerSpawnEgg("eye_maw", VoidHeartEntities.EYE_MAW);
+        registerSpawnEgg("large_eye_maw", VoidHeartEntities.LARGE_EYE_MAW);
+        registerSpawnEgg("arcane_eye", VoidHeartEntities.ARCANE_EYE);
+    }
+
+    private static void registerSpawnEgg(String mob, EntityType<?> type)
+    {
+        SPAWN_EGGS.add(registerItem(mob + "_spawn_egg", properties -> new SpawnEggItem(properties.spawnEgg(type))));
     }
 
     public static <T extends Item> T registerItem(String name, Function<Properties, T> factory)
