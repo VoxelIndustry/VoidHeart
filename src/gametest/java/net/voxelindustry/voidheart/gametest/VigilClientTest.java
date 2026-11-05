@@ -10,8 +10,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.chat.GuiMessage;
 import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.client.resources.sounds.TickableSoundInstance;
 import net.minecraft.client.sounds.SoundEventListener;
 import net.minecraft.client.sounds.WeighedSoundEvents;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +63,7 @@ public class VigilClientTest implements FabricClientGameTest
     private static final int    ARM_DEGREES         = 6;
     private static final double DROP_REACH          = 2.2;
     private static final int    CAVE_SOUNDS_LEAST   = 3;
+    private static final int    SOUND_RELEASE_TICKS = 60;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -106,8 +110,9 @@ public class VigilClientTest implements FabricClientGameTest
         standAtOrigin(context, server, 0);
         context.runOnClient(VigilClientTest::clearChat);
         int entitiesBefore = server.computeOnServer(VigilClientTest::entityCount);
-        var heard = Collections.synchronizedList(new ArrayList<String>());
-        SoundEventListener listener = (SoundInstance sound, WeighedSoundEvents events, float range) -> heard.add(sound.getIdentifier().toString());
+        // A set, as the engine announces a looping sound to its listeners again every 10 ticks
+        var heard = Collections.synchronizedSet(new HashSet<SoundInstance>());
+        SoundEventListener listener = (SoundInstance sound, WeighedSoundEvents events, float range) -> heard.add(sound);
         context.runOnClient(minecraft -> minecraft.getSoundManager().addListener(listener));
 
         server.runCommand("voidheart curse trigger vigil @a");
@@ -172,13 +177,11 @@ public class VigilClientTest implements FabricClientGameTest
 
         if (messages(context) != 1)
             throw new AssertionError("Expected the message exactly once, got " + messages(context));
-        var beaconHum = SoundEvents.BEACON_AMBIENT.location().toString();
-        if (heard.stream().filter(beaconHum::equals).count() != 2)
+        if (soundsOf(heard, SoundEvents.BEACON_AMBIENT.location()).size() != 2)
             throw new AssertionError("Expected the appearing drone and the held one, got " + heard);
-        if (!heard.contains(SoundEvents.BEACON_DEACTIVATE.location().toString()))
+        if (soundsOf(heard, SoundEvents.BEACON_DEACTIVATE.location()).isEmpty())
             throw new AssertionError("Expected a low sound as they vanish, got " + heard);
-        var cave = SoundEvents.AMBIENT_CAVE.value().location().toString();
-        if (heard.stream().filter(cave::equals).count() < CAVE_SOUNDS_LEAST)
+        if (soundsOf(heard, SoundEvents.AMBIENT_CAVE.value().location()).size() < CAVE_SOUNDS_LEAST)
             throw new AssertionError("Expected cave sounds all through the scene, got " + heard);
         if (server.computeOnServer(VigilClientTest::entityCount) != entitiesBefore)
             throw new AssertionError("Expected the server to know of no new entity");
@@ -438,37 +441,40 @@ public class VigilClientTest implements FabricClientGameTest
             throw new AssertionError("Expected no message from a curse stopped before it came");
 
         // Cut short while its drone holds, nothing may keep playing
-        var sounds = Collections.synchronizedList(new ArrayList<SoundInstance>());
+        var sounds = Collections.synchronizedSet(new HashSet<SoundInstance>());
         SoundEventListener listener = (SoundInstance sound, WeighedSoundEvents events, float range) -> sounds.add(sound);
         context.runOnClient(minecraft -> minecraft.getSoundManager().addListener(listener));
         server.runCommand("voidheart curse trigger vigil @a");
         waitForAge(context, 120);
         server.runCommand("voidheart curse stop @a");
-        // The sound engine lets go of a stopped sound on its own thread
-        context.waitTicks(20);
-        context.runOnClient(minecraft ->
+        context.waitFor(minecraft -> CurseDirector.active() == null);
+        var played = context.computeOnClient(minecraft ->
         {
             minecraft.getSoundManager().removeListener(listener);
-            var cave = SoundEvents.AMBIENT_CAVE.value().location();
-            var caves = sounds.stream().filter(sound -> sound.getIdentifier().equals(cave)).toList();
+            var caves = soundsOf(sounds, SoundEvents.AMBIENT_CAVE.value().location());
             if (caves.isEmpty())
                 throw new AssertionError("Expected cave sounds before it was stopped, got " + sounds);
-            for (var sound : caves)
-            {
-                if (minecraft.getSoundManager().isActive(sound))
-                    throw new AssertionError("Expected no cave sound still playing once the curse is stopped");
-            }
-
-            var hum = SoundEvents.BEACON_AMBIENT.location();
-            var held = sounds.stream().filter(sound -> sound.getIdentifier().equals(hum)).toList();
+            var held = soundsOf(sounds, SoundEvents.BEACON_AMBIENT.location());
             if (held.size() != 2)
                 throw new AssertionError("Expected the appearing and the held drone, got " + held);
-            for (var sound : held)
+
+            var all = new ArrayList<>(caves);
+            all.addAll(held);
+            // Only a sound flagged stopped is stopped again by the engine if it was still loading the first time
+            for (var sound : all)
             {
-                if (minecraft.getSoundManager().isActive(sound))
-                    throw new AssertionError("Expected no drone still playing once the curse is stopped, looping: " + sound.isLooping());
+                if (!(sound instanceof TickableSoundInstance tickable && tickable.isStopped()))
+                    throw new AssertionError("Expected " + sound + " flagged stopped along with the curse");
             }
+            return all;
         });
+        // The engine keeps even a stopped sound for 20 ticks from its start, and a cave can start just before the stop reaches the client
+        context.waitFor(minecraft -> played.stream().noneMatch(minecraft.getSoundManager()::isActive), SOUND_RELEASE_TICKS);
+    }
+
+    private static List<SoundInstance> soundsOf(Collection<SoundInstance> sounds, Identifier id)
+    {
+        return sounds.stream().filter(sound -> sound.getIdentifier().equals(id)).toList();
     }
 
     /**
