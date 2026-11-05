@@ -211,7 +211,7 @@ public class DaedalusClientTest implements FabricClientGameTest
             {
                 for (int x = minX; x < minX + 16; x++)
                 {
-                    var wanted = palette.state((byte) canvas.get(x, y, z).ordinal(), x, y, z);
+                    var wanted = palette.state(canvas.raw(x, y, z), x, y, z);
                     var found = chunk.getBlockState(at.set(x, y, z));
                     check(wanted == found, "At " + at + " the plan has " + wanted + " but the chunk has " + found);
                 }
@@ -346,9 +346,13 @@ public class DaedalusClientTest implements FabricClientGameTest
         var landing = plan.landings().stream().filter(candidate -> candidate.direction() == Compass.EAST).findFirst().orElse(plan.landings().getFirst());
         shootCorridor(context, world, server, plan, landing, "daedalus-" + themeName + "-corridor");
         shootCorridorIntoRoom(context, world, server, plan, "daedalus-" + themeName + "-corridor-into-room");
+        shootVistas(context, world, server, plan, "daedalus-" + themeName + "-vista");
 
         var seen = EnumSet.noneOf(RoomShape.class);
-        for (var room : plan.rooms())
+        var largestFirst = java.util.Arrays.stream(plan.rooms())
+                .sorted(java.util.Comparator.comparingInt((Room room) -> room.cellsWide() * room.cellsDeep()).reversed())
+                .toList();
+        for (var room : largestFirst)
         {
             if (room.shape() != RoomShape.PLAIN && !seen.add(room.shape()))
                 continue;
@@ -402,6 +406,92 @@ public class DaedalusClientTest implements FabricClientGameTest
         throw new AssertionError("No small room with a corridor in front of it in " + plan.theme);
     }
 
+    private static int clockwise(int direction)
+    {
+        return (direction + 1) & 3;
+    }
+
+    private static float yawOf(int direction)
+    {
+        return switch (direction)
+        {
+            case Compass.NORTH -> NORTH;
+            case Compass.EAST -> EAST;
+            case Compass.SOUTH -> SOUTH;
+            default -> WEST;
+        };
+    }
+
+    /**
+     * Down from a catwalk and from a balcony, up from the floor of a vault, and out of a window onto the chasm.
+     */
+    private static void shootVistas(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server, DistrictPlan plan, String name)
+    {
+        boolean catwalk = false;
+        boolean balcony = false;
+        boolean vault = false;
+        for (var opening : plan.voids())
+        {
+            if (!vault && opening.shape() == RoomShape.VAULT)
+            {
+                double x = plan.pos.originX() + (opening.minI() + opening.maxI() + 1) * DistrictPos.CELL / 2.0;
+                double z = plan.pos.originZ() + (opening.minJ() + opening.maxJ() + 1) * DistrictPos.CELL / 2.0;
+                shoot(context, world, server, name + "-vault-up", x, DistrictPos.floorY(opening.minK()) + 1, z, EAST, -55);
+                vault = true;
+            }
+            for (int k = opening.maxK(); k >= opening.minK() && !(catwalk && balcony); k--)
+            {
+                for (int j = opening.minJ(); j <= opening.maxJ(); j++)
+                {
+                    for (int i = opening.minI(); i <= opening.maxI(); i++)
+                    {
+                        double cellX = plan.pos.originX() + i * DistrictPos.CELL;
+                        double cellZ = plan.pos.originZ() + j * DistrictPos.CELL;
+                        double y = DistrictPos.floorY(k) + 1;
+                        for (int side = 0; side < Compass.COUNT; side++)
+                        {
+                            if (!catwalk && plan.isCatwalk(i, k, j) && plan.isCatwalkOpen(i, k, j, side))
+                            {
+                                shoot(context, world, server, name + "-catwalk", cellX + LANE_CENTRE + 0.5, y, cellZ + LANE_CENTRE + 0.5, yawOf(clockwise(side)), 50);
+                                catwalk = true;
+                            }
+                            if (!balcony && plan.hasBalcony(i, k, j, side))
+                            {
+                                double inset = side == Compass.NORTH || side == Compass.WEST ? 1.5 : DistrictPos.CELL - 1.5;
+                                double x = cellX + (Compass.dx(side) != 0 ? inset : LANE_CENTRE + 0.5);
+                                double z = cellZ + (Compass.dz(side) != 0 ? inset : LANE_CENTRE + 0.5);
+                                shoot(context, world, server, name + "-balcony", x, y, z, yawOf(Compass.opposite(side)), 45);
+                                balcony = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        check(catwalk && balcony, "No catwalk or no balcony to look from in " + plan.theme);
+        shootChasmWindow(context, world, server, plan, name + "-chasm-window");
+    }
+
+    private static void shootChasmWindow(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server, DistrictPlan plan, String name)
+    {
+        for (int k = DistrictPos.TIERS - 1; k >= 0; k--)
+        {
+            for (int along = 1; along < DistrictPos.CELLS - 1; along++)
+            {
+                int[][] cells = { { DistrictPos.CELLS - 1, along, Compass.EAST }, { along, DistrictPos.CELLS - 1, Compass.SOUTH } };
+                for (int[] cell : cells)
+                {
+                    if (!plan.hasWindow(cell[0], k, cell[1], cell[2]))
+                        continue;
+                    double x = plan.pos.originX() + cell[0] * DistrictPos.CELL + LANE_CENTRE + 0.5;
+                    double z = plan.pos.originZ() + cell[1] * DistrictPos.CELL + LANE_CENTRE + 0.5;
+                    shoot(context, world, server, name, x, DistrictPos.floorY(k) + 1, z, yawOf(cell[2]), 5);
+                    return;
+                }
+            }
+        }
+    }
+
     /**
      * Just inside a room's door, looking in.
      */
@@ -430,5 +520,7 @@ public class DaedalusClientTest implements FabricClientGameTest
 
         if (room.maxK() > room.minK() && room.shape() != RoomShape.FLOOD)
             shoot(context, world, server, name + "-above", x, DistrictPos.floorY(room.maxK()) + 3, z, EAST, 25);
+        else if (room.shape() == RoomShape.PLAIN || room.shape() == RoomShape.VAULT)
+            shoot(context, world, server, name + "-raised", x, y + 3, z, EAST, 35);
     }
 }

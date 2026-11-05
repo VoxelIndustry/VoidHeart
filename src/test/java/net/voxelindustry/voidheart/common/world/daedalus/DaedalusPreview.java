@@ -136,9 +136,11 @@ class DaedalusPreview
         return switch (material)
         {
             case AIR -> 0xD8D8E0;
+            case OPENING -> 0xF0B0B0;
             case FILL -> 0x101018;
             case BOUND -> 0x000000;
-            case FLOOR, FLOOR_TRIM -> 0x7A7488;
+            case FLOOR, FLOOR_TRIM, FLOOR_INLAY -> 0x7A7488;
+            case CARPET -> 0xA03050;
             case WALL, CEILING -> 0x3A3648;
             case PANEL, FACADE -> 0x4C4860;
             case TRIM, FACADE_TRIM -> 0xC0A040;
@@ -151,6 +153,7 @@ class DaedalusPreview
             case SLAB, SLAB_TOP -> 0x6A6478;
             case STAIRS_NORTH, STAIRS_EAST, STAIRS_SOUTH, STAIRS_WEST -> 0x40C080;
             case ARCH_NORTH, ARCH_EAST, ARCH_SOUTH, ARCH_WEST -> 0x60A0A0;
+            case PROP -> 0xE06030;
         };
     }
 }

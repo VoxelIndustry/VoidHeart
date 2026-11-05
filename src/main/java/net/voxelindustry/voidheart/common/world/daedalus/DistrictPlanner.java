@@ -8,24 +8,32 @@ import java.util.SplittableRandom;
 import static net.voxelindustry.voidheart.common.world.daedalus.DistrictPlan.*;
 
 /**
- * Lays out one district on its lattice: bridge landings first since they are fixed, then the rooms of its theme, then corridors and stairs until everything is one walkable whole.
- * Routing is Dijkstra over (cell, heading) states, which is what lets a theme price corners and stairs.
+ * Lays out one district on its lattice: bridge landings first since they are fixed, then the open voids and rooms of its theme, then corridors and stairs until everything is one walkable whole.
+ * Routing is Dijkstra over (cell, heading) states, which is what lets a theme price corners and stairs. Voids are solid to it, so they keep their depth and are only crossed by the catwalks laid on purpose.
  */
 final class DistrictPlanner
 {
     private static final long PLAN_SALT = 0x706C616EL;
+    private static final int TIER_SCALE = DistrictPos.TIERS / 8;
     private static final int STEP_COST = 4;
-    private static final int MAX_ROOMS = 250;
+    private static final int MIN_CATWALK_SPAN = 2;
+    private static final int MIN_CATWALK_TIER_GAP = 3;
+    private static final int MAX_ROOMS = 1000;
     private static final int ROOM_PLACE_ATTEMPTS = 6;
+    private static final int VOID_PLACE_ATTEMPTS = 12;
     private static final int ROOM_ENDING_PERCENT = 65;
     private static final int ROOM_DOOR_SIDES = 4;
     private static final int CELL_DOOR_SIDES = 2;
     private static final int THROUGH_DOOR_COST_LIMIT = 60;
     private static final int WIDE_CORRIDOR = 5;
     private static final int ROUTE_ATTEMPTS = 32;
+    private static final int BALCONY_PERCENT = 30;
+    private static final int WINDOW_PERCENT = 40;
+    private static final int CHASM_WINDOW_PERCENT = 45;
     private static final int STATES = CELL_COUNT * Compass.COUNT;
     private static final int UNREACHED = Integer.MAX_VALUE;
     private static final int LAST_CELL = DistrictPos.CELLS - 1;
+    private static final int LAYER = DistrictPos.CELLS * DistrictPos.CELLS;
 
     private static final byte MOVE_START = 0;
     private static final byte MOVE_WALK = 1;
@@ -45,10 +53,12 @@ final class DistrictPlanner
 
     private final byte[] kinds = new byte[CELL_COUNT];
     private final byte[] faces = new byte[CELL_COUNT];
-    private final byte[] roomIds = new byte[CELL_COUNT];
+    private final byte[] windows = new byte[CELL_COUNT];
+    private final short[] roomIds = new short[CELL_COUNT];
     private final byte[] noise = new byte[CELL_COUNT];
     private final int[] parent = new int[CELL_COUNT];
     private final List<Room> rooms = new ArrayList<>();
+    private final List<Room> voids = new ArrayList<>();
     private final List<Landing> landings = new ArrayList<>();
     private int carved;
 
@@ -63,7 +73,7 @@ final class DistrictPlanner
     private int goalCell;
     private byte goalMove;
     private int searchRoot;
-    private byte searchRoom;
+    private short searchRoom;
     private int searchCostLimit;
 
     private DistrictPlanner(long worldSeed, DistrictPos pos)
@@ -82,18 +92,21 @@ final class DistrictPlanner
     {
         var planner = new DistrictPlanner(worldSeed, pos);
         planner.placeLandings();
+        planner.placeVoids();
         planner.placeTheme();
+        planner.placeCatwalks();
         planner.connectEverything();
         planner.grow();
         planner.addLoops();
         planner.openRoomsOnTheWay();
         planner.widenCorridorsIntoRooms();
+        planner.openOntoVoids();
         return planner.build();
     }
 
     private static int tierOf(int cell)
     {
-        return cell / (DistrictPos.CELLS * DistrictPos.CELLS);
+        return cell / LAYER;
     }
 
     private static int neighbor(int cell, int direction)
@@ -107,12 +120,24 @@ final class DistrictPlanner
 
     private static int above(int cell)
     {
-        return tierOf(cell) == DistrictPos.TIERS - 1 ? -1 : cell + DistrictPos.CELLS * DistrictPos.CELLS;
+        return tierOf(cell) == DistrictPos.TIERS - 1 ? -1 : cell + LAYER;
     }
 
     private static int below(int cell)
     {
-        return tierOf(cell) == 0 ? -1 : cell - DistrictPos.CELLS * DistrictPos.CELLS;
+        return tierOf(cell) == 0 ? -1 : cell - LAYER;
+    }
+
+    private static boolean isOnRing(int cell)
+    {
+        int i = cell & LAST_CELL;
+        int j = (cell >> 4) & LAST_CELL;
+        return i == 0 || j == 0 || i == LAST_CELL || j == LAST_CELL;
+    }
+
+    private static boolean isStructure(byte kind)
+    {
+        return kind == CORRIDOR || kind == ROOM || kind == STAIR_LOW || kind == STAIR_HIGH || kind == CATWALK;
     }
 
     private int find(int cell)
@@ -136,12 +161,24 @@ final class DistrictPlanner
 
     private void claim(int cell, byte kind)
     {
-        if (kinds[cell] == EMPTY)
+        if (!isStructure(kinds[cell]))
         {
-            carved++;
+            if (kinds[cell] == EMPTY)
+                carved++;
             parent[cell] = cell;
         }
         kinds[cell] = kind;
+    }
+
+    /**
+     * A passage through rock is a corridor, through a void it is a catwalk.
+     */
+    private void claimPassage(int cell)
+    {
+        if (kinds[cell] == EMPTY)
+            claim(cell, CORRIDOR);
+        else if (kinds[cell] == VOID)
+            claim(cell, CATWALK);
     }
 
     private void open(int cell, int direction)
@@ -178,6 +215,91 @@ final class DistrictPlanner
         landings.add(new Landing(i, k, j, direction));
     }
 
+    private int between(int min, int max)
+    {
+        return min + random.nextInt(max - min + 1);
+    }
+
+    /**
+     * Pits drop from near the floor of the world, so looking into one from a high corridor shows a long fall into fog. Vaults stand on a floor that people walk into and rise far above it.
+     */
+    private void placeVoids()
+    {
+        int pits = switch (theme)
+        {
+            case WARREN -> between(3, 5);
+            case CISTERN, WRITHING -> between(2, 3);
+            case STAIRWELL -> between(2, 4);
+            default -> between(1, 2);
+        };
+        int vaults = switch (theme)
+        {
+            case GALLERY -> between(2, 3);
+            case WARREN -> between(0, 1);
+            default -> between(1, 2);
+        };
+        boolean narrow = theme == DaedalusTheme.WARREN;
+        for (int pit = 0; pit < pits; pit++)
+            tryVoid(RoomShape.PIT, narrow ? 1 : 2, narrow ? 2 : 4, between(5, 7) * TIER_SCALE, DistrictPos.TIERS - 1);
+        for (int vault = 0; vault < vaults; vault++)
+            tryVoid(RoomShape.VAULT, 3, theme == DaedalusTheme.GALLERY ? 6 : 5, between(2, 5) * TIER_SCALE, DistrictPos.TIERS - 1);
+    }
+
+    private void tryVoid(RoomShape shape, int minSide, int maxSide, int tall, int topTier)
+    {
+        int wide = between(minSide, maxSide);
+        int deep = between(minSide, maxSide);
+        for (int attempt = 0; attempt < VOID_PLACE_ATTEMPTS; attempt++)
+        {
+            int minI = 1 + random.nextInt(DistrictPos.CELLS - 2 - wide + 1);
+            int minJ = 1 + random.nextInt(DistrictPos.CELLS - 2 - deep + 1);
+            int highestBottom = Math.max(0, topTier - tall + 1);
+            int minK = shape == RoomShape.PIT ? random.nextInt(Math.min(3, highestBottom + 1)) : random.nextInt(highestBottom + 1);
+            int maxK = Math.min(topTier, minK + tall - 1);
+            if (isFree(minI, minK, minJ, minI + wide - 1, maxK, minJ + deep - 1) && placeVoid(shape, minI, minK, minJ, minI + wide - 1, maxK, minJ + deep - 1))
+                return;
+        }
+    }
+
+    private boolean isFree(int minI, int minK, int minJ, int maxI, int maxK, int maxJ)
+    {
+        for (int k = minK; k <= maxK; k++)
+        {
+            for (int j = minJ; j <= maxJ; j++)
+            {
+                for (int i = minI; i <= maxI; i++)
+                {
+                    if (kinds[index(i, k, j)] != EMPTY)
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean placeVoid(RoomShape shape, int minI, int minK, int minJ, int maxI, int maxK, int maxJ)
+    {
+        int firstOpen = minK;
+        if (shape == RoomShape.VAULT)
+        {
+            if (!placeRoom(RoomShape.VAULT, minI, minK, minJ, maxI - minI + 1, 1, maxJ - minJ + 1, random.nextInt()))
+                return false;
+            firstOpen = minK + 1;
+        }
+
+        int floodTop = theme == DaedalusTheme.CISTERN && shape == RoomShape.PIT ? minK + random.nextInt(2) : -1;
+        for (int k = firstOpen; k <= maxK; k++)
+        {
+            for (int j = minJ; j <= maxJ; j++)
+            {
+                for (int i = minI; i <= maxI; i++)
+                    kinds[index(i, k, j)] = k <= floodTop ? FLOODED : VOID;
+            }
+        }
+        voids.add(new Room(minI, minK, minJ, maxI, maxK, maxJ, shape, random.nextInt()));
+        return true;
+    }
+
     private void placeTheme()
     {
         switch (theme)
@@ -191,23 +313,18 @@ final class DistrictPlanner
         }
     }
 
-    private int between(int min, int max)
-    {
-        return min + random.nextInt(max - min + 1);
-    }
-
     private void placeArchive()
     {
         boolean alongX = random.nextBoolean();
         int variant = random.nextInt() & ~1 | (alongX ? 1 : 0);
-        for (int hall = between(4, 7); hall > 0; hall--)
+        for (int hall = between(4, 7) * TIER_SCALE; hall > 0; hall--)
         {
             int length = between(5, 10);
             int across = between(3, 6);
             tryRoom(RoomShape.STACKS, alongX ? length : across, between(1, 2), alongX ? across : length, variant, 1);
         }
-        scatterRooms(RoomShape.PLAIN, between(10, 16), 1, 3, 1, 3, 1, 1);
-        for (int aisle = between(2, 4); aisle > 0; aisle--)
+        scatterRooms(RoomShape.PLAIN, between(10, 16) * TIER_SCALE, 1, 3, 1, 3, 1, 1);
+        for (int aisle = between(2, 4) * TIER_SCALE; aisle > 0; aisle--)
         {
             int row = random.nextInt(DistrictPos.CELLS);
             int tier = random.nextInt(DistrictPos.TIERS);
@@ -219,33 +336,33 @@ final class DistrictPlanner
 
     private void placeWarren()
     {
-        scatterRooms(RoomShape.CELL, between(50, 80), 1, 1, 1, 1, 1, 1);
-        for (int walker = between(16, 24); walker > 0; walker--)
+        scatterRooms(RoomShape.CELL, between(50, 80) * TIER_SCALE, 1, 1, 1, 1, 1, 1);
+        for (int walker = between(16, 24) * TIER_SCALE; walker > 0; walker--)
             wander(index(random.nextInt(DistrictPos.CELLS), random.nextInt(DistrictPos.TIERS), random.nextInt(DistrictPos.CELLS)), between(10, 26));
     }
 
     private void placeGallery()
     {
-        scatterRooms(RoomShape.COLONNADE, between(8, 12), 3, 6, 2, 4, 2, 2);
-        scatterRooms(RoomShape.PLAIN, between(6, 10), 2, 3, 2, 3, 1, 1);
+        scatterRooms(RoomShape.COLONNADE, between(8, 12) * TIER_SCALE, 3, 6, 2, 4, 2, 2);
+        scatterRooms(RoomShape.PLAIN, between(6, 10) * TIER_SCALE, 2, 3, 2, 3, 1, 1);
     }
 
     private void placeCistern()
     {
-        scatterRooms(RoomShape.FLOOD, between(5, 8), 3, 7, 3, 6, 2, 1);
-        scatterRooms(RoomShape.PLAIN, between(8, 12), 2, 3, 2, 3, 1, 1);
+        scatterRooms(RoomShape.FLOOD, between(5, 8) * TIER_SCALE, 3, 7, 3, 6, 2, 1);
+        scatterRooms(RoomShape.PLAIN, between(8, 12) * TIER_SCALE, 2, 3, 2, 3, 1, 1);
     }
 
     private void placeStairwell()
     {
-        for (int atrium = between(3, 5); atrium > 0; atrium--)
-            tryRoom(RoomShape.ATRIUM, between(2, 4), between(5, DistrictPos.TIERS), between(2, 4), random.nextInt(), 1);
-        scatterRooms(RoomShape.PLAIN, between(8, 12), 1, 2, 1, 2, 1, 1);
+        for (int atrium = between(3, 5) * TIER_SCALE; atrium > 0; atrium--)
+            tryRoom(RoomShape.ATRIUM, between(2, 4), between(5, 8) * TIER_SCALE, between(2, 4), random.nextInt(), 1);
+        scatterRooms(RoomShape.PLAIN, between(8, 12) * TIER_SCALE, 1, 2, 1, 2, 1, 1);
     }
 
     private void placeWrithing()
     {
-        scatterRooms(RoomShape.CHAMBER, between(20, 32), 1, 3, 1, 3, 1, 1);
+        scatterRooms(RoomShape.CHAMBER, between(20, 32) * TIER_SCALE, 1, 3, 1, 3, 1, 1);
     }
 
     private void scatterRooms(RoomShape shape, int count, int minWide, int maxWide, int minDeep, int maxDeep, int tall, int tierStep)
@@ -274,20 +391,11 @@ final class DistrictPlanner
     {
         if (rooms.size() >= MAX_ROOMS || minI < 1 || minJ < 1 || minI + wide > DistrictPos.CELLS - 1 || minJ + deep > DistrictPos.CELLS - 1)
             return false;
-        for (int k = minK; k < minK + tall; k++)
-        {
-            for (int j = minJ; j < minJ + deep; j++)
-            {
-                for (int i = minI; i < minI + wide; i++)
-                {
-                    if (kinds[index(i, k, j)] != EMPTY)
-                        return false;
-                }
-            }
-        }
+        if (!isFree(minI, minK, minJ, minI + wide - 1, minK + tall - 1, minJ + deep - 1))
+            return false;
 
         rooms.add(new Room(minI, minK, minJ, minI + wide - 1, minK + tall - 1, minJ + deep - 1, shape, variant));
-        byte id = (byte) rooms.size();
+        short id = (short) rooms.size();
         int first = index(minI, minK, minJ);
         for (int k = minK; k < minK + tall; k++)
         {
@@ -303,6 +411,64 @@ final class DistrictPlanner
             }
         }
         return true;
+    }
+
+    /**
+     * Straight walkways across some tiers of every void, joined to whatever lies on both sides. A void one cell across only gets balconies and windows, since a walkway through it would read as a corridor.
+     */
+    private void placeCatwalks()
+    {
+        for (var opening : voids)
+        {
+            int lowest = opening.shape() == RoomShape.VAULT ? opening.minK() + 1 : opening.minK() + 2;
+            if (lowest > opening.maxK())
+                continue;
+            var usedTiers = new ArrayList<Integer>();
+            for (int crossing = between(1, 2); crossing > 0; crossing--)
+            {
+                int k = between(lowest, opening.maxK());
+                if (usedTiers.stream().anyMatch(used -> Math.abs(used - k) < MIN_CATWALK_TIER_GAP))
+                    continue;
+                usedTiers.add(k);
+                boolean alongX = random.nextBoolean();
+                if ((alongX ? opening.cellsWide() : opening.cellsDeep()) < MIN_CATWALK_SPAN)
+                    continue;
+                int row = alongX ? between(opening.minJ(), opening.maxJ()) : between(opening.minI(), opening.maxI());
+                int start = alongX ? index(opening.minI() - 1, k, row) : index(row, k, opening.minJ() - 1);
+                int length = (alongX ? opening.cellsWide() : opening.cellsDeep()) + 1;
+                tryCatwalk(start, alongX ? Compass.EAST : Compass.SOUTH, length);
+            }
+        }
+    }
+
+    private void tryCatwalk(int start, int direction, int length)
+    {
+        int end = start;
+        for (int step = 0; step < length; step++)
+            end = neighbor(end, direction);
+        if (!isCatwalkEnd(start, direction) || !isCatwalkEnd(end, Compass.opposite(direction)))
+            return;
+        for (int cell = neighbor(start, direction); cell != end; cell = neighbor(cell, direction))
+        {
+            if (kinds[cell] != VOID && kinds[cell] != CATWALK)
+                return;
+        }
+
+        claimPassage(start);
+        claimPassage(end);
+        int current = start;
+        for (int step = 0; step < length; step++)
+        {
+            int next = neighbor(current, direction);
+            claimPassage(next);
+            link(current, direction, next);
+            current = next;
+        }
+    }
+
+    private boolean isCatwalkEnd(int cell, int towardsVoid)
+    {
+        return cell >= 0 && (kinds[cell] == EMPTY || (isStructure(kinds[cell]) && hasOpening(cell, towardsVoid)));
     }
 
     private void carveRun(int start, int direction, int length)
@@ -367,7 +533,7 @@ final class DistrictPlanner
      */
     private boolean hasOpening(int cell, int direction)
     {
-        if (kinds[cell] == CORRIDOR)
+        if (kinds[cell] == CORRIDOR || kinds[cell] == CATWALK)
             return true;
         if (kinds[cell] != ROOM)
             return false;
@@ -375,7 +541,7 @@ final class DistrictPlanner
         int outside = neighbor(cell, direction);
         if (outside < 0 || roomIds[outside] == roomIds[cell])
             return false;
-        var room = rooms.get((roomIds[cell] & 0xFF) - 1);
+        var room = rooms.get(roomIds[cell] - 1);
         return room.shape().hasDoorsAt(tierOf(cell), room);
     }
 
@@ -399,7 +565,7 @@ final class DistrictPlanner
         int first = -1;
         for (int cell = 0; cell < CELL_COUNT; cell++)
         {
-            if (kinds[cell] == EMPTY)
+            if (!isStructure(kinds[cell]))
                 continue;
             int root = find(cell);
             if (first == -1)
@@ -412,14 +578,14 @@ final class DistrictPlanner
 
     private boolean routeWithRetries(int root)
     {
-        return search(root, (byte) 0, null, 0, UNREACHED);
+        return search(root, (short) 0, null, 0, UNREACHED);
     }
 
     /**
      * @param room        when not 0, routes from {@code sourceCells} of that room to anything but the room itself, instead of from structure {@code root} to any other
      * @param sourceCells the cells to start from, leaving by {@code sourceSide}, or null to start from all of {@code root}
      */
-    private boolean search(int root, byte room, int[] sourceCells, int sourceSide, int costLimit)
+    private boolean search(int root, short room, int[] sourceCells, int sourceSide, int costLimit)
     {
         searchRoot = root;
         searchRoom = room;
@@ -447,7 +613,7 @@ final class DistrictPlanner
         {
             for (int cell = 0; cell < CELL_COUNT; cell++)
             {
-                if (kinds[cell] == EMPTY || find(cell) != searchRoot)
+                if (!isStructure(kinds[cell]) || find(cell) != searchRoot)
                     continue;
                 for (int direction = 0; direction < Compass.COUNT; direction++)
                 {
@@ -477,6 +643,8 @@ final class DistrictPlanner
      */
     private boolean isGoal(int cell, int arrivalDirection)
     {
+        if (!isStructure(kinds[cell]))
+            return false;
         boolean isStart = searchRoom != 0 ? roomIds[cell] == searchRoom : find(cell) == searchRoot;
         return !isStart && hasOpening(cell, Compass.opposite(arrivalDirection));
     }
@@ -498,9 +666,7 @@ final class DistrictPlanner
         if (next < 0)
             return false;
         if (kinds[next] != EMPTY)
-        {
             return isGoal(next, direction) && reachGoal(state, MOVE_WALK, next);
-        }
 
         relax(next * Compass.COUNT + direction, cost + STEP_COST + noise[next], state, MOVE_WALK);
         return expandStair(state, cost, direction, above(next), next, MOVE_UP)
@@ -590,10 +756,8 @@ final class DistrictPlanner
     {
         int from = fromState / Compass.COUNT;
         int direction = fromState % Compass.COUNT;
-        if (kinds[from] == EMPTY)
-            claim(from, CORRIDOR);
-        if (kinds[to] == EMPTY)
-            claim(to, CORRIDOR);
+        claimPassage(from);
+        claimPassage(to);
         if (move == MOVE_WALK)
         {
             link(from, direction, to);
@@ -656,7 +820,7 @@ final class DistrictPlanner
     {
         for (int cell = 0; cell < CELL_COUNT; cell++)
         {
-            if (kinds[cell] == EMPTY || find(cell) != root)
+            if (!isStructure(kinds[cell]) || find(cell) != root)
                 continue;
             if (kinds[cell] == ROOM)
                 clearRoomOf(cell);
@@ -668,13 +832,15 @@ final class DistrictPlanner
 
     private void clearRoomOf(int roomCell)
     {
-        byte id = roomIds[roomCell];
-        rooms.set((id & 0xFF) - 1, null);
+        short id = roomIds[roomCell];
+        var room = rooms.set(id - 1, null);
         for (int cell = 0; cell < CELL_COUNT; cell++)
         {
             if (roomIds[cell] == id)
                 clearCell(cell);
         }
+        if (room != null && room.shape() == RoomShape.VAULT)
+            voids.removeIf(opening -> opening.minI() == room.minI() && opening.minJ() == room.minJ() && opening.minK() == room.minK());
     }
 
     private void clearCell(int cell)
@@ -682,13 +848,15 @@ final class DistrictPlanner
         for (int direction = 0; direction < Compass.COUNT; direction++)
         {
             int outside = neighbor(cell, direction);
-            if (outside >= 0 && (kinds[outside] == CORRIDOR || kinds[outside] == ROOM))
+            if (outside >= 0 && (kinds[outside] == CORRIDOR || kinds[outside] == ROOM || kinds[outside] == CATWALK))
                 faces[outside] &= (byte) ~(1 << Compass.opposite(direction));
         }
-        kinds[cell] = EMPTY;
+        boolean wasCatwalk = kinds[cell] == CATWALK;
+        kinds[cell] = wasCatwalk ? VOID : EMPTY;
         faces[cell] = 0;
         roomIds[cell] = 0;
-        carved--;
+        if (!wasCatwalk)
+            carved--;
     }
 
     private void rebuildStructures()
@@ -696,7 +864,7 @@ final class DistrictPlanner
         Arrays.fill(parent, -1);
         for (int cell = 0; cell < CELL_COUNT; cell++)
         {
-            if (kinds[cell] != EMPTY)
+            if (isStructure(kinds[cell]))
                 parent[cell] = cell;
         }
         int[] firstOfRoom = new int[rooms.size() + 1];
@@ -704,11 +872,11 @@ final class DistrictPlanner
         for (int cell = 0; cell < CELL_COUNT; cell++)
         {
             byte kind = kinds[cell];
-            if (kind == EMPTY)
+            if (!isStructure(kind))
                 continue;
             if (kind == ROOM)
             {
-                int id = roomIds[cell] & 0xFF;
+                int id = roomIds[cell];
                 if (firstOfRoom[id] < 0)
                     firstOfRoom[id] = cell;
                 union(cell, firstOfRoom[id]);
@@ -725,7 +893,7 @@ final class DistrictPlanner
             for (int direction = 0; direction < Compass.COUNT; direction++)
             {
                 int outside = neighbor(cell, direction);
-                if ((faces[cell] & (1 << direction)) != 0 && outside >= 0 && kinds[outside] != EMPTY && kinds[outside] != STAIR_LOW && kinds[outside] != STAIR_HIGH)
+                if ((faces[cell] & (1 << direction)) != 0 && outside >= 0 && isStructure(kinds[outside]) && kinds[outside] != STAIR_LOW && kinds[outside] != STAIR_HIGH)
                     union(cell, outside);
             }
         }
@@ -733,7 +901,7 @@ final class DistrictPlanner
 
     private void joinIfPresent(int cell, int other)
     {
-        if (other >= 0 && kinds[other] != EMPTY)
+        if (other >= 0 && isStructure(kinds[other]))
             union(cell, other);
     }
 
@@ -761,12 +929,7 @@ final class DistrictPlanner
 
     private void endInRoom(int end, int direction)
     {
-        var shape = switch (theme)
-        {
-            case WARREN -> RoomShape.CELL;
-            case WRITHING -> RoomShape.CHAMBER;
-            default -> RoomShape.PLAIN;
-        };
+        var shape = smallRoomShape();
         int wide = shape == RoomShape.CELL ? 1 : between(1, 3);
         int deep = shape == RoomShape.CELL ? 1 : between(1, 3);
         int entrance = neighbor(end, direction);
@@ -779,6 +942,16 @@ final class DistrictPlanner
         int minJ = Compass.dz(direction) > 0 ? entranceJ : Compass.dz(direction) < 0 ? entranceJ - deep + 1 : entranceJ - random.nextInt(deep);
         if (placeRoom(shape, minI, tierOf(end), minJ, wide, 1, deep, random.nextInt()))
             link(end, direction, entrance);
+    }
+
+    private RoomShape smallRoomShape()
+    {
+        return switch (theme)
+        {
+            case WARREN -> RoomShape.CELL;
+            case WRITHING -> RoomShape.CHAMBER;
+            default -> RoomShape.PLAIN;
+        };
     }
 
     private void addLoops()
@@ -810,7 +983,7 @@ final class DistrictPlanner
             if (room == null)
                 continue;
 
-            byte id = (byte) (index + 1);
+            short id = (short) (index + 1);
             int wanted = room.shape() == RoomShape.CELL ? CELL_DOOR_SIDES : ROOM_DOOR_SIDES;
             int doored = 0;
             for (int side = 0; side < Compass.COUNT; side++)
@@ -865,7 +1038,7 @@ final class DistrictPlanner
         return Arrays.copyOf(cells, count);
     }
 
-    private boolean connectSide(Room room, byte id, int side)
+    private boolean connectSide(Room room, short id, int side)
     {
         int[] cells = sideCells(room, side, true);
         if (cells.length == 0)
@@ -876,7 +1049,7 @@ final class DistrictPlanner
         {
             int cell = cells[(index + offset) % cells.length];
             int outside = neighbor(cell, side);
-            if (kinds[outside] != EMPTY && roomIds[outside] != id && hasOpening(outside, Compass.opposite(side)))
+            if (isStructure(kinds[outside]) && roomIds[outside] != id && hasOpening(outside, Compass.opposite(side)))
             {
                 link(cell, side, outside);
                 return true;
@@ -891,12 +1064,7 @@ final class DistrictPlanner
      */
     private void widenCorridorsIntoRooms()
     {
-        var shape = switch (theme)
-        {
-            case WARREN -> RoomShape.CELL;
-            case WRITHING -> RoomShape.CHAMBER;
-            default -> RoomShape.PLAIN;
-        };
+        var shape = smallRoomShape();
         int junctionPercent = theme == DaedalusTheme.WARREN ? 40 : 70;
         int deadEndPercent = 70;
         int passagePercent = theme == DaedalusTheme.WARREN ? 5 : 15;
@@ -904,7 +1072,7 @@ final class DistrictPlanner
         {
             int i = cell & LAST_CELL;
             int j = (cell >> 4) & LAST_CELL;
-            if (kinds[cell] != CORRIDOR || i == 0 || j == 0 || i == LAST_CELL || j == LAST_CELL)
+            if (kinds[cell] != CORRIDOR || isOnRing(cell))
                 continue;
 
             int open = Integer.bitCount(faces[cell] & 15);
@@ -918,7 +1086,7 @@ final class DistrictPlanner
             if (singleCell && layout.corridorWidth() >= WIDE_CORRIDOR)
                 continue;
             rooms.add(new Room(box[0], k, box[1], box[2], k, box[3], shape, random.nextInt()));
-            byte id = (byte) rooms.size();
+            short id = (short) rooms.size();
             for (int boxJ = box[1]; boxJ <= box[3]; boxJ++)
             {
                 for (int boxI = box[0]; boxI <= box[2]; boxI++)
@@ -968,20 +1136,62 @@ final class DistrictPlanner
         return true;
     }
 
+    /**
+     * Where a corridor or room runs beside a void it sometimes opens onto it, as a balcony or a window, and corridors on the outer ring look out over the chasm.
+     * Water never gets an opening, since it would pour out.
+     */
+    private void openOntoVoids()
+    {
+        for (int cell = 0; cell < CELL_COUNT; cell++)
+        {
+            if (kinds[cell] != CORRIDOR && kinds[cell] != ROOM)
+                continue;
+            var room = kinds[cell] == ROOM ? rooms.get(roomIds[cell] - 1) : null;
+            if (room != null && room.shape() == RoomShape.FLOOD && tierOf(cell) < room.maxK())
+                continue;
+            for (int direction = 0; direction < Compass.COUNT; direction++)
+            {
+                if ((faces[cell] & (1 << direction)) != 0)
+                    continue;
+                int outside = neighbor(cell, direction);
+                if (outside < 0)
+                {
+                    if (kinds[cell] == CORRIDOR && random.nextInt(100) < CHASM_WINDOW_PERCENT)
+                        windows[cell] |= (byte) (1 << direction);
+                    continue;
+                }
+                if (kinds[outside] != VOID)
+                    continue;
+
+                int chance = random.nextInt(100);
+                if (chance < BALCONY_PERCENT && hasOpening(cell, direction))
+                {
+                    open(cell, direction);
+                    open(outside, Compass.opposite(direction));
+                }
+                else if (chance < BALCONY_PERCENT + WINDOW_PERCENT)
+                {
+                    windows[cell] |= (byte) (1 << direction);
+                    windows[outside] |= (byte) (1 << Compass.opposite(direction));
+                }
+            }
+        }
+    }
+
     private DistrictPlan build()
     {
         var kept = new ArrayList<Room>(rooms.size());
-        byte[] remapped = new byte[rooms.size() + 1];
+        short[] remapped = new short[rooms.size() + 1];
         for (int index = 0; index < rooms.size(); index++)
         {
             if (rooms.get(index) == null)
                 continue;
             kept.add(rooms.get(index));
-            remapped[index + 1] = (byte) kept.size();
+            remapped[index + 1] = (short) kept.size();
         }
         for (int cell = 0; cell < CELL_COUNT; cell++)
-            roomIds[cell] = remapped[roomIds[cell] & 0xFF];
-        return new DistrictPlan(worldSeed, pos, theme, kinds, faces, roomIds, kept.toArray(Room[]::new), List.copyOf(landings));
+            roomIds[cell] = remapped[roomIds[cell]];
+        return new DistrictPlan(worldSeed, pos, theme, kinds, faces, windows, roomIds, kept.toArray(Room[]::new), voids.toArray(Room[]::new), List.copyOf(landings));
     }
 
     private void push(long value)

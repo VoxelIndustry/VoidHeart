@@ -72,7 +72,11 @@ import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBl
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterPartBlock;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
@@ -229,6 +233,8 @@ public class VoidHeartBlocks
     public static Block GIANT_TUBE_WORMS;
     public static Block STILL_ANEMONE;
     public static Block BARNACLE_CRUST;
+
+    private static final Map<DaedalusProp, Block> DAEDALUS_PROPS = new EnumMap<>(DaedalusProp.class);
 
     public static final List<Block> MINEABLE_BLOCKS = new ArrayList<>();
 
@@ -543,6 +549,7 @@ public class VoidHeartBlocks
                 .sound(SoundType.SLIME_BLOCK)));
 
         registerDepthsBlocks();
+        registerDaedalusProps();
 
         SMALL_AZURIUM_BUNDLE = registerSmallBundle("azurium", MapColor.COLOR_BLUE, 1, 6);
         MEDIUM_AZURIUM_BUNDLE = registerMediumBundle("azurium", MapColor.COLOR_BLUE, 3, 10);
@@ -596,6 +603,57 @@ public class VoidHeartBlocks
         CUT_LISTLESS_LEAD_STAIRS = generateStairs(CUT_LISTLESS_LEAD, "cut_listless_lead");
         CUT_LISTLESS_LEAD_SLAB = generateSlab(CUT_LISTLESS_LEAD, "cut_listless_lead");
         CUT_LISTLESS_LEAD_WALL = generateWall(CUT_LISTLESS_LEAD, "cut_listless_lead");
+    }
+
+    public static Block daedalusProp(DaedalusProp prop)
+    {
+        return DAEDALUS_PROPS.get(prop);
+    }
+
+    private static void registerDaedalusProps()
+    {
+        for (var prop : DaedalusProp.values())
+        {
+            var shape = switch (prop)
+            {
+                case BENCH -> Block.box(0, 0, 4, 16, 8, 12);
+                case PLINTH -> Block.box(2, 0, 2, 14, 16, 14);
+                case BUST -> Block.box(3, 0, 4, 13, 15, 12);
+                case URN -> Block.box(3, 0, 3, 13, 15, 13);
+                case CANDELABRUM -> Block.box(3, 0, 6, 13, 15, 10);
+                case CHANDELIER -> Block.box(2, 3, 2, 14, 16, 14);
+                case FRAME -> Block.box(1, 2, 15, 15, 15, 16);
+                case DESK -> Block.box(0, 0, 2, 16, 15, 14);
+                case LEDGERS -> Block.box(2, 0, 2, 13, 8, 12);
+                case GRATE -> Block.box(0, 0, 0, 16, 16, 16);
+                case VALVE -> Block.box(3, 3, 10, 13, 13, 16);
+                case GROWTH -> Block.box(3, 0, 4, 13, 8, 13);
+                case COT -> Block.box(0, 0, 1, 16, 5, 15);
+            };
+            var sound = switch (prop)
+            {
+                case CANDELABRUM, CHANDELIER, GRATE, VALVE -> SoundType.CHAIN;
+                case GROWTH -> SoundType.SLIME_BLOCK;
+                case LEDGERS, COT -> SoundType.WOOL;
+                default -> SoundType.STONE;
+            };
+            int light = switch (prop)
+            {
+                case CANDELABRUM -> 12;
+                case CHANDELIER -> 15;
+                default -> 0;
+            };
+            var properties = BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .requiresCorrectToolForDrops()
+                    .strength(1.5F, 6.0F)
+                    .sound(sound)
+                    .noOcclusion()
+                    .lightLevel(state -> light)
+                    .pushReaction(PushReaction.POPPED);
+            boolean onWall = prop.hangsOnWall();
+            DAEDALUS_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new DaedalusPropBlock(blockProperties, shape, onWall), properties, true));
+        }
     }
 
     private static void registerDepthsBlocks()

@@ -8,7 +8,9 @@ public enum RoomShape
     COLONNADE,
     FLOOD,
     ATRIUM,
-    CHAMBER;
+    CHAMBER,
+    VAULT,
+    PIT;
 
     /** Rooms taller than one tier can only be reached where they have a floor to arrive on. */
     boolean hasDoorsAt(int tier, Room room)

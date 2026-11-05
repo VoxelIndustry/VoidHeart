@@ -22,6 +22,12 @@ final class DistrictPainter
     private static final int SHELF_UPRIGHT_SPACING = 4;
     private static final int POOL_WALKWAY = 2;
     private static final int RANDOM_BITS = 8;
+    private static final int WINDOW_LOW = 3;
+    private static final int WINDOW_HIGH = 4;
+    private static final int WINDOW_BOTTOM = 2;
+    private static final int WINDOW_TOP = 3;
+    private static final int WALL_LAMP_HEIGHT = 4;
+    private static final int BALCONY_DEPTH = 3;
 
     private final DistrictPlan plan;
     private final DaedalusTheme theme;
@@ -83,10 +89,28 @@ final class DistrictPainter
                     paintCell(i, k, j);
             }
         }
+        var furnisher = new RoomFurnisher(plan, canvas);
         for (var room : plan.rooms())
         {
             if (canvas.overlaps(cellX(room.minI()), cellZ(room.minJ()), cellX(room.maxI()) + LAST, cellZ(room.maxJ()) + LAST))
+            {
+                furnisher.detail(room);
+                if (room.shape() == RoomShape.VAULT)
+                {
+                    for (int j = room.minJ(); j <= room.maxJ(); j++)
+                    {
+                        for (int i = room.minI(); i <= room.maxI(); i++)
+                            paintVaultColumns(i, room.minK(), j, floorY(room.minK()));
+                    }
+                }
                 decorate(room);
+                furnisher.furnish(room);
+            }
+        }
+        for (var opening : plan.voids())
+        {
+            if (canvas.overlaps(cellX(opening.minI()), cellZ(opening.minJ()), cellX(opening.maxI()) + LAST, cellZ(opening.maxJ()) + LAST))
+                furnisher.hangInVoid(opening);
         }
         paintFacade();
         for (var landing : plan.landings())
@@ -100,6 +124,12 @@ final class DistrictPainter
             case DistrictPlan.CORRIDOR -> paintCorridor(i, k, j);
             case DistrictPlan.ROOM -> paintRoomCell(i, k, j);
             case DistrictPlan.STAIR_LOW -> paintStairs(i, k, j);
+            case DistrictPlan.VOID, DistrictPlan.FLOODED -> paintVoid(i, k, j);
+            case DistrictPlan.CATWALK ->
+            {
+                paintVoid(i, k, j);
+                paintCatwalk(i, k, j);
+            }
             default ->
             {
                 // Empty cells stay solid and the upper half of stairs is drawn with the lower half.
@@ -166,6 +196,30 @@ final class DistrictPainter
         }
         if (DaedalusHash.pick(hash >>> RANDOM_BITS, layout.lampEvery()) == 0)
             canvas.set(x + LANE_CENTRE, y + hubHeight + 1, z + LANE_CENTRE, LAMP);
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            if (plan.hasWindow(i, k, j, direction))
+                paintWindow(x, y, z, direction, direction == Compass.NORTH || direction == Compass.WEST ? hubLow - 1 : LAST - hubHigh - 1);
+        }
+    }
+
+    /**
+     * An opening from a passage's side out to the edge of its cell, at eye height and too high to walk through.
+     *
+     * @param depth how many blocks in from the cell's edge to cut
+     */
+    private void paintWindow(int x, int y, int z, int direction, int depth)
+    {
+        for (int inset = 0; inset <= depth; inset++)
+        {
+            int along = direction == Compass.NORTH || direction == Compass.WEST ? inset : LAST - inset;
+            for (int lateral = WINDOW_LOW; lateral <= WINDOW_HIGH; lateral++)
+            {
+                int windowX = Compass.isAlongX(direction) ? x + along : x + lateral;
+                int windowZ = Compass.isAlongX(direction) ? z + lateral : z + along;
+                canvas.fill(windowX, y + WINDOW_BOTTOM, windowZ, windowX, y + WINDOW_TOP, windowZ, OPENING);
+            }
+        }
     }
 
     private enum Pass
@@ -315,7 +369,7 @@ final class DistrictPainter
         int y = floorY(k);
         int z = cellZ(j);
         boolean below = plan.room(i, k - 1, j) == room;
-        boolean above = plan.room(i, k + 1, j) == room;
+        boolean above = plan.room(i, k + 1, j) == room || (room.shape() == RoomShape.VAULT && plan.isOpenVolume(i, k + 1, j));
         boolean north = plan.room(i, k, j - 1) == room;
         boolean east = plan.room(i + 1, k, j) == room;
         boolean south = plan.room(i, k, j + 1) == room;
@@ -342,6 +396,222 @@ final class DistrictPainter
         boolean checkerboard = ((i - room.minI()) + (j - room.minJ())) % 2 == 0;
         if (!above && checkerboard)
             canvas.set(x + LANE_CENTRE, y + top + 1, z + LANE_CENTRE, LAMP);
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            if (plan.hasWindow(i, k, j, direction))
+                paintWindow(x, y, z, direction, 0);
+        }
+    }
+
+    /**
+     * A cell of a pit or vault: open from wall to wall, with walls only where it meets something else. The walls carry a band at every tier and lamps, so the depth can be read through the fog.
+     * Flooded cells only open onto other flooded cells, so their water is always walled in.
+     */
+    private void paintVoid(int i, int k, int j)
+    {
+        int x = cellX(i);
+        int y = floorY(k);
+        int z = cellZ(j);
+        boolean flooded = plan.kind(i, k, j) == DistrictPlan.FLOODED;
+        var below = plan.room(i, k - 1, j);
+        boolean openBelow = flooded
+                            ? plan.kind(i, k - 1, j) == DistrictPlan.FLOODED
+                            : plan.isOpenVolume(i, k - 1, j) || (below != null && below.shape() == RoomShape.VAULT);
+        boolean openAbove = plan.isOpenVolume(i, k + 1, j);
+        boolean[] openSide = new boolean[Compass.COUNT];
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            int ni = i + Compass.dx(direction);
+            int nj = j + Compass.dz(direction);
+            openSide[direction] = flooded ? plan.kind(ni, k, nj) == DistrictPlan.FLOODED : plan.isOpenVolume(ni, k, nj);
+        }
+
+        canvas.fill(x, y, z, x + LAST, y + LAST, z + LAST, WALL);
+        canvas.fill(x, y, z, x + LAST, y, z + LAST, TRIM);
+        int x0 = x + (openSide[Compass.WEST] ? 0 : 1);
+        int x1 = x + (openSide[Compass.EAST] ? LAST : LAST - 1);
+        int z0 = z + (openSide[Compass.NORTH] ? 0 : 1);
+        int z1 = z + (openSide[Compass.SOUTH] ? LAST : LAST - 1);
+        canvas.fill(x0, y + (openBelow ? 0 : 1), z0, x1, y + (openAbove ? LAST : LAST - 1), z1, flooded ? WATER : AIR);
+        if (!openBelow)
+        {
+            canvas.fill(x0, y, z0, x1, y, z1, FLOOR);
+            canvas.set(x + LANE_CENTRE, y, z + LANE_CENTRE, LAMP);
+        }
+        if (!openAbove)
+        {
+            canvas.fill(x0, y + LAST, z0, x1, y + LAST, z1, CEILING);
+            canvas.set(x + LANE_CENTRE, y + LAST, z + LANE_CENTRE, LAMP);
+        }
+
+        long hash = plan.cellHash(i, k, j);
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            if (openSide[direction])
+                continue;
+            int along = direction == Compass.NORTH || direction == Compass.WEST ? 0 : LAST;
+            for (int height = 1; height <= LAST; height++)
+            {
+                setInWall(x, z, direction, along, 0, y + height, COLUMN);
+                setInWall(x, z, direction, along, LAST, y + height, COLUMN);
+            }
+        }
+        paintVaultColumns(i, k, j, y);
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            if (openSide[direction])
+                continue;
+            int along = direction == Compass.NORTH || direction == Compass.WEST ? 0 : LAST;
+            if (((hash >>> direction) & 1) == 0)
+                setInWall(x, z, direction, along, LANE_CENTRE, y + WALL_LAMP_HEIGHT, LAMP);
+            if (plan.hasWindow(i, k, j, direction))
+                paintWindow(x, y, z, direction, 0);
+            if (plan.isOpen(i, k, j, direction) && plan.kind(i, k, j) == DistrictPlan.VOID)
+                paintBalcony(x, y, z, direction);
+        }
+    }
+
+    /**
+     * Columns rising through a vault from its floor to its top, on every other lattice corner inside it. Each cell draws its own quarter of the columns at its corners.
+     */
+    void paintVaultColumns(int i, int k, int j, int bottom)
+    {
+        for (var opening : plan.voids())
+        {
+            if (opening.shape() != RoomShape.VAULT || i < opening.minI() || i > opening.maxI() || j < opening.minJ() || j > opening.maxJ() || k < opening.minK() || k > opening.maxK())
+                continue;
+            for (int cornerI = 0; cornerI <= 1; cornerI++)
+            {
+                for (int cornerJ = 0; cornerJ <= 1; cornerJ++)
+                {
+                    int junctionI = i + cornerI;
+                    int junctionJ = j + cornerJ;
+                    boolean inside = junctionI > opening.minI() && junctionI <= opening.maxI() && junctionJ > opening.minJ() && junctionJ <= opening.maxJ();
+                    boolean spaced = (junctionI - opening.minI()) % 2 == 0 && (junctionJ - opening.minJ()) % 2 == 0;
+                    if (!inside || !spaced)
+                        continue;
+                    int x = cellX(i) + cornerI * LAST;
+                    int z = cellZ(j) + cornerJ * LAST;
+                    int from = k == opening.minK() ? bottom + 1 : bottom;
+                    canvas.fill(x, from, z, x, bottom + LAST, z, COLUMN);
+                    if (k == opening.minK())
+                        canvas.set(x, from, z, TRIM);
+                }
+            }
+            return;
+        }
+    }
+
+    private void setInWall(int x, int z, int direction, int along, int lateral, int y, DaedalusMaterial material)
+    {
+        int blockX = Compass.isAlongX(direction) ? x + along : x + lateral;
+        int blockZ = Compass.isAlongX(direction) ? z + lateral : z + along;
+        canvas.set(blockX, y, blockZ, material);
+    }
+
+    /**
+     * A ledge jutting from a doorway into the void, railed on its open sides, where a corridor stops to look out.
+     */
+    private void paintBalcony(int x, int y, int z, int direction)
+    {
+        int low = laneLow(layout.corridorWidth()) - 1;
+        int high = laneHigh(layout.corridorWidth()) + 1;
+        for (int inset = 0; inset < BALCONY_DEPTH; inset++)
+        {
+            int along = direction == Compass.NORTH || direction == Compass.WEST ? inset : LAST - inset;
+            for (int lateral = low; lateral <= high; lateral++)
+            {
+                setInWall(x, z, direction, along, lateral, y, FLOOR);
+                boolean edge = lateral == low || lateral == high || inset == BALCONY_DEPTH - 1;
+                boolean inDoorway = inset == 0 && lateral > low && lateral < high;
+                var railing = lateral == low || lateral == high
+                              ? (inset == BALCONY_DEPTH - 1 ? RAIL_POST : Compass.isAlongX(direction) ? RAIL_X : RAIL_Z)
+                              : Compass.isAlongX(direction) ? RAIL_Z : RAIL_X;
+                if (inDoorway)
+                {
+                    for (int height = 1; height <= layout.corridorHeight(); height++)
+                        setInWall(x, z, direction, along, lateral, y + height, AIR);
+                }
+                else if (edge && inset > 0)
+                {
+                    setInWall(x, z, direction, along, lateral, y + 1, railing);
+                }
+            }
+        }
+    }
+
+    /**
+     * A railed walkway through the void along the cell's open sides, with the doorway carved wherever it meets a wall.
+     */
+    private void paintCatwalk(int i, int k, int j)
+    {
+        int x = cellX(i);
+        int y = floorY(k);
+        int z = cellZ(j);
+        int low = laneLow(layout.corridorWidth());
+        int high = laneHigh(layout.corridorWidth());
+        boolean[][] walk = new boolean[CELL][CELL];
+        for (int a = low; a <= high; a++)
+        {
+            for (int b = low; b <= high; b++)
+                walk[a][b] = true;
+        }
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            if (!plan.isOpen(i, k, j, direction))
+                continue;
+            for (int along = 0; along < CELL; along++)
+            {
+                boolean towards = direction == Compass.NORTH || direction == Compass.WEST ? along < low : along > high;
+                if (!towards)
+                    continue;
+                for (int lateral = low; lateral <= high; lateral++)
+                {
+                    if (Compass.isAlongX(direction))
+                        walk[along][lateral] = true;
+                    else
+                        walk[lateral][along] = true;
+                }
+            }
+        }
+
+        for (int localZ = 0; localZ < CELL; localZ++)
+        {
+            for (int localX = 0; localX < CELL; localX++)
+            {
+                if (walk[localX][localZ])
+                {
+                    canvas.set(x + localX, y, z + localZ, FLOOR);
+                    for (int height = 1; height <= layout.corridorHeight(); height++)
+                        canvas.set(x + localX, y + height, z + localZ, AIR);
+                    continue;
+                }
+                boolean besideX = (localX > 0 && walk[localX - 1][localZ]) || (localX < LAST && walk[localX + 1][localZ]);
+                boolean besideZ = (localZ > 0 && walk[localX][localZ - 1]) || (localZ < LAST && walk[localX][localZ + 1]);
+                boolean diagonal = !besideX && !besideZ && isDiagonalToWalk(walk, localX, localZ);
+                if (!besideX && !besideZ && !diagonal)
+                    continue;
+                if (canvas.get(x + localX, y + 1, z + localZ) != AIR)
+                    continue;
+                canvas.set(x + localX, y, z + localZ, TRIM);
+                canvas.set(x + localX, y + 1, z + localZ, besideX && besideZ || diagonal ? RAIL_POST : besideX ? RAIL_Z : RAIL_X);
+            }
+        }
+    }
+
+    private static boolean isDiagonalToWalk(boolean[][] walk, int localX, int localZ)
+    {
+        for (int dx = -1; dx <= 1; dx += 2)
+        {
+            for (int dz = -1; dz <= 1; dz += 2)
+            {
+                int nx = localX + dx;
+                int nz = localZ + dz;
+                if (nx >= 0 && nz >= 0 && nx < CELL && nz < CELL && walk[nx][nz])
+                    return true;
+            }
+        }
+        return false;
     }
 
     private void paintDoor(int x, int y, int z, int direction, int width, int height)
@@ -626,7 +896,7 @@ final class DistrictPainter
         boolean pilaster = relative == PILASTER_SPACING - 1 || relative == 0;
         for (int y = 1; y < DistrictPos.TOP_Y; y++)
         {
-            if (canvas.get(x, y, z) == AIR || canvas.get(x + inwardX, y, z + inwardZ) == AIR)
+            if (canvas.get(x, y, z).isPassable() || canvas.get(x + inwardX, y, z + inwardZ).isPassable())
                 continue;
             boolean band = (y - 1) % CELL == 0;
             canvas.set(x, y, z, band ? FACADE_TRIM : pilaster ? COLUMN : FACADE);

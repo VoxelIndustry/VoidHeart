@@ -4,10 +4,13 @@ package net.voxelindustry.voidheart.common.world.daedalus;
 public enum DaedalusMaterial
 {
     AIR,
+    OPENING,
     FILL,
     BOUND,
     FLOOR,
     FLOOR_TRIM,
+    FLOOR_INLAY,
+    CARPET,
     WALL,
     PANEL,
     TRIM,
@@ -31,13 +34,17 @@ public enum DaedalusMaterial
     ARCH_NORTH,
     ARCH_EAST,
     ARCH_SOUTH,
-    ARCH_WEST;
+    ARCH_WEST,
+    PROP;
 
     private static final DaedalusMaterial[] VALUES = values();
 
+    /**
+     * @param ordinal a canvas byte, which stands for a prop from {@link DaedalusCanvas#PROP_BASE} up
+     */
     public static DaedalusMaterial of(byte ordinal)
     {
-        return VALUES[ordinal];
+        return ordinal >= DaedalusCanvas.PROP_BASE ? PROP : VALUES[ordinal];
     }
 
     public static DaedalusMaterial stairs(int climbDirection)
@@ -58,6 +65,6 @@ public enum DaedalusMaterial
 
     public boolean isPassable()
     {
-        return this == AIR || this == WATER || this == CHAIN;
+        return this == AIR || this == OPENING || this == WATER || this == CHAIN || this == CARPET;
     }
 }

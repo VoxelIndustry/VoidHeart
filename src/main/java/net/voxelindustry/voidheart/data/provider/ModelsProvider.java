@@ -46,7 +46,8 @@ public class ModelsProvider extends FabricModelProvider
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "knowledge_tablet", "knowledge_repository", "knowledge_column", "shoulder_eye", "permeable_barrier", "beam_focus",
-            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix"
+            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix",
+            "daedalus_bench", "daedalus_plinth", "daedalus_bust", "daedalus_urn", "daedalus_candelabrum", "daedalus_chandelier", "daedalus_frame", "daedalus_desk", "daedalus_ledgers", "daedalus_grate", "daedalus_valve", "daedalus_growth", "daedalus_cot"
     );
 
     /**

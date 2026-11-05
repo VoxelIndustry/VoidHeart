@@ -7,6 +7,9 @@ import java.util.Arrays;
  */
 public final class DaedalusCanvas
 {
+    public static final int PROP_BASE = 64;
+    public static final int MAX_PROPS = (Byte.MAX_VALUE + 1 - PROP_BASE) / Compass.COUNT;
+
     private static final byte AIR = (byte) DaedalusMaterial.AIR.ordinal();
     private static final byte BOUND = (byte) DaedalusMaterial.BOUND.ordinal();
     private static final int MIN_PAINTABLE_Y = 1;
@@ -70,6 +73,23 @@ public final class DaedalusCanvas
         if (x < minX || x > maxX() || z < minZ || z > maxZ() || y < 0 || y >= DistrictPos.HEIGHT)
             return DaedalusMaterial.AIR;
         return DaedalusMaterial.of(cells[index(x, y, z)]);
+    }
+
+    /**
+     * @return the stored byte, a {@link DaedalusMaterial} ordinal or a prop from {@link #PROP_BASE} up
+     */
+    public byte raw(int x, int y, int z)
+    {
+        if (x < minX || x > maxX() || z < minZ || z > maxZ() || y < 0 || y >= DistrictPos.HEIGHT)
+            return AIR;
+        return cells[index(x, y, z)];
+    }
+
+    public void setProp(int x, int y, int z, DaedalusProp prop, int facing)
+    {
+        if (x < minX || x > maxX() || z < minZ || z > maxZ() || y < MIN_PAINTABLE_Y || y > MAX_PAINTABLE_Y)
+            return;
+        cells[index(x, y, z)] = (byte) (PROP_BASE + prop.ordinal() * Compass.COUNT + facing);
     }
 
     public void set(int x, int y, int z, DaedalusMaterial material)

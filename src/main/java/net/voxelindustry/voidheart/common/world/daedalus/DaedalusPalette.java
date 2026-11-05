@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.common.world.daedalus;
 
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
@@ -11,6 +13,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.block.state.properties.WallSide;
+import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.EnumMap;
@@ -29,10 +32,17 @@ public final class DaedalusPalette
     private static DaedalusPalette chasm;
 
     private final BlockState[][] options = new BlockState[DaedalusMaterial.values().length][];
+    private final BlockState[] props = new BlockState[DaedalusProp.values().length * Compass.COUNT];
 
     private DaedalusPalette()
     {
         common();
+        for (var prop : DaedalusProp.values())
+        {
+            var block = VoidHeartBlocks.daedalusProp(prop);
+            for (int facing = 0; facing < Compass.COUNT; facing++)
+                props[prop.ordinal() * Compass.COUNT + facing] = block.defaultBlockState().setValue(DaedalusPropBlock.FACING, DIRECTIONS[facing]);
+        }
     }
 
     public static synchronized DaedalusPalette of(DaedalusTheme theme)
@@ -67,6 +77,8 @@ public final class DaedalusPalette
      */
     public BlockState state(byte material, int x, int y, int z)
     {
+        if (material >= DaedalusCanvas.PROP_BASE)
+            return props[material - DaedalusCanvas.PROP_BASE];
         var variants = options[material];
         if (variants.length == 1)
             return variants[0];
@@ -75,7 +87,7 @@ public final class DaedalusPalette
 
     public boolean covers(DaedalusMaterial material)
     {
-        return options[material.ordinal()] != null;
+        return material == DaedalusMaterial.PROP ? java.util.Arrays.stream(props).allMatch(java.util.Objects::nonNull) : options[material.ordinal()] != null;
     }
 
     private void set(DaedalusMaterial material, Block... blocks)
@@ -86,6 +98,14 @@ public final class DaedalusPalette
         options[material.ordinal()] = states;
     }
 
+    /**
+     * Dyed blocks have no field of their own in this version.
+     */
+    private static Block vanilla(String name)
+    {
+        return BuiltInRegistries.BLOCK.getOptional(Identifier.withDefaultNamespace(name)).orElseThrow(() -> new IllegalStateException("Unknown block " + name));
+    }
+
     private void setState(DaedalusMaterial material, BlockState state)
     {
         options[material.ordinal()] = new BlockState[] { state };
@@ -94,6 +114,8 @@ public final class DaedalusPalette
     private void common()
     {
         set(AIR, Blocks.AIR);
+        set(OPENING, Blocks.AIR);
+        set(PROP, Blocks.AIR);
         set(FILL, VOIDSTONE);
         set(BOUND, POCKET_WALL);
         set(WATER, Blocks.WATER);
@@ -107,6 +129,8 @@ public final class DaedalusPalette
         set(TRIM, VOIDSTONE_POLISHED);
         set(FLOOR, VOIDSTONE_TILE);
         set(FLOOR_TRIM, VOIDSTONE_TILE_SMALL);
+        set(FLOOR_INLAY, VOIDSTONE_TILE_SMALL_CHISELED);
+        set(CARPET, Blocks.AIR);
         set(CEILING, VOIDSTONE_BRICKS);
         set(LAMP, Blocks.SEA_LANTERN);
         rails(VOIDSTONE_BRICKS_WALL);
@@ -144,6 +168,8 @@ public final class DaedalusPalette
         set(CEILING, VOIDSTONE_POLISHED);
         set(SHELF, Blocks.BOOKSHELF);
         set(LAMP, Blocks.OCHRE_FROGLIGHT);
+        set(FLOOR_INLAY, VOIDSTONE_POLISHED);
+        set(CARPET, vanilla("red_carpet"));
     }
 
     private void warren()
@@ -154,6 +180,7 @@ public final class DaedalusPalette
         set(FLOOR, VOIDSTONE, VOIDSTONE_TILE_SMALL, VOIDSTONE_BRICKS_CRACKED);
         set(CEILING, VOIDSTONE);
         set(LAMP, Blocks.CRYING_OBSIDIAN);
+        set(FLOOR_INLAY, VOIDSTONE_BRICKS_CRACKED);
         steps(VOIDSTONE_BRICKS_CRACKED_STAIRS, VOIDSTONE_BRICKS_CRACKED_SLAB);
     }
 
@@ -162,10 +189,12 @@ public final class DaedalusPalette
         set(WALL, VOIDSTONE_POLISHED);
         set(PANEL, VOIDSTONE_BRICKS);
         set(TRIM, Blocks.GILDED_BLACKSTONE);
-        set(FLOOR, VOIDSTONE_TILE, VOIDSTONE_TILE, VOIDSTONE_TILE_SMALL_CHISELED);
-        set(FLOOR_TRIM, VOIDSTONE_TILE_SMALL_CARVED);
+        set(FLOOR, VOIDSTONE_TILE);
+        set(FLOOR_TRIM, VOIDSTONE_POLISHED);
+        set(FLOOR_INLAY, Blocks.GILDED_BLACKSTONE);
         set(CEILING, VOIDSTONE_TILE_SMALL);
         set(LAMP, Blocks.SHROOMLIGHT);
+        set(CARPET, vanilla("purple_carpet"));
         steps(VOIDSTONE_POLISHED_STAIRS, VOIDSTONE_POLISHED_SLAB);
         rails(VOIDSTONE_POLISHED_WALL);
     }
@@ -180,6 +209,7 @@ public final class DaedalusPalette
         set(CEILING, ABYSSAL_ROCK);
         set(COLUMN, VOIDSTONE_WEATHERED_PILLAR);
         set(LAMP, Blocks.VERDANT_FROGLIGHT);
+        set(FLOOR_INLAY, VOIDSTONE_TILE);
         steps(ABYSSAL_ROCK_STAIRS, ABYSSAL_ROCK_SLAB);
         rails(ABYSSAL_ROCK_WALL);
     }
@@ -191,6 +221,8 @@ public final class DaedalusPalette
         set(TRIM, Blocks.CHISELED_POLISHED_BLACKSTONE);
         set(FLOOR, VOIDSTONE_TILE);
         set(FLOOR_TRIM, VOIDSTONE_TILE_SMALL);
+        set(FLOOR_INLAY, Blocks.CHISELED_POLISHED_BLACKSTONE);
+        set(CARPET, vanilla("gray_carpet"));
         set(CEILING, VOIDSTONE_POLISHED);
         set(LAMP, Blocks.SEA_LANTERN);
         steps(VOIDSTONE_POLISHED_STAIRS, VOIDSTONE_POLISHED_SLAB);
@@ -204,6 +236,7 @@ public final class DaedalusPalette
         set(TRIM, VOIDSTONE_WRITHING_MAW);
         set(FLOOR, VOIDSTONE_WRITHING, VOIDSTONE_WRITHING, VOIDSTONE, ELDRITCH_VOIDSTONE);
         set(FLOOR_TRIM, ELDRITCH_VOIDSTONE);
+        set(FLOOR_INLAY, VOIDSTONE_WRITHING_MAW);
         set(CEILING, VOIDSTONE_WRITHING, VOIDSTONE_WRITHING, VOIDSTONE_WRITHING, VOIDSTONE_WRITHING_MAW, VOIDSTONE_WRITHING_BLOSSOM);
         set(LAMP, Blocks.PEARLESCENT_FROGLIGHT);
     }

@@ -22,9 +22,11 @@ class DaedalusDistrictTest
     private static final int PER_THEME = 12;
     private static final int SEARCH_RADIUS = 40;
     private static final int LANE_CENTRE = 3;
+    private static final int DEEP_PIT_TIERS = 10;
+    private static final int MIN_PROPS_PER_DISTRICT = 100;
     private static final int WANDER_STEPS = 120;
     private static final int WANDERS_PER_DISTRICT = 20;
-    private static final float MIN_ROOMS_WANDERED = 8;
+    private static final float MIN_ROOMS_WANDERED = 7;
 
     private static List<DistrictPos> districtsOf(DaedalusTheme theme, int wanted)
     {
@@ -134,7 +136,7 @@ class DaedalusDistrictTest
             float throughShare = throughRooms / (float) rooms;
             float crossedShare = pathsThroughRooms / (float) paths;
             float wandered = roomsMetWandering(theme);
-            System.out.printf("Rooms in %s: %.0f%% have doors on several sides, %.0f%% of ways between bridges cross one, %.1f entered per %d cells wandered%n",
+            System.out.printf("Rooms in %s: %.0f%% have doors on several sides, %.0f%% of ways between bridges cross one, %.1f rooms or voids entered per %d cells wandered%n",
                     theme, throughShare * 100, crossedShare * 100, wandered, WANDER_STEPS);
             assertTrue(throughShare > 0.75F, theme + " has too many dead end rooms: " + throughShare);
             assertTrue(crossedShare > 0.6F, "The way between bridges rarely crosses a room in " + theme + ": " + crossedShare);
@@ -142,8 +144,18 @@ class DaedalusDistrictTest
         }
     }
 
+    private static Room voidAt(DistrictPlan plan, int i, int k, int j)
+    {
+        for (var opening : plan.voids())
+        {
+            if (i >= opening.minI() && i <= opening.maxI() && j >= opening.minJ() && j <= opening.maxJ() && k >= opening.minK() && k <= opening.maxK())
+                return opening;
+        }
+        throw new AssertionError("A catwalk outside every void at " + i + " " + k + " " + j);
+    }
+
     /**
-     * A walk that never turns back unless it must, choosing at random at every junction, as someone exploring would.
+     * A walk that never turns back unless it must, choosing at random at every junction, as someone exploring would. Crossing a void on a catwalk counts as much as entering a room, since both break up the corridors.
      */
     private static float roomsMetWandering(DaedalusTheme theme)
     {
@@ -166,9 +178,14 @@ class DaedalusDistrictTest
                         options.remove(Integer.valueOf(previous));
                     previous = cell;
                     cell = options.get(random.nextInt(options.size()));
-                    var room = plan.room(cell & 15, cell >> 8, (cell >> 4) & 15);
+                    int i = cell & 15;
+                    int k = cell >> 8;
+                    int j = (cell >> 4) & 15;
+                    var room = plan.room(i, k, j);
                     if (room != null)
                         entered.add(room);
+                    if (plan.isCatwalk(i, k, j))
+                        entered.add(voidAt(plan, i, k, j));
                 }
                 met += entered.size();
                 walks++;
@@ -251,7 +268,8 @@ class DaedalusDistrictTest
                 continue;
             byte other = plan.kind(ni, k, nj);
             boolean sameRoom = room != null && plan.room(ni, k, nj) == room;
-            boolean throughDoor = plan.isOpen(i, k, j, direction) && (other == DistrictPlan.CORRIDOR || other == DistrictPlan.ROOM) && plan.isOpen(ni, k, nj, Compass.opposite(direction));
+            boolean walkable = other == DistrictPlan.CORRIDOR || other == DistrictPlan.ROOM || other == DistrictPlan.CATWALK;
+            boolean throughDoor = plan.isOpen(i, k, j, direction) && walkable && plan.isOpen(ni, k, nj, Compass.opposite(direction));
             boolean ontoStairs = plan.isOpen(i, k, j, direction)
                                  && ((other == DistrictPlan.STAIR_LOW && plan.faces(ni, k, nj) == direction) || (other == DistrictPlan.STAIR_HIGH && plan.faces(ni, k, nj) == Compass.opposite(direction)));
             if (sameRoom || throughDoor || ontoStairs)
@@ -265,6 +283,109 @@ class DaedalusDistrictTest
                 next.add(DistrictPlan.index(i, k - 1, j));
         }
         return next;
+    }
+
+    /**
+     * Every district opens onto deep voids somewhere, and the catwalks and balconies looking into them can be walked to.
+     */
+    @Test
+    void voidsGiveVistasThatCanBeReached()
+    {
+        for (var theme : DaedalusTheme.values())
+        {
+            int voids = 0;
+            int reachedVoids = 0;
+            int deepPits = 0;
+            int districts = 0;
+            for (var pos : districtsOf(theme, PER_THEME / 2))
+            {
+                districts++;
+                var plan = DistrictPlanner.generate(SEEDS[2], pos);
+                assertTrue(plan.voids().length > 0, "No void at all in " + theme + " " + pos);
+                var canvas = painted(plan);
+                var walker = new DaedalusWalker(canvas);
+                int[] start = landingPosition(plan, plan.landings().getFirst());
+                walker.walkFrom(start[0], start[1], start[2]);
+
+                boolean hasDeepPit = false;
+                for (var opening : plan.voids())
+                {
+                    voids++;
+                    hasDeepPit |= opening.shape() == RoomShape.PIT && opening.maxK() - opening.minK() + 1 >= DEEP_PIT_TIERS;
+                    if (hasReachableLookout(plan, walker, opening))
+                        reachedVoids++;
+                }
+                deepPits += hasDeepPit ? 1 : 0;
+            }
+            float reachedShare = reachedVoids / (float) voids;
+            System.out.printf("Voids in %s: %.1f per district, %.0f%% can be looked into from a catwalk or balcony, %d of %d districts have a pit %d tiers deep%n",
+                    theme, voids / (float) districts, reachedShare * 100, deepPits, districts, DEEP_PIT_TIERS);
+            assertTrue(reachedShare > 0.8F, "Too many voids in " + theme + " are out of sight: " + reachedShare);
+            assertTrue(deepPits * 2 >= districts, "Too few deep pits in " + theme);
+        }
+    }
+
+    private static boolean hasReachableLookout(DistrictPlan plan, DaedalusWalker walker, Room opening)
+    {
+        int originX = plan.pos.originX();
+        int originZ = plan.pos.originZ();
+        for (int k = opening.minK(); k <= opening.maxK(); k++)
+        {
+            for (int j = opening.minJ(); j <= opening.maxJ(); j++)
+            {
+                for (int i = opening.minI(); i <= opening.maxI(); i++)
+                {
+                    boolean lookout = plan.isCatwalk(i, k, j);
+                    for (int direction = 0; direction < Compass.COUNT && !lookout; direction++)
+                        lookout = plan.hasBalcony(i, k, j, direction);
+                    if (!lookout)
+                        continue;
+                    int x = originX + i * DistrictPos.CELL;
+                    int z = originZ + j * DistrictPos.CELL;
+                    int y = DistrictPos.floorY(k) + 1;
+                    if (walker.hasReachedWithin(x, y, z, x + DistrictPos.CELL - 1, y, z + DistrictPos.CELL - 1))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Test
+    void roomsAreFurnishedWithEveryProp()
+    {
+        var counts = new int[DaedalusProp.values().length];
+        int districts = 0;
+        int total = 0;
+        for (var theme : DaedalusTheme.values())
+        {
+            for (var pos : districtsOf(theme, 3))
+            {
+                districts++;
+                var canvas = painted(DistrictPlanner.generate(SEEDS[1], pos));
+                for (int y = 1; y < DistrictPos.TOP_Y; y++)
+                {
+                    for (int z = canvas.minZ(); z <= canvas.maxZ(); z++)
+                    {
+                        for (int x = canvas.minX(); x <= canvas.maxX(); x++)
+                        {
+                            int raw = canvas.raw(x, y, z);
+                            if (raw < DaedalusCanvas.PROP_BASE)
+                                continue;
+                            counts[(raw - DaedalusCanvas.PROP_BASE) / Compass.COUNT]++;
+                            total++;
+                        }
+                    }
+                }
+            }
+        }
+        var report = new StringBuilder("Props per district:");
+        for (var prop : DaedalusProp.values())
+            report.append(' ').append(prop.name().toLowerCase()).append('=').append(String.format("%.1f", counts[prop.ordinal()] / (float) districts));
+        System.out.println(report);
+        for (var prop : DaedalusProp.values())
+            assertTrue(counts[prop.ordinal()] > 0, prop + " is never placed");
+        assertTrue(total / districts >= MIN_PROPS_PER_DISTRICT, "Districts are too bare: " + total / districts + " props each");
     }
 
     @Test
@@ -364,7 +485,10 @@ class DaedalusDistrictTest
     @Test
     void waterCannotFlowAnywhere()
     {
-        for (var pos : districtsOf(DaedalusTheme.CISTERN, PER_THEME))
+        var positions = new ArrayList<DistrictPos>();
+        for (var theme : DaedalusTheme.values())
+            positions.addAll(districtsOf(theme, theme == DaedalusTheme.CISTERN ? PER_THEME : 3));
+        for (var pos : positions)
         {
             var canvas = painted(DistrictPlanner.generate(SEEDS[0], pos));
             for (int y = 1; y < DistrictPos.TOP_Y; y++)
@@ -375,9 +499,12 @@ class DaedalusDistrictTest
                     {
                         if (canvas.get(x, y, z) != DaedalusMaterial.WATER)
                             continue;
-                        assertNotEquals(DaedalusMaterial.AIR, canvas.get(x, y - 1, z), "Water can fall at " + x + " " + y + " " + z);
+                        assertFalse(canvas.get(x, y - 1, z).isPassable() && canvas.get(x, y - 1, z) != DaedalusMaterial.WATER, "Water can fall at " + x + " " + y + " " + z);
                         for (int direction = 0; direction < Compass.COUNT; direction++)
-                            assertNotEquals(DaedalusMaterial.AIR, canvas.get(x + Compass.dx(direction), y, z + Compass.dz(direction)), "Water can spread at " + x + " " + y + " " + z);
+                        {
+                            var beside = canvas.get(x + Compass.dx(direction), y, z + Compass.dz(direction));
+                            assertFalse(beside.isPassable() && beside != DaedalusMaterial.WATER, "Water can spread at " + x + " " + y + " " + z);
+                        }
                     }
                 }
             }

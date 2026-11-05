@@ -4,7 +4,7 @@ import java.util.ArrayDeque;
 import java.util.BitSet;
 
 /**
- * Walks a painted canvas the way a player would: two blocks of headroom, solid ground, one step up where there is room to jump or stairs to climb, and short drops. Water is never ground.
+ * Walks a painted canvas the way a player would: two blocks of headroom, solid ground, one step up where there is room to jump or stairs to climb, and short drops. Water is never ground, and window sills are not a way through.
  */
 final class DaedalusWalker
 {
@@ -33,7 +33,8 @@ final class DaedalusWalker
     {
         if (!isInside(x, z) || y < 1 || y >= DistrictPos.TOP_Y - 1)
             return false;
-        return canvas.get(x, y, z).isPassable() && canvas.get(x, y + 1, z).isPassable() && !canvas.get(x, y - 1, z).isPassable();
+        var feet = canvas.get(x, y, z);
+        return feet.isPassable() && feet != DaedalusMaterial.OPENING && canvas.get(x, y + 1, z).isPassable() && !canvas.get(x, y - 1, z).isPassable();
     }
 
     void walkFrom(int startX, int startY, int startZ)
