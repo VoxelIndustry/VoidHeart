@@ -90,6 +90,12 @@ public class VoidHeart implements ModInitializer
     public static SimpleParticleType KNOWLEDGE_MOTE_PARTICLE;
     public static SimpleParticleType KNOWLEDGE_GLYPH_PARTICLE;
     public static SimpleParticleType SHATTER_FORGE_EXPERIENCE_PARTICLE;
+    public static SimpleParticleType SMOKER_WISP_PARTICLE;
+    public static SimpleParticleType SMOKER_PLUME_PARTICLE;
+    public static SimpleParticleType SMOKER_CORE_PARTICLE;
+    public static SimpleParticleType SMOKER_EMBER_PARTICLE;
+    public static SimpleParticleType MARINE_SNOW_PARTICLE;
+    public static SimpleParticleType SHOAL_SPECK_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
 
@@ -203,7 +209,18 @@ public class VoidHeart implements ModInitializer
                 Identifier.fromNamespaceAndPath(MODID, "knowledge_glyph"), KNOWLEDGE_GLYPH_PARTICLE = FabricParticleTypes.simple(false));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_experience"), SHATTER_FORGE_EXPERIENCE_PARTICLE = FabricParticleTypes.simple(true));
+        SMOKER_WISP_PARTICLE = registerSimpleParticle("smoker_wisp", true);
+        SMOKER_PLUME_PARTICLE = registerSimpleParticle("smoker_plume", true);
+        SMOKER_CORE_PARTICLE = registerSimpleParticle("smoker_core", true);
+        SMOKER_EMBER_PARTICLE = registerSimpleParticle("smoker_ember", true);
+        MARINE_SNOW_PARTICLE = registerSimpleParticle("marine_snow", false);
+        SHOAL_SPECK_PARTICLE = registerSimpleParticle("shoal_speck", true);
 
         EssenceRegistry.bootstrap();
+    }
+
+    private static SimpleParticleType registerSimpleParticle(String name, boolean alwaysVisible)
+    {
+        return Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MODID, name), FabricParticleTypes.simple(alwaysVisible));
     }
 }

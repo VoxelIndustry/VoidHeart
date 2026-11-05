@@ -84,6 +84,19 @@ public enum DungeonMaterial
     GRATE(true),
     CHEST,
 
+    CORAL_BLOCK,
+    CORAL_GROWTH,
+    GLOW_ALGAE,
+    BARNACLE,
+    ANEMONE,
+    KELP,
+    KELP_TIP,
+    DRIFT_ALGAE,
+    DRIFT_ALGAE_TIP,
+    WHALE_BONE,
+    VENT_CHIMNEY,
+    SMOKER_VENT,
+
     AZURIUM_SMALL,
     AZURIUM_MEDIUM,
     AZURIUM_LARGE,
@@ -116,7 +129,8 @@ public enum DungeonMaterial
     {
         return switch (this)
         {
-            case UNSET, AIR, FILL_LIGHT, FLUID, RUNNER, CANDLE, LANTERN, CHAIN, PLANT, TALL_PLANT, HANGING, COBWEB -> true;
+            case UNSET, AIR, FILL_LIGHT, FLUID, RUNNER, CANDLE, LANTERN, CHAIN, PLANT, TALL_PLANT, HANGING, COBWEB,
+                 CORAL_GROWTH, GLOW_ALGAE, BARNACLE, ANEMONE, KELP, KELP_TIP, DRIFT_ALGAE, DRIFT_ALGAE_TIP -> true;
             default -> false;
         };
     }
@@ -130,7 +144,7 @@ public enum DungeonMaterial
     {
         return switch (this)
         {
-            case ROCK, ROCK_NATIVE, VEIN, VEIN_WRITHING, WALL, PANEL, FLOOR, CEILING, WALL_TRIM, COLUMN, SOIL, SUBSOIL, POOL_BED -> true;
+            case ROCK, ROCK_NATIVE, VEIN, VEIN_WRITHING, WALL, PANEL, FLOOR, CEILING, WALL_TRIM, COLUMN, SOIL, SUBSOIL, POOL_BED, CORAL_BLOCK, WHALE_BONE, VENT_CHIMNEY -> true;
             default -> false;
         };
     }
@@ -141,6 +155,7 @@ public enum DungeonMaterial
         {
             case STAIRS, SLAB, FENCE, WINDOW, RUNNER, LANTERN, CANDLE, FILL_LIGHT, CAMPFIRE, CHAIN, METAL_STAIRS, METAL_SLAB, METAL_WALL, ROOF_STAIRS, ROOF_SLAB,
                  WOOD_FENCE, DOOR, HANGING, PLANT, TALL_PLANT, LECTERN, ANVIL, CAULDRON, COBWEB, BELL, PIPE_THIN, GRATE, CHEST, FLUID,
+                 CORAL_GROWTH, GLOW_ALGAE, BARNACLE, ANEMONE, KELP, KELP_TIP, DRIFT_ALGAE, DRIFT_ALGAE_TIP,
                  AZURIUM_SMALL, AZURIUM_MEDIUM, AZURIUM_LARGE, RUBRUM_SMALL, RUBRUM_MEDIUM, RUBRUM_LARGE, MEMORIAM_SMALL, MEMORIAM_MEDIUM, MEMORIAM_LARGE -> false;
             default -> true;
         };

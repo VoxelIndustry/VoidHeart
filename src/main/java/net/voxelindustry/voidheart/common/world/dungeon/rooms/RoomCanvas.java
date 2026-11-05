@@ -275,7 +275,7 @@ public final class RoomCanvas
                 for (int y = 1; y <= WALKWAY_HEIGHT; y++)
                 {
                     var material = get(x, y, z);
-                    if (!material.isPassable() || material == FLUID)
+                    if (!material.isPassable() || material == FLUID || material == DungeonMaterial.UNSET)
                         set(x, y, z, AIR);
                     walkway.set(walkwayIndex(x, y, z));
                 }

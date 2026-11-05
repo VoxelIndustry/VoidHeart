@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.voxelindustry.voidheart.common.block.StateProperties;
+import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.ArrayList;
@@ -29,6 +30,9 @@ public final class DungeonPalette
 {
     private static final int METAL_REGION_BITS = 4;
     private static final int GROUND_REGION_BITS = 2;
+    private static final int REEF_REGION_BITS = 3;
+    private static final int DEPTHS_FILL_LIGHT_LEVEL = 11;
+    private static final int OVERGROWN_ONE_IN = 7;
     private static final int FILL_LIGHT_LEVEL = 12;
     private static final int DARK_STONE_FILL_LIGHT_LEVEL = 15;
     private static final int ORIENTATIONS = Direction.values().length * 2;
@@ -50,6 +54,7 @@ public final class DungeonPalette
             case TEMPLE -> temple();
             case FOREST -> forest();
             case MYCOSIS -> mycosis();
+            case DEPTHS -> depths();
         }
         if (options[PANEL.ordinal()] == null)
             options[PANEL.ordinal()] = options[WALL_TRIM.ordinal()];
@@ -68,9 +73,16 @@ public final class DungeonPalette
      */
     public BlockState redraw(BlockState original, int x, int y, int z)
     {
+        if (theme == DungeonTheme.DEPTHS && !original.getFluidState().isEmpty())
+            return original.hasProperty(BlockStateProperties.WATERLOGGED)
+                   ? redraw(original.setValue(BlockStateProperties.WATERLOGGED, false), x, y, z)
+                   : Blocks.AIR.defaultBlockState();
+
         var material = theme == DungeonTheme.TEMPLE ? null : templateMaterial(original.getBlock());
         if (material == null)
             return original;
+        if (theme == DungeonTheme.DEPTHS && (material == WALL || material == PANEL) && Math.floorMod(x * 31 + y * 17 + z * 13, OVERGROWN_ONE_IN) == 0)
+            material = CORAL_BLOCK;
 
         var variants = options[material.ordinal()];
         return variants[pick(material, variants.length, x, y, z)][0].getBlock().withPropertiesOf(original);
@@ -142,6 +154,7 @@ public final class DungeonPalette
             case METAL_BLOCK, METAL_CUT, METAL_STAIRS, METAL_SLAB, METAL_WALL -> METAL_REGION_BITS;
             case ROCK_NATIVE, SOIL, SUBSOIL, LEAVES -> GROUND_REGION_BITS;
             case LOG -> METAL_REGION_BITS;
+            case CORAL_BLOCK, CORAL_GROWTH -> REEF_REGION_BITS;
             default -> 0;
         };
     }
@@ -317,6 +330,18 @@ public final class DungeonPalette
         set(PIPE_THIN, Blocks.IRON_BARS);
         set(GRATE, Blocks.IRON_BARS);
         set(CHEST, Blocks.CHEST);
+        set(CORAL_BLOCK, Blocks.AIR);
+        set(CORAL_GROWTH, Blocks.AIR);
+        set(GLOW_ALGAE, Blocks.AIR);
+        set(BARNACLE, Blocks.AIR);
+        set(ANEMONE, Blocks.AIR);
+        set(KELP, Blocks.AIR);
+        set(KELP_TIP, Blocks.AIR);
+        set(DRIFT_ALGAE, Blocks.AIR);
+        set(DRIFT_ALGAE_TIP, Blocks.AIR);
+        set(WHALE_BONE, Blocks.BONE_BLOCK);
+        set(VENT_CHIMNEY, Blocks.AIR);
+        set(SMOKER_VENT, Blocks.AIR);
 
         set(AZURIUM_SMALL, VoidHeartBlocks.SMALL_AZURIUM_BUNDLE);
         set(AZURIUM_MEDIUM, VoidHeartBlocks.MEDIUM_AZURIUM_BUNDLE);
@@ -446,6 +471,48 @@ public final class DungeonPalette
         set(TALL_PLANT, Blocks.LARGE_FERN, Blocks.TALL_GRASS);
         set(GLOW, Blocks.VERDANT_FROGLIGHT);
         set(POOL_BED, Blocks.MUD);
+    }
+
+    /**
+     * Rock and life of a sea floor with the sea gone. Ruins that sank here are dark prismarine, and its lead has long since stopped caring.
+     */
+    private void depths()
+    {
+        metals(listlessLead());
+        setStates(FILL_LIGHT, List.of(Blocks.LIGHT.defaultBlockState().setValue(BlockStateProperties.LEVEL, DEPTHS_FILL_LIGHT_LEVEL)));
+        set(ROCK, VoidHeartBlocks.ABYSSAL_ROCK);
+        set(ROCK_NATIVE, VoidHeartBlocks.ABYSSAL_ROCK);
+        set(WALL, Blocks.DARK_PRISMARINE, Blocks.DARK_PRISMARINE, Blocks.DARK_PRISMARINE, Blocks.PRISMARINE_BRICKS);
+        set(WALL_TRIM, Blocks.PRISMARINE_BRICKS);
+        set(PANEL, Blocks.DARK_PRISMARINE);
+        set(FLOOR, VoidHeartBlocks.ABYSSAL_SILT, VoidHeartBlocks.ABYSSAL_SILT, VoidHeartBlocks.ABYSSAL_SILT, VoidHeartBlocks.ABYSSAL_ROCK);
+        set(FLOOR_TRIM, VoidHeartBlocks.ABYSSAL_ROCK, VoidHeartBlocks.ABYSSAL_SILT);
+        set(CEILING, VoidHeartBlocks.ABYSSAL_ROCK);
+        set(COLUMN, Blocks.DARK_PRISMARINE);
+        set(STAIRS, VoidHeartBlocks.ABYSSAL_ROCK_STAIRS);
+        set(SLAB, VoidHeartBlocks.ABYSSAL_ROCK_SLAB);
+        set(FENCE, VoidHeartBlocks.ABYSSAL_ROCK_WALL);
+        set(WINDOW, vanilla("cyan_stained_glass_pane"), vanilla("light_blue_stained_glass_pane"));
+        set(RUNNER, vanilla("cyan_carpet"));
+        set(LANTERN, Blocks.SOUL_LANTERN);
+        set(CANDLE, vanilla("cyan_candle"));
+        set(GLOW, Blocks.SEA_LANTERN);
+        set(FLUID, Blocks.AIR);
+        set(POOL_BED, VoidHeartBlocks.ABYSSAL_ROCK);
+        set(TALL_PLANT, VoidHeartBlocks.GIANT_TUBE_WORMS);
+
+        set(CORAL_BLOCK, VoidHeartBlocks.PALLID_CORAL_BLOCK, VoidHeartBlocks.VIOLET_CORAL_BLOCK, VoidHeartBlocks.LUMEN_CORAL_BLOCK);
+        set(CORAL_GROWTH, VoidHeartBlocks.PALLID_CORAL, VoidHeartBlocks.VIOLET_CORAL, VoidHeartBlocks.LUMEN_CORAL);
+        set(GLOW_ALGAE, VoidHeartBlocks.GLOW_ALGAE);
+        set(BARNACLE, VoidHeartBlocks.BARNACLE_CRUST);
+        set(ANEMONE, VoidHeartBlocks.STILL_ANEMONE);
+        setStates(KELP, List.of(VoidHeartBlocks.STILL_KELP.defaultBlockState().setValue(StrandPlantBlock.TIP, false)));
+        setStates(KELP_TIP, List.of(VoidHeartBlocks.STILL_KELP.defaultBlockState().setValue(StrandPlantBlock.TIP, true)));
+        setStates(DRIFT_ALGAE, List.of(VoidHeartBlocks.DRIFT_ALGAE.defaultBlockState().setValue(StrandPlantBlock.TIP, false)));
+        setStates(DRIFT_ALGAE_TIP, List.of(VoidHeartBlocks.DRIFT_ALGAE.defaultBlockState().setValue(StrandPlantBlock.TIP, true)));
+        set(WHALE_BONE, Blocks.BONE_BLOCK);
+        set(VENT_CHIMNEY, VoidHeartBlocks.SULFIDE_CRUST);
+        set(SMOKER_VENT, VoidHeartBlocks.SMOKER_VENT);
     }
 
     private void mycosis()

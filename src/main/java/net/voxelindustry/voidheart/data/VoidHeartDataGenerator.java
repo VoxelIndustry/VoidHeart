@@ -64,6 +64,12 @@ public class VoidHeartDataGenerator implements DataGeneratorEntrypoint
                 .wall(VoidHeartBlocks.CUT_LISTLESS_LEAD_WALL)
                 .getFamily();
 
+        BlockFamilies.familyBuilder(VoidHeartBlocks.ABYSSAL_ROCK)
+                .stairs(VoidHeartBlocks.ABYSSAL_ROCK_STAIRS)
+                .slab(VoidHeartBlocks.ABYSSAL_ROCK_SLAB)
+                .wall(VoidHeartBlocks.ABYSSAL_ROCK_WALL)
+                .getFamily();
+
         BlockFamilies.familyBuilder(VoidHeartBlocks.VOIDSTONE)
                 .polished(VoidHeartBlocks.VOIDSTONE_POLISHED)
                 .stairs(VoidHeartBlocks.VOIDSTONE_STAIRS)

@@ -10,7 +10,8 @@ public enum DungeonTheme implements StringRepresentable
     PALACE(2, "palace"),
     TEMPLE(3, "temple"),
     FOREST(4, "forest"),
-    MYCOSIS(5, "mycosis");
+    MYCOSIS(5, "mycosis"),
+    DEPTHS(6, "depths");
 
     private final int id;
     private final String name;

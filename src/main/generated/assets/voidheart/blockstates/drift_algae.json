@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "tip=false": {
+      "model": "voidheart:block/drift_algae"
+    },
+    "tip=true": {
+      "model": "voidheart:block/drift_algae_tip"
+    }
+  }
+}

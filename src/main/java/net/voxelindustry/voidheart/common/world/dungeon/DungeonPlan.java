@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.world.dungeon;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
+import net.voxelindustry.voidheart.common.world.dungeon.rooms.DepthsRooms;
 import net.voxelindustry.voidheart.common.world.dungeon.rooms.DungeonKit;
 import net.voxelindustry.voidheart.common.world.dungeon.rooms.RoomCanvas;
 import net.voxelindustry.voidheart.common.world.dungeon.rooms.RoomKind;
@@ -41,6 +42,11 @@ public final class DungeonPlan
     private static final double MEMORIAM_SHARE = 0.12;
     private static final double VEIN_SCALE = 30;
     private static final double VEIN_WIDTH = 0.022;
+    private static final double BURIED_ROCK_LIMIT = 0.75;
+    private static final double BURIED_CAVERNOUS_ROCK_LIMIT = 0.42;
+    private static final double FLOATING_MASS_LIMIT = 0.78;
+    private static final double FLOATING_SEAMOUNT_LIMIT = 0.5;
+    private static final int TUNNEL_BITE_ONE_IN = 2;
 
     private final DungeonBlueprint blueprint;
     private final RandomSource random;
@@ -82,6 +88,8 @@ public final class DungeonPlan
         settleEntry();
         growCrystals();
         placeChests();
+        if (isNatural())
+            new DepthsReef(blueprint, grid, layout.rooms, this::isSafe, entry, random).grow();
         spreadFillLight();
         sealShell();
     }
@@ -132,6 +140,19 @@ public final class DungeonPlan
     public DungeonRoom entryRoom()
     {
         return layout.entry;
+    }
+
+    /**
+     * Rock with life in it rather than a building: corridors are tunnels, and nothing stands on columns or bridges.
+     */
+    private boolean isNatural()
+    {
+        return blueprint.theme() == DungeonTheme.DEPTHS;
+    }
+
+    private DungeonMaterial built(DungeonMaterial material)
+    {
+        return isNatural() ? ROCK_NATIVE : material;
     }
 
     private int index(int x, int y, int z)
@@ -188,7 +209,7 @@ public final class DungeonPlan
                     double low = large.get(x / 16.0, y / 16.0, z / 16.0);
                     double detail = fine.get(x / 6.0, y / 6.0, z / 6.0);
                     boolean rock = blueprint.isBuried()
-                                   ? low + detail * 0.4 < 0.75
+                                   ? low + detail * 0.4 < (isNatural() ? BURIED_CAVERNOUS_ROCK_LIMIT : BURIED_ROCK_LIMIT)
                                    : isCrust(x, y, z, low, detail, scale);
                     if (rock)
                         grid.set(x, y, z, ROCK);
@@ -206,7 +227,7 @@ public final class DungeonPlan
         return fromFloor < 3 + thickness * 5
                || fromCeiling < 1 + thickness * 7
                || fromWall < 1 + thickness * 6
-               || low > 0.78 && detail > -0.2;
+               || low > (isNatural() ? FLOATING_SEAMOUNT_LIMIT : FLOATING_MASS_LIMIT) && detail > -0.2;
     }
 
     /**
@@ -247,7 +268,7 @@ public final class DungeonPlan
      */
     private boolean hasPilotis(DungeonRoom room)
     {
-        return room.kind.template() == null && room.j0 > 0 && blueprint.theme() != DungeonTheme.FOREST && blueprint.theme() != DungeonTheme.MYCOSIS;
+        return room.kind.template() == null && room.j0 > 0 && blueprint.theme() != DungeonTheme.FOREST && blueprint.theme() != DungeonTheme.MYCOSIS && !isNatural();
     }
 
     private void stampPiloti(DungeonRoom room, int x, int z, int plate)
@@ -309,6 +330,9 @@ public final class DungeonPlan
      */
     private void stampDoorFrames(DungeonRoom room)
     {
+        if (DepthsRooms.isCave(room.kind.name()))
+            return;
+
         for (var door : room.doors)
         {
             for (int lateral = -2; lateral <= 2; lateral++)
@@ -414,7 +438,7 @@ public final class DungeonPlan
         int x0 = plane(flat.i);
         int y0 = plane(flat.j);
         int z0 = plane(flat.k);
-        boolean enclosed = blueprint.isBuried() || random.nextDouble() < ENCLOSED_BRIDGE_CHANCE;
+        boolean enclosed = blueprint.isBuried() || isNatural() || random.nextDouble() < ENCLOSED_BRIDGE_CHANCE;
 
         for (int z = z0; z <= z0 + CELL; z++)
         {
@@ -424,7 +448,7 @@ public final class DungeonPlan
                 if (!isSafe(x, y0, z))
                     grid.set(x, y0, z, gridLine ? FLOOR_TRIM : FLOOR);
                 if (enclosed)
-                    setUnlessSafe(x, y0 + CELL, z, CEILING);
+                    setUnlessSafe(x, y0 + CELL, z, built(CEILING));
             }
         }
 
@@ -441,7 +465,7 @@ public final class DungeonPlan
                 {
                     boolean pilaster = along == 0 || along == CELL;
                     for (int y = 1; y < CELL; y++)
-                        setUnlessSafe(x, y0 + y, z, pilaster ? WALL_TRIM : WALL);
+                        setUnlessSafe(x, y0 + y, z, built(pilaster ? WALL_TRIM : WALL));
                 }
                 else
                     setUnlessSafe(x, y0 + 1, z, FENCE);
@@ -465,6 +489,11 @@ public final class DungeonPlan
                 markSafe(x0 + x, y0, z0 + z);
         }
         flat.openings.forEach(side -> openThreshold(x0, y0, z0, side));
+        if (isNatural())
+        {
+            biteTunnel(x0, y0, z0);
+            return;
+        }
         if (enclosed)
             stampCorridorRib(flat, x0, y0, z0);
 
@@ -475,6 +504,12 @@ public final class DungeonPlan
             else
                 cornerLamp(flat, x0, y0, z0);
         }
+    }
+
+    private void biteTunnel(int x0, int y0, int z0)
+    {
+        if (random.nextInt(TUNNEL_BITE_ONE_IN) == 0)
+            biteAt(x0 + CELL / 2 + random.nextInt(3) - 1, y0 + CELL - 1, z0 + CELL / 2 + random.nextInt(3) - 1, 3 + random.nextInt(2), AIR, warpX, null);
     }
 
     /**
@@ -534,7 +569,7 @@ public final class DungeonPlan
         int z0 = plane(stair.k());
         var up = stair.ascending();
         boolean alongX = up.getAxis() == Direction.Axis.X;
-        boolean enclosed = blueprint.isBuried() || random.nextBoolean();
+        boolean enclosed = blueprint.isBuried() || isNatural() || random.nextBoolean();
         int top = CELL * 2;
 
         for (int along = 0; along <= CELL; along++)
@@ -557,7 +592,7 @@ public final class DungeonPlan
             if (enclosed)
             {
                 for (int y = 0; y <= top; y++)
-                    setUnlessSafe(x, y0 + y, z, WALL);
+                    setUnlessSafe(x, y0 + y, z, built(WALL));
             }
             else
             {
@@ -569,7 +604,7 @@ public final class DungeonPlan
         }
 
         for (int y = 0; y < along; y++)
-            grid.set(x, y0 + y, z, y == 0 ? FLOOR : WALL);
+            grid.set(x, y0 + y, z, y == 0 ? FLOOR : built(WALL));
 
         if (along == 0 || along == CELL)
             grid.set(x, y0 + along, z, FLOOR);
@@ -583,7 +618,7 @@ public final class DungeonPlan
             if (endWall)
             {
                 if (enclosed)
-                    setUnlessSafe(x, y0 + y, z, WALL);
+                    setUnlessSafe(x, y0 + y, z, built(WALL));
                 continue;
             }
             carveCorridor(x, y0 + y, z, y == top - 1);
@@ -591,7 +626,7 @@ public final class DungeonPlan
                 markSafe(x, y0 + y, z);
         }
         if (enclosed)
-            setUnlessSafe(x, y0 + top, z, CEILING);
+            setUnlessSafe(x, y0 + top, z, built(CEILING));
     }
 
     /**
@@ -856,11 +891,16 @@ public final class DungeonPlan
             var kind = mustBeMemoriam || random.nextDouble() < MEMORIAM_SHARE
                        ? DungeonCrystal.MEMORIAM
                        : random.nextBoolean() ? DungeonCrystal.AZURIUM : DungeonCrystal.RUBRUM;
+            int grown = growCluster(spots.get(random.nextInt(spots.size())), kind);
             if (kind == DungeonCrystal.MEMORIAM)
-                placedMemoriam++;
-
-            var spot = spots.get(random.nextInt(spots.size()));
-            growCluster(spot, kind);
+                placedMemoriam += grown;
+        }
+        // A spot can already be taken by an earlier cluster, and Memoriam is found nowhere else
+        for (var spot : spots)
+        {
+            if (placedMemoriam > 0)
+                return;
+            placedMemoriam += growCluster(spot, DungeonCrystal.MEMORIAM);
         }
     }
 
@@ -876,8 +916,9 @@ public final class DungeonPlan
         }
     }
 
-    private void growCluster(int[] spot, DungeonCrystal kind)
+    private int growCluster(int[] spot, DungeonCrystal kind)
     {
+        int grown = 0;
         var facing = Direction.values()[spot[3]];
         int count = 1 + random.nextInt(4);
         for (int crystal = 0; crystal < count; crystal++)
@@ -887,8 +928,12 @@ public final class DungeonPlan
             int z = spot[2] + (crystal == 0 || facing.getAxis() == Direction.Axis.Z ? 0 : random.nextInt(5) - 2);
             boolean anchored = grid.material(x - facing.getStepX(), y - facing.getStepY(), z - facing.getStepZ()).isAnchor();
             if (isInner(x, y, z) && grid.material(x, y, z).isOpen() && !isSafe(x, y, z) && anchored)
+            {
                 grid.set(x, y, z, DungeonMaterial.crystal(kind, random.nextInt(3)), facing);
+                grown++;
+            }
         }
+        return grown;
     }
 
     private void placeChests()
@@ -967,8 +1012,11 @@ public final class DungeonPlan
         }
         for (var flat : layout.flats.values())
         {
-            if ((flat.i + flat.k) % 2 == 0)
-                grid.set(plane(flat.i) + CELL / 2, plane(flat.j) + 2, plane(flat.k) + CELL / 2, FILL_LIGHT);
+            int x = plane(flat.i) + CELL / 2;
+            int y = plane(flat.j) + 2;
+            int z = plane(flat.k) + CELL / 2;
+            if ((flat.i + flat.k) % 2 == 0 && grid.material(x, y, z).isOpen())
+                grid.set(x, y, z, FILL_LIGHT);
         }
         if (!blueprint.isBuried())
             lightCavity();

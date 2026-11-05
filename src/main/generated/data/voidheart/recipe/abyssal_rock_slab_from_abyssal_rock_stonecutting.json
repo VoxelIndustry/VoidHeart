@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:abyssal_rock",
+  "result": {
+    "count": 2,
+    "id": "voidheart:abyssal_rock_slab"
+  }
+}

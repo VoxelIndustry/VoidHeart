@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "voidheart:block/abyssal_rock",
+    "side": "voidheart:block/abyssal_rock",
+    "top": "voidheart:block/abyssal_rock"
+  }
+}

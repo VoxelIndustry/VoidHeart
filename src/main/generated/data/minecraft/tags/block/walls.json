@@ -1,14 +1,15 @@
 {
   "values": [
+    "voidheart:cut_ravenous_gold_wall",
+    "voidheart:cut_listless_lead_wall",
     "voidheart:cut_seething_steel_wall",
+    "voidheart:voidstone_wall",
+    "voidheart:voidstone_tile_small_wall",
+    "voidheart:voidstone_polished_wall",
     "voidheart:cut_arrogant_iron_wall",
     "voidheart:cut_covetous_copper_wall",
-    "voidheart:voidstone_tile_small_wall",
-    "voidheart:voidstone_wall",
-    "voidheart:cut_ravenous_gold_wall",
-    "voidheart:voidstone_polished_wall",
+    "voidheart:voidstone_bricks_wall",
     "voidheart:voidstone_bricks_cracked_wall",
-    "voidheart:cut_listless_lead_wall",
-    "voidheart:voidstone_bricks_wall"
+    "voidheart:abyssal_rock_wall"
   ]
 }

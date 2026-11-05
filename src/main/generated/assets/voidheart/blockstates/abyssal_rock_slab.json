@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "voidheart:block/abyssal_rock_slab"
+    },
+    "type=double": {
+      "model": "voidheart:block/abyssal_rock"
+    },
+    "type=top": {
+      "model": "voidheart:block/abyssal_rock_slab_top"
+    }
+  }
+}

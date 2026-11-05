@@ -27,6 +27,11 @@ import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePa
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
+import net.voxelindustry.voidheart.client.particle.DepthsShoals;
+import net.voxelindustry.voidheart.client.particle.MarineSnowParticle;
+import net.voxelindustry.voidheart.client.particle.ShoalSpeckParticle;
+import net.voxelindustry.voidheart.client.particle.SmokerGlowParticle;
+import net.voxelindustry.voidheart.client.particle.SmokerPlumeParticle;
 import net.voxelindustry.voidheart.client.particle.AltarExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
@@ -162,6 +167,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.register(OculusRenderer::onLoad);
         ClientBlockEntityEvents.BLOCK_ENTITY_UNLOAD.register(OculusRenderer::onUnload);
         ClientTickEvents.END_CLIENT_TICK.register(OculusRenderer::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(DepthsShoals::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(LeyDebugRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
 
@@ -219,6 +225,19 @@ public class VoidHeartClient implements ClientModInitializer
                 SHATTER_FORGE_ITEM_PARTICLE,
                 (options, level, x, y, z, xAux, yAux, zAux, random) ->
                         new ShatterForgeItemParticle(level, x, y, z, xAux, yAux, zAux, options.input(), options.output()));
+
+        particles.register(SMOKER_WISP_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                SmokerPlumeParticle.wisp(level, x, y, z, yAux, spriteSet.get(random)));
+        particles.register(SMOKER_PLUME_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                SmokerPlumeParticle.plume(level, x, y, z, yAux, spriteSet.get(random)));
+        particles.register(SMOKER_CORE_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                SmokerGlowParticle.core(level, x, y, z, yAux, spriteSet.get(random)));
+        particles.register(SMOKER_EMBER_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                SmokerGlowParticle.ember(level, x, y, z, yAux, spriteSet.get(random)));
+        particles.register(MARINE_SNOW_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                new MarineSnowParticle(level, x, y, z, spriteSet.get(random)));
+        particles.register(SHOAL_SPECK_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                new ShoalSpeckParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
 
         particles.register(
                 SHATTER_FORGE_EXPERIENCE_PARTICLE,

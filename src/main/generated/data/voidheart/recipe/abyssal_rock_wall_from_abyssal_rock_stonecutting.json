@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:abyssal_rock",
+  "result": {
+    "id": "voidheart:abyssal_rock_wall"
+  }
+}

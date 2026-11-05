@@ -31,6 +31,7 @@ public final class DungeonBiomeSource extends BiomeSource implements BiomeResolv
     private static final ResourceKey<Biome> TEMPLE = key("dungeon_temple");
     private static final ResourceKey<Biome> FOREST = key("dungeon_forest");
     private static final ResourceKey<Biome> MYCOSIS = key("dungeon_mycosis");
+    private static final ResourceKey<Biome> DEPTHS = key("dungeon_depths");
 
     public static final MapCodec<DungeonBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                     RegistryOps.retrieveElement(BETWEEN),
@@ -39,7 +40,8 @@ public final class DungeonBiomeSource extends BiomeSource implements BiomeResolv
                     RegistryOps.retrieveElement(PALACE),
                     RegistryOps.retrieveElement(TEMPLE),
                     RegistryOps.retrieveElement(FOREST),
-                    RegistryOps.retrieveElement(MYCOSIS))
+                    RegistryOps.retrieveElement(MYCOSIS),
+                    RegistryOps.retrieveElement(DEPTHS))
             .apply(instance, instance.stable(DungeonBiomeSource::new)));
 
     private final Holder<Biome> between;
@@ -51,7 +53,8 @@ public final class DungeonBiomeSource extends BiomeSource implements BiomeResolv
                                Holder<Biome> palace,
                                Holder<Biome> temple,
                                Holder<Biome> forest,
-                               Holder<Biome> mycosis)
+                               Holder<Biome> mycosis,
+                               Holder<Biome> depths)
     {
         this.between = between;
         byTheme.put(DungeonTheme.CATHEDRAL, cathedral);
@@ -60,6 +63,7 @@ public final class DungeonBiomeSource extends BiomeSource implements BiomeResolv
         byTheme.put(DungeonTheme.TEMPLE, temple);
         byTheme.put(DungeonTheme.FOREST, forest);
         byTheme.put(DungeonTheme.MYCOSIS, mycosis);
+        byTheme.put(DungeonTheme.DEPTHS, depths);
     }
 
     private static ResourceKey<Biome> key(String name)

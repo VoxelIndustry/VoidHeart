@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:block/template_surface_growth",
+  "textures": {
+    "cross": "voidheart:block/glow_algae"
+  }
+}

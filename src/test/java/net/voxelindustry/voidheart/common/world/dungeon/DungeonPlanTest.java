@@ -176,6 +176,153 @@ class DungeonPlanTest
         }
     }
 
+    private static Stream<Arguments> depths()
+    {
+        return dungeons().filter(arguments -> ((DungeonBlueprint) arguments.get()[0]).theme() == DungeonTheme.DEPTHS);
+    }
+
+    private static EnumMap<DungeonMaterial, Integer> count(DungeonGrid grid)
+    {
+        var counts = new EnumMap<DungeonMaterial, Integer>(DungeonMaterial.class);
+        for (int y = 0; y < grid.height; y++)
+        {
+            for (int z = 0; z < grid.depth; z++)
+            {
+                for (int x = 0; x < grid.width; x++)
+                    counts.merge(grid.material(x, y, z), 1, Integer::sum);
+            }
+        }
+        return counts;
+    }
+
+    @ParameterizedTest
+    @MethodSource("depths")
+    void stillDepths_holdNoWater(DungeonBlueprint blueprint)
+    {
+        assertThat(count(DungeonPlan.generate(blueprint).grid())).doesNotContainKey(FLUID);
+    }
+
+    @ParameterizedTest
+    @MethodSource("depths")
+    void stillDepths_holdReefLifeAndSmokers(DungeonBlueprint blueprint)
+    {
+        var counts = count(DungeonPlan.generate(blueprint).grid());
+        assertThat(counts).as("smokers of %s", blueprint).containsKey(SMOKER_VENT);
+        assertThat(counts).as("coral of %s", blueprint).containsKey(CORAL_GROWTH);
+        assertThat(counts).as("drifting algae of %s", blueprint).containsKey(DRIFT_ALGAE_TIP);
+        if (blueprint.size() != DungeonSize.SMALL)
+        {
+            assertThat(counts).as("coral blocks of %s", blueprint).containsKey(CORAL_BLOCK);
+            assertThat(counts).as("kelp of %s", blueprint).containsKey(KELP_TIP);
+            assertThat(counts).as("tube worms of %s", blueprint).containsKey(TALL_PLANT);
+        }
+    }
+
+    @Test
+    void harderStillDepths_holdMoreSmokers()
+    {
+        double easy = averageSmokers(DungeonAddress.MIN_DIFFICULTY);
+        double hard = averageSmokers(DungeonAddress.MAX_DIFFICULTY);
+        assertThat(hard).isGreaterThan(easy * 1.3);
+    }
+
+    private static double averageSmokers(int difficulty)
+    {
+        int seeds = 16;
+        int smokers = 0;
+        for (int seed = 0; seed < seeds; seed++)
+        {
+            var blueprint = new DungeonBlueprint(DungeonSize.MEDIUM, DungeonTheme.DEPTHS, difficulty, DungeonLayout.BURIED, 104729L * seed);
+            smokers += count(DungeonPlan.generate(blueprint).grid()).getOrDefault(SMOKER_VENT, 0);
+        }
+        return smokers / (double) seeds;
+    }
+
+    /**
+     * Everything alive stands on something a player could not walk through, and survives its first block update in the world.
+     */
+    @ParameterizedTest
+    @MethodSource("depths")
+    void stillDepthsLife_isAttachedToSolidSurfaces(DungeonBlueprint blueprint)
+    {
+        var grid = DungeonPlan.generate(blueprint).grid();
+        for (int y = 0; y < grid.height; y++)
+        {
+            for (int z = 0; z < grid.depth; z++)
+            {
+                for (int x = 0; x < grid.width; x++)
+                {
+                    var material = grid.material(x, y, z);
+                    switch (material)
+                    {
+                        case CORAL_GROWTH, GLOW_ALGAE, BARNACLE, ANEMONE ->
+                        {
+                            var facing = DungeonCell.facing(grid.cell(x, y, z));
+                            var support = grid.material(x - facing.getStepX(), y - facing.getStepY(), z - facing.getStepZ());
+                            assertThat(isSolidSupport(support)).as("%s on %s at %s %s %s facing %s of %s", material, support, x, y, z, facing, blueprint).isTrue();
+                        }
+                        case KELP, KELP_TIP ->
+                        {
+                            var below = grid.material(x, y - 1, z);
+                            assertThat(below == KELP || isSolidSupport(below)).as("kelp on %s at %s %s %s of %s", below, x, y, z, blueprint).isTrue();
+                            if (material == KELP)
+                                assertThat(grid.material(x, y + 1, z)).isIn(KELP, KELP_TIP);
+                        }
+                        case DRIFT_ALGAE, DRIFT_ALGAE_TIP ->
+                        {
+                            var above = grid.material(x, y + 1, z);
+                            assertThat(above == DRIFT_ALGAE || isSolidSupport(above)).as("algae under %s at %s %s %s of %s", above, x, y, z, blueprint).isTrue();
+                            if (material == DRIFT_ALGAE)
+                                assertThat(grid.material(x, y - 1, z)).isIn(DRIFT_ALGAE, DRIFT_ALGAE_TIP);
+                        }
+                        case TALL_PLANT ->
+                        {
+                            boolean upper = DungeonCell.flipped(grid.cell(x, y, z));
+                            if (upper)
+                                assertThat(grid.material(x, y - 1, z)).isEqualTo(TALL_PLANT);
+                            else
+                            {
+                                assertThat(isSolidSupport(grid.material(x, y - 1, z))).as("tube worms at %s %s %s of %s", x, y, z, blueprint).isTrue();
+                                assertThat(grid.material(x, y + 1, z)).isEqualTo(TALL_PLANT);
+                            }
+                        }
+                        default ->
+                        {
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean isSolidSupport(DungeonMaterial material)
+    {
+        return material != TEMPLATE && material.isCube() && !material.isOpen();
+    }
+
+    @ParameterizedTest
+    @MethodSource("depths")
+    void smokers_haveRoomToFireAndStayAwayFromTheEntry(DungeonBlueprint blueprint)
+    {
+        var plan = DungeonPlan.generate(blueprint);
+        var grid = plan.grid();
+        var entry = plan.entry();
+        for (int y = 0; y < grid.height; y++)
+        {
+            for (int z = 0; z < grid.depth; z++)
+            {
+                for (int x = 0; x < grid.width; x++)
+                {
+                    if (grid.material(x, y, z) != SMOKER_VENT)
+                        continue;
+                    assertThat(Math.abs(x - entry[0]) + Math.abs(z - entry[2])).as("smoker %s %s %s of %s", x, y, z, blueprint).isGreaterThanOrEqualTo(10);
+                    for (int up = 1; up <= 2; up++)
+                        assertThat(grid.material(x, y + up, z).isPassable()).as("above smoker %s %s %s of %s", x, y, z, blueprint).isTrue();
+                }
+            }
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("dungeons")
     void generation_isDeterministic(DungeonBlueprint blueprint)

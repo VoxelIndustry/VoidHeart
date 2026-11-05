@@ -117,6 +117,14 @@ class DungeonPlanPreview
             return 0x8A5A30;
         if (material == CAP || material == CAP_GILL || material == CAP_GLOW)
             return 0xC83A20;
+        if (material == CORAL_BLOCK || material == CORAL_GROWTH || material == ANEMONE)
+            return 0xD86AB0;
+        if (material == KELP || material == KELP_TIP || material == DRIFT_ALGAE || material == DRIFT_ALGAE_TIP || material == GLOW_ALGAE)
+            return 0x2FAF8F;
+        if (material == SMOKER_VENT || material == VENT_CHIMNEY)
+            return 0xFF5A1A;
+        if (material == WHALE_BONE)
+            return 0xF0E8D0;
         return 0x9A9AA6;
     }
 }

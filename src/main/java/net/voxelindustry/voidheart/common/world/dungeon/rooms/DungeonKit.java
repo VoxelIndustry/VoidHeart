@@ -61,6 +61,14 @@ public record DungeonKit(List<RoomKind> landmarks, List<RoomKind> rooms)
                     List.of(RoomKind.of("hut", 3, 4, 2, 3, 4, MycosisRooms::hut),
                             RoomKind.of("farm", 3, 5, 2, 3, 3, MycosisRooms::farm),
                             RoomKind.of("pit", 2, 4, 1, 2, 2, MycosisRooms::pit),
+                            TOWER, SANCTUM, MONOLITH_COURT)),
+            DungeonTheme.DEPTHS, new DungeonKit(
+                    List.of(RoomKind.of(DepthsRooms.TRENCH, 4, 8, 3, 6, 3, DepthsRooms::trench), ATRIUM, KEEP),
+                    List.of(RoomKind.of(DepthsRooms.REEF, 3, 6, 2, 4, 4, DepthsRooms::reef),
+                            RoomKind.of(DepthsRooms.KELP_FOREST, 3, 5, 3, 5, 3, DepthsRooms::kelpForest),
+                            RoomKind.of(DepthsRooms.VENT_FIELD, 3, 6, 2, 3, 3, DepthsRooms::ventField),
+                            RoomKind.of(DepthsRooms.GROTTO, 2, 4, 1, 2, 4, DepthsRooms::grotto),
+                            RoomKind.of(DepthsRooms.WHALE_FALL, 4, 6, 2, 3, 2, DepthsRooms::whaleFall),
                             TOWER, SANCTUM, MONOLITH_COURT))));
 
     public static DungeonKit of(DungeonTheme theme)
