@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "voidheart:block/armillary_part"
+    },
+    "open=true": {
+      "model": "voidheart:block/armillary_part"
+    }
+  }
+}

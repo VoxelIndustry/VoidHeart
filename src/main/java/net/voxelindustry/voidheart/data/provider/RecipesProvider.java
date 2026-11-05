@@ -102,6 +102,7 @@ public class RecipesProvider extends FabricRecipeProvider
             offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_TILE_SMALL_CHISELED, VoidHeartBlocks.VOIDSTONE_TILE);
 
             offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_BRICKS);
+            offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_CHISELED, VoidHeartBlocks.VOIDSTONE_POLISHED);
 
             offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE);
             offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_PILLAR_SLAB, VoidHeartBlocks.VOIDSTONE_PILLAR, 2);
@@ -149,6 +150,11 @@ public class RecipesProvider extends FabricRecipeProvider
                     ExperienceSkullTile.MAX_EXPERIENCE);
 
             // Altar: the catalyst sits on the altar, each ingredient on one of the eight pillars
+            offerAltarRecipe("armillary_core", VoidHeartBlocks.ARMILLARY_CORE, Items.COMPASS,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartItems.OBSIDIAN_SHARD);
             offerAltarRecipe("beam_focus", VoidHeartBlocks.BEAM_FOCUS, VoidHeartBlocks.VOID_CONDUIT,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);

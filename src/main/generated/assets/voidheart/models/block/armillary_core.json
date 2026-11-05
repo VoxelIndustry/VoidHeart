@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "voidheart:block/armillary_core_bottom",
+    "side": "voidheart:block/armillary_core_side",
+    "top": "voidheart:block/armillary_core_top"
+  }
+}

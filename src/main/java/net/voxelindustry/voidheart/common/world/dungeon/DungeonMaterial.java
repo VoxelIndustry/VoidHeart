@@ -84,6 +84,8 @@ public enum DungeonMaterial
     GRATE(true),
     CHEST,
     NEST,
+    // Where players leave from, always within sight of where they arrive
+    RETURN_RIFT,
 
     CORAL_BLOCK,
     CORAL_GROWTH,
@@ -130,7 +132,7 @@ public enum DungeonMaterial
     {
         return switch (this)
         {
-            case UNSET, AIR, FILL_LIGHT, FLUID, RUNNER, CANDLE, LANTERN, CHAIN, PLANT, TALL_PLANT, HANGING, COBWEB,
+            case UNSET, AIR, FILL_LIGHT, FLUID, RUNNER, CANDLE, LANTERN, CHAIN, PLANT, TALL_PLANT, HANGING, COBWEB, RETURN_RIFT,
                  CORAL_GROWTH, GLOW_ALGAE, BARNACLE, ANEMONE, KELP, KELP_TIP, DRIFT_ALGAE, DRIFT_ALGAE_TIP -> true;
             default -> false;
         };

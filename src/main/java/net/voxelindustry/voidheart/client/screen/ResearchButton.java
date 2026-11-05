@@ -22,9 +22,20 @@ class ResearchButton extends Button
     private static final int  DEAD_TEXT       = 0xFF9A8AAE;
     private static final long BREATH_MILLIS   = 2400;
 
+    private final boolean quiet;
+
     ResearchButton(int x, int y, int width, int height, OnPress onPress)
     {
+        this(x, y, width, height, false, onPress);
+    }
+
+    /**
+     * @param quiet for what is there if wanted but should not be invited: it neither breathes nor lights up until the cursor is on it
+     */
+    ResearchButton(int x, int y, int width, int height, boolean quiet, OnPress onPress)
+    {
         super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
+        this.quiet = quiet;
     }
 
     @Override
@@ -32,16 +43,17 @@ class ResearchButton extends Button
     {
         int x = getX();
         int y = getY();
+        boolean lit = active && (!quiet || isHoveredOrFocused());
 
         graphics.fill(x, y, x + width, y + height, PLATE_COLOR);
-        if (active)
+        if (active && !quiet)
         {
             float breath = 0.5F + 0.5F * (float) Math.sin(Util.getMillis() * Math.PI * 2 / BREATH_MILLIS);
             graphics.fill(x, y, x + width, y + height, ARGB.srgbLerp(breath * 0.6F, CHARGE_COLOR, READY_COLOR));
         }
 
-        graphics.outline(x, y, width, height, !active ? BORDER_COLOR : isHoveredOrFocused() ? HOVER_COLOR : LIVE_COLOR);
+        graphics.outline(x, y, width, height, !lit ? BORDER_COLOR : isHoveredOrFocused() ? HOVER_COLOR : LIVE_COLOR);
         var font = Minecraft.getInstance().font;
-        graphics.centeredText(font, getMessage(), x + width / 2, y + (height - font.lineHeight) / 2 + 1, active ? LIVE_TEXT : DEAD_TEXT);
+        graphics.centeredText(font, getMessage(), x + width / 2, y + (height - font.lineHeight) / 2 + 1, lit ? LIVE_TEXT : DEAD_TEXT);
     }
 }

@@ -359,6 +359,34 @@ class DungeonPlanTest
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("dungeons")
+    void returnRift_floatsWithinReachOfTheArrival(DungeonBlueprint blueprint)
+    {
+        var plan = DungeonPlan.generate(blueprint);
+        var grid = plan.grid();
+        var entry = plan.entry();
+        var rift = plan.returnRift();
+
+        assertThat(grid.material(rift[0], rift[1], rift[2])).as("rift of %s", blueprint).isEqualTo(RETURN_RIFT);
+        assertThat(Math.abs(rift[0] - entry[0]) + Math.abs(rift[2] - entry[2])).isLessThanOrEqualTo(2);
+        assertThat(rift[1]).isEqualTo(entry[1] + 1);
+
+        int rifts = 0;
+        for (int y = 0; y < grid.height; y++)
+        {
+            for (int z = 0; z < grid.depth; z++)
+            {
+                for (int x = 0; x < grid.width; x++)
+                {
+                    if (grid.material(x, y, z) == RETURN_RIFT)
+                        rifts++;
+                }
+            }
+        }
+        assertThat(rifts).as("rifts in %s", blueprint).isEqualTo(1);
+    }
+
     static int index(DungeonGrid grid, int x, int y, int z)
     {
         return (y * grid.depth + z) * grid.width + x;

@@ -96,6 +96,8 @@ public class ModelsProvider extends FabricModelProvider
         registerBundle(VoidHeartBlocks.MEDIUM_MEMORIAM_BUNDLE);
         registerBundle(VoidHeartBlocks.LARGE_MEMORIAM_BUNDLE);
 
+        generator.createTrivialBlock(VoidHeartBlocks.ARMILLARY_CORE, TexturedModel.CUBE_BOTTOM_TOP);
+        generator.createTrivialCube(VoidHeartBlocks.VOIDSTONE_CHISELED);
         registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
         registerBeholder(VoidHeartBlocks.BEHOLDER);
 

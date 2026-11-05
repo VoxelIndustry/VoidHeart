@@ -38,7 +38,8 @@
       "net.voxelindustry.voidheart.gametest.VoidEyeBehaviourClientTest",
       "net.voxelindustry.voidheart.gametest.LootTablesClientTest",
       "net.voxelindustry.voidheart.gametest.DungeonTeleportClientTest",
-      "net.voxelindustry.voidheart.gametest.StillDepthsClientTest"
+      "net.voxelindustry.voidheart.gametest.StillDepthsClientTest",
+      "net.voxelindustry.voidheart.gametest.ArmillaryClientTest"
     ]
   },
   "depends": {

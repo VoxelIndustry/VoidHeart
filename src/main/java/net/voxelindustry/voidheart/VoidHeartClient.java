@@ -20,6 +20,11 @@ import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
 import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
 import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
 import net.voxelindustry.voidheart.client.render.mob.VoidMobRenderers;
+import net.voxelindustry.voidheart.client.ArmillaryTremor;
+import net.voxelindustry.voidheart.client.render.ArmillaryRender;
+import net.voxelindustry.voidheart.client.render.ArmillaryRiftRender;
+import net.voxelindustry.voidheart.client.screen.ArmillaryScreen;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
@@ -122,6 +127,12 @@ public class VoidHeartClient implements ClientModInitializer
 
         MenuScreens.register(VoidHeartMenus.PERMEABLE_BARRIER, PermeableBarrierScreen::new);
         MenuScreens.register(VoidHeartMenus.KNOWLEDGE_REPOSITORY, ResearchScreen::new);
+        MenuScreens.register(VoidHeartMenus.ARMILLARY, ArmillaryScreen::new);
+        ClientPlayNetworking.registerGlobalReceiver(ArmillaryPayloads.View.TYPE, (payload, context) -> ArmillaryScreen.receive(payload));
+        ClientPlayNetworking.registerGlobalReceiver(ArmillaryPayloads.Tremor.TYPE, (payload, context) -> ArmillaryTremor.receive(payload));
+        ClientTickEvents.END_CLIENT_TICK.register(ArmillaryTremor::tickClient);
+        BlockEntityRenderers.register(VoidHeartTiles.ARMILLARY, ArmillaryRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.ARMILLARY_RIFT, ArmillaryRiftRender::new);
         ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Snapshot.TYPE, (payload, context) -> ResearchScreen.snapshot = payload);
         ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Recipes.TYPE, (payload, context) -> ResearchScreen.recipeSheets = payload.sheets());
         ItemTooltipCallback.EVENT.register(ResearchScreen::appendKnowledgeTooltip);
@@ -148,6 +159,7 @@ public class VoidHeartClient implements ClientModInitializer
         {
             LeyDebugRender.clear();
             AnchorWaypointRender.clear();
+            ArmillaryTremor.clear();
             OculusRenderer.clear();
             OculusControls.clear();
             OculusMarkers.clear();

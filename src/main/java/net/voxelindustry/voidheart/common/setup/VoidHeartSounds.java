@@ -48,6 +48,16 @@ public final class VoidHeartSounds
     public static final SoundEvent ARCANE_EYE_FIRE  = register("entity.arcane_eye.fire");
     public static final SoundEvent ARCANE_BOLT_HIT  = register("entity.arcane_bolt.hit");
 
+    public static final SoundEvent ARMILLARY_FORM         = register("block.armillary.form");
+    public static final SoundEvent ARMILLARY_BREAK        = register("block.armillary.break");
+    public static final SoundEvent ARMILLARY_FOUND        = register("block.armillary.found");
+    public static final SoundEvent ARMILLARY_REACHED      = register("block.armillary.reached");
+    public static final SoundEvent ARMILLARY_OPEN         = register("block.armillary.open");
+    public static final SoundEvent ARMILLARY_CLOSE        = register("block.armillary.close");
+    public static final SoundEvent CONNECTION_TRAVEL      = register("connection.travel");
+    public static final SoundEvent CONNECTION_RUMBLE_FAR  = register("connection.rumble_far");
+    public static final SoundEvent CONNECTION_RUMBLE_NEAR = register("connection.rumble_near");
+
     private VoidHeartSounds()
     {
     }

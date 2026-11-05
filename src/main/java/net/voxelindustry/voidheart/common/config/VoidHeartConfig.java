@@ -28,6 +28,7 @@ public class VoidHeartConfig
     private static final String BEHOLDER = "beholder";
     private static final String SHOULDER_EYE = "shoulder_eye";
     private static final String RESEARCH = "research";
+    private static final String ARMILLARY = "armillary";
 
     @AutoGen(category = LEY_LINES)
     @TickBox
@@ -119,6 +120,46 @@ public class VoidHeartConfig
     @SerialEntry(value = "knowledge_tablet_chance", comment = "Chance for a broken monolith block to drop a Knowledge Tablet, once the player has held one")
     public float knowledgeTabletChance = 0.05F;
 
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 60, step = 1)
+    @SerialEntry(value = "armillary_scan_minutes", comment = "Minutes an armillary takes to find each new bubble, while its chunk is loaded")
+    public int armillaryScanMinutes = 5;
+
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 10, step = 1)
+    @SerialEntry(value = "armillary_max_bubbles", comment = "How many bubbles an armillary can hold on its chart at once")
+    public int armillaryMaxBubbles = 5;
+
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 240, step = 1)
+    @SerialEntry(value = "armillary_bubble_fade_minutes", comment = "Minutes a bubble nobody targets stays on the chart")
+    public int armillaryBubbleFadeMinutes = 30;
+
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 60, step = 1)
+    @SerialEntry(value = "armillary_search_min_minutes", comment = "Minutes the search for a path takes at the shallowest depth")
+    public int armillarySearchMinMinutes = 2;
+
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 60, step = 1)
+    @SerialEntry(value = "armillary_search_max_minutes", comment = "Minutes the search for a path takes at the deepest depth")
+    public int armillarySearchMaxMinutes = 8;
+
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 240, step = 1)
+    @SerialEntry(value = "armillary_connection_min_minutes", comment = "Shortest time a connection to a dungeon can hold, in minutes")
+    public int armillaryConnectionMinMinutes = 30;
+
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 240, step = 1)
+    @SerialEntry(value = "armillary_connection_max_minutes", comment = "Longest time a connection to a dungeon can hold, in minutes")
+    public int armillaryConnectionMaxMinutes = 40;
+
+    @AutoGen(category = ARMILLARY)
+    @TickBox
+    @SerialEntry(value = "armillary_camera_shake", comment = "Shake the camera while a connection collapses")
+    public boolean armillaryCameraShake = true;
+
     public static void load()
     {
         HANDLER.load();
@@ -129,6 +170,13 @@ public class VoidHeartConfig
         get().insightCostGrowth = Mth.clamp(get().insightCostGrowth, 1, 2);
         get().knowledgeFirstTabletChance = Mth.clamp(get().knowledgeFirstTabletChance, 0, 1);
         get().knowledgeTabletChance = Mth.clamp(get().knowledgeTabletChance, 0, 1);
+        get().armillaryScanMinutes = Mth.clamp(get().armillaryScanMinutes, 1, 60);
+        get().armillaryMaxBubbles = Mth.clamp(get().armillaryMaxBubbles, 1, 10);
+        get().armillaryBubbleFadeMinutes = Mth.clamp(get().armillaryBubbleFadeMinutes, 1, 240);
+        get().armillarySearchMinMinutes = Mth.clamp(get().armillarySearchMinMinutes, 1, 60);
+        get().armillarySearchMaxMinutes = Mth.clamp(get().armillarySearchMaxMinutes, 1, 60);
+        get().armillaryConnectionMinMinutes = Mth.clamp(get().armillaryConnectionMinMinutes, 1, 240);
+        get().armillaryConnectionMaxMinutes = Mth.clamp(get().armillaryConnectionMaxMinutes, 1, 240);
         get().leyLineTravelAnchorInactiveRate = Mth.clamp(get().leyLineTravelAnchorInactiveRate, 0, 1);
         get().oculusTableFollowRange = Mth.clamp(get().oculusTableFollowRange, 16, 512);
         get().oculusTableSightRange = Mth.clamp(get().oculusTableSightRange, 0, 64);

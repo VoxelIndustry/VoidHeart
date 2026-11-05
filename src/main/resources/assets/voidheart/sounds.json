@@ -628,5 +628,104 @@
         "pitch": 1.4
       }
     ]
+  },
+  "block.armillary.form": {
+    "subtitle": "subtitles.voidheart.block.armillary.form",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.activate",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 1.0
+      }
+    ]
+  },
+  "block.armillary.break": {
+    "subtitle": "subtitles.voidheart.block.armillary.break",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.deactivate",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 1.0
+      }
+    ]
+  },
+  "block.armillary.found": {
+    "subtitle": "subtitles.voidheart.block.armillary.found",
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_block.resonate",
+        "type": "event",
+        "pitch": 0.5,
+        "volume": 1.0
+      }
+    ]
+  },
+  "block.armillary.reached": {
+    "subtitle": "subtitles.voidheart.block.armillary.reached",
+    "sounds": [
+      {
+        "name": "minecraft:block.end_portal_frame.fill",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 1.0
+      }
+    ]
+  },
+  "block.armillary.open": {
+    "subtitle": "subtitles.voidheart.block.armillary.open",
+    "sounds": [
+      {
+        "name": "minecraft:block.end_portal.spawn",
+        "type": "event",
+        "pitch": 1.3,
+        "volume": 0.6
+      }
+    ]
+  },
+  "block.armillary.close": {
+    "subtitle": "subtitles.voidheart.block.armillary.close",
+    "sounds": [
+      {
+        "name": "minecraft:block.conduit.deactivate",
+        "type": "event",
+        "pitch": 0.7,
+        "volume": 1.0
+      }
+    ]
+  },
+  "connection.travel": {
+    "subtitle": "subtitles.voidheart.connection.travel",
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.teleport",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 0.8
+      }
+    ]
+  },
+  "connection.rumble_far": {
+    "subtitle": "subtitles.voidheart.connection.rumble_far",
+    "sounds": [
+      {
+        "name": "minecraft:entity.lightning_bolt.thunder",
+        "type": "event",
+        "pitch": 0.5,
+        "volume": 0.5
+      }
+    ]
+  },
+  "connection.rumble_near": {
+    "subtitle": "subtitles.voidheart.connection.rumble_near",
+    "sounds": [
+      {
+        "name": "minecraft:entity.generic.explode",
+        "type": "event",
+        "pitch": 0.5,
+        "volume": 0.6
+      }
+    ]
   }
 }

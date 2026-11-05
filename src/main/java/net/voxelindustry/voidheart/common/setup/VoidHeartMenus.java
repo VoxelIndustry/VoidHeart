@@ -7,6 +7,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryMenu;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierConfigurePayload;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePayload;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierMenu;
@@ -19,6 +21,7 @@ public class VoidHeartMenus
 {
     public static ExtendedMenuType<PermeableBarrierMenu, BlockPos> PERMEABLE_BARRIER;
     public static ExtendedMenuType<KnowledgeRepositoryMenu, BlockPos> KNOWLEDGE_REPOSITORY;
+    public static ExtendedMenuType<ArmillaryMenu, BlockPos> ARMILLARY;
 
     public static void registerMenus()
     {
@@ -28,6 +31,10 @@ public class VoidHeartMenus
         KNOWLEDGE_REPOSITORY = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "knowledge_repository"),
                 new ExtendedMenuType<>(KnowledgeRepositoryMenu::new, BlockPos.STREAM_CODEC));
         KnowledgePayloads.register();
+
+        ARMILLARY = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "armillary"),
+                new ExtendedMenuType<>(ArmillaryMenu::new, BlockPos.STREAM_CODEC));
+        ArmillaryPayloads.register();
 
         PayloadTypeRegistry.clientboundPlay().register(BarrierWavePayload.TYPE, BarrierWavePayload.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(BarrierConfigurePayload.TYPE, BarrierConfigurePayload.STREAM_CODEC);

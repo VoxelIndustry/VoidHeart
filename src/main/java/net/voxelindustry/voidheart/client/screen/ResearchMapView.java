@@ -57,7 +57,7 @@ final class ResearchMapView
     private static final int  MOTES_REACH     = 9;
     private static final float MOTES_SPEED    = 0.00011F;
     private static final int  LABEL_DROP      = 4;
-    private static final int  LABEL_BACK_COLOR = 0xC8050308;
+    static final int          LABEL_BACK_COLOR = 0xC8050308;
     private static final int  TEAR_CLEARANCE  = 18;
     private static final int  LINK_PIECES     = 20;
     private static final int  BLOOM_DOTS      = 32;
@@ -355,15 +355,22 @@ final class ResearchMapView
             float y = link.ys()[piece] + (link.ys()[piece + 1] - link.ys()[piece]) * within;
             float angle = (float) Math.atan2(link.ys()[piece + 1] - link.ys()[piece], link.xs()[piece + 1] - link.xs()[piece]);
             float ends = Math.min(1, Math.min(along, link.length() - along) / 8);
-
-            var pose = graphics.pose();
-            pose.pushMatrix();
-            pose.translate(x, y);
-            pose.rotate(angle - (float) (Math.PI / 2));
-            pose.scale(0.6F, 1);
-            graphics.fillGradient(-1, -6, 1, 0, ARGB.color(0, rgb), ARGB.color((int) (alpha * ends), rgb));
-            pose.popMatrix();
+            mote(graphics, x, y, angle, rgb, (int) (alpha * ends));
         }
+    }
+
+    /**
+     * A little light with its tail behind it, which hides the pixel steps a dot would show at this speed.
+     */
+    static void mote(GuiGraphicsExtractor graphics, float x, float y, float angle, int rgb, int alpha)
+    {
+        var pose = graphics.pose();
+        pose.pushMatrix();
+        pose.translate(x, y);
+        pose.rotate(angle - (float) (Math.PI / 2));
+        pose.scale(0.6F, 1);
+        graphics.fillGradient(-1, -6, 1, 0, ARGB.color(0, rgb), ARGB.color(alpha, rgb));
+        pose.popMatrix();
     }
 
     /**
@@ -626,6 +633,11 @@ final class ResearchMapView
         graphics.blit(RenderPipelines.GUI_TEXTURED, SPRITES, x, y, open ? 16 : 0, GLYPH_ROW, 16, 16, ATLAS, ATLAS);
     }
 
+    static void glyph(GuiGraphicsExtractor graphics, boolean open, int x, int y, int scale, int color)
+    {
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SPRITES, x, y, open ? 16 : 0, GLYPH_ROW, 16 * scale, 16 * scale, 16, 16, ATLAS, ATLAS, color);
+    }
+
     static ItemStack iconOf(Research research)
     {
         return new ItemStack(BuiltInRegistries.ITEM.getValue(research.icon()));
@@ -641,10 +653,12 @@ final class ResearchMapView
 
     private void brackets(GuiGraphicsExtractor graphics, Identifier id, int color)
     {
-        int reach = NODE_SIZE / 2 + 2;
+        brackets(graphics, nodeX(id), nodeY(id), NODE_SIZE / 2 + 2, color);
+    }
+
+    static void brackets(GuiGraphicsExtractor graphics, int x, int y, int reach, int color)
+    {
         int arm = 4;
-        int x = nodeX(id);
-        int y = nodeY(id);
         for (int sx = -1; sx <= 1; sx += 2)
         {
             for (int sy = -1; sy <= 1; sy += 2)
@@ -669,11 +683,16 @@ final class ResearchMapView
         float radius = NODE_SIZE / 2F + eased * reach;
         int dots = bloom.finished() ? BLOOM_DOTS * 2 : BLOOM_DOTS;
         int color = ARGB.color((int) (255 * (1 - t)), bloom.finished() ? ResearchScreen.KNOWN_RGB : ResearchScreen.FRONTIER_RGB);
+        dotRing(graphics, nodeX(bloom.id()), nodeY(bloom.id()), radius, dots, eased, color);
+    }
+
+    static void dotRing(GuiGraphicsExtractor graphics, float centerX, float centerY, float radius, int dots, float turn, int color)
+    {
         for (int dot = 0; dot < dots; dot++)
         {
-            double angle = dot * Math.PI * 2 / dots + eased;
-            int x = (int) (nodeX(bloom.id()) + Math.cos(angle) * radius);
-            int y = (int) (nodeY(bloom.id()) + Math.sin(angle) * radius);
+            double angle = dot * Math.PI * 2 / dots + turn;
+            int x = (int) (centerX + Math.cos(angle) * radius);
+            int y = (int) (centerY + Math.sin(angle) * radius);
             graphics.fill(x, y, x + 2, y + 2, color);
         }
     }

@@ -20,6 +20,7 @@ A Fabric mod for Minecraft 26.3 on Java 25, using Mojang mappings. It depends on
 - `src/main/generated/`: datagen output, committed. Change the providers and rerun `runDatagen` rather than editing these files.
 - `src/test/`: unit tests for pure logic.
 - `src/main/java/.../common/world/dungeon/`: void dungeons. `DungeonPlan` is pure and unit tested; `DUNGEON_PREVIEW=true ./gradlew test --tests '*DungeonPlanPreview*'` draws cuts through them into `build/dungeon-preview` without starting a game.
+- `src/main/java/.../common/content/armillary/`: the way into dungeons. `ArmillaryChart` and `ArmillaryRoots` are pure and unit tested. `/voidheart armillary reveal|search <percent>|decay <seconds>` skips its timers for review.
 - `src/gametest/`: client game tests. Each one must be listed in `src/gametest/resources/fabric.mod.json`, or it silently never runs.
 
 ## Skills

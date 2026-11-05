@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client.screen;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.KeyEvent;
@@ -65,11 +66,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     static final int LID_COLOR      = 0xFF8E6BE8;
     static final int LID_LOW_COLOR  = 0xFF4A3860;
 
-    private static final int RULE_COLOR     = 0xFF4A3860;
+    static final int         RULE_COLOR     = 0xFF4A3860;
     private static final int BAR_BACK_COLOR = 0xFF08050C;
     private static final int TABLET_COLOR   = 0xF40B0810;
     private static final int SPENT_SHADE    = 0xB0100A18;
-    private static final int READOUT_COLOR  = 0xFF8A7A99;
+    static final int         READOUT_COLOR  = 0xFF8A7A99;
     private static final int GLYPH_DIM      = 0x58040208;
     private static final int WHISPER_BACK   = 0xA0050308;
 
@@ -138,7 +139,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     {
     }
 
-    private record Bounds(int x, int y, int width, int height)
+    record Bounds(int x, int y, int width, int height)
     {
         boolean contains(double px, double py)
         {
@@ -388,7 +389,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return String.format(Locale.ROOT, "%.0f", value);
     }
 
-    private static String duration(double seconds)
+    static String duration(double seconds)
     {
         long whole = (long) Math.ceil(seconds);
         if (whole < 60)
@@ -403,7 +404,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return Component.translatable(count == 1 ? "voidheart.research.insight_one" : "voidheart.research.insight_many", count);
     }
 
-    private static void tablet(GuiGraphicsExtractor graphics, Bounds bounds)
+    static void tablet(GuiGraphicsExtractor graphics, Bounds bounds)
     {
         graphics.fill(bounds.x(), bounds.y(), bounds.x() + bounds.width(), bounds.y() + bounds.height(), TABLET_COLOR);
         graphics.outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), RULE_COLOR);
@@ -756,9 +757,13 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         if (text == null)
             return;
 
-        int y = height - PAD - LINE + 1;
+        whisper(graphics, font, text, color, (left + right) / 2, height);
+    }
+
+    static void whisper(GuiGraphicsExtractor graphics, Font font, Component text, int color, int center, int screenHeight)
+    {
+        int y = screenHeight - PAD - LINE + 1;
         int half = font.width(text) / 2 + 3;
-        int center = (left + right) / 2;
         graphics.fill(center - half, y - 1, center + half, y + LINE - 1, WHISPER_BACK);
         graphics.centeredText(font, text, center, y, color);
     }

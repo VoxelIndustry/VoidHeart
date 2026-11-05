@@ -111,6 +111,7 @@ public class VoidHeartCommands
 
         registerPocketCommand(builder);
         DungeonCommands.register(builder);
+        ArmillaryCommands.register(builder);
         LeyCommands.register(builder);
         CurseCommands.register(builder);
         ResearchCommands.register(builder);
