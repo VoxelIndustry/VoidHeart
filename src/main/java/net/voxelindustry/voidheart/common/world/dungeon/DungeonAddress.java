@@ -25,6 +25,8 @@ public record DungeonAddress(DungeonSize size, DungeonTheme theme, int difficult
             throw new IllegalArgumentException("Difficulty out of range: " + difficulty);
         if (index < 0 || index > MAX_INDEX)
             throw new IllegalArgumentException("Index out of range: " + index);
+        if (!theme.comesIn(size))
+            throw new IllegalArgumentException("No " + theme.getSerializedName() + " dungeon comes in " + size.getSerializedName());
     }
 
     public int row()
@@ -51,7 +53,7 @@ public record DungeonAddress(DungeonSize size, DungeonTheme theme, int difficult
         int themeAndDifficulty = row / SIZES;
         var theme = DungeonTheme.byId(themeAndDifficulty % RESERVED_THEMES);
         int difficulty = themeAndDifficulty / RESERVED_THEMES + MIN_DIFFICULTY;
-        if (theme == null || difficulty > MAX_DIFFICULTY)
+        if (theme == null || difficulty > MAX_DIFFICULTY || !theme.comesIn(size))
             return null;
 
         return new DungeonAddress(size, theme, difficulty, column);

@@ -11,21 +11,33 @@ public enum DungeonTheme implements StringRepresentable
     TEMPLE(3, "temple"),
     FOREST(4, "forest"),
     MYCOSIS(5, "mycosis"),
-    DEPTHS(6, "depths");
+    DEPTHS(6, "depths", DungeonSize.MEDIUM);
 
     private final int id;
     private final String name;
+    private final DungeonSize smallest;
+
+    DungeonTheme(int id, String name)
+    {
+        this(id, name, DungeonSize.SMALL);
+    }
 
     // The id is part of where a dungeon lies in the world, so it can never change once released
-    DungeonTheme(int id, String name)
+    DungeonTheme(int id, String name, DungeonSize smallest)
     {
         this.id = id;
         this.name = name;
+        this.smallest = smallest;
     }
 
     public int id()
     {
         return id;
+    }
+
+    public boolean comesIn(DungeonSize size)
+    {
+        return size.ordinal() >= smallest.ordinal();
     }
 
     public static @Nullable DungeonTheme byId(int id)

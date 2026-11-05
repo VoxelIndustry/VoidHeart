@@ -122,6 +122,16 @@ public class VoidDungeonClientTest implements FabricClientGameTest
             if (other.equals(address))
                 throw new AssertionError("Two dungeons were handed the same place: " + other);
         });
+
+        server.runCommand("execute as @a run voidheart dungeon open small_depths 2");
+        context.waitTicks(20);
+        server.runOnServer(minecraft ->
+        {
+            var player = minecraft.getPlayerList().getPlayers().getFirst();
+            var address = DungeonAddress.at(player.getBlockX(), player.getBlockZ());
+            if (address == null || address.theme() != DungeonTheme.CATHEDRAL)
+                throw new AssertionError("A dungeon that does not exist should not open, the player stands in " + address);
+        });
     }
 
     /**

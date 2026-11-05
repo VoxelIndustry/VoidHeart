@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 import static net.voxelindustry.voidheart.common.world.dungeon.DungeonMaterial.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DungeonPlanTest
 {
@@ -26,6 +27,9 @@ class DungeonPlanTest
             int seeds = size == DungeonSize.LARGE ? 2 : size == DungeonSize.MEDIUM ? 4 : 8;
             for (var theme : DungeonTheme.values())
             {
+                if (!theme.comesIn(size))
+                    continue;
+
                 for (var layout : DungeonLayout.values())
                 {
                     for (int seed = 0; seed < seeds; seed++)
@@ -210,12 +214,25 @@ class DungeonPlanTest
         assertThat(counts).as("smokers of %s", blueprint).containsKey(SMOKER_VENT);
         assertThat(counts).as("coral of %s", blueprint).containsKey(CORAL_GROWTH);
         assertThat(counts).as("drifting algae of %s", blueprint).containsKey(DRIFT_ALGAE_TIP);
-        if (blueprint.size() != DungeonSize.SMALL)
-        {
-            assertThat(counts).as("coral blocks of %s", blueprint).containsKey(CORAL_BLOCK);
-            assertThat(counts).as("kelp of %s", blueprint).containsKey(KELP_TIP);
-            assertThat(counts).as("tube worms of %s", blueprint).containsKey(TALL_PLANT);
-        }
+        assertThat(counts).as("coral blocks of %s", blueprint).containsKey(CORAL_BLOCK);
+        assertThat(counts).as("kelp of %s", blueprint).containsKey(KELP_TIP);
+        assertThat(counts).as("tube worms of %s", blueprint).containsKey(TALL_PLANT);
+    }
+
+    @Test
+    void stillDepths_doNotComeInSmall()
+    {
+        var medium = new DungeonAddress(DungeonSize.MEDIUM, DungeonTheme.DEPTHS, 1, 0);
+        int x = medium.origin().getX();
+        int z = medium.origin().getZ();
+        int rowBefore = z - 1024;
+
+        assertThat(DungeonAddress.at(x, z)).isEqualTo(medium);
+        assertThat(DungeonAddress.at(x, rowBefore)).isNull();
+        assertThatThrownBy(() -> new DungeonAddress(DungeonSize.SMALL, DungeonTheme.DEPTHS, 1, 0)).isInstanceOf(IllegalArgumentException.class);
+
+        var smallCathedral = new DungeonAddress(DungeonSize.SMALL, DungeonTheme.CATHEDRAL, 1, 0);
+        assertThat(DungeonAddress.at(smallCathedral.origin().getX(), smallCathedral.origin().getZ())).isEqualTo(smallCathedral);
     }
 
     @Test

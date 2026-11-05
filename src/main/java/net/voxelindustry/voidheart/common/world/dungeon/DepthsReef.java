@@ -330,7 +330,7 @@ final class DepthsReef
     }
 
     /**
-     * The rooms of the smallest dungeons can all be taken up by hand built pockets or lie around the entry, and a Still Depths without a smoker would not be one.
+     * All of a dungeon's rooms can be taken up by hand built pockets or lie around the entry, and a Still Depths without a smoker would not be one.
      */
     private void placeAnywhere()
     {

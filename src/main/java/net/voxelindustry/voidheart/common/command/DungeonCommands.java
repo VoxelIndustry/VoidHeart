@@ -63,7 +63,7 @@ final class DungeonCommands
     private static Iterable<String> kinds()
     {
         return Arrays.stream(DungeonSize.values())
-                .flatMap(size -> Arrays.stream(DungeonTheme.values()).map(theme -> size.getSerializedName() + "_" + theme.getSerializedName()))
+                .flatMap(size -> Arrays.stream(DungeonTheme.values()).filter(theme -> theme.comesIn(size)).map(theme -> size.getSerializedName() + "_" + theme.getSerializedName()))
                 .toList();
     }
 
@@ -85,7 +85,11 @@ final class DungeonCommands
         var parts = StringArgumentType.getString(context, "kind").split("_", 2);
         if (parts.length != 2)
             throw new SimpleCommandExceptionType(Component.literal("Expected size_theme, like small_cathedral")).create();
-        return new DungeonAddress(parse(DungeonSize.values(), parts[0]), parse(DungeonTheme.values(), parts[1]), difficulty, index);
+        var size = parse(DungeonSize.values(), parts[0]);
+        var theme = parse(DungeonTheme.values(), parts[1]);
+        if (!theme.comesIn(size))
+            throw new SimpleCommandExceptionType(Component.literal("No " + theme.getSerializedName() + " dungeon comes in " + size.getSerializedName())).create();
+        return new DungeonAddress(size, theme, difficulty, index);
     }
 
     private static int open(CommandContext<CommandSourceStack> context, int difficulty) throws CommandSyntaxException

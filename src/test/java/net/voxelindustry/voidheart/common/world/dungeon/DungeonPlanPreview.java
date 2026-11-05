@@ -27,6 +27,9 @@ class DungeonPlanPreview
         {
             for (var theme : DungeonTheme.values())
             {
+                if (!theme.comesIn(size))
+                    continue;
+
                 for (var layout : DungeonLayout.values())
                 {
                     long start = System.nanoTime();
