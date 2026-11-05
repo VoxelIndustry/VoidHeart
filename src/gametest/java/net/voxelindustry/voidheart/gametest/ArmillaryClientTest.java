@@ -48,6 +48,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
 
     private static final int FORMED_TICKS = 30;
     private static final int RISEN_TICKS  = 80;
+    private static final int DIAL_SETTLE_TICKS = 120;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -76,9 +77,12 @@ public class ArmillaryClientTest implements FabricClientGameTest
             screenshotRings(context, server, "armillary-idle-night");
             server.runCommand("time set noon");
             context.getInput().pressKey(InputConstants.KEY_F1);
+            check(context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().hud(1)) == 0, "A new armillary should have nothing to show on its dial");
 
             int target = checkChart(context, server);
+            checkDialWhenReached(context, server);
             checkOpening(context, server);
+            checkDialDraining(context, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
             screenshotRings(context, server, "armillary-portal");
             server.runCommand("time set midnight");
@@ -90,6 +94,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
             checkCrossing(context, server);
             checkWarningsAndCollapse(context, server, target);
             checkCollapseOnTheMap(context, server);
+            shootDial(context, server, "armillary-dial-bubbles", 0);
             checkRejoin(context, server);
             checkBrokenArmillary(context, server);
             checkArmillaryInsideDungeon(context, server);
@@ -216,6 +221,11 @@ public class ArmillaryClientTest implements FabricClientGameTest
     private static ArmillaryTile armillary(MinecraftServer server)
     {
         return (ArmillaryTile) server.overworld().getBlockEntity(CORE);
+    }
+
+    private static ArmillaryTile clientArmillary(net.minecraft.client.Minecraft minecraft)
+    {
+        return (ArmillaryTile) minecraft.level.getBlockEntity(CORE);
     }
 
     private static ServerPlayer player(MinecraftServer server)
@@ -476,6 +486,13 @@ public class ArmillaryClientTest implements FabricClientGameTest
             act(server, armillary -> armillary.advanceSearch(percent / 100F));
             context.waitTicks(4);
             context.takeScreenshot("armillary-map-search-" + percent);
+            if (percent == 50)
+            {
+                shootDial(context, server, "armillary-dial-search", 0.5F);
+                aimAtHub(context, server);
+                rightClick(context);
+                context.waitTicks(10);
+            }
         }
 
         act(server, armillary -> armillary.advanceSearch(1));
@@ -488,6 +505,59 @@ public class ArmillaryClientTest implements FabricClientGameTest
         check(gap >= 8, "Abandoning should stand well apart from opening, they are " + gap + " apart");
         context.takeScreenshot("armillary-map-reached");
         return deepest.id();
+    }
+
+    /**
+     * The dial from where a player would read it, with the map closed. The server's word can take a few seconds to reach it, and it eases from there.
+     */
+    private static void shootDial(ClientGameTestContext context, TestServerContext server, String name, float arc)
+    {
+        context.runOnClient(minecraft -> minecraft.player.closeContainer());
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimAt(context, server, 4.5, CORE.getY(), 3.5, 0.5, CORE.getY() + 1.4, 0.5);
+        context.waitTicks(DIAL_SETTLE_TICKS);
+        float hud = context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().hud(1));
+        float shown = context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().arc(1));
+        check(hud == 1, name + " should show the dial, it stands at " + hud);
+        check(Math.abs(shown - arc) < 0.04F, name + " should light " + arc + " of the dial, it shows " + shown);
+        context.takeScreenshot(name);
+        context.getInput().pressKey(InputConstants.KEY_F1);
+    }
+
+    /**
+     * Full and in the theme's colour once a path is ready. Readable from across a room, and gone from further away.
+     */
+    private static void checkDialWhenReached(ClientGameTestContext context, TestServerContext server)
+    {
+        shootDial(context, server, "armillary-dial-reached", 1);
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimAt(context, server, 10.5, CORE.getY(), 7.5, 0.5, CORE.getY() + 1.4, 0.5);
+        context.takeScreenshot("armillary-dial-reached-across");
+        aimAt(context, server, 26.5, CORE.getY(), 15.5, 0.5, CORE.getY() + 1.4, 0.5);
+        context.takeScreenshot("armillary-dial-reached-far");
+        aimAt(context, server, 2.5, CORE.getY(), 1.5, 0.5, CORE.getY() + 1.4, 0.5);
+        context.takeScreenshot("armillary-dial-reached-too-close");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        aimAtHub(context, server);
+        rightClick(context);
+        context.waitTicks(10);
+    }
+
+    /**
+     * Drains with the time left, and starts to flicker near the end. The connection is put back afterwards for the rest of the test.
+     */
+    private static void checkDialDraining(ClientGameTestContext context, TestServerContext server)
+    {
+        shootDial(context, server, "armillary-dial-connected", 1);
+        int duration = onServer(server, minecraft -> (int) ArmillaryConnections.get(minecraft).get(armillary(minecraft).getConnection()).duration());
+
+        act(server, armillary -> armillary.decayIn(duration / 20 / 2));
+        shootDial(context, server, "armillary-dial-draining", 0.5F);
+        act(server, armillary -> armillary.decayIn(40));
+        shootDial(context, server, "armillary-dial-failing", 40F * 20 / duration);
+        act(server, armillary -> armillary.decayIn(duration / 20));
+        context.waitTicks(20);
     }
 
     /**

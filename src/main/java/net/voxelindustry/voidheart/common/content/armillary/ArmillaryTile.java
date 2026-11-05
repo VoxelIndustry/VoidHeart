@@ -37,6 +37,7 @@ import org.jspecify.annotations.Nullable;
 public class ArmillaryTile extends TileBase
 {
     private static final int STRUCTURE_INTERVAL = 10;
+    private static final int DIAL_INTERVAL = 100;
     private static final int VIEW_INTERVAL      = 20;
     private static final int PREVIEW_TICKS      = 20 * 30;
     private static final int TICKS_PER_MINUTE   = 20 * 60;
@@ -58,6 +59,8 @@ public class ArmillaryTile extends TileBase
     @Getter
     private ConnectionTimeline.Stage stage = ConnectionTimeline.Stage.STABLE;
     private long                     previewUntil;
+    /** How much of the connection is left, from 1 down to 0. */
+    private float                    connectionLeft;
 
     private final float[] ringAngles         = new float[RINGS];
     private final float[] previousRingAngles = new float[RINGS];
@@ -67,6 +70,9 @@ public class ArmillaryTile extends TileBase
     /** Client only, when the portal started to tear open. */
     @Getter
     private       long    portalOpenedAt     = Long.MIN_VALUE / 2;
+    /** Client only. */
+    @Getter
+    private final ArmillaryDisplay display   = new ArmillaryDisplay();
 
     public ArmillaryTile(BlockPos pos, BlockState state)
     {
@@ -105,16 +111,18 @@ public class ArmillaryTile extends TileBase
             switch (event)
             {
                 case FOUND -> play(VoidHeartSounds.ARMILLARY_FOUND);
-                case REACHED ->
-                {
-                    play(VoidHeartSounds.ARMILLARY_REACHED);
-                    sync();
-                }
+                case REACHED -> play(VoidHeartSounds.ARMILLARY_REACHED);
                 default ->
                 {
                 }
             }
-            changed |= event != ArmillaryChart.Event.NONE;
+            if (event != ArmillaryChart.Event.NONE)
+            {
+                changed = true;
+                sync();
+            }
+            else if (time % DIAL_INTERVAL == 0 && dialIsMoving())
+                sync();
         }
 
         if (changed || time % VIEW_INTERVAL == 0)
@@ -122,6 +130,11 @@ public class ArmillaryTile extends TileBase
             setChanged();
             sendViews(level);
         }
+    }
+
+    private boolean dialIsMoving()
+    {
+        return chart.getPhase() == ArmillaryChart.Phase.SEARCHING || chart.getPhase() == ArmillaryChart.Phase.CONNECTED;
     }
 
     private void checkStructure(ServerLevel level)
@@ -165,6 +178,7 @@ public class ArmillaryTile extends TileBase
         if (open == null)
         {
             connection = null;
+            connectionLeft = 0;
             stage = ConnectionTimeline.Stage.STABLE;
             chart.connectionClosed();
             play(VoidHeartSounds.ARMILLARY_CLOSE);
@@ -173,7 +187,9 @@ public class ArmillaryTile extends TileBase
             return true;
         }
 
-        var current = ConnectionTimeline.stage(open.decayAt() - ArmillaryConnections.now(server));
+        long left = open.decayAt() - ArmillaryConnections.now(server);
+        connectionLeft = open.duration() <= 0 ? 0 : (float) left / open.duration();
+        var current = ConnectionTimeline.stage(left);
         if (current == stage)
             return false;
 
@@ -311,6 +327,7 @@ public class ArmillaryTile extends TileBase
         ArmillaryConnections.get(server).open(address, level.dimension(), worldPosition, ArmillaryConnections.now(server), duration);
 
         connection = address;
+        connectionLeft = 1;
         chart.connect();
         placeHub((ServerLevel) level);
         play(VoidHeartSounds.ARMILLARY_OPEN);
@@ -396,6 +413,9 @@ public class ArmillaryTile extends TileBase
             previousRingAngles[ring] = ringAngles[ring];
             ringAngles[ring] += RING_SPEEDS[ring] * spin * formation;
         }
+
+        display.tick(ArmillaryDisplay.isShown(formed, chart.liveBubbles(), chart.getPhase()),
+                ArmillaryDisplay.arcOf(chart.getPhase(), chart.getSearchTicks(), chart.getSearchDuration(), connectionLeft));
     }
 
     /**
@@ -456,6 +476,7 @@ public class ArmillaryTile extends TileBase
         connection = tag.read("connection", DungeonAddress.CODEC).orElse(null);
         stage = ConnectionTimeline.Stage.values()[Mth.clamp(tag.getIntOr("stage", 0), 0, ConnectionTimeline.Stage.values().length - 1)];
         previewUntil = tag.getLongOr("previewUntil", 0);
+        connectionLeft = tag.getFloatOr("connectionLeft", 0);
 
         if (level != null && level.isClientSide() && !wasConnected && isConnected())
             portalOpenedAt = level.getGameTime();
@@ -470,6 +491,7 @@ public class ArmillaryTile extends TileBase
             tag.store("connection", DungeonAddress.CODEC, connection);
         tag.putInt("stage", stage.ordinal());
         tag.putLong("previewUntil", previewUntil);
+        tag.putFloat("connectionLeft", connectionLeft);
 
         super.saveAdditional(tag);
     }

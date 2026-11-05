@@ -84,6 +84,7 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         int     portalRgb;
         Vec3    toCamera = Vec3.ZERO;
         final List<Hint> hints = new ArrayList<>();
+        final ArmillaryDialRender.Dial dial = new ArmillaryDialRender.Dial();
     }
 
     public ArmillaryRender(BlockEntityRendererProvider.Context context)
@@ -114,6 +115,8 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         state.portalOpened = Mth.clamp((level.getGameTime() - armillary.getPortalOpenedAt() + partialTicks) / PORTAL_OPEN_TICKS, 0, 1);
         state.portalRgb = ArmillaryPortalRender.themeColor(armillary.portalTheme());
         state.toCamera = cameraPosition.subtract(Vec3.atCenterOf(hub));
+
+        ArmillaryDialRender.extract(armillary, state.dial, state.time, partialTicks, cameraPosition);
 
         state.hints.clear();
         if (armillary.isPreviewActive())
@@ -164,6 +167,8 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
 
         if (state.portal)
             ArmillaryPortalRender.submit(poseStack, collector, new Vec3(0.5, CENTER_HEIGHT - sag, 0.5), state.toCamera, PORTAL_RADIUS, state.portalOpened, state.portalRgb, state.time);
+        if (state.dial.alpha > 0)
+            ArmillaryDialRender.submit(state.dial, poseStack, collector);
     }
 
     /**
