@@ -7,6 +7,8 @@ import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.model.ItemModelUtils;
 import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.client.data.models.blockstates.MultiPartGenerator;
+import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
+import net.minecraft.client.data.models.blockstates.PropertyDispatch;
 import net.minecraft.client.data.models.model.ModelTemplate;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.client.data.models.model.ModelTemplates;
@@ -20,6 +22,7 @@ import net.minecraft.data.BlockFamilies;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import com.geckolib.renderer.internal.GeckolibItemSpecialRenderer;
+import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
@@ -59,6 +62,9 @@ public class ModelsProvider extends FabricModelProvider
             Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_oculus_table_inventory")), Optional.of("_inventory"),
             TextureSlot.TOP, TextureSlot.SIDE, TextureSlot.BOTTOM);
 
+    private static final ModelTemplate SURFACE_GROWTH_TEMPLATE = new ModelTemplate(
+            Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_surface_growth")), Optional.empty(), TextureSlot.CROSS);
+
     private BlockModelGenerators generator;
 
     public ModelsProvider(FabricPackOutput output)
@@ -92,6 +98,57 @@ public class ModelsProvider extends FabricModelProvider
 
         registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
         registerBeholder(VoidHeartBlocks.BEHOLDER);
+
+        registerDepths();
+    }
+
+    private void registerDepths()
+    {
+        generator.createTrivialCube(VoidHeartBlocks.ABYSSAL_SILT);
+        generator.createTrivialCube(VoidHeartBlocks.SULFIDE_CRUST);
+        generator.createTrivialCube(VoidHeartBlocks.PALLID_CORAL_BLOCK);
+        generator.createTrivialCube(VoidHeartBlocks.VIOLET_CORAL_BLOCK);
+        generator.createTrivialCube(VoidHeartBlocks.LUMEN_CORAL_BLOCK);
+        var ventTextures = new TextureMapping()
+                .put(TextureSlot.SIDE, TextureMapping.getBlockTexture(VoidHeartBlocks.SULFIDE_CRUST))
+                .put(TextureSlot.BOTTOM, TextureMapping.getBlockTexture(VoidHeartBlocks.SULFIDE_CRUST))
+                .put(TextureSlot.TOP, TextureMapping.getBlockTexture(VoidHeartBlocks.SMOKER_VENT));
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(VoidHeartBlocks.SMOKER_VENT,
+                plainVariant(ModelTemplates.CUBE_BOTTOM_TOP.create(VoidHeartBlocks.SMOKER_VENT, ventTextures, generator.modelOutput))));
+
+        registerBundle(VoidHeartBlocks.PALLID_CORAL);
+        registerBundle(VoidHeartBlocks.VIOLET_CORAL);
+        registerBundle(VoidHeartBlocks.LUMEN_CORAL);
+        registerBundle(VoidHeartBlocks.STILL_ANEMONE);
+        registerSurfaceGrowth(VoidHeartBlocks.GLOW_ALGAE);
+        registerSurfaceGrowth(VoidHeartBlocks.BARNACLE_CRUST);
+        registerStrand(VoidHeartBlocks.STILL_KELP);
+        registerStrand(VoidHeartBlocks.DRIFT_ALGAE);
+
+        generator.createDoublePlant(VoidHeartBlocks.GIANT_TUBE_WORMS, BlockModelGenerators.PlantType.NOT_TINTED);
+        generator.registerSimpleFlatItemModel(VoidHeartBlocks.GIANT_TUBE_WORMS, "_top");
+    }
+
+    /**
+     * Lying flat against the face it grows from, turned the same way a cross is by {@link #registerBundle}.
+     */
+    private void registerSurfaceGrowth(Block growth)
+    {
+        var model = plainVariant(SURFACE_GROWTH_TEMPLATE.create(growth, TextureMapping.cross(growth), generator.modelOutput));
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(growth, model).with(BlockModelGenerators.ROTATIONS_COLUMN_WITH_FACING));
+        generator.registerSimpleFlatItemModel(growth);
+    }
+
+    /**
+     * A cross per block of the column, with its own texture at the end of it.
+     */
+    private void registerStrand(Block strand)
+    {
+        var body = plainVariant(ModelTemplates.CROSS.create(strand, TextureMapping.cross(strand), generator.modelOutput));
+        var tip = plainVariant(ModelTemplates.CROSS.createWithSuffix(strand, "_tip", TextureMapping.cross(TextureMapping.getBlockTexture(strand, "_tip")), generator.modelOutput));
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(strand)
+                .with(PropertyDispatch.initial(StrandPlantBlock.TIP).select(false, body).select(true, tip)));
+        generator.registerSimpleFlatItemModel(strand, "_tip");
     }
 
     /**

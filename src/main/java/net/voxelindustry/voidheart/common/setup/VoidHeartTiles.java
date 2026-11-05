@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.depths.SmokerVentTile;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
@@ -61,8 +62,12 @@ public class VoidHeartTiles
 
     public static BlockEntityType<MalignantTormenterTile> MALIGNANT_TORMENTER;
 
+    public static BlockEntityType<SmokerVentTile> SMOKER_VENT;
+
     public static void registerTiles()
     {
+        registerTile(SMOKER_VENT = FabricBlockEntityTypeBuilder.create(SmokerVentTile::new, VoidHeartBlocks.SMOKER_VENT).build(), "smoker_vent");
+
         registerTile(POCKET_PORTAL =
                         FabricBlockEntityTypeBuilder.create(PortalInteriorTile::new, VoidHeartBlocks.PORTAL_INTERIOR).build(),
                 "pocket_portal");

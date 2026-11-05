@@ -425,6 +425,7 @@ public class RaptureClientTest implements FabricClientGameTest
         expectCoreStaring(context, server, "rapture-breach-held-moved");
 
         standUnderRoof(context, server);
+        world.getConnection().waitForChunksRender();
         var roofAfter = captureLarge(context, "rapture-breach-held-roof");
         expectRoofHides(context, roofBefore, roofAfter);
         look(context, YAW, LOOK_BREACH_SIDE);

@@ -8,7 +8,8 @@
     "MixinCraftingMenuResearch",
     "MixinEntityBarrierDisguise",
     "MixinLivingEntityBarrierDisguise",
-    "MixinStableLifecycle"
+    "MixinStableLifecycle",
+    "MixinThrownEnderpearlDungeon"
   ],
   "client": [
     "client.MixinClientLevelBarrierDisguise",

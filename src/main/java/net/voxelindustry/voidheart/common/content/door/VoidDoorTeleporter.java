@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 
 import java.util.HashMap;
 import java.util.List;
@@ -98,6 +99,9 @@ public class VoidDoorTeleporter
 
     private static void travel(MinecraftServer server, ServerPlayer player, BlockState fromState, ServerLevel toLevel, BlockPos toPos, BlockState toState)
     {
+        if (DungeonTeleportLock.refuse(player))
+            return;
+
         Direction fromFacing = fromState.getValue(DoorBlock.FACING);
         Direction toFacing = toState.getValue(DoorBlock.FACING);
 

@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "voidheart:block/glow_algae",
+      "x": 180
+    },
+    "facing=east": {
+      "model": "voidheart:block/glow_algae",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/glow_algae",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/glow_algae",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up": {
+      "model": "voidheart:block/glow_algae"
+    },
+    "facing=west": {
+      "model": "voidheart:block/glow_algae",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

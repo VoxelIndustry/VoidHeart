@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.voxelindustry.voidheart.common.block.PortalFrameStateProperties.FrameConnection;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -52,6 +53,8 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
         var tile = tileOpt.get();
         if (world.isClientSide())
             return InteractionResult.PASS;
+        if (DungeonTeleportLock.refuse(player))
+            return InteractionResult.SUCCESS;
 
         // Core block is probably a previously broken portal
         if (tile.isBroken())

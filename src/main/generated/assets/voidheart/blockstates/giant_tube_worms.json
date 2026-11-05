@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "half=lower": {
+      "model": "voidheart:block/giant_tube_worms_bottom"
+    },
+    "half=upper": {
+      "model": "voidheart:block/giant_tube_worms_top"
+    }
+  }
+}

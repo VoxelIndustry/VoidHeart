@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "voidheart:block/sulfide_crust",
+    "side": "voidheart:block/sulfide_crust",
+    "top": "voidheart:block/smoker_vent"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "tip=false": {
+      "model": "voidheart:block/still_kelp"
+    },
+    "tip=true": {
+      "model": "voidheart:block/still_kelp_tip"
+    }
+  }
+}

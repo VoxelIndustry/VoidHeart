@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "voidheart:block/barnacle_crust",
+      "x": 180
+    },
+    "facing=east": {
+      "model": "voidheart:block/barnacle_crust",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/barnacle_crust",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/barnacle_crust",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up": {
+      "model": "voidheart:block/barnacle_crust"
+    },
+    "facing=west": {
+      "model": "voidheart:block/barnacle_crust",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

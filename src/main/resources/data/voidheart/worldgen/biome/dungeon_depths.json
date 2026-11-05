@@ -1,0 +1,47 @@
+{
+  "attributes": {
+    "minecraft:visual/fog_color": "#07213f",
+    "minecraft:visual/fog_start_distance": 6.0,
+    "minecraft:visual/fog_end_distance": 64.0,
+    "minecraft:visual/ambient_particles": {
+      "argument": [
+        {
+          "particle": {
+            "type": "voidheart:marine_snow"
+          },
+          "probability": 0.03
+        }
+      ],
+      "modifier": "append"
+    },
+    "minecraft:audio/ambient_sounds": {
+      "loop": "minecraft:ambient.underwater.loop",
+      "mood": {
+        "block_search_extent": 8,
+        "offset": 2.0,
+        "sound": "minecraft:ambient.underwater.loop.additions.ultra_rare",
+        "tick_delay": 6000
+      },
+      "additions": {
+        "sound": "minecraft:ambient.underwater.loop.additions.rare",
+        "tick_chance": 0.008
+      }
+    },
+    "minecraft:audio/background_music": {
+      "default": {
+        "max_delay": 24000,
+        "min_delay": 12000,
+        "sound": "minecraft:music.under_water"
+      }
+    },
+    "minecraft:visual/ambient_light_color": "#34578a"
+  },
+  "carvers": [],
+  "downfall": 0.0,
+  "effects": {
+    "water_color": "#0a2c52"
+  },
+  "features": [],
+  "has_precipitation": false,
+  "temperature": 0.5
+}

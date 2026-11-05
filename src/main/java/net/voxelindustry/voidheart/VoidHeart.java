@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
@@ -64,6 +65,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
+import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
 import java.util.logging.Logger;
 
@@ -87,6 +90,12 @@ public class VoidHeart implements ModInitializer
     public static SimpleParticleType KNOWLEDGE_MOTE_PARTICLE;
     public static SimpleParticleType KNOWLEDGE_GLYPH_PARTICLE;
     public static SimpleParticleType SHATTER_FORGE_EXPERIENCE_PARTICLE;
+    public static SimpleParticleType SMOKER_WISP_PARTICLE;
+    public static SimpleParticleType SMOKER_PLUME_PARTICLE;
+    public static SimpleParticleType SMOKER_CORE_PARTICLE;
+    public static SimpleParticleType SMOKER_EMBER_PARTICLE;
+    public static SimpleParticleType MARINE_SNOW_PARTICLE;
+    public static SimpleParticleType SHOAL_SPECK_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
 
@@ -130,6 +139,8 @@ public class VoidHeart implements ModInitializer
         Corruption.register();
         CursePayloads.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
+        UseItemCallback.EVENT.register(DungeonTeleportLock::onUseItem);
         ServerPlayerEvents.LEAVE.register(Curses::onLeave);
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
@@ -167,6 +178,7 @@ public class VoidHeart implements ModInitializer
             OculusSightPayloads.clear();
             ShoulderEyes.clear();
             Curses.clear();
+            DungeonTeleportLock.clear();
         });
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
@@ -197,7 +209,18 @@ public class VoidHeart implements ModInitializer
                 Identifier.fromNamespaceAndPath(MODID, "knowledge_glyph"), KNOWLEDGE_GLYPH_PARTICLE = FabricParticleTypes.simple(false));
         Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge_experience"), SHATTER_FORGE_EXPERIENCE_PARTICLE = FabricParticleTypes.simple(true));
+        SMOKER_WISP_PARTICLE = registerSimpleParticle("smoker_wisp", true);
+        SMOKER_PLUME_PARTICLE = registerSimpleParticle("smoker_plume", true);
+        SMOKER_CORE_PARTICLE = registerSimpleParticle("smoker_core", true);
+        SMOKER_EMBER_PARTICLE = registerSimpleParticle("smoker_ember", true);
+        MARINE_SNOW_PARTICLE = registerSimpleParticle("marine_snow", false);
+        SHOAL_SPECK_PARTICLE = registerSimpleParticle("shoal_speck", true);
 
         EssenceRegistry.bootstrap();
+    }
+
+    private static SimpleParticleType registerSimpleParticle(String name, boolean alwaysVisible)
+    {
+        return Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MODID, name), FabricParticleTypes.simple(alwaysVisible));
     }
 }

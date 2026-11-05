@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "condition": {
+            "type": "minecraft:match_block",
+            "blocks": "voidheart:giant_tube_worms",
+            "state": {
+              "half": "lower"
+            }
+          },
+          "name": "voidheart:giant_tube_worms"
+        }
+      ],
+      "rolls": 1
+    }
+  ]
+}

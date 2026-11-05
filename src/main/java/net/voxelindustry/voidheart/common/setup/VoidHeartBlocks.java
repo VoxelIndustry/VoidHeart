@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.impl.datagen.FabricDataGenHelper;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -29,6 +30,10 @@ import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.item.LoreBlockItem;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
+import net.voxelindustry.voidheart.common.content.depths.AttachedGrowthBlock;
+import net.voxelindustry.voidheart.common.content.depths.SmokerVentBlock;
+import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
+import net.voxelindustry.voidheart.common.content.depths.TubeWormsBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
@@ -188,6 +193,26 @@ public class VoidHeartBlocks
     public static Block RAVENOUS_STORAGE;
     public static Block RAVENOUS_STORAGE_MATRIX;
     public static Block RAVENOUS_RELAY;
+
+    public static Block ABYSSAL_ROCK;
+    public static Block ABYSSAL_ROCK_STAIRS;
+    public static Block ABYSSAL_ROCK_SLAB;
+    public static Block ABYSSAL_ROCK_WALL;
+    public static Block ABYSSAL_SILT;
+    public static Block SULFIDE_CRUST;
+    public static Block SMOKER_VENT;
+    public static Block PALLID_CORAL_BLOCK;
+    public static Block VIOLET_CORAL_BLOCK;
+    public static Block LUMEN_CORAL_BLOCK;
+    public static Block PALLID_CORAL;
+    public static Block VIOLET_CORAL;
+    public static Block LUMEN_CORAL;
+    public static Block STILL_KELP;
+    public static Block DRIFT_ALGAE;
+    public static Block GLOW_ALGAE;
+    public static Block GIANT_TUBE_WORMS;
+    public static Block STILL_ANEMONE;
+    public static Block BARNACLE_CRUST;
 
     public static final List<Block> MINEABLE_BLOCKS = new ArrayList<>();
 
@@ -482,6 +507,8 @@ public class VoidHeartBlocks
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.SLIME_BLOCK)));
 
+        registerDepthsBlocks();
+
         SMALL_AZURIUM_BUNDLE = registerSmallBundle("azurium", MapColor.COLOR_BLUE, 1, 6);
         MEDIUM_AZURIUM_BUNDLE = registerMediumBundle("azurium", MapColor.COLOR_BLUE, 3, 10);
         LARGE_AZURIUM_BUNDLE = registerLargeBundle("azurium", MapColor.COLOR_BLUE, 5, 15);
@@ -534,6 +561,80 @@ public class VoidHeartBlocks
         CUT_LISTLESS_LEAD_STAIRS = generateStairs(CUT_LISTLESS_LEAD, "cut_listless_lead");
         CUT_LISTLESS_LEAD_SLAB = generateSlab(CUT_LISTLESS_LEAD, "cut_listless_lead");
         CUT_LISTLESS_LEAD_WALL = generateWall(CUT_LISTLESS_LEAD, "cut_listless_lead");
+    }
+
+    private static void registerDepthsBlocks()
+    {
+        ABYSSAL_ROCK = registerBlock("abyssal_rock", Block::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLUE)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .sound(SoundType.DEEPSLATE)
+                .strength(2F, 6.0F), true);
+        ABYSSAL_ROCK_STAIRS = generateStairs(ABYSSAL_ROCK, "abyssal_rock");
+        ABYSSAL_ROCK_SLAB = generateSlab(ABYSSAL_ROCK, "abyssal_rock");
+        ABYSSAL_ROCK_WALL = generateWall(ABYSSAL_ROCK, "abyssal_rock");
+
+        ABYSSAL_SILT = registerBlock("abyssal_silt", Block::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.CLAY)
+                .sound(SoundType.MUD)
+                .strength(0.6F), true);
+
+        SULFIDE_CRUST = registerBlock("sulfide_crust", Block::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .sound(SoundType.BASALT)
+                .lightLevel(state -> 2)
+                .strength(2.5F, 6.0F), true);
+        SMOKER_VENT = registerBlock("smoker_vent", SmokerVentBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .sound(SoundType.BASALT)
+                .lightLevel(state -> 6)
+                .strength(2.5F, 6.0F), true);
+
+        PALLID_CORAL_BLOCK = registerCoralBlock("pallid_coral_block", MapColor.QUARTZ, 0);
+        VIOLET_CORAL_BLOCK = registerCoralBlock("violet_coral_block", MapColor.COLOR_PURPLE, 0);
+        LUMEN_CORAL_BLOCK = registerCoralBlock("lumen_coral_block", MapColor.DIAMOND, 7);
+        PALLID_CORAL = registerGrowth("pallid_coral", MapColor.QUARTZ, 0, 14, 14);
+        VIOLET_CORAL = registerGrowth("violet_coral", MapColor.COLOR_PURPLE, 0, 14, 14);
+        LUMEN_CORAL = registerGrowth("lumen_coral", MapColor.DIAMOND, 8, 14, 14);
+        GLOW_ALGAE = registerGrowth("glow_algae", MapColor.COLOR_CYAN, 6, 2, 16);
+        BARNACLE_CRUST = registerGrowth("barnacle_crust", MapColor.TERRACOTTA_WHITE, 0, 2, 16);
+        STILL_ANEMONE = registerGrowth("still_anemone", MapColor.COLOR_PINK, 5, 10, 12);
+
+        STILL_KELP = registerBlock("still_kelp", properties -> new StrandPlantBlock(Direction.UP, properties), plantProperties(MapColor.COLOR_GREEN, 0), true);
+        DRIFT_ALGAE = registerBlock("drift_algae", properties -> new StrandPlantBlock(Direction.DOWN, properties), plantProperties(MapColor.COLOR_CYAN, 0), true);
+        GIANT_TUBE_WORMS = registerBlock("giant_tube_worms", TubeWormsBlock::new, plantProperties(MapColor.COLOR_RED, 0), true);
+    }
+
+    private static Block registerCoralBlock(String name, MapColor color, int light)
+    {
+        return registerBlock(name, Block::new, BlockBehaviour.Properties.of()
+                .mapColor(color)
+                .requiresCorrectToolForDrops()
+                .sound(SoundType.CORAL_BLOCK)
+                .lightLevel(state -> light)
+                .strength(1.5F, 6.0F), true);
+    }
+
+    private static Block registerGrowth(String name, MapColor color, int light, float height, float width)
+    {
+        return registerBlock(name, properties -> new AttachedGrowthBlock(height, width, properties), plantProperties(color, light), true);
+    }
+
+    private static BlockBehaviour.Properties plantProperties(MapColor color, int light)
+    {
+        return BlockBehaviour.Properties.of()
+                .mapColor(color)
+                .noCollision()
+                .noOcclusion()
+                .instabreak()
+                .lightLevel(state -> light)
+                .pushReaction(PushReaction.POPPED)
+                .sound(SoundType.WET_GRASS);
     }
 
     private static Block registerBlock(String name, Function<BlockBehaviour.Properties, Block> factory, BlockBehaviour.Properties properties, boolean inCreativeTab)

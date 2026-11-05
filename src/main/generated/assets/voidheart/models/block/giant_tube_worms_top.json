@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "voidheart:block/giant_tube_worms_top"
+  }
+}
