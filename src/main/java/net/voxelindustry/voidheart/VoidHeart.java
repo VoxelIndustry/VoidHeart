@@ -98,6 +98,8 @@ public class VoidHeart implements ModInitializer
     public static SimpleParticleType SMOKER_PLUME_PARTICLE;
     public static SimpleParticleType SMOKER_CORE_PARTICLE;
     public static SimpleParticleType SMOKER_EMBER_PARTICLE;
+    public static SimpleParticleType VOID_FLAME_PARTICLE;
+    public static SimpleParticleType VOID_EMBER_PARTICLE;
     public static SimpleParticleType MARINE_SNOW_PARTICLE;
     public static SimpleParticleType SHOAL_SPECK_PARTICLE;
 
@@ -224,6 +226,8 @@ public class VoidHeart implements ModInitializer
         SMOKER_PLUME_PARTICLE = registerSimpleParticle("smoker_plume", true);
         SMOKER_CORE_PARTICLE = registerSimpleParticle("smoker_core", true);
         SMOKER_EMBER_PARTICLE = registerSimpleParticle("smoker_ember", true);
+        VOID_FLAME_PARTICLE = registerSimpleParticle("void_flame", true);
+        VOID_EMBER_PARTICLE = registerSimpleParticle("void_ember", true);
         MARINE_SNOW_PARTICLE = registerSimpleParticle("marine_snow", false);
         SHOAL_SPECK_PARTICLE = registerSimpleParticle("shoal_speck", true);
 

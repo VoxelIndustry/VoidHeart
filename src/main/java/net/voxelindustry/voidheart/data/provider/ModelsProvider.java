@@ -211,6 +211,7 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.AZURIUM_SHARD, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.RUBRUM_SHARD, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.MEMORIAM_SHARD, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.KERNACIAN_CORE, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SEETHING_STEEL_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_INGOT, ModelTemplates.FLAT_ITEM);

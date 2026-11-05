@@ -223,32 +223,45 @@ public class Wraith extends VoidMonster
         lockedSolid = input.getBooleanOr("LockedSolid", false);
     }
 
-    private final class SenseThroughWallsGoal extends NearestAttackableTargetGoal<Player>
+    protected final class SenseThroughWallsGoal extends NearestAttackableTargetGoal<Player>
     {
-        private SenseThroughWallsGoal()
+        protected SenseThroughWallsGoal()
         {
             super(Wraith.this, Player.class, false);
             targetConditions.ignoreLineOfSight();
         }
     }
 
-    private record Route(BlockPos block, Direction face, Vec3 emergeAt)
+    protected record Route(BlockPos block, Direction face, Vec3 emergeAt)
     {
     }
 
-    private @Nullable Route planRoute(LivingEntity target)
+    protected @Nullable Route planRoute(LivingEntity target)
     {
         var from = getEyePosition();
         var to = target.getEyePosition();
         if (from.distanceTo(to) > SENSE_RANGE)
             return null;
 
-        var hit = level().clip(new ClipContext(to, from, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
-        if (hit.getType() == HitResult.Type.MISS || !canCrossBetween(from, to))
+        return routeThrough(level().clip(new ClipContext(to, from, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this)), to);
+    }
+
+    /**
+     * @param hit the face to come out of
+     * @param to  how far along to check the way there for anything that cannot be crossed
+     */
+    protected @Nullable Route routeThrough(BlockHitResult hit, Vec3 to)
+    {
+        if (hit.getType() == HitResult.Type.MISS || !canCrossBetween(getEyePosition(), to))
             return null;
 
         var emergeAt = emergeSpot(hit);
         return emergeAt == null ? null : new Route(hit.getBlockPos(), hit.getDirection(), emergeAt);
+    }
+
+    protected boolean canStartCrossing()
+    {
+        return true;
     }
 
     private boolean canCrossBetween(Vec3 from, Vec3 to)
@@ -281,13 +294,13 @@ public class Wraith extends VoidMonster
         return null;
     }
 
-    private final class CrossGoal extends Goal
+    protected final class CrossGoal extends Goal
     {
         private @Nullable Route route;
         private Vec3 start = Vec3.ZERO;
         private int ticks;
 
-        private CrossGoal()
+        protected CrossGoal()
         {
             setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
         }
@@ -296,7 +309,7 @@ public class Wraith extends VoidMonster
         public boolean canUse()
         {
             var target = getTarget();
-            if (lockedSolid || target == null || cooldown > 0 || blindTicks < BLIND_TICKS_BEFORE_CROSSING)
+            if (lockedSolid || target == null || cooldown > 0 || blindTicks < BLIND_TICKS_BEFORE_CROSSING || !canStartCrossing())
                 return false;
 
             route = planRoute(target);

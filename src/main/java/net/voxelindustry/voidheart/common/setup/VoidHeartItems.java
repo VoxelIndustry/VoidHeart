@@ -51,6 +51,7 @@ public class VoidHeartItems
     public static Item AZURIUM_SHARD;
     public static Item RUBRUM_SHARD;
     public static Item MEMORIAM_SHARD;
+    public static Item KERNACIAN_CORE;
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
 
@@ -80,6 +81,7 @@ public class VoidHeartItems
         AZURIUM_SHARD = registerItem("azurium_shard", properties -> new LoreItem(properties, "voidheart.azurium_shard.lore"));
         RUBRUM_SHARD = registerItem("rubrum_shard", properties -> new LoreItem(properties, "voidheart.rubrum_shard.lore"));
         MEMORIAM_SHARD = registerItem("memoriam_shard", properties -> new LoreItem(properties, "voidheart.memoriam_shard.lore"));
+        KERNACIAN_CORE = registerItem("kernacian_core", properties -> new LoreItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC), "voidheart.kernacian_core.lore"));
     }
 
     public static void registerSpawnEggs()
@@ -97,6 +99,12 @@ public class VoidHeartItems
         registerSpawnEgg("eye_maw", VoidHeartEntities.EYE_MAW);
         registerSpawnEgg("large_eye_maw", VoidHeartEntities.LARGE_EYE_MAW);
         registerSpawnEgg("arcane_eye", VoidHeartEntities.ARCANE_EYE);
+        registerSpawnEgg("stalking_wraith", VoidHeartEntities.STALKING_WRAITH);
+        registerSpawnEgg("fallen_bishop", VoidHeartEntities.FALLEN_BISHOP);
+        registerSpawnEgg("malignant_boulder", VoidHeartEntities.MALIGNANT_BOULDER);
+        registerSpawnEgg("legionary", VoidHeartEntities.LEGIONARY);
+        registerSpawnEgg("centurion", VoidHeartEntities.CENTURION);
+        registerSpawnEgg("kernacian_dragoon", VoidHeartEntities.KERNACIAN_DRAGOON);
     }
 
     private static void registerSpawnEgg(String mob, EntityType<?> type)

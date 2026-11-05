@@ -8,11 +8,18 @@ import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.client.model.mob.ArcaneEyeModel;
 import net.voxelindustry.voidheart.client.model.mob.BarnacleGrowthModel;
+import net.voxelindustry.voidheart.client.model.mob.CenturionModel;
 import net.voxelindustry.voidheart.client.model.mob.CorruptedBarnacleModel;
 import net.voxelindustry.voidheart.client.model.mob.CorruptedCrabModel;
 import net.voxelindustry.voidheart.client.model.mob.EyeMawModel;
+import net.voxelindustry.voidheart.client.model.mob.FallenBishopModel;
 import net.voxelindustry.voidheart.client.model.mob.FallenElderModel;
+import net.voxelindustry.voidheart.client.model.mob.KernacianDragoonModel;
 import net.voxelindustry.voidheart.client.model.mob.FallenModel;
+import net.voxelindustry.voidheart.client.model.mob.LegionaryModel;
+import net.voxelindustry.voidheart.client.model.mob.MalignantBoulderModel;
+import net.voxelindustry.voidheart.client.model.mob.StalkingWraithModel;
+import net.voxelindustry.voidheart.client.model.mob.StalkingWraithMouthModel;
 import net.voxelindustry.voidheart.client.model.mob.VoidGhoulModel;
 import net.voxelindustry.voidheart.client.model.mob.VoidSkeletonModel;
 import net.voxelindustry.voidheart.client.model.mob.WraithModel;
@@ -41,6 +48,13 @@ public final class VoidMobRenderers
         ModelLayerRegistry.registerModelLayer(EyeMawModel.SMALL, EyeMawModel::createSmallLayer);
         ModelLayerRegistry.registerModelLayer(EyeMawModel.LARGE, EyeMawModel::createLargeLayer);
         ModelLayerRegistry.registerModelLayer(ArcaneEyeModel.LAYER, ArcaneEyeModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(StalkingWraithModel.LAYER, StalkingWraithModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(StalkingWraithMouthModel.LAYER, StalkingWraithMouthModel::createMouthLayer);
+        ModelLayerRegistry.registerModelLayer(FallenBishopModel.LAYER, FallenBishopModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(MalignantBoulderModel.LAYER, MalignantBoulderModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(LegionaryModel.LAYER, LegionaryModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(CenturionModel.LAYER, CenturionModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(KernacianDragoonModel.LAYER, KernacianDragoonModel::createBodyLayer);
 
         EntityRenderers.register(VoidHeartEntities.VOID_SKELETON, VoidSkeletonRender::new);
         EntityRenderers.register(VoidHeartEntities.VOID_GHOUL, VoidGhoulRender::new);
@@ -62,6 +76,12 @@ public final class VoidMobRenderers
                 context -> new EyeMawRender<>(context, EyeMawModel.LARGE, 2, texture("large_eye_maw"), texture("large_eye_maw_glow"), 2.25F, 1.1F));
         EntityRenderers.register(VoidHeartEntities.ARCANE_EYE, ArcaneEyeRender::new);
         EntityRenderers.register(VoidHeartEntities.ARCANE_BOLT, context -> new GlowQuadRender<>(context, texture("arcane_bolt"), 0.24F));
+        EntityRenderers.register(VoidHeartEntities.STALKING_WRAITH, StalkingWraithRender::new);
+        EntityRenderers.register(VoidHeartEntities.FALLEN_BISHOP, FallenBishopRender::new);
+        EntityRenderers.register(VoidHeartEntities.MALIGNANT_BOULDER, MalignantBoulderRender::new);
+        EntityRenderers.register(VoidHeartEntities.LEGIONARY, LegionaryRender::new);
+        EntityRenderers.register(VoidHeartEntities.CENTURION, CenturionRender::new);
+        EntityRenderers.register(VoidHeartEntities.KERNACIAN_DRAGOON, KernacianDragoonRender::new);
 
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) ->
         {
