@@ -13,6 +13,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.consume_effects.TeleportRandomlyConsumeEffect;
 import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.common.item.VoidPearlItem;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +22,7 @@ import java.util.UUID;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Nothing teleports a player inside a dungeon, whichever way it is attempted. Commands and creative players stay free, for building and review.
+ * Nothing teleports a player inside a dungeon or the Daedalus, whichever way it is attempted. Commands and creative players stay free, for building and review.
  */
 public final class DungeonTeleportLock
 {
@@ -37,7 +38,8 @@ public final class DungeonTeleportLock
 
     public static boolean isLocked(Player player)
     {
-        return player.level().dimension().equals(VoidDungeons.WORLD_KEY) && !player.isCreative() && !player.isSpectator();
+        var dimension = player.level().dimension();
+        return (dimension.equals(VoidDungeons.WORLD_KEY) || dimension.equals(VoidDaedalus.WORLD_KEY)) && !player.isCreative() && !player.isSpectator();
     }
 
     /**

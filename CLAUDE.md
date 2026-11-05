@@ -21,6 +21,7 @@ A Fabric mod for Minecraft 26.3 on Java 25, using Mojang mappings. It depends on
 - `src/test/`: unit tests for pure logic.
 - `src/main/java/.../common/world/dungeon/`: void dungeons. `DungeonPlan` is pure and unit tested; `DUNGEON_PREVIEW=true ./gradlew test --tests '*DungeonPlanPreview*'` draws cuts through them into `build/dungeon-preview` without starting a game.
 - `src/main/java/.../common/content/armillary/`: the way into dungeons. `ArmillaryChart` and `ArmillaryRoots` are pure and unit tested. `/voidheart armillary reveal|search <percent>|decay <seconds>` skips its timers for review.
+- `src/main/java/.../common/world/daedalus/`: the Daedalus, an infinite maze of districts. Plans and painting are pure and unit tested, and content may only depend on the seed and a district's position. `DUNGEON_PREVIEW=true ./gradlew test --tests '*DaedalusPreview*'` draws it into `build/daedalus-preview`. `/voidheart daedalus enter|leave|where|visit <theme>` reaches it for review.
 - `src/gametest/`: client game tests. Each one must be listed in `src/gametest/resources/fabric.mod.json`, or it silently never runs.
 
 ## Skills

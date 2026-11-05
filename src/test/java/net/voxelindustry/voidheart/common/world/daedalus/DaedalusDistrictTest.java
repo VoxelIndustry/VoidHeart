@@ -1,0 +1,548 @@
+package net.voxelindustry.voidheart.common.world.daedalus;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.junit.jupiter.api.Test;
+
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class DaedalusDistrictTest
+{
+    private static final long[] SEEDS = { 0L, 1234L, -987654321L, 0x123456789ABCDEFL };
+    private static final int PER_THEME = 12;
+    private static final int SEARCH_RADIUS = 40;
+    private static final int LANE_CENTRE = 3;
+    private static final int WANDER_STEPS = 120;
+    private static final int WANDERS_PER_DISTRICT = 20;
+    private static final float MIN_ROOMS_WANDERED = 8;
+
+    private static List<DistrictPos> districtsOf(DaedalusTheme theme, int wanted)
+    {
+        var found = new ArrayList<DistrictPos>();
+        for (int z = -SEARCH_RADIUS; z <= SEARCH_RADIUS && found.size() < wanted; z++)
+        {
+            for (int x = -SEARCH_RADIUS; x <= SEARCH_RADIUS && found.size() < wanted; x++)
+            {
+                var pos = new DistrictPos(x, z);
+                if (DaedalusTheme.at(pos) == theme)
+                    found.add(pos);
+            }
+        }
+        return found;
+    }
+
+    private static DaedalusCanvas painted(DistrictPlan plan)
+    {
+        var canvas = new DaedalusCanvas(DistrictPos.SIZE, DistrictPos.SIZE);
+        canvas.reset(plan.pos.originX(), plan.pos.originZ());
+        DistrictPainter.paint(plan, canvas);
+        return canvas;
+    }
+
+    private static int[] landingPosition(DistrictPlan plan, DistrictPlan.Landing landing)
+    {
+        int along = landing.direction() == Compass.NORTH || landing.direction() == Compass.WEST ? 0 : DistrictPos.CELL - 1;
+        int localX = Compass.isAlongX(landing.direction()) ? along : LANE_CENTRE;
+        int localZ = Compass.isAlongX(landing.direction()) ? LANE_CENTRE : along;
+        return new int[] {
+                plan.pos.originX() + landing.i() * DistrictPos.CELL + localX,
+                DistrictPos.floorY(landing.k()) + 1,
+                plan.pos.originZ() + landing.j() * DistrictPos.CELL + localZ };
+    }
+
+    @Test
+    void everyLandingAndRoomIsWalkableFromAnyOther()
+    {
+        for (long seed : SEEDS)
+        {
+            for (var theme : DaedalusTheme.values())
+            {
+                for (var pos : districtsOf(theme, PER_THEME))
+                {
+                    var plan = DistrictPlanner.generate(seed, pos);
+                    var canvas = painted(plan);
+                    var walker = new DaedalusWalker(canvas);
+                    int[] start = landingPosition(plan, plan.landings().getFirst());
+                    walker.walkFrom(start[0], start[1], start[2]);
+
+                    String where = theme + " " + pos + " seed " + seed;
+                    for (var landing : plan.landings())
+                    {
+                        int[] at = landingPosition(plan, landing);
+                        assertTrue(walker.hasReached(at[0], at[1], at[2]), "Landing " + landing + " is out of reach in " + where);
+                    }
+                    for (var room : plan.rooms())
+                    {
+                        int x = plan.pos.originX();
+                        int z = plan.pos.originZ();
+                        assertTrue(walker.hasReachedWithin(x + room.minI() * DistrictPos.CELL, DistrictPos.floorY(room.minK()), z + room.minJ() * DistrictPos.CELL,
+                                        x + room.maxI() * DistrictPos.CELL + 7, DistrictPos.floorY(room.maxK()) + 7, z + room.maxJ() * DistrictPos.CELL + 7),
+                                "Room " + room + " is out of reach in " + where);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Rooms should be on the way rather than beside it: most have doors on several sides, and the shortest way between two bridges usually crosses one.
+     */
+    @Test
+    void roomsAreCrossedOnTheWayBetweenBridges()
+    {
+        for (var theme : DaedalusTheme.values())
+        {
+            int rooms = 0;
+            int throughRooms = 0;
+            int paths = 0;
+            int pathsThroughRooms = 0;
+            for (var pos : districtsOf(theme, PER_THEME))
+            {
+                var plan = DistrictPlanner.generate(SEEDS[1], pos);
+                for (var room : plan.rooms())
+                {
+                    rooms++;
+                    if (doorSides(plan, room) >= 2)
+                        throughRooms++;
+                }
+
+                var start = plan.landings().getFirst();
+                int[] parents = latticePaths(plan, DistrictPlan.index(start.i(), start.k(), start.j()));
+                for (var landing : plan.landings().subList(1, plan.landings().size()))
+                {
+                    paths++;
+                    for (int cell = DistrictPlan.index(landing.i(), landing.k(), landing.j()); cell >= 0; cell = parents[cell])
+                    {
+                        if (kindOf(plan, cell) == DistrictPlan.ROOM)
+                        {
+                            pathsThroughRooms++;
+                            break;
+                        }
+                    }
+                }
+            }
+            float throughShare = throughRooms / (float) rooms;
+            float crossedShare = pathsThroughRooms / (float) paths;
+            float wandered = roomsMetWandering(theme);
+            System.out.printf("Rooms in %s: %.0f%% have doors on several sides, %.0f%% of ways between bridges cross one, %.1f entered per %d cells wandered%n",
+                    theme, throughShare * 100, crossedShare * 100, wandered, WANDER_STEPS);
+            assertTrue(throughShare > 0.75F, theme + " has too many dead end rooms: " + throughShare);
+            assertTrue(crossedShare > 0.6F, "The way between bridges rarely crosses a room in " + theme + ": " + crossedShare);
+            assertTrue(wandered >= MIN_ROOMS_WANDERED, "Wandering " + theme + " finds too few rooms: " + wandered);
+        }
+    }
+
+    /**
+     * A walk that never turns back unless it must, choosing at random at every junction, as someone exploring would.
+     */
+    private static float roomsMetWandering(DaedalusTheme theme)
+    {
+        var random = new java.util.SplittableRandom(7);
+        int walks = 0;
+        int met = 0;
+        for (var pos : districtsOf(theme, PER_THEME))
+        {
+            var plan = DistrictPlanner.generate(SEEDS[1], pos);
+            for (int walk = 0; walk < WANDERS_PER_DISTRICT; walk++)
+            {
+                var landing = plan.landings().get(random.nextInt(plan.landings().size()));
+                int cell = DistrictPlan.index(landing.i(), landing.k(), landing.j());
+                int previous = -1;
+                var entered = new HashSet<Room>();
+                for (int step = 0; step < WANDER_STEPS; step++)
+                {
+                    var options = new ArrayList<>(latticeNeighbors(plan, cell));
+                    if (options.size() > 1)
+                        options.remove(Integer.valueOf(previous));
+                    previous = cell;
+                    cell = options.get(random.nextInt(options.size()));
+                    var room = plan.room(cell & 15, cell >> 8, (cell >> 4) & 15);
+                    if (room != null)
+                        entered.add(room);
+                }
+                met += entered.size();
+                walks++;
+            }
+        }
+        return met / (float) walks;
+    }
+
+    private static int doorSides(DistrictPlan plan, Room room)
+    {
+        int sides = 0;
+        for (int k = room.minK(); k <= room.maxK(); k++)
+        {
+            for (int j = room.minJ(); j <= room.maxJ(); j++)
+            {
+                for (int i = room.minI(); i <= room.maxI(); i++)
+                    sides |= plan.faces(i, k, j) & 15;
+            }
+        }
+        return Integer.bitCount(sides);
+    }
+
+    private static byte kindOf(DistrictPlan plan, int cell)
+    {
+        return plan.kind(cell & 15, cell >> 8, (cell >> 4) & 15);
+    }
+
+    /**
+     * Breadth first over lattice cells, following doors, room interiors and flights.
+     *
+     * @return the cell each reached cell was entered from, -1 for the start and unreached cells
+     */
+    private static int[] latticePaths(DistrictPlan plan, int start)
+    {
+        var parents = new int[DistrictPlan.CELL_COUNT];
+        var seen = new boolean[DistrictPlan.CELL_COUNT];
+        java.util.Arrays.fill(parents, -1);
+        var queue = new java.util.ArrayDeque<Integer>();
+        queue.add(start);
+        seen[start] = true;
+        while (!queue.isEmpty())
+        {
+            int cell = queue.poll();
+            for (int next : latticeNeighbors(plan, cell))
+            {
+                if (next < 0 || seen[next])
+                    continue;
+                seen[next] = true;
+                parents[next] = cell;
+                queue.add(next);
+            }
+        }
+        return parents;
+    }
+
+    private static List<Integer> latticeNeighbors(DistrictPlan plan, int cell)
+    {
+        int i = cell & 15;
+        int j = (cell >> 4) & 15;
+        int k = cell >> 8;
+        byte kind = plan.kind(i, k, j);
+        var next = new ArrayList<Integer>();
+        if (kind == DistrictPlan.STAIR_LOW || kind == DistrictPlan.STAIR_HIGH)
+        {
+            int climb = plan.faces(i, k, j);
+            int otherTier = kind == DistrictPlan.STAIR_LOW ? k + 1 : k - 1;
+            next.add(DistrictPlan.index(i, otherTier, j));
+            int side = kind == DistrictPlan.STAIR_LOW ? Compass.opposite(climb) : climb;
+            if (DistrictPlan.isInside(i + Compass.dx(side), k, j + Compass.dz(side)))
+                next.add(DistrictPlan.index(i + Compass.dx(side), k, j + Compass.dz(side)));
+            return next;
+        }
+
+        var room = plan.room(i, k, j);
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            int ni = i + Compass.dx(direction);
+            int nj = j + Compass.dz(direction);
+            if (!DistrictPlan.isInside(ni, k, nj))
+                continue;
+            byte other = plan.kind(ni, k, nj);
+            boolean sameRoom = room != null && plan.room(ni, k, nj) == room;
+            boolean throughDoor = plan.isOpen(i, k, j, direction) && (other == DistrictPlan.CORRIDOR || other == DistrictPlan.ROOM) && plan.isOpen(ni, k, nj, Compass.opposite(direction));
+            boolean ontoStairs = plan.isOpen(i, k, j, direction)
+                                 && ((other == DistrictPlan.STAIR_LOW && plan.faces(ni, k, nj) == direction) || (other == DistrictPlan.STAIR_HIGH && plan.faces(ni, k, nj) == Compass.opposite(direction)));
+            if (sameRoom || throughDoor || ontoStairs)
+                next.add(DistrictPlan.index(ni, k, nj));
+        }
+        if (room != null && (room.shape() == RoomShape.ATRIUM || room.shape() == RoomShape.COLONNADE))
+        {
+            if (plan.room(i, k + 1, j) == room)
+                next.add(DistrictPlan.index(i, k + 1, j));
+            if (plan.room(i, k - 1, j) == room)
+                next.add(DistrictPlan.index(i, k - 1, j));
+        }
+        return next;
+    }
+
+    @Test
+    void districtsHaveEnoughBridgesOnEverySide()
+    {
+        for (var pos : List.of(new DistrictPos(0, 0), new DistrictPos(-3, 7), new DistrictPos(1000, -1000)))
+        {
+            var plan = DistrictPlanner.generate(SEEDS[1], pos);
+            var perSide = new int[Compass.COUNT];
+            for (var landing : plan.landings())
+                perSide[landing.direction()]++;
+            for (int side = 0; side < Compass.COUNT; side++)
+                assertTrue(perSide[side] >= 2, "Too few bridges on side " + side + " of " + pos);
+        }
+    }
+
+    @Test
+    void bridgesOfASideHaveVaryingHeightsAndDoNotOverlap()
+    {
+        for (int x = -20; x < 20; x++)
+        {
+            var bridges = DaedalusBridges.between(SEEDS[2], new DistrictPos(x, x * 3), x % 2 == 0 ? Compass.EAST : Compass.SOUTH);
+            var heights = new HashSet<Integer>();
+            for (var bridge : bridges)
+                heights.add(bridge.fromTier());
+            assertEquals(bridges.size(), heights.size(), "Bridges of a side should not share a height");
+
+            for (var bridge : bridges)
+            {
+                for (var other : bridges)
+                {
+                    if (bridge != other)
+                        assertTrue(Math.abs(bridge.cell() - other.cell()) >= 2, "Bridges too close: " + bridge + " and " + other);
+                }
+            }
+        }
+    }
+
+    @Test
+    void walkingAcrossABridgeReachesTheNextDistrict()
+    {
+        for (var theme : DaedalusTheme.values())
+        {
+            var from = districtsOf(theme, 1).getFirst();
+            for (int direction : new int[] { Compass.EAST, Compass.SOUTH })
+            {
+                var to = new DistrictPos(from.x() + Compass.dx(direction), from.z() + Compass.dz(direction));
+                var canvas = new DaedalusCanvas(direction == Compass.EAST ? DistrictPos.PITCH + DistrictPos.SIZE : DistrictPos.SIZE,
+                        direction == Compass.SOUTH ? DistrictPos.PITCH + DistrictPos.SIZE : DistrictPos.SIZE);
+                canvas.reset(from.originX(), from.originZ());
+                DistrictPlans.paint(SEEDS[1], canvas);
+
+                var plan = DistrictPlans.get(SEEDS[1], from);
+                var target = DistrictPlans.get(SEEDS[1], to);
+                int[] start = landingPosition(plan, plan.landings().getFirst());
+                var walker = new DaedalusWalker(canvas);
+                walker.walkFrom(start[0], start[1], start[2]);
+
+                int[] arrival = landingPosition(target, target.landings().stream().filter(landing -> landing.direction() == Compass.opposite(direction)).findFirst().orElseThrow());
+                assertTrue(walker.hasReached(arrival[0], arrival[1], arrival[2]), "No way across from " + from + " to " + to + " for " + theme);
+            }
+        }
+    }
+
+    @Test
+    void everyBridgeStyleCanBeWalkedEndToEnd()
+    {
+        var seen = EnumSet.noneOf(DaedalusBridge.BridgeStyle.class);
+        for (int x = 0; x < 60; x++)
+        {
+            for (int direction : new int[] { Compass.EAST, Compass.SOUTH })
+            {
+                var from = new DistrictPos(x, -x);
+                for (var bridge : DaedalusBridges.between(SEEDS[3], from, direction))
+                {
+                    seen.add(bridge.style());
+                    var canvas = new DaedalusCanvas(DistrictPos.CHASM + 2, DistrictPos.CHASM + 2);
+                    int minX = bridge.worldX(0, LANE_CENTRE) - 1;
+                    int minZ = bridge.worldZ(0, LANE_CENTRE) - 1;
+                    if (bridge.isAlongX())
+                        minZ -= DistrictPos.CHASM / 2;
+                    else
+                        minX -= DistrictPos.CHASM / 2;
+                    canvas.reset(minX, minZ);
+                    BridgePainter.paint(bridge, canvas);
+
+                    var walker = new DaedalusWalker(canvas);
+                    walker.walkFrom(bridge.worldX(0, LANE_CENTRE), bridge.walkY(0), bridge.worldZ(0, LANE_CENTRE));
+                    int last = DistrictPos.CHASM - 1;
+                    assertTrue(walker.hasReached(bridge.worldX(last, LANE_CENTRE), bridge.walkY(last), bridge.worldZ(last, LANE_CENTRE)), "Cannot cross " + bridge);
+                }
+            }
+        }
+        assertEquals(EnumSet.allOf(DaedalusBridge.BridgeStyle.class), seen);
+    }
+
+    @Test
+    void waterCannotFlowAnywhere()
+    {
+        for (var pos : districtsOf(DaedalusTheme.CISTERN, PER_THEME))
+        {
+            var canvas = painted(DistrictPlanner.generate(SEEDS[0], pos));
+            for (int y = 1; y < DistrictPos.TOP_Y; y++)
+            {
+                for (int z = canvas.minZ(); z <= canvas.maxZ(); z++)
+                {
+                    for (int x = canvas.minX(); x <= canvas.maxX(); x++)
+                    {
+                        if (canvas.get(x, y, z) != DaedalusMaterial.WATER)
+                            continue;
+                        assertNotEquals(DaedalusMaterial.AIR, canvas.get(x, y - 1, z), "Water can fall at " + x + " " + y + " " + z);
+                        for (int direction = 0; direction < Compass.COUNT; direction++)
+                            assertNotEquals(DaedalusMaterial.AIR, canvas.get(x + Compass.dx(direction), y, z + Compass.dz(direction)), "Water can spread at " + x + " " + y + " " + z);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    void floorAndCeilingCoverEveryColumnIncludingChasms()
+    {
+        var canvas = new DaedalusCanvas(DistrictPos.PITCH, DistrictPos.PITCH);
+        canvas.reset(-DistrictPos.PITCH, -DistrictPos.PITCH);
+        DistrictPlans.paint(SEEDS[0], canvas);
+        for (int z = canvas.minZ(); z <= canvas.maxZ(); z++)
+        {
+            for (int x = canvas.minX(); x <= canvas.maxX(); x++)
+            {
+                assertEquals(DaedalusMaterial.BOUND, canvas.get(x, 0, z));
+                assertEquals(DaedalusMaterial.BOUND, canvas.get(x, DistrictPos.TOP_Y, z));
+            }
+        }
+    }
+
+    @Test
+    void chunkByChunkDrawsTheSameAsAllAtOnce()
+    {
+        for (var theme : DaedalusTheme.values())
+        {
+            var pos = districtsOf(theme, 1).getFirst();
+            var whole = new DaedalusCanvas(DistrictPos.PITCH, DistrictPos.PITCH);
+            whole.reset(pos.originX(), pos.originZ());
+            DistrictPlans.paint(SEEDS[1], whole);
+
+            var chunk = new DaedalusCanvas(16, 16);
+            for (int cz = 0; cz < DistrictPos.PITCH; cz += 16)
+            {
+                for (int cx = 0; cx < DistrictPos.PITCH; cx += 16)
+                {
+                    chunk.reset(pos.originX() + cx, pos.originZ() + cz);
+                    DistrictPlans.paint(SEEDS[1], chunk);
+                    for (int y = 0; y < DistrictPos.HEIGHT; y++)
+                    {
+                        for (int z = 0; z < 16; z++)
+                        {
+                            for (int x = 0; x < 16; x++)
+                            {
+                                int worldX = chunk.minX() + x;
+                                int worldZ = chunk.minZ() + z;
+                                assertEquals(whole.get(worldX, y, worldZ), chunk.get(worldX, y, worldZ), "Differs at " + worldX + " " + y + " " + worldZ + " in " + theme);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    void generationDependsOnlyOnSeedAndPosition()
+    {
+        var pos = new DistrictPos(17, -42);
+        var first = painted(DistrictPlanner.generate(SEEDS[1], pos));
+        var second = painted(DistrictPlanner.generate(SEEDS[1], pos));
+        var otherSeed = painted(DistrictPlanner.generate(SEEDS[2], pos));
+        assertArrayEquals(first.cells(), second.cells());
+        assertFalse(java.util.Arrays.equals(first.cells(), otherSeed.cells()), "Another world should lay the district out differently");
+    }
+
+    @Test
+    void negativeCoordinatesFallInTheRightDistrict()
+    {
+        assertEquals(new DistrictPos(-1, -1), DistrictPos.at(-1, -1));
+        assertEquals(new DistrictPos(0, 0), DistrictPos.at(DistrictPos.PITCH - 1, 0));
+        assertTrue(DistrictPos.isInsideDistrict(-DistrictPos.PITCH, -DistrictPos.PITCH));
+        assertFalse(DistrictPos.isInsideDistrict(-1, 0));
+    }
+
+    @Test
+    void themesAreEvenlySpread()
+    {
+        Map<DaedalusTheme, Integer> counts = new EnumMap<>(DaedalusTheme.class);
+        int total = 0;
+        for (int z = -50; z < 50; z++)
+        {
+            for (int x = -50; x < 50; x++)
+            {
+                counts.merge(DaedalusTheme.at(new DistrictPos(x, z)), 1, Integer::sum);
+                total++;
+            }
+        }
+        for (var theme : DaedalusTheme.values())
+        {
+            float share = counts.getOrDefault(theme, 0) / (float) total;
+            assertTrue(share > 0.12F && share < 0.22F, theme + " has a share of " + share);
+        }
+    }
+
+    @Test
+    void namesAreVariedAndAllExistInTheLanguageFile() throws Exception
+    {
+        JsonObject language;
+        try (var stream = Objects.requireNonNull(getClass().getResourceAsStream("/assets/voidheart/lang/en_us.json")))
+        {
+            language = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+
+        for (var pattern : List.of("plain", "of"))
+            assertTrue(language.has("voidheart.daedalus.pattern." + pattern), "Missing name pattern " + pattern);
+        for (var theme : DaedalusTheme.values())
+        {
+            String prefix = "voidheart.daedalus." + theme.getSerializedName();
+            for (int word = 0; word < DistrictName.ADJECTIVES; word++)
+                assertTrue(language.has(prefix + ".adjective." + word), "Missing " + prefix + ".adjective." + word);
+            for (int word = 0; word < DistrictName.NOUNS; word++)
+                assertTrue(language.has(prefix + ".noun." + word), "Missing " + prefix + ".noun." + word);
+            for (int word = 0; word < DistrictName.SUBJECTS; word++)
+                assertTrue(language.has(prefix + ".subject." + word), "Missing " + prefix + ".subject." + word);
+        }
+
+        var names = new HashSet<DistrictName>();
+        int count = 0;
+        for (int x = 0; x < 200; x++)
+        {
+            var pos = new DistrictPos(x, x * 7);
+            var name = DistrictName.of(SEEDS[1], pos);
+            assertTrue(name.words().getFirst().contains(DaedalusTheme.at(pos).getSerializedName()), "A name should use words of its theme: " + name);
+            names.add(name);
+            count++;
+        }
+        assertTrue(names.size() > count * 3 / 4, "Names repeat too much: " + names.size() + " of " + count);
+    }
+
+    @Test
+    void plansAreFastToMakeAndChunksFastToDraw()
+    {
+        var positions = new ArrayList<DistrictPos>();
+        for (var theme : DaedalusTheme.values())
+            positions.addAll(districtsOf(theme, PER_THEME));
+
+        for (var pos : positions)
+            DistrictPlanner.generate(SEEDS[0], pos);
+
+        long planStart = System.nanoTime();
+        for (var pos : positions)
+            DistrictPlanner.generate(SEEDS[3], pos);
+        double planMillis = (System.nanoTime() - planStart) / 1e6 / positions.size();
+
+        var chunk = new DaedalusCanvas(16, 16);
+        int drawn = 0;
+        long drawStart = System.nanoTime();
+        for (var pos : positions)
+        {
+            for (int cz = 0; cz < DistrictPos.PITCH; cz += 16)
+            {
+                for (int cx = 0; cx < DistrictPos.PITCH; cx += 16)
+                {
+                    chunk.reset(pos.originX() + cx, pos.originZ() + cz);
+                    DistrictPlans.paint(SEEDS[3], chunk);
+                    drawn++;
+                }
+            }
+        }
+        double drawMillis = (System.nanoTime() - drawStart) / 1e6 / drawn;
+
+        System.out.printf("Daedalus: %.2f ms per district plan, %.3f ms per chunk drawn%n", planMillis, drawMillis);
+        assertTrue(planMillis < 25, "A district plan took " + planMillis + " ms");
+        assertTrue(drawMillis < 2, "A chunk took " + drawMillis + " ms to draw");
+    }
+}

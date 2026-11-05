@@ -69,6 +69,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryConnections;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
@@ -149,6 +150,7 @@ public class VoidHeart implements ModInitializer
         CursePayloads.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(VoidDaedalus::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ArmillaryConnections::tickServer);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ArmillaryConnections.onJoin(handler.getPlayer()));
         UseItemCallback.EVENT.register(DungeonTeleportLock::onUseItem);
@@ -190,6 +192,7 @@ public class VoidHeart implements ModInitializer
             ShoulderEyes.clear();
             Curses.clear();
             DungeonTeleportLock.clear();
+            VoidDaedalus.clear();
         });
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
