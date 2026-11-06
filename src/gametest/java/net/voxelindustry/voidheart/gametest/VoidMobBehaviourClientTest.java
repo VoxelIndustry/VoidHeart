@@ -629,16 +629,8 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         });
         context.waitTicks(20);
         context.takeScreenshot("mob-infection-burst");
-        for (int wait = 0; wait < 6; wait++)
-        {
-            context.waitTicks(100);
-            server.runOnServer(minecraft ->
-            {
-                for (var barnacle : minecraft.overworld().getEntities(VoidHeartEntities.CORRUPTED_BARNACLE, Entity::isAlive))
-                    System.out.println("[VoidMobs] barnacle at " + barnacle.position() + " from " + burstAt[0] + " scattering " + barnacle.isScattering() + " done " + barnacle.getNavigation().isDone());
-            });
-        }
-        waitFor(context, server, 2, "The barnacles should turn into nests", minecraft -> minecraft.overworld().getEntities(VoidHeartEntities.CORRUPTED_BARNACLE, Entity::isAlive).isEmpty());
+        // They must nest before their 30 seconds of running are up, 20 ticks of which went to the screenshot
+        waitFor(context, server, 30 * 20 - 20, "The barnacles should turn into nests", minecraft -> minecraft.overworld().getEntities(VoidHeartEntities.CORRUPTED_BARNACLE, Entity::isAlive).isEmpty());
         server.runOnServer(minecraft ->
         {
             var level = minecraft.overworld();
