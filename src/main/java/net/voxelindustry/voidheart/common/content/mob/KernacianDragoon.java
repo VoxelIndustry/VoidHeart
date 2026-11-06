@@ -110,6 +110,13 @@ public class KernacianDragoon extends Automaton
     // Within this of facing its target, a face it bumps into is one worth climbing
     private static final double CLIMB_FACING = 0.4;
     private static final int TARGET_MEMORY_TICKS = 600;
+    // On guard it sees ahead of it, as its one eye slit would, and senses anyone this close whichever way they are
+    private static final double GUARD_VIEW_COS = Math.cos(Math.toRadians(70));
+    private static final double GUARD_SENSE_RANGE = 6;
+    private static final double AT_POST = 1.2;
+    private static final int POST_REPATH_TICKS = 20;
+    // A post it can't find its way back to becomes wherever it gave up
+    private static final int POST_GIVE_UP_TICKS = 600;
 
     private final ServerBossEvent bossEvent = new ServerBossEvent(getUUID(), getDisplayName(), BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.NOTCHED_10);
 
@@ -131,6 +138,9 @@ public class KernacianDragoon extends Automaton
     public float climbCycle;
     public float climbCycleO;
     private int lastGrip = Integer.MIN_VALUE;
+
+    private @Nullable BlockPos post;
+    private float postYaw;
 
     /**
      * How far each kind's parts have grown on the client, following the hit counts so that new parts grow in rather than pop.
@@ -242,9 +252,47 @@ public class KernacianDragoon extends Automaton
         goalSelector.addGoal(2, new BeamGoal());
         goalSelector.addGoal(2, new ClimbGoal());
         goalSelector.addGoal(3, new AdvanceGoal());
+        goalSelector.addGoal(4, new GuardGoal());
         addIdleGoals(6);
         // It keeps after a player who climbs or hides out of its sight, rather than forgetting them as most mobs do
-        targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true).setUnseenMemoryTicks(TARGET_MEMORY_TICKS));
+        targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, (target, level) -> spots(target))
+                .setUnseenMemoryTicks(TARGET_MEMORY_TICKS));
+    }
+
+    /**
+     * Stands still at this spot, facing this way, until it spots a player or is hit, and walks back to it once it loses them.
+     */
+    public void guard(BlockPos post, float yaw)
+    {
+        this.post = post.immutable();
+        postYaw = yaw;
+    }
+
+    public @Nullable BlockPos post()
+    {
+        return post;
+    }
+
+    public boolean isStandingGuard()
+    {
+        return post != null && getTarget() == null && position().distanceTo(Vec3.atBottomCenterOf(post)) <= AT_POST;
+    }
+
+    private boolean spots(LivingEntity target)
+    {
+        if (post == null || getTarget() != null)
+            return true;
+        var toward = target.position().subtract(position());
+        if (toward.horizontalDistance() <= GUARD_SENSE_RANGE)
+            return true;
+        var flat = new Vec3(toward.x, 0, toward.z).normalize();
+        return flat.dot(facing()) >= GUARD_VIEW_COS;
+    }
+
+    @Override
+    public boolean isPushable()
+    {
+        return !isStandingGuard() && super.isPushable();
     }
 
     @Override
@@ -584,6 +632,11 @@ public class KernacianDragoon extends Automaton
     {
         super.addAdditionalSaveData(output);
         output.putInt("Adaptation", adaptation());
+        if (post != null)
+        {
+            output.store("Post", BlockPos.CODEC, post);
+            output.putFloat("PostYaw", postYaw);
+        }
     }
 
     @Override
@@ -591,6 +644,8 @@ public class KernacianDragoon extends Automaton
     {
         super.readAdditionalSaveData(input);
         setAdaptation(input.getIntOr("Adaptation", 0));
+        post = input.read("Post", BlockPos.CODEC).orElse(null);
+        postYaw = input.getFloatOr("PostYaw", 0);
         if (hasCustomName())
             bossEvent.setName(getDisplayName());
     }
@@ -1020,6 +1075,77 @@ public class KernacianDragoon extends Automaton
             var path = getNavigation().getPath();
             if (getNavigation().isDone() && (path == null || !path.canReach()) && target.getY() - getY() > DragoonClimb.MIN_RISE)
                 getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1);
+        }
+    }
+
+    /**
+     * With no one to fight it walks back to its post, then stands there as still as the machine it is, not even turning its head.
+     */
+    private final class GuardGoal extends Goal
+    {
+        private int repathDelay;
+        private int awayTicks;
+
+        private GuardGoal()
+        {
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
+        }
+
+        @Override
+        public boolean canUse()
+        {
+            return post != null && getTarget() == null && !isClimbing();
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick()
+        {
+            return true;
+        }
+
+        @Override
+        public void start()
+        {
+            repathDelay = 0;
+            awayTicks = 0;
+        }
+
+        @Override
+        public void stop()
+        {
+            getNavigation().stop();
+        }
+
+        @Override
+        public void tick()
+        {
+            if (post == null)
+                return;
+            var spot = Vec3.atBottomCenterOf(post);
+            if (position().distanceTo(spot) > AT_POST)
+            {
+                if (++awayTicks >= POST_GIVE_UP_TICKS)
+                {
+                    post = blockPosition();
+                    return;
+                }
+                if (--repathDelay <= 0)
+                {
+                    repathDelay = POST_REPATH_TICKS;
+                    getNavigation().moveTo(spot.x, spot.y, spot.z, 1);
+                }
+                return;
+            }
+
+            awayTicks = 0;
+            getNavigation().stop();
+            setDeltaMovement(getDeltaMovement().multiply(0, 1, 0));
+            setYRot(postYaw);
+            setYBodyRot(postYaw);
+            setYHeadRot(postYaw);
+            setXRot(0);
+            var ahead = getEyePosition().add(facing());
+            getLookControl().setLookAt(ahead.x, ahead.y, ahead.z);
         }
     }
 }

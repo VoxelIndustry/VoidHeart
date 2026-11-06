@@ -30,6 +30,7 @@ public final class DistrictPlan
     private final Room[] roomList;
     private final Room[] voids;
     private final List<Landing> landings;
+    private volatile DaedalusMobPlan mobs;
 
     DistrictPlan(long worldSeed, DistrictPos pos, DaedalusTheme theme, byte[] kinds, byte[] faces, byte[] windows, short[] rooms, Room[] roomList, Room[] voids, List<Landing> landings)
     {
@@ -126,6 +127,22 @@ public final class DistrictPlan
     public List<Landing> landings()
     {
         return landings;
+    }
+
+    /**
+     * Planned on first use, since only chunks reaching the spawn step need it.
+     */
+    public DaedalusMobPlan mobs()
+    {
+        var plan = mobs;
+        if (plan != null)
+            return plan;
+        synchronized (this)
+        {
+            if (mobs == null)
+                mobs = DaedalusMobPlan.of(this);
+            return mobs;
+        }
     }
 
     long cellHash(int i, int k, int j)

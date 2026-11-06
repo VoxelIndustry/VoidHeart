@@ -256,7 +256,7 @@ public class Wraith extends VoidMonster
             return null;
 
         var emergeAt = emergeSpot(hit);
-        return emergeAt == null ? null : new Route(hit.getBlockPos(), hit.getDirection(), emergeAt);
+        return emergeAt == null || !mayGoTo(emergeAt) ? null : new Route(hit.getBlockPos(), hit.getDirection(), emergeAt);
     }
 
     protected boolean canStartCrossing()

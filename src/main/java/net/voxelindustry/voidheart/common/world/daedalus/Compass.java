@@ -40,6 +40,14 @@ public final class Compass
         return (direction + 3) & 3;
     }
 
+    /**
+     * @return the direction as a Minecraft yaw, where south is 0 and west 90
+     */
+    public static float yaw(int direction)
+    {
+        return Math.floorMod(direction * 90 + 180, 360);
+    }
+
     static boolean isAlongX(int direction)
     {
         return direction == EAST || direction == WEST;

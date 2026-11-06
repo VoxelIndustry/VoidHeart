@@ -1,14 +1,21 @@
 package net.voxelindustry.voidheart.common.world.daedalus;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.voxelindustry.voidheart.common.content.mob.BarnacleNestBlock;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Writes a chunk straight into its sections at the terrain step, like noise generation does. Nothing generated needs its neighbours, so a chunk costs no feature step, shape update or light beyond its few lamps.
- * The few altars and pillars get their block entities here too, as a feature would have given them.
+ * The few altars and pillars get their block entities here too, as a feature would have given them, and barnacle nests are grown here since the spawn step may not set blocks.
  */
 final class DaedalusChunkWriter
 {
@@ -62,6 +69,25 @@ final class DaedalusChunkWriter
             }
         }
         primeHeightmaps(chunk, palette);
+        if (DistrictPos.isInsideDistrict(minX, minZ))
+            growNests(chunk, canvas, DistrictPlans.get(worldSeed, DistrictPos.at(minX, minZ)));
+    }
+
+    private static void growNests(ChunkAccess chunk, DaedalusCanvas canvas, DistrictPlan plan)
+    {
+        var taken = new HashMap<Integer, Set<Long>>();
+        for (var placement : plan.mobs().inChunk(chunk.getPos().x(), chunk.getPos().z()))
+        {
+            if (placement.mob() != DaedalusMob.BARNACLE_NEST)
+                continue;
+            var spot = DaedalusMobSpots.find(canvas, plan.pos, placement, taken.computeIfAbsent(DistrictPlan.index(placement.i(), placement.k(), placement.j()), key -> new HashSet<>()));
+            if (spot == null)
+                continue;
+            var pos = new BlockPos(spot.x(), spot.y(), spot.z());
+            var state = VoidHeartBlocks.BARNACLE_NEST.defaultBlockState().setValue(BarnacleNestBlock.FACING, Direction.from3DDataValue(spot.surface()));
+            chunk.setBlockState(pos, state, 0);
+            addBlockEntity(chunk, pos, state);
+        }
     }
 
     private static void addBlockEntity(ChunkAccess chunk, BlockPos pos, BlockState state)
