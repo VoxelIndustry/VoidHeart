@@ -177,6 +177,12 @@ public abstract class CrawlerMonster extends VoidMonster
     }
 
     @Override
+    protected boolean isHeldInPlace()
+    {
+        return isClinging();
+    }
+
+    @Override
     public void travel(Vec3 input)
     {
         if (isClinging())

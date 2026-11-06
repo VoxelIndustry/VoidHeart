@@ -20,6 +20,8 @@ import net.voxelindustry.voidheart.common.world.daedalus.Compass;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusBridges;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusCanvas;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusMaterial;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusMob;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusMobSpots;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusPalette;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
@@ -205,13 +207,34 @@ public class DaedalusClientTest implements FabricClientGameTest
                     canvas.reset(minX, minZ);
                     DistrictPlans.paint(level.getSeed(), canvas);
                     var palette = DistrictPos.isInsideDistrict(minX, minZ) ? DaedalusPalette.of(DaedalusTheme.at(DistrictPos.at(minX, minZ))) : DaedalusPalette.chasm();
-                    compare(chunk, canvas, palette, minX, minZ);
+                    compare(chunk, canvas, palette, minX, minZ, nests(level.getSeed(), canvas, minX, minZ));
                 }
             }
         }
     }
 
-    private static void compare(net.minecraft.world.level.chunk.ChunkAccess chunk, DaedalusCanvas canvas, DaedalusPalette palette, int minX, int minZ)
+    /**
+     * Barnacle nests grow over the painted district where its mobs are planned, found in their cells as the chunk writer finds them.
+     */
+    private static java.util.Set<BlockPos> nests(long seed, DaedalusCanvas canvas, int minX, int minZ)
+    {
+        var nests = new java.util.HashSet<BlockPos>();
+        if (!DistrictPos.isInsideDistrict(minX, minZ))
+            return nests;
+        var plan = DistrictPlans.get(seed, DistrictPos.at(minX, minZ));
+        var taken = new java.util.HashMap<String, java.util.Set<Long>>();
+        for (var placement : plan.mobs().inChunk(minX >> 4, minZ >> 4))
+        {
+            if (placement.mob() != DaedalusMob.BARNACLE_NEST)
+                continue;
+            var spot = DaedalusMobSpots.find(canvas, plan.pos, placement, taken.computeIfAbsent(placement.i() + " " + placement.k() + " " + placement.j(), key -> new java.util.HashSet<>()));
+            if (spot != null)
+                nests.add(new BlockPos(spot.x(), spot.y(), spot.z()));
+        }
+        return nests;
+    }
+
+    private static void compare(net.minecraft.world.level.chunk.ChunkAccess chunk, DaedalusCanvas canvas, DaedalusPalette palette, int minX, int minZ, java.util.Set<BlockPos> nests)
     {
         var at = new BlockPos.MutableBlockPos();
         for (int y = 0; y < DistrictPos.HEIGHT; y++)
@@ -222,6 +245,11 @@ public class DaedalusClientTest implements FabricClientGameTest
                 {
                     var wanted = palette.state(canvas.raw(x, y, z), x, y, z);
                     var found = chunk.getBlockState(at.set(x, y, z));
+                    if (nests.contains(at))
+                    {
+                        check(found.is(VoidHeartBlocks.BARNACLE_NEST), "At " + at + " a nest should have grown, the chunk has " + found);
+                        continue;
+                    }
                     check(wanted == found, "At " + at + " the plan has " + wanted + " but the chunk has " + found);
                 }
             }

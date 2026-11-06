@@ -90,6 +90,7 @@ public final class DaedalusChunkGenerator extends ChunkGenerator
     @Override
     public void spawnOriginalMobs(WorldGenRegion region)
     {
+        DaedalusMobSpawner.spawn(region);
     }
 
     @Override

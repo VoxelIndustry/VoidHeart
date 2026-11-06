@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -21,11 +22,15 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusFence;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 
 /**
  * What every mob of the void shares. They only ever fight players and never despawn, as a cleared dungeon must stay cleared.
  * In Peaceful they lie dormant rather than being removed, and are back as they were when the difficulty rises again.
+ * In the Daedalus they never leave their district, so a player on a bridge is out of their reach but for what they throw or fire.
  */
 public abstract class VoidMonster extends Monster
 {
@@ -34,6 +39,11 @@ public abstract class VoidMonster extends Monster
     private static final EntityDataAccessor<Boolean> DATA_DORMANT = SynchedEntityData.defineId(VoidMonster.class, EntityDataSerializers.BOOLEAN);
 
     private static final float STEP_VOLUME = 0.15F;
+    // Beyond every mob's notice and follow range, so a resting mob misses nothing it could have reacted to
+    private static final double REST_RANGE = 40;
+    private static final int REST_CHECK_TICKS = 20;
+
+    private boolean resting;
 
     protected VoidMonster(EntityType<? extends VoidMonster> type, Level level)
     {
@@ -79,8 +89,32 @@ public abstract class VoidMonster extends Monster
     public void tick()
     {
         if (!level().isClientSide())
+        {
             updateDormancy();
+            if ((tickCount + getId()) % REST_CHECK_TICKS == 0)
+                resting = isInDaedalus() && level().getNearestPlayer(this, REST_RANGE) == null;
+            if (isResting())
+                return;
+        }
         super.tick();
+    }
+
+    /**
+     * The Daedalus keeps a hundred mobs to a district and loads several districts around each player, so those with no one near rest where they stand and skip
+     * their ticks altogether, which is most of what so many would cost. Only one held up by something rests, so none hangs in the air, and anything happening to it
+     * wakes it.
+     */
+    public boolean isResting()
+    {
+        return resting && getTarget() == null && hurtTime == 0 && !isDeadOrDying() && !isOnFire() && (onGround() || isNoGravity() || isHeldInPlace());
+    }
+
+    /**
+     * @return whether something other than the ground or a lack of gravity holds it where it is, as a wall holds a crawler
+     */
+    protected boolean isHeldInPlace()
+    {
+        return false;
     }
 
     private void updateDormancy()
@@ -107,6 +141,30 @@ public abstract class VoidMonster extends Monster
     public boolean isPushable()
     {
         return !isDormant() && super.isPushable();
+    }
+
+    @Override
+    public void move(MoverType type, Vec3 delta)
+    {
+        if (isInDaedalus())
+        {
+            var box = getBoundingBox();
+            delta = new Vec3(DaedalusFence.clipX(getX(), getZ(), box.minX, box.maxX, delta.x), delta.y, DaedalusFence.clipZ(getX(), getZ(), box.minZ, box.maxZ, delta.z));
+        }
+        super.move(type, delta);
+    }
+
+    /**
+     * @return whether it may be put at this spot by its own doing, as by crossing a wall, which only the Daedalus' district edges forbid
+     */
+    public boolean mayGoTo(Vec3 spot)
+    {
+        return !isInDaedalus() || DaedalusFence.allows(getX(), getZ(), spot.x, spot.z);
+    }
+
+    protected boolean isInDaedalus()
+    {
+        return level().dimension() == VoidDaedalus.WORLD_KEY;
     }
 
     @Override
