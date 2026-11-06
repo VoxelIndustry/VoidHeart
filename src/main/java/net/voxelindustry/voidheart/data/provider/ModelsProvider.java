@@ -28,6 +28,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 
 import java.util.List;
@@ -220,6 +221,8 @@ public class ModelsProvider extends FabricModelProvider
 
         for (var name : HAND_WRITTEN_ITEM_MODELS)
             generator.itemModelOutput.accept(BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(MODID, name)), ItemModelUtils.plainModel(itemModel(name)));
+        for (var prop : DaedalusProp.values())
+            generator.itemModelOutput.accept(VoidHeartBlocks.daedalusProp(prop).asItem(), ItemModelUtils.plainModel(itemModel(prop.id())));
 
         // Drawn by GeckoLib with the block model, the base model only provides display transforms
         generator.itemModelOutput.accept(VoidHeartBlocks.RAVENOUS_COLLECTOR.asItem(),

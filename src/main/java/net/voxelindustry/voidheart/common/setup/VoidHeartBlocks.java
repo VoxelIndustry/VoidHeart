@@ -75,7 +75,11 @@ import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBl
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterPartBlock;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
@@ -234,6 +238,8 @@ public class VoidHeartBlocks
     public static Block GIANT_TUBE_WORMS;
     public static Block STILL_ANEMONE;
     public static Block BARNACLE_CRUST;
+
+    private static final Map<DaedalusProp, Block> DAEDALUS_PROPS = new EnumMap<>(DaedalusProp.class);
 
     public static final List<Block> MINEABLE_BLOCKS = new ArrayList<>();
 
@@ -561,6 +567,7 @@ public class VoidHeartBlocks
                 .sound(SoundType.SLIME_BLOCK)));
 
         registerDepthsBlocks();
+        registerDaedalusProps();
 
         SMALL_AZURIUM_BUNDLE = registerSmallBundle("azurium", MapColor.COLOR_BLUE, 1, 6);
         MEDIUM_AZURIUM_BUNDLE = registerMediumBundle("azurium", MapColor.COLOR_BLUE, 3, 10);
@@ -614,6 +621,106 @@ public class VoidHeartBlocks
         CUT_LISTLESS_LEAD_STAIRS = generateStairs(CUT_LISTLESS_LEAD, "cut_listless_lead");
         CUT_LISTLESS_LEAD_SLAB = generateSlab(CUT_LISTLESS_LEAD, "cut_listless_lead");
         CUT_LISTLESS_LEAD_WALL = generateWall(CUT_LISTLESS_LEAD, "cut_listless_lead");
+    }
+
+    public static Block daedalusProp(DaedalusProp prop)
+    {
+        return DAEDALUS_PROPS.get(prop);
+    }
+
+    private static void registerDaedalusProps()
+    {
+        for (var prop : DaedalusProp.values())
+        {
+            var shape = switch (prop)
+            {
+                case BENCH -> Block.box(0, 0, 4, 16, 8, 12);
+                case PLINTH -> Block.box(2, 0, 2, 14, 16, 14);
+                case BUST -> Block.box(3, 0, 4, 13, 15, 12);
+                case URN -> Block.box(3, 0, 3, 13, 15, 13);
+                case CANDELABRUM -> Block.box(3, 0, 6, 13, 15, 10);
+                case CHANDELIER -> Block.box(2, 3, 2, 14, 16, 14);
+                case FRAME -> Block.box(1, 2, 15, 15, 15, 16);
+                case DESK -> Block.box(0, 0, 2, 16, 15, 14);
+                case LEDGERS -> Block.box(2, 0, 2, 13, 8, 12);
+                case GRATE -> Block.box(0, 0, 0, 16, 16, 16);
+                case VALVE -> Block.box(3, 3, 10, 13, 13, 16);
+                case GROWTH -> Block.box(3, 0, 4, 13, 8, 13);
+                case COT -> Block.box(0, 0, 1, 16, 5, 15);
+                case ORRERY -> Block.box(2, 0, 2, 14, 15, 14);
+                case LECTERN -> Block.box(2, 0, 2, 14, 15, 14);
+                case CHAIR -> Block.box(2, 0, 2, 14, 16, 14);
+                case HOURGLASS -> Block.box(4, 0, 4, 12, 14, 12);
+                case CLOCK -> Block.box(2, 2, 13, 14, 14, 16);
+                case MIRROR -> Block.box(2, 0, 14, 14, 16, 16);
+                case PIPES -> Block.box(2, 0, 11, 12, 16, 16);
+                case BASIN -> Block.box(2, 0, 2, 14, 9, 14);
+                case CRATES -> Block.box(0, 0, 1, 16, 14, 13);
+                case BRAZIER -> Block.box(2, 0, 2, 14, 10, 14);
+                case CAGE -> Block.box(3, 1, 3, 13, 16, 13);
+                case CANDLES -> Block.box(3, 0, 3, 13, 8, 12);
+                case REMAINS -> Block.box(2, 0, 2, 14, 5, 14);
+                case TABLE -> Block.box(0, 0, 1, 16, 16, 15);
+                case BOOKS -> Block.box(2, 0, 2, 15, 5, 14);
+                case SCONCE -> Block.box(5, 4, 9, 11, 14, 16);
+                case TAPESTRY -> Block.box(1, 0, 14, 15, 15, 16);
+                case CABINET -> Block.box(2, 0, 2, 14, 16, 14);
+                case BARREL -> Block.box(3, 0, 3, 13, 14, 13);
+                case TRUNK -> Block.box(1, 0, 2, 15, 11, 14);
+                case PLANTER -> Block.box(3.5, 0, 3.5, 12.5, 15, 12.5);
+                case CENSER -> Block.box(5, 3, 5, 11, 16, 11);
+                case STATUE -> Block.box(3, 0, 3, 13, 16, 13);
+                case SCROLLS -> Block.box(1, 4, 11, 15, 16, 16);
+                case GEARS -> Block.box(2, 2, 13, 15, 15, 16);
+                case GAUGE -> Block.box(3.5, 0, 12, 12.5, 13, 16);
+                case CONSOLE -> Block.box(1, 0, 4, 15, 14, 15);
+                case COIL -> Block.box(4, 0, 4, 12, 16, 12);
+                case CONDENSER -> Block.box(2, 0, 2, 14, 16, 14);
+                case FLYWHEEL -> Block.box(0.5, 0, 2, 15.5, 15, 14);
+                case PISTON -> Block.box(3, 0, 3, 13, 16, 13);
+                case AUTOMATON -> Block.box(2.5, 0, 1, 13.5, 12, 12);
+                case LANTERN -> Block.box(4.5, 0, 4.5, 11.5, 16, 11.5);
+                case WINCH -> Block.box(2, 0, 9, 16, 13, 16);
+                case CELLS -> Block.box(3, 0, 3, 13, 11, 13);
+                case SARCOPHAGUS -> Block.box(1, 0, 0, 15, 11, 16);
+                case SARCOPHAGUS_FOOT -> Block.box(1, 0, 0.5, 15, 9, 16);
+                case SARCOPHAGUS_OPEN -> Block.box(1, 0, 0, 15, 11, 16);
+            };
+            var sound = switch (prop)
+            {
+                case CANDELABRUM, CHANDELIER, GRATE, VALVE, ORRERY, CLOCK, BRAZIER, CAGE, SCONCE, CENSER -> SoundType.CHAIN;
+                case CABINET -> SoundType.METAL;
+                case GEARS, GAUGE, CONSOLE, COIL, CONDENSER, FLYWHEEL, PISTON, AUTOMATON, LANTERN, WINCH, CELLS -> SoundType.COPPER;
+                case PIPES -> SoundType.COPPER;
+                case GROWTH -> SoundType.SLIME_BLOCK;
+                case LEDGERS, COT, CANDLES, BOOKS, TAPESTRY -> SoundType.WOOL;
+                case LECTERN, CHAIR, CRATES, TABLE, BARREL, TRUNK, SCROLLS -> SoundType.WOOD;
+                case HOURGLASS, MIRROR -> SoundType.GLASS;
+                case REMAINS -> SoundType.BONE_BLOCK;
+                default -> SoundType.STONE;
+            };
+            int light = switch (prop)
+            {
+                case CANDELABRUM -> 12;
+                case CHANDELIER -> 15;
+                case BRAZIER -> 14;
+                case SCONCE -> 11;
+                case LANTERN -> 4;
+                case CONDENSER -> 3;
+                case CELLS -> 2;
+                case CANDLES -> 9;
+                default -> 0;
+            };
+            var properties = BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .requiresCorrectToolForDrops()
+                    .strength(1.5F, 6.0F)
+                    .sound(sound)
+                    .noOcclusion()
+                    .lightLevel(state -> light)
+                    .pushReaction(PushReaction.POPPED);
+            DAEDALUS_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new DaedalusPropBlock(blockProperties, prop, shape), properties, true));
+        }
     }
 
     private static void registerDepthsBlocks()

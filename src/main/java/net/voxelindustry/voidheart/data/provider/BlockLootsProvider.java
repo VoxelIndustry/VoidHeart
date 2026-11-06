@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.data.provider;
 
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootSubProvider;
 import net.minecraft.core.HolderLookup;
@@ -34,6 +35,8 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
         this.dropSelf(VoidHeartBlocks.RAVENOUS_GOLD_BLOCK);
         this.dropSelf(VoidHeartBlocks.OCULUS_TABLE);
         this.dropSelf(VoidHeartBlocks.BEHOLDER);
+        for (var prop : DaedalusProp.values())
+            this.dropSelf(VoidHeartBlocks.daedalusProp(prop));
 
         dropMetalFamily(VoidHeartBlocks.SEETHING_STEEL_BLOCK, VoidHeartBlocks.CUT_SEETHING_STEEL,
                 VoidHeartBlocks.CUT_SEETHING_STEEL_STAIRS, VoidHeartBlocks.CUT_SEETHING_STEEL_SLAB, VoidHeartBlocks.CUT_SEETHING_STEEL_WALL);

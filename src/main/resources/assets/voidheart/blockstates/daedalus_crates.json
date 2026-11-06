@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/daedalus_crates"
+    },
+    "facing=east": {
+      "model": "voidheart:block/daedalus_crates",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/daedalus_crates",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/daedalus_crates",
+      "y": 270
+    }
+  }
+}
