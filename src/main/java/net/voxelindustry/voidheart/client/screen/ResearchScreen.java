@@ -22,6 +22,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.voxelindustry.voidheart.client.scene.ResearchScenes;
+import net.voxelindustry.voidheart.common.content.oil.Elixirs;
+import net.voxelindustry.voidheart.common.content.oil.OilType;
 import net.voxelindustry.voidheart.common.content.research.Constellation;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeMath;
@@ -503,6 +505,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "column_capacity" -> wholeNumber(columns.capacity());
             case "column_count" -> wholeNumber(columns.count());
             case "column_total" -> wholeNumber(columns.total());
+            case "searing_charges" -> wholeNumber(OilType.SEARING.charges());
+            case "ember_minutes" -> wholeNumber(Elixirs.EMBER_DRAUGHT_TICKS / 1200D);
+            case "stillwater_minutes" -> wholeNumber(Elixirs.STILLWATER_TICKS / 1200D);
+            case "bulwark_seconds" -> wholeNumber(Elixirs.BULWARK_TICKS / 20D);
+            case "bulwark_health" -> wholeNumber(4 * (Elixirs.BULWARK_AMPLIFIER + 1));
             default -> name;
         };
     }

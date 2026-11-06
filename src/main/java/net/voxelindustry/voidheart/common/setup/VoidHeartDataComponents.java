@@ -13,6 +13,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
 import net.voxelindustry.voidheart.common.content.essence.MultiEssenceStorage;
+import net.voxelindustry.voidheart.common.content.oil.WeaponOil;
 import net.voxelindustry.voidheart.common.content.tormenter.TormenterSouls;
 
 import java.util.UUID;
@@ -65,6 +66,7 @@ public class VoidHeartDataComponents
     public static DataComponentType<MultiEssenceStorage> MULTI_ESSENCE_STORAGE;
     public static DataComponentType<BlockPos>        BARRIER_FIRST_POINT;
     public static DataComponentType<TormenterSouls>  TORMENTER_SOULS;
+    public static DataComponentType<WeaponOil>       WEAPON_OIL;
 
     public static void registerComponents()
     {
@@ -77,6 +79,7 @@ public class VoidHeartDataComponents
         MULTI_ESSENCE_STORAGE = register("multi_essence_storage", MultiEssenceStorage.CODEC);
         BARRIER_FIRST_POINT = register("barrier_first_point", BlockPos.CODEC);
         TORMENTER_SOULS = register("tormenter_souls", TormenterSouls.CODEC);
+        WEAPON_OIL = register("weapon_oil", WeaponOil.CODEC);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

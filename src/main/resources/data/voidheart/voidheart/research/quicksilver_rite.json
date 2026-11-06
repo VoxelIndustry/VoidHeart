@@ -1,0 +1,23 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "x": -0.98,
+  "y": -0.36,
+  "icon": "voidheart:quicksilver",
+  "insight_cost": 10,
+  "knowledge_cost": 750,
+  "knowledge_per_second": 1.25,
+  "requires": [
+    "voidheart:tria_prima"
+  ],
+  "unlocks": [
+    "voidheart:ember_draught",
+    "voidheart:stillwater",
+    "voidheart:bulwark_elixir"
+  ],
+  "recipes": [
+    "voidheart:athanor/ember_draught",
+    "voidheart:athanor/stillwater",
+    "voidheart:athanor/bulwark_elixir"
+  ]
+}

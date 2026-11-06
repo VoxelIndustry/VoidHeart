@@ -18,6 +18,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
+import net.voxelindustry.voidheart.client.OilEmbers;
+import net.voxelindustry.voidheart.client.OilTooltip;
 import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
 import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
 import net.voxelindustry.voidheart.client.render.mob.VoidMobRenderers;
@@ -142,6 +144,8 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Snapshot.TYPE, (payload, context) -> ResearchScreen.snapshot = payload);
         ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Recipes.TYPE, (payload, context) -> ResearchScreen.recipeSheets = payload.sheets());
         ItemTooltipCallback.EVENT.register(ResearchScreen::appendKnowledgeTooltip);
+        ItemTooltipCallback.EVENT.register(OilTooltip::append);
+        ClientTickEvents.END_CLIENT_TICK.register(OilEmbers::tick);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);

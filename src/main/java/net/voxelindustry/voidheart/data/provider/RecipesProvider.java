@@ -204,6 +204,13 @@ public class RecipesProvider extends FabricRecipeProvider
             // Athanor: the base sits in the core, one reagent in each crucible
             offerAthanorRecipe("searing_oil", new ItemStack(VoidHeartItems.SEARING_OIL), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.FIERY, 500),
                     Items.SULFUR, VoidHeartItems.QUICKSILVER);
+            offerAthanorRecipe("ember_draught", new ItemStack(VoidHeartItems.EMBER_DRAUGHT), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.FIERY, 300),
+                    VoidHeartItems.QUICKSILVER, VoidHeartItems.RUBRUM_SHARD, VoidHeartBlocks.SULFIDE_CRUST);
+            offerAthanorRecipe("stillwater", new ItemStack(VoidHeartItems.STILLWATER), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.STILLNESS, 300),
+                    VoidHeartItems.QUICKSILVER, VoidHeartBlocks.STILL_KELP, VoidHeartBlocks.STILL_ANEMONE);
+            offerAthanorRecipe("bulwark_elixir", new ItemStack(VoidHeartItems.BULWARK_ELIXIR), Items.GLASS_BOTTLE, 240,
+                    Map.of(EssenceRegistry.STILLNESS, 200, EssenceRegistry.FIERY, 200),
+                    VoidHeartItems.QUICKSILVER, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.OBSIDIAN_SHARD);
 
             // The heart binding is done by an onCraft callback registered on this id, see VoidHeartRecipes
             saveAltarRecipe(new AltarRecipe(altarRecipeId("voidheart"), ingredient(VoidHeartItems.VOID_HEART), ALTAR_TIME), VoidHeartItems.VOID_HEART);

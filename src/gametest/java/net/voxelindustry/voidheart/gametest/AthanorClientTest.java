@@ -87,6 +87,11 @@ public class AthanorClientTest implements FabricClientGameTest
                 throw new AssertionError("Expected no brew without an alembic");
 
             server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(ALEMBIC, VoidHeartBlocks.ALEMBIC.defaultBlockState()));
+            // Searing oil is locked until whoever set the base has its research
+            context.waitTicks(3 * AthanorTile.CHECK_INTERVAL);
+            if (server.computeOnServer(minecraft -> athanor(minecraft).isBrewing()))
+                throw new AssertionError("Expected no brew before its research");
+            server.runCommand("execute as @a run voidheart research grant voidheart:sulfur_rite");
             // The relay links what it sees on its next scan, then the intake draws on the next check
             try
             {

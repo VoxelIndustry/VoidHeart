@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.oil.Elixirs;
 import net.voxelindustry.voidheart.common.content.depths.SmokerCycle.Phase;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jspecify.annotations.Nullable;
@@ -80,7 +81,7 @@ public class SmokerVentTile extends TileBase
                 continue;
             if (source == null)
                 source = new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(JET_DAMAGE));
-            player.hurtServer(level, source, JET_DAMAGE_AMOUNT);
+            player.hurtServer(level, source, Elixirs.againstJet(player, JET_DAMAGE_AMOUNT));
         }
     }
 

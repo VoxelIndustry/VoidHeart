@@ -14,6 +14,7 @@
   "client": [
     "client.MixinCameraTremor",
     "client.MixinClientLevelBarrierDisguise",
+    "client.MixinGuiGraphicsOil",
     "client.MixinCloudRendererRapture",
     "client.MixinLevelExtractorOculus",
     "client.MixinLevelRendererOculus",

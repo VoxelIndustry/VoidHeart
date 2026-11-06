@@ -18,6 +18,23 @@ public final class VoidHeartEffects
             Identifier.fromNamespaceAndPath(MODID, "barnacle_infection"),
             new DisplayEffect(MobEffectCategory.HARMFUL, INFECTION_COLOR));
 
+    private static final int EMBER_WARD_COLOR = 0xFF8A3D;
+    private static final int STILLWATER_COLOR = 0x7FB8FF;
+
+    /**
+     * Ember Draught: the Kernacian Dragoon's void fire does less, though it still sets the drinker alight.
+     */
+    public static final Holder<MobEffect> EMBER_WARD = Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT,
+            Identifier.fromNamespaceAndPath(MODID, "ember_ward"),
+            new DisplayEffect(MobEffectCategory.BENEFICIAL, EMBER_WARD_COLOR));
+
+    /**
+     * Stillwater: the jets of the Still Depths' smokers do less.
+     */
+    public static final Holder<MobEffect> STILLWATER = Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT,
+            Identifier.fromNamespaceAndPath(MODID, "stillwater"),
+            new DisplayEffect(MobEffectCategory.BENEFICIAL, STILLWATER_COLOR));
+
     private VoidHeartEffects()
     {
     }

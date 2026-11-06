@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "x": -0.74,
+  "y": -0.92,
+  "icon": "voidheart:searing_oil",
+  "insight_cost": 10,
+  "knowledge_cost": 750,
+  "knowledge_per_second": 1.25,
+  "requires": [
+    "voidheart:tria_prima"
+  ],
+  "unlocks": [
+    "voidheart:searing_oil"
+  ],
+  "recipes": [
+    "voidheart:athanor/searing_oil"
+  ]
+}

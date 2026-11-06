@@ -248,6 +248,9 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.SALT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.QUICKSILVER, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SEARING_OIL, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.EMBER_DRAUGHT, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.STILLWATER, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.BULWARK_ELIXIR, ModelTemplates.FLAT_ITEM);
         VoidHeartItems.SPAWN_EGGS.forEach(egg -> generator.generateFlatItem(egg, ModelTemplates.FLAT_ITEM));
 
         for (var name : HAND_WRITTEN_ITEM_MODELS)
