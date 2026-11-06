@@ -1,0 +1,21 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "x": -0.48,
+  "y": -0.54,
+  "icon": "voidheart:concussive_oil",
+  "insight_cost": 10,
+  "knowledge_cost": 900,
+  "knowledge_per_second": 1.25,
+  "requires": [
+    "voidheart:tria_prima"
+  ],
+  "unlocks": [
+    "voidheart:concussive_oil",
+    "voidheart:arcane_oil"
+  ],
+  "recipes": [
+    "voidheart:athanor/concussive_oil",
+    "voidheart:athanor/arcane_oil"
+  ]
+}

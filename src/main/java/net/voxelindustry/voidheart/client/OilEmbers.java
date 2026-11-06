@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.client;
 
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
@@ -41,6 +42,8 @@ public final class OilEmbers
     private static final double VIEW_FORWARD    = 1.8;
     private static final double VIEW_SIDE       = 1.15;
     private static final double VIEW_DOWN       = 0.75;
+
+    private static final ParticleOptions CONCUSSIVE_GRIT = new DustParticleOptions(OilType.CONCUSSIVE.color(), 0.7F);
 
     private static final Map<Entity, Boolean> WAS_SWINGING = new WeakHashMap<>();
 
@@ -88,6 +91,8 @@ public final class OilEmbers
         return switch (type)
         {
             case SEARING -> ParticleTypes.SMALL_FLAME;
+            case CONCUSSIVE -> CONCUSSIVE_GRIT;
+            case ARCANE -> ParticleTypes.ENCHANTED_HIT;
         };
     }
 

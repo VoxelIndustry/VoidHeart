@@ -12,7 +12,7 @@ import net.minecraft.world.item.Items;
 import net.voxelindustry.voidheart.common.item.LoreItem;
 
 /**
- * A flask of oil that coats a weapon when either is used on the other in an inventory, as bundles are filled. The empty bottle comes back.
+ * A flask of oil that coats a weapon, or a few arrows, when either is used on the other in an inventory, as bundles are filled. The empty bottle comes back.
  */
 public class OilFlaskItem extends LoreItem
 {
@@ -38,11 +38,14 @@ public class OilFlaskItem extends LoreItem
         if (clickAction != ClickAction.SECONDARY || !slot.allowModification(player))
             return false;
 
-        var weapon = slot.getItem();
-        if (!OilCoating.canCoat(weapon))
+        var target = slot.getItem();
+        if (OilCoating.canCoat(target))
+            coat(self, target, player);
+        else if (OilCoating.isArrow(target))
+            coatArrows(self, target, player);
+        else
             return false;
 
-        coat(self, weapon, player);
         slot.setChanged();
         return true;
     }
@@ -53,10 +56,16 @@ public class OilFlaskItem extends LoreItem
     @Override
     public boolean overrideOtherStackedOnMe(ItemStack self, ItemStack other, Slot slot, ClickAction clickAction, Player player, SlotAccess carriedItem)
     {
-        if (clickAction != ClickAction.SECONDARY || !slot.allowModification(player) || !OilCoating.canCoat(other))
+        if (clickAction != ClickAction.SECONDARY || !slot.allowModification(player))
             return false;
 
-        coat(self, other, player);
+        if (OilCoating.canCoat(other))
+            coat(self, other, player);
+        else if (OilCoating.isArrow(other))
+            coatArrows(self, other, player);
+        else
+            return false;
+
         slot.setChanged();
         return true;
     }
@@ -64,6 +73,28 @@ public class OilFlaskItem extends LoreItem
     private void coat(ItemStack flask, ItemStack weapon, Player player)
     {
         OilCoating.coat(weapon, type);
+        useUp(flask, player);
+    }
+
+    /**
+     * Coats the whole stack when it's small enough, or splits the flask's worth off it into the inventory.
+     */
+    private void coatArrows(ItemStack flask, ItemStack arrows, Player player)
+    {
+        if (arrows.getCount() <= OilCoating.ARROWS_PER_FLASK)
+            OilCoating.coatArrows(arrows, type);
+        else
+        {
+            var coated = arrows.split(OilCoating.ARROWS_PER_FLASK);
+            OilCoating.coatArrows(coated, type);
+            if (player instanceof ServerPlayer)
+                player.getInventory().placeItemBackInInventory(coated, Prediction.SERVER_ONLY);
+        }
+        useUp(flask, player);
+    }
+
+    private void useUp(ItemStack flask, Player player)
+    {
         flask.shrink(1);
         player.playSound(SoundEvents.HONEYCOMB_WAX_ON, 0.8F, 0.8F + player.level().getRandom().nextFloat() * 0.2F);
 

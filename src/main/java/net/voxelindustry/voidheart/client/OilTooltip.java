@@ -24,7 +24,8 @@ public final class OilTooltip
         if (coating == null)
             return;
 
-        var line = Component.translatable("voidheart.oil.coating", Component.translatable(coating.type().nameKey()), coating.charges())
+        var name = Component.translatable(coating.type().nameKey());
+        var line = (OilCoating.isArrow(stack) ? name : Component.translatable("voidheart.oil.coating", name, coating.charges()))
                 .withStyle(style -> style.withColor(TextColor.fromRgb(coating.type().color())));
         lines.add(Math.min(1, lines.size()), line);
     }

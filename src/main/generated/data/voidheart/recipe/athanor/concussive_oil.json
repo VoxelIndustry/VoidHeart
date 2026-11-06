@@ -1,0 +1,36 @@
+{
+  "type": "voidheart:athanor",
+  "aspects": {
+    "voidheart:fiery": 100,
+    "voidheart:stillness": 400
+  },
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:glass_bottle"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:sulfur"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:quicksilver"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:concussive_oil"
+      }
+    ]
+  },
+  "time": 200
+}

@@ -24,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.voxelindustry.voidheart.client.scene.ResearchScenes;
 import net.voxelindustry.voidheart.common.content.oil.Elixirs;
+import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.voxelindustry.voidheart.common.content.oil.OilType;
 import net.voxelindustry.voidheart.common.content.research.Constellation;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
@@ -507,6 +508,9 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "column_count" -> wholeNumber(columns.count());
             case "column_total" -> wholeNumber(columns.total());
             case "searing_charges" -> wholeNumber(OilType.SEARING.charges());
+            case "concussive_charges" -> wholeNumber(OilType.CONCUSSIVE.charges());
+            case "arcane_charges" -> wholeNumber(OilType.ARCANE.charges());
+            case "arrows_per_flask" -> wholeNumber(OilCoating.ARROWS_PER_FLASK);
             case "salt_cells" -> wholeNumber(SaltPatch.CELLS_PER_SALT);
             case "salt_size" -> wholeNumber(SaltPatch.MAX_SIZE);
             case "ember_minutes" -> wholeNumber(Elixirs.EMBER_DRAUGHT_TICKS / 1200D);

@@ -11,7 +11,9 @@ import java.util.Locale;
  */
 public enum OilType implements StringRepresentable
 {
-    SEARING(DragoonAdaptation.Kind.FIRE, 20, 0xFF8A3D);
+    SEARING(DragoonAdaptation.Kind.FIRE, 20, 0xFF8A3D),
+    CONCUSSIVE(DragoonAdaptation.Kind.BLUNT, 20, 0xC2A272),
+    ARCANE(DragoonAdaptation.Kind.MAGIC, 20, 0x5E8BFF);
 
     public static final Codec<OilType> CODEC = StringRepresentable.fromEnum(OilType::values);
 

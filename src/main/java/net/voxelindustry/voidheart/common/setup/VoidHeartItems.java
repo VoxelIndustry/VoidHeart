@@ -59,6 +59,8 @@ public class VoidHeartItems
     public static Item SALT;
     public static Item QUICKSILVER;
     public static Item SEARING_OIL;
+    public static Item CONCUSSIVE_OIL;
+    public static Item ARCANE_OIL;
     public static Item EMBER_DRAUGHT;
     public static Item STILLWATER;
     public static Item BULWARK_ELIXIR;
@@ -98,6 +100,8 @@ public class VoidHeartItems
         SALT = registerItem("salt", properties -> new SaltItem(properties, "voidheart.salt.lore", "voidheart.salt.use"));
         QUICKSILVER = registerItem("quicksilver", properties -> new LoreItem(properties, "voidheart.quicksilver.lore"));
         SEARING_OIL = registerItem("searing_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.SEARING, "voidheart.searing_oil.lore", "voidheart.oil_flask.lore"));
+        CONCUSSIVE_OIL = registerItem("concussive_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.CONCUSSIVE, "voidheart.concussive_oil.lore", "voidheart.oil_flask.lore"));
+        ARCANE_OIL = registerItem("arcane_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.ARCANE, "voidheart.arcane_oil.lore", "voidheart.oil_flask.lore"));
         EMBER_DRAUGHT = registerItem("ember_draught", properties -> new LoreItem(Elixirs.emberDraught(properties), "voidheart.ember_draught.lore"));
         STILLWATER = registerItem("stillwater", properties -> new LoreItem(Elixirs.stillwater(properties), "voidheart.stillwater.lore"));
         BULWARK_ELIXIR = registerItem("bulwark_elixir", properties -> new LoreItem(Elixirs.bulwark(properties), "voidheart.bulwark_elixir.lore"));

@@ -204,6 +204,12 @@ public class RecipesProvider extends FabricRecipeProvider
             // Athanor: the base sits in the core, one reagent in each crucible
             offerAthanorRecipe("searing_oil", new ItemStack(VoidHeartItems.SEARING_OIL), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.FIERY, 500),
                     Items.SULFUR, VoidHeartItems.QUICKSILVER);
+            offerAthanorRecipe("concussive_oil", new ItemStack(VoidHeartItems.CONCUSSIVE_OIL), Items.GLASS_BOTTLE, 200,
+                    Map.of(EssenceRegistry.STILLNESS, 400, EssenceRegistry.FIERY, 100),
+                    Items.SULFUR, VoidHeartItems.QUICKSILVER, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAthanorRecipe("arcane_oil", new ItemStack(VoidHeartItems.ARCANE_OIL), Items.GLASS_BOTTLE, 200,
+                    Map.of(EssenceRegistry.STILLNESS, 250, EssenceRegistry.FIERY, 250),
+                    Items.SULFUR, VoidHeartItems.QUICKSILVER, Items.LAPIS_LAZULI);
             offerAthanorRecipe("ember_draught", new ItemStack(VoidHeartItems.EMBER_DRAUGHT), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.FIERY, 300),
                     VoidHeartItems.QUICKSILVER, VoidHeartItems.RUBRUM_SHARD, VoidHeartBlocks.SULFIDE_CRUST);
             offerAthanorRecipe("stillwater", new ItemStack(VoidHeartItems.STILLWATER), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.STILLNESS, 300),

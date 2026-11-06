@@ -43,6 +43,10 @@ public final class OilDecoration
         graphics.fill(RenderPipelines.GUI, left + 1, top + 1, left + 3, top + 5, color);
         graphics.fill(RenderPipelines.GUI, left + 1, top + 2, left + 2, top + 3, DROP_SHINE);
 
+        // An arrow's coat lasts one hit, so it has no charges to show
+        if (OilCoating.isArrow(stack))
+            return;
+
         int barTop = y + (stack.isBarVisible() ? BAR_TOP_ABOVE_DURABILITY : BAR_TOP);
         int barLeft = x + BAR_LEFT;
         int filled = Math.max(1, Math.round(BAR_WIDTH * coating.charges() / (float) coating.type().charges()));

@@ -6,12 +6,17 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptions;
 import net.minecraft.client.CameraType;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -22,12 +27,14 @@ import net.voxelindustry.voidheart.common.content.mob.DragoonAdaptation.Kind;
 import net.voxelindustry.voidheart.common.content.mob.KernacianDragoon;
 import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.voxelindustry.voidheart.common.content.oil.OilType;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 /**
  * Searing Oil coats a sword through real inventory clicks. The coated sword's hits count only as fire for a Dragoon, set a zombie alight, and use
- * a charge each, while an uncoated sword still counts as a blade.
+ * a charge each, while an uncoated sword still counts as a blade. Concussive and Arcane Oil count as blunt and magic, throw a zombie further, break off
+ * a Bishop's lance and strip a blessing. A flask coats sixteen arrows, and an oiled arrow counts as its oil.
  */
 public class OilClientTest implements FabricClientGameTest
 {
@@ -37,6 +44,9 @@ public class OilClientTest implements FabricClientGameTest
      */
     private static final int SWORD_SLOT = 36;
     private static final int OIL_SLOT   = 37;
+    private static final int ARROW_SLOT = 40;
+    private static final int ARCANE_SLOT = 41;
+    private static final int ARROWS     = 20;
     /**
      * Button numbers a container click carries, which a menu reads as primary and secondary. They are not the mouse button codes.
      */
@@ -56,6 +66,8 @@ public class OilClientTest implements FabricClientGameTest
             server.runCommand("clear @a");
             server.runCommand("item replace entity @a hotbar.0 with iron_sword");
             server.runCommand("item replace entity @a hotbar.1 with voidheart:searing_oil 2");
+            server.runCommand("item replace entity @a hotbar.4 with arrow " + ARROWS);
+            server.runCommand("item replace entity @a hotbar.5 with voidheart:arcane_oil");
             context.waitTicks(10);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
@@ -68,6 +80,9 @@ public class OilClientTest implements FabricClientGameTest
                 minecraft.gameMode.handleContainerInput(menu.containerId, OIL_SLOT, CLICK_PRIMARY, ContainerInput.PICKUP, minecraft.player);
                 minecraft.gameMode.handleContainerInput(menu.containerId, SWORD_SLOT, CLICK_SECONDARY, ContainerInput.PICKUP, minecraft.player);
                 minecraft.gameMode.handleContainerInput(menu.containerId, OIL_SLOT, CLICK_PRIMARY, ContainerInput.PICKUP, minecraft.player);
+                // A flask on a stack of arrows coats a flask's worth of them
+                minecraft.gameMode.handleContainerInput(menu.containerId, ARCANE_SLOT, CLICK_PRIMARY, ContainerInput.PICKUP, minecraft.player);
+                minecraft.gameMode.handleContainerInput(menu.containerId, ARROW_SLOT, CLICK_SECONDARY, ContainerInput.PICKUP, minecraft.player);
             });
             context.waitTicks(5);
 
@@ -83,6 +98,26 @@ public class OilClientTest implements FabricClientGameTest
                 // The bottle lands in the flask's emptied slot, so putting the other flask back there picks it up
                 expect(player.getInventory().contains(stack -> stack.is(Items.GLASS_BOTTLE)) || player.containerMenu.getCarried().is(Items.GLASS_BOTTLE),
                         "Expected the empty bottle given back");
+            });
+            server.runOnServer(minecraft ->
+            {
+                var inventory = player(minecraft).getInventory();
+                var plain = inventory.getItem(4);
+                expect(plain.is(Items.ARROW) && plain.getCount() == ARROWS - OilCoating.ARROWS_PER_FLASK && OilCoating.coatingOf(plain) == null,
+                        "Expected the arrows past a flask's worth left plain in their slot, got " + plain + " " + plain.getComponents());
+                int oiled = 0;
+                for (int slot = 0; slot < inventory.getContainerSize(); slot++)
+                {
+                    var stack = inventory.getItem(slot);
+                    var coating = OilCoating.coatingOf(stack);
+                    if (stack.is(Items.ARROW) && coating != null)
+                    {
+                        expect(coating.type() == OilType.ARCANE && coating.charges() == 1, "Expected arrows coated with arcane oil for one hit, got " + coating);
+                        oiled += stack.getCount();
+                    }
+                }
+                expect(oiled == OilCoating.ARROWS_PER_FLASK, "Expected " + OilCoating.ARROWS_PER_FLASK + " oiled arrows, got " + oiled);
+                expect(player(minecraft).containerMenu.getCarried().isEmpty(), "Expected the arcane flask used up, carrying " + player(minecraft).containerMenu.getCarried());
             });
             context.computeOnClient(minecraft ->
             {
@@ -101,8 +136,14 @@ public class OilClientTest implements FabricClientGameTest
                 worn.setDamageValue(900);
                 worn.enchant(minecraft.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.SHARPNESS), 3);
                 OilCoating.coat(worn, OilType.SEARING);
-                player.getInventory().setItem(2, worn);
+                player.getInventory().setItem(9, worn);
                 player.getInventory().setItem(3, new ItemStack(Items.IRON_SWORD));
+                var concussive = new ItemStack(Items.IRON_AXE);
+                OilCoating.coat(concussive, OilType.CONCUSSIVE);
+                player.getInventory().setItem(10, concussive);
+                var arcane = new ItemStack(Items.GOLDEN_SWORD);
+                OilCoating.coat(arcane, OilType.ARCANE);
+                player.getInventory().setItem(11, arcane);
             });
             context.waitTicks(5);
             context.takeScreenshot(TestScreenshotOptions.of("oil-inventory").withSize(1280, 720));
@@ -159,6 +200,8 @@ public class OilClientTest implements FabricClientGameTest
                 expect(OilCoating.coatingOf(sword) == null, "Expected the coat to wear off after its last charge");
                 OilCoating.coat(sword, OilType.SEARING);
             });
+            otherOils(server);
+            arrows(context, server);
 
             // Embers off the held blade, in first person and from the front
             server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 0 10");
@@ -175,8 +218,144 @@ public class OilClientTest implements FabricClientGameTest
             context.takeScreenshot("oil-embers-third-person-swing");
             context.waitTicks(30);
             context.takeScreenshot("oil-embers-third-person-idle");
+            for (var oil : new OilType[]{ OilType.CONCUSSIVE, OilType.ARCANE })
+            {
+                server.runOnServer(minecraft -> OilCoating.coat(player(minecraft).getMainHandItem(), oil));
+                context.waitTicks(10);
+                context.getInput().pressKey(options -> options.keyAttack);
+                context.waitTicks(2);
+                context.takeScreenshot("oil-" + oil.getSerializedName() + "-third-person-swing");
+            }
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
         }
+    }
+
+    /**
+     * A sword coated with concussive or arcane oil counts as blunt or magic, and does what its oil does to anything but the Dragoon.
+     */
+    private static void otherOils(TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var player = player(minecraft);
+            player.teleportTo(0.5, GROUND_Y, 0.5);
+            var sword = new ItemStack(Items.IRON_SWORD);
+            player.getInventory().setItem(8, sword);
+            player.getInventory().setSelectedSlot(8);
+
+            var dragoon = VoidHeartEntities.KERNACIAN_DRAGOON.create(level, EntitySpawnReason.COMMAND);
+            dragoon.setNoAi(true);
+            dragoon.snapTo(0.5, GROUND_Y, 3.5, 0, 0);
+            level.addFreshEntity(dragoon);
+            OilCoating.coat(sword, OilType.CONCUSSIVE);
+            attack(player, dragoon);
+            expect(DragoonAdaptation.count(dragoon.adaptation(), Kind.BLUNT) == 1, "Expected a concussive sword's hit to count as blunt");
+            expect(DragoonAdaptation.count(dragoon.adaptation(), Kind.BLADE) == 0, "Expected a concussive sword's hit not to count as a blade");
+            OilCoating.coat(sword, OilType.ARCANE);
+            attack(player, dragoon);
+            expect(DragoonAdaptation.count(dragoon.adaptation(), Kind.MAGIC) == 1, "Expected an arcane sword's hit to count as magic");
+            dragoon.discard();
+
+            // Concussive: the same blow throws a zombie much further
+            sword.remove(VoidHeartDataComponents.WEAPON_OIL);
+            double plain = knockedBy(player, level);
+            OilCoating.coat(sword, OilType.CONCUSSIVE);
+            double concussed = knockedBy(player, level);
+            System.out.println("[Oil] a zombie was thrown at " + plain + " plain and " + concussed + " concussed");
+            expect(concussed > plain * 1.8, "Expected a concussive hit to throw much harder, " + concussed + " against " + plain);
+
+            // Concussive: a Bishop charging its lance loses it
+            var bishop = VoidHeartEntities.FALLEN_BISHOP.create(level, EntitySpawnReason.COMMAND);
+            bishop.setNoAi(true);
+            bishop.snapTo(3.5, GROUND_Y, 0.5, 0, 0);
+            level.addFreshEntity(bishop);
+            bishop.showLance(player.position(), 6);
+            attack(player, bishop);
+            expect(bishop.lanceTicks() == 0, "Expected a concussive hit to break off a charging lance, at " + bishop.lanceTicks());
+            bishop.discard();
+
+            // Arcane: one blessing goes, the harmful effect stays
+            OilCoating.coat(sword, OilType.ARCANE);
+            var blessed = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
+            blessed.setNoAi(true);
+            blessed.snapTo(3.5, GROUND_Y, 0.5, 0, 0);
+            level.addFreshEntity(blessed);
+            blessed.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 1200));
+            blessed.addEffect(new MobEffectInstance(MobEffects.SPEED, 1200));
+            blessed.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 1200));
+            expect(blessed.getActiveEffects().size() == 3, "Expected the zombie to take all three effects, got " + blessed.getActiveEffects());
+            attack(player, blessed);
+            long blessings = blessed.getActiveEffects().stream().filter(effect -> effect.getEffect().value().isBeneficial()).count();
+            expect(blessings == 1, "Expected an arcane hit to strip one blessing, " + blessings + " left of " + blessed.getActiveEffects());
+            expect(blessed.hasEffect(MobEffects.SLOWNESS), "Expected an arcane hit to leave harmful effects");
+            blessed.discard();
+            player.getInventory().setItem(8, ItemStack.EMPTY);
+            player.getInventory().setSelectedSlot(0);
+        });
+    }
+
+    /**
+     * @return how fast the player's blow sent a fresh zombie away
+     */
+    private static double knockedBy(ServerPlayer player, ServerLevel level)
+    {
+        var zombie = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
+        zombie.setNoAi(true);
+        zombie.snapTo(0.5, GROUND_Y, 2.5, 0, 0);
+        level.addFreshEntity(zombie);
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, zombie.getEyePosition());
+        attack(player, zombie);
+        double speed = zombie.getDeltaMovement().horizontalDistance();
+        zombie.discard();
+        return speed;
+    }
+
+    /**
+     * An oiled arrow counts as its oil rather than a projectile and carries its effect.
+     */
+    private static void arrows(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var dragoon = VoidHeartEntities.KERNACIAN_DRAGOON.create(level, EntitySpawnReason.COMMAND);
+            dragoon.setNoAi(true);
+            dragoon.snapTo(0.5, GROUND_Y, 6.5, 0, 0);
+            level.addFreshEntity(dragoon);
+            var zombie = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
+            zombie.setNoAi(true);
+            zombie.snapTo(6.5, GROUND_Y, 0.5, 0, 0);
+            level.addFreshEntity(zombie);
+            shoot(player(minecraft), OilType.SEARING, dragoon);
+            shoot(player(minecraft), OilType.SEARING, zombie);
+        });
+        context.waitTicks(20);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var dragoon = level.getEntities(VoidHeartEntities.KERNACIAN_DRAGOON, entity -> true).getFirst();
+            int packed = dragoon.adaptation();
+            expect(DragoonAdaptation.count(packed, Kind.FIRE) == 1, "Expected a searing arrow to count as fire, got " + DragoonAdaptation.count(packed, Kind.FIRE));
+            expect(DragoonAdaptation.count(packed, Kind.PROJECTILE) == 0, "Expected a searing arrow not to count as a projectile too");
+            var zombie = level.getEntities(EntityTypes.ZOMBIE, entity -> true).getFirst();
+            expect(zombie.getHealth() < zombie.getMaxHealth(), "Expected the arrow to hit the zombie");
+            expect(zombie.isOnFire(), "Expected a searing arrow to set the zombie alight");
+            dragoon.discard();
+            zombie.discard();
+        });
+    }
+
+    private static void shoot(ServerPlayer player, OilType oil, LivingEntity target)
+    {
+        var level = (ServerLevel) player.level();
+        var stack = new ItemStack(Items.ARROW);
+        OilCoating.coatArrows(stack, oil);
+        var arrow = new Arrow(level, player, stack, null);
+        arrow.setPos(player.getEyePosition());
+        var to = target.getBoundingBox().getCenter().subtract(player.getEyePosition());
+        arrow.shoot(to.x, to.y, to.z, 2.5F, 0);
+        level.addFreshEntity(arrow);
     }
 
     private static void attack(ServerPlayer player, LivingEntity target)

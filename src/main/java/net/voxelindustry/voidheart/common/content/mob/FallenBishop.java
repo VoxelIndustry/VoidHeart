@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
-import net.voxelindustry.voidheart.common.content.salt.SaltWard;
-import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -10,6 +8,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -27,10 +26,12 @@ import net.minecraft.world.item.SwingAnimationType;
 import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 import org.joml.Vector3f;
@@ -237,6 +238,20 @@ public class FallenBishop extends VoidMonster
         if (lance > CHARGE_TICKS)
             entityData.set(DATA_LANCE, lance >= CHARGE_TICKS + LINGER_TICKS ? 0 : lance + 1);
         entityData.set(DATA_LANCE_READY, lance == 0 && !isKneeling() && lanceCooldown <= LANCE_WARN_TICKS && canLance(getTarget()));
+    }
+
+    /**
+     * A heavy blow breaks off a lance still charging, and the Bishop has to wait out its cooldown before the next one.
+     */
+    public void breakLance()
+    {
+        int lance = lanceTicks();
+        if (lance == 0 || lance > CHARGE_TICKS)
+            return;
+
+        entityData.set(DATA_LANCE, 0);
+        lanceCooldown = LANCE_INTERVAL;
+        playSound(SoundEvents.FIRE_EXTINGUISH, 0.8F, 1.4F);
     }
 
     /**
