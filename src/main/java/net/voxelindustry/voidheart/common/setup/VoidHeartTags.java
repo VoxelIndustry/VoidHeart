@@ -26,6 +26,10 @@ public class VoidHeartTags
     public static final TagKey<Item> KNOWLEDGE_PROFOUND = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/profound"));
     public static final TagKey<Item> KNOWLEDGE_TRANSCENDENT = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/transcendent"));
 
+    /**
+     * Mobs that salt burns as they cross it.
+     */
+    public static final TagKey<EntityType<?>> SALT_BURNED = TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "salt_burned"));
     public static final TagKey<EntityType<?>> TORMENTER_REFUSES = TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "tormenter_refuses"));
 
     public static final TagKey<Structure> LEY_MINOR_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_minor_anchor"));

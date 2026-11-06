@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    { "apply": { "model": "voidheart:block/salt_ward" } },
+    { "when": { "north": "true" }, "apply": { "model": "voidheart:block/salt_ward_edge" } },
+    { "when": { "east": "true" }, "apply": { "model": "voidheart:block/salt_ward_edge", "y": 90 } },
+    { "when": { "south": "true" }, "apply": { "model": "voidheart:block/salt_ward_edge", "y": 180 } },
+    { "when": { "west": "true" }, "apply": { "model": "voidheart:block/salt_ward_edge", "y": 270 } }
+  ]
+}

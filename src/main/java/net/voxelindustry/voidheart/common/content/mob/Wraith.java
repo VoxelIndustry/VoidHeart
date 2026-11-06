@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -40,7 +42,7 @@ import java.util.EnumSet;
 
 /**
  * Walks like anything else in open rooms. When a wall stands between it and a player it marks the far side, then crosses straight through
- * and comes out of the mark. Hurting it once takes the ability away for good.
+ * and comes out of the mark. Hurting it once takes the ability away for good. Salt stops it: it won't step onto it or come out of a wall beside it.
  */
 public class Wraith extends VoidMonster
 {
@@ -58,15 +60,19 @@ public class Wraith extends VoidMonster
     private static final int RESCUE_RADIUS = 8;
     private static final float WITHER_CHANCE = 0.1F;
     private static final int WITHER_TICKS = 8 * 20;
+    private static final int SALT_CRACKLE_TICKS = 20;
 
     private boolean lockedSolid;
     private int blindTicks;
     private int cooldown;
+    private @Nullable Vec3 lastOffSalt;
+    private int saltCrackleDelay;
 
     public Wraith(EntityType<? extends Wraith> type, Level level)
     {
         super(type, level);
         xpReward = EXPERIENCE;
+        setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, -1);
     }
 
     public static AttributeSupplier.Builder createAttributes()
@@ -142,6 +148,45 @@ public class Wraith extends VoidMonster
 
         if (!isCrossing() && tickCount % 10 == 0 && !level.noCollision(this, getBoundingBox()))
             leaveWall(level);
+    }
+
+    /**
+     * After it moved, so it never ends a tick on salt.
+     */
+    @Override
+    public void aiStep()
+    {
+        super.aiStep();
+        if (level() instanceof ServerLevel level)
+            keepOffSalt(level);
+    }
+
+    /**
+     * Nothing stops it walking, so a step that lands it on salt is taken back.
+     */
+    private void keepOffSalt(ServerLevel level)
+    {
+        if (saltCrackleDelay > 0)
+            saltCrackleDelay--;
+        if (isCrossing())
+            return;
+        if (!SaltWard.isOn(this))
+        {
+            lastOffSalt = position();
+            return;
+        }
+        if (lastOffSalt != null)
+        {
+            var salt = blockPosition();
+            setPos(lastOffSalt);
+            setDeltaMovement(0, getDeltaMovement().y, 0);
+            getNavigation().stop();
+            if (saltCrackleDelay == 0)
+            {
+                SaltWard.crackle(level, salt);
+                saltCrackleDelay = SALT_CRACKLE_TICKS;
+            }
+        }
     }
 
     /**
@@ -256,7 +301,9 @@ public class Wraith extends VoidMonster
             return null;
 
         var emergeAt = emergeSpot(hit);
-        return emergeAt == null || !mayGoTo(emergeAt) ? null : new Route(hit.getBlockPos(), hit.getDirection(), emergeAt);
+        if (emergeAt == null || !mayGoTo(emergeAt) || SaltWard.isWardedBelow(level(), BlockPos.containing(emergeAt)))
+            return null;
+        return new Route(hit.getBlockPos(), hit.getDirection(), emergeAt);
     }
 
     protected boolean canStartCrossing()

@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
@@ -16,6 +18,7 @@ public class FallenNovice extends VoidMonster
     {
         super(type, level);
         xpReward = EXPERIENCE;
+        setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, SaltWard.FALLEN_MALUS);
     }
 
     public static AttributeSupplier.Builder createAttributes()

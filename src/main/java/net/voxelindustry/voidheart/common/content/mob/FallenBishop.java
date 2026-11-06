@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -104,6 +106,7 @@ public class FallenBishop extends VoidMonster
     {
         super(type, level);
         xpReward = EXPERIENCE;
+        setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, SaltWard.FALLEN_MALUS);
     }
 
     public static AttributeSupplier.Builder createAttributes()

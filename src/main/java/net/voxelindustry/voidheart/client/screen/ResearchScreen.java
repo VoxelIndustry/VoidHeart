@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.screen;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltPatch;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
@@ -506,6 +507,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "column_count" -> wholeNumber(columns.count());
             case "column_total" -> wholeNumber(columns.total());
             case "searing_charges" -> wholeNumber(OilType.SEARING.charges());
+            case "salt_cells" -> wholeNumber(SaltPatch.CELLS_PER_SALT);
+            case "salt_size" -> wholeNumber(SaltPatch.MAX_SIZE);
             case "ember_minutes" -> wholeNumber(Elixirs.EMBER_DRAUGHT_TICKS / 1200D);
             case "stillwater_minutes" -> wholeNumber(Elixirs.STILLWATER_TICKS / 1200D);
             case "bulwark_seconds" -> wholeNumber(Elixirs.BULWARK_TICKS / 20D);

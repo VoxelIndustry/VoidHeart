@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -71,6 +73,8 @@ public class CorruptedBarnacle extends CrawlerMonster
     {
         super(type, level);
         xpReward = EXPERIENCE[0];
+        // Steers around salt entirely
+        setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, -1);
     }
 
     public static AttributeSupplier.Builder createAttributes()
@@ -229,7 +233,8 @@ public class CorruptedBarnacle extends CrawlerMonster
         if (stage() < GROWN)
         {
             growthTicks++;
-            if (growthTicks >= (stage() + 1) * GROWTH_TICKS)
+            // It can't cement itself on salt, so it waits for its last stage until it is off it
+            if (growthTicks >= (stage() + 1) * GROWTH_TICKS && !(stage() + 1 == GROWN && SaltWard.isOn(this)))
                 applyStage(stage() + 1);
         }
     }
@@ -333,7 +338,7 @@ public class CorruptedBarnacle extends CrawlerMonster
 
             for (var pos : BlockPos.withinManhattan(origin, NEST_SEARCH_RADIUS))
             {
-                if (!level.getBlockState(pos).canBeReplaced() || !level.getFluidState(pos).isEmpty())
+                if (!level.getBlockState(pos).canBeReplaced() || !level.getFluidState(pos).isEmpty() || SaltWard.isWarded(level, pos))
                     continue;
 
                 for (var facing : Direction.values())

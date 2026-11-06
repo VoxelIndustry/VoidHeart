@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
@@ -165,7 +166,8 @@ final class CrawlerChaseGoal extends Goal
 
     private void climbIfBlocked(Vec3 toTarget)
     {
-        if (!mob.horizontalCollision)
+        // Salt drags at a crab too much for it to get a grip on the wall
+        if (!mob.horizontalCollision || mob instanceof CorruptedCrab && SaltWard.isOn(mob))
             return;
 
         var side = Direction.getApproximateNearest(toTarget.x, 0, toTarget.z);

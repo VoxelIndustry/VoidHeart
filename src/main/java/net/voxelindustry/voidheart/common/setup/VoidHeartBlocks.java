@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.fabricmc.fabric.api.registry.LandPathTypeRegistry;
+import net.minecraft.world.level.pathfinder.PathType;
+import net.voxelindustry.voidheart.common.content.salt.SaltWardBlock;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeletonHeadBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AlembicBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AspectIntakeBlock;
@@ -173,6 +176,7 @@ public class VoidHeartBlocks
     public static Block ALEMBIC;
     public static Block CRUCIBLE;
     public static Block ASPECT_INTAKE;
+    public static Block SALT_WARD;
     public static Block ARMILLARY_CORE;
     public static Block ARMILLARY_BASE_SIDE;
     public static Block ARMILLARY_BASE_CORNER;
@@ -746,6 +750,19 @@ public class VoidHeartBlocks
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
                 .sound(SoundType.STONE), true);
+
+        // Laid from salt rather than placed, so it has no item and drops nothing
+        var saltId = Identifier.fromNamespaceAndPath(MODID, "salt_ward");
+        SALT_WARD = Registry.register(BuiltInRegistries.BLOCK, saltId, new SaltWardBlock(BlockBehaviour.Properties.of()
+                .setId(ResourceKey.create(Registries.BLOCK, saltId))
+                .mapColor(MapColor.SNOW)
+                .noCollision()
+                .noOcclusion()
+                .instabreak()
+                .noLootTable()
+                .sound(SoundType.SAND)
+                .pushReaction(PushReaction.POPPED)));
+        LandPathTypeRegistry.register(SALT_WARD, PathType.DAMAGE_CAUTIOUS, null);
     }
 
     /**

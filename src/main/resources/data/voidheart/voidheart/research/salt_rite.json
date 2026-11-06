@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "x": -1.0,
+  "y": -1.0,
+  "icon": "voidheart:salt",
+  "insight_cost": 10,
+  "knowledge_cost": 750,
+  "knowledge_per_second": 1.25,
+  "requires": [
+    "voidheart:tria_prima"
+  ],
+  "unlocks": [
+    "voidheart:salt"
+  ],
+  "recipes": [
+    "voidheart:shatterforge/salt_from_abyssal_silt"
+  ]
+}
