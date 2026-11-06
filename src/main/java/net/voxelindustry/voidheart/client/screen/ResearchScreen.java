@@ -353,12 +353,23 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private double knowledgeChange()
     {
         var research = activeResearch();
-        return research.isPresent() ? snapshot.rate() - research.get().knowledgePerSecond() : snapshot.rate();
+        return research.isPresent() && !tooStrained(research.get()) ? snapshot.rate() - research.get().knowledgePerSecond() : snapshot.rate();
+    }
+
+    /** Whether a research weighs more than the player and their proxies bear, which stops it from starting or keeps it waiting. */
+    private boolean tooStrained(Research research)
+    {
+        return research.strain() > snapshot.upgrades().bearable();
+    }
+
+    private boolean strained()
+    {
+        return activeResearch().filter(this::tooStrained).isPresent();
     }
 
     private boolean starving()
     {
-        return activeResearch().isPresent() && knowledgeChange() < 0 && shownKnowledge() <= 0.01;
+        return activeResearch().isPresent() && !strained() && knowledgeChange() < 0 && shownKnowledge() <= 0.01;
     }
 
     private double shownKnowledge()
@@ -369,13 +380,15 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private double shownProgress(Identifier id, Research research)
     {
         double progress = snapshot.progress().getOrDefault(id, 0D);
-        if (snapshot.active().filter(id::equals).isEmpty())
+        if (snapshot.active().filter(id::equals).isEmpty() || tooStrained(research))
             return progress;
         return Math.min(research.knowledgeCost(), progress + (starving() ? snapshot.rate() : research.knowledgePerSecond()) * secondsSinceSnapshot());
     }
 
     private double secondsToFinish(Identifier id, Research research)
     {
+        if (tooStrained(research))
+            return Double.POSITIVE_INFINITY;
         return KnowledgeMath.secondsToFinish(shownKnowledge(), snapshot.rate(), research.knowledgeCost() - shownProgress(id, research), research.knowledgePerSecond());
     }
 
@@ -503,6 +516,14 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "column_capacity" -> wholeNumber(columns.capacity());
             case "column_count" -> wholeNumber(columns.count());
             case "column_total" -> wholeNumber(columns.total());
+            case "cogitant_count" -> wholeNumber(snapshot.upgrades().countedCogitants());
+            case "cogitant_limit" -> wholeNumber(snapshot.upgrades().cogitantLimit());
+            case "cogitant_rate" -> String.format(Locale.ROOT, "%.2f", snapshot.upgrades().cogitantRate());
+            case "tolerance" -> wholeNumber(snapshot.upgrades().tolerance());
+            case "proxy_strain" -> wholeNumber(snapshot.upgrades().proxyStrain());
+            case "proxy_count" -> wholeNumber(snapshot.upgrades().proxies());
+            case "proxy_limit" -> wholeNumber(snapshot.upgrades().proxyLimit());
+            case "proxy_insights" -> String.format(Locale.ROOT, "%.0f", snapshot.upgrades().proxyInsightsPerHour());
             default -> name;
         };
     }
@@ -687,6 +708,16 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         activeResearch().ifPresent(research -> rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format(Locale.ROOT, "%.2f/s", research.knowledgePerSecond()), TEXT_COLOR)));
         rows.add(new CardRow(Component.translatable("voidheart.research.card.holds"), wholeNumber(snapshot.cap()), TEXT_COLOR));
         rows.add(new CardRow(Component.translatable("voidheart.research.card.columns"), wholeNumber(snapshot.columns().count()), TEXT_COLOR));
+        var upgrades = snapshot.upgrades();
+        if (upgrades.cogitants() > 0)
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.cogitants"), upgrades.countedCogitants() + "/" + upgrades.cogitantLimit(),
+                    upgrades.cogitants() > upgrades.cogitantLimit() ? LACK_COLOR : TEXT_COLOR));
+        if (upgrades.insightsPerHour() > 0)
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.proxy_insights"), String.format(Locale.ROOT, "%.1f/h", upgrades.insightsPerHour()), TEXT_COLOR));
+        if (upgrades.bearable() > 0)
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.bears"), upgrades.proxies() > 0
+                    ? Component.translatable("voidheart.research.card.bears_proxies", upgrades.tolerance(), upgrades.proxies() * upgrades.proxyStrain()).getString()
+                    : wholeNumber(upgrades.tolerance()), strained() ? LACK_COLOR : TEXT_COLOR));
 
         if (knowledge >= snapshot.cap() && change >= 0)
             rows.add(new CardRow(Component.translatable("voidheart.research.card.full"), Component.translatable("voidheart.research.card.full_lost").getString(), LACK_COLOR));
@@ -698,6 +729,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         rows.add(null);
         rows.add(new CardRow(Component.translatable("voidheart.research.card.next"), nextInsightText(knowledge, cost, change), knowledge >= cost ? FRONTIER_COLOR : TEXT_COLOR));
         rows.add(new CardRow(Component.translatable("voidheart.research.card.cost"), wholeNumber(Math.ceil(cost)), TEXT_COLOR));
+        rows.add(new CardRow(Component.translatable(upgrades.loom() ? "voidheart.research.card.woven" : "voidheart.research.card.growth"),
+                String.format(Locale.ROOT, "×%.3f", snapshot.insightCostGrowth()), upgrades.loom() ? KNOWN_COLOR : TEXT_COLOR));
         return rows;
     }
 
@@ -726,6 +759,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         {
             text = Component.translatable("voidheart.research.learned", Component.translatable(Research.nameKey(learned)));
             color = KNOWN_COLOR;
+        }
+        else if (strained())
+        {
+            text = Component.translatable("voidheart.research.whisper.strained");
+            color = LACK_COLOR;
         }
         else if (starving())
         {
@@ -877,7 +915,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         int unlocksAt = lines.size();
         if (!unknown)
             effects(research).forEach(effect -> font.split(effect, inner).forEach(line -> lines.add(new Line(line, FRONTIER_COLOR))));
-        statusOf(selected, research, state).ifPresent(status -> font.split(status, inner).forEach(line -> lines.add(new Line(line, starving() && state == NodeState.ACTIVE ? LACK_COLOR : MUTED_COLOR))));
+        if (!unknown && state != NodeState.DONE && research.strain() > 0)
+            font.split(strainOf(research), inner).forEach(line -> lines.add(new Line(line, tooStrained(research) ? LACK_COLOR : FRONTIER_COLOR)));
+        boolean lacking = state == NodeState.ACTIVE && (starving() || tooStrained(research));
+        statusOf(selected, research, state).ifPresent(status -> font.split(status, inner).forEach(line -> lines.add(new Line(line, lacking ? LACK_COLOR : MUTED_COLOR))));
 
         double progress = state == NodeState.DONE || unknown ? 0 : shownProgress(selected, research) / research.knowledgeCost();
         boolean hasButton = state != NodeState.DONE || ResearchScenes.has(selected);
@@ -970,9 +1011,19 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return y + (named ? unlocks.size() * UNLOCK_ROW : (unlocks.size() + columns - 1) / columns * UNLOCK_PITCH);
     }
 
+    private Component strainOf(Research research)
+    {
+        var upgrades = snapshot.upgrades();
+        if (upgrades.proxies() > 0)
+            return Component.translatable("voidheart.research.strain_proxies", research.strain(), upgrades.tolerance(), upgrades.proxies() * upgrades.proxyStrain());
+        return Component.translatable("voidheart.research.strain", research.strain(), upgrades.tolerance());
+    }
+
     private static List<Component> effects(Research research)
     {
         var effects = new ArrayList<Component>();
+        if (research.cogitantRate() > 0)
+            effects.add(Component.translatable("voidheart.research.cogitant_rate", String.format(Locale.ROOT, "%.2f", research.cogitantRate())));
         if (research.passiveBonus() > 0)
             effects.add(Component.translatable("voidheart.research.passive_bonus", String.format(Locale.ROOT, "%.2f", research.passiveBonus())));
         if (research.columnCapacity() > 0)
@@ -987,6 +1038,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         {
             case ACTIVE ->
             {
+                if (tooStrained(research))
+                    yield Optional.of(Component.translatable("voidheart.research.strained"));
                 if (starving())
                     yield Optional.of(Component.translatable("voidheart.research.starving"));
                 yield Optional.of(Double.isInfinite(seconds) ? Component.translatable("voidheart.research.stalled") : Component.translatable("voidheart.research.left", duration(seconds)));
@@ -1010,7 +1063,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         actionButton.setY(y);
         actionButton.setWidth(buttonWidth);
         actionButton.visible = true;
-        actionButton.active = state != NodeState.UNKNOWN || canReveal(research);
+        boolean refused = state == NodeState.REVEALED && tooStrained(research);
+        actionButton.active = state == NodeState.UNKNOWN ? canReveal(research) : !refused;
         actionButton.setMessage(switch (state)
         {
             case UNKNOWN -> canReveal(research)
@@ -1018,7 +1072,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
                     : Component.translatable("voidheart.research.needs", insightCount(research.insightCost() - snapshot.insights()));
             case ACTIVE -> Component.translatable("voidheart.research.pause");
             case DONE -> Component.translatable("voidheart.research.see_scene");
-            default -> Component.translatable(snapshot.progress().getOrDefault(selected, 0D) > 0 ? "voidheart.research.resume" : "voidheart.research.begin");
+            default -> refused ? Component.translatable("voidheart.research.too_strained") : Component.translatable(snapshot.progress().getOrDefault(selected, 0D) > 0 ? "voidheart.research.resume" : "voidheart.research.begin");
         });
     }
 

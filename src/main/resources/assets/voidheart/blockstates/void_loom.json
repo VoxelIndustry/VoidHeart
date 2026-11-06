@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/void_loom"
+    },
+    "facing=east": {
+      "model": "voidheart:block/void_loom",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/void_loom",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/void_loom",
+      "y": 270
+    }
+  }
+}

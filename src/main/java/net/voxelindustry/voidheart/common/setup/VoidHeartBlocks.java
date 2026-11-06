@@ -7,6 +7,11 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.core.component.DataComponents;
 import net.fabricmc.fabric.impl.datagen.FabricDataGenHelper;
 import net.minecraft.core.BlockPos;
+import net.voxelindustry.voidheart.common.content.research.CogitantTile;
+import net.voxelindustry.voidheart.common.content.research.MeatProxyBlock;
+import net.voxelindustry.voidheart.common.content.research.MeatProxyBlockItem;
+import net.voxelindustry.voidheart.common.content.research.RepositoryUpgradeBlock;
+import net.voxelindustry.voidheart.common.content.research.VoidLoomBlock;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -143,6 +148,9 @@ public class VoidHeartBlocks
     public static Block VOID_PILLAR;
     public static Block KNOWLEDGE_REPOSITORY;
     public static Block KNOWLEDGE_COLUMN;
+    public static Block COGITANT;
+    public static Block VOID_LOOM;
+    public static Block MEAT_PROXY;
 
     public static Block VOID_HEART;
 
@@ -258,6 +266,26 @@ public class VoidHeartBlocks
         VOID_PILLAR = registerBlock("void_pillar", VoidPillarBlock::new, BlockBehaviour.Properties.of(), true);
         KNOWLEDGE_REPOSITORY = registerBlock("knowledge_repository", KnowledgeRepositoryBlock::new, BlockBehaviour.Properties.of(), false);
         KNOWLEDGE_COLUMN = registerBlock("knowledge_column", KnowledgeColumnBlock::new, BlockBehaviour.Properties.of(), true);
+        COGITANT = registerBlock("cogitant", properties -> new RepositoryUpgradeBlock<>(properties, Block.box(2, 0, 2, 14, 13, 14),
+                () -> VoidHeartTiles.COGITANT, CogitantTile::new, CogitantTile::clientTick), BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(1.5F, 6.0F)
+                .noOcclusion()
+                .sound(SoundType.STONE), true);
+        VOID_LOOM = registerBlock("void_loom", VoidLoomBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(1.5F, 6.0F)
+                .noOcclusion()
+                .sound(SoundType.STONE), true);
+        MEAT_PROXY = registerBlock("meat_proxy", properties -> new MeatProxyBlock(properties, Block.box(1, 0, 1, 15, 15, 15)), BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_RED)
+                .strength(1F)
+                .noOcclusion()
+                .sound(SoundType.SLIME_BLOCK), MeatProxyBlockItem::new);
 
         VOID_HEART = registerBlock("void_heart_block", VoidHeartBlock::new, BlockBehaviour.Properties.of(), false);
 

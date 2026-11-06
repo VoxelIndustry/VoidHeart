@@ -7,7 +7,9 @@
     "MixinCrafterBlockResearch",
     "MixinCraftingMenuResearch",
     "MixinEntityBarrierDisguise",
+    "MixinFoodDataGrafts",
     "MixinLivingEntityBarrierDisguise",
+    "MixinPlayerGrafts",
     "MixinStableLifecycle",
     "MixinThrownEnderpearlDungeon"
   ],

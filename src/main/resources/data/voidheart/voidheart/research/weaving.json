@@ -1,0 +1,19 @@
+{
+  "tier": 2,
+  "constellation": "archive",
+  "x": 0.32,
+  "y": -0.66,
+  "icon": "voidheart:void_loom",
+  "insight_cost": 7,
+  "knowledge_cost": 250,
+  "knowledge_per_second": 0.75,
+  "requires": [
+    "voidheart:archive_expansion"
+  ],
+  "unlocks": [
+    "voidheart:void_loom"
+  ],
+  "recipes": [
+    "voidheart:altar/void_loom"
+  ]
+}

@@ -7,14 +7,23 @@ public enum KnowledgeRepositoryStatus
     GATHERING,
     FULL,
     RESEARCHING,
-    STARVED;
+    STARVED,
+    /** Running a research nobody is there to bear the strain of. */
+    STRAINED;
 
     private static final double DRY = 0.01;
 
     public static KnowledgeRepositoryStatus of(boolean bound, boolean researching, double knowledge, double cap)
     {
+        return of(bound, researching, false, knowledge, cap);
+    }
+
+    public static KnowledgeRepositoryStatus of(boolean bound, boolean researching, boolean strained, double knowledge, double cap)
+    {
         if (!bound)
             return DORMANT;
+        if (researching && strained)
+            return STRAINED;
         if (researching)
             return knowledge < DRY ? STARVED : RESEARCHING;
         return knowledge >= cap ? FULL : GATHERING;
@@ -22,6 +31,6 @@ public enum KnowledgeRepositoryStatus
 
     public boolean drawsFromColumns()
     {
-        return this == GATHERING || this == STARVED;
+        return this == GATHERING || this == STARVED || this == STRAINED;
     }
 }

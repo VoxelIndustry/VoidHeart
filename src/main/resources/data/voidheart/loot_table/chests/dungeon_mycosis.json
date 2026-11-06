@@ -108,6 +108,15 @@
           }
         }
       ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:loot_table",
+          "value": "voidheart:chests/dungeon_insights"
+        }
+      ]
     }
   ]
 }

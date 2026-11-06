@@ -19,8 +19,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
+import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
 import java.util.HashMap;
 import java.util.List;
@@ -55,13 +57,20 @@ public class Knowledge
     public static KnowledgeRules rules()
     {
         var config = VoidHeartConfig.get();
-        return new KnowledgeRules(config.knowledgeBaseRate, config.knowledgeBaseCap, config.insightBaseCost, config.insightCostGrowth);
+        return new KnowledgeRules(config.knowledgeBaseRate, config.knowledgeBaseCap, config.insightBaseCost, config.insightCostGrowth, config.voidLoomCut,
+                config.cogitantLimit, config.meatProxyStrain, config.meatProxyLimit, config.meatProxyInsightsPerHour);
     }
 
     /** How far from a repository its columns count, in every direction. */
     public static int columnRadius()
     {
         return VoidHeartConfig.get().knowledgeColumnRadius;
+    }
+
+    /** Seconds of strained research a fresh Meat Proxy bears. */
+    public static double proxySeconds()
+    {
+        return VoidHeartConfig.get().meatProxyMinutes * 60D;
     }
 
     public static Map<Identifier, Research> tree(RegistryAccess registries)
@@ -75,6 +84,7 @@ public class Knowledge
     {
         var state = KnowledgeState.get(server);
         var data = state.of(player);
+        attuneToHeart(server, player, data);
         var finished = data.settle(server.overworld().getGameTime(), rules(), tree(server.registryAccess()));
         state.setDirty();
 
@@ -82,6 +92,15 @@ public class Knowledge
         if (online != null)
             finished.ifPresent(id -> announceFinished(online, id));
         return data;
+    }
+
+    /** The heart given to the void is the first step of attunement, also for players who gave it before attunement existed. */
+    private static void attuneToHeart(MinecraftServer server, UUID player, PlayerKnowledge data)
+    {
+        if (data.getAttunement() >= 1 || server.getLevel(VoidHeart.VOID_WORLD_KEY) == null)
+            return;
+        if (VoidPocketState.getVoidPocketState(server.overworld()).hasPocket(player))
+            data.attune(1);
     }
 
     private static void announceFinished(ServerPlayer player, Identifier research)
@@ -115,14 +134,16 @@ public class Knowledge
                 data.cap(rules, tree),
                 data.rate(rules, tree),
                 data.getInsights(),
-                rules.insightCost(data.getInsightsBought()),
-                rules.insightGrowth(),
+                data.insightCost(rules),
+                rules.insightGrowth(data.hasLoom()),
                 data.getActive(),
                 new HashMap<>(data.getProgress()),
                 List.copyOf(data.getRevealed()),
                 List.copyOf(data.getCompleted()),
                 new HashMap<>(data.getFed()),
-                new KnowledgePayloads.ColumnInfo(data.getColumns(), data.columnCapacity(tree), columnRadius())));
+                new KnowledgePayloads.ColumnInfo(data.getColumns(), data.columnCapacity(tree), columnRadius()),
+                new KnowledgePayloads.UpgradeInfo(data.getAttunement(), data.tolerance(), Strain.alive(data.getProxies()), rules.proxyStrain(),
+                        data.getCogitants(), rules.cogitants(), data.cogitantRate(tree), data.hasLoom(), rules.proxies(), rules.proxyInsightsPerHour())));
     }
 
     public static void bind(MinecraftServer server, UUID player, GlobalPos repository)
@@ -156,6 +177,36 @@ public class Knowledge
         of(server, player);
         data.setColumns(columns);
         state.setDirty();
+    }
+
+    /**
+     * Called by a repository for its owner with what else stands around it, and ignored unless that owner is bound to it.
+     *
+     * @return what each Meat Proxy found has left once the wear of research is applied, empty when ignored
+     */
+    public static Map<UUID, Double> reportUpgrades(MinecraftServer server, UUID player, GlobalPos repository, int cogitants, boolean loom, Map<UUID, Double> proxies)
+    {
+        var state = KnowledgeState.get(server);
+        var data = state.of(player);
+        if (data.getRepository().filter(repository::equals).isEmpty())
+            return Map.of();
+
+        // Settled first, so that the time already passed counts with what stood there then
+        of(server, player);
+        data.setUpgrades(cogitants, loom);
+        var left = data.reportProxies(proxies);
+        state.setDirty();
+        return left;
+    }
+
+    /** @return whether that raised the attunement of the player */
+    public static boolean attune(MinecraftServer server, UUID player, int level)
+    {
+        var data = of(server, player);
+        if (!data.attune(level))
+            return false;
+        KnowledgeState.get(server).setDirty();
+        return true;
     }
 
     public static double valueOf(ItemStack stack)

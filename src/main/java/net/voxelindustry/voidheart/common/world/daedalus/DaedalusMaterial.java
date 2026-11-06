@@ -51,6 +51,8 @@ public enum DaedalusMaterial
     PIPE_X,
     PIPE_Y,
     PIPE_Z,
+    /** A barrel left in a room, holding what its makers kept. */
+    CACHE,
     PROP;
 
     private static final DaedalusMaterial[] VALUES = values();

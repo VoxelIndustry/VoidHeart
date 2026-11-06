@@ -155,6 +155,32 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
                     VoidHeartItems.OBSIDIAN_SHARD);
+            offerAltarRecipe("cogitant", VoidHeartBlocks.COGITANT, VoidHeartItems.WRIGGLING_BRAIN,
+                    VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+            offerAltarRecipe("void_loom", VoidHeartBlocks.VOID_LOOM, Items.LOOM,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+            // The proxy is a Cogitant grown past its cage
+            offerAltarRecipe("meat_proxy", VoidHeartBlocks.MEAT_PROXY, VoidHeartBlocks.COGITANT,
+                    VoidHeartItems.WRIGGLING_BRAIN, VoidHeartItems.WRIGGLING_BRAIN, VoidHeartItems.WRIGGLING_BRAIN,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.ARROGANT_IRON_INGOT,
+                    Items.ROTTEN_FLESH, Items.ROTTEN_FLESH);
+            // Grafts, eaten to go one step further into the void after the heart
+            offerAltarRecipe("void_vein", VoidHeartItems.VOID_VEIN, VoidHeartItems.VOID_AMALGAM,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    Items.REDSTONE, Items.REDSTONE,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    Items.ROTTEN_FLESH, Items.ROTTEN_FLESH);
+            offerAltarRecipe("void_marrow", VoidHeartItems.VOID_MARROW, Items.BONE_BLOCK,
+                    VoidHeartItems.WRIGGLING_BRAIN, VoidHeartItems.WRIGGLING_BRAIN,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL);
             offerAltarRecipe("beam_focus", VoidHeartBlocks.BEAM_FOCUS, VoidHeartBlocks.VOID_CONDUIT,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);

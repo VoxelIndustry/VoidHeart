@@ -2,16 +2,23 @@ package net.voxelindustry.voidheart.common.world.daedalus;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleNestBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Writes a chunk straight into its sections at the terrain step, like noise generation does. Nothing generated needs its neighbours, so a chunk costs no feature step, shape update or light beyond its few lamps.
@@ -22,6 +29,8 @@ final class DaedalusChunkWriter
     private static final int SECTION = 16;
     private static final byte AIR = (byte) DaedalusMaterial.AIR.ordinal();
     private static final byte BOUND = (byte) DaedalusMaterial.BOUND.ordinal();
+    private static final int  CACHE = DaedalusMaterial.CACHE.ordinal();
+    private static final ResourceKey<LootTable> CACHE_LOOT = ResourceKey.create(Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath(MODID, "chests/daedalus_cache"));
     private static final ThreadLocal<DaedalusCanvas> CANVAS = ThreadLocal.withInitial(() -> new DaedalusCanvas(SECTION, SECTION));
 
     private DaedalusChunkWriter()
@@ -59,7 +68,12 @@ final class DaedalusChunkWriter
                             var state = palette.state(material, minX + x, baseY + y, minZ + z);
                             section.setBlockState(x, y, z, state, false);
                             if (state.hasBlockEntity())
-                                addBlockEntity(chunk, new BlockPos(minX + x, baseY + y, minZ + z), state);
+                            {
+                                var pos = new BlockPos(minX + x, baseY + y, minZ + z);
+                                addBlockEntity(chunk, pos, state);
+                                if (material == CACHE && chunk.getBlockEntity(pos) instanceof RandomizableContainerBlockEntity cache)
+                                    cache.setLootTable(CACHE_LOOT, worldSeed ^ pos.asLong());
+                            }
                         }
                     }
                 }

@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:block/cogitant",
+  "textures": {
+    "particle": "voidheart:block/meat_proxy_flesh"
+  }
+}

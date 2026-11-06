@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "x": -0.98,
+  "y": -0.62,
+  "icon": "voidheart:void_marrow",
+  "insight_cost": 16,
+  "knowledge_cost": 2000,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:void_vein"
+  ],
+  "unlocks": [
+    "voidheart:void_marrow"
+  ],
+  "recipes": [
+    "voidheart:altar/void_marrow"
+  ]
+}

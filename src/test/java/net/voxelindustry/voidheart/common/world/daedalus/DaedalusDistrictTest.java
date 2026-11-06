@@ -821,4 +821,36 @@ class DaedalusDistrictTest
         assertTrue(planMillis < 25, "A district plan took " + planMillis + " ms");
         assertTrue(drawMillis < 2, "A chunk took " + drawMillis + " ms to draw");
     }
+
+    /** Caches hold the Sparks of the Daedalus, so a district has a few of them, each standing on a floor with room to open it. */
+    @Test
+    void districtsKeepAFewCaches()
+    {
+        int districts = 0;
+        int caches = 0;
+        for (var theme : DaedalusTheme.values())
+        {
+            for (var pos : districtsOf(theme, 3))
+            {
+                districts++;
+                var canvas = painted(DistrictPlanner.generate(SEEDS[1], pos));
+                for (int y = 1; y < DistrictPos.TOP_Y; y++)
+                {
+                    for (int z = canvas.minZ(); z <= canvas.maxZ(); z++)
+                    {
+                        for (int x = canvas.minX(); x <= canvas.maxX(); x++)
+                        {
+                            if (canvas.raw(x, y, z) != DaedalusMaterial.CACHE.ordinal())
+                                continue;
+                            caches++;
+                            assertTrue(!canvas.get(x, y - 1, z).isPassable(), "A cache at " + x + " " + y + " " + z + " floats");
+                            assertTrue(canvas.get(x, y + 1, z).isPassable(), "A cache at " + x + " " + y + " " + z + " cannot be opened");
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Caches per district: " + String.format("%.1f", caches / (float) districts));
+        assertTrue(caches >= districts, "Districts should keep at least one cache each on average, got " + caches + " in " + districts);
+    }
 }
