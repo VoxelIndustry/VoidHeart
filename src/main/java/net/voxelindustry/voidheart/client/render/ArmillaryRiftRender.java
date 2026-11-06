@@ -9,6 +9,9 @@ import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftTile;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
+import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonAddress;
 import org.jspecify.annotations.Nullable;
 
@@ -41,8 +44,13 @@ public class ArmillaryRiftRender implements BlockEntityRenderer<ArmillaryRiftTil
         BlockEntityRenderer.super.extractRenderState(rift, state, partialTicks, cameraPosition, breakProgress);
 
         var pos = rift.getBlockPos();
-        var address = DungeonAddress.at(pos.getX(), pos.getZ());
-        state.rgb = ArmillaryPortalRender.themeColor(address == null ? null : address.theme());
+        if (rift.getLevel().dimension().equals(VoidDaedalus.WORLD_KEY))
+            state.rgb = DaedalusTheme.at(DistrictPos.at(pos.getX(), pos.getZ())).color();
+        else
+        {
+            var address = DungeonAddress.at(pos.getX(), pos.getZ());
+            state.rgb = ArmillaryPortalRender.themeColor(address == null ? null : address.theme());
+        }
         state.toCamera = cameraPosition.subtract(Vec3.atCenterOf(pos));
         state.time = ArmillaryPortalRender.animationTime(rift.getLevel().getGameTime(), partialTicks);
     }

@@ -113,7 +113,8 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
 
         state.portal = armillary.isConnected() && armillary.isFormed();
         state.portalOpened = Mth.clamp((level.getGameTime() - armillary.getPortalOpenedAt() + partialTicks) / PORTAL_OPEN_TICKS, 0, 1);
-        state.portalRgb = ArmillaryPortalRender.themeColor(armillary.portalTheme());
+        var daedalusRgb = armillary.portalDaedalusRgb();
+        state.portalRgb = daedalusRgb != null ? daedalusRgb : ArmillaryPortalRender.themeColor(armillary.portalTheme());
         state.toCamera = cameraPosition.subtract(Vec3.atCenterOf(hub));
 
         ArmillaryDialRender.extract(armillary, state.dial, state.time, partialTicks, cameraPosition);

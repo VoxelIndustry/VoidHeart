@@ -107,7 +107,7 @@ final class ResearchVoid
         textures.register(target, texture);
     }
 
-    private static NativeImage readStone(Minecraft minecraft)
+    static NativeImage readStone(Minecraft minecraft)
     {
         try (var stream = minecraft.getResourceManager().getResourceOrThrow(STONE).open())
         {
@@ -124,7 +124,7 @@ final class ResearchVoid
         return Math.round((smooth(y * 0.07F, 3.1F, seed) * 0.7F + smooth(y * 0.31F, 7.7F, seed) * 0.3F) * TEAR_DEPTH);
     }
 
-    private static int stoneAt(NativeImage stone, int x, int y, int fromEdge, long seed)
+    static int stoneAt(NativeImage stone, int x, int y, int fromEdge, long seed)
     {
         if (fromEdge <= 1)
             return hash(x, y, seed) > 0.72F ? LIP_BRIGHT : LIP_COLOR;
@@ -141,7 +141,7 @@ final class ResearchVoid
                 (int) (ARGB.blue(texel) * shade));
     }
 
-    private static int voidAt(int x, int y, float wall, float dark, List<Light> lights, long seed)
+    static int voidAt(int x, int y, float wall, float dark, List<Light> lights, long seed)
     {
         float light = 0;
         float red = 0;

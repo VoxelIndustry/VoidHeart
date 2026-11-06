@@ -4,13 +4,19 @@ import io.netty.buffer.ByteBuf;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
+import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -62,16 +68,53 @@ public final class ArmillaryPayloads
     }
 
     /**
+     * The Daedalus as this viewer's chart shows it: only a shadow until they have studied it. Where the root comes down and the district it opens on stay unknown until the root gets there.
+     */
+    public record StrataView(boolean known, boolean reveal, float x, long seed, int theme, Optional<Component> district, int searchDuration, int cost)
+    {
+        public static final StrataView NONE = new StrataView(false, false, 0, 0, HIDDEN_THEME, Optional.empty(), 0, 0);
+
+        private static final StreamCodec<RegistryFriendlyByteBuf, StrataView> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.BOOL, StrataView::known,
+                ByteBufCodecs.BOOL, StrataView::reveal,
+                ByteBufCodecs.FLOAT, StrataView::x,
+                ByteBufCodecs.LONG, StrataView::seed,
+                ByteBufCodecs.VAR_INT, StrataView::theme,
+                ComponentSerialization.TRUSTED_OPTIONAL_STREAM_CODEC, StrataView::district,
+                ByteBufCodecs.VAR_INT, StrataView::searchDuration,
+                ByteBufCodecs.VAR_INT, StrataView::cost,
+                StrataView::new);
+
+        /**
+         * @param reveal whether this viewer is seeing it come into focus, the first time they look after studying it
+         */
+        static StrataView of(ArmillaryChart chart, ArmillaryChart.Rules rules, boolean known, boolean reveal, int cost, long worldSeed)
+        {
+            var point = chart.getStrata();
+            if (point == null)
+                return new StrataView(known, reveal, 0, 0, HIDDEN_THEME, Optional.empty(), rules.strataSearchTicks(), cost);
+
+            boolean revealed = chart.getPhase().ordinal() >= ArmillaryChart.Phase.REACHED.ordinal();
+            var district = new DistrictPos(point.districtX(), point.districtZ());
+            return new StrataView(known, reveal, point.x(), point.seed(), revealed && known ? DaedalusTheme.at(district).ordinal() : HIDDEN_THEME,
+                    revealed && known ? Optional.of(VoidDaedalus.nameOf(worldSeed, district)) : Optional.empty(), rules.strataSearchTicks(), cost);
+        }
+    }
+
+    /**
      * What an armillary's screen draws, sent every second while it is open and after every change.
      */
-    public record View(List<BubbleView> bubbles, int target, int phase, int searchTicks, int searchDuration, int stage, int pearls, int connectionTicks, int connectionDuration) implements CustomPacketPayload
+    public record View(List<BubbleView> bubbles, int target, int phase, int searchTicks, int searchDuration, int stage, int pearls, int connectionTicks, int connectionDuration,
+                       StrataView strata) implements CustomPacketPayload
     {
         public static final Type<View> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "armillary_view"));
 
         /** In place of a pearl count, for a player who pays nothing. */
         public static final int FREE = -1;
+        /** In place of a connection's length, for one that holds until it is severed. */
+        public static final int STABLE = -1;
 
-        public static final View EMPTY = new View(List.of(), -1, 0, 0, 0, 0, 0, 0, 0);
+        public static final View EMPTY = new View(List.of(), -1, 0, 0, 0, 0, 0, 0, 0, StrataView.NONE);
 
         public static final StreamCodec<RegistryFriendlyByteBuf, View> STREAM_CODEC = StreamCodec.composite(
                 BubbleView.STREAM_CODEC.apply(ByteBufCodecs.list()), View::bubbles,
@@ -83,14 +126,26 @@ public final class ArmillaryPayloads
                 ByteBufCodecs.VAR_INT, View::pearls,
                 ByteBufCodecs.VAR_INT, View::connectionTicks,
                 ByteBufCodecs.VAR_INT, View::connectionDuration,
+                StrataView.STREAM_CODEC, View::strata,
                 View::new);
 
-        static View of(ArmillaryChart chart, ArmillaryChart.Rules rules, ConnectionTimeline.Stage stage, int pearls, int connectionTicks, int connectionDuration)
+        static View of(ArmillaryChart chart, ArmillaryChart.Rules rules, ConnectionTimeline.Stage stage, int pearls, int connectionTicks, int connectionDuration, StrataView strata)
         {
             var bubbles = new ArrayList<BubbleView>();
             for (var bubble : chart.bubbles())
                 bubbles.add(BubbleView.of(bubble, chart, rules));
-            return new View(bubbles, chart.getTargetId(), chart.getPhase().ordinal(), chart.getSearchTicks(), chart.getSearchDuration(), stage.ordinal(), pearls, connectionTicks, connectionDuration);
+            return new View(bubbles, chart.getTargetId(), chart.getPhase().ordinal(), chart.getSearchTicks(), chart.getSearchDuration(), stage.ordinal(), pearls, connectionTicks, connectionDuration,
+                    strata);
+        }
+
+        public boolean targetsStrata()
+        {
+            return target == ArmillaryChart.STRATA;
+        }
+
+        public boolean isStable()
+        {
+            return connectionDuration == STABLE;
         }
 
         public ArmillaryChart.Phase phaseValue()
@@ -114,7 +169,8 @@ public final class ArmillaryPayloads
     {
         TARGET,
         ABANDON,
-        OPEN
+        OPEN,
+        SEVER
     }
 
     public record Action(ActionKind kind, int bubble) implements CustomPacketPayload

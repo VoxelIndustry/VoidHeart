@@ -166,7 +166,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var chart = armillary(minecraft).getChart();
-            chart.target(chart.bubbles().getFirst().id(), ArmillaryTile.rules());
+            chart.target(chart.bubbles().getFirst().id(), ArmillaryTile.rules(), RandomSource.create());
             chart.advanceSearch(0.4F);
 
             var address = new DungeonAddress(DungeonSize.SMALL, DungeonTheme.FOREST, 1, 903);
@@ -835,7 +835,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         {
             var chart = armillary(minecraft).getChart();
             var found = chart.find(ArmillaryTile.rules(), randomForDifficulty(3));
-            chart.target(found.id(), ArmillaryTile.rules());
+            chart.target(found.id(), ArmillaryTile.rules(), RandomSource.create());
             chart.advanceSearch(1);
             return found.id();
         });

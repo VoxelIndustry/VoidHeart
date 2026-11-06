@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * What one armillary has found so far and which bubble it is reaching for. Counts its own ticks, so it stands still while its chunk is unloaded.
@@ -42,8 +43,30 @@ public final class ArmillaryChart
         REACHED
     }
 
-    public record Rules(int firstScanTicks, int scanTicks, int maxBubbles, int fadeTicks, int minSearchTicks, int maxSearchTicks)
+    public record Rules(int firstScanTicks, int scanTicks, int maxBubbles, int fadeTicks, int minSearchTicks, int maxSearchTicks, int strataSearchTicks)
     {
+    }
+
+    /**
+     * Where a root reaching for the Daedalus comes down on the strata, and the bridge it opens onto there. Picked afresh for every search, so no two connections land in the same place.
+     */
+    public record StrataPoint(float x, long seed, int districtX, int districtZ, boolean south, int bridge)
+    {
+        public static final Codec<StrataPoint> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.FLOAT.fieldOf("x").forGetter(StrataPoint::x),
+                Codec.LONG.fieldOf("seed").forGetter(StrataPoint::seed),
+                Codec.INT.fieldOf("district_x").forGetter(StrataPoint::districtX),
+                Codec.INT.fieldOf("district_z").forGetter(StrataPoint::districtZ),
+                Codec.BOOL.fieldOf("south").forGetter(StrataPoint::south),
+                Codec.INT.fieldOf("bridge").forGetter(StrataPoint::bridge)
+        ).apply(instance, StrataPoint::new));
+
+        static StrataPoint random(RandomSource random)
+        {
+            float x = EDGE_MARGIN + random.nextFloat() * (1 - 2 * EDGE_MARGIN);
+            return new StrataPoint(x, random.nextLong(), random.nextInt(STRATA_RANGE * 2) - STRATA_RANGE, random.nextInt(STRATA_RANGE * 2) - STRATA_RANGE, random.nextBoolean(),
+                    random.nextInt(Integer.MAX_VALUE));
+        }
     }
 
     public static final Codec<ArmillaryChart> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -54,11 +77,19 @@ public final class ArmillaryChart
             Codec.INT.fieldOf("target").forGetter(chart -> chart.targetId),
             StringRepresentable.fromEnum(Phase::values).fieldOf("phase").forGetter(chart -> chart.phase),
             Codec.INT.fieldOf("search_ticks").forGetter(chart -> chart.searchTicks),
-            Codec.INT.fieldOf("search_duration").forGetter(chart -> chart.searchDuration)
+            Codec.INT.fieldOf("search_duration").forGetter(chart -> chart.searchDuration),
+            StrataPoint.CODEC.optionalFieldOf("strata").forGetter(chart -> Optional.ofNullable(chart.strata))
     ).apply(instance, ArmillaryChart::new));
 
     /** How long a bubble stays on the chart once its connection gave way, empty and falling apart. */
     public static final int RUIN_TICKS = 20 * 90;
+
+    /** The target id of the Daedalus, which is no bubble: it lies under all of them, the whole width of the chart. */
+    public static final int STRATA = -2;
+    /** Where the strata begins, in chart space. Every bubble lies above it. */
+    public static final float STRATA_TOP = 0.86F;
+    /** How far out a root can come down, in districts from the middle of the Daedalus. */
+    static final int STRATA_RANGE = 512;
 
     private static final int     NONE                = -1;
     private static final int     PLACEMENT_TRIES     = 12;
@@ -81,13 +112,16 @@ public final class ArmillaryChart
     private int   searchTicks;
     @Getter
     private int   searchDuration;
+    /** Only while the Daedalus is the target. */
+    @Getter
+    private @Nullable StrataPoint strata;
 
     public ArmillaryChart()
     {
         bubbles = new ArrayList<>();
     }
 
-    private ArmillaryChart(long age, long nextScanAt, int nextId, List<VoidBubble> bubbles, int targetId, Phase phase, int searchTicks, int searchDuration)
+    private ArmillaryChart(long age, long nextScanAt, int nextId, List<VoidBubble> bubbles, int targetId, Phase phase, int searchTicks, int searchDuration, Optional<StrataPoint> strata)
     {
         this.age = age;
         this.nextScanAt = nextScanAt;
@@ -97,8 +131,10 @@ public final class ArmillaryChart
         this.phase = phase;
         this.searchTicks = searchTicks;
         this.searchDuration = searchDuration;
+        this.strata = strata.orElse(null);
 
-        if (target() == null || searchDuration <= 0)
+        boolean hasTarget = targetId == STRATA ? this.strata != null : target() != null;
+        if (!hasTarget || searchDuration <= 0)
             clearTarget();
     }
 
@@ -115,6 +151,11 @@ public final class ArmillaryChart
     public @Nullable VoidBubble target()
     {
         return bubble(targetId);
+    }
+
+    public boolean targetsStrata()
+    {
+        return targetId == STRATA;
     }
 
     public @Nullable VoidBubble bubble(int id)
@@ -212,8 +253,11 @@ public final class ArmillaryChart
     /**
      * Reaching for another bubble throws away the path to the last one, which starts fading again.
      */
-    public boolean target(int id, Rules rules)
+    public boolean target(int id, Rules rules, RandomSource random)
     {
+        if (id == STRATA)
+            return targetStrata(rules, random);
+
         var bubble = bubble(id);
         if (bubble == null || bubble.broken() || phase == Phase.CONNECTED || id == targetId)
             return false;
@@ -227,6 +271,23 @@ public final class ArmillaryChart
         return true;
     }
 
+    /**
+     * Whoever asks for it must have made the strata out first, which is for the armillary to check.
+     */
+    private boolean targetStrata(Rules rules, RandomSource random)
+    {
+        if (phase == Phase.CONNECTED || targetId == STRATA)
+            return false;
+
+        releaseTarget(rules);
+        targetId = STRATA;
+        strata = StrataPoint.random(random);
+        phase = Phase.SEARCHING;
+        searchTicks = 0;
+        searchDuration = Math.max(1, rules.strataSearchTicks());
+        return true;
+    }
+
     static int searchDuration(int difficulty, Rules rules)
     {
         float depth = (difficulty - DungeonAddress.MIN_DIFFICULTY) / (float) (DungeonAddress.MAX_DIFFICULTY - DungeonAddress.MIN_DIFFICULTY);
@@ -235,7 +296,7 @@ public final class ArmillaryChart
 
     public boolean abandon(Rules rules)
     {
-        if (phase == Phase.CONNECTED || target() == null)
+        if (phase == Phase.CONNECTED || targetId == NONE)
             return false;
 
         releaseTarget(rules);
@@ -270,7 +331,7 @@ public final class ArmillaryChart
     }
 
     /**
-     * The bubble is spent once its connection is gone, and only lingers as a broken shell.
+     * The bubble is spent once its connection is gone, and only lingers as a broken shell. The strata is never spent, only the point on it.
      */
     public void connectionClosed()
     {
@@ -290,6 +351,7 @@ public final class ArmillaryChart
         var target = target();
         if (target != null)
             replace(target.withFadeAt(age + rules.fadeTicks()));
+        strata = null;
     }
 
     private void clearTarget()
@@ -298,6 +360,7 @@ public final class ArmillaryChart
         phase = Phase.SCANNING;
         searchTicks = 0;
         searchDuration = 0;
+        strata = null;
     }
 
     private void replace(VoidBubble bubble)

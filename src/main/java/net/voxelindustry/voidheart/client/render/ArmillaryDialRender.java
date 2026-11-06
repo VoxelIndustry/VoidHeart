@@ -91,7 +91,8 @@ final class ArmillaryDialRender
         dial.arc = Mth.clamp(display.arc(partialTicks), 0, 1);
         dial.time = time;
         dial.falter = armillary.falter();
-        dial.rgb = phase == ArmillaryChart.Phase.SEARCHING ? ACTIVE_RGB : ArmillaryPortalRender.themeColor(armillary.portalTheme());
+        var daedalusRgb = armillary.portalDaedalusRgb();
+        dial.rgb = phase == ArmillaryChart.Phase.SEARCHING ? ACTIVE_RGB : daedalusRgb != null ? daedalusRgb : ArmillaryPortalRender.themeColor(armillary.portalTheme());
         dial.breathing = phase == ArmillaryChart.Phase.REACHED;
 
         dial.dotCount = 0;
