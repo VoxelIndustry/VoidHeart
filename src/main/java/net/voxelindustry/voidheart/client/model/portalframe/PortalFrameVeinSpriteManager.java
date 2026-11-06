@@ -49,11 +49,6 @@ public class PortalFrameVeinSpriteManager
         VOIDBRICK_SPRITE = materials.get(new Material(Identifier.fromNamespaceAndPath(MODID, "block/voidstone_bricks")), DEBUG_NAME);
     }
 
-    public static Material[] getFrameSpriteIdentifiers()
-    {
-        return FRAME_SPRITE_IDENTIFIERS;
-    }
-
     public static Material.Baked getCoreSprite()
     {
         return CORE_SPRITES[0];

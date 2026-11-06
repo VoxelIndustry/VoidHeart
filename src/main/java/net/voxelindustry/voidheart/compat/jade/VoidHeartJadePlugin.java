@@ -29,8 +29,10 @@ import snownee.jade.api.IWailaPlugin;
 public class VoidHeartJadePlugin implements IWailaPlugin
 {
     private final ShatterForgeProvider shatterForgeProvider = new ShatterForgeProvider();
-    private final RavenousCollectorProvider ravenousCollectorProvider = new RavenousCollectorProvider();
-    private final RavenousStorageProvider ravenousStorageProvider = new RavenousStorageProvider();
+    private final EssenceStorageProvider ravenousCollectorProvider = new EssenceStorageProvider("ravenous_collector",
+            tile -> tile instanceof RavenousCollectorTile collector ? collector.storage() : null);
+    private final EssenceStorageProvider ravenousStorageProvider = new EssenceStorageProvider("ravenous_storage",
+            tile -> tile instanceof RavenousStorageTile storage ? storage.storage() : null);
     private final RavenousStorageMatrixProvider ravenousStorageMatrixProvider = new RavenousStorageMatrixProvider();
     private final RavenousRelayProvider ravenousRelayProvider = new RavenousRelayProvider();
     private final KnowledgeColumnProvider knowledgeColumnProvider = new KnowledgeColumnProvider();
@@ -59,9 +61,9 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     public void registerClient(IWailaClientRegistration registration)
     {
         registration.registerBlockComponent(new ShatterForgeProvider.Client(shatterForgeProvider), ShatterForgeBlock.class);
-        registration.registerBlockComponent(new RavenousCollectorProvider.Client(), RavenousCollectorBlock.class);
+        registration.registerBlockComponent(ravenousCollectorProvider.client(), RavenousCollectorBlock.class);
 
-        registration.registerBlockComponent(new RavenousStorageProvider.Client(), RavenousStorageBlock.class);
+        registration.registerBlockComponent(ravenousStorageProvider.client(), RavenousStorageBlock.class);
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
         registration.registerBlockComponent(new RavenousRelayProvider.Client(), RavenousRelayBlock.class);
         registration.registerBlockComponent(new KnowledgeColumnProvider.Client(), KnowledgeColumnBlock.class);

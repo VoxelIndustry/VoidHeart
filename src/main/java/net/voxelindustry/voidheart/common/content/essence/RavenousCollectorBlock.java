@@ -117,20 +117,4 @@ public class RavenousCollectorBlock extends Block implements EntityBlock
     {
         return createTickerHelper(type, VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorTile::tick);
     }
-
-    private static VoxelShape makeShape()
-    {
-        var shape = Shapes.empty();
-        shape = Shapes.or(shape, Shapes.box(0.5, 0.25, 0.25, 0.75, 0.5, 0.5));
-        shape = Shapes.or(shape, Shapes.box(0.5, 0.25, 0.5, 0.75, 0.5, 0.75));
-        shape = Shapes.or(shape, Shapes.box(0.25, 0.25, 0.5, 0.5, 0.5, 0.75));
-        shape = Shapes.or(shape, Shapes.box(0.25, 0.25, 0.25, 0.5, 0.5, 0.5));
-        shape = Shapes.or(shape, Shapes.box(0.25, 0.5, 0.5, 0.5, 0.75, 0.75));
-        shape = Shapes.or(shape, Shapes.box(0.5, 0.5, 0.5, 0.75, 0.75, 0.75));
-        shape = Shapes.or(shape, Shapes.box(0.5, 0.5, 0.25, 0.75, 0.75, 0.5));
-        shape = Shapes.or(shape, Shapes.box(0.25, 0.5, 0.25, 0.5, 0.75, 0.5));
-        shape = Shapes.or(shape, Shapes.box(0.3125, 0.3125, 0.3125, 0.6875, 0.6875, 0.6875));
-
-        return shape;
-    }
 }

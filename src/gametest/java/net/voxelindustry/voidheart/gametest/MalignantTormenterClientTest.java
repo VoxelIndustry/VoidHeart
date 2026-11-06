@@ -43,6 +43,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Souls taken by a single tormenter of the hotbar, then a sated one yielding the loot of its mob and showing its heads.
  */
@@ -69,8 +71,7 @@ public class MalignantTormenterClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule spawn_mobs false");
             server.runCommand("gamemode creative @a");
             context.waitTicks(20);
@@ -566,37 +567,8 @@ public class MalignantTormenterClientTest implements FabricClientGameTest
                 "slot " + slot + " should hold " + count + " souls of " + BuiltInRegistries.ENTITY_TYPE.getKey(type) + ", found " + souls);
     }
 
-    private static void expect(boolean condition, String failure)
-    {
-        if (!condition)
-            throw new AssertionError(failure);
-    }
-
-    private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z, int settleTicks)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-        // Landing ends creative flight, so it is set again each time or the player falls away from the framing
-        server.runOnServer(minecraft ->
-        {
-            var player = player(minecraft);
-            player.getAbilities().flying = true;
-            player.onUpdateAbilities();
-        });
-        context.waitTicks(settleTicks);
-    }
-
     private static ServerLevel level(MinecraftServer minecraft)
     {
         return minecraft.overworld();
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 }

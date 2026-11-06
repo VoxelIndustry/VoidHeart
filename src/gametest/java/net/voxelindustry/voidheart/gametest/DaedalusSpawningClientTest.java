@@ -10,8 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.ClipContext;
@@ -33,6 +31,8 @@ import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 
 import java.util.TreeMap;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Mobs of real Daedalus districts: what each theme holds once its chunks generate, the Kernacian Dragoon standing guard and going back to its post, and mobs held at the
@@ -64,8 +64,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule spawn_mobs false");
             server.runCommand("difficulty normal");
             server.runCommand("gamemode spectator @a");
@@ -97,33 +96,6 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
                 minecraft.options.broadcastOptions();
             });
         }
-    }
-
-    private static void check(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
-    }
-
-    private static DistrictPos closest(DaedalusTheme theme)
-    {
-        for (int radius = 0; radius < 64; radius++)
-        {
-            for (int z = -radius; z <= radius; z++)
-            {
-                for (int x = -radius; x <= radius; x++)
-                {
-                    if (Math.max(Math.abs(x), Math.abs(z)) == radius && DaedalusTheme.at(new DistrictPos(x, z)) == theme)
-                        return new DistrictPos(x, z);
-                }
-            }
-        }
-        throw new AssertionError("No district of " + theme);
     }
 
     private static AABB bounds(DistrictPos pos)
@@ -172,11 +144,11 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
         {
             var name = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getPath();
             counts.merge(name, 1, Integer::sum);
-            check(level.noCollision(mob), name + " spawned inside a block at " + mob.position() + " in " + theme + ": " + level.getBlockState(mob.blockPosition()) + " / "
+            expect(level.noCollision(mob), name + " spawned inside a block at " + mob.position() + " in " + theme + ": " + level.getBlockState(mob.blockPosition()) + " / "
                                           + level.getBlockState(mob.blockPosition().above()) + " / " + level.getBlockState(mob.blockPosition().above(2)) + ", below " + level.getBlockState(mob.blockPosition().below()));
-            check(!level.getBlockState(mob.blockPosition().below()).isAir() || mob instanceof CrawlerMonster || mob.getType() == VoidHeartEntities.EYE_MAW || mob.getType() == VoidHeartEntities.ARCANE_EYE,
+            expect(!level.getBlockState(mob.blockPosition().below()).isAir() || mob instanceof CrawlerMonster || mob.getType() == VoidHeartEntities.EYE_MAW || mob.getType() == VoidHeartEntities.ARCANE_EYE,
                     name + " spawned over nothing at " + mob.blockPosition() + " in " + theme);
-            check(mob.isPersistenceRequired(), name + " would despawn");
+            expect(mob.isPersistenceRequired(), name + " would despawn");
             if (mob instanceof KernacianDragoon found)
             {
                 dragoon = found;
@@ -184,7 +156,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
             }
             if (mob instanceof Legionary legionary)
             {
-                check(legionary.partner() != null && level.getEntity(legionary.partner()) instanceof Legionary, "A Legionary without its partner at " + mob.blockPosition() + " in " + theme);
+                expect(legionary.partner() != null && level.getEntity(legionary.partner()) instanceof Legionary, "A Legionary without its partner at " + mob.blockPosition() + " in " + theme);
             }
         }
         if (dragoons != 1)
@@ -199,9 +171,9 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
             }
             throw new AssertionError(dragoons + " dragoons in the " + theme + " district " + pos + " of " + mobs.size() + " mobs " + counts + ", planned " + planned + ", dragoons in the level " + everywhere);
         }
-        check(dragoon.post() != null && dragoon.post().equals(dragoon.blockPosition()), "The " + theme + " dragoon should stand at its post, it is at " + dragoon.blockPosition() + " for " + dragoon.post());
-        check(mobs.size() >= MIN_MOBS, "Only " + mobs.size() + " mobs in the " + theme + " district " + pos);
-        check(roster.hasNests() == (nests > 0), nests + " nests in " + theme);
+        expect(dragoon.post() != null && dragoon.post().equals(dragoon.blockPosition()), "The " + theme + " dragoon should stand at its post, it is at " + dragoon.blockPosition() + " for " + dragoon.post());
+        expect(mobs.size() >= MIN_MOBS, "Only " + mobs.size() + " mobs in the " + theme + " district " + pos);
+        expect(roster.hasNests() == (nests > 0), nests + " nests in " + theme);
 
         String summary = theme + " " + pos + ": " + mobs.size() + " mobs, " + nests + " nests " + counts;
         return new Census(mobs.size(), summary, dragoon.blockPosition(), dragoon.getYRot());
@@ -223,7 +195,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
 
     private static void checkDistrict(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server, DaedalusTheme theme)
     {
-        var pos = closest(theme);
+        var pos = closestDistrict(theme);
         // Chunks generated earlier around another district load their entities apart from their blocks, so the district is held loaded until they are all in
         String area = pos.originX() + " " + pos.originZ() + " " + (pos.originX() + DistrictPos.SIZE - 1) + " " + (pos.originZ() + DistrictPos.SIZE - 1);
         server.runCommand("tick freeze");
@@ -234,7 +206,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
             context.waitTicks(10);
             loaded = server.computeOnServer(minecraft -> entitiesLoaded(minecraft, pos));
         }
-        check(loaded, "The entities of the " + theme + " district never loaded");
+        expect(loaded, "The entities of the " + theme + " district never loaded");
         var census = server.computeOnServer(minecraft -> census(minecraft, pos));
         server.runCommand("execute in voidheart:daedalus run forceload remove " + area);
         server.runCommand("tick unfreeze");
@@ -304,7 +276,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
     private static KernacianDragoon guard(MinecraftServer minecraft)
     {
         var found = minecraft.overworld().getEntitiesOfClass(KernacianDragoon.class, new AABB(GUARD_X - 40, GROUND - 5, -40, GUARD_X + 40, GROUND + 20, 40));
-        check(found.size() == 1, found.size() + " guard dragoons");
+        expect(found.size() == 1, found.size() + " guard dragoons");
         return found.getFirst();
     }
 
@@ -334,9 +306,9 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var dragoon = guard(minecraft);
-            check(dragoon.getTarget() == null, "A player behind the dragoon was spotted");
-            check(dragoon.isStandingGuard(), "The dragoon should still stand guard, it is at " + dragoon.position());
-            check(Math.abs(net.minecraft.util.Mth.wrapDegrees(dragoon.getYHeadRot())) < 1, "The dragoon turned its head to " + dragoon.getYHeadRot() + " on guard");
+            expect(dragoon.getTarget() == null, "A player behind the dragoon was spotted");
+            expect(dragoon.isStandingGuard(), "The dragoon should still stand guard, it is at " + dragoon.position());
+            expect(Math.abs(net.minecraft.util.Mth.wrapDegrees(dragoon.getYHeadRot())) < 1, "The dragoon turned its head to " + dragoon.getYHeadRot() + " on guard");
         });
         context.takeScreenshot("daedalus-spawning-guard-behind");
 
@@ -347,7 +319,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
             context.waitTicks(5);
             spotted = server.computeOnServer(minecraft -> guard(minecraft).getTarget() == player(minecraft));
         }
-        check(spotted, "The dragoon never spotted a player in front of it");
+        expect(spotted, "The dragoon never spotted a player in front of it");
         // Backing off keeps it coming, so that it ends up well away from its post
         double moved = 0;
         for (int waited = 0; waited < WAKE_TICKS && moved < AWAY; waited += 10)
@@ -363,7 +335,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
             moved = server.computeOnServer(minecraft -> guard(minecraft).position().distanceTo(Vec3.atBottomCenterOf(guard(minecraft).post())));
         }
         System.out.printf("Daedalus spawning: the woken dragoon came %.1f blocks from its post%n", moved);
-        check(moved >= AWAY, "The woken dragoon only came " + moved + " blocks from its post");
+        expect(moved >= AWAY, "The woken dragoon only came " + moved + " blocks from its post");
         context.takeScreenshot("daedalus-spawning-guard-woken");
 
         server.runCommand("gamemode spectator @a");
@@ -379,7 +351,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
                        && Math.abs(net.minecraft.util.Mth.wrapDegrees(dragoon.getYRot())) < 1;
             });
         }
-        check(back, "The dragoon never went back to its post facing south");
+        expect(back, "The dragoon never went back to its post facing south");
         context.waitTicks(20);
         context.takeScreenshot("daedalus-spawning-guard-back");
         server.runOnServer(minecraft ->
@@ -397,7 +369,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
      */
     private static void checkFence(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server)
     {
-        var pos = closest(DaedalusTheme.ARCHIVE);
+        var pos = closestDistrict(DaedalusTheme.ARCHIVE);
         long seed = server.computeOnServer(minecraft -> VoidDaedalus.level(minecraft).getSeed());
         var bridge = DaedalusBridges.between(seed, pos, Compass.EAST).getFirst();
         int edge = pos.originX() + DistrictPos.SIZE;
@@ -419,7 +391,7 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
             var level = VoidDaedalus.level(minecraft);
             var skeleton = VoidHeartEntities.VOID_SKELETON.create(level, EntitySpawnReason.COMMAND);
             skeleton.snapTo(edge - 4 + 0.5, floor, laneZ, -90, 0);
-            check(level.noCollision(skeleton), "No room for the skeleton in the landing at " + skeleton.blockPosition());
+            expect(level.noCollision(skeleton), "No room for the skeleton in the landing at " + skeleton.blockPosition());
             skeleton.setPersistenceRequired();
             skeleton.addTag("fence");
             level.addFreshEntity(skeleton);
@@ -439,9 +411,9 @@ public class DaedalusSpawningClientTest implements FabricClientGameTest
             chased |= state[1] > 0;
         }
         System.out.printf("Daedalus spawning: the fenced skeleton reached x %.2f, the district ends at %d%n", furthest, edge);
-        check(chased, "The skeleton never went after the player on the bridge");
-        check(furthest <= edge + 1e-6, "The skeleton stepped onto the bridge, reaching " + furthest + " past " + edge);
-        check(furthest > edge - 1.5, "The skeleton stopped short of the edge at " + furthest);
+        expect(chased, "The skeleton never went after the player on the bridge");
+        expect(furthest <= edge + 1e-6, "The skeleton stepped onto the bridge, reaching " + furthest + " past " + edge);
+        expect(furthest > edge - 1.5, "The skeleton stopped short of the edge at " + furthest);
         context.takeScreenshot("daedalus-spawning-fence");
 
         server.runOnServer(minecraft ->

@@ -31,6 +31,8 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * The sky must leave no trace of the curse behind, and the rain must never fall through a roof. How it all looks is for the screenshots to show.
  */
@@ -78,8 +80,7 @@ public class OmenClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set midnight");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "midnight");
             server.runCommand("weather clear");
             server.runCommand("gamemode creative @a");
             server.runCommand("fill " + HUT_MIN_X + " " + FEET + " " + HUT_MIN_Z + " " + HUT_MAX_X + " " + HUT_ROOF + " " + HUT_MAX_Z + " stone_bricks hollow");

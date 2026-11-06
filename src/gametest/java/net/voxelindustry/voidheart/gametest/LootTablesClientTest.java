@@ -21,6 +21,8 @@ import net.voxelindustry.voidheart.common.world.dungeon.DungeonTheme;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * What the mod's loot tables really hand out, since a field the game does not read fails silently and a table that cannot be read is simply empty.
  */
@@ -145,11 +147,5 @@ public class LootTablesClientTest implements FabricClientGameTest
             item.discard();
         }
         return count;
-    }
-
-    private static void expect(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
     }
 }

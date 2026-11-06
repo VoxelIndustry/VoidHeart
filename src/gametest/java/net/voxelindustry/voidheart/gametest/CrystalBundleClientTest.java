@@ -32,6 +32,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.List;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Each crystal grows in three sizes of bundle: a pickaxe breaks them into shards, silk touch keeps them whole.
  */
@@ -62,11 +64,6 @@ public class CrystalBundleClientTest implements FabricClientGameTest
                 new Bundle(VoidHeartBlocks.LARGE_MEMORIAM_BUNDLE, LARGE, VoidHeartItems.MEMORIAM_SHARD, 5, 14));
     }
 
-    private static ServerPlayer player(MinecraftServer server)
-    {
-        return server.getPlayerList().getPlayers().getFirst();
-    }
-
     @Override
     public void runTest(ClientGameTestContext context)
     {
@@ -74,8 +71,7 @@ public class CrystalBundleClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode survival @a");
             server.runCommand("fill -4 " + (GROUND - 1) + " -4 14 " + (GROUND - 1) + " 14 voidheart:voidstone_polished");
             server.runCommand("tp @a 5 " + GROUND + " -3");

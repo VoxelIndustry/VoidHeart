@@ -8,18 +8,17 @@ import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundEventListener;
 import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.curse.CurseKind;
 import net.voxelindustry.voidheart.common.curse.CurseTimings;
-import net.voxelindustry.voidheart.common.curse.Curses;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Corruption stays on a player through death, the debug commands strike and stop curses, and the sound curse plays out in order.
@@ -35,8 +34,7 @@ public class CurseClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 0");
             context.waitTicks(20);
@@ -154,18 +152,6 @@ public class CurseClientTest implements FabricClientGameTest
         int actual = server.computeOnServer(minecraft -> Corruption.get(player(minecraft)));
         if (actual != expected)
             throw new AssertionError("Expected " + expected + " corruption, got " + actual);
-    }
-
-    private static void expectRunning(TestServerContext server, CurseKind expected, String what)
-    {
-        var actual = server.computeOnServer(minecraft -> Curses.running(player(minecraft)));
-        if (actual != expected)
-            throw new AssertionError("Expected " + what + ", the server runs " + actual);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 
     private record Heard(String id, float pitch, boolean relative)

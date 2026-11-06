@@ -14,6 +14,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.function.Predicate;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Presses the floating buttons of a table with real clicks and checks the server side view follows.
  */
@@ -133,12 +135,7 @@ public class OculusControlsClientTest implements FabricClientGameTest
      */
     private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
     {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
+        aimCamera(server, feetX, feetY, feetZ, x, y, z);
         context.waitTicks(10);
     }
 

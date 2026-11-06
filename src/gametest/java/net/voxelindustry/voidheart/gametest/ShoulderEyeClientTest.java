@@ -6,7 +6,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.phys.AABB;
@@ -15,6 +14,8 @@ import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeEntity;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyes;
 
 import java.util.List;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * An eye bound to the player perches on their shoulder, burns a mob hunting them, and once slain grows back and flies home.
@@ -30,8 +31,7 @@ public class ShoulderEyeClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 10");
 
@@ -122,11 +122,6 @@ public class ShoulderEyeClientTest implements FabricClientGameTest
             context.waitTick();
         }
         throw new AssertionError("Expected the eye to fire at the husk hunting the player");
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 
     private static List<ShoulderEyeEntity> eyes(MinecraftServer minecraft)

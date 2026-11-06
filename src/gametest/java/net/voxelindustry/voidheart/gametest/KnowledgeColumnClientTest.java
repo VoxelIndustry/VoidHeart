@@ -11,7 +11,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -31,6 +30,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.Objects;
 import java.util.UUID;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Columns placed with real clicks, counted by a repository, drawn as a floating cluster.
@@ -54,8 +55,7 @@ public class KnowledgeColumnClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode creative @a");
             context.waitTicks(20);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
@@ -336,28 +336,5 @@ public class KnowledgeColumnClientTest implements FabricClientGameTest
                 for (int y = 0; y < (heart ? 2 : 1); y++)
                     level.setBlockAndUpdate(CLUSTER.offset(x, y, z), full);
             }
-    }
-
-    private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z, int settleTicks)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-        // Landing ends creative flight, so it is set again each time or the player falls away from the framing
-        server.runOnServer(minecraft ->
-        {
-            var player = player(minecraft);
-            player.getAbilities().flying = true;
-            player.onUpdateAbilities();
-        });
-        context.waitTicks(settleTicks);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 }

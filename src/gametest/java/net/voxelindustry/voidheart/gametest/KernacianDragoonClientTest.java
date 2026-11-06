@@ -9,7 +9,6 @@ import net.minecraft.client.CameraType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -33,11 +32,12 @@ import net.voxelindustry.voidheart.common.content.mob.KernacianDragoon;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * The Kernacian Dragoon: what each hit teaches it and how that shows, its beam and kick against a netherite player, how it climbs after a player out of its
@@ -60,8 +60,7 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule spawn_mobs false");
             server.runCommand("gamerule immediate_respawn true");
             server.runCommand("gamerule keep_inventory true");
@@ -377,8 +376,8 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
      */
     private static float hit(KernacianDragoon dragoon, DamageSource source, float damage)
     {
-        set(dragoon, LivingEntity.class, "damageCooldownTime", 0);
-        set(dragoon, Entity.class, "invulnerableTime", 0);
+        setIntField(dragoon, LivingEntity.class, "damageCooldownTime", 0);
+        setIntField(dragoon, Entity.class, "invulnerableTime", 0);
         float before = dragoon.getHealth();
         dragoon.hurtServer((net.minecraft.server.level.ServerLevel) dragoon.level(), source, damage);
         float lost = before - dragoon.getHealth();
@@ -433,7 +432,7 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
             armor(minecraft, Enchantments.FIRE_PROTECTION);
             heal(minecraft);
             player(minecraft).clearFire();
-            set(first(minecraft), KernacianDragoon.class, "beamCooldown", 0);
+            setIntField(first(minecraft), KernacianDragoon.class, "beamCooldown", 0);
         });
         waitFor(context, server, 40, "The dragoon should fire again", minecraft -> first(minecraft).isFiring());
         waitFor(context, server, 60, "The beam should end", minecraft -> first(minecraft).beamTicks() == 0);
@@ -447,7 +446,7 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
             heal(minecraft);
             player(minecraft).clearFire();
             var dragoon = first(minecraft);
-            set(dragoon, KernacianDragoon.class, "beamCooldown", 0);
+            setIntField(dragoon, KernacianDragoon.class, "beamCooldown", 0);
             // It only opens up on what it can see, so it is set going as the wall rises
             dragoon.showBeam(dragoon.position(), KernacianDragoon.BEAM_CHARGE_TICKS);
         });
@@ -634,7 +633,7 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
      */
     private static void calm(KernacianDragoon dragoon)
     {
-        set(dragoon, KernacianDragoon.class, "beamCooldown", 100000);
+        setIntField(dragoon, KernacianDragoon.class, "beamCooldown", 100000);
     }
 
     private static void stand(TestServerContext server, double x, double y, double z, float yaw, float pitch)
@@ -761,39 +760,9 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
         context.waitTicks(20);
     }
 
-    private static void clearArea(TestServerContext server, double x)
-    {
-        int from = (int) x - 20;
-        int to = (int) x + 20;
-        server.runCommand("fill " + from + " " + FEET + " -20 " + to + " " + (FEET + 8) + " 20 air");
-        server.runCommand("fill " + from + " " + GROUND + " -20 " + to + " " + GROUND + " grass_block");
-    }
-
-    private static void clearScene(TestServerContext server)
-    {
-        server.runCommand("kill @e[type=!player]");
-    }
-
     private static void face(TestServerContext server, double x, double y, double z, float yaw, float pitch)
     {
         server.runCommand("tp @a " + x + " " + y + " " + z + " " + yaw + " " + pitch);
-    }
-
-    private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-        server.runOnServer(minecraft ->
-        {
-            var player = player(minecraft);
-            player.getAbilities().flying = true;
-            player.onUpdateAbilities();
-        });
-        context.waitTicks(3);
     }
 
     private static void waitFor(ClientGameTestContext context, TestServerContext server, int maxTicks, String message, Predicate<MinecraftServer> condition)
@@ -818,36 +787,5 @@ public class KernacianDragoonClientTest implements FabricClientGameTest
         return String.format("dragoon at %.2f %.2f %.2f, target %s, navigation done %s, path %s, climbing %s, on ground %s, against a wall %s",
                 dragoon.getX(), dragoon.getY() - FEET, dragoon.getZ(), target == null ? "none" : target.position(), dragoon.getNavigation().isDone(),
                 path == null ? "none" : (path.canReach() ? "reaching " : "short of target at ") + path.getEndNode(), dragoon.isClimbing(), dragoon.onGround(), dragoon.horizontalCollision);
-    }
-
-    private static void heal(MinecraftServer minecraft)
-    {
-        var player = player(minecraft);
-        player.setHealth(player.getMaxHealth());
-    }
-
-    private static void set(Object target, Class<?> owner, String name, int value)
-    {
-        try
-        {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            field.setInt(target, value);
-        }
-        catch (ReflectiveOperationException e)
-        {
-            throw new AssertionError(e);
-        }
-    }
-
-    private static void expect(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 }
