@@ -36,6 +36,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Seven figures stand in an arc before the player, none of them in a wall, dripping, point at the player, say their line once and vanish, caves sounding all the while and all without the server knowing.
  */
@@ -72,8 +74,7 @@ public class VigilClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("weather clear");
             server.runCommand("gamemode creative @a");
             standAtOrigin(context, server, 0);
@@ -642,12 +643,7 @@ public class VigilClientTest implements FabricClientGameTest
      */
     private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
     {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
+        aimCamera(server, feetX, feetY, feetZ, x, y, z);
         context.waitTicks(3);
     }
 

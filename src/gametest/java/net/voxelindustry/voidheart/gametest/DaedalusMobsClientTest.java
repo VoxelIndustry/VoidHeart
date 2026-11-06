@@ -41,8 +41,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * The five Daedalus mobs against a netherite player: what each does, how hard it hits through that armor, and how it looks.
@@ -79,8 +79,7 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule spawn_mobs false");
             server.runCommand("gamerule immediate_respawn true");
             server.runCommand("gamerule keep_inventory true");
@@ -405,11 +404,11 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
 
     private static void checkStalkerCreep(ClientGameTestContext context, TestServerContext server)
     {
-        server.runOnServer(DaedalusMobsClientTest::heal);
+        server.runOnServer(GameTestKit::heal);
         waitFor(context, server, 200, "The stalker should go back to stalking", minecraft -> first(minecraft, VoidHeartEntities.STALKING_WRAITH).phase() == Phase.STALK);
         server.runOnServer(minecraft -> lookAway(minecraft));
         context.waitTicks(5);
-        server.runOnServer(minecraft -> set(first(minecraft, VoidHeartEntities.STALKING_WRAITH), StalkingWraith.class, "unnoticedTicks", WraithStalk.UNNOTICED_TICKS - 10));
+        server.runOnServer(minecraft -> setIntField(first(minecraft, VoidHeartEntities.STALKING_WRAITH), StalkingWraith.class, "unnoticedTicks", WraithStalk.UNNOTICED_TICKS - 10));
         waitFor(context, server, 200, "Left unnoticed, the stalker should creep in and strike", minecraft -> player(minecraft).getHealth() < player(minecraft).getMaxHealth());
         server.runOnServer(minecraft ->
         {
@@ -865,7 +864,6 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
                 minecraft -> first(minecraft, VoidHeartEntities.MALIGNANT_BOULDER).slamTicks() >= MalignantBoulder.WINDUP_TICKS);
     }
 
-
     private static void ward(MinecraftServer minecraft, Vec3 from)
     {
         var level = minecraft.overworld();
@@ -1044,7 +1042,7 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
         expect(thrown > 5, "The bash should throw the player far back, moved " + thrown);
 
         // Back in range, the scimitar sweeps
-        server.runOnServer(DaedalusMobsClientTest::heal);
+        server.runOnServer(GameTestKit::heal);
         server.runOnServer(minecraft ->
         {
             var centurion = first(minecraft, VoidHeartEntities.CENTURION);
@@ -1141,7 +1139,7 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
                 legionaries.getFirst().enterFrenzy();
 
                 var bishop = spawn(minecraft, VoidHeartEntities.FALLEN_BISHOP, -6.5, FEET, 6.5);
-                set(bishop, FallenBishop.class, "withdrawals", 1);
+                setIntField(bishop, FallenBishop.class, "withdrawals", 1);
                 bishop.setNoAi(true);
 
                 var wraith = spawn(minecraft, VoidHeartEntities.STALKING_WRAITH, 0.5, FEET, 8.5);
@@ -1236,27 +1234,9 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
         server.runOnServer(minecraft -> player(minecraft).setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY));
     }
 
-    private static void clearArea(TestServerContext server, double x)
-    {
-        int from = (int) x - 20;
-        int to = (int) x + 20;
-        server.runCommand("fill " + from + " " + FEET + " -20 " + to + " " + (FEET + 8) + " 20 air");
-        server.runCommand("fill " + from + " " + GROUND + " -20 " + to + " " + GROUND + " grass_block");
-    }
-
-    private static void clearScene(TestServerContext server)
-    {
-        server.runCommand("kill @e[type=!player]");
-    }
-
     private static void face(TestServerContext server, double x, double y, double z, float yaw, float pitch)
     {
         server.runCommand("tp @a " + x + " " + y + " " + z + " " + yaw + " " + pitch);
-    }
-
-    private static void tp(TestServerContext server, double x, double y, double z)
-    {
-        server.runCommand("tp @a " + x + " " + y + " " + z);
     }
 
     private static void aimPlayer(ServerPlayer player, Vec3 at)
@@ -1268,44 +1248,6 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
         player.connection.teleport(player.getX(), player.getY(), player.getZ(), yaw, pitch);
-    }
-
-    private static void aimCamera(TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-    }
-
-    private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
-    {
-        aimCamera(server, feetX, feetY, feetZ, x, y, z);
-        server.runOnServer(minecraft ->
-        {
-            var player = player(minecraft);
-            player.getAbilities().flying = true;
-            player.onUpdateAbilities();
-        });
-        context.waitTicks(3);
-    }
-
-    private static void waitFor(ClientGameTestContext context, TestServerContext server, int maxTicks, String message, Predicate<MinecraftServer> condition)
-    {
-        waitFor(context, server, maxTicks, () -> message, condition);
-    }
-
-    private static void waitFor(ClientGameTestContext context, TestServerContext server, int maxTicks, Supplier<String> message, Predicate<MinecraftServer> condition)
-    {
-        for (int tick = 0; tick < maxTicks; tick++)
-        {
-            if (server.computeOnServer(condition::test))
-                return;
-            context.waitTick();
-        }
-        throw new AssertionError(message.get() + " within " + maxTicks + " ticks");
     }
 
     private static String describeStalker(MinecraftServer minecraft)
@@ -1322,46 +1264,9 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
                + ", " + wraith.distanceTo(player) + " from the player at " + player.position() + " looking " + player.getViewVector(1);
     }
 
-    private static <T extends Mob> T spawn(MinecraftServer minecraft, EntityType<T> type, double x, double y, double z)
-    {
-        var level = minecraft.overworld();
-        var mob = type.create(level, EntitySpawnReason.COMMAND);
-        mob.snapTo(x, y, z, 90, 0);
-        level.addFreshEntity(mob);
-        return mob;
-    }
-
-    private static <T extends Entity> T first(MinecraftServer minecraft, EntityType<T> type)
-    {
-        var found = all(minecraft, type);
-        if (found.isEmpty())
-            throw new AssertionError("Expected a living " + type);
-        return found.getFirst();
-    }
-
     private static <T extends Entity> List<T> all(MinecraftServer minecraft, EntityType<T> type)
     {
         return new ArrayList<>(minecraft.overworld().getEntities(type, Entity::isAlive));
-    }
-
-    private static void heal(MinecraftServer minecraft)
-    {
-        var player = player(minecraft);
-        player.setHealth(player.getMaxHealth());
-    }
-
-    private static void set(Object target, Class<?> owner, String name, int value)
-    {
-        try
-        {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            field.setInt(target, value);
-        }
-        catch (ReflectiveOperationException e)
-        {
-            throw new AssertionError(e);
-        }
     }
 
     private static int get(Object target, Class<?> owner, String name)
@@ -1376,22 +1281,5 @@ public class DaedalusMobsClientTest implements FabricClientGameTest
         {
             throw new AssertionError(e);
         }
-    }
-
-    private static void expectClient(ClientGameTestContext context, String message, Predicate<net.minecraft.client.Minecraft> condition)
-    {
-        if (!context.computeOnClient(condition::test))
-            throw new AssertionError(message);
-    }
-
-    private static void expect(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 }

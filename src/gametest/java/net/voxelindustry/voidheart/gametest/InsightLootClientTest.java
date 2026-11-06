@@ -31,6 +31,8 @@ import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Insight loot: rolled from real chest tables by where the chest stands, dropped by the Dragoon, stashed in Daedalus caches, and taken in by use.
  */
@@ -159,11 +161,5 @@ public class InsightLootClientTest implements FabricClientGameTest
         var table = minecraft.reloadableRegistries().getLootTable(ResourceKey.create(Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath(MODID, path)));
         expect(table != LootTable.EMPTY, "Missing loot table " + path);
         return table;
-    }
-
-    private static void expect(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
     }
 }

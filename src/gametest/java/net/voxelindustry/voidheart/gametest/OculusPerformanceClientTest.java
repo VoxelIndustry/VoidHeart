@@ -9,6 +9,8 @@ import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Measures a table of the largest size over generated terrain at every zoom: how long the hologram takes to fill,
  * what each chunk costs to build and what a frame costs once it is built. Results are written to the log.
@@ -30,8 +32,7 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
             var server = world.getServer();
             var connection = world.getConnection();
             connection.waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode spectator @a");
             // The worst case: the table sees all the land it shows, no cheaper relief anywhere
             server.runOnServer(minecraft -> VoidHeartConfig.get().oculusTableSightRange = 512);

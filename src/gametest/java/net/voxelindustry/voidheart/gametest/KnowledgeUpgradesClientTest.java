@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.client.CameraType;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -23,12 +22,13 @@ import net.voxelindustry.voidheart.common.content.research.CogitantTile;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.research.MeatProxyTile;
-import net.voxelindustry.voidheart.common.content.research.PlayerKnowledge;
 import net.voxelindustry.voidheart.common.content.research.VoidLoomBlock;
 import net.voxelindustry.voidheart.common.content.research.VoidLoomTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Cogitants, the Void Loom and Meat Proxies counted by a repository, strain holding a research back until a proxy bears it, and the grafts.
@@ -49,11 +49,6 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
     private static final Identifier FAR_SIGHT    = id("far_sight");
     private static final Identifier SHOULDER_EYE = id("shoulder_eye");
 
-    private static Identifier id(String path)
-    {
-        return Identifier.fromNamespaceAndPath("voidheart", path);
-    }
-
     @Override
     public void runTest(ClientGameTestContext context)
     {
@@ -61,8 +56,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode creative @a");
             context.waitTicks(20);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
@@ -91,7 +85,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
             // Without the research the Cogitants are only promised and add nothing
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 if (data.getCogitants() != 0)
                     throw new AssertionError("Cogitants should count for nothing before Cogitation, got " + data.getCogitants());
                 if (!data.hasLoom())
@@ -106,7 +100,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
 
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 if (data.getCogitants() != 3)
                     throw new AssertionError("Three Cogitants should count once researched, got " + data.getCogitants());
                 double rate = data.rate(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess()));
@@ -128,7 +122,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
             {
                 var uuid = player(minecraft).getUUID();
                 Knowledge.attune(minecraft, uuid, 1);
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 data.grant(VOID_FLESH);
                 data.grant(FAR_SIGHT);
                 data.addInsights(40);
@@ -139,7 +133,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
             context.waitTicks(60);
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 if (!data.isStrained(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())))
                     throw new AssertionError("Strain 20 should be beyond what an attunement of 1 bears");
                 if (data.getProgress().getOrDefault(SHOULDER_EYE, 0D) > 0)
@@ -157,7 +151,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
             context.waitTicks(100);
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 if (data.isStrained(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())))
                     throw new AssertionError("The proxy should bear the missing strain");
                 if (data.getProgress().getOrDefault(SHOULDER_EYE, 0D) <= 0)
@@ -176,7 +170,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
             context.waitTicks(50);
             server.runOnServer(minecraft ->
             {
-                int claimed = data(minecraft).getProxies().size();
+                int claimed = knowledge(minecraft).getProxies().size();
                 if (claimed != 3)
                     throw new AssertionError("Exactly three proxies should count, got " + claimed);
                 long idle = java.util.stream.Stream.concat(java.util.stream.Stream.of(PROXY), java.util.Arrays.stream(EXTRA_PROXIES))
@@ -217,7 +211,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
             {
                 if (player(minecraft).level().getBlockState(PROXY).is(VoidHeartBlocks.MEAT_PROXY))
                     throw new AssertionError("A worn out proxy should give out");
-                if (!data(minecraft).isStrained(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())))
+                if (!knowledge(minecraft).isStrained(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())))
                     throw new AssertionError("The research should wait again once the proxy gave out");
             });
 
@@ -244,13 +238,13 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
                 var player = player(minecraft);
                 var marrow = new ItemStack(VoidHeartItems.VOID_MARROW);
                 marrow.finishUsingItem(player.level(), player);
-                if (data(minecraft).getAttunement() != 1 || marrow.isEmpty())
+                if (knowledge(minecraft).getAttunement() != 1 || marrow.isEmpty())
                     throw new AssertionError("The Marrow should be refused before the Vein");
 
                 var vein = new ItemStack(VoidHeartItems.VOID_VEIN);
                 vein.finishUsingItem(player.level(), player);
-                if (data(minecraft).getAttunement() != 2 || !vein.isEmpty())
-                    throw new AssertionError("The Vein should be eaten and raise attunement to 2, got " + data(minecraft).getAttunement());
+                if (knowledge(minecraft).getAttunement() != 2 || !vein.isEmpty())
+                    throw new AssertionError("The Vein should be eaten and raise attunement to 2, got " + knowledge(minecraft).getAttunement());
 
                 float before = exhaustion(player);
                 player.causeFoodExhaustion(1);
@@ -259,7 +253,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
                     throw new AssertionError("Hunger should drain 1.5 times as fast outside the void, got " + exhaustion);
 
                 marrow.finishUsingItem(player.level(), player);
-                if (data(minecraft).getAttunement() != 3)
+                if (knowledge(minecraft).getAttunement() != 3)
                     throw new AssertionError("The Marrow should raise attunement to 3");
                 player.removeAllEffects();
             });
@@ -269,7 +263,7 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
             // With attunement 3 the strain of 20 is borne unaided, and the tablet says so
             server.runOnServer(minecraft ->
             {
-                if (data(minecraft).isStrained(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())))
+                if (knowledge(minecraft).isStrained(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())))
                     throw new AssertionError("Attunement 3 should bear Watcher Unbound alone");
             });
 
@@ -324,49 +318,8 @@ public class KnowledgeUpgradesClientTest implements FabricClientGameTest
         }
     }
 
-    private static void click(ClientGameTestContext context, int[] guiPosition)
-    {
-        hover(context, guiPosition);
-        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
-        context.waitTicks(2);
-    }
-
-    private static void hover(ClientGameTestContext context, int[] guiPosition)
-    {
-        double scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
-        context.getInput().setCursorPos(guiPosition[0] * scale, guiPosition[1] * scale);
-        context.waitTicks(3);
-    }
-
     private static net.minecraft.world.level.block.entity.BlockEntity tile(MinecraftServer minecraft, BlockPos pos)
     {
         return player(minecraft).level().getBlockEntity(pos);
-    }
-
-    private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z, int settleTicks)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-        server.runOnServer(minecraft ->
-        {
-            var player = player(minecraft);
-            player.getAbilities().flying = true;
-            player.onUpdateAbilities();
-        });
-        context.waitTicks(settleTicks);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
-    }
-
-    private static PlayerKnowledge data(MinecraftServer minecraft)
-    {
-        return Knowledge.of(minecraft, player(minecraft).getUUID());
     }
 }

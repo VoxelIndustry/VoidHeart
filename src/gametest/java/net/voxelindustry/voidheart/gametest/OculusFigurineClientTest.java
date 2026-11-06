@@ -12,6 +12,8 @@ import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 
 import java.util.Optional;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * A table following a player shows them as a small figure under their pin, striding, swinging and sneaking with them.
  */
@@ -27,8 +29,7 @@ public class OculusFigurineClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("fill -2 " + TABLE.getY() + " -2 2 " + TABLE.getY() + " 2 voidheart:oculus_table");
             server.runCommand("setblock 0 " + TABLE.getY() + " -12 voidheart:beholder");
             server.runCommand("gamemode creative @a");

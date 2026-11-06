@@ -10,7 +10,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
 import net.minecraft.world.item.ItemStack;
@@ -34,6 +33,8 @@ import net.voxelindustry.voidheart.common.world.dungeon.DungeonAddress;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonSize;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonTheme;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Every way a survival player could teleport fails inside a dungeon, without using anything up, while a creative player stays free.
@@ -83,11 +84,6 @@ public class DungeonTeleportClientTest implements FabricClientGameTest
 
             server.runCommand("gamemode spectator @a");
         }
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 
     private void give(ClientGameTestContext context, TestServerContext server, ItemStack stack)

@@ -8,11 +8,8 @@ import net.fabricmc.fabric.api.client.gametest.v1.world.TestWorldSave;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Hud;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -30,6 +27,8 @@ import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 
 import java.util.List;
 import java.util.function.Function;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * The way down to the Daedalus: a shadow until studied, a search and a price like any bubble, a portal onto a bridge that holds through a restart, the rift back, and severing it.
@@ -57,8 +56,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
             save = world.getWorldSave();
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule show_advancement_messages false");
             server.runCommand("gamerule spawn_monsters false");
             server.runCommand("gamemode creative @a");
@@ -66,7 +64,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
             server.runOnServer(DaedalusAccessClientTest::build);
             context.waitTicks(FORMED_TICKS);
-            check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "The armillary should form");
+            expect(onServer(server, minecraft -> armillary(minecraft).isFormed()), "The armillary should form");
 
             checkShadow(context, server);
             checkStudied(context, server);
@@ -106,16 +104,16 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
 
         clickStrata(context);
         var text = String.join(" ", tablet(context));
-        check(text.contains("A shadow below"), "An unstudied strata should only show as a shadow, the tablet says " + text);
-        check(text.contains("The Floor of the Void would bring it into focus."), "The tablet should say what to study, it says " + text);
-        check(!context.computeOnClient(minecraft -> screen(minecraft).primaryVisible()), "Nothing should be on offer before it is studied");
+        expect(text.contains("A shadow below"), "An unstudied strata should only show as a shadow, the tablet says " + text);
+        expect(text.contains("The Floor of the Void would bring it into focus."), "The tablet should say what to study, it says " + text);
+        expect(!context.computeOnClient(minecraft -> screen(minecraft).primaryVisible()), "Nothing should be on offer before it is studied");
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         context.takeScreenshot("daedalus-map-shadow-tablet");
 
         context.runOnClient(minecraft -> ClientPlayNetworking.send(new ArmillaryPayloads.Action(ArmillaryPayloads.ActionKind.TARGET, ArmillaryChart.STRATA)));
         context.waitTicks(10);
-        check(!onServer(server, minecraft -> armillary(minecraft).getChart().targetsStrata()), "The server should refuse a search for the strata from someone who has not studied it");
+        expect(!onServer(server, minecraft -> armillary(minecraft).getChart().targetsStrata()), "The server should refuse a search for the strata from someone who has not studied it");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(2);
     }
@@ -128,7 +126,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         server.runCommand("execute as @a at @a run voidheart research grant voidheart:daedalus");
         for (int tick = 0; tick < VIEW_TICKS * 2 && !context.computeOnClient(minecraft -> screen(minecraft).isRevealing()); tick++)
             context.waitTicks(1);
-        check(context.computeOnClient(minecraft -> screen(minecraft).isRevealing()), "Studying it should bring the strata into focus on the open chart");
+        expect(context.computeOnClient(minecraft -> screen(minecraft).isRevealing()), "Studying it should bring the strata into focus on the open chart");
         context.waitTicks(REVEAL_SHOT_TICKS);
         context.takeScreenshot("daedalus-map-reveal");
         context.waitTicks(VIEW_TICKS * 2);
@@ -139,22 +137,22 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         openChart(context, server);
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(VIEW_TICKS);
-        check(!context.computeOnClient(minecraft -> screen(minecraft).isRevealing()), "The strata should only come into focus once");
+        expect(!context.computeOnClient(minecraft -> screen(minecraft).isRevealing()), "The strata should only come into focus once");
 
         clickStrata(context);
         var text = String.join(" ", tablet(context));
-        check(text.contains("The Daedalus"), "A studied strata should be named, the tablet says " + text);
-        check(text.contains("10m 00s to search"), "The search time should show before committing to it, the tablet says " + text);
-        check(text.contains("8 void pearls"), "The price should show from the first look, the tablet says " + text);
-        check(primaryLabel(context).equals("Search for a path"), "The strata should offer a search, not " + primaryLabel(context));
+        expect(text.contains("The Daedalus"), "A studied strata should be named, the tablet says " + text);
+        expect(text.contains("10m 00s to search"), "The search time should show before committing to it, the tablet says " + text);
+        expect(text.contains("8 void pearls"), "The price should show from the first look, the tablet says " + text);
+        expect(primaryLabel(context).equals("Search for a path"), "The strata should offer a search, not " + primaryLabel(context));
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         context.takeScreenshot("daedalus-map-known-tablet");
 
         var plate = context.computeOnClient(minecraft -> screen(minecraft).primaryCenter());
-        guiClick(context, plate[0], plate[1]);
+        click(context, plate[0], plate[1], 5);
         context.waitTicks(5);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().targetsStrata()), "The plate should start a search for the strata");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().targetsStrata()), "The plate should start a search for the strata");
         context.getInput().setCursorPos(2, 2);
 
         for (int percent : new int[] { 25, 60, 90 })
@@ -166,12 +164,12 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
 
         act(server, armillary -> armillary.advanceSearch(1));
         context.waitTicks(8);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.REACHED, "A finished search should reach the strata");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.REACHED, "A finished search should reach the strata");
         context.takeScreenshot("daedalus-map-reached-bloom");
         context.waitTicks(60);
-        check(context.computeOnClient(minecraft -> screen(minecraft).selected()) == ArmillaryChart.STRATA, "Reaching the strata should bring up its tablet");
+        expect(context.computeOnClient(minecraft -> screen(minecraft).selected()) == ArmillaryChart.STRATA, "Reaching the strata should bring up its tablet");
         text = String.join(" ", tablet(context));
-        check(text.contains("Opens on "), "The district the root came down on should be named, the tablet says " + text);
+        expect(text.contains("Opens on "), "The district the root came down on should be named, the tablet says " + text);
         context.takeScreenshot("daedalus-map-reached");
     }
 
@@ -187,22 +185,22 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
             player(minecraft).getInventory().add(new ItemStack(VoidHeartItems.VOID_PEARL, ArmillaryTile.daedalusCost() + 2));
         });
         context.waitTicks(VIEW_TICKS);
-        check(primaryLabel(context).equals("Open: 8 void pearls"), "The plate should give the price, not " + primaryLabel(context));
+        expect(primaryLabel(context).equals("Open: 8 void pearls"), "The plate should give the price, not " + primaryLabel(context));
 
         var plate = context.computeOnClient(minecraft -> screen(minecraft).primaryCenter());
-        guiClick(context, plate[0], plate[1]);
+        click(context, plate[0], plate[1], 5);
         context.waitTicks(10);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "Paying should open the way");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "Paying should open the way");
         int left = onServer(server, minecraft -> player(minecraft).getInventory().countItem(VoidHeartItems.VOID_PEARL));
-        check(left == 2, "Opening should cost exactly 8 pearls, " + left + " are left of 10");
-        check(onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The middle of the rings should show an open portal");
+        expect(left == 2, "Opening should cost exactly 8 pearls, " + left + " are left of 10");
+        expect(onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The middle of the rings should show an open portal");
         context.takeScreenshot("daedalus-map-connected-bloom");
 
         context.waitTicks(45);
         var text = String.join(" ", tablet(context));
-        check(text.contains("Holds until it is severed"), "The way into the Daedalus should hold, the tablet says " + text);
-        check(context.computeOnClient(minecraft -> screen(minecraft).quietLabel()).equals("Sever the way"), "The tablet should offer to sever the way");
-        check(context.computeOnClient(minecraft -> screen(minecraft).whisper()).equals("The way into the Daedalus stands open."), "The map should say the way stands open");
+        expect(text.contains("Holds until it is severed"), "The way into the Daedalus should hold, the tablet says " + text);
+        expect(context.computeOnClient(minecraft -> screen(minecraft).quietLabel()).equals("Sever the way"), "The tablet should offer to sever the way");
+        expect(context.computeOnClient(minecraft -> screen(minecraft).whisper()).equals("The way into the Daedalus stands open."), "The map should say the way stands open");
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         captureSizes(context, "daedalus-map-connected");
@@ -224,15 +222,15 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
     private static BlockPos checkCrossing(ClientGameTestContext context, TestServerContext server)
     {
         enterThroughHub(context, server);
-        check(dimension(server).equals(DAEDALUS), "The portal should lead into the Daedalus, the player is in " + dimension(server));
+        expect(dimension(server).equals(DAEDALUS), "The portal should lead into the Daedalus, the player is in " + dimension(server));
         var feet = onServer(server, minecraft -> player(minecraft).blockPosition());
-        check(onServer(server, minecraft -> !player(minecraft).level().getBlockState(feet.below()).isAir()), "The player should stand on a bridge");
+        expect(onServer(server, minecraft -> !player(minecraft).level().getBlockState(feet.below()).isAir()), "The player should stand on a bridge");
         int id = onServer(server, minecraft -> armillary(minecraft).getDaedalusConnection());
-        check(onServer(server, minecraft -> DaedalusConnections.get(minecraft).entryOf(player(minecraft).getUUID())) == id, "The player should be known to have come in by this way");
+        expect(onServer(server, minecraft -> DaedalusConnections.get(minecraft).entryOf(player(minecraft).getUUID())) == id, "The player should be known to have come in by this way");
 
         var rift = onServer(server, DaedalusAccessClientTest::findRift);
-        check(rift != null, "A rift should stand on the bridge near where the player arrives");
-        check(onServer(server, minecraft -> ((ArmillaryRiftTile) VoidDaedalus.level(minecraft).getBlockEntity(rift)).getConnection()) == id, "The rift should belong to the way it was opened by");
+        expect(rift != null, "A rift should stand on the bridge near where the player arrives");
+        expect(onServer(server, minecraft -> ((ArmillaryRiftTile) VoidDaedalus.level(minecraft).getBlockEntity(rift)).getConnection()) == id, "The rift should belong to the way it was opened by");
 
         context.waitTicks(40);
         context.getInput().pressKey(InputConstants.KEY_F1);
@@ -243,13 +241,13 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
 
         rightClick(context);
         context.waitTicks(20);
-        check(dimension(server).equals(OVERWORLD), "The rift should lead back");
+        expect(dimension(server).equals(OVERWORLD), "The rift should lead back");
         double distance = onServer(server, minecraft -> Math.sqrt(player(minecraft).blockPosition().distSqr(CORE)));
-        check(distance <= 8, "The rift should land the player beside the armillary, " + distance + " blocks away");
+        expect(distance <= 8, "The rift should land the player beside the armillary, " + distance + " blocks away");
 
         enterThroughHub(context, server);
         var again = onServer(server, minecraft -> player(minecraft).blockPosition());
-        check(dimension(server).equals(DAEDALUS) && again.equals(feet), "The portal should keep leading onto the same bridge, " + again + " rather than " + feet);
+        expect(dimension(server).equals(DAEDALUS) && again.equals(feet), "The portal should keep leading onto the same bridge, " + again + " rather than " + feet);
         return feet;
     }
 
@@ -258,19 +256,19 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
      */
     private static void checkAfterReload(ClientGameTestContext context, TestServerContext server, BlockPos arrival)
     {
-        check(dimension(server).equals(DAEDALUS), "The player should come back inside the Daedalus, not in " + dimension(server));
+        expect(dimension(server).equals(DAEDALUS), "The player should come back inside the Daedalus, not in " + dimension(server));
         int id = onServer(server, minecraft -> armillary(minecraft).getDaedalusConnection());
-        check(id != ArmillaryRiftTile.NONE && onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id)) != null, "The way should survive a reload");
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "The armillary should still hold the way");
+        expect(id != ArmillaryRiftTile.NONE && onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id)) != null, "The way should survive a reload");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "The armillary should still hold the way");
 
         var rift = onServer(server, DaedalusAccessClientTest::findRift);
-        check(rift != null, "The rift should still stand");
+        expect(rift != null, "The rift should still stand");
         server.runCommand("execute in " + DAEDALUS + " run tp @a " + (arrival.getX() + 0.5) + " " + arrival.getY() + " " + (arrival.getZ() + 0.5));
         context.waitTicks(20);
         aimAt(context, server, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5, rift.getX() + 0.5, rift.getY() + 0.5, rift.getZ() + 0.5);
         rightClick(context);
         context.waitTicks(20);
-        check(dimension(server).equals(OVERWORLD), "The rift should still lead back after a reload");
+        expect(dimension(server).equals(OVERWORLD), "The rift should still lead back after a reload");
     }
 
     /**
@@ -280,15 +278,15 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
     {
         openChart(context, server);
         context.waitTicks(VIEW_TICKS);
-        guiClick(context, strataDoor(context)[0], strataDoor(context)[1]);
-        check(context.computeOnClient(minecraft -> screen(minecraft).quietLabel()).equals("Sever the way"), "The strata's tablet should offer to sever the way");
+        click(context, strataDoor(context)[0], strataDoor(context)[1], 5);
+        expect(context.computeOnClient(minecraft -> screen(minecraft).quietLabel()).equals("Sever the way"), "The strata's tablet should offer to sever the way");
         var quiet = context.computeOnClient(minecraft -> screen(minecraft).quietCenter());
-        guiClick(context, quiet[0], quiet[1]);
+        click(context, quiet[0], quiet[1], 5);
         context.waitTicks(VIEW_TICKS);
 
         int id = onServer(server, minecraft -> armillary(minecraft).getDaedalusConnection());
-        check(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id).isSevered()), "The quiet plate should sever the way");
-        check(tablet(context).stream().anyMatch(line -> line.endsWith(" left")), "A severed way should say how long it has left, the tablet says " + tablet(context));
+        expect(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id).isSevered()), "The quiet plate should sever the way");
+        expect(tablet(context).stream().anyMatch(line -> line.endsWith(" left")), "A severed way should say how long it has left, the tablet says " + tablet(context));
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         context.takeScreenshot("daedalus-map-severed");
@@ -296,25 +294,25 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         context.waitTicks(5);
 
         enterThroughHub(context, server);
-        check(dimension(server).equals(DAEDALUS), "A severed way should still let players through until it closes");
+        expect(dimension(server).equals(DAEDALUS), "A severed way should still let players through until it closes");
         var rift = onServer(server, DaedalusAccessClientTest::findRift);
         server.runCommand("execute in " + DAEDALUS + " run forceload add " + rift.getX() + " " + rift.getZ());
 
         server.runCommand("execute as @a at @a run voidheart armillary decay 65");
         context.waitTicks(5 * 20 + 15);
-        check(overlay(context).contains("collapsing"), "Expected the last minute's warning, the action bar shows: " + overlay(context));
+        expect(overlay(context).contains("collapsing"), "Expected the last minute's warning, the action bar shows: " + overlay(context));
 
         server.runCommand("execute as @a at @a run voidheart armillary decay 3");
         context.waitTicks(3 * 20 + 20);
-        check(dimension(server).equals(OVERWORLD), "The end of the way should throw the player out, they are in " + dimension(server));
+        expect(dimension(server).equals(OVERWORLD), "The end of the way should throw the player out, they are in " + dimension(server));
         double distance = onServer(server, minecraft -> Math.sqrt(player(minecraft).blockPosition().distSqr(CORE)));
-        check(distance <= 8, "The player should land beside the armillary, " + distance + " blocks away");
-        check(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id)) == null, "The way should be gone");
+        expect(distance <= 8, "The player should land beside the armillary, " + distance + " blocks away");
+        expect(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id)) == null, "The way should be gone");
 
         context.waitTicks(40);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.SCANNING, "The armillary should go back to scanning");
-        check(!onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The portal should close");
-        check(onServer(server, minecraft -> VoidDaedalus.level(minecraft).getBlockState(rift).isAir()), "The rift should go with its way");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.SCANNING, "The armillary should go back to scanning");
+        expect(!onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The portal should close");
+        expect(onServer(server, minecraft -> VoidDaedalus.level(minecraft).getBlockState(rift).isAir()), "The rift should go with its way");
         server.runCommand("execute in " + DAEDALUS + " run forceload remove " + rift.getX() + " " + rift.getZ());
 
         openChart(context, server);
@@ -339,17 +337,17 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         context.waitTicks(5);
         openChart(context, server);
         context.waitTicks(VIEW_TICKS);
-        guiClick(context, strataDoor(context)[0], strataDoor(context)[1]);
+        click(context, strataDoor(context)[0], strataDoor(context)[1], 5);
         var plate = context.computeOnClient(minecraft -> screen(minecraft).primaryCenter());
-        guiClick(context, plate[0], plate[1]);
+        click(context, plate[0], plate[1], 5);
         context.waitTicks(10);
         int id = onServer(server, minecraft -> armillary(minecraft).getDaedalusConnection());
-        check(id != ArmillaryRiftTile.NONE, "A creative player should open the way for free");
+        expect(id != ArmillaryRiftTile.NONE, "A creative player should open the way for free");
         context.runOnClient(minecraft -> minecraft.player.closeContainer());
 
         server.runOnServer(minecraft -> minecraft.overworld().destroyBlock(CORE, true));
         context.waitTicks(5);
-        check(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id).isSevered()), "Breaking the core should sever the way");
+        expect(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id).isSevered()), "Breaking the core should sever the way");
     }
 
     private static BlockPos findRift(MinecraftServer minecraft)
@@ -376,14 +374,14 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         aimAt(context, server, 3.5, CORE.getY(), 0.5, 0.5, CORE.getY() + 0.9, 0.5);
         rightClick(context);
         context.waitTicks(5);
-        check(context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Using the core should open the map");
+        expect(context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Using the core should open the map");
     }
 
     private static void clickStrata(ClientGameTestContext context)
     {
         var spot = context.computeOnClient(minecraft -> screen(minecraft).strataSpot());
-        guiClick(context, spot[0], spot[1]);
-        check(context.computeOnClient(minecraft -> screen(minecraft).selected()) == ArmillaryChart.STRATA, "A click on the strata should select it");
+        click(context, spot[0], spot[1], 5);
+        expect(context.computeOnClient(minecraft -> screen(minecraft).selected()) == ArmillaryChart.STRATA, "A click on the strata should select it");
     }
 
     private static float[] strataDoor(ClientGameTestContext context)
@@ -401,11 +399,6 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         server.runOnServer(minecraft -> action.accept(armillary(minecraft)));
     }
 
-    private static ServerPlayer player(MinecraftServer server)
-    {
-        return server.getPlayerList().getPlayers().getFirst();
-    }
-
     private static <T> T onServer(TestServerContext server, Function<MinecraftServer, T> function)
     {
         return server.computeOnServer(function::apply);
@@ -416,36 +409,10 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         return onServer(server, minecraft -> player(minecraft).level().dimension().identifier().toString());
     }
 
-    private static void check(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
-    }
-
     private static void aimAt(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
     {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("execute in " + dimension(server) + " run tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
+        server.runCommand("execute in " + dimension(server) + " run tp @a " + aimedPose(feetX, feetY, feetZ, x, y, z));
         context.waitTicks(10);
-    }
-
-    private static void rightClick(ClientGameTestContext context)
-    {
-        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
-        context.waitTicks(5);
-    }
-
-    private static void guiClick(ClientGameTestContext context, float x, float y)
-    {
-        double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
-        context.getInput().setCursorPos(x * scale, y * scale);
-        context.waitTicks(2);
-        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
-        context.waitTicks(5);
     }
 
     private static ArmillaryScreen screen(Minecraft minecraft)
@@ -465,39 +432,11 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
 
     private static void captureSizes(ClientGameTestContext context, String name)
     {
-        size(context, 640, 480, 2);
+        resize(context, 640, 480, 2);
         context.takeScreenshot(name + "-320x240");
-        size(context, 1920, 1080, 2);
+        resize(context, 1920, 1080, 2);
         context.takeScreenshot(name + "-960x540");
-        size(context, 854, 480, 2);
+        resize(context, 854, 480, 2);
         context.takeScreenshot(name);
-    }
-
-    private static void size(ClientGameTestContext context, int width, int height, int scale)
-    {
-        context.getInput().resizeWindow(width, height);
-        context.runOnClient(minecraft ->
-        {
-            minecraft.options.guiScale().set(scale);
-            minecraft.resizeGui();
-        });
-        context.waitTicks(4);
-    }
-
-    private static String overlay(ClientGameTestContext context)
-    {
-        return context.computeOnClient(minecraft ->
-        {
-            try
-            {
-                var field = Hud.class.getDeclaredField("overlayMessageString");
-                field.setAccessible(true);
-                var message = (Component) field.get(minecraft.gui.hud);
-                return message == null ? "" : message.getString();
-            } catch (ReflectiveOperationException e)
-            {
-                throw new AssertionError(e);
-            }
-        });
     }
 }

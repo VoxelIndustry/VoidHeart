@@ -9,6 +9,8 @@ import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
 import net.voxelindustry.voidheart.common.content.oculus.OculusChunkServer;
 import net.voxelindustry.voidheart.common.content.oculus.OculusSight;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * A table alone sees only around itself and shows the rest as generated relief. A beholder lets it see far land,
  * read from the save where nobody keeps it loaded, and tells mobs apart near it.
@@ -29,8 +31,7 @@ public class OculusBeholderClientTest implements FabricClientGameTest
             var server = world.getServer();
             var connection = world.getConnection();
             connection.waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             context.runOnClient(minecraft -> minecraft.options.renderDistance().set(2));
 
             server.runCommand("forceload add -16 -16 112 16");

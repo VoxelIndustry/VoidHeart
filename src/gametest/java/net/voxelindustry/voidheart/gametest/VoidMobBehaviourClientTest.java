@@ -46,7 +46,8 @@ import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * What the mobs do when left to their own devices against a real player, and what the numbers behind them are.
@@ -68,8 +69,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule spawn_mobs false");
             server.runCommand("gamerule immediate_respawn true");
             server.runCommand("difficulty hard");
@@ -117,7 +117,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
             int withered = 0;
             for (int roll = 0; roll < CHANCE_ROLLS; roll++)
             {
-                set(cow, net.minecraft.world.entity.LivingEntity.class, "damageCooldownTime", 0);
+                setIntField(cow, net.minecraft.world.entity.LivingEntity.class, "damageCooldownTime", 0);
                 cow.setHealth(cow.getMaxHealth());
                 cow.removeAllEffects();
                 wraith.doHurtTarget(level, cow);
@@ -137,7 +137,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
                 for (int roll = 0; roll < CHANCE_ROLLS; roll++)
                 {
                     BarnacleInfection.clear(player);
-                    set(player, net.minecraft.world.entity.LivingEntity.class, "damageCooldownTime", 0);
+                    setIntField(player, net.minecraft.world.entity.LivingEntity.class, "damageCooldownTime", 0);
                     player.setHealth(player.getMaxHealth());
                     barnacle.doHurtTarget(level, player);
                     if (BarnacleInfection.amount(player) > 0)
@@ -272,7 +272,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
                 wraith.setNoAi(true);
 
                 level.setBlockAndUpdate(nestPos, VoidHeartBlocks.BARNACLE_NEST.defaultBlockState().setValue(BarnacleNestBlock.FACING, Direction.NORTH));
-                set(level.getBlockEntity(nestPos), BarnacleNestTile.class, "ticksUntilRelease", 123);
+                setIntField(level.getBlockEntity(nestPos), BarnacleNestTile.class, "ticksUntilRelease", 123);
 
                 BarnacleInfection.infect(player);
                 BarnacleInfection.infect(player);
@@ -529,7 +529,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var barnacle = spawn(minecraft, VoidHeartEntities.CORRUPTED_BARNACLE, 215.5, FEET, 0.5);
-            set(barnacle, CorruptedBarnacle.class, "growthTicks", CorruptedBarnacle.GROWTH_TICKS - 4);
+            setIntField(barnacle, CorruptedBarnacle.class, "growthTicks", CorruptedBarnacle.GROWTH_TICKS - 4);
         });
         context.waitTicks(10);
         server.runOnServer(minecraft ->
@@ -649,7 +649,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         {
             var barnacle = spawn(minecraft, VoidHeartEntities.CORRUPTED_BARNACLE, x + 20.5, FEET, 0.5);
             barnacle.scatterFrom(new Vec3(x + 20.5, FEET, 0.5), 0);
-            set(barnacle, CorruptedBarnacle.class, "scatterTicks", 120);
+            setIntField(barnacle, CorruptedBarnacle.class, "scatterTicks", 120);
         });
         context.waitTicks(160);
         server.runOnServer(minecraft ->
@@ -690,7 +690,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
 
         for (int released = 1; released <= BarnacleNestTile.MAX_ALIVE + 1; released++)
         {
-            server.runOnServer(minecraft -> set(minecraft.overworld().getBlockEntity(nestPos), BarnacleNestTile.class, "ticksUntilRelease", 1));
+            server.runOnServer(minecraft -> setIntField(minecraft.overworld().getBlockEntity(nestPos), BarnacleNestTile.class, "ticksUntilRelease", 1));
             context.waitTicks(25);
             int expected = Math.min(released, BarnacleNestTile.MAX_ALIVE);
             int count = server.computeOnServer(minecraft -> minecraft.overworld().getEntities(VoidHeartEntities.CORRUPTED_BARNACLE, Entity::isAlive).size());
@@ -699,7 +699,7 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         }
         server.runCommand("kill @e[type=voidheart:corrupted_barnacle]");
         tp(server, x + 30.5, FEET, 0.5);
-        server.runOnServer(minecraft -> set(minecraft.overworld().getBlockEntity(nestPos), BarnacleNestTile.class, "ticksUntilRelease", 1));
+        server.runOnServer(minecraft -> setIntField(minecraft.overworld().getBlockEntity(nestPos), BarnacleNestTile.class, "ticksUntilRelease", 1));
         context.waitTicks(45);
         server.runOnServer(minecraft ->
         {
@@ -731,9 +731,9 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         waitFor(context, server, 200, "The elder should raise novices", minecraft -> minecraft.overworld().getEntities(VoidHeartEntities.FALLEN_NOVICE, Entity::isAlive).size() == FallenElder.RAISED_AT_ONCE);
         context.takeScreenshot("mob-elder-raised");
 
-        server.runOnServer(minecraft -> set(first(minecraft, VoidHeartEntities.FALLEN_ELDER), FallenElder.class, "raiseCooldown", 1));
+        server.runOnServer(minecraft -> setIntField(first(minecraft, VoidHeartEntities.FALLEN_ELDER), FallenElder.class, "raiseCooldown", 1));
         context.waitTicks(5);
-        server.runOnServer(minecraft -> set(first(minecraft, VoidHeartEntities.FALLEN_ELDER), FallenElder.class, "raiseCooldown", 1));
+        server.runOnServer(minecraft -> setIntField(first(minecraft, VoidHeartEntities.FALLEN_ELDER), FallenElder.class, "raiseCooldown", 1));
         context.waitTicks(5);
         server.runOnServer(minecraft ->
         {
@@ -1047,87 +1047,5 @@ public class VoidMobBehaviourClientTest implements FabricClientGameTest
         {
             throw new AssertionError(e);
         }
-    }
-
-    private static void set(Object target, Class<?> owner, String name, int value)
-    {
-        try
-        {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            field.setInt(target, value);
-        }
-        catch (ReflectiveOperationException e)
-        {
-            throw new AssertionError(e);
-        }
-    }
-
-    private static <T extends Mob> T spawn(MinecraftServer minecraft, EntityType<T> type, double x, double y, double z)
-    {
-        var level = minecraft.overworld();
-        var mob = type.create(level, EntitySpawnReason.COMMAND);
-        mob.snapTo(x, y, z, 90, 0);
-        level.addFreshEntity(mob);
-        return mob;
-    }
-
-    private static <T extends Entity> T first(MinecraftServer minecraft, EntityType<T> type)
-    {
-        return minecraft.overworld().getEntities(type, Entity::isAlive).getFirst();
-    }
-
-    private static void heal(MinecraftServer minecraft)
-    {
-        var player = player(minecraft);
-        player.setHealth(player.getMaxHealth());
-    }
-
-    private static void clearScene(TestServerContext server)
-    {
-        server.runCommand("kill @e[type=!player]");
-    }
-
-    private static void tp(TestServerContext server, double x, double y, double z)
-    {
-        server.runCommand("tp @a " + x + " " + y + " " + z);
-    }
-
-    private static void aimCamera(TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-    }
-
-    private static void waitFor(ClientGameTestContext context, TestServerContext server, int maxTicks, String message, Predicate<MinecraftServer> condition)
-    {
-        for (int tick = 0; tick < maxTicks; tick++)
-        {
-            if (server.computeOnServer(condition::test))
-                return;
-            context.waitTick();
-        }
-        throw new AssertionError(message + " within " + maxTicks + " ticks");
-    }
-
-    private static void expectClient(ClientGameTestContext context, String message, Predicate<net.minecraft.client.Minecraft> condition)
-    {
-        if (!context.computeOnClient(condition::test))
-            throw new AssertionError(message);
-    }
-
-    private static void expect(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 }

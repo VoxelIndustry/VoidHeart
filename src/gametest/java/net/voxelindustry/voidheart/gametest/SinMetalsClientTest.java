@@ -26,6 +26,8 @@ import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * The Seething Steel, Covetous Copper and Listless Lead families: their recipes, drops and translations, with captures
  * of each placed family, the steel's animation, and the ingots in hand and in the inventory.
@@ -42,8 +44,7 @@ public class SinMetalsClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode creative @a");
 
             server.runOnServer(SinMetalsClientTest::assertRecipes);
@@ -175,23 +176,5 @@ public class SinMetalsClientTest implements FabricClientGameTest
     private static Block block(String id)
     {
         return BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath(MODID, id));
-    }
-
-    private static void aimFrom(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z, int settleTicks)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-        // Landing ends creative flight, so it is set again each time or the player falls away from the framing
-        server.runOnServer(minecraft ->
-        {
-            var player = minecraft.getPlayerList().getPlayers().getFirst();
-            player.getAbilities().flying = true;
-            player.onUpdateAbilities();
-        });
-        context.waitTicks(settleTicks);
     }
 }
