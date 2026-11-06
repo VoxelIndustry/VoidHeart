@@ -7,7 +7,7 @@ import java.util.Arrays;
  */
 public final class DaedalusCanvas
 {
-    public static final int PROP_BASE = 50;
+    public static final int PROP_BASE = 51;
     private static final int UNSIGNED_BYTE = 0xFF;
     public static final int MAX_PROPS = (UNSIGNED_BYTE + 1 - PROP_BASE) / Compass.COUNT;
 

@@ -26,6 +26,15 @@
         }
       ],
       "rolls": 1
+    },
+    {
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:tainted_breakthrough"
+        }
+      ],
+      "rolls": 1
     }
   ],
   "random_sequence": "voidheart:entities/kernacian_dragoon"

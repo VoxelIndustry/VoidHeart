@@ -12,7 +12,11 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixB
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
+import net.voxelindustry.voidheart.common.content.research.CogitantTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
+import net.voxelindustry.voidheart.common.content.research.MeatProxyTile;
+import net.voxelindustry.voidheart.common.content.research.RepositoryUpgradeBlock;
+import net.voxelindustry.voidheart.common.content.research.VoidLoomTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBlock;
@@ -30,6 +34,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     private final RavenousStorageMatrixProvider ravenousStorageMatrixProvider = new RavenousStorageMatrixProvider();
     private final RavenousRelayProvider ravenousRelayProvider = new RavenousRelayProvider();
     private final KnowledgeColumnProvider knowledgeColumnProvider = new KnowledgeColumnProvider();
+    private final RepositoryUpgradeProvider repositoryUpgradeProvider = new RepositoryUpgradeProvider();
     private final MalignantTormenterProvider malignantTormenterProvider = new MalignantTormenterProvider();
     private final ArmillaryProvider armillaryProvider = new ArmillaryProvider();
 
@@ -43,6 +48,9 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockDataProvider(ravenousStorageMatrixProvider, RavenousStorageMatrixTile.class);
         registration.registerBlockDataProvider(ravenousRelayProvider, RavenousRelayTile.class);
         registration.registerBlockDataProvider(knowledgeColumnProvider, KnowledgeColumnTile.class);
+        registration.registerBlockDataProvider(repositoryUpgradeProvider, CogitantTile.class);
+        registration.registerBlockDataProvider(repositoryUpgradeProvider, VoidLoomTile.class);
+        registration.registerBlockDataProvider(repositoryUpgradeProvider, MeatProxyTile.class);
         registration.registerBlockDataProvider(malignantTormenterProvider, MalignantTormenterTile.class);
         registration.registerBlockDataProvider(armillaryProvider, ArmillaryTile.class);
     }
@@ -57,6 +65,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
         registration.registerBlockComponent(new RavenousRelayProvider.Client(), RavenousRelayBlock.class);
         registration.registerBlockComponent(new KnowledgeColumnProvider.Client(), KnowledgeColumnBlock.class);
+        registration.registerBlockComponent(new RepositoryUpgradeProvider.Client(), RepositoryUpgradeBlock.class);
         registration.registerBlockComponent(new MalignantTormenterProvider.Client(), MalignantTormenterBlock.class);
         registration.registerBlockComponent(new ArmillaryProvider.Client(), ArmillaryCoreBlock.class);
 

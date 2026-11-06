@@ -147,7 +147,7 @@ public class KnowledgeRepositoryRender implements BlockEntityRenderer<KnowledgeR
             case GATHERING -> TABLET_GATHERING;
             case FULL -> Mth.lerp(0.5F + 0.5F * Mth.sin(time * TABLET_FULL_PULSE), TABLET_FULL_LOW, TABLET_FULL_HIGH);
             case RESEARCHING -> TABLET_RESEARCHING;
-            case STARVED -> TABLET_STARVED;
+            case STARVED, STRAINED -> TABLET_STARVED;
         };
     }
 
@@ -230,7 +230,7 @@ public class KnowledgeRepositoryRender implements BlockEntityRenderer<KnowledgeR
         quad(pose, buffer, left, bottom, split, top, 0, color(filled, state.hud));
 
         int track = TRACK_RGB;
-        if (state.status == KnowledgeRepositoryStatus.STARVED)
+        if (state.status == KnowledgeRepositoryStatus.STARVED || state.status == KnowledgeRepositoryStatus.STRAINED)
             track = ARGB.srgbLerp(0.5F + 0.5F * Mth.sin(state.time * LACK_PULSE), TRACK_RGB, LACK_RGB);
         quad(pose, buffer, split, bottom, right, top, 0, color(track, TRACK_ALPHA * state.hud));
     }
@@ -238,7 +238,7 @@ public class KnowledgeRepositoryRender implements BlockEntityRenderer<KnowledgeR
     private static void ring(State state, PoseStack.Pose pose, VertexConsumer buffer)
     {
         float alpha = state.hud * state.ring;
-        float brightness = state.status == KnowledgeRepositoryStatus.STARVED ? STARVED_RING : 1;
+        float brightness = state.status == KnowledgeRepositoryStatus.STARVED || state.status == KnowledgeRepositoryStatus.STRAINED ? STARVED_RING : 1;
         float center = KnowledgeRepositoryTile.RING_HEIGHT;
 
         for (int side = 0; side < PLATE_SIDES; side++)

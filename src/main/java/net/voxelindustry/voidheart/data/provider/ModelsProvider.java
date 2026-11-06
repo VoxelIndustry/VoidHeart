@@ -48,7 +48,7 @@ public class ModelsProvider extends FabricModelProvider
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "knowledge_tablet", "knowledge_repository", "knowledge_column", "shoulder_eye", "permeable_barrier", "beam_focus",
-            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix"
+            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix", "cogitant", "meat_proxy", "void_loom"
     );
 
     /**
@@ -217,6 +217,11 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRIGGLING_BRAIN, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.VOID_VEIN, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.VOID_MARROW, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.IDEA_ABOUT_THE_VOID, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.SPARK_OF_UNDERSTANDING, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.TAINTED_BREAKTHROUGH, ModelTemplates.FLAT_ITEM);
         VoidHeartItems.SPAWN_EGGS.forEach(egg -> generator.generateFlatItem(egg, ModelTemplates.FLAT_ITEM));
 
         for (var name : HAND_WRITTEN_ITEM_MODELS)

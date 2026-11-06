@@ -155,7 +155,7 @@ public class KnowledgeColumnBlock extends Block implements EntityBlock
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
     {
-        return world.isClientSide() ? null : createTickerHelper(type, VoidHeartTiles.KNOWLEDGE_COLUMN, KnowledgeColumnTile::tick);
+        return world.isClientSide() ? null : createTickerHelper(type, VoidHeartTiles.KNOWLEDGE_COLUMN, RepositoryBoundTile::tick);
     }
 
     @Override

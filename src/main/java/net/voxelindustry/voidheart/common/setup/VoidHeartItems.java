@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.voxelindustry.voidheart.common.content.research.InsightItem;
+import net.voxelindustry.voidheart.common.content.research.VoidGraftItem;
+import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.core.Registry;
@@ -40,6 +43,11 @@ public class VoidHeartItems
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
 
     public static Item WRIGGLING_BRAIN;
+    public static Item VOID_VEIN;
+    public static Item VOID_MARROW;
+    public static Item IDEA_ABOUT_THE_VOID;
+    public static Item SPARK_OF_UNDERSTANDING;
+    public static Item TAINTED_BREAKTHROUGH;
 
     public static Item OBSIDIAN_SHARD;
     public static Item ENDER_SHARD;
@@ -78,6 +86,11 @@ public class VoidHeartItems
         COVETOUS_COPPER_INGOT = registerItem("covetous_copper_ingot", Item::new);
         LISTLESS_LEAD_INGOT = registerItem("listless_lead_ingot", Item::new);
         WRIGGLING_BRAIN = registerItem("wriggling_brain", Item::new);
+        VOID_VEIN = registerItem("void_vein", properties -> new VoidGraftItem(properties, VoidGrafts.VEIN, "void_vein"));
+        VOID_MARROW = registerItem("void_marrow", properties -> new VoidGraftItem(properties, VoidGrafts.MARROW, "void_marrow"));
+        IDEA_ABOUT_THE_VOID = registerItem("idea_about_the_void", properties -> new InsightItem(properties.rarity(net.minecraft.world.item.Rarity.UNCOMMON), 1, 2));
+        SPARK_OF_UNDERSTANDING = registerItem("spark_of_understanding", properties -> new InsightItem(properties.rarity(net.minecraft.world.item.Rarity.RARE), 4, 6));
+        TAINTED_BREAKTHROUGH = registerItem("tainted_breakthrough", properties -> new InsightItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC), 10, 15));
         AZURIUM_SHARD = registerItem("azurium_shard", properties -> new LoreItem(properties, "voidheart.azurium_shard.lore"));
         RUBRUM_SHARD = registerItem("rubrum_shard", properties -> new LoreItem(properties, "voidheart.rubrum_shard.lore"));
         MEMORIAM_SHARD = registerItem("memoriam_shard", properties -> new LoreItem(properties, "voidheart.memoriam_shard.lore"));

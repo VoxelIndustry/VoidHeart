@@ -37,10 +37,47 @@ public class KnowledgePayloads
         }
     }
 
-    public record Snapshot(double knowledge, double cap, double rate, int insights, double nextInsightCost, double insightCostGrowth, Optional<Identifier> active,
-                           Map<Identifier, Double> progress, List<Identifier> revealed, List<Identifier> completed, Map<Identifier, Integer> fed, ColumnInfo columns) implements CustomPacketPayload
+    /** What attunement, Meat Proxies, Cogitants and the Void Loom come to around a repository. */
+    public record UpgradeInfo(int attunement, int tolerance, int proxies, int proxyStrain, int cogitants, int cogitantLimit, double cogitantRate, boolean loom,
+                              int proxyLimit, double proxyInsightsPerHour)
     {
-        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, 1, Optional.empty(), Map.of(), List.of(), List.of(), Map.of(), ColumnInfo.NONE);
+        public static final UpgradeInfo NONE = new UpgradeInfo(0, 0, 0, 0, 0, 0, 0, false, 0, 0);
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, UpgradeInfo> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, UpgradeInfo::attunement,
+                ByteBufCodecs.VAR_INT, UpgradeInfo::tolerance,
+                ByteBufCodecs.VAR_INT, UpgradeInfo::proxies,
+                ByteBufCodecs.VAR_INT, UpgradeInfo::proxyStrain,
+                ByteBufCodecs.VAR_INT, UpgradeInfo::cogitants,
+                ByteBufCodecs.VAR_INT, UpgradeInfo::cogitantLimit,
+                ByteBufCodecs.DOUBLE, UpgradeInfo::cogitantRate,
+                ByteBufCodecs.BOOL, UpgradeInfo::loom,
+                ByteBufCodecs.VAR_INT, UpgradeInfo::proxyLimit,
+                ByteBufCodecs.DOUBLE, UpgradeInfo::proxyInsightsPerHour,
+                UpgradeInfo::new);
+
+        public int bearable()
+        {
+            return tolerance + proxies * proxyStrain;
+        }
+
+        /** Insights the counted proxies make in an hour. */
+        public double insightsPerHour()
+        {
+            return Math.min(proxies, proxyLimit) * proxyInsightsPerHour;
+        }
+
+        public int countedCogitants()
+        {
+            return Math.min(cogitants, cogitantLimit);
+        }
+    }
+
+    public record Snapshot(double knowledge, double cap, double rate, int insights, double nextInsightCost, double insightCostGrowth, Optional<Identifier> active,
+                           Map<Identifier, Double> progress, List<Identifier> revealed, List<Identifier> completed, Map<Identifier, Integer> fed, ColumnInfo columns,
+                           UpgradeInfo upgrades) implements CustomPacketPayload
+    {
+        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, 1, Optional.empty(), Map.of(), List.of(), List.of(), Map.of(), ColumnInfo.NONE, UpgradeInfo.NONE);
 
         public static final Type<Snapshot> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "knowledge_snapshot"));
 
@@ -57,6 +94,7 @@ public class KnowledgePayloads
                 Identifier.STREAM_CODEC.apply(ByteBufCodecs.list()), Snapshot::completed,
                 ByteBufCodecs.<RegistryFriendlyByteBuf, Identifier, Integer, Map<Identifier, Integer>>map(HashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.VAR_INT), Snapshot::fed,
                 ColumnInfo.STREAM_CODEC, Snapshot::columns,
+                UpgradeInfo.STREAM_CODEC, Snapshot::upgrades,
                 Snapshot::new);
 
         @Override
@@ -110,6 +148,13 @@ public class KnowledgePayloads
         }
     }
 
+    /** Pausing is always allowed, starting only with the strain borne. */
+    private static boolean mayToggle(PlayerKnowledge data, Map<Identifier, Research> tree, Identifier id)
+    {
+        var research = tree.get(id);
+        return research != null && (data.getActive().filter(id::equals).isPresent() || data.canBear(research, Knowledge.rules()));
+    }
+
     public static void register()
     {
         PayloadTypeRegistry.clientboundPlay().register(Snapshot.TYPE, Snapshot.STREAM_CODEC);
@@ -132,7 +177,7 @@ public class KnowledgePayloads
         {
             case BUY_INSIGHT -> data.buyInsight(Knowledge.rules());
             case REVEAL -> action.research().filter(id -> data.reveal(id, tree)).isPresent();
-            case TOGGLE -> action.research().filter(data::toggleActive).isPresent();
+            case TOGGLE -> action.research().filter(id -> mayToggle(data, tree, id) && data.toggleActive(id)).isPresent();
         };
 
         if (changed)

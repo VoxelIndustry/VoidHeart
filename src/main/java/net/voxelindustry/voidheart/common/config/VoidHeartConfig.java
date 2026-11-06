@@ -108,7 +108,7 @@ public class VoidHeartConfig
     @AutoGen(category = RESEARCH)
     @FloatSlider(min = 1, max = 2, step = 0.01F, format = "%.2f")
     @SerialEntry(value = "insight_cost_growth", comment = "How much pricier each insight is than the one before")
-    public float insightCostGrowth = 1.2F;
+    public float insightCostGrowth = 1.1F;
 
     @AutoGen(category = RESEARCH)
     @FloatSlider(min = 0, max = 1, step = 0.01F, format = "%.2f")
@@ -119,6 +119,36 @@ public class VoidHeartConfig
     @FloatSlider(min = 0, max = 1, step = 0.01F, format = "%.2f")
     @SerialEntry(value = "knowledge_tablet_chance", comment = "Chance for a broken monolith block to drop a Knowledge Tablet, once the player has held one")
     public float knowledgeTabletChance = 0.05F;
+
+    @AutoGen(category = RESEARCH)
+    @IntSlider(min = 0, max = 64, step = 1)
+    @SerialEntry(value = "cogitant_limit", comment = "How many Cogitants around a repository count at most")
+    public int cogitantLimit = 12;
+
+    @AutoGen(category = RESEARCH)
+    @FloatSlider(min = 0, max = 1, step = 0.01F, format = "%.2f")
+    @SerialEntry(value = "void_loom_cut", comment = "Share of the growth of insight prices a Void Loom takes away")
+    public float voidLoomCut = 0.25F;
+
+    @AutoGen(category = RESEARCH)
+    @IntSlider(min = 1, max = 50, step = 1)
+    @SerialEntry(value = "meat_proxy_strain", comment = "Strain each Meat Proxy bears for its owner")
+    public int meatProxyStrain = 10;
+
+    @AutoGen(category = RESEARCH)
+    @IntSlider(min = 1, max = 240, step = 1)
+    @SerialEntry(value = "meat_proxy_minutes", comment = "Minutes of research a Meat Proxy bears strain for before it gives out")
+    public int meatProxyMinutes = 40;
+
+    @AutoGen(category = RESEARCH)
+    @IntSlider(min = 0, max = 12, step = 1)
+    @SerialEntry(value = "meat_proxy_limit", comment = "How many Meat Proxies around a repository count at most")
+    public int meatProxyLimit = 3;
+
+    @AutoGen(category = RESEARCH)
+    @FloatSlider(min = 0, max = 10, step = 0.1F, format = "%.1f")
+    @SerialEntry(value = "meat_proxy_insights_per_hour", comment = "Insights each counted Meat Proxy makes in an hour")
+    public float meatProxyInsightsPerHour = 2;
 
     @AutoGen(category = ARMILLARY)
     @IntSlider(min = 1, max = 60, step = 1)
@@ -180,6 +210,12 @@ public class VoidHeartConfig
         get().insightCostGrowth = Mth.clamp(get().insightCostGrowth, 1, 2);
         get().knowledgeFirstTabletChance = Mth.clamp(get().knowledgeFirstTabletChance, 0, 1);
         get().knowledgeTabletChance = Mth.clamp(get().knowledgeTabletChance, 0, 1);
+        get().cogitantLimit = Mth.clamp(get().cogitantLimit, 0, 64);
+        get().voidLoomCut = Mth.clamp(get().voidLoomCut, 0, 1);
+        get().meatProxyStrain = Mth.clamp(get().meatProxyStrain, 1, 50);
+        get().meatProxyMinutes = Mth.clamp(get().meatProxyMinutes, 1, 240);
+        get().meatProxyLimit = Mth.clamp(get().meatProxyLimit, 0, 12);
+        get().meatProxyInsightsPerHour = Mth.clamp(get().meatProxyInsightsPerHour, 0, 10);
         get().armillaryScanMinutes = Mth.clamp(get().armillaryScanMinutes, 1, 60);
         get().armillaryMaxBubbles = Mth.clamp(get().armillaryMaxBubbles, 1, 10);
         get().armillaryBubbleFadeMinutes = Mth.clamp(get().armillaryBubbleFadeMinutes, 1, 240);

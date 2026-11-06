@@ -79,7 +79,10 @@ import net.voxelindustry.voidheart.client.screen.TravelMapScreen;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.client.render.ShatterForgeRender;
 import net.voxelindustry.voidheart.client.render.RavenousCollectorRender;
+import net.voxelindustry.voidheart.client.render.CogitantRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeColumnRender;
+import net.voxelindustry.voidheart.client.render.MeatProxyRender;
+import net.voxelindustry.voidheart.client.render.VoidLoomRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeRepositoryRender;
 import net.voxelindustry.voidheart.client.render.RavenousRelayRender;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterRender;
@@ -144,6 +147,9 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.MALIGNANT_TORMENTER, MalignantTormenterRender::new);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "malignant_tormenter"), MalignantTormenterItemRender.Unbaked.MAP_CODEC);
         BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_COLUMN, KnowledgeColumnRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.COGITANT, CogitantRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.MEAT_PROXY, MeatProxyRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.VOID_LOOM, VoidLoomRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_REPOSITORY, KnowledgeRepositoryRender::new);
 
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);

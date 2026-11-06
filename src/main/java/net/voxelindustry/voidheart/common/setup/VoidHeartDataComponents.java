@@ -65,6 +65,8 @@ public class VoidHeartDataComponents
     public static DataComponentType<MultiEssenceStorage> MULTI_ESSENCE_STORAGE;
     public static DataComponentType<BlockPos>        BARRIER_FIRST_POINT;
     public static DataComponentType<TormenterSouls>  TORMENTER_SOULS;
+    /** Seconds of strained research a Meat Proxy can still bear. */
+    public static DataComponentType<Double>          PROXY_ENDURANCE;
 
     public static void registerComponents()
     {
@@ -77,6 +79,7 @@ public class VoidHeartDataComponents
         MULTI_ESSENCE_STORAGE = register("multi_essence_storage", MultiEssenceStorage.CODEC);
         BARRIER_FIRST_POINT = register("barrier_first_point", BlockPos.CODEC);
         TORMENTER_SOULS = register("tormenter_souls", TormenterSouls.CODEC);
+        PROXY_ENDURANCE = register("proxy_endurance", Codec.DOUBLE);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

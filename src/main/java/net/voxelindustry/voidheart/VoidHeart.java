@@ -204,6 +204,9 @@ public class VoidHeart implements ModInitializer
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
         VOID_DIMENSION_KEY = ResourceKey.create(Registries.DIMENSION_TYPE, Identifier.fromNamespaceAndPath(MODID, "void"));
 
+        Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, Identifier.fromNamespaceAndPath(MODID, "dungeon_size"),
+                net.voxelindustry.voidheart.common.world.dungeon.DungeonSizeCondition.MAP_CODEC);
+
         Registry.register(
                 BuiltInRegistries.CHUNK_GENERATOR,
                 Identifier.fromNamespaceAndPath(MODID, "void_gen"),

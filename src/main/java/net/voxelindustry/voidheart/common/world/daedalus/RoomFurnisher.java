@@ -38,6 +38,8 @@ final class RoomFurnisher
     private static final int RUNNER_HALF_WIDTH = 1;
     private static final int COLONNADE_CELLS = 3;
     private static final int SHRINE_ODDS = 3;
+    /** One room in this many keeps a cache in one of its corners. */
+    private static final int CACHE_ODDS = 5;
     private static final int RITUAL_ODDS = 3;
     private static final int VAULT_RELIC_ODDS = 2;
     private static final int RITUAL_ROOM = 13;
@@ -468,6 +470,31 @@ final class RoomFurnisher
                 // Other shapes carry their character in their walls.
             }
         }
+        switch (room.shape())
+        {
+            case PLAIN, CELL, CHAMBER, STACKS, COLONNADE, VAULT -> stashCache(room);
+            default ->
+            {
+                // No floor of their own to keep anything on.
+            }
+        }
+    }
+
+    /**
+     * A barrel in the corner of the room its hash picks, unless something already stands there. Only that corner's own column is read, so every
+     * chunk comes to the same answer.
+     */
+    private void stashCache(Room room)
+    {
+        if (DaedalusHash.pick(hash(room, 40), CACHE_ODDS) != 0)
+            return;
+
+        int y = floorY(room.minK()) + 1;
+        int corner = DaedalusHash.pick(hash(room, 41), 4);
+        int x = corner == 0 || corner == 3 ? minX(room) : maxX(room);
+        int z = corner < 2 ? minZ(room) : maxZ(room);
+        if (isClear(x, z) && canvas.raw(x, y, z) == DaedalusMaterial.AIR.ordinal() && !canvas.get(x, y - 1, z).isPassable())
+            canvas.set(x, y, z, DaedalusMaterial.CACHE);
     }
 
     /**

@@ -124,8 +124,10 @@ public class ResearchClientTest implements FabricClientGameTest
             var bought = context.computeOnClient(client -> ResearchScreen.snapshot);
             if (bought.insights() != 1 || !bought.revealed().contains(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")) || bought.revealed().contains(PATIENT_STUDY))
                 throw new AssertionError("Only the root should have been revealed, the other one is not connected yet: " + bought);
-            if (Math.abs(bought.nextInsightCost() - 12) > 1E-6)
-                throw new AssertionError("Expected the next insight 20% pricier, got " + bought.nextInsightCost());
+            // Priced from the config, whose float growth is not exactly 1.1
+            double growth = net.voxelindustry.voidheart.common.config.VoidHeartConfig.get().insightCostGrowth;
+            if (Math.abs(bought.nextInsightCost() - 10 * growth) > 1E-6)
+                throw new AssertionError("Expected the next insight " + growth + " times pricier, got " + bought.nextInsightCost());
 
             send(context, KnowledgePayloads.Action.Kind.TOGGLE, Optional.of(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")));
             context.waitFor(client -> ResearchScreen.snapshot.completed().contains(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")), 400 * 20);

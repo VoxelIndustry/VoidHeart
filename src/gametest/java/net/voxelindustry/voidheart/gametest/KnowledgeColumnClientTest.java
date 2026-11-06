@@ -23,6 +23,7 @@ import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
+import net.voxelindustry.voidheart.common.content.research.RepositoryBoundTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -262,7 +263,7 @@ public class KnowledgeColumnClientTest implements FabricClientGameTest
     private static void expectLink(MinecraftServer minecraft, BlockPos pos, UUID owner)
     {
         var column = (KnowledgeColumnTile) player(minecraft).level().getBlockEntity(pos);
-        var linked = column.getLink().map(KnowledgeColumnTile.Link::owner).orElse(null);
+        var linked = column.getLink().map(RepositoryBoundTile.Link::owner).orElse(null);
         if (!Objects.equals(linked, owner))
             throw new AssertionError("Expected the columns at " + pos + " linked to " + owner + ", got " + column.getLink());
     }

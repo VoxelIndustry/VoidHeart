@@ -40,7 +40,7 @@ public class KnowledgeColumnProvider implements IServerDataProvider<BlockAccesso
     }
 
     /** The owner may be offline, in which case only the server's memory of them knows their name. */
-    private static Optional<String> nameOf(MinecraftServer server, UUID owner)
+    static Optional<String> nameOf(MinecraftServer server, UUID owner)
     {
         var online = server.getPlayerList().getPlayer(owner);
         if (online != null)

@@ -7,6 +7,7 @@
   "insight_cost": 9,
   "knowledge_cost": 900,
   "knowledge_per_second": 1.5,
+  "strain": 10,
   "requires": [
     "voidheart:portal_flexion"
   ],
