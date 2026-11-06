@@ -1,0 +1,289 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "metal": "voidheart:block/cut_listless_lead",
+    "candle": "minecraft:block/white_candle_lit",
+    "gilt": "minecraft:block/gilded_blackstone",
+    "particle": "voidheart:block/cut_listless_lead"
+  },
+  "elements": [
+    {
+      "from": [
+        6,
+        4,
+        15
+      ],
+      "to": [
+        10,
+        11,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        6.5,
+        5,
+        14.5
+      ],
+      "to": [
+        9.5,
+        6,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#gilt"
+        },
+        "south": {
+          "texture": "#gilt"
+        },
+        "east": {
+          "texture": "#gilt"
+        },
+        "west": {
+          "texture": "#gilt"
+        },
+        "up": {
+          "texture": "#gilt"
+        },
+        "down": {
+          "texture": "#gilt"
+        }
+      }
+    },
+    {
+      "from": [
+        7.5,
+        6,
+        11
+      ],
+      "to": [
+        8.5,
+        7,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        7,
+        9.5
+      ],
+      "to": [
+        10,
+        8,
+        13.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        8,
+        10.5
+      ],
+      "to": [
+        9,
+        12,
+        12.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            8,
+            2,
+            12
+          ]
+        },
+        "south": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            8,
+            2,
+            12
+          ]
+        },
+        "east": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            8,
+            2,
+            12
+          ]
+        },
+        "west": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            8,
+            2,
+            12
+          ]
+        },
+        "up": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            6,
+            2,
+            8
+          ]
+        },
+        "down": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            14,
+            2,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        7.5,
+        12,
+        11.5
+      ],
+      "to": [
+        8.5,
+        13,
+        11.5
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          12,
+          11.5
+        ],
+        "axis": "y",
+        "angle": 45
+      },
+      "faces": {
+        "north": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            5,
+            1,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            5,
+            1,
+            6
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        7.5,
+        12,
+        11.5
+      ],
+      "to": [
+        8.5,
+        13,
+        11.5
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          12,
+          11.5
+        ],
+        "axis": "y",
+        "angle": -45
+      },
+      "faces": {
+        "north": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            5,
+            1,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#candle",
+          "uv": [
+            0,
+            5,
+            1,
+            6
+          ]
+        }
+      }
+    }
+  ]
+}

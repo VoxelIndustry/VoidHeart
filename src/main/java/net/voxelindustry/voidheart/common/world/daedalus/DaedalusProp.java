@@ -15,7 +15,45 @@ public enum DaedalusProp
     GRATE,
     VALVE,
     GROWTH,
-    COT;
+    COT,
+    ORRERY,
+    LECTERN,
+    CHAIR,
+    HOURGLASS,
+    CLOCK,
+    MIRROR,
+    PIPES,
+    BASIN,
+    CRATES,
+    BRAZIER,
+    CAGE,
+    CANDLES,
+    REMAINS,
+    TABLE,
+    BOOKS,
+    SCONCE,
+    TAPESTRY,
+    CABINET,
+    BARREL,
+    TRUNK,
+    PLANTER,
+    CENSER,
+    STATUE,
+    SCROLLS,
+    GEARS,
+    GAUGE,
+    CONSOLE,
+    COIL,
+    CONDENSER,
+    FLYWHEEL,
+    PISTON,
+    AUTOMATON,
+    LANTERN,
+    WINCH,
+    CELLS,
+    SARCOPHAGUS,
+    SARCOPHAGUS_FOOT,
+    SARCOPHAGUS_OPEN;
 
     private static final DaedalusProp[] VALUES = values();
 
@@ -31,6 +69,6 @@ public enum DaedalusProp
 
     public boolean hangsOnWall()
     {
-        return this == FRAME || this == VALVE;
+        return this == FRAME || this == VALVE || this == CLOCK || this == MIRROR || this == PIPES || this == SCONCE || this == TAPESTRY || this == SCROLLS || this == GEARS || this == GAUGE || this == WINCH;
     }
 }

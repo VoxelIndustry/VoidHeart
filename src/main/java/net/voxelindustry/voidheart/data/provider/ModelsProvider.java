@@ -27,6 +27,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 
 import java.util.List;
@@ -46,8 +47,7 @@ public class ModelsProvider extends FabricModelProvider
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "knowledge_tablet", "knowledge_repository", "knowledge_column", "shoulder_eye", "permeable_barrier", "beam_focus",
-            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix",
-            "daedalus_bench", "daedalus_plinth", "daedalus_bust", "daedalus_urn", "daedalus_candelabrum", "daedalus_chandelier", "daedalus_frame", "daedalus_desk", "daedalus_ledgers", "daedalus_grate", "daedalus_valve", "daedalus_growth", "daedalus_cot"
+            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix"
     );
 
     /**
@@ -207,6 +207,8 @@ public class ModelsProvider extends FabricModelProvider
 
         for (var name : HAND_WRITTEN_ITEM_MODELS)
             generator.itemModelOutput.accept(BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(MODID, name)), ItemModelUtils.plainModel(itemModel(name)));
+        for (var prop : DaedalusProp.values())
+            generator.itemModelOutput.accept(VoidHeartBlocks.daedalusProp(prop).asItem(), ItemModelUtils.plainModel(itemModel(prop.id())));
 
         // Drawn by GeckoLib with the block model, the base model only provides display transforms
         generator.itemModelOutput.accept(VoidHeartBlocks.RAVENOUS_COLLECTOR.asItem(),

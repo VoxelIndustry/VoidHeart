@@ -1,0 +1,207 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "pot": "voidheart:block/voidstone_polished",
+    "rim": "voidheart:block/voidstone_tile",
+    "soil": "minecraft:block/soul_soil",
+    "plant": "minecraft:block/dead_bush",
+    "particle": "voidheart:block/voidstone_polished"
+  },
+  "elements": [
+    {
+      "from": [
+        4.5,
+        0,
+        4.5
+      ],
+      "to": [
+        11.5,
+        1,
+        11.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rim"
+        },
+        "south": {
+          "texture": "#rim"
+        },
+        "east": {
+          "texture": "#rim"
+        },
+        "west": {
+          "texture": "#rim"
+        },
+        "up": {
+          "texture": "#rim"
+        },
+        "down": {
+          "texture": "#rim"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        1,
+        4
+      ],
+      "to": [
+        12,
+        6,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pot"
+        },
+        "south": {
+          "texture": "#pot"
+        },
+        "east": {
+          "texture": "#pot"
+        },
+        "west": {
+          "texture": "#pot"
+        },
+        "up": {
+          "texture": "#pot"
+        },
+        "down": {
+          "texture": "#pot"
+        }
+      }
+    },
+    {
+      "from": [
+        3.5,
+        6,
+        3.5
+      ],
+      "to": [
+        12.5,
+        7.5,
+        12.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rim"
+        },
+        "south": {
+          "texture": "#rim"
+        },
+        "east": {
+          "texture": "#rim"
+        },
+        "west": {
+          "texture": "#rim"
+        },
+        "up": {
+          "texture": "#rim"
+        },
+        "down": {
+          "texture": "#rim"
+        }
+      }
+    },
+    {
+      "from": [
+        4.5,
+        7,
+        4.5
+      ],
+      "to": [
+        11.5,
+        7.25,
+        11.5
+      ],
+      "faces": {
+        "up": {
+          "texture": "#soil"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        7.25,
+        8
+      ],
+      "to": [
+        13,
+        16,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#plant",
+          "uv": [
+            3,
+            7.25,
+            13,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#plant",
+          "uv": [
+            3,
+            7.25,
+            13,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          7.25,
+          8
+        ],
+        "axis": "y",
+        "angle": 45
+      }
+    },
+    {
+      "from": [
+        3,
+        7.25,
+        8
+      ],
+      "to": [
+        13,
+        16,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#plant",
+          "uv": [
+            3,
+            7.25,
+            13,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#plant",
+          "uv": [
+            3,
+            7.25,
+            13,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          7.25,
+          8
+        ],
+        "axis": "y",
+        "angle": -45
+      }
+    }
+  ]
+}

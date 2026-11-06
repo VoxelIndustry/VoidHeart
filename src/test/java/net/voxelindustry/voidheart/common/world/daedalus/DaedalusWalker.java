@@ -12,10 +12,20 @@ final class DaedalusWalker
 
     private final DaedalusCanvas canvas;
     private final BitSet reached;
+    private final boolean jumps;
 
     DaedalusWalker(DaedalusCanvas canvas)
     {
+        this(canvas, true);
+    }
+
+    /**
+     * @param jumps whether a full block can be climbed by jumping, rather than only stairs and slabs walked up
+     */
+    DaedalusWalker(DaedalusCanvas canvas, boolean jumps)
+    {
         this.canvas = canvas;
+        this.jumps = jumps;
         reached = new BitSet(canvas.width * canvas.depth * DistrictPos.HEIGHT);
     }
 
@@ -58,7 +68,7 @@ final class DaedalusWalker
         if (!isInside(toX, toZ))
             return;
 
-        if (canvas.get(x, y + 2, z).isPassable() || canvas.get(toX, y, toZ).isStep())
+        if (jumps && canvas.get(x, y + 2, z).isPassable() || canvas.get(toX, y, toZ).isStep())
             visit(toX, y + 1, toZ, queue);
         visit(toX, y, toZ, queue);
         for (int drop = 1; drop <= MAX_DROP; drop++)

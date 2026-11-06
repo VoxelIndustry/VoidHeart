@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/daedalus_winch"
+    },
+    "facing=east": {
+      "model": "voidheart:block/daedalus_winch",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/daedalus_winch",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/daedalus_winch",
+      "y": 270
+    }
+  }
+}

@@ -1,10 +1,14 @@
 package net.voxelindustry.voidheart.common.world.daedalus;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
- * Writes a chunk straight into its sections at the terrain step, like noise generation does. Nothing generated has a block entity or needs its neighbours, so a chunk costs no feature step, shape update or light beyond its few lamps.
+ * Writes a chunk straight into its sections at the terrain step, like noise generation does. Nothing generated needs its neighbours, so a chunk costs no feature step, shape update or light beyond its few lamps.
+ * The few altars and pillars get their block entities here too, as a feature would have given them.
  */
 final class DaedalusChunkWriter
 {
@@ -42,9 +46,13 @@ final class DaedalusChunkWriter
                     {
                         for (int x = 0; x < SECTION; x++)
                         {
-                            byte material = cells[index++];
-                            if (material != AIR)
-                                section.setBlockState(x, y, z, palette.state(material, minX + x, baseY + y, minZ + z), false);
+                            int material = cells[index++] & 0xFF;
+                            if (material == AIR)
+                                continue;
+                            var state = palette.state(material, minX + x, baseY + y, minZ + z);
+                            section.setBlockState(x, y, z, state, false);
+                            if (state.hasBlockEntity())
+                                addBlockEntity(chunk, new BlockPos(minX + x, baseY + y, minZ + z), state);
                         }
                     }
                 }
@@ -54,6 +62,16 @@ final class DaedalusChunkWriter
             }
         }
         primeHeightmaps(chunk, palette);
+    }
+
+    private static void addBlockEntity(ChunkAccess chunk, BlockPos pos, BlockState state)
+    {
+        if (state.getBlock() instanceof EntityBlock block)
+        {
+            var entity = block.newBlockEntity(pos, state);
+            if (entity != null)
+                chunk.setBlockEntity(entity);
+        }
     }
 
     /**

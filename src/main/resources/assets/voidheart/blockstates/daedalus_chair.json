@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/daedalus_chair"
+    },
+    "facing=east": {
+      "model": "voidheart:block/daedalus_chair",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/daedalus_chair",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/daedalus_chair",
+      "y": 270
+    }
+  }
+}

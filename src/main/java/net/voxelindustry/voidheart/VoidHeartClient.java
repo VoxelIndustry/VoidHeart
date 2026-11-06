@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleGroupRegistry;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry;
+import net.minecraft.client.particle.FlameParticle;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
@@ -252,6 +253,7 @@ public class VoidHeartClient implements ClientModInitializer
                 new MarineSnowParticle(level, x, y, z, spriteSet.get(random)));
         particles.register(SHOAL_SPECK_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
                 new ShoalSpeckParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+        particles.register(SMALL_SOUL_FLAME_PARTICLE, FlameParticle.SmallFlameProvider::new);
 
         particles.register(
                 SHATTER_FORGE_EXPERIENCE_PARTICLE,

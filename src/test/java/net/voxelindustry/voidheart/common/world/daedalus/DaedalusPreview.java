@@ -154,6 +154,11 @@ class DaedalusPreview
             case STAIRS_NORTH, STAIRS_EAST, STAIRS_SOUTH, STAIRS_WEST -> 0x40C080;
             case ARCH_NORTH, ARCH_EAST, ARCH_SOUTH, ARCH_WEST -> 0x60A0A0;
             case PROP -> 0xE06030;
+            case ALTAR, PILLAR, SHRINE_LAMP -> 0xD040D0;
+            case MONOLITH_ALONE, MONOLITH_BASE, MONOLITH_SHAFT, MONOLITH_TIP -> 0x60FF90;
+            case ELDRITCH, OBSIDIAN -> 0x502070;
+            case COBWEB -> 0xE0E0E0;
+            case COPPER, COPPER_SLAB, VENT, PIPE_X, PIPE_Y, PIPE_Z -> 0x4FA08A;
         };
     }
 }

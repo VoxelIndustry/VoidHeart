@@ -1,0 +1,256 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "metal": "voidheart:block/cut_listless_lead",
+    "gilt": "minecraft:block/gilded_blackstone",
+    "chain": "minecraft:block/iron_chain",
+    "ember": "minecraft:block/crying_obsidian",
+    "particle": "voidheart:block/cut_listless_lead"
+  },
+  "elements": [
+    {
+      "from": [
+        6.5,
+        10,
+        8
+      ],
+      "to": [
+        9.5,
+        16,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#chain",
+          "uv": [
+            0,
+            0,
+            3,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#chain",
+          "uv": [
+            0,
+            0,
+            3,
+            6
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          10,
+          8
+        ],
+        "axis": "y",
+        "angle": 45
+      }
+    },
+    {
+      "from": [
+        6.5,
+        10,
+        8
+      ],
+      "to": [
+        9.5,
+        16,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#chain",
+          "uv": [
+            0,
+            0,
+            3,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#chain",
+          "uv": [
+            0,
+            0,
+            3,
+            6
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          10,
+          8
+        ],
+        "axis": "y",
+        "angle": -45
+      }
+    },
+    {
+      "from": [
+        6.5,
+        8,
+        6.5
+      ],
+      "to": [
+        9.5,
+        10,
+        9.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        5.5,
+        4,
+        5.5
+      ],
+      "to": [
+        10.5,
+        8,
+        10.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        5.25,
+        5.5,
+        5.25
+      ],
+      "to": [
+        10.75,
+        6.5,
+        10.75
+      ],
+      "faces": {
+        "north": {
+          "texture": "#gilt"
+        },
+        "south": {
+          "texture": "#gilt"
+        },
+        "east": {
+          "texture": "#gilt"
+        },
+        "west": {
+          "texture": "#gilt"
+        },
+        "up": {
+          "texture": "#gilt"
+        },
+        "down": {
+          "texture": "#gilt"
+        }
+      }
+    },
+    {
+      "from": [
+        6.5,
+        6.5,
+        5.4
+      ],
+      "to": [
+        9.5,
+        7.5,
+        5.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#ember"
+        }
+      }
+    },
+    {
+      "from": [
+        6.5,
+        6.5,
+        10.5
+      ],
+      "to": [
+        9.5,
+        7.5,
+        10.6
+      ],
+      "faces": {
+        "south": {
+          "texture": "#ember"
+        }
+      }
+    },
+    {
+      "from": [
+        7.5,
+        3,
+        7.5
+      ],
+      "to": [
+        8.5,
+        4,
+        8.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#gilt"
+        },
+        "south": {
+          "texture": "#gilt"
+        },
+        "east": {
+          "texture": "#gilt"
+        },
+        "west": {
+          "texture": "#gilt"
+        },
+        "up": {
+          "texture": "#gilt"
+        },
+        "down": {
+          "texture": "#gilt"
+        }
+      }
+    }
+  ]
+}

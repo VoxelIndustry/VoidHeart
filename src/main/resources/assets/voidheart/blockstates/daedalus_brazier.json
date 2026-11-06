@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/daedalus_brazier"
+    },
+    "facing=east": {
+      "model": "voidheart:block/daedalus_brazier",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/daedalus_brazier",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/daedalus_brazier",
+      "y": 270
+    }
+  }
+}

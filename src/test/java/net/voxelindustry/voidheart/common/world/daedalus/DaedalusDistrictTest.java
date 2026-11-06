@@ -97,6 +97,29 @@ class DaedalusDistrictTest
     }
 
     /**
+     * Stairs are walked up, never jumped: every landing can be reached from any other without climbing a full block.
+     */
+    @Test
+    void everyLandingIsReachedWithoutJumping()
+    {
+        for (var theme : DaedalusTheme.values())
+        {
+            for (var pos : districtsOf(theme, PER_THEME))
+            {
+                var plan = DistrictPlanner.generate(SEEDS[1], pos);
+                var walker = new DaedalusWalker(painted(plan), false);
+                int[] start = landingPosition(plan, plan.landings().getFirst());
+                walker.walkFrom(start[0], start[1], start[2]);
+                for (var landing : plan.landings())
+                {
+                    int[] at = landingPosition(plan, landing);
+                    assertTrue(walker.hasReached(at[0], at[1], at[2]), "Landing " + landing + " needs a jump to reach in " + theme + " " + pos);
+                }
+            }
+        }
+    }
+
+    /**
      * Rooms should be on the way rather than beside it: most have doors on several sides, and the shortest way between two bridges usually crosses one.
      */
     @Test
@@ -386,6 +409,132 @@ class DaedalusDistrictTest
         for (var prop : DaedalusProp.values())
             assertTrue(counts[prop.ordinal()] > 0, prop + " is never placed");
         assertTrue(total / districts >= MIN_PROPS_PER_DISTRICT, "Districts are too bare: " + total / districts + " props each");
+    }
+
+    @Test
+    void ritualsAreWholeWhereverTheyStand()
+    {
+        int[][] pillars = { { -1, 3 }, { 1, 3 }, { 1, -3 }, { -1, -3 }, { 3, -1 }, { 3, 1 }, { -3, -1 }, { -3, 1 } };
+        int altars = 0;
+        int monoliths = 0;
+        int shrines = 0;
+        for (var theme : DaedalusTheme.values())
+        {
+            for (var pos : districtsOf(theme, 3))
+            {
+                var canvas = painted(DistrictPlanner.generate(SEEDS[1], pos));
+                for (int y = 1; y < DistrictPos.TOP_Y; y++)
+                {
+                    for (int z = canvas.minZ(); z <= canvas.maxZ(); z++)
+                    {
+                        for (int x = canvas.minX(); x <= canvas.maxX(); x++)
+                        {
+                            var material = canvas.get(x, y, z);
+                            if (material == DaedalusMaterial.ALTAR)
+                            {
+                                altars++;
+                                for (int[] offset : pillars)
+                                    assertEquals(DaedalusMaterial.PILLAR, canvas.get(x + offset[0], y, z + offset[1]), "Altar at " + x + " " + y + " " + z + " is missing a pillar");
+                            }
+                            if (material == DaedalusMaterial.SHRINE_LAMP)
+                            {
+                                shrines++;
+                                assertEquals(DaedalusMaterial.PILLAR, canvas.get(x, y - 1, z), "Shrine lamp at " + x + " " + y + " " + z + " stands on no pillar");
+                            }
+                            if (!material.isMonolith())
+                                continue;
+                            boolean below = canvas.get(x, y - 1, z).isMonolith();
+                            boolean above = canvas.get(x, y + 1, z).isMonolith();
+                            if (!below)
+                                monoliths++;
+                            var expected = below ? above ? DaedalusMaterial.MONOLITH_SHAFT : DaedalusMaterial.MONOLITH_TIP : above ? DaedalusMaterial.MONOLITH_BASE : DaedalusMaterial.MONOLITH_ALONE;
+                            assertEquals(expected, material, "Monolith at " + x + " " + y + " " + z + " is joined wrongly");
+                            if (!above)
+                                assertTrue(canvas.get(x, y + 1, z).isPassable(), "Monolith at " + x + " " + y + " " + z + " touches what is above it");
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Relics in 18 districts: " + altars + " altars, " + monoliths + " monoliths, " + shrines + " shrines");
+        assertTrue(altars > 0, "No altar circle was raised");
+        assertTrue(monoliths > 0, "No monolith was raised");
+        assertTrue(shrines > 0, "No shrine was raised");
+    }
+
+    private static boolean isArch(DaedalusCanvas canvas, int x, int y, int z)
+    {
+        int ordinal = canvas.get(x, y, z).ordinal();
+        return ordinal >= DaedalusMaterial.ARCH_NORTH.ordinal() && ordinal <= DaedalusMaterial.ARCH_WEST.ordinal();
+    }
+
+    private static boolean isProp(DaedalusCanvas canvas, int x, int y, int z, DaedalusProp prop)
+    {
+        int raw = canvas.raw(x, y, z);
+        return raw >= DaedalusCanvas.PROP_BASE && (raw - DaedalusCanvas.PROP_BASE) / Compass.COUNT == prop.ordinal();
+    }
+
+    @Test
+    void everyMaterialAndPropFitsInACanvasByte()
+    {
+        assertTrue(DaedalusMaterial.values().length <= DaedalusCanvas.PROP_BASE, DaedalusMaterial.values().length + " materials run into the props");
+        assertTrue(DaedalusProp.values().length <= DaedalusCanvas.MAX_PROPS, DaedalusProp.values().length + " props do not fit in " + DaedalusCanvas.MAX_PROPS);
+    }
+
+    @Test
+    void largeRoomsHaveRaisedFeaturesTablesAndAlcoves()
+    {
+        int daises = 0;
+        int tables = 0;
+        int pools = 0;
+        int alcoves = 0;
+        int engines = 0;
+        int boilers = 0;
+        int pipes = 0;
+        int sarcophagi = 0;
+        for (var theme : DaedalusTheme.values())
+        {
+            for (var pos : districtsOf(theme, 3))
+            {
+                var canvas = painted(DistrictPlanner.generate(SEEDS[1], pos));
+                for (int y = 2; y < DistrictPos.TOP_Y - 1; y++)
+                {
+                    for (int z = canvas.minZ() + 2; z <= canvas.maxZ() - 2; z++)
+                    {
+                        for (int x = canvas.minX() + 2; x <= canvas.maxX() - 2; x++)
+                        {
+                            var material = canvas.get(x, y, z);
+                            if (material == DaedalusMaterial.FLOOR_TRIM && canvas.get(x + 2, y, z).isStep() && canvas.get(x - 2, y, z).isStep() && canvas.get(x, y, z + 2).isStep())
+                                daises++;
+                            if (isProp(canvas, x, y, z, DaedalusProp.TABLE) && !isProp(canvas, x - 1, y, z, DaedalusProp.TABLE) && isProp(canvas, x + 1, y, z, DaedalusProp.TABLE))
+                                tables++;
+                            if (material == DaedalusMaterial.COLUMN && canvas.get(x + 1, y, z) == DaedalusMaterial.WATER && isProp(canvas, x, y + 1, z, DaedalusProp.BASIN))
+                                pools++;
+                            if (isProp(canvas, x, y, z, DaedalusProp.CONDENSER) && isProp(canvas, x + 2, y, z + 2, DaedalusProp.COIL))
+                                engines++;
+                            if (material == DaedalusMaterial.COPPER && canvas.get(x, y + 1, z) == DaedalusMaterial.COPPER
+                                && (canvas.get(x + 1, y, z) == DaedalusMaterial.VENT || canvas.get(x - 1, y, z) == DaedalusMaterial.VENT
+                                    || canvas.get(x, y, z + 1) == DaedalusMaterial.VENT || canvas.get(x, y, z - 1) == DaedalusMaterial.VENT))
+                                boilers++;
+                            if (material == DaedalusMaterial.PIPE_X || material == DaedalusMaterial.PIPE_Z)
+                                pipes++;
+                            if (isProp(canvas, x, y, z, DaedalusProp.SARCOPHAGUS) || isProp(canvas, x, y, z, DaedalusProp.SARCOPHAGUS_OPEN))
+                            {
+                                sarcophagi++;
+                                int facing = (canvas.raw(x, y, z) - DaedalusCanvas.PROP_BASE) % Compass.COUNT;
+                                assertTrue(isProp(canvas, x + Compass.dx(facing), y, z + Compass.dz(facing), DaedalusProp.SARCOPHAGUS_FOOT), "Sarcophagus at " + x + " " + y + " " + z + " has no foot");
+                            }
+                            if (material == DaedalusMaterial.TRIM && canvas.get(x, y - 1, z) == DaedalusMaterial.AIR && !canvas.get(x, y - 4, z).isPassable()
+                                && (isArch(canvas, x - 1, y - 1, z) && isArch(canvas, x + 1, y - 1, z) || isArch(canvas, x, y - 1, z - 1) && isArch(canvas, x, y - 1, z + 1)))
+                                alcoves++;
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Features in 18 districts: " + daises + " daises, " + tables + " table rows, " + pools + " pools, " + alcoves + " alcoves, " + engines + " engines, "
+                           + boilers + " boilers, " + pipes + " pipe blocks, " + sarcophagi + " sarcophagi");
+        assertTrue(daises > 0 && tables > 0 && pools > 0 && alcoves > 0 && engines > 0 && boilers > 0 && pipes > 0 && sarcophagi > 0, "A feature is never built");
     }
 
     @Test

@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
+import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 
@@ -20,7 +21,11 @@ public class DaedalusPropsClientTest implements FabricClientGameTest
     private static final int FLOOR_Y = -55;
     private static final int SPACING = 2;
     private static final int CHUNK_TIMEOUT_TICKS = 600;
-    private static final int SHOTS = 4;
+    private static final int SHOTS = 10;
+    private static final double LIGHT_DISTANCE = 1.7;
+    private static final double LIGHT_RAISE = 0.45;
+    private static final double EYE_HEIGHT = 1.62;
+    private static final int FLAME_TICKS = 40;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -44,7 +49,7 @@ public class DaedalusPropsClientTest implements FabricClientGameTest
             context.waitTicks(20);
 
             context.getInput().pressKey(InputConstants.KEY_F1);
-            int stride = length / SHOTS;
+            int stride = (length + SHOTS - 1) / SHOTS;
             for (int shot = 0; shot < SHOTS; shot++)
             {
                 double x = stride * shot + stride / 2.0;
@@ -56,6 +61,7 @@ public class DaedalusPropsClientTest implements FabricClientGameTest
                 context.waitTicks(10);
                 context.takeScreenshot("daedalus-props-above-" + shot);
             }
+            showLights(context, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
 
             checkItems(context, server);
@@ -91,16 +97,20 @@ public class DaedalusPropsClientTest implements FabricClientGameTest
         {
             int x = prop.ordinal() * SPACING;
             String state = "voidheart:" + prop.id() + "[facing=south]";
+            if (prop.hangsOnWall())
+            {
+                server.runCommand("setblock " + x + " " + (y + 1) + " -1 " + state);
+                continue;
+            }
             switch (prop)
             {
                 case GRATE -> server.runCommand("setblock " + x + " " + (y - 1) + " 0 " + state);
-                case FRAME, VALVE -> server.runCommand("setblock " + x + " " + (y + 1) + " -1 " + state);
-                case CHANDELIER ->
+                case CHANDELIER, CAGE, LANTERN ->
                 {
                     server.runCommand("fill " + x + " " + (y + 3) + " -1 " + x + " " + (y + 3) + " 0 voidheart:voidstone_bricks");
                     server.runCommand("setblock " + x + " " + (y + 2) + " 0 " + state);
                 }
-                case BUST ->
+                case BUST, ORRERY ->
                 {
                     server.runCommand("setblock " + x + " " + y + " 0 voidheart:daedalus_plinth[facing=south]");
                     server.runCommand("setblock " + x + " " + (y + 1) + " 0 " + state);
@@ -114,12 +124,11 @@ public class DaedalusPropsClientTest implements FabricClientGameTest
             for (var prop : DaedalusProp.values())
             {
                 int x = prop.ordinal() * SPACING;
-                int placedY = switch (prop)
+                int placedY = prop.hangsOnWall() ? y + 1 : switch (prop)
                 {
                     case GRATE -> y - 1;
-                    case FRAME, VALVE -> y + 1;
-                    case CHANDELIER -> y + 2;
-                    case BUST -> y + 1;
+                    case CHANDELIER, CAGE, LANTERN -> y + 2;
+                    case BUST, ORRERY -> y + 1;
                     default -> y;
                 };
                 var pos = new BlockPos(x, placedY, prop.hangsOnWall() ? -1 : 0);
@@ -127,6 +136,36 @@ public class DaedalusPropsClientTest implements FabricClientGameTest
                     throw new AssertionError(prop + " was not placed at " + pos + ", found " + level.getBlockState(pos));
             }
         });
+    }
+
+    /**
+     * Each light at midnight from close by, to see its soul flames burn over the wicks and coals.
+     */
+    private static void showLights(ClientGameTestContext context, TestServerContext server)
+    {
+        context.runOnClient(minecraft ->
+        {
+            if (minecraft.particleEngine.createParticle(VoidHeart.SMALL_SOUL_FLAME_PARTICLE, 0, FLOOR_Y, 0, 0, 0, 0) == null)
+                throw new AssertionError("Small soul flames have no particle provider");
+        });
+        server.runCommand("time set midnight");
+        for (var prop : new DaedalusProp[] { DaedalusProp.CANDLES, DaedalusProp.CANDELABRUM, DaedalusProp.CHANDELIER, DaedalusProp.BRAZIER, DaedalusProp.SCONCE })
+        {
+            double targetY = FLOOR_Y + switch (prop)
+            {
+                case CANDELABRUM -> 0.9;
+                case CHANDELIER -> 2.5;
+                case BRAZIER -> 0.7;
+                case SCONCE -> 1.6;
+                default -> 0.4;
+            };
+            double targetZ = (prop.hangsOnWall() ? -1 : 0) + 0.5;
+            double pitch = Math.toDegrees(Math.atan2(LIGHT_RAISE, LIGHT_DISTANCE));
+            server.runCommand("tp @a " + (prop.ordinal() * SPACING + 0.5) + " " + (targetY + LIGHT_RAISE - EYE_HEIGHT) + " " + (targetZ + LIGHT_DISTANCE) + " 180 " + pitch);
+            context.waitTicks(FLAME_TICKS);
+            context.takeScreenshot("daedalus-props-light-" + prop.id());
+        }
+        server.runCommand("time set noon");
     }
 
     private static void checkItems(ClientGameTestContext context, TestServerContext server)

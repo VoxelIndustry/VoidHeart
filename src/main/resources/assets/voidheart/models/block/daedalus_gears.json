@@ -1,0 +1,392 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "copper": "minecraft:block/weathered_cut_copper",
+    "patina": "minecraft:block/oxidized_copper",
+    "core": "minecraft:block/crying_obsidian",
+    "metal": "voidheart:block/cut_listless_lead",
+    "web": "minecraft:block/cobweb",
+    "particle": "minecraft:block/weathered_cut_copper"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        2,
+        15.5
+      ],
+      "to": [
+        14,
+        14,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        13.9
+      ],
+      "to": [
+        8,
+        8,
+        13.9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#web",
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ]
+        },
+        "south": {
+          "texture": "#web",
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        2.5,
+        2.5,
+        14.25
+      ],
+      "to": [
+        11.5,
+        11.5,
+        15.25
+      ],
+      "faces": {
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "down": {
+          "texture": "#copper"
+        }
+      }
+    },
+    {
+      "from": [
+        2.5,
+        2.5,
+        14.25
+      ],
+      "to": [
+        11.5,
+        11.5,
+        15.25
+      ],
+      "faces": {
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "down": {
+          "texture": "#copper"
+        }
+      },
+      "rotation": {
+        "origin": [
+          7,
+          7,
+          14.75
+        ],
+        "axis": "z",
+        "angle": 45
+      }
+    },
+    {
+      "from": [
+        5.5,
+        5.5,
+        13.75
+      ],
+      "to": [
+        8.5,
+        8.5,
+        15.26
+      ],
+      "faces": {
+        "north": {
+          "texture": "#core"
+        },
+        "south": {
+          "texture": "#core"
+        },
+        "east": {
+          "texture": "#core"
+        },
+        "west": {
+          "texture": "#core"
+        },
+        "up": {
+          "texture": "#core"
+        },
+        "down": {
+          "texture": "#core"
+        }
+      }
+    },
+    {
+      "from": [
+        9.5,
+        9.5,
+        14.5
+      ],
+      "to": [
+        14.5,
+        14.5,
+        15.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#patina"
+        },
+        "south": {
+          "texture": "#patina"
+        },
+        "east": {
+          "texture": "#patina"
+        },
+        "west": {
+          "texture": "#patina"
+        },
+        "up": {
+          "texture": "#patina"
+        },
+        "down": {
+          "texture": "#patina"
+        }
+      }
+    },
+    {
+      "from": [
+        9.5,
+        9.5,
+        14.5
+      ],
+      "to": [
+        14.5,
+        14.5,
+        15.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#patina"
+        },
+        "south": {
+          "texture": "#patina"
+        },
+        "east": {
+          "texture": "#patina"
+        },
+        "west": {
+          "texture": "#patina"
+        },
+        "up": {
+          "texture": "#patina"
+        },
+        "down": {
+          "texture": "#patina"
+        }
+      },
+      "rotation": {
+        "origin": [
+          12,
+          12,
+          15.0
+        ],
+        "axis": "z",
+        "angle": 45
+      }
+    },
+    {
+      "from": [
+        11.25,
+        11.25,
+        14.0
+      ],
+      "to": [
+        12.75,
+        12.75,
+        15.51
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        10.5,
+        2,
+        14.75
+      ],
+      "to": [
+        14.5,
+        6,
+        15.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "down": {
+          "texture": "#copper"
+        }
+      }
+    },
+    {
+      "from": [
+        10.5,
+        2,
+        14.75
+      ],
+      "to": [
+        14.5,
+        6,
+        15.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "down": {
+          "texture": "#copper"
+        }
+      },
+      "rotation": {
+        "origin": [
+          12.5,
+          4,
+          15.125
+        ],
+        "axis": "z",
+        "angle": 45
+      }
+    },
+    {
+      "from": [
+        11.75,
+        3.25,
+        14.25
+      ],
+      "to": [
+        13.25,
+        4.75,
+        15.51
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    }
+  ]
+}

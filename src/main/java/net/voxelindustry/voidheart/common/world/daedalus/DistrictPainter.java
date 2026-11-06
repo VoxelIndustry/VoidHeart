@@ -14,6 +14,8 @@ final class DistrictPainter
     private static final int LANE_CENTRE = 3;
     private static final int FULL_ROOM_TOP = 6;
     private static final int STAIR_RUN = CELL;
+    private static final long PIPE_SALT_X = 0x91BE5L;
+    private static final long PIPE_SALT_Z = 0x91BE6L;
     private static final int MIN_STAIR_HEAD = 3;
     private static final int PILASTER_SPACING = 16;
     private static final int RING_WIDTH = 3;
@@ -157,6 +159,69 @@ final class DistrictPainter
             hubHeight = height + 1;
         }
         paintPassage(i, k, j, hubWidth, hubHeight, armWidth, height, hash);
+        paintCorridorPipe(i, k, j);
+    }
+
+    /**
+     * A pipe of the old machines under the ceiling of a straight corridor, along one wall. A whole row of straight corridors shares it, so it runs on unbroken and turns into the wall where the row ends.
+     */
+    private void paintCorridorPipe(int i, int k, int j)
+    {
+        boolean alongX = isStraight(i, k, j, true);
+        if (!alongX && !isStraight(i, k, j, false))
+            return;
+        long line = DaedalusHash.mix(plan.worldSeed, plan.pos.x() * 31L + plan.pos.z(), (alongX ? j : i) * DistrictPos.TIERS + k, alongX ? PIPE_SALT_X : PIPE_SALT_Z);
+        if (DaedalusHash.pick(line, pipeOdds()) != 0)
+            return;
+        int width = corridorWidth(i, k, j);
+        boolean low = (line >>> RANDOM_BITS & 1) == 0;
+        int lateral = low ? laneLow(width) : laneHigh(width);
+        int wallLateral = low ? lateral - 1 : lateral + 1;
+        int x = cellX(i);
+        int z = cellZ(j);
+        int y = floorY(k) + layout.corridorHeight();
+        var pipe = alongX ? PIPE_X : PIPE_Z;
+        for (int along = 0; along < CELL; along++)
+        {
+            int blockX = alongX ? x + along : x + lateral;
+            int blockZ = alongX ? z + lateral : z + along;
+            var current = canvas.get(blockX, y, blockZ);
+            if (current == AIR || current == TRIM)
+                canvas.set(blockX, y, blockZ, pipe);
+        }
+        for (int end = 0; end < 2; end++)
+        {
+            int direction = alongX ? (end == 0 ? Compass.WEST : Compass.EAST) : (end == 0 ? Compass.NORTH : Compass.SOUTH);
+            int nextI = i + Compass.dx(direction);
+            int nextJ = j + Compass.dz(direction);
+            if (DistrictPlan.isInside(nextI, k, nextJ) && isStraight(nextI, k, nextJ, alongX) && corridorWidth(nextI, k, nextJ) == width)
+                continue;
+            int along = end == 0 ? 0 : LAST;
+            int wallX = alongX ? x + along : x + wallLateral;
+            int wallZ = alongX ? z + wallLateral : z + along;
+            var wall = canvas.get(wallX, y, wallZ);
+            if (wall == WALL || wall == COLUMN || wall == TRIM || wall == PANEL)
+                canvas.set(wallX, y, wallZ, VENT);
+        }
+    }
+
+    private boolean isStraight(int i, int k, int j, boolean alongX)
+    {
+        if (plan.kind(i, k, j) != DistrictPlan.CORRIDOR)
+            return false;
+        int faces = plan.faces(i, k, j);
+        return alongX ? faces == (1 << Compass.EAST | 1 << Compass.WEST) : faces == (1 << Compass.NORTH | 1 << Compass.SOUTH);
+    }
+
+    private int pipeOdds()
+    {
+        return switch (theme)
+        {
+            case CISTERN -> 2;
+            case STAIRWELL, WARREN -> 3;
+            case ARCHIVE, WRITHING -> 4;
+            case GALLERY -> 6;
+        };
     }
 
     /**
@@ -348,7 +413,7 @@ final class DistrictPainter
                     canvas.fill(blockX, step - 1, blockZ, blockX, step + head + 1, blockZ, WALL);
                     continue;
                 }
-                canvas.set(blockX, step, blockZ, run == STAIR_RUN - 1 ? FLOOR : steps);
+                canvas.set(blockX, step, blockZ, steps);
                 canvas.fill(blockX, step + 1, blockZ, blockX, step + head, blockZ, AIR);
                 canvas.set(blockX, step + head + 1, blockZ, CEILING);
             }
@@ -796,7 +861,7 @@ final class DistrictPainter
                 int x = alongX ? along : cross;
                 int z = alongX ? cross : along;
                 canvas.fill(x, floor + 1, z, x, step - 1, z, WALL);
-                canvas.set(x, step, z, run == STAIR_RUN - 1 ? FLOOR : stairs(climb));
+                canvas.set(x, step, z, stairs(climb));
                 canvas.fill(x, step + 1, z, x, step + MIN_STAIR_HEAD, z, AIR);
             }
         }

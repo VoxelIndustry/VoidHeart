@@ -101,6 +101,7 @@ public class VoidHeart implements ModInitializer
     public static SimpleParticleType SMOKER_EMBER_PARTICLE;
     public static SimpleParticleType MARINE_SNOW_PARTICLE;
     public static SimpleParticleType SHOAL_SPECK_PARTICLE;
+    public static SimpleParticleType SMALL_SOUL_FLAME_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
 
@@ -229,6 +230,7 @@ public class VoidHeart implements ModInitializer
         SMOKER_EMBER_PARTICLE = registerSimpleParticle("smoker_ember", true);
         MARINE_SNOW_PARTICLE = registerSimpleParticle("marine_snow", false);
         SHOAL_SPECK_PARTICLE = registerSimpleParticle("shoal_speck", true);
+        SMALL_SOUL_FLAME_PARTICLE = registerSimpleParticle("small_soul_flame", false);
 
         EssenceRegistry.bootstrap();
     }

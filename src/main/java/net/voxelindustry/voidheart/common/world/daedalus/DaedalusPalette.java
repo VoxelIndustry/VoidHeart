@@ -13,6 +13,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.block.state.properties.WallSide;
+import net.voxelindustry.voidheart.common.block.StateProperties;
+import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
@@ -23,7 +25,8 @@ import static net.voxelindustry.voidheart.common.setup.VoidHeartBlocks.*;
 import static net.voxelindustry.voidheart.common.world.daedalus.DaedalusMaterial.*;
 
 /**
- * Which blocks each theme is built from. An infinite supply of any of these can be mined, so sin metals and other crafted materials stay out, and lights are vanilla.
+ * Which blocks each theme is built from. An infinite supply of any of these can be mined, so sin metals stay out. The altars, pillars and lamps of the void's old rituals are cheap to craft anyway,
+ * and the copper of the old machines is waxed so it never changes.
  */
 public final class DaedalusPalette
 {
@@ -75,7 +78,7 @@ public final class DaedalusPalette
     /**
      * @param x y z world position, deciding which block a mixed material becomes
      */
-    public BlockState state(byte material, int x, int y, int z)
+    public BlockState state(int material, int x, int y, int z)
     {
         if (material >= DaedalusCanvas.PROP_BASE)
             return props[material - DaedalusCanvas.PROP_BASE];
@@ -111,6 +114,11 @@ public final class DaedalusPalette
         options[material.ordinal()] = new BlockState[] { state };
     }
 
+    private void setStates(DaedalusMaterial material, BlockState... states)
+    {
+        options[material.ordinal()] = states;
+    }
+
     private void common()
     {
         set(AIR, Blocks.AIR);
@@ -135,6 +143,34 @@ public final class DaedalusPalette
         set(LAMP, Blocks.SEA_LANTERN);
         rails(VOIDSTONE_BRICKS_WALL);
         steps(VOIDSTONE_BRICKS_STAIRS, VOIDSTONE_BRICKS_SLAB);
+        relics();
+    }
+
+    private void relics()
+    {
+        setState(ALTAR, VOID_ALTAR.defaultBlockState());
+        setState(PILLAR, VOID_PILLAR.defaultBlockState());
+        setStates(SHRINE_LAMP, voidLamp(2), voidLamp(3), voidLamp(4));
+        var monolith = VOID_MONOLITH.defaultBlockState().setValue(StateProperties.BROKEN, true);
+        setState(MONOLITH_ALONE, monolith);
+        setState(MONOLITH_BASE, monolith.setValue(StateProperties.UP, true));
+        setState(MONOLITH_SHAFT, monolith.setValue(StateProperties.UP, true).setValue(StateProperties.DOWN, true));
+        setState(MONOLITH_TIP, monolith.setValue(StateProperties.DOWN, true));
+        set(ELDRITCH, ELDRITCH_VOIDSTONE);
+        set(OBSIDIAN, Blocks.OBSIDIAN, Blocks.OBSIDIAN, Blocks.CRYING_OBSIDIAN);
+        set(COBWEB, Blocks.COBWEB);
+        set(COPPER, vanilla("waxed_oxidized_copper"), vanilla("waxed_oxidized_copper"), vanilla("waxed_weathered_copper"), vanilla("waxed_oxidized_cut_copper"));
+        setState(COPPER_SLAB, vanilla("waxed_oxidized_cut_copper_slab").defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM));
+        set(VENT, vanilla("waxed_oxidized_copper_grate"));
+        var rod = vanilla("waxed_oxidized_lightning_rod").defaultBlockState();
+        setState(PIPE_X, rod.setValue(BlockStateProperties.FACING, Direction.EAST));
+        setState(PIPE_Y, rod.setValue(BlockStateProperties.FACING, Direction.UP));
+        setState(PIPE_Z, rod.setValue(BlockStateProperties.FACING, Direction.SOUTH));
+    }
+
+    private static BlockState voidLamp(int corruption)
+    {
+        return VOID_LAMP.defaultBlockState().setValue(VoidLampBlock.CORRUPTION, corruption);
     }
 
     private void rails(Block wall)
@@ -238,6 +274,7 @@ public final class DaedalusPalette
         set(FLOOR_TRIM, ELDRITCH_VOIDSTONE);
         set(FLOOR_INLAY, VOIDSTONE_WRITHING_MAW);
         set(CEILING, VOIDSTONE_WRITHING, VOIDSTONE_WRITHING, VOIDSTONE_WRITHING, VOIDSTONE_WRITHING_MAW, VOIDSTONE_WRITHING_BLOSSOM);
-        set(LAMP, Blocks.PEARLESCENT_FROGLIGHT);
+        setStates(LAMP, voidLamp(5), voidLamp(5), voidLamp(6));
+        setStates(SHRINE_LAMP, voidLamp(4), voidLamp(5), voidLamp(6));
     }
 }

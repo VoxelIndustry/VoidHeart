@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "voidheart:block/daedalus_sconce"
+    },
+    "facing=east": {
+      "model": "voidheart:block/daedalus_sconce",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/daedalus_sconce",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/daedalus_sconce",
+      "y": 270
+    }
+  }
+}

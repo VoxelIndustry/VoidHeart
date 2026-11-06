@@ -13,12 +13,15 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.daedalus.Compass;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusBridges;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusCanvas;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusMaterial;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusPalette;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPlan;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPlans;
@@ -51,6 +54,10 @@ public class DaedalusClientTest implements FabricClientGameTest
     private static final float SOUTH = 0;
     private static final float WEST = 90;
     private static final float NORTH = 180;
+    private static final int RELIC_DISTRICTS = 6;
+    private static final int VAULT_AIR = 12;
+    private static final int ALTAR_PILLARS = 8;
+    private static final int ALCOVE_KEYSTONE = 3;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -84,6 +91,8 @@ public class DaedalusClientTest implements FabricClientGameTest
             context.getInput().pressKey(InputConstants.KEY_F1);
             for (var theme : DaedalusTheme.values())
                 tour(context, world, server, theme);
+            visitRelics(context, world, server);
+            visitFeatures(context, world, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
 
             int fps = context.computeOnClient(minecraft -> minecraft.getFps());
@@ -508,6 +517,187 @@ public class DaedalusClientTest implements FabricClientGameTest
             default -> WEST;
         };
         shoot(context, world, server, name, x, DistrictPos.floorY(k) + 1, z, yaw, 0);
+    }
+
+    /**
+     * A material found in a painted district, with the way out of the wall for a shrine.
+     */
+    private record Found(int x, int y, int z, int open)
+    {
+    }
+
+    private interface Spot
+    {
+        boolean matches(DaedalusCanvas canvas, int x, int y, int z);
+    }
+
+    private static Found find(long seed, Spot spot, DaedalusTheme... themes)
+    {
+        for (var theme : themes)
+        {
+            var found = find(seed, theme, spot);
+            if (found != null)
+                return found;
+        }
+        throw new AssertionError("No relic found in " + RELIC_DISTRICTS + " districts each of " + java.util.Arrays.toString(themes));
+    }
+
+    private static Found find(long seed, DaedalusTheme theme, Spot spot)
+    {
+        var canvas = new DaedalusCanvas(DistrictPos.SIZE, DistrictPos.SIZE);
+        int searched = 0;
+        for (int radius = 0; radius < 64 && searched < RELIC_DISTRICTS; radius++)
+        {
+            for (int dz = -radius; dz <= radius; dz++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var pos = new DistrictPos(dx, dz);
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius || DaedalusTheme.at(pos) != theme)
+                        continue;
+                    searched++;
+                    canvas.reset(pos.originX(), pos.originZ());
+                    DistrictPlans.paint(seed, canvas);
+                    for (int y = 1; y < DistrictPos.TOP_Y; y++)
+                    {
+                        for (int z = canvas.minZ(); z <= canvas.maxZ(); z++)
+                        {
+                            for (int x = canvas.minX(); x <= canvas.maxX(); x++)
+                            {
+                                if (!spot.matches(canvas, x, y, z))
+                                    continue;
+                                int open = -1;
+                                for (int side = 0; side < Compass.COUNT; side++)
+                                {
+                                    if (canvas.get(x + Compass.dx(side), y, z + Compass.dz(side)) == DaedalusMaterial.AIR)
+                                        open = side;
+                                }
+                                return new Found(x, y, z, open);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static int airAbove(DaedalusCanvas canvas, int x, int y, int z)
+    {
+        int air = 0;
+        while (canvas.get(x, y + air + 1, z) == DaedalusMaterial.AIR)
+            air++;
+        return air;
+    }
+
+    /**
+     * Altar circles in a room and under a vault, monoliths of the Writhing and a shrine in a niche, out of real chunks. The altars find all eight of their pillars, so a circle found here works.
+     */
+    private static void visitRelics(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server)
+    {
+        long seed = server.computeOnServer(minecraft -> VoidDaedalus.level(minecraft).getSeed());
+        Spot roomAltar = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.ALTAR && airAbove(canvas, x, y, z) < VAULT_AIR;
+        Spot vaultAltarSpot = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.ALTAR && airAbove(canvas, x, y, z) >= VAULT_AIR;
+        Spot ring = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.SHRINE_LAMP && canvas.get(x + 3, y - 1, z).isMonolith() && canvas.get(x - 3, y - 1, z).isMonolith();
+        Spot niche = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.SHRINE_LAMP;
+        var altar = find(seed, roomAltar, DaedalusTheme.GALLERY, DaedalusTheme.ARCHIVE, DaedalusTheme.STAIRWELL, DaedalusTheme.CISTERN);
+        var vaultAltar = find(seed, vaultAltarSpot, DaedalusTheme.STAIRWELL, DaedalusTheme.GALLERY, DaedalusTheme.ARCHIVE, DaedalusTheme.CISTERN, DaedalusTheme.WRITHING);
+        var monoliths = find(seed, ring, DaedalusTheme.WRITHING, DaedalusTheme.WARREN);
+        var shrine = find(seed, niche, DaedalusTheme.ARCHIVE, DaedalusTheme.GALLERY);
+
+        for (var found : new Found[] { altar, vaultAltar })
+        {
+            server.runOnServer(minecraft ->
+            {
+                var level = VoidDaedalus.level(minecraft);
+                var pos = new BlockPos(found.x(), found.y(), found.z());
+                level.getChunk(pos);
+                check(level.getBlockEntity(pos) instanceof VoidAltarTile, "The altar at " + pos + " has no block entity: " + level.getBlockEntity(pos));
+                var tile = (VoidAltarTile) level.getBlockEntity(pos);
+                tile.searchPillars();
+                check(tile.foundPillars() == ALTAR_PILLARS, "The altar at " + pos + " finds " + tile.foundPillars() + " pillars");
+                check(level.getBlockEntity(pos.offset(1, 0, 3)) instanceof VoidPillarTile, "Pillars of the altar at " + pos + " have no block entity");
+            });
+        }
+
+        shoot(context, world, server, "daedalus-relic-altar", altar.x() + 5.5, altar.y() + 2.5, altar.z() + 5.5, 135, 20);
+        shoot(context, world, server, "daedalus-relic-altar-close", altar.x() + 0.5, altar.y() + 1.6, altar.z() + 3.5, NORTH, 25);
+        shoot(context, world, server, "daedalus-relic-vault", vaultAltar.x() + 9.5, vaultAltar.y() + 3.5, vaultAltar.z() + 9.5, 135, 12);
+        shoot(context, world, server, "daedalus-relic-vault-up", vaultAltar.x() + 0.5, vaultAltar.y() + 1.6, vaultAltar.z() + 5.5, NORTH, -30);
+        shoot(context, world, server, "daedalus-relic-monoliths", monoliths.x() + 4.5, monoliths.y() + 1, monoliths.z() + 4.5, 135, 15);
+        check(shrine.open() >= 0, "The shrine at " + shrine + " opens onto nothing");
+        double viewX = shrine.x() + 0.5 + Compass.dx(shrine.open()) * 2.5;
+        double viewZ = shrine.z() + 0.5 + Compass.dz(shrine.open()) * 2.5;
+        shoot(context, world, server, "daedalus-relic-shrine", viewX, shrine.y() - 1, viewZ, yawOf(Compass.opposite(shrine.open())), 15);
+    }
+
+    private static boolean isProp(DaedalusCanvas canvas, int x, int y, int z, DaedalusProp prop)
+    {
+        int raw = canvas.raw(x, y, z);
+        return raw >= DaedalusCanvas.PROP_BASE && (raw - DaedalusCanvas.PROP_BASE) / Compass.COUNT == prop.ordinal();
+    }
+
+    /**
+     * What breaks up the floors of large rooms: rows of tables, a statue on its dais, a pool round a font, and a bay cut into the wall.
+     */
+    private static void visitFeatures(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server)
+    {
+        long seed = server.computeOnServer(minecraft -> VoidDaedalus.level(minecraft).getSeed());
+        Spot tableRow = (canvas, x, y, z) -> isProp(canvas, x, y, z, DaedalusProp.TABLE) && isProp(canvas, x + 1, y, z, DaedalusProp.TABLE) && isProp(canvas, x + 2, y, z, DaedalusProp.TABLE);
+        Spot dais = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.FLOOR_TRIM && canvas.get(x + 2, y, z).isStep() && canvas.get(x - 2, y, z).isStep()
+                                         && canvas.get(x, y, z + 2).isStep() && isProp(canvas, x, y + 1, z, DaedalusProp.PLINTH);
+        Spot pool = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.COLUMN && canvas.get(x + 1, y, z) == DaedalusMaterial.WATER && isProp(canvas, x, y + 1, z, DaedalusProp.BASIN);
+        Spot alcove = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.TRIM && canvas.get(x, y - 1, z) == DaedalusMaterial.AIR
+                                           && !canvas.get(x, y - 4, z).isPassable()
+                                           && (isArch(canvas, x - 1, y - 1, z) && isArch(canvas, x + 1, y - 1, z) || isArch(canvas, x, y - 1, z - 1) && isArch(canvas, x, y - 1, z + 1));
+
+        var tables = find(seed, tableRow, DaedalusTheme.ARCHIVE, DaedalusTheme.GALLERY, DaedalusTheme.STAIRWELL);
+        shoot(context, world, server, "daedalus-feature-tables", tables.x() - 2, tables.y() + 2.5, tables.z() + 3, -120, 25);
+        var raised = find(seed, dais, DaedalusTheme.GALLERY, DaedalusTheme.ARCHIVE, DaedalusTheme.STAIRWELL);
+        shoot(context, world, server, "daedalus-feature-dais", raised.x() + 4.5, raised.y() + 2, raised.z() + 4.5, 135, 20);
+        var font = find(seed, pool, DaedalusTheme.CISTERN);
+        shoot(context, world, server, "daedalus-feature-pool", font.x() + 5.5, font.y() + 2.5, font.z() + 5.5, 135, 25);
+        Spot engine = (canvas, x, y, z) -> isProp(canvas, x, y, z, DaedalusProp.CONDENSER) && isProp(canvas, x + 2, y, z + 2, DaedalusProp.COIL);
+        var machine = find(seed, engine, DaedalusTheme.CISTERN, DaedalusTheme.STAIRWELL, DaedalusTheme.ARCHIVE);
+        shoot(context, world, server, "daedalus-feature-engine", machine.x() + 5.5, machine.y() + 2.5, machine.z() + 5.5, 135, 25);
+        shoot(context, world, server, "daedalus-feature-engine-close", machine.x() + 0.5, machine.y() + 1.6, machine.z() + 4.5, NORTH, 15);
+        Spot boilerBase = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.COPPER && canvas.get(x, y + 1, z) == DaedalusMaterial.COPPER && canvas.get(x + 1, y, z) == DaedalusMaterial.VENT;
+        var boiler = find(seed, boilerBase, DaedalusTheme.CISTERN, DaedalusTheme.STAIRWELL);
+        shoot(context, world, server, "daedalus-feature-boiler", boiler.x() + 5.5, boiler.y() + 1.6, boiler.z() + 2.5, 70, 10);
+        shoot(context, world, server, "daedalus-feature-boiler-room", boiler.x() + 6.5, boiler.y() + 3.5, boiler.z() + 6.5, 135, 25);
+
+        Spot crypt = (canvas, x, y, z) -> isProp(canvas, x, y, z, DaedalusProp.SARCOPHAGUS) && isProp(canvas, x + 2, y, z, DaedalusProp.SARCOPHAGUS)
+                                          && (canvas.raw(x, y, z) - DaedalusCanvas.PROP_BASE) % Compass.COUNT == Compass.SOUTH;
+        var sleeper = find(seed, crypt, DaedalusTheme.GALLERY, DaedalusTheme.ARCHIVE, DaedalusTheme.STAIRWELL);
+        shoot(context, world, server, "daedalus-feature-crypt", sleeper.x() + 1.5, sleeper.y() + 1.8, sleeper.z() + 4.5, NORTH, 25);
+        shoot(context, world, server, "daedalus-feature-crypt-row", sleeper.x() - 2.5, sleeper.y() + 2.5, sleeper.z() + 3.5, -120, 30);
+
+        Spot pipeRun = (canvas, x, y, z) -> canvas.get(x, y, z) == DaedalusMaterial.PIPE_X && canvas.get(x + 1, y, z) == DaedalusMaterial.PIPE_X && canvas.get(x + 2, y, z) == DaedalusMaterial.PIPE_X
+                                            && canvas.get(x, y - 1, z) == DaedalusMaterial.AIR && !canvas.get(x, y, z - 1).isPassable() && canvas.get(x, y - 1, z + 1) == DaedalusMaterial.AIR;
+        var pipe = find(seed, pipeRun, DaedalusTheme.CISTERN, DaedalusTheme.STAIRWELL, DaedalusTheme.WARREN);
+        shoot(context, world, server, "daedalus-feature-corridor-pipe", pipe.x() + 0.5, pipe.y() - 1.6, pipe.z() + 1.5, -80, -15);
+
+        var bay = find(seed, alcove, DaedalusTheme.GALLERY, DaedalusTheme.STAIRWELL, DaedalusTheme.ARCHIVE);
+        int feet = bay.y() - ALCOVE_KEYSTONE;
+        int out = server.computeOnServer(minecraft ->
+        {
+            var level = VoidDaedalus.level(minecraft);
+            for (int side = 0; side < Compass.COUNT; side++)
+            {
+                var pos = new BlockPos(bay.x() + Compass.dx(side) * 2, feet + 1, bay.z() + Compass.dz(side) * 2);
+                if (!level.getBlockState(pos).isCollisionShapeFullBlock(level, pos))
+                    return side;
+            }
+            return -1;
+        });
+        check(out >= 0, "The alcove at " + bay + " opens onto nothing");
+        shoot(context, world, server, "daedalus-feature-alcove", bay.x() + 0.5 + Compass.dx(out) * 4, feet, bay.z() + 0.5 + Compass.dz(out) * 4, yawOf(Compass.opposite(out)), 10);
+    }
+
+    private static boolean isArch(DaedalusCanvas canvas, int x, int y, int z)
+    {
+        int ordinal = canvas.get(x, y, z).ordinal();
+        return ordinal >= DaedalusMaterial.ARCH_NORTH.ordinal() && ordinal <= DaedalusMaterial.ARCH_WEST.ordinal();
     }
 
     private static void shootRoom(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server, DistrictPlan plan, Room room, String name)

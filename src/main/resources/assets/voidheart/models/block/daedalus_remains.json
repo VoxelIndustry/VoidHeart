@@ -1,0 +1,282 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "bone": "minecraft:block/bone_block_side",
+    "skull": "minecraft:block/bone_block_top",
+    "socket": "minecraft:block/black_concrete",
+    "particle": "minecraft:block/bone_block_side"
+  },
+  "elements": [
+    {
+      "from": [
+        3,
+        0,
+        6
+      ],
+      "to": [
+        8,
+        4.5,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#skull"
+        },
+        "south": {
+          "texture": "#skull"
+        },
+        "east": {
+          "texture": "#skull"
+        },
+        "west": {
+          "texture": "#skull"
+        },
+        "up": {
+          "texture": "#skull"
+        },
+        "down": {
+          "texture": "#skull"
+        }
+      },
+      "rotation": {
+        "origin": [
+          5.5,
+          0,
+          8.5
+        ],
+        "axis": "y",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        3.6,
+        1.8,
+        5.9
+      ],
+      "to": [
+        4.9,
+        3,
+        6
+      ],
+      "faces": {
+        "north": {
+          "texture": "#socket"
+        }
+      },
+      "rotation": {
+        "origin": [
+          5.5,
+          0,
+          8.5
+        ],
+        "axis": "y",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        6.1,
+        1.8,
+        5.9
+      ],
+      "to": [
+        7.4,
+        3,
+        6
+      ],
+      "faces": {
+        "north": {
+          "texture": "#socket"
+        }
+      },
+      "rotation": {
+        "origin": [
+          5.5,
+          0,
+          8.5
+        ],
+        "axis": "y",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        7,
+        0,
+        3
+      ],
+      "to": [
+        14,
+        1.25,
+        4.25
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "down": {
+          "texture": "#bone"
+        }
+      },
+      "rotation": {
+        "origin": [
+          10.5,
+          0,
+          3.5
+        ],
+        "axis": "y",
+        "angle": 22.5
+      }
+    },
+    {
+      "from": [
+        9.5,
+        0,
+        6
+      ],
+      "to": [
+        10.75,
+        1.25,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "down": {
+          "texture": "#bone"
+        }
+      }
+    },
+    {
+      "from": [
+        11.5,
+        0,
+        9
+      ],
+      "to": [
+        14.5,
+        1,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "down": {
+          "texture": "#bone"
+        }
+      }
+    },
+    {
+      "from": [
+        11.5,
+        0,
+        11
+      ],
+      "to": [
+        14.5,
+        1,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "down": {
+          "texture": "#bone"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        0,
+        12
+      ],
+      "to": [
+        7,
+        1,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "down": {
+          "texture": "#bone"
+        }
+      },
+      "rotation": {
+        "origin": [
+          4.5,
+          0,
+          12.5
+        ],
+        "axis": "y",
+        "angle": 45
+      }
+    }
+  ]
+}
