@@ -140,7 +140,6 @@ public class VoidHeart implements ModInitializer
         VoidHeartWorld.registerGeneration();
 
         ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
-        ServerTickEvents.START_LEVEL_TICK.register(VoidHeartTicker::tickWorld);
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BarnacleInfection::tickServer);

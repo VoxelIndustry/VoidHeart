@@ -12,13 +12,9 @@ public class DeferredRollbackWork<T>
     private       boolean success;
 
     @Getter
-    private final boolean canRollback;
-
-    @Getter
     private final T state;
 
     private final Function<T, Boolean> deferredWorker;
-    private final Runnable             rollbackWorker;
 
     public boolean maySucceed()
     {
@@ -36,19 +32,13 @@ public class DeferredRollbackWork<T>
             success = deferredWorker.apply(state);
     }
 
-    public void rollback()
-    {
-        if (rollbackWorker != null)
-            rollbackWorker.run();
-    }
-
     public static <T> DeferredRollbackWork<T> willFail()
     {
-        return new DeferredRollbackWork<>(false, false, null, null, null);
+        return new DeferredRollbackWork<>(false, null, null);
     }
 
-    public static <T> DeferredRollbackWork<T> maySucceed(boolean canRollback, T state, Function<T, Boolean> deferredWorker, Runnable rollbackWorker)
+    public static <T> DeferredRollbackWork<T> maySucceed(T state, Function<T, Boolean> deferredWorker)
     {
-        return new DeferredRollbackWork<>(true, canRollback, state, deferredWorker, rollbackWorker);
+        return new DeferredRollbackWork<>(true, state, deferredWorker);
     }
 }

@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
@@ -642,11 +641,6 @@ public class ArmillaryTile extends TileBase
     public float formation(float partialTicks)
     {
         return Mth.lerp(partialTicks, previousFormation, formation);
-    }
-
-    public Vec3 hubCenter()
-    {
-        return Vec3.atCenterOf(ArmillaryLayout.hub(worldPosition));
     }
 
     @Override

@@ -2,11 +2,7 @@ package net.voxelindustry.voidheart.common.world.pocket;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import lombok.extern.log4j.Log4j2;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalKey;
@@ -17,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Log4j2
 public final class VoidHeartData
 {
     public static final Codec<VoidHeartData> CODEC = RecordCodecBuilder
@@ -70,18 +65,6 @@ public final class VoidHeartData
     {
         portalKeyList.remove(new PortalKey(fromWorld.dimension(), corePos));
         markDirty();
-    }
-
-    public static VoidHeartData fromNbt(CompoundTag compound)
-    {
-        return CODEC.decode(NbtOps.INSTANCE, compound)
-                .resultOrPartial(log::error)
-                .orElseThrow().getFirst();
-    }
-
-    public Tag toNbt()
-    {
-        return CODEC.encodeStart(NbtOps.INSTANCE, this).result().orElseThrow();
     }
 
     public BlockPos pocketPos()

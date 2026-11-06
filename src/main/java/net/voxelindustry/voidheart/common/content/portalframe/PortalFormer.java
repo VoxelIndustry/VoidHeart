@@ -1,6 +1,5 @@
 package net.voxelindustry.voidheart.common.content.portalframe;
 
-import com.google.common.util.concurrent.Runnables;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockPos.MutableBlockPos;
 import net.minecraft.core.Direction;
@@ -56,7 +55,7 @@ public class PortalFormer
         if (portalPoints.getLeft().equals(brickPos) && portalPoints.getRight().equals(brickPos))
             return DeferredRollbackWork.willFail();
 
-        return DeferredRollbackWork.maySucceed(false,
+        return DeferredRollbackWork.maySucceed(
                 PortalFormerState.of(portalPoints.getLeft(), portalPoints.getRight(), direction),
                 portalFormerState ->
                 {
@@ -89,7 +88,7 @@ public class PortalFormer
                     coreFrame.setChanged();
 
                     return true;
-                }, Runnables.doNothing());
+                });
     }
 
     private static void setFrameBlockState(Level world, BlockState state, BlockPos pos, PortalFormerState portalFormerState)

@@ -820,17 +820,6 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         return currentRecipe == null ? Map.of() : currentRecipe.getAspects();
     }
 
-    public ItemStack getInputStack()
-    {
-        var linkedPillar = getPillar();
-        return linkedPillar == null ? ItemStack.EMPTY : linkedPillar.getStack();
-    }
-
-    public ItemStack getOutputStack()
-    {
-        return stack;
-    }
-
     @Override
     public void setStack(ItemStack stack)
     {

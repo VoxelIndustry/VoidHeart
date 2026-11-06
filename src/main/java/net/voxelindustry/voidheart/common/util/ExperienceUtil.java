@@ -55,15 +55,4 @@ public class ExperienceUtil
         var level = getExperienceLevel(experienceTotal);
         return nextLevelProgress(experienceTotal) > 0 ? level + 1 : level;
     }
-
-    public int getTotalExperienceForLevel(int level)
-    {
-        int total = 0;
-        for (int i = 0; i < level; i++)
-        {
-            total += getNextLevelExp(i + 1);
-        }
-
-        return total;
-    }
 }
