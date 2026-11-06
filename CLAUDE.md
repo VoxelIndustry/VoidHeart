@@ -12,7 +12,7 @@ A Fabric mod for Minecraft 26.3 on Java 25, using Mojang mappings. It depends on
 ./gradlew runDatagen --console=plain
 ```
 
-`-PgameTest` runs only the client game tests whose class name contains that text. The full suite takes about 4 minutes.
+`-PgameTest` runs only the client game tests whose class name contains that text, and takes a comma-separated list. The tests run on a virtual clock, about ten times faster than real time, so the full suite takes about 4 minutes. `-PgameTestRealtime` runs them at real speed, which takes over 30 minutes for the full suite.
 
 ## Layout
 

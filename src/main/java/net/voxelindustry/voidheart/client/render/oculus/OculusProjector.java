@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -295,7 +296,7 @@ final class OculusProjector implements AutoCloseable
      */
     void advance(float partialTick)
     {
-        long now = System.nanoTime();
+        long now = Util.getNanos();
         float seconds = lastFrameNanos == 0 ? 0 : Math.min((now - lastFrameNanos) / 1E9F, 0.25F);
         lastFrameNanos = now;
 

@@ -15,14 +15,17 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.client.ArmillaryTremor;
 import net.voxelindustry.voidheart.client.screen.ArmillaryScreen;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryChart;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryConnections;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryHubBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryLayout;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
@@ -75,8 +78,13 @@ public class ArmillaryClientTest implements FabricClientGameTest
             server.runCommand("time set midnight");
             context.waitTicks(5);
             screenshotRings(context, server, "armillary-idle-night");
+            screenshotBase(context, server, "armillary-base-night");
             server.runCommand("time set noon");
+            context.waitTicks(5);
+            screenshotBase(context, server, "armillary-base");
+            sweepBase(context, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
+            checkBaseBlocks(context, server);
             check(context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().hud(1)) == 0, "A new armillary should have nothing to show on its dial");
 
             int target = checkChart(context, server);
@@ -182,6 +190,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.waitTicks(30);
 
         check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "The armillary should still be formed after a reload");
+        checkBaseShape(server, true, "A reloaded armillary");
         var phase = onServer(server, minecraft -> armillary(minecraft).getChart().getPhase());
         check(phase == ArmillaryChart.Phase.SEARCHING, "The search should survive a reload, the chart is " + phase);
         var ticks = onServer(server, minecraft -> armillary(minecraft).getChart().getSearchTicks());
@@ -374,6 +383,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.waitTicks(FORMED_TICKS);
         check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "A whole base should form");
         check(onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "A formed armillary should keep its middle clickable");
+        checkBaseShape(server, true, "A whole base");
         context.getInput().pressKey(InputConstants.KEY_F1);
         context.takeScreenshot("armillary-rising");
         context.waitTicks(RISEN_TICKS);
@@ -383,6 +393,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.waitTicks(FORMED_TICKS);
         check(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A block in the way of the rings should stop them");
         check(onServer(server, minecraft -> !minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "A stopped armillary should take its middle away");
+        checkBaseShape(server, false, "A stopped armillary");
 
         aimAt(context, server, 2.5, CORE.getY(), 2.5, 0.5, CORE.getY() + 0.9, 0.5);
         rightClick(context);
@@ -391,11 +402,117 @@ public class ArmillaryClientTest implements FabricClientGameTest
         server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(CORE.offset(1, 3, 1), Blocks.AIR.defaultBlockState()));
         context.waitTicks(FORMED_TICKS + RISEN_TICKS);
         check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "Clearing the way should bring the rings back");
+        checkBaseShape(server, true, "An armillary with its way cleared");
 
         server.runOnServer(minecraft -> player(minecraft).setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(VoidHeartBlocks.ARMILLARY_CORE)));
         context.waitTicks(5);
         context.takeScreenshot("armillary-core-held");
         server.runOnServer(minecraft -> player(minecraft).setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY));
+    }
+
+    private static void checkBaseShape(TestServerContext server, boolean formed, String who)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            for (var part : ArmillaryLayout.base(CORE))
+            {
+                var state = level.getBlockState(part.pos());
+                var wanted = formed ? part.formed() : part.block().defaultBlockState();
+                check(state == wanted, who + " should have " + wanted + " at " + part.pos() + ", found " + state);
+            }
+            check(level.getBlockState(CORE).getValue(ArmillaryCoreBlock.FORMED) == formed, who + " should have a core showing formed=" + formed);
+            check(armillary(minecraft).getBlockState().getValue(ArmillaryCoreBlock.FORMED) == formed, who + " should have told its tile");
+        });
+    }
+
+    /**
+     * The pieces of the model behave like one instrument: a click anywhere opens it, and each piece still is the block it was when mined.
+     */
+    private static void checkBaseBlocks(ClientGameTestContext context, TestServerContext server)
+    {
+        for (double[] target : new double[][] { { 3.5, 0.5, 1.5, 0.5 }, { 3.2, 3.2, 1.5, 1.5 } })
+        {
+            aimAt(context, server, target[0], CORE.getY(), target[1], target[2], CORE.getY() + 0.5, target[3]);
+            rightClick(context);
+            context.waitTicks(5);
+            check(context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Using the base at " + target[2] + " " + target[3] + " should open the map");
+            context.runOnClient(minecraft -> minecraft.player.closeContainer());
+            context.waitTicks(5);
+        }
+
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var pickaxe = new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE);
+            for (var part : ArmillaryLayout.base(CORE))
+            {
+                check(pickaxe.isCorrectToolForDrops(part.formed()), "A pickaxe should be right for " + part.formed());
+                var drops = Block.getDrops(part.formed(), level, part.pos(), null, player(minecraft), pickaxe);
+                check(drops.size() == 1 && drops.getFirst().is(part.block().asItem()), part.pos() + " should drop " + part.block() + ", it drops " + drops);
+                check(level.getBlockState(part.pos()).getCloneItemStack(level, part.pos(), false).is(part.block().asItem()), "Picking " + part.pos() + " should give " + part.block());
+            }
+        });
+
+        var broken = ArmillaryLayout.base(CORE).getFirst();
+        var dropped = onServer(server, minecraft ->
+        {
+            var level = minecraft.overworld();
+            level.destroyBlock(broken.pos(), true, player(minecraft));
+            return level.getEntitiesOfClass(ItemEntity.class, new AABB(broken.pos()).inflate(1)).stream().anyMatch(item -> item.getItem().is(broken.block().asItem()));
+        });
+        check(dropped, "Breaking " + broken.pos() + " should leave its block on the ground");
+        context.waitTicks(FORMED_TICKS);
+        check(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A broken base should stop the armillary");
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            check(level.getBlockState(broken.pos()).isAir(), "The broken piece should stay gone");
+            for (var part : ArmillaryLayout.base(CORE))
+                check(part.pos().equals(broken.pos()) || level.getBlockState(part.pos()).is(part.block()), part.pos() + " should be its block again");
+            check(!level.getBlockState(CORE).getValue(ArmillaryCoreBlock.FORMED), "The core should be a cube again");
+            level.getEntitiesOfClass(ItemEntity.class, new AABB(CORE).inflate(3)).forEach(ItemEntity::discard);
+        });
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimAt(context, server, 3.5, CORE.getY() + 0.5, 3.5, 0.5, CORE.getY() + 0.6, 0.5);
+        context.takeScreenshot("armillary-base-broken");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(broken.pos(), broken.block().defaultBlockState()));
+        context.waitTicks(FORMED_TICKS);
+        checkBaseShape(server, true, "A repaired armillary");
+        context.waitTicks(RISEN_TICKS);
+    }
+
+    private static void screenshotBase(ClientGameTestContext context, TestServerContext server, String name)
+    {
+        // Spectating, since these look from below the height of a player standing on the ground
+        server.runCommand("gamemode spectator @a");
+        aimAt(context, server, 3.6, CORE.getY() - 0.6, 0.5, 0.5, CORE.getY() + 0.6, 0.5);
+        context.takeScreenshot(name + "-side");
+        aimAt(context, server, 3.1, CORE.getY() - 0.6, 3.1, 0.5, CORE.getY() + 0.6, 0.5);
+        context.takeScreenshot(name + "-corner");
+        aimAt(context, server, 2.2, CORE.getY() + 1.1, 1.2, 0.5, CORE.getY() + 0.6, 0.5);
+        context.takeScreenshot(name + "-above");
+        aimAt(context, server, -5.5, CORE.getY(), 6.5, 0.5, CORE.getY() + 1.5, 0.5);
+        context.takeScreenshot(name + "-whole");
+        server.runCommand("gamemode creative @a");
+    }
+
+    /**
+     * Grazing the top of the base, where its steps meet between blocks.
+     */
+    private static void sweepBase(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("gamemode spectator @a");
+        server.runCommand("tick freeze");
+        for (int step = 0; step < 8; step++)
+        {
+            aimAt(context, server, 3.4 + step * 0.05, CORE.getY() - 0.7 + step * 0.02, -1.5 + step * 0.08, 0.5, CORE.getY() + 0.8, 0.5);
+            context.takeScreenshot("armillary-base-sweep-" + step);
+        }
+        server.runCommand("tick unfreeze");
+        server.runCommand("gamemode creative @a");
     }
 
     private static void screenshotRings(ClientGameTestContext context, TestServerContext server, String name)
@@ -812,7 +929,10 @@ public class ArmillaryClientTest implements FabricClientGameTest
             var level = minecraft.overworld();
             level.destroyBlock(CORE, false);
             for (var part : ArmillaryLayout.base(CORE))
+            {
+                check(level.getBlockState(part.pos()).is(part.block()), "Breaking the core should give " + part.pos() + " its block back");
                 level.setBlockAndUpdate(part.pos(), Blocks.AIR.defaultBlockState());
+            }
         });
         check(onServer(server, minecraft -> !minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "Breaking the core should take its middle away");
         check(onServer(server, minecraft -> ArmillaryConnections.get(minecraft).get(address)) != null, "The connection should outlive the armillary");

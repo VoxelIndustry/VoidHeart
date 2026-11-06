@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
+    "formed=false": {
       "model": "voidheart:block/armillary_core"
+    },
+    "formed=true": {
+      "model": "voidheart:block/armillary_core_formed"
     }
   }
 }

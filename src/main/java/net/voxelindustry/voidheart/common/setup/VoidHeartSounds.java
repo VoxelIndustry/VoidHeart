@@ -27,6 +27,12 @@ public final class VoidHeartSounds
     public static final MobSounds EYE_MAW       = mob("eye_maw");
     public static final MobSounds LARGE_EYE_MAW = mob("large_eye_maw");
     public static final MobSounds ARCANE_EYE    = mob("arcane_eye");
+    public static final MobSounds STALKING_WRAITH   = mob("stalking_wraith");
+    public static final MobSounds FALLEN_BISHOP     = mob("fallen_bishop");
+    public static final MobSounds MALIGNANT_BOULDER = mob("malignant_boulder");
+    public static final MobSounds LEGIONARY         = mob("legionary");
+    public static final MobSounds CENTURION         = mob("centurion");
+    public static final MobSounds KERNACIAN_DRAGOON = mob("kernacian_dragoon");
 
     public static final SoundEvent GHOUL_LUNGE      = register("entity.void_ghoul.lunge");
     public static final SoundEvent WRAITH_WHISPER   = register("entity.wraith.whisper");
@@ -47,6 +53,26 @@ public final class VoidHeartSounds
     public static final SoundEvent ARCANE_EYE_CHARGE = register("entity.arcane_eye.charge");
     public static final SoundEvent ARCANE_EYE_FIRE  = register("entity.arcane_eye.fire");
     public static final SoundEvent ARCANE_BOLT_HIT  = register("entity.arcane_bolt.hit");
+    public static final SoundEvent STALKER_SMILE    = register("entity.stalking_wraith.smile");
+    public static final SoundEvent STALKER_RUSH     = register("entity.stalking_wraith.rush");
+    public static final SoundEvent STALKER_STRIKE   = register("entity.stalking_wraith.strike");
+    public static final SoundEvent STALKER_SLURP    = register("entity.stalking_wraith.slurp");
+    public static final SoundEvent BISHOP_CHARGE    = register("entity.fallen_bishop.charge");
+    public static final SoundEvent BISHOP_LANCE     = register("entity.fallen_bishop.lance");
+    public static final SoundEvent BISHOP_CHANT     = register("entity.fallen_bishop.chant");
+    public static final SoundEvent BOULDER_RAISE    = register("entity.malignant_boulder.raise");
+    public static final SoundEvent BOULDER_SLAM     = register("entity.malignant_boulder.slam");
+    public static final SoundEvent BOULDER_WARD     = register("entity.malignant_boulder.ward");
+    public static final SoundEvent BOULDER_BREAK    = register("entity.malignant_boulder.break");
+    public static final SoundEvent LEGIONARY_FRENZY = register("entity.legionary.frenzy");
+    public static final SoundEvent LEGIONARY_CHOP   = register("entity.legionary.chop");
+    public static final SoundEvent CENTURION_BASH   = register("entity.centurion.bash");
+    public static final SoundEvent CENTURION_SWEEP  = register("entity.centurion.sweep");
+    public static final SoundEvent DRAGOON_OPEN     = register("entity.kernacian_dragoon.open");
+    public static final SoundEvent DRAGOON_CHARGE   = register("entity.kernacian_dragoon.charge");
+    public static final SoundEvent DRAGOON_BEAM     = register("entity.kernacian_dragoon.beam");
+    public static final SoundEvent DRAGOON_KICK     = register("entity.kernacian_dragoon.kick");
+    public static final SoundEvent DRAGOON_ADAPT    = register("entity.kernacian_dragoon.adapt");
 
     public static final SoundEvent ARMILLARY_FORM         = register("block.armillary.form");
     public static final SoundEvent ARMILLARY_BREAK        = register("block.armillary.break");

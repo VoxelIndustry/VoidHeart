@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "name": "VoidHeart Game Tests",
   "environment": "*",
+  "mixins": [
+    "voidheart-gametest.mixins.json"
+  ],
   "entrypoints": {
     "fabric-client-gametest": [
       "net.voxelindustry.voidheart.gametest.OculusTableClientTest",
@@ -41,7 +44,9 @@
       "net.voxelindustry.voidheart.gametest.StillDepthsClientTest",
       "net.voxelindustry.voidheart.gametest.ArmillaryClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusClientTest",
-      "net.voxelindustry.voidheart.gametest.DaedalusPropsClientTest"
+      "net.voxelindustry.voidheart.gametest.DaedalusPropsClientTest",
+      "net.voxelindustry.voidheart.gametest.DaedalusMobsClientTest",
+      "net.voxelindustry.voidheart.gametest.KernacianDragoonClientTest"
     ]
   },
   "depends": {

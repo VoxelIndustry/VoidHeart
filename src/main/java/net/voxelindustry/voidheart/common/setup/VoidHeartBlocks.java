@@ -28,6 +28,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
 import net.voxelindustry.voidheart.common.ley.anchor.OldAnchorBlock;
 import net.voxelindustry.voidheart.common.block.VoidLampBlock;
@@ -62,6 +64,7 @@ import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorB
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullBlock;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullItemBlock;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarBlock;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryBaseBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryHubBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftBlock;
@@ -161,6 +164,8 @@ public class VoidHeartBlocks
 
     public static Block SHATTER_FORGE;
     public static Block ARMILLARY_CORE;
+    public static Block ARMILLARY_BASE_SIDE;
+    public static Block ARMILLARY_BASE_CORNER;
     public static Block ARMILLARY_HUB;
     public static Block ARMILLARY_RIFT;
     public static Block VOID_CONDUIT;
@@ -470,6 +475,19 @@ public class VoidHeartBlocks
                         .instrument(NoteBlockInstrument.IRON_XYLOPHONE)
                         .sound(SoundType.METAL)
                         .requiresCorrectToolForDrops().strength(4F, 10.0F), true);
+        ARMILLARY_BASE_SIDE = registerArmillaryBase("armillary_base_side", CUT_RAVENOUS_GOLD, false, Shapes.or(
+                Block.box(0, 0, 0, 16, 3, 16),
+                Block.box(0, 3, 2, 16, 9, 16),
+                Block.box(0, 9, 4, 16, 13, 16)));
+        ARMILLARY_BASE_CORNER = registerArmillaryBase("armillary_base_corner", VOIDSTONE_CHISELED, true, Shapes.or(
+                Block.box(0, 0, 12, 16, 3, 16),
+                Block.box(0, 0, 0, 4, 3, 16),
+                Block.box(0, 0, 6, 10, 3, 16),
+                Block.box(0, 3, 8, 8, 13, 16),
+                Block.box(0, 3, 12, 12, 13, 16),
+                Block.box(0, 3, 4, 4, 13, 16),
+                Block.box(6, 0, 6, 12, 10, 12),
+                Block.box(7, 10, 7, 11, 21, 11)));
         SEETHING_STEEL_BLOCK = registerBlock("seething_steel_block", Block::new, BlockBehaviour.Properties.of()
                         .mapColor(MapColor.COLOR_RED)
                         .instrument(NoteBlockInstrument.BASEDRUM)
@@ -777,6 +795,25 @@ public class VoidHeartBlocks
                 .lightLevel(state -> light)
                 .pushReaction(PushReaction.POPPED)
                 .sound(SoundType.WET_GRASS);
+    }
+
+    /**
+     * Mined and sounding like the block it stands in for, which is also what it drops. It has no item of its own, and part of its cell is empty.
+     */
+    private static Block registerArmillaryBase(String name, Block original, boolean corner, VoxelShape northShape)
+    {
+        var id = Identifier.fromNamespaceAndPath(MODID, name);
+        var block = Registry.register(BuiltInRegistries.BLOCK, id, new ArmillaryBaseBlock(BlockBehaviour.Properties.ofFullCopy(original)
+                .setId(ResourceKey.create(Registries.BLOCK, id))
+                .noLootTable()
+                .randomTicks()
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .isValidSpawn(VoidHeartBlocks::never)
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos, box) -> false), original, corner, northShape));
+        if (FabricDataGenHelper.ENABLED)
+            MINEABLE_BLOCKS.add(block);
+        return block;
     }
 
     /**

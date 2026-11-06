@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.Util;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -81,7 +82,7 @@ public class BeholderRender implements BlockEntityRenderer<BeholderTile, Beholde
             wantedPitch = Mth.sin(time * 0.017F) * 0.25F;
         }
 
-        long now = System.nanoTime();
+        long now = Util.getNanos();
         float seconds = beholder.lastEyeNanos == 0 ? 1 : Math.min((now - beholder.lastEyeNanos) / 1E9F, 0.25F);
         beholder.lastEyeNanos = now;
         float ease = 1 - (float) Math.exp(-TURN_RATE * seconds);

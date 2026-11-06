@@ -39,6 +39,7 @@ import net.voxelindustry.voidheart.client.particle.MarineSnowParticle;
 import net.voxelindustry.voidheart.client.particle.ShoalSpeckParticle;
 import net.voxelindustry.voidheart.client.particle.SmokerGlowParticle;
 import net.voxelindustry.voidheart.client.particle.SmokerPlumeParticle;
+import net.voxelindustry.voidheart.client.particle.VoidFireParticle;
 import net.voxelindustry.voidheart.client.particle.AltarExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
@@ -247,6 +248,10 @@ public class VoidHeartClient implements ClientModInitializer
                 SmokerPlumeParticle.plume(level, x, y, z, yAux, spriteSet.get(random)));
         particles.register(SMOKER_CORE_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
                 SmokerGlowParticle.core(level, x, y, z, yAux, spriteSet.get(random)));
+        particles.register(VOID_FLAME_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                VoidFireParticle.flame(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+        particles.register(VOID_EMBER_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                VoidFireParticle.ember(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
         particles.register(SMOKER_EMBER_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
                 SmokerGlowParticle.ember(level, x, y, z, yAux, spriteSet.get(random)));
         particles.register(MARINE_SNOW_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->

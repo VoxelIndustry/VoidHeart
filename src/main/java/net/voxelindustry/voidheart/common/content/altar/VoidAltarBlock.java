@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.altar;
 
 import net.minecraft.util.Prediction;
+import net.minecraft.util.Util;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
@@ -76,7 +77,7 @@ public class VoidAltarBlock extends Block implements EntityBlock
                     stackInHand.shrink(1);
             }
             else if(world.isClientSide())
-                VoidAltarRender.lastTouchedMillis = System.currentTimeMillis();
+                VoidAltarRender.lastTouchedMillis = Util.getMillis();
         }
         else
         {

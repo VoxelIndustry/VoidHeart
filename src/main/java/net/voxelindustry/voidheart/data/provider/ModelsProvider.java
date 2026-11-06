@@ -23,6 +23,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import com.geckolib.renderer.internal.GeckolibItemSpecialRenderer;
 import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
@@ -97,12 +98,24 @@ public class ModelsProvider extends FabricModelProvider
         registerBundle(VoidHeartBlocks.MEDIUM_MEMORIAM_BUNDLE);
         registerBundle(VoidHeartBlocks.LARGE_MEMORIAM_BUNDLE);
 
-        generator.createTrivialBlock(VoidHeartBlocks.ARMILLARY_CORE, TexturedModel.CUBE_BOTTOM_TOP);
+        registerArmillaryCore();
         generator.createTrivialCube(VoidHeartBlocks.VOIDSTONE_CHISELED);
         registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
         registerBeholder(VoidHeartBlocks.BEHOLDER);
 
         registerDepths();
+    }
+
+    /**
+     * Alone it's a plain cube, and once formed the middle of the base's hand-written model.
+     */
+    private void registerArmillaryCore()
+    {
+        var core = VoidHeartBlocks.ARMILLARY_CORE;
+        var idle = plainVariant(TexturedModel.CUBE_BOTTOM_TOP.create(core, generator.modelOutput));
+        var formed = plainVariant(ModelLocationUtils.getModelLocation(core, "_formed"));
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(core)
+                .with(PropertyDispatch.initial(ArmillaryCoreBlock.FORMED).select(false, idle).select(true, formed)));
     }
 
     private void registerDepths()
@@ -199,6 +212,7 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.AZURIUM_SHARD, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.RUBRUM_SHARD, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.MEMORIAM_SHARD, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.KERNACIAN_CORE, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SEETHING_STEEL_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_INGOT, ModelTemplates.FLAT_ITEM);
