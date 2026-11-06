@@ -52,6 +52,8 @@ public class CorruptedBarnacle extends CrawlerMonster
     private static final int SCATTER_TICKS = 30 * 20;
     private static final double SCATTER_MIN = 16;
     private static final double SCATTER_MAX = 32;
+    // Paths may end a node beside their target and the mob stops short of that node, so it aims past where it will nest
+    private static final double SCATTER_OVERSHOOT = 3;
     private static final double SCATTER_RUN_SPEED = 1.25;
     private static final int PATH_INTERVAL = 20;
     private static final double STUCK_DISTANCE = 0.5;
@@ -124,7 +126,8 @@ public class CorruptedBarnacle extends CrawlerMonster
 
     private void chooseScatterTarget(double angle)
     {
-        scatterTarget = scatterFrom.add(Math.cos(angle) * scatterDistance, 0, Math.sin(angle) * scatterDistance);
+        double reach = scatterDistance + SCATTER_OVERSHOOT;
+        scatterTarget = scatterFrom.add(Math.cos(angle) * reach, 0, Math.sin(angle) * reach);
     }
 
     @Override
