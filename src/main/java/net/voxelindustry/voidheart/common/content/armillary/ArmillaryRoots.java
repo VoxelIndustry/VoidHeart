@@ -40,6 +40,8 @@ public final class ArmillaryRoots
     private static final float LAST_WITHER = 0.985F;
     private static final float EDGE        = 0.015F;
     private static final float KEEP_OUT    = 1.6F;
+    // No root ever digs into the strata, though the one reaching for it ends on its lip
+    private static final float FLOOR       = ArmillaryChart.STRATA_TOP;
 
     public record Branch(float[] xs, float[] ys, float growStart, float growEnd, float witherStart, float witherEnd, boolean main)
     {
@@ -125,7 +127,7 @@ public final class ArmillaryRoots
     {
         float angle = (float) (Math.PI / 2 + (random.nextFloat() - 0.5F) * Math.PI * 0.95F);
         float endX = Mth.clamp(x + Mth.cos(angle) * length, EDGE, ASPECT - EDGE);
-        float endY = Mth.clamp(y + Mth.sin(angle) * length, EDGE, 1 - EDGE);
+        float endY = Mth.clamp(y + Mth.sin(angle) * length, EDGE, FLOOR - EDGE);
         float[][] points = walk(random, x, y, endX, endY, DEAD_END_WOBBLE, targetX, targetY, targetRadius * KEEP_OUT);
 
         float growEnd = born + GROWTH_MIN + random.nextFloat() * GROWTH_RANGE;
@@ -175,7 +177,7 @@ public final class ArmillaryRoots
 
             float remaining = Mth.sqrt((toX - x) * (toX - x) + (toY - y) * (toY - y)) / (steps - step + 1);
             x = Mth.clamp(x + Mth.cos(heading) * remaining, EDGE, ASPECT - EDGE);
-            y = Mth.clamp(y + Mth.sin(heading) * remaining, 0, 1 - EDGE);
+            y = Mth.clamp(y + Mth.sin(heading) * remaining, 0, FLOOR - EDGE);
             if (step == steps && avoidRadius <= 0)
             {
                 x = toX;

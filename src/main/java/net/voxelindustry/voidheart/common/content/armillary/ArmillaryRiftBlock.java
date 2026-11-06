@@ -18,10 +18,15 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jspecify.annotations.Nullable;
 
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
+
 /**
- * The way back, generated with every dungeon near where players arrive. It leads somewhere only while a connection holds the dungeon.
+ * The way back, generated with every dungeon near where players arrive, or placed on the bridge a connection opens onto in the Daedalus. It leads somewhere only while its connection holds.
  */
 public class ArmillaryRiftBlock extends Block implements EntityBlock
 {
@@ -35,20 +40,32 @@ public class ArmillaryRiftBlock extends Block implements EntityBlock
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit)
     {
-        return use(player);
+        return use(world, pos, player);
     }
 
     @Override
     protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
-        return use(player);
+        return use(world, pos, player);
     }
 
-    private static InteractionResult use(Player player)
+    private static InteractionResult use(Level world, BlockPos pos, Player player)
     {
-        if (player instanceof ServerPlayer serverPlayer && !ArmillaryConnections.leave(serverPlayer))
+        if (!(player instanceof ServerPlayer serverPlayer))
+            return InteractionResult.SUCCESS;
+
+        boolean left = world.getBlockEntity(pos) instanceof ArmillaryRiftTile rift && rift.getConnection() != ArmillaryRiftTile.NONE
+                ? DaedalusConnections.leave(serverPlayer, rift.getConnection())
+                : ArmillaryConnections.leave(serverPlayer);
+        if (!left)
             serverPlayer.sendOverlayMessage(Component.translatable("voidheart.armillary.rift_dead"));
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type)
+    {
+        return world.isClientSide() ? null : createTickerHelper(type, VoidHeartTiles.ARMILLARY_RIFT, ArmillaryRiftTile::tick);
     }
 
     @Override

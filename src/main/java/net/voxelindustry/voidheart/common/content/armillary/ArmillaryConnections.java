@@ -152,7 +152,7 @@ public final class ArmillaryConnections extends SavedData
         return inside;
     }
 
-    private static void warn(List<ServerPlayer> inside, long remaining)
+    static void warn(List<ServerPlayer> inside, long remaining)
     {
         var warning = ConnectionTimeline.warningAt(remaining);
         int countdown = ConnectionTimeline.countdownAt(remaining);
@@ -210,12 +210,17 @@ public final class ArmillaryConnections extends SavedData
 
     private static void eject(ServerPlayer player, Connection connection, @Nullable String message)
     {
+        eject(player, connection.dimension(), connection.armillary(), message);
+    }
+
+    static void eject(ServerPlayer player, ResourceKey<Level> dimension, BlockPos armillary, @Nullable String message)
+    {
         var server = player.level().getServer();
-        var level = server.getLevel(connection.dimension());
+        var level = server.getLevel(dimension);
         if (level == null)
             level = server.overworld();
 
-        var landing = ArmillaryLanding.find(level, connection.armillary());
+        var landing = ArmillaryLanding.find(level, armillary);
         TeleportUtil.teleport(player, level, landing, player.getYHeadRot(), player.getViewXRot(0));
         level.playSound(null, landing.x, landing.y, landing.z, VoidHeartSounds.CONNECTION_TRAVEL, SoundSource.PLAYERS, 1, 1);
         if (message != null)

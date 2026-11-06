@@ -8,6 +8,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
+import net.voxelindustry.voidheart.common.content.armillary.DaedalusConnections;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -18,7 +19,7 @@ import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
 /**
- * The way in and out of the Daedalus, until players have their own.
+ * A way in and out of the Daedalus for review, leading back through no armillary.
  */
 final class DaedalusCommands
 {
@@ -40,7 +41,9 @@ final class DaedalusCommands
 
     private static int enter(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
-        VoidDaedalus.enter(context.getSource().getPlayerOrException());
+        var player = context.getSource().getPlayerOrException();
+        VoidDaedalus.enter(player);
+        DaedalusConnections.forget(player);
         return 1;
     }
 
@@ -53,6 +56,7 @@ final class DaedalusCommands
             return 0;
         }
         VoidDaedalus.leave(player);
+        DaedalusConnections.forget(player);
         return 1;
     }
 
@@ -66,6 +70,7 @@ final class DaedalusCommands
 
         var player = context.getSource().getPlayerOrException();
         var pos = VoidDaedalus.visit(player, theme);
+        DaedalusConnections.forget(player);
         var seed = VoidDaedalus.level(context.getSource().getServer()).getSeed();
         context.getSource().sendSuccess(() -> Component.literal("On a bridge of district " + pos.x() + " " + pos.z() + ", ").append(VoidDaedalus.nameOf(seed, pos)), false);
         return 1;

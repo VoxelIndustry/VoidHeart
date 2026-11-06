@@ -186,6 +186,16 @@ public class VoidHeartConfig
     public int armillaryConnectionMaxMinutes = 40;
 
     @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 1, max = 60, step = 1)
+    @SerialEntry(value = "armillary_daedalus_search_minutes", comment = "Minutes the search for a path down to the Daedalus takes")
+    public int armillaryDaedalusSearchMinutes = 10;
+
+    @AutoGen(category = ARMILLARY)
+    @IntSlider(min = 0, max = 64, step = 1)
+    @SerialEntry(value = "armillary_daedalus_pearls", comment = "Void pearls it takes to open the way into the Daedalus")
+    public int armillaryDaedalusPearls = 8;
+
+    @AutoGen(category = ARMILLARY)
     @TickBox
     @SerialEntry(value = "armillary_camera_shake", comment = "Shake the camera while a connection collapses")
     public boolean armillaryCameraShake = true;
@@ -213,6 +223,8 @@ public class VoidHeartConfig
         get().armillarySearchMaxMinutes = Mth.clamp(get().armillarySearchMaxMinutes, 1, 60);
         get().armillaryConnectionMinMinutes = Mth.clamp(get().armillaryConnectionMinMinutes, 1, 240);
         get().armillaryConnectionMaxMinutes = Mth.clamp(get().armillaryConnectionMaxMinutes, 1, 240);
+        get().armillaryDaedalusSearchMinutes = Mth.clamp(get().armillaryDaedalusSearchMinutes, 1, 60);
+        get().armillaryDaedalusPearls = Mth.clamp(get().armillaryDaedalusPearls, 0, 64);
         get().leyLineTravelAnchorInactiveRate = Mth.clamp(get().leyLineTravelAnchorInactiveRate, 0, 1);
         get().oculusTableFollowRange = Mth.clamp(get().oculusTableFollowRange, 16, 512);
         get().oculusTableSightRange = Mth.clamp(get().oculusTableSightRange, 0, 64);

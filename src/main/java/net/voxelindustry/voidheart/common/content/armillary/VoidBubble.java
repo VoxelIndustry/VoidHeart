@@ -29,10 +29,21 @@ public record VoidBubble(int id, int difficulty, DungeonSize size, DungeonTheme 
             Codec.BOOL.optionalFieldOf("broken", false).forGetter(VoidBubble::broken)
     ).apply(instance, VoidBubble::new));
 
+    /** How much of the chart the depths take, the rest below being the strata. */
+    public static final float DEPTHS_SHARE = 0.8F;
+
     public static float y(int difficulty, long seed)
     {
         float jitter = (seed >>> 8 & 0xFFFF) / 65535F * 2 - 1;
-        return (difficulty - 0.5F + jitter * BAND_JITTER) / DungeonAddress.MAX_DIFFICULTY;
+        return bandY(difficulty - 0.5F + jitter * BAND_JITTER);
+    }
+
+    /**
+     * @param depth counted in bands, 0 at the overworld and {@link DungeonAddress#MAX_DIFFICULTY} at the strata's lip
+     */
+    public static float bandY(float depth)
+    {
+        return depth / DungeonAddress.MAX_DIFFICULTY * DEPTHS_SHARE;
     }
 
     public static float radius(DungeonSize size)

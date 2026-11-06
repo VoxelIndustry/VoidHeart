@@ -9,6 +9,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryConnections;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
+import net.voxelindustry.voidheart.common.content.armillary.DaedalusConnections;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonAddress;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 import org.jspecify.annotations.Nullable;
@@ -64,7 +66,7 @@ final class ArmillaryCommands
     }
 
     /**
-     * Works on the armillary nearby, or from inside the dungeon a connection leads to.
+     * Works on the armillary nearby, or from inside the dungeon or the Daedalus a connection leads to.
      */
     private static int decay(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
@@ -77,6 +79,12 @@ final class ArmillaryCommands
         {
             var address = DungeonAddress.at(player.getBlockX(), player.getBlockZ());
             done = address != null && ArmillaryConnections.get(server).decayIn(address, ArmillaryConnections.now(server) + seconds * 20L);
+        }
+        else if (player.level().dimension().equals(VoidDaedalus.WORLD_KEY))
+        {
+            var connections = DaedalusConnections.get(server);
+            var entry = connections.entryOf(player.getUUID());
+            done = entry != null && connections.decayAt(entry, ArmillaryConnections.now(server) + seconds * 20L);
         }
         else
         {

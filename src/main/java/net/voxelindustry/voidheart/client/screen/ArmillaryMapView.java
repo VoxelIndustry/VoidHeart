@@ -17,6 +17,7 @@ import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRoots;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.armillary.ConnectionTimeline;
 import net.voxelindustry.voidheart.common.content.armillary.VoidBubble;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonAddress;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonTheme;
 import org.jspecify.annotations.Nullable;
@@ -28,7 +29,7 @@ import java.util.Random;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * The hole in the slab: the rings at the top feeling their way down, the bubbles they have found, and the dark between them.
+ * The hole in the slab: the rings at the top feeling their way down, the bubbles they have found, the dark between them, and the Daedalus under it all.
  * Colour follows the knowledge repository: teal can be acted on, gold is running, lilac rests, and a bubble's theme only shows in its own light.
  */
 final class ArmillaryMapView
@@ -124,6 +125,18 @@ final class ArmillaryMapView
 
     private static final String[] NUMERALS = { "I", "II", "III", "IV", "V" };
 
+    // The door is the rings' portal torn into the strata's lip, and the reached district's light rises from inside it
+    private static final int   DOOR_RADIUS         = 3;
+    private static final int   DOOR_SINK           = 1;
+    private static final float STRATA_SEARCH_LIGHT = 0.7F;
+    private static final float DOOR_LIGHT_REACH    = 26;
+    private static final float DISTRICT_LIGHT_REACH = 38;
+    private static final float DISTRICT_LIGHT_DEPTH = 0.55F;
+    private static final int   WATCHER_CLEARANCE   = 8;
+    private static final int   LIP_HOVER           = 2;
+    private static final long  REVEAL_MILLIS       = 2400;
+    private static final int   REVEAL_RISE         = 6;
+
     private record Root(ArmillaryRoots.Branch branch, float[] xs, float[] ys, float length)
     {
     }
@@ -159,6 +172,9 @@ final class ArmillaryMapView
     private float      lookY;
     private @Nullable Root dying;
     private long       dyingAt;
+    private final long seed;
+    // Halved so that subtracting it from the time cannot overflow
+    private long       revealAt = Long.MIN_VALUE / 2;
 
     ArmillaryMapView(Font font, int left, int right, int height, long seed)
     {
@@ -170,13 +186,87 @@ final class ArmillaryMapView
         this.scale = height >= LARGE_MIN ? 2 : 1;
         this.chartTop = ArmillaryChartBackground.surfaceBottom(scale) + CHART_GAP;
         this.chartBottom = height - BOTTOM_BAND;
+        this.seed = seed;
 
         var random = new Random(seed);
-        int chartHeight = chartBottom - chartTop;
+        int depths = Math.max(2, strataTop() - WATCHER_CLEARANCE * scale - chartTop);
         for (int index = 0; index < WATCHERS; index++)
-            watchers.add(new Spot(holeLeft + random.nextInt(holeRight - holeLeft), chartTop + chartHeight / 2 + random.nextInt(chartHeight / 2), random.nextFloat()));
+            watchers.add(new Spot(holeLeft + random.nextInt(holeRight - holeLeft), chartTop + depths / 2 + random.nextInt(depths / 2), random.nextFloat()));
         for (int index = 0; index < EMBERS; index++)
-            embers.add(new Spot(holeLeft + random.nextInt(holeRight - holeLeft), chartTop + random.nextInt(chartHeight), random.nextFloat()));
+            embers.add(new Spot(holeLeft + random.nextInt(holeRight - holeLeft), chartTop + random.nextInt(depths), random.nextFloat()));
+    }
+
+    /**
+     * Where the Daedalus begins, across the whole hole.
+     */
+    int strataTop()
+    {
+        return Math.round(screenY(ArmillaryChart.STRATA_TOP));
+    }
+
+    int holeLeft()
+    {
+        return holeLeft;
+    }
+
+    static boolean targetsStrata(View view)
+    {
+        return view.targetsStrata();
+    }
+
+    /**
+     * Where the root comes down on the strata. Only means something while the strata is the target.
+     */
+    int strataX(View view)
+    {
+        return Math.round(screenX(view.strata().x()));
+    }
+
+    static @Nullable DaedalusTheme strataTheme(View view)
+    {
+        int theme = view.strata().theme();
+        return theme < 0 || theme >= DaedalusTheme.values().length ? null : DaedalusTheme.values()[theme];
+    }
+
+    /**
+     * Where the strata's torn lip is above a column of the screen, matching the bake.
+     */
+    int lipY(int x)
+    {
+        return ArmillaryChartBackground.lipY(x, left, strataTop(), scale, seed);
+    }
+
+    boolean isOverStrata(double mouseX, double mouseY)
+    {
+        return mouseX >= holeLeft && mouseX < holeRight && mouseY >= lipY((int) mouseX) - LIP_HOVER * scale;
+    }
+
+    ArmillaryChartBackground.Strata strata(View view)
+    {
+        return new ArmillaryChartBackground.Strata(view.strata().known(), strataTop());
+    }
+
+    int doorY(View view)
+    {
+        return lipY(strataX(view)) + DOOR_SINK * scale;
+    }
+
+    int doorReach()
+    {
+        return (DOOR_RADIUS + 1) * scale;
+    }
+
+    /**
+     * The strata coming into focus: a light running out along its lip from the middle while the studied look fades in.
+     */
+    void revealStrata()
+    {
+        revealAt = Util.getMillis();
+    }
+
+    boolean isRevealing()
+    {
+        return Util.getMillis() - revealAt < REVEAL_MILLIS;
     }
 
     int scale()
@@ -255,6 +345,18 @@ final class ArmillaryMapView
         return NUMERALS[difficulty - 1];
     }
 
+    static int strataStateRgb(View view)
+    {
+        if (!targetsStrata(view))
+            return view.phaseValue() == Phase.SCANNING && view.strata().known() ? ResearchScreen.FRONTIER_RGB : ResearchScreen.KNOWN_RGB;
+        return switch (view.phaseValue())
+        {
+            case REACHED -> ResearchScreen.FRONTIER_RGB;
+            case CONNECTED -> failing(view) ? LACK_RGB : ResearchScreen.ACTIVE_RGB;
+            default -> ResearchScreen.ACTIVE_RGB;
+        };
+    }
+
     /**
      * The state a bubble is in, as a colour: only what can be acted on is teal, only what is running is gold.
      */
@@ -283,21 +385,42 @@ final class ArmillaryMapView
         return ArmillaryPortalRender.themeColor(theme);
     }
 
-    private static int themeLight(DungeonTheme theme)
+    private static int themeLight(int rgb)
     {
-        int rgb = themeRgb(theme);
         return ARGB.color(0, (int) (ARGB.red(rgb) * THEME_LIGHT), (int) (ARGB.green(rgb) * THEME_LIGHT), (int) (ARGB.blue(rgb) * THEME_LIGHT));
     }
 
     private void prepareRoots(BubbleView target)
     {
-        if (rootsTarget == target.id() && rootsSeed == target.seed())
+        prepareRoots(target.id(), target.seed(), target.x(), VoidBubble.y(target.difficulty(), target.seed()), (float) radius(target) / chartHeight());
+    }
+
+    /**
+     * @return whether there is anything to grow roots towards
+     */
+    private boolean prepareRoots(View view)
+    {
+        if (targetsStrata(view))
+        {
+            prepareRoots(ArmillaryChart.STRATA, view.strata().seed(), view.strata().x(), ArmillaryChart.STRATA_TOP, 0);
+            return true;
+        }
+
+        var target = target(view);
+        if (target == null)
+            return false;
+        prepareRoots(target);
+        return true;
+    }
+
+    private void prepareRoots(int id, long seed, float x, float y, float radius)
+    {
+        if (rootsTarget == id && rootsSeed == seed)
             return;
 
-        rootsTarget = target.id();
-        rootsSeed = target.seed();
-        float bubbleRadius = (float) radius(target) / chartHeight();
-        var grown = ArmillaryRoots.grow(target.seed(), SOURCE_X, target.x(), VoidBubble.y(target.difficulty(), target.seed()), bubbleRadius);
+        rootsTarget = id;
+        rootsSeed = seed;
+        var grown = ArmillaryRoots.grow(seed, SOURCE_X, x, y, radius);
 
         var prepared = new ArrayList<Root>();
         for (var branch : grown)
@@ -333,11 +456,9 @@ final class ArmillaryMapView
      */
     int rootStep(View view, float progress)
     {
-        var target = target(view);
-        if (target == null)
+        if (!prepareRoots(view))
             return 0;
 
-        prepareRoots(target);
         var main = mainRoot();
         return main == null ? 0 : Mth.floor(Math.min(1, main.branch().grown(progress)) * ROOT_LIGHTS);
     }
@@ -352,7 +473,19 @@ final class ArmillaryMapView
         lights.add(new ResearchVoid.Light(screenX(SOURCE_X), chartTop, reach, 0.95, ResearchVoid.LIT_RGB));
 
         var targetTheme = target(view) == null ? null : DungeonTheme.byId(target(view).theme());
-        int pathRgb = targetTheme == null ? ResearchVoid.LIT_RGB : themeLight(targetTheme);
+        int pathRgb = targetTheme == null ? ResearchVoid.LIT_RGB : themeLight(themeRgb(targetTheme));
+        var daedalusTheme = targetsStrata(view) ? strataTheme(view) : null;
+        if (daedalusTheme != null)
+            pathRgb = themeLight(daedalusTheme.color());
+        if (targetsStrata(view) && daedalusTheme == null)
+            lights.add(new ResearchVoid.Light(strataX(view), doorY(view), DOOR_LIGHT_REACH * scale, STRATA_SEARCH_LIGHT, ResearchVoid.LIT_RGB));
+        else if (daedalusTheme != null)
+        {
+            // Through the door and up out of the district below, the only colour the strata ever takes
+            int screenBottom = chartBottom + BOTTOM_BAND;
+            lights.add(new ResearchVoid.Light(strataX(view), doorY(view), DOOR_LIGHT_REACH * 1.6 * scale, 1, pathRgb));
+            lights.add(new ResearchVoid.Light(strataX(view), strataTop() + (screenBottom - strataTop()) * DISTRICT_LIGHT_DEPTH, DISTRICT_LIGHT_REACH * scale, 1, pathRgb));
+        }
 
         for (var bubble : view.bubbles())
         {
@@ -369,7 +502,7 @@ final class ArmillaryMapView
                 lights.add(new ResearchVoid.Light(bubbleX(bubble), bubbleY(bubble), radius * 3.4 + 36, 1, pathRgb));
         }
 
-        var main = target(view) == null ? null : mainRoot();
+        var main = target(view) == null && !targetsStrata(view) ? null : mainRoot();
         if (main != null)
         {
             int segments = main.branch().segments();
@@ -390,6 +523,9 @@ final class ArmillaryMapView
         var key = new ArrayList<Integer>();
         key.add(rootStep);
         key.add(view.target());
+        key.add(view.strata().known() ? 1 : 0);
+        key.add(view.strata().theme());
+        key.add(Float.floatToIntBits(view.strata().x()));
         for (var bubble : view.bubbles())
         {
             key.add(bubble.id());
@@ -402,6 +538,24 @@ final class ArmillaryMapView
     void bloom(BubbleView bubble, boolean finished, int rgb)
     {
         blooms.add(new Bloom(bubbleX(bubble), bubbleY(bubble), radius(bubble), Util.getMillis(), finished, rgb));
+    }
+
+    void bloomStrata(View view, boolean finished, int rgb)
+    {
+        blooms.add(new Bloom(strataX(view), doorY(view), doorReach(), Util.getMillis(), finished, rgb));
+    }
+
+    /**
+     * The way into the Daedalus closed: the door on the strata goes dark and the root dies back.
+     */
+    void collapseStrata(View before)
+    {
+        bloomStrata(before, true, LACK_RGB);
+        if (rootsTarget == ArmillaryChart.STRATA)
+        {
+            dying = mainRoot();
+            dyingAt = Util.getMillis();
+        }
     }
 
     /**
@@ -417,7 +571,12 @@ final class ArmillaryMapView
         }
     }
 
-    void extract(GuiGraphicsExtractor graphics, View view, float progress, float elapsedTicks, @Nullable BubbleView selected, @Nullable BubbleView hovered, int mouseX, int mouseY)
+    /**
+     * @param strataLooked whether the strata is selected or under the cursor, rather than a bubble
+     * @param strataLookX  where along it, when it is not the target
+     */
+    void extract(GuiGraphicsExtractor graphics, View view, float progress, float elapsedTicks, @Nullable BubbleView selected, @Nullable BubbleView hovered, boolean strataLooked,
+                 int strataLookX, int mouseX, int mouseY)
     {
         long now = Util.getMillis();
         var target = target(view);
@@ -425,14 +584,12 @@ final class ArmillaryMapView
         extractWatchers(graphics, mouseX, mouseY, now);
         if (view.phaseValue() == Phase.SCANNING)
             extractEmbers(graphics, now);
-        if (target != null)
-        {
-            prepareRoots(target);
-            extractRoots(graphics, view, target, progress, now);
-        }
+        if (prepareRoots(view))
+            extractRoots(graphics, view, progress, now);
         else
             rootsTarget = -1;
         extractDying(graphics, now);
+        extractDoor(graphics, view, now);
 
         for (var bubble : view.bubbles())
         {
@@ -441,17 +598,103 @@ final class ArmillaryMapView
             else
                 extractBubble(graphics, view, bubble, now);
         }
-        extractRings(graphics, view, target, progress, elapsedTicks, selected != null ? selected : hovered, mouseX, mouseY, now);
+        var looked = selected != null ? selected : hovered;
+        int lookX = looked != null ? bubbleX(looked) : strataLooked ? strataLookX : mouseX;
+        int lookY = looked != null ? bubbleY(looked) : strataLooked ? lipY(lookX) : mouseY;
+        extractRings(graphics, view, progress, elapsedTicks, lookX, lookY, looked != null || strataLooked, now);
 
         if (selected != null)
             ResearchMapView.brackets(graphics, bubbleX(selected), bubbleY(selected), radius(selected) + BRACKET_GAP, ResearchScreen.TEXT_COLOR);
         if (hovered != null && hovered != selected)
             ResearchMapView.brackets(graphics, bubbleX(hovered), bubbleY(hovered), radius(hovered) + BRACKET_GAP, ResearchScreen.MUTED_COLOR);
+        if (strataLooked && targetsStrata(view))
+            ResearchMapView.brackets(graphics, strataX(view), doorY(view), doorReach() + BRACKET_GAP, isStrataSelected ? ResearchScreen.TEXT_COLOR : ResearchScreen.MUTED_COLOR);
 
-        extractNumerals(graphics, selected != null ? selected : hovered);
+        extractNumerals(graphics, looked);
         extractLabel(graphics, view, target, selected, hovered);
+        extractStrataLabel(graphics, view, strataLooked, strataLookX, selected, hovered);
         extractBlooms(graphics, now);
+        extractReveal(graphics, now);
         lastFrame = now;
+    }
+
+    /**
+     * A light running out along the lip from the middle, fading behind itself, the moment the strata comes into focus.
+     */
+    private void extractReveal(GuiGraphicsExtractor graphics, long now)
+    {
+        float t = (now - revealAt) / (float) REVEAL_MILLIS;
+        if (t < 0 || t >= 1)
+            return;
+
+        float eased = 1 - (1 - t) * (1 - t) * (1 - t);
+        int middle = (holeLeft + holeRight) / 2;
+        float front = eased * (holeRight - holeLeft) / 2F;
+        float trail = Math.max(1, front * 0.6F);
+        for (int x = holeLeft; x < holeRight; x += scale)
+        {
+            float behind = front - Math.abs(x - middle);
+            if (behind < 0)
+                continue;
+
+            int alpha = (int) (255 * Math.max(0, 1 - behind / trail) * (1 - t));
+            if (alpha <= 0)
+                continue;
+            int y = lipY(x) - scale;
+            graphics.fill(x, y, x + scale, y + scale, ARGB.color(alpha, ResearchScreen.REVEALED_RGB));
+            if (behind < REVEAL_RISE * scale)
+                graphics.fill(x, y - scale * 2, x + scale, y - scale, ARGB.color(alpha / 3, ResearchScreen.KNOWN_RGB));
+        }
+    }
+
+    /**
+     * Where the root came down, the same torn hole as the one inside the rings opens in the lip, rimmed in the district's colour. It breathes until it is opened.
+     */
+    private void extractDoor(GuiGraphicsExtractor graphics, View view, long now)
+    {
+        if (!targetsStrata(view) || view.phaseValue().ordinal() < Phase.REACHED.ordinal())
+            return;
+
+        var theme = strataTheme(view);
+        int rim = theme == null ? ARGB.opaque(strataStateRgb(view)) : ARGB.opaque(theme.color());
+        if (failing(view))
+            rim = ARGB.opaque(LACK_RGB);
+        if (view.phaseValue() == Phase.REACHED)
+        {
+            float breath = 0.5F + 0.5F * (float) Math.sin(now * Math.PI * 2 / BREATH_MILLIS);
+            rim = ARGB.srgbLerp(0.35F + 0.65F * breath, ARGB.opaque(IDLE_CORE_RGB), rim);
+        }
+
+        int x = strataX(view);
+        int y = doorY(view);
+        disc(graphics, x, y, DOOR_RADIUS, PORTAL_COLOR);
+        arc(graphics, x, y, DOOR_RADIUS + 1, 0, 1, rim);
+    }
+
+    /**
+     * A name for the strata, wherever it is being looked at or the root is reaching. Someone who has not studied it only knows there is something.
+     */
+    private void extractStrataLabel(GuiGraphicsExtractor graphics, View view, boolean strataLooked, int strataLookX, @Nullable BubbleView selected, @Nullable BubbleView hovered)
+    {
+        boolean targeted = targetsStrata(view);
+        if (!targeted && !strataLooked || isStrataSelected)
+            return;
+
+        var text = Component.translatable(view.strata().known() ? "voidheart.armillary.strata.name" : "voidheart.armillary.strata.unknown");
+        int half = font.width(text) / 2 + 2;
+        int anchor = targeted ? strataX(view) : strataLookX;
+        int centerX = Math.clamp(anchor, holeLeft + half, Math.max(holeLeft + half, holeRight - half));
+        int y = (targeted ? doorY(view) - doorReach() : lipY(centerX)) - LABEL_DROP - font.lineHeight;
+
+        graphics.fill(centerX - half, y - 1, centerX + half, y + font.lineHeight - 1, ResearchMapView.LABEL_BACK_COLOR);
+        graphics.centeredText(font, text, centerX, y, ARGB.opaque(view.strata().known() ? strataStateRgb(view) : ResearchScreen.MUTED_COLOR));
+    }
+
+    private boolean isStrataSelected;
+
+    void setStrataSelected(boolean selected)
+    {
+        isStrataSelected = selected;
     }
 
     /**
@@ -487,7 +730,7 @@ final class ArmillaryMapView
         }
     }
 
-    private void extractRoots(GuiGraphicsExtractor graphics, View view, BubbleView target, float progress, long now)
+    private void extractRoots(GuiGraphicsExtractor graphics, View view, float progress, long now)
     {
         for (var root : roots)
         {
@@ -499,7 +742,8 @@ final class ArmillaryMapView
         if (main == null)
             return;
 
-        int rgb = stateRgb(view, target);
+        var target = target(view);
+        int rgb = target == null ? strataStateRgb(view) : stateRgb(view, target);
         float grown = Math.min(1, main.branch().grown(progress));
         forGrown(main, grown, (x1, y1, x2, y2, along) -> TravelMapScreen.line(graphics, x1, y1, x2, y2, MAIN_GLOW_WIDTH, ARGB.color(MAIN_GLOW_ALPHA, rgb)));
         forGrown(main, grown, (x1, y1, x2, y2, along) -> TravelMapScreen.line(graphics, x1, y1, x2, y2, Mth.lerp(along, MAIN_CORE_WIDTH, MAIN_TIP_WIDTH), ARGB.opaque(rgb)));
@@ -657,7 +901,7 @@ final class ArmillaryMapView
     /**
      * The three rings of the instrument itself, nested as they are in the world and turning at the same speeds. What is behind is darker, which is all it takes to read them as round.
      */
-    private void extractRings(GuiGraphicsExtractor graphics, View view, @Nullable BubbleView target, float progress, float elapsedTicks, @Nullable BubbleView looked, int mouseX, int mouseY, long now)
+    private void extractRings(GuiGraphicsExtractor graphics, View view, float progress, float elapsedTicks, int lookAtX, int lookAtY, boolean lookingAtSomething, long now)
     {
         float ticks = Math.min(5, (now - lastFrame) / 50F);
         spin += (ArmillaryTile.spinOf(view.phaseValue(), view.stageValue()) - spin) * Math.min(1, SPIN_EASE * ticks);
@@ -671,15 +915,15 @@ final class ArmillaryMapView
         disc(graphics, centerX, centerY, MOUNT_RADIUS - 1, MOUNT_BACK);
         extractGauge(graphics, view, progress, elapsedTicks, centerX, centerY, now);
 
-        float wantedX = Mth.clamp(((looked != null ? bubbleX(looked) : mouseX) - centerX) / LOOK_DISTANCE, -1, 1) * LOOK_REACH;
-        float wantedY = Mth.clamp(((looked != null ? bubbleY(looked) : mouseY) - centerY) / LOOK_DISTANCE, -1, 1) * LOOK_REACH;
+        float wantedX = Mth.clamp((lookAtX - centerX) / LOOK_DISTANCE, -1, 1) * LOOK_REACH;
+        float wantedY = Mth.clamp((lookAtY - centerY) / LOOK_DISTANCE, -1, 1) * LOOK_REACH;
         lookX += (wantedX - lookX) * Math.min(1, LOOK_EASE * ticks);
         lookY += (wantedY - lookY) * Math.min(1, LOOK_EASE * ticks);
 
         for (int ring = 0; ring < angles.length; ring++)
             extractRing(graphics, ring, ringX(centerX, ring), ringY(centerY, ring), false);
-        if (view.phaseValue() == Phase.CONNECTED && target != null)
-            extractPortal(graphics, ringX(centerX, 2), ringY(centerY, 2), target);
+        if (view.phaseValue() == Phase.CONNECTED)
+            extractPortal(graphics, ringX(centerX, 2), ringY(centerY, 2), view);
         for (int ring = 0; ring < angles.length; ring++)
             extractRing(graphics, ring, ringX(centerX, ring), ringY(centerY, ring), true);
     }
@@ -720,7 +964,7 @@ final class ArmillaryMapView
             }
             case CONNECTED ->
             {
-                float left = view.connectionDuration() > 0 ? Math.clamp((view.connectionTicks() - elapsedTicks) / view.connectionDuration(), 0, 1) : 0;
+                float left = view.isStable() ? 1 : view.connectionDuration() > 0 ? Math.clamp((view.connectionTicks() - elapsedTicks) / view.connectionDuration(), 0, 1) : 0;
                 arc(graphics, centerX, centerY, MOUNT_RADIUS, 0, left, failing(view) ? ResearchScreen.LACK_COLOR : ResearchScreen.ACTIVE_COLOR);
             }
         }
@@ -790,10 +1034,19 @@ final class ArmillaryMapView
         }
     }
 
-    private void extractPortal(GuiGraphicsExtractor graphics, int centerX, int centerY, BubbleView target)
+    private void extractPortal(GuiGraphicsExtractor graphics, int centerX, int centerY, View view)
     {
+        int rgb;
+        var target = target(view);
+        if (target != null)
+            rgb = themeRgb(DungeonTheme.byId(target.theme()));
+        else if (targetsStrata(view))
+            rgb = strataTheme(view) == null ? ArmillaryPortalRender.themeColor(null) : strataTheme(view).color();
+        else
+            return;
+
         disc(graphics, centerX, centerY, PORTAL_RADIUS, PORTAL_COLOR);
-        arc(graphics, centerX, centerY, PORTAL_RADIUS + 1, 0, 1, ARGB.opaque(themeRgb(DungeonTheme.byId(target.theme()))));
+        arc(graphics, centerX, centerY, PORTAL_RADIUS + 1, 0, 1, ARGB.opaque(rgb));
     }
 
     /**
@@ -805,7 +1058,7 @@ final class ArmillaryMapView
         {
             String numeral = numeral(depth);
             int x = (left - font.width(numeral)) / 2;
-            int y = (int) screenY((depth - 0.5F) / DungeonAddress.MAX_DIFFICULTY) - font.lineHeight / 2;
+            int y = (int) screenY(VoidBubble.bandY(depth - 0.5F)) - font.lineHeight / 2;
             boolean woken = looked != null && looked.difficulty() == depth;
             graphics.text(font, numeral, x - 1, y - 1, ResearchVoid.LIP_SHADE_COLOR, false);
             graphics.text(font, numeral, x, y, woken ? ResearchScreen.TEXT_COLOR : ResearchScreen.READOUT_COLOR, false);

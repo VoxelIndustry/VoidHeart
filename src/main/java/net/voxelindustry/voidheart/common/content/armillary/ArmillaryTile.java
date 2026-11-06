@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -21,7 +22,11 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeState;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
+import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
@@ -31,6 +36,13 @@ import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonTheme;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 import org.jspecify.annotations.Nullable;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The instrument itself: it checks its own structure, keeps the chart turning, and follows the connection it opened, which outlives it if it must.
@@ -53,11 +65,18 @@ public class ArmillaryTile extends TileBase
     private static final float   REACHED_SPEED     = 0.5F;
     private static final float   FALTER_SPEED_DROP = 0.6F;
 
+    /** What a player must have studied to make out the strata, and reach for it. */
+    public static final Identifier DAEDALUS_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "daedalus");
+
     private ArmillaryChart chart = new ArmillaryChart();
 
     @Getter
     private boolean                  formed;
     private @Nullable DungeonAddress connection;
+    /** The way into the Daedalus held open, if that is what the rings hold rather than a dungeon. */
+    private           int            daedalus = ArmillaryRiftTile.NONE;
+    /** Who has already watched the strata come into focus on this chart since studying it. */
+    private final     Set<UUID>      sawStrata = new HashSet<>();
     @Getter
     private ConnectionTimeline.Stage stage = ConnectionTimeline.Stage.STABLE;
     private long                     previewUntil;
@@ -85,7 +104,18 @@ public class ArmillaryTile extends TileBase
     {
         var config = VoidHeartConfig.get();
         return new ArmillaryChart.Rules(TICKS_PER_MINUTE, config.armillaryScanMinutes * TICKS_PER_MINUTE, config.armillaryMaxBubbles, config.armillaryBubbleFadeMinutes * TICKS_PER_MINUTE,
-                config.armillarySearchMinMinutes * TICKS_PER_MINUTE, Math.max(config.armillarySearchMinMinutes, config.armillarySearchMaxMinutes) * TICKS_PER_MINUTE);
+                config.armillarySearchMinMinutes * TICKS_PER_MINUTE, Math.max(config.armillarySearchMinMinutes, config.armillarySearchMaxMinutes) * TICKS_PER_MINUTE,
+                config.armillaryDaedalusSearchMinutes * TICKS_PER_MINUTE);
+    }
+
+    public static int daedalusCost()
+    {
+        return VoidHeartConfig.get().armillaryDaedalusPearls;
+    }
+
+    public static boolean knowsDaedalus(ServerPlayer player)
+    {
+        return KnowledgeState.get(player.level().getServer()).of(player.getUUID()).getCompleted().contains(DAEDALUS_RESEARCH);
     }
 
     public static void tick(Level world, BlockPos pos, BlockState state, ArmillaryTile armillary)
@@ -180,7 +210,7 @@ public class ArmillaryTile extends TileBase
         var current = level.getBlockState(hub);
         if (formed)
         {
-            var wanted = VoidHeartBlocks.ARMILLARY_HUB.defaultBlockState().setValue(ArmillaryHubBlock.OPEN, connection != null);
+            var wanted = VoidHeartBlocks.ARMILLARY_HUB.defaultBlockState().setValue(ArmillaryHubBlock.OPEN, holdsConnection());
             if (current != wanted)
                 level.setBlockAndUpdate(hub, wanted);
         }
@@ -188,8 +218,15 @@ public class ArmillaryTile extends TileBase
             level.setBlockAndUpdate(hub, Blocks.AIR.defaultBlockState());
     }
 
+    private boolean holdsConnection()
+    {
+        return connection != null || daedalus != ArmillaryRiftTile.NONE;
+    }
+
     private boolean followConnection(ServerLevel level)
     {
+        if (daedalus != ArmillaryRiftTile.NONE)
+            return followDaedalus(level);
         if (connection == null)
             return false;
 
@@ -209,13 +246,47 @@ public class ArmillaryTile extends TileBase
 
         long left = open.decayAt() - ArmillaryConnections.now(server);
         connectionLeft = open.duration() <= 0 ? 0 : (float) left / open.duration();
-        var current = ConnectionTimeline.stage(left);
+        return moveToStage(ConnectionTimeline.stage(left));
+    }
+
+    private boolean moveToStage(ConnectionTimeline.Stage current)
+    {
         if (current == stage)
             return false;
 
         stage = current;
         sync();
         return true;
+    }
+
+    /**
+     * Holds without wearing until it is severed, and from then on fails like any other connection's last minutes.
+     */
+    private boolean followDaedalus(ServerLevel level)
+    {
+        var server = level.getServer();
+        var open = DaedalusConnections.get(server).get(daedalus);
+        if (open == null)
+        {
+            daedalus = ArmillaryRiftTile.NONE;
+            connectionLeft = 0;
+            stage = ConnectionTimeline.Stage.STABLE;
+            chart.connectionClosed();
+            play(VoidHeartSounds.ARMILLARY_CLOSE);
+            placeHub(level);
+            sync();
+            return true;
+        }
+
+        if (!open.isSevered())
+        {
+            connectionLeft = 1;
+            return moveToStage(ConnectionTimeline.Stage.STABLE);
+        }
+
+        long left = open.decayAt() - ArmillaryConnections.now(server);
+        connectionLeft = Mth.clamp((float) left / DaedalusConnections.SEVER_TICKS, 0, 1);
+        return moveToStage(ConnectionTimeline.stage(left));
     }
 
     private void sendViews(ServerLevel level)
@@ -230,11 +301,27 @@ public class ArmillaryTile extends TileBase
     private void sendView(ServerPlayer player)
     {
         var server = player.level().getServer();
+        int left = 0;
+        int total = 0;
         var open = connection == null ? null : ArmillaryConnections.get(server).get(connection);
-        int left = open == null ? 0 : (int) Math.max(0, open.decayAt() - ArmillaryConnections.now(server));
-        int total = open == null ? 0 : (int) open.duration();
+        if (open != null)
+        {
+            left = (int) Math.max(0, open.decayAt() - ArmillaryConnections.now(server));
+            total = (int) open.duration();
+        }
+        var daedalusOpen = daedalus == ArmillaryRiftTile.NONE ? null : DaedalusConnections.get(server).get(daedalus);
+        if (daedalusOpen != null)
+        {
+            left = daedalusOpen.isSevered() ? (int) Math.max(0, daedalusOpen.decayAt() - ArmillaryConnections.now(server)) : 0;
+            total = daedalusOpen.isSevered() ? DaedalusConnections.SEVER_TICKS : ArmillaryPayloads.View.STABLE;
+        }
         int pearls = player.isCreative() ? ArmillaryPayloads.View.FREE : pearlsHeld(player, Integer.MAX_VALUE);
-        ServerPlayNetworking.send(player, ArmillaryPayloads.View.of(chart, rules(), stage, pearls, left, total));
+        boolean known = knowsDaedalus(player);
+        boolean reveal = known && sawStrata.add(player.getUUID());
+        if (reveal)
+            setChanged();
+        var strata = ArmillaryPayloads.StrataView.of(chart, rules(), known, reveal, daedalusCost(), server.overworld().getSeed());
+        ServerPlayNetworking.send(player, ArmillaryPayloads.View.of(chart, rules(), stage, pearls, left, total, strata));
     }
 
     private static int pearlsHeld(ServerPlayer player, int upTo)
@@ -268,7 +355,7 @@ public class ArmillaryTile extends TileBase
             return;
         }
 
-        if (onHub && connection != null)
+        if (onHub && holdsConnection())
         {
             enter(player);
             return;
@@ -299,11 +386,21 @@ public class ArmillaryTile extends TileBase
 
     private void enter(ServerPlayer player)
     {
-        if (ArmillaryConnections.get(player.level().getServer()).get(connection) == null)
-            return;
-
-        play(VoidHeartSounds.CONNECTION_TRAVEL);
-        VoidDungeons.enter(player, connection);
+        var server = player.level().getServer();
+        if (daedalus != ArmillaryRiftTile.NONE)
+        {
+            if (DaedalusConnections.get(server).get(daedalus) == null)
+                return;
+            play(VoidHeartSounds.CONNECTION_TRAVEL);
+            DaedalusConnections.enter(player, daedalus);
+        }
+        else
+        {
+            if (ArmillaryConnections.get(server).get(connection) == null)
+                return;
+            play(VoidHeartSounds.CONNECTION_TRAVEL);
+            VoidDungeons.enter(player, connection);
+        }
         var arrival = player.position();
         player.level().playSound(null, arrival.x, arrival.y, arrival.z, VoidHeartSounds.CONNECTION_TRAVEL, SoundSource.PLAYERS, 1, 1);
     }
@@ -312,9 +409,10 @@ public class ArmillaryTile extends TileBase
     {
         boolean changed = switch (action.kind())
         {
-            case TARGET -> chart.target(action.bubble(), rules());
+            case TARGET -> (action.bubble() != ArmillaryChart.STRATA || knowsDaedalus(player)) && chart.target(action.bubble(), rules(), level.getRandom());
             case ABANDON -> chart.abandon(rules());
             case OPEN -> open(player);
+            case SEVER -> sever();
         };
         if (!changed)
             return;
@@ -326,17 +424,14 @@ public class ArmillaryTile extends TileBase
 
     private boolean open(ServerPlayer player)
     {
-        var target = chart.target();
-        if (target == null || chart.getPhase() != ArmillaryChart.Phase.REACHED || !formed)
+        if (chart.getPhase() != ArmillaryChart.Phase.REACHED || !formed)
             return false;
+        if (chart.targetsStrata())
+            return openDaedalus(player);
 
-        if (!player.isCreative())
-        {
-            int cost = target.openCost();
-            if (pearlsHeld(player, cost) < cost)
-                return false;
-            player.getInventory().clearOrCountMatchingItems(stack -> stack.is(VoidHeartItems.VOID_PEARL), false, cost, player.inventoryMenu.getCraftSlots());
-        }
+        var target = chart.target();
+        if (target == null || !pay(player, target.openCost()))
+            return false;
 
         var server = player.level().getServer();
         var address = VoidDungeons.open(server, target.size(), target.theme(), target.difficulty());
@@ -352,6 +447,57 @@ public class ArmillaryTile extends TileBase
         placeHub((ServerLevel) level);
         play(VoidHeartSounds.ARMILLARY_OPEN);
         return true;
+    }
+
+    private static boolean pay(ServerPlayer player, int cost)
+    {
+        if (player.isCreative())
+            return true;
+        if (pearlsHeld(player, cost) < cost)
+            return false;
+        player.getInventory().clearOrCountMatchingItems(stack -> stack.is(VoidHeartItems.VOID_PEARL), false, cost, player.inventoryMenu.getCraftSlots());
+        return true;
+    }
+
+    private boolean openDaedalus(ServerPlayer player)
+    {
+        var point = chart.getStrata();
+        if (point == null || !knowsDaedalus(player) || !pay(player, daedalusCost()))
+            return false;
+
+        daedalus = DaedalusConnections.get(player.level().getServer()).open(level.dimension(), worldPosition, point).id();
+        connectionLeft = 1;
+        stage = ConnectionTimeline.Stage.STABLE;
+        chart.connect();
+        placeHub((ServerLevel) level);
+        play(VoidHeartSounds.ARMILLARY_OPEN);
+        return true;
+    }
+
+    /**
+     * Anyone at the chart may let go of the Daedalus. It is not let go of at once, for the sake of those still inside.
+     */
+    private boolean sever()
+    {
+        if (daedalus == ArmillaryRiftTile.NONE)
+            return false;
+
+        var server = level.getServer();
+        if (!DaedalusConnections.get(server).sever(daedalus, ArmillaryConnections.now(server)))
+            return false;
+        followDaedalus((ServerLevel) level);
+        return true;
+    }
+
+    /**
+     * The Daedalus is only held by the armillary that opened the way, so it goes once the core does. A dungeon's connection outlives it, as it wears out on its own.
+     */
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        super.preRemoveSideEffects(pos, state);
+        if (level instanceof ServerLevel serverLevel && daedalus != ArmillaryRiftTile.NONE)
+            DaedalusConnections.get(serverLevel.getServer()).sever(daedalus, ArmillaryConnections.now(serverLevel.getServer()));
     }
 
     /**
@@ -376,10 +522,12 @@ public class ArmillaryTile extends TileBase
 
     public boolean decayIn(int seconds)
     {
+        var server = level.getServer();
+        if (daedalus != ArmillaryRiftTile.NONE)
+            return DaedalusConnections.get(server).decayAt(daedalus, ArmillaryConnections.now(server) + seconds * 20L);
         if (connection == null)
             return false;
 
-        var server = level.getServer();
         return ArmillaryConnections.get(server).decayIn(connection, ArmillaryConnections.now(server) + seconds * 20L);
     }
 
@@ -417,6 +565,22 @@ public class ArmillaryTile extends TileBase
     {
         var target = chart.target();
         return target != null && chart.getPhase().ordinal() >= ArmillaryChart.Phase.REACHED.ordinal() ? target.theme() : null;
+    }
+
+    /**
+     * The colour of the district the portal opens into, once a root has reached the strata. Null otherwise.
+     */
+    public @Nullable Integer portalDaedalusRgb()
+    {
+        var point = chart.getStrata();
+        if (point == null || chart.getPhase().ordinal() < ArmillaryChart.Phase.REACHED.ordinal())
+            return null;
+        return DaedalusTheme.at(new DistrictPos(point.districtX(), point.districtZ())).color();
+    }
+
+    public int getDaedalusConnection()
+    {
+        return daedalus;
     }
 
     private void tickClient()
@@ -492,8 +656,11 @@ public class ArmillaryTile extends TileBase
 
         boolean wasConnected = isConnected();
         chart = tag.read("chart", ArmillaryChart.CODEC).orElseGet(ArmillaryChart::new);
+        sawStrata.clear();
+        tag.read("saw_strata", UUIDUtil.CODEC.listOf()).ifPresent(sawStrata::addAll);
         formed = tag.getBooleanOr("formed", false);
         connection = tag.read("connection", DungeonAddress.CODEC).orElse(null);
+        daedalus = tag.getIntOr("daedalus", ArmillaryRiftTile.NONE);
         stage = ConnectionTimeline.Stage.values()[Mth.clamp(tag.getIntOr("stage", 0), 0, ConnectionTimeline.Stage.values().length - 1)];
         previewUntil = tag.getLongOr("previewUntil", 0);
         connectionLeft = tag.getFloatOr("connectionLeft", 0);
@@ -506,9 +673,12 @@ public class ArmillaryTile extends TileBase
     protected void saveAdditional(ValueOutput tag)
     {
         tag.store("chart", ArmillaryChart.CODEC, chart);
+        tag.store("saw_strata", UUIDUtil.CODEC.listOf(), List.copyOf(sawStrata));
         tag.putBoolean("formed", formed);
         if (connection != null)
             tag.store("connection", DungeonAddress.CODEC, connection);
+        if (daedalus != ArmillaryRiftTile.NONE)
+            tag.putInt("daedalus", daedalus);
         tag.putInt("stage", stage.ordinal());
         tag.putLong("previewUntil", previewUntil);
         tag.putFloat("connectionLeft", connectionLeft);

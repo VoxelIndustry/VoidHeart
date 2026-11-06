@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ArmillaryChartTest
 {
-    private static final ArmillaryChart.Rules RULES = new ArmillaryChart.Rules(10, 100, 3, 500, 40, 200);
+    private static final ArmillaryChart.Rules RULES = new ArmillaryChart.Rules(10, 100, 3, 500, 40, 200, 300);
 
     private final RandomSource random = RandomSource.create(42);
 
@@ -83,7 +83,7 @@ class ArmillaryChartTest
     {
         var chart = new ArmillaryChart();
         var bubble = found(chart);
-        assertThat(chart.target(bubble.id(), RULES)).isTrue();
+        assertThat(chart.target(bubble.id(), RULES, random)).isTrue();
         assertThat(chart.getPhase()).isEqualTo(ArmillaryChart.Phase.SEARCHING);
 
         int duration = ArmillaryChart.searchDuration(bubble.difficulty(), RULES);
@@ -110,11 +110,11 @@ class ArmillaryChartTest
         var chart = new ArmillaryChart();
         var first = found(chart);
         var second = found(chart);
-        chart.target(first.id(), RULES);
+        chart.target(first.id(), RULES, random);
         tick(chart, 5);
         assertThat(chart.getSearchTicks()).isEqualTo(5);
 
-        assertThat(chart.target(second.id(), RULES)).isTrue();
+        assertThat(chart.target(second.id(), RULES, random)).isTrue();
         assertThat(chart.getSearchTicks()).isZero();
         assertThat(chart.getTargetId()).isEqualTo(second.id());
         assertThat(chart.bubble(first.id()).fadeAt()).isNotEqualTo(VoidBubble.NEVER);
@@ -124,7 +124,7 @@ class ArmillaryChartTest
     void cannotConnect_beforeReaching()
     {
         var chart = new ArmillaryChart();
-        chart.target(found(chart).id(), RULES);
+        chart.target(found(chart).id(), RULES, random);
 
         assertThat(chart.connect()).isFalse();
         assertThat(chart.getPhase()).isEqualTo(ArmillaryChart.Phase.SEARCHING);
@@ -136,11 +136,11 @@ class ArmillaryChartTest
         var chart = new ArmillaryChart();
         var bubble = found(chart);
         var other = found(chart);
-        chart.target(bubble.id(), RULES);
+        chart.target(bubble.id(), RULES, random);
         chart.advanceSearch(1);
         assertThat(chart.connect()).isTrue();
 
-        assertThat(chart.target(other.id(), RULES)).isFalse();
+        assertThat(chart.target(other.id(), RULES, random)).isFalse();
         assertThat(chart.abandon(RULES)).isFalse();
         tick(chart, RULES.fadeTicks() * 2);
         assertThat(chart.target()).isNotNull();
@@ -148,7 +148,7 @@ class ArmillaryChartTest
         chart.connectionClosed();
         assertThat(chart.getPhase()).isEqualTo(ArmillaryChart.Phase.SCANNING);
         assertThat(chart.bubble(bubble.id()).broken()).isTrue();
-        assertThat(chart.target(bubble.id(), RULES)).isFalse();
+        assertThat(chart.target(bubble.id(), RULES, random)).isFalse();
 
         tick(chart, ArmillaryChart.RUIN_TICKS);
         assertThat(chart.bubble(bubble.id())).isNull();
@@ -161,7 +161,7 @@ class ArmillaryChartTest
         tick(chart, 400);
         assertThat(chart.liveBubbles()).isEqualTo(RULES.maxBubbles());
 
-        chart.target(chart.bubbles().getFirst().id(), RULES);
+        chart.target(chart.bubbles().getFirst().id(), RULES, random);
         chart.advanceSearch(1);
         chart.connect();
         chart.connectionClosed();
@@ -176,7 +176,7 @@ class ArmillaryChartTest
     {
         var chart = new ArmillaryChart();
         var bubble = found(chart);
-        chart.target(bubble.id(), RULES);
+        chart.target(bubble.id(), RULES, random);
         tick(chart, 7);
 
         var encoded = ArmillaryChart.CODEC.encodeStart(JavaOps.INSTANCE, chart).getOrThrow();
@@ -193,7 +193,7 @@ class ArmillaryChartTest
     void savedChart_withATargetThatIsGone_fallsBackToScanning()
     {
         var chart = new ArmillaryChart();
-        chart.target(found(chart).id(), RULES);
+        chart.target(found(chart).id(), RULES, random);
 
         var saved = new HashMap<Object, Object>((Map<?, ?>) ArmillaryChart.CODEC.encodeStart(JavaOps.INSTANCE, chart).getOrThrow());
         saved.put("target", 999);
@@ -210,10 +210,82 @@ class ArmillaryChartTest
         for (int index = 0; index < 500; index++)
         {
             var bubble = chart.find(RULES, random);
-            float band = (bubble.difficulty() - 1) / 5F;
-            assertThat(bubble.y()).isBetween(band, band + 0.2F);
+            assertThat(bubble.y()).isBetween(VoidBubble.bandY(bubble.difficulty() - 1), VoidBubble.bandY(bubble.difficulty()));
+            assertThat(bubble.y() + bubble.radius()).as("clear of the strata").isLessThan(ArmillaryChart.STRATA_TOP);
             assertThat(bubble.x()).isBetween(0F, 1F);
             assertThat(bubble.openCost()).isEqualTo(bubble.difficulty());
         }
+    }
+
+    @Test
+    void strata_isSearchedForLikeABubble_andLandsSomewhereNewEachTime()
+    {
+        var chart = new ArmillaryChart();
+        assertThat(chart.target(ArmillaryChart.STRATA, RULES, random)).isTrue();
+        assertThat(chart.targetsStrata()).isTrue();
+        assertThat(chart.target()).isNull();
+        assertThat(chart.getSearchDuration()).isEqualTo(RULES.strataSearchTicks());
+        var first = chart.getStrata();
+        assertThat(first).isNotNull();
+        assertThat(first.x()).isBetween(0F, 1F);
+
+        for (int tick = 1; tick < RULES.strataSearchTicks(); tick++)
+            assertThat(chart.tick(RULES, random)).isNotEqualTo(ArmillaryChart.Event.REACHED);
+        assertThat(chart.tick(RULES, random)).isEqualTo(ArmillaryChart.Event.REACHED);
+        assertThat(chart.connect()).isTrue();
+        assertThat(chart.target(ArmillaryChart.STRATA, RULES, random)).as("held while connected").isFalse();
+
+        chart.connectionClosed();
+        assertThat(chart.getPhase()).isEqualTo(ArmillaryChart.Phase.SCANNING);
+        assertThat(chart.getStrata()).isNull();
+
+        chart.target(ArmillaryChart.STRATA, RULES, random);
+        assertThat(chart.getStrata()).isNotEqualTo(first);
+    }
+
+    @Test
+    void reachingForABubble_letsGoOfTheStrata_andTheOtherWayRound()
+    {
+        var chart = new ArmillaryChart();
+        var bubble = found(chart);
+        chart.target(ArmillaryChart.STRATA, RULES, random);
+
+        assertThat(chart.target(bubble.id(), RULES, random)).isTrue();
+        assertThat(chart.getStrata()).isNull();
+        assertThat(chart.target(ArmillaryChart.STRATA, RULES, random)).isTrue();
+        assertThat(chart.bubble(bubble.id()).fadeAt()).isNotEqualTo(VoidBubble.NEVER);
+
+        assertThat(chart.abandon(RULES)).isTrue();
+        assertThat(chart.targetsStrata()).isFalse();
+        assertThat(chart.getStrata()).isNull();
+    }
+
+    @Test
+    void savedChart_keepsWhereTheStrataWasReached()
+    {
+        var chart = new ArmillaryChart();
+        chart.target(ArmillaryChart.STRATA, RULES, random);
+        chart.advanceSearch(1);
+        chart.connect();
+
+        var encoded = ArmillaryChart.CODEC.encodeStart(JavaOps.INSTANCE, chart).getOrThrow();
+        var decoded = ArmillaryChart.CODEC.parse(JavaOps.INSTANCE, encoded).getOrThrow();
+        assertThat(decoded.targetsStrata()).isTrue();
+        assertThat(decoded.getPhase()).isEqualTo(ArmillaryChart.Phase.CONNECTED);
+        assertThat(decoded.getStrata()).isEqualTo(chart.getStrata());
+    }
+
+    @Test
+    void savedChart_reachingForTheStrataWithoutAPoint_fallsBackToScanning()
+    {
+        var chart = new ArmillaryChart();
+        chart.target(ArmillaryChart.STRATA, RULES, random);
+
+        var saved = new HashMap<Object, Object>((Map<?, ?>) ArmillaryChart.CODEC.encodeStart(JavaOps.INSTANCE, chart).getOrThrow());
+        saved.remove("strata");
+
+        var decoded = ArmillaryChart.CODEC.parse(JavaOps.INSTANCE, (Object) saved).getOrThrow();
+        assertThat(decoded.getPhase()).isEqualTo(ArmillaryChart.Phase.SCANNING);
+        assertThat(decoded.targetsStrata()).isFalse();
     }
 }
