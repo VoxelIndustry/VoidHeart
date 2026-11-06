@@ -35,6 +35,7 @@
       "net.voxelindustry.voidheart.gametest.ElixirClientTest",
       "net.voxelindustry.voidheart.gametest.InsightClientTest",
       "net.voxelindustry.voidheart.gametest.SaltClientTest",
+      "net.voxelindustry.voidheart.gametest.RefinementClientTest",
       "net.voxelindustry.voidheart.gametest.MalignantTormenterClientTest",
       "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest",
       "net.voxelindustry.voidheart.gametest.SinMetalsClientTest",

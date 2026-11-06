@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.fog.FogData;
 import net.minecraft.util.Mth;
+import net.voxelindustry.voidheart.common.content.oil.Elixirs;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEffects;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
@@ -13,13 +14,20 @@ import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
  */
 public final class ClarityFog
 {
-    public static final float START_SCALE  = 2.5F;
-    public static final float END_SCALE    = 1.75F;
+    /**
+     * How far a plain brew pushes the fog's start and end. Stronger brews push further, see {@link Elixirs#CLARITY_START}.
+     */
+    public static final float START_SCALE  = Elixirs.CLARITY_START[0];
+    public static final float END_SCALE    = Elixirs.CLARITY_END[0];
     public static final int   EASE_IN_TICKS  = 60;
     public static final int   EASE_OUT_TICKS = 200;
 
     private static float strength;
     private static float strengthO;
+    /**
+     * Level of the Clarity last seen, kept while the fog eases back so a fading brew doesn't drop to a weaker push.
+     */
+    private static int   level;
 
     private ClarityFog()
     {
@@ -33,6 +41,8 @@ public final class ClarityFog
         if (player != null && inFoggedDimension(minecraft))
         {
             var effect = player.getEffect(VoidHeartEffects.CLARITY);
+            if (effect != null)
+                level = effect.getAmplifier();
             if (effect != null)
                 target = effect.isInfiniteDuration() ? 1 : Mth.clamp(effect.getDuration() / (float) EASE_OUT_TICKS, 0, 1);
         }
@@ -51,8 +61,8 @@ public final class ClarityFog
         if (clarity <= 0)
             return;
 
-        float end = Math.min(renderDistance, fog.environmentalEnd * Mth.lerp(clarity, 1, END_SCALE));
-        float start = Math.min(end * 0.9F, fog.environmentalStart * Mth.lerp(clarity, 1, START_SCALE));
+        float end = Math.min(renderDistance, fog.environmentalEnd * Mth.lerp(clarity, 1, Elixirs.byLevel(Elixirs.CLARITY_END, level)));
+        float start = Math.min(end * 0.9F, fog.environmentalStart * Mth.lerp(clarity, 1, Elixirs.byLevel(Elixirs.CLARITY_START, level)));
         fog.environmentalEnd = Math.max(fog.environmentalEnd, end);
         fog.environmentalStart = Math.max(fog.environmentalStart, start);
     }

@@ -72,7 +72,7 @@ public class OilFlaskItem extends LoreItem
 
     private void coat(ItemStack flask, ItemStack weapon, Player player)
     {
-        OilCoating.coat(weapon, type);
+        OilCoating.coat(weapon, type, Brews.brewOf(flask));
         useUp(flask, player);
     }
 
@@ -82,11 +82,11 @@ public class OilFlaskItem extends LoreItem
     private void coatArrows(ItemStack flask, ItemStack arrows, Player player)
     {
         if (arrows.getCount() <= OilCoating.ARROWS_PER_FLASK)
-            OilCoating.coatArrows(arrows, type);
+            OilCoating.coatArrows(arrows, type, Brews.brewOf(flask));
         else
         {
             var coated = arrows.split(OilCoating.ARROWS_PER_FLASK);
-            OilCoating.coatArrows(coated, type);
+            OilCoating.coatArrows(coated, type, Brews.brewOf(flask));
             if (player instanceof ServerPlayer)
                 player.getInventory().placeItemBackInInventory(coated, Prediction.SERVER_ONLY);
         }

@@ -20,6 +20,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
 import net.voxelindustry.voidheart.client.ClarityFog;
 import net.voxelindustry.voidheart.client.OilEmbers;
+import net.voxelindustry.voidheart.client.BrewTooltip;
 import net.voxelindustry.voidheart.client.OilTooltip;
 import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
 import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
@@ -146,6 +147,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(KnowledgePayloads.Recipes.TYPE, (payload, context) -> ResearchScreen.recipeSheets = payload.sheets());
         ItemTooltipCallback.EVENT.register(ResearchScreen::appendKnowledgeTooltip);
         ItemTooltipCallback.EVENT.register(OilTooltip::append);
+        ItemTooltipCallback.EVENT.register(BrewTooltip::append);
         ClientTickEvents.END_CLIENT_TICK.register(OilEmbers::tick);
         ClientTickEvents.END_CLIENT_TICK.register(ClarityFog::tick);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);

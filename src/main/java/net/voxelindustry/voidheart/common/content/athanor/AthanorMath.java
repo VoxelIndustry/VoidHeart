@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.athanor;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,38 @@ public final class AthanorMath
             used[slot] = false;
         }
         return false;
+    }
+
+    /**
+     * Ways to set shards aside from a recipe's reagents, to change the brew rather than feed it: none first, then one shard of either kind, then one of
+     * each. At most one shard of each kind counts.
+     *
+     * @return the slot indexes to set aside for each way, fewest first
+     */
+    public static <S> List<int[]> asides(List<S> slots, Predicate<S> strengthens, Predicate<S> prolongs)
+    {
+        var strong = new ArrayList<Integer>();
+        var lasting = new ArrayList<Integer>();
+        for (int slot = 0; slot < slots.size(); slot++)
+        {
+            if (strengthens.test(slots.get(slot)))
+                strong.add(slot);
+            else if (prolongs.test(slots.get(slot)))
+                lasting.add(slot);
+        }
+
+        var ways = new ArrayList<int[]>();
+        ways.add(new int[0]);
+        for (int slot : strong)
+            ways.add(new int[]{ slot });
+        for (int slot : lasting)
+            ways.add(new int[]{ slot });
+        for (int first : strong)
+        {
+            for (int second : lasting)
+                ways.add(new int[]{ first, second });
+        }
+        return ways;
     }
 
     /**

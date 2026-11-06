@@ -4,6 +4,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
@@ -13,6 +14,8 @@ import net.voxelindustry.voidheart.common.content.mob.FallenBishop;
 import net.voxelindustry.voidheart.common.content.mob.KernacianDragoon;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
 
 /**
  * Oils coat melee weapons and arrows. A coated hit counts as the oil's kind of damage and carries the oil's effect. Each hit landed on a living thing
@@ -24,10 +27,21 @@ public final class OilCoating
      * How long a searing hit sets its target alight.
      */
     public static final float SEARING_FIRE_SECONDS = 4;
+    public static final float STRONG_FIRE_SECONDS  = 8;
     /**
      * Extra knockback of a concussive hit, on top of the hit's own. A Knockback I sword adds 0.5.
      */
     public static final float CONCUSSIVE_KNOCKBACK = 0.8F;
+    public static final float STRONG_KNOCKBACK     = 1.4F;
+    /**
+     * Blessings an arcane hit strips, plain and from a stronger brew.
+     */
+    public static final int   ARCANE_STRIPS        = 1;
+    public static final int   STRONG_STRIPS        = 2;
+    /**
+     * Durability a seething steel coat costs its weapon on each hit, on top of the hit's own.
+     */
+    public static final int   SEETHING_WEAR        = 1;
     /**
      * Arrows one flask coats.
      */
@@ -52,7 +66,12 @@ public final class OilCoating
      */
     public static void coat(ItemStack weapon, OilType type)
     {
-        weapon.set(VoidHeartDataComponents.WEAPON_OIL, WeaponOil.fresh(type));
+        coat(weapon, type, Brew.PLAIN);
+    }
+
+    public static void coat(ItemStack weapon, OilType type, Brew brew)
+    {
+        weapon.set(VoidHeartDataComponents.WEAPON_OIL, WeaponOil.fresh(type, brew));
     }
 
     /**
@@ -60,7 +79,15 @@ public final class OilCoating
      */
     public static void coatArrows(ItemStack arrows, OilType type)
     {
-        arrows.set(VoidHeartDataComponents.WEAPON_OIL, new WeaponOil(type, 1));
+        coatArrows(arrows, type, Brew.PLAIN);
+    }
+
+    /**
+     * An arrow's coat is always one hit, so only a stronger brew changes it.
+     */
+    public static void coatArrows(ItemStack arrows, OilType type, Brew brew)
+    {
+        arrows.set(VoidHeartDataComponents.WEAPON_OIL, new WeaponOil(type, 1, 1, brew.empowered(), false));
     }
 
     @Nullable
@@ -110,7 +137,9 @@ public final class OilCoating
         var coating = coatingOf(stack);
         // The Dragoon answers oils only by what kind they count as. Burn ticks would also teach it fire again, using up what the coating is for
         if (!(target instanceof KernacianDragoon))
-            applyEffect(coating.type(), target, source);
+            applyEffect(coating, target, source);
+        if (coating.wearing() && source.getDirectEntity() == source.getEntity() && source.getEntity() instanceof LivingEntity attacker)
+            stack.hurtAndBreak(SEETHING_WEAR, attacker, EquipmentSlot.MAINHAND);
 
         var spent = coating.spend();
         if (spent == null)
@@ -119,20 +148,21 @@ public final class OilCoating
             stack.set(VoidHeartDataComponents.WEAPON_OIL, spent);
     }
 
-    private static void applyEffect(OilType type, LivingEntity target, DamageSource source)
+    private static void applyEffect(WeaponOil coating, LivingEntity target, DamageSource source)
     {
-        switch (type)
+        boolean strong = coating.strong();
+        switch (coating.type())
         {
-            case SEARING -> target.igniteForSeconds(SEARING_FIRE_SECONDS);
-            case CONCUSSIVE -> concuss(target, source);
-            case ARCANE -> dispel(target);
+            case SEARING -> target.igniteForSeconds(strong ? STRONG_FIRE_SECONDS : SEARING_FIRE_SECONDS);
+            case CONCUSSIVE -> concuss(target, source, strong ? STRONG_KNOCKBACK : CONCUSSIVE_KNOCKBACK);
+            case ARCANE -> dispel(target, strong ? STRONG_STRIPS : ARCANE_STRIPS);
         }
     }
 
     /**
      * Knocks the target further away from the blow, and breaks off a Bishop's lance before it is cast.
      */
-    private static void concuss(LivingEntity target, DamageSource source)
+    private static void concuss(LivingEntity target, DamageSource source, float strength)
     {
         double awayX;
         double awayZ;
@@ -147,22 +177,22 @@ public final class OilCoating
             awayX = source.getEntity().getX() - target.getX();
             awayZ = source.getEntity().getZ() - target.getZ();
         }
-        target.knockback(CONCUSSIVE_KNOCKBACK, awayX, awayZ, source, 0);
+        target.knockback(strength, awayX, awayZ, source, 0);
         if (target instanceof FallenBishop bishop)
             bishop.breakLance();
     }
 
     /**
-     * Strips one of the target's beneficial effects, picked at random.
+     * Strips some of the target's beneficial effects, picked at random.
      */
-    private static void dispel(LivingEntity target)
+    private static void dispel(LivingEntity target, int count)
     {
-        var beneficial = target.getActiveEffects().stream().filter(effect -> effect.getEffect().value().isBeneficial()).toList();
+        var beneficial = new ArrayList<>(target.getActiveEffects().stream().filter(effect -> effect.getEffect().value().isBeneficial()).toList());
         if (beneficial.isEmpty())
             return;
 
-        var stripped = beneficial.get(target.getRandom().nextInt(beneficial.size()));
-        target.removeEffect(stripped.getEffect());
+        for (int i = 0; i < count && !beneficial.isEmpty(); i++)
+            target.removeEffect(beneficial.remove(target.getRandom().nextInt(beneficial.size())).getEffect());
         target.level().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.BEACON_DEACTIVATE, SoundSource.NEUTRAL, 0.6F, 1.6F);
     }
 }

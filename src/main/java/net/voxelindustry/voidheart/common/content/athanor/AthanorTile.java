@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -21,9 +22,12 @@ import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RelayNetwork;
+import net.voxelindustry.voidheart.common.content.oil.Brew;
+import net.voxelindustry.voidheart.common.content.oil.Brews;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
@@ -34,13 +38,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
+
 /**
  * The seething steel furnace at the heart of an athanor. Its base sits inside it. Once the reagents of the crucibles beside it answer a recipe, the
- * intake below gathers the aspects it needs, then the brew runs and leaves its product where the base was.
+ * intake below gathers the aspects it needs, then the brew runs and leaves its product where the base was. Once refinement is researched, an Azurium
+ * or Rubrum shard in a crucible the recipe doesn't use strengthens or prolongs the brew, and a sin-metal flask can stand in for the glass bottle.
  */
 public class AthanorTile extends TileBase
 {
     public static final int CHECK_INTERVAL = 10;
+    public static final Identifier REFINEMENT = Identifier.fromNamespaceAndPath(MODID, "refinement");
 
     private static final Codec<Map<Identifier, Integer>> GATHERED_CODEC = Codec.unboundedMap(Identifier.CODEC, Codec.INT);
 
@@ -68,6 +76,11 @@ public class AthanorTile extends TileBase
      * Crucible of each reagent of the current recipe, in reagent order.
      */
     private List<BlockPos> reagentSources = List.of();
+    /**
+     * Shards and vessel of the current brew, or null until matched again after a reload, like the crucibles.
+     */
+    @Nullable
+    private Brew brew;
 
     public AthanorTile(BlockPos pos, BlockState state)
     {
@@ -102,6 +115,7 @@ public class AthanorTile extends TileBase
         });
 
         currentRecipe = null;
+        brew = null;
     }
 
     @Override
@@ -226,7 +240,10 @@ public class AthanorTile extends TileBase
         });
     }
 
-    private record Match(AthanorRecipe recipe, List<BlockPos> sources)
+    /**
+     * @param sources the crucibles the brew empties: one per reagent, in reagent order, then the shards set aside
+     */
+    private record Match(AthanorRecipe recipe, List<BlockPos> sources, Brew brew)
     {
     }
 
@@ -243,22 +260,64 @@ public class AthanorTile extends TileBase
                 crucibles.add(crucible);
         }
 
-        for (var recipe : allRecipes())
+        boolean refining = mayRefine();
+        var vessel = Brews.vesselOf(stack);
+        if (vessel != null && !refining)
+            return null;
+        // A sin-metal flask is a bottle to every recipe, and decides after whether it can hold what that recipe makes
+        var base = vessel == null ? stack : new ItemStack(Items.GLASS_BOTTLE);
+        var asides = refining
+                ? AthanorMath.asides(crucibles, crucible -> crucible.getStack().is(VoidHeartItems.AZURIUM_SHARD), crucible -> crucible.getStack().is(VoidHeartItems.RUBRUM_SHARD))
+                : List.of(new int[0]);
+
+        for (var aside : asides)
         {
-            if (!recipe.getBase().match(stack))
-                continue;
+            var reagents = new ArrayList<>(crucibles);
+            var setAside = new ArrayList<CrucibleTile>();
+            for (int index : aside)
+                setAside.add(crucibles.get(index));
+            reagents.removeAll(setAside);
+            boolean empowered = setAside.stream().anyMatch(crucible -> crucible.getStack().is(VoidHeartItems.AZURIUM_SHARD));
+            boolean prolonged = setAside.stream().anyMatch(crucible -> crucible.getStack().is(VoidHeartItems.RUBRUM_SHARD));
 
-            var assignment = AthanorMath.matchUnordered(recipe.getReagents(), crucibles, crucible -> !crucible.getStack().isEmpty(),
-                    (ingredient, crucible) -> ingredient.match(crucible.getStack()));
-            if (assignment == null)
-                continue;
+            for (var recipe : allRecipes())
+            {
+                if (!recipe.getBase().match(base))
+                    continue;
 
-            var sources = new ArrayList<BlockPos>();
-            for (int index : assignment)
-                sources.add(crucibles.get(index).getBlockPos());
-            return new Match(recipe, sources);
+                var assignment = AthanorMath.matchUnordered(recipe.getReagents(), reagents, crucible -> !crucible.getStack().isEmpty(),
+                        (ingredient, crucible) -> ingredient.match(crucible.getStack()));
+                if (assignment == null)
+                    continue;
+
+                var brew = Brews.brewFor(recipe.getOutput(), empowered, prolonged, vessel);
+                if (brew.isEmpty())
+                    continue;
+
+                var sources = new ArrayList<BlockPos>();
+                for (int index : assignment)
+                    sources.add(reagents.get(index).getBlockPos());
+                for (var crucible : setAside)
+                    sources.add(crucible.getBlockPos());
+                return new Match(recipe, sources, brew.get());
+            }
         }
         return null;
+    }
+
+    /**
+     * Whether whoever set the base knows how to refine a brew.
+     */
+    private boolean mayRefine()
+    {
+        if (owner == null || !(level instanceof ServerLevel serverLevel))
+            return false;
+        return Knowledge.hasCompleted(serverLevel.getServer(), owner, REFINEMENT);
+    }
+
+    public Brew getBrew()
+    {
+        return brew == null ? Brew.PLAIN : brew;
     }
 
     /**
@@ -294,6 +353,7 @@ public class AthanorTile extends TileBase
 
         setRecipe(match.recipe());
         reagentSources = match.sources();
+        brew = match.brew();
 
         if (!AthanorMath.missing(match.recipe().getAspects(), gathered).isEmpty() && layout.intake())
             drawFromStorages();
@@ -399,7 +459,11 @@ public class AthanorTile extends TileBase
         var match = findMatch();
         if (match == null || !match.recipe().getId().equals(currentRecipe.getId()))
             return false;
+        // A shard taken away or added mid-brew makes it another brew, which has to start over
+        if (brew != null && !match.brew().equals(brew))
+            return false;
         reagentSources = match.sources();
+        brew = match.brew();
         return true;
     }
 
@@ -416,7 +480,8 @@ public class AthanorTile extends TileBase
         gathered.clear();
         gathered.putAll(left);
 
-        stack = recipe.getOutput().copy();
+        stack = Brews.apply(recipe.getOutput().copy(), getBrew());
+        brew = null;
         brewing = false;
         progress = 0;
         setRecipe(null);

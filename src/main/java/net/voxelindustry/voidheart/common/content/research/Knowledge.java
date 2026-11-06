@@ -250,6 +250,14 @@ public class Knowledge
     }
 
     /**
+     * Whether a player finished a research, always true while research gating is off.
+     */
+    public static boolean hasCompleted(MinecraftServer server, UUID player, Identifier research)
+    {
+        return !VoidHeartConfig.get().researchGating || of(server, player).getCompleted().contains(research);
+    }
+
+    /**
      * For crafting nobody in particular asked for, such as a crafter fed by hoppers: it never knows a locked recipe.
      */
     public static boolean isLocked(ServerLevel level, Identifier recipe)

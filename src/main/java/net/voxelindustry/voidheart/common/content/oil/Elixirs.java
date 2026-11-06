@@ -17,15 +17,15 @@ public final class Elixirs
 {
     public static final int EMBER_DRAUGHT_TICKS = 3 * 60 * 20;
     /**
-     * Share of the Dragoon's void fire that still lands on a drinker of Ember Draught.
+     * Share of the Dragoon's void fire that still lands on a drinker of Ember Draught, by the effect's level. A stronger brew raises the level.
      */
-    public static final float EMBER_WARD_TAKEN  = 0.5F;
+    public static final float[] EMBER_WARD_TAKEN = { 0.5F, 0.3F, 0.15F };
 
     public static final int STILLWATER_TICKS    = 3 * 60 * 20;
     /**
-     * Share of a smoker jet's heat that still lands on a drinker of Stillwater.
+     * Share of a smoker jet's heat that still lands on a drinker of Stillwater, by the effect's level.
      */
-    public static final float STILLWATER_TAKEN  = 0.25F;
+    public static final float[] STILLWATER_TAKEN = { 0.25F, 0.12F, 0.05F };
 
     public static final int BULWARK_TICKS       = 90 * 20;
     /**
@@ -35,6 +35,15 @@ public final class Elixirs
 
     public static final int INSIGHT_TICKS       = 3 * 60 * 20;
     public static final int CLARITY_TICKS       = 5 * 60 * 20;
+    /**
+     * How far Insight reaches, by the effect's level. Silhouettes are at full strength within a third of it.
+     */
+    public static final float[] INSIGHT_RANGE   = { 24, 36, 48 };
+    /**
+     * How much further Clarity pushes the fog's start and end, by the effect's level.
+     */
+    public static final float[] CLARITY_START   = { 2.5F, 3.25F, 4 };
+    public static final float[] CLARITY_END     = { 1.75F, 2.25F, 2.75F };
 
     private Elixirs()
     {
@@ -78,7 +87,8 @@ public final class Elixirs
      */
     public static float againstVoidFire(LivingEntity target, float damage)
     {
-        return target.hasEffect(VoidHeartEffects.EMBER_WARD) ? damage * EMBER_WARD_TAKEN : damage;
+        var ward = target.getEffect(VoidHeartEffects.EMBER_WARD);
+        return ward == null ? damage : damage * byLevel(EMBER_WARD_TAKEN, ward.getAmplifier());
     }
 
     /**
@@ -86,6 +96,15 @@ public final class Elixirs
      */
     public static float againstJet(LivingEntity target, float damage)
     {
-        return target.hasEffect(VoidHeartEffects.STILLWATER) ? damage * STILLWATER_TAKEN : damage;
+        var still = target.getEffect(VoidHeartEffects.STILLWATER);
+        return still == null ? damage : damage * byLevel(STILLWATER_TAKEN, still.getAmplifier());
+    }
+
+    /**
+     * @return the table's value for an effect level, holding at the last one for any higher level
+     */
+    public static float byLevel(float[] table, int amplifier)
+    {
+        return table[Math.clamp(amplifier, 0, table.length - 1)];
     }
 }

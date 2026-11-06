@@ -49,7 +49,7 @@ public final class OilDecoration
 
         int barTop = y + (stack.isBarVisible() ? BAR_TOP_ABOVE_DURABILITY : BAR_TOP);
         int barLeft = x + BAR_LEFT;
-        int filled = Math.max(1, Math.round(BAR_WIDTH * coating.charges() / (float) coating.type().charges()));
+        int filled = Math.max(1, Math.round(BAR_WIDTH * Math.min(1, coating.charges() / (float) coating.capacity())));
         graphics.fill(RenderPipelines.GUI, barLeft, barTop, barLeft + BAR_WIDTH, barTop + 2, 0xFF000000);
         graphics.fill(RenderPipelines.GUI, barLeft, barTop, barLeft + filled, barTop + 1, color);
     }

@@ -121,4 +121,20 @@ class AthanorMathTest
         assertThat(layout.alembic()).isFalse();
         assertThat(layout.intake()).isFalse();
     }
+
+    @Test
+    void asides_tryNoneFirstThenEachShardThenBoth()
+    {
+        var slots = List.of("sulfur", "azurium", "quicksilver", "rubrum");
+        var ways = AthanorMath.asides(slots, "azurium"::equals, "rubrum"::equals);
+        assertThat(ways).extracting(Arrays::toString).containsExactly("[]", "[1]", "[3]", "[1, 3]");
+    }
+
+    @Test
+    void asides_offerEachShardOfAKindButNeverTwoOfIt()
+    {
+        var slots = List.of("rubrum", "quicksilver", "rubrum");
+        var ways = AthanorMath.asides(slots, "azurium"::equals, "rubrum"::equals);
+        assertThat(ways).extracting(Arrays::toString).containsExactly("[]", "[0]", "[2]");
+    }
 }

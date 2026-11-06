@@ -13,6 +13,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
 import net.voxelindustry.voidheart.common.content.essence.MultiEssenceStorage;
+import net.voxelindustry.voidheart.common.content.oil.Brew;
 import net.voxelindustry.voidheart.common.content.oil.WeaponOil;
 import net.voxelindustry.voidheart.common.content.tormenter.TormenterSouls;
 
@@ -67,6 +68,7 @@ public class VoidHeartDataComponents
     public static DataComponentType<BlockPos>        BARRIER_FIRST_POINT;
     public static DataComponentType<TormenterSouls>  TORMENTER_SOULS;
     public static DataComponentType<WeaponOil>       WEAPON_OIL;
+    public static DataComponentType<Brew>            BREW;
 
     public static void registerComponents()
     {
@@ -80,6 +82,7 @@ public class VoidHeartDataComponents
         BARRIER_FIRST_POINT = register("barrier_first_point", BlockPos.CODEC);
         TORMENTER_SOULS = register("tormenter_souls", TormenterSouls.CODEC);
         WEAPON_OIL = register("weapon_oil", WeaponOil.CODEC);
+        BREW = register("brew", Brew.CODEC);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

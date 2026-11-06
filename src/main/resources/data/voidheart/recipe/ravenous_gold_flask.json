@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "I I",
+    " I "
+  ],
+  "key": {
+    "I": "voidheart:ravenous_gold_ingot"
+  },
+  "result": {
+    "id": "voidheart:ravenous_gold_flask",
+    "count": 3
+  }
+}

@@ -51,7 +51,7 @@ public class ElixirClientTest implements FabricClientGameTest
                 var player = player(minecraft);
                 expect(player.hasEffect(VoidHeartEffects.EMBER_WARD), "Expected Ember Draught to give its ward");
                 expect(player.getInventory().contains(stack -> stack.is(Items.GLASS_BOTTLE)), "Expected the bottle left after drinking");
-                expect(Elixirs.againstVoidFire(player, 10) == 10 * Elixirs.EMBER_WARD_TAKEN, "Expected the ward to cut the Dragoon's void fire");
+                expect(Elixirs.againstVoidFire(player, 10) == 10 * Elixirs.EMBER_WARD_TAKEN[0], "Expected the ward to cut the Dragoon's void fire");
             });
 
             drink(context, server, "bulwark_elixir");
@@ -97,7 +97,7 @@ public class ElixirClientTest implements FabricClientGameTest
             context.waitTicks(25);
             float lost = server.computeOnServer(minecraft -> player(minecraft).getMaxHealth() - player(minecraft).getHealth());
             expect(lost > 0, "Expected the jet to still burn a little");
-            expect(lost <= 3 * JET_HIT * Elixirs.STILLWATER_TAKEN + 0.01F, "Expected Stillwater to cool each jet hit to a quarter, lost " + lost + " in 25 ticks");
+            expect(lost <= 3 * JET_HIT * Elixirs.STILLWATER_TAKEN[0] + 0.01F, "Expected Stillwater to cool each jet hit to a quarter, lost " + lost + " in 25 ticks");
             System.out.println("[Elixir] lost in a jet with Stillwater: " + lost + " health in 25 ticks");
         }
     }
