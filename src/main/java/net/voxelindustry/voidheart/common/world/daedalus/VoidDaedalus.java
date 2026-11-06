@@ -88,11 +88,22 @@ public final class VoidDaedalus
 
     public static void arriveOn(ServerPlayer player, DaedalusBridge bridge)
     {
+        arriveOn(player, bridge, MIDDLE_OF_SPAN, false);
+    }
+
+    /**
+     * @param span      how far along the crossing, from the district it starts from
+     * @param facingBack facing the district it starts from, rather than the one it leads to
+     */
+    public static void arriveOn(ServerPlayer player, DaedalusBridge bridge, int span, boolean facingBack)
+    {
         var level = level(player.level().getServer());
-        double x = bridge.worldX(MIDDLE_OF_SPAN, LANE_CENTRE) + 0.5;
-        double z = bridge.worldZ(MIDDLE_OF_SPAN, LANE_CENTRE) + 0.5;
+        double x = bridge.worldX(span, LANE_CENTRE) + 0.5;
+        double z = bridge.worldZ(span, LANE_CENTRE) + 0.5;
         float facing = bridge.isAlongX() ? FACING_EAST : FACING_SOUTH;
-        TeleportUtil.teleport(player, level, new Vec3(x, bridge.walkY(MIDDLE_OF_SPAN), z), facing, 0);
+        if (facingBack)
+            facing += 180;
+        TeleportUtil.teleport(player, level, new Vec3(x, bridge.walkY(span), z), facing, 0);
     }
 
     public static void leave(ServerPlayer player)

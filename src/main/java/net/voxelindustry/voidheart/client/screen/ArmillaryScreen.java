@@ -20,6 +20,8 @@ import net.voxelindustry.voidheart.client.screen.ResearchScreen.Bounds;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryChart;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryChart.Phase;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryMenu;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
+import net.voxelindustry.voidheart.common.content.research.Research;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads.ActionKind;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads.BubbleView;
@@ -63,8 +65,10 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
     private static final int READOUT_GAP  = 3;
     private static final int BAR_BACK     = 0xFF08050C;
     private static final int LEAVING_TICKS = 20 * 60;
+    private static final int RINGS_CLEARANCE = 26;
 
-    private static final long FADE_MILLIS = 1200;
+    private static final long FADE_MILLIS   = 1200;
+    private static final long REVEAL_MILLIS = 2600;
 
     private static final Identifier VOID_A = Identifier.fromNamespaceAndPath(MODID, "dynamic/armillary_void");
     private static final Identifier VOID_B = Identifier.fromNamespaceAndPath(MODID, "dynamic/armillary_void_previous");
@@ -73,6 +77,19 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
     private static long viewReceivedAt;
 
     private record Line(FormattedCharSequence text, int color)
+    {
+    }
+
+    /**
+     * Everything one tablet says, about a bubble or the strata alike.
+     *
+     * @param cost        void pearls it takes to open, or -1 to leave the price out
+     * @param bar         how full the bar under the status is, or -1 for none
+     * @param primaryText null for no primary button
+     * @param quietText   null for no quiet button
+     */
+    private record Tablet(List<Line> head, List<Line> body, int cost, boolean canPay, List<Line> status, float bar, int barColor, @Nullable Component primaryText, boolean primaryActive,
+                          @Nullable Component quietText)
     {
     }
 
@@ -92,11 +109,15 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
     private long          bakedAt;
     private List<Integer> bakedKey;
     private View          seen = View.EMPTY;
+    private long          fadeMillis = FADE_MILLIS;
+    private boolean       revealed;
 
     private int             selected = -1;
     private int             lastClicked = -1;
     private @Nullable Bounds tablet;
     private int             whisperHalf;
+    /** Where along the strata it was clicked, which is where its tablet stands while no root reaches for it. */
+    private int             strataLookX;
     private String          whisperText = "";
 
     public ArmillaryScreen(ArmillaryMenu menu, Inventory inventory, Component title)
@@ -133,7 +154,7 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         quiet = addRenderableWidget(new ResearchButton(0, 0, DETAIL_MIN, QUIET_H, true, pressed ->
         {
             setFocused(null);
-            send(ActionKind.ABANDON, -1);
+            send(view.phaseValue() == Phase.CONNECTED && view.targetsStrata() ? ActionKind.SEVER : ActionKind.ABANDON, -1);
         }));
         quiet.visible = false;
     }
@@ -145,7 +166,13 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
 
     private void bake(Identifier target, int rootStep)
     {
-        ArmillaryChartBackground.bake(minecraft, target, width, height, left, right, map.chartTop(), map.chartBottom(), map.scale(), map.lights(view, rootStep), seed());
+        bake(target, rootStep, view.strata().known());
+    }
+
+    private void bake(Identifier target, int rootStep, boolean strataKnown)
+    {
+        var strata = new ArmillaryChartBackground.Strata(strataKnown, map.strataTop());
+        ArmillaryChartBackground.bake(minecraft, target, width, height, left, right, map.chartTop(), map.chartBottom(), map.scale(), map.lights(view, rootStep), seed(), strata);
     }
 
     private static void send(ActionKind kind, int bubble)
@@ -168,7 +195,7 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
             if (opening && view.phaseValue() == Phase.REACHED || before.phaseValue() != Phase.REACHED && view.phaseValue() == Phase.REACHED)
                 selected = view.target();
             var looked = bubble(selected);
-            if (looked == null || looked.broken())
+            if (selected != ArmillaryChart.STRATA && (looked == null || looked.broken()))
                 selected = -1;
         }
 
@@ -178,10 +205,20 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
             return;
 
         bakedKey = key;
-        if (opening)
+        boolean reveal = view.strata().reveal() && !revealed;
+        if (reveal)
+            revealed = true;
+        if (opening && !reveal)
         {
             bake(voidCurrent, rootStep);
             return;
+        }
+        fadeMillis = reveal ? REVEAL_MILLIS : FADE_MILLIS;
+        if (reveal)
+        {
+            // Seen for the first time since it was studied: the shadow it was gives way to what it is
+            bake(voidCurrent, rootStep, false);
+            map.revealStrata();
         }
 
         var fresh = voidPrevious;
@@ -209,6 +246,18 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         var spent = ArmillaryMapView.target(before);
         if (before.phaseValue() == Phase.CONNECTED && view.phaseValue() != Phase.CONNECTED && spent != null)
             map.collapse(spent);
+        if (before.phaseValue() == Phase.CONNECTED && view.phaseValue() != Phase.CONNECTED && before.targetsStrata())
+            map.collapseStrata(before);
+
+        if (view.targetsStrata() && before.phaseValue() != view.phaseValue())
+        {
+            var theme = ArmillaryMapView.strataTheme(view);
+            if (view.phaseValue() == Phase.REACHED)
+                map.bloomStrata(view, true, theme == null ? ResearchScreen.FRONTIER_RGB : theme.color());
+            else if (view.phaseValue() == Phase.CONNECTED)
+                map.bloomStrata(view, true, ResearchScreen.ACTIVE_RGB);
+            return;
+        }
 
         var target = ArmillaryMapView.target(view);
         if (target == null || before.phaseValue() == view.phaseValue())
@@ -255,9 +304,14 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         return Math.max(0, view.connectionTicks() - elapsedTicks()) / 20;
     }
 
+    private boolean canPay(int cost)
+    {
+        return view.pearls() == View.FREE || view.pearls() >= cost;
+    }
+
     private boolean canPay(BubbleView bubble)
     {
-        return view.pearls() == View.FREE || view.pearls() >= VoidBubble.openCost(bubble.difficulty());
+        return canPay(VoidBubble.openCost(bubble.difficulty()));
     }
 
     private static Component pearls(int count)
@@ -273,7 +327,7 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         graphics.blit(RenderPipelines.GUI_TEXTURED, voidCurrent, 0, 0, 0, 0, width, height, width, height);
         if (hasPrevious)
         {
-            float fade = (Util.getMillis() - bakedAt) / (float) FADE_MILLIS;
+            float fade = (Util.getMillis() - bakedAt) / (float) fadeMillis;
             if (fade < 1)
                 graphics.blit(RenderPipelines.GUI_TEXTURED, voidPrevious, 0, 0, 0, 0, width, height, width, height, ARGB.white(1 - fade));
             else
@@ -281,7 +335,10 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         }
 
         var over = overTablet(mouseX, mouseY) ? null : map.bubbleAt(view, mouseX, mouseY);
-        map.extract(graphics, view, searchProgress(), elapsedTicks(), bubble(selected), over, mouseX, mouseY);
+        boolean overStrata = over == null && !overTablet(mouseX, mouseY) && map.isOverStrata(mouseX, mouseY);
+        boolean strataSelected = selected == ArmillaryChart.STRATA;
+        map.setStrataSelected(strataSelected);
+        map.extract(graphics, view, searchProgress(), elapsedTicks(), bubble(selected), over, strataSelected || overStrata && selected == -1, strataSelected ? strataLookX : mouseX, mouseX, mouseY);
 
         extractReadout(graphics);
         extractWhisper(graphics);
@@ -348,7 +405,8 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
             }
             case CONNECTED ->
             {
-                text = Component.translatable("voidheart.armillary.screen.connected." + view.stageValue().name().toLowerCase(Locale.ROOT));
+                boolean holds = view.targetsStrata() && view.isStable();
+                text = Component.translatable(holds ? "voidheart.armillary.screen.connected.daedalus" : "voidheart.armillary.screen.connected." + view.stageValue().name().toLowerCase(Locale.ROOT));
                 color = ArmillaryMapView.failing(view) ? ResearchScreen.LACK_COLOR : ResearchScreen.KNOWN_COLOR;
             }
         }
@@ -379,10 +437,209 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         quiet.visible = false;
         tabletText.clear();
 
+        int boxWidth = Math.clamp((int) (width * 0.3F), DETAIL_MIN, DETAIL_MAX);
+        int inner = boxWidth - PAD * 2;
+
+        if (selected == ArmillaryChart.STRATA)
+        {
+            var content = strataTablet(inner);
+            extractTablet(graphics, content, strataTabletX(boxWidth, tabletHeight(content)), strataTabletY(tabletHeight(content), boxWidth), boxWidth, tabletHeight(content), inner);
+            return;
+        }
+
         var bubble = bubble(selected);
         if (bubble == null)
             return;
 
+        var content = bubbleTablet(bubble, inner);
+        int boxHeight = tabletHeight(content);
+
+        int bubbleX = map.bubbleX(bubble);
+        int reach = map.radius(bubble) + DETAIL_GAP;
+        boolean onRight = bubbleX >= (left + right) / 2;
+        int x = onRight ? bubbleX + reach : bubbleX - reach - boxWidth;
+        if (x < left + EDGE || x + boxWidth > right - EDGE)
+            x = onRight ? bubbleX - reach - boxWidth : bubbleX + reach;
+        x = Math.clamp(x, left + EDGE, Math.max(left + EDGE, right - EDGE - boxWidth));
+        int center = (left + right) / 2;
+        boolean overWhisper = whisperHalf > 0 && x < center + whisperHalf && x + boxWidth > center - whisperHalf;
+        int lowest = (overWhisper ? height - PAD - LINE - SECTION_GAP : height - EDGE) - boxHeight;
+        int y = Math.clamp(map.bubbleY(bubble) - boxHeight / 2, EDGE, Math.max(EDGE, lowest));
+        extractTablet(graphics, content, x, y, boxWidth, boxHeight, inner);
+    }
+
+    /**
+     * Beside the door, or where the strata was clicked, on the side away from the middle: the root comes down from the rings, so this keeps its last stretch in view.
+     */
+    private int strataTabletX(int boxWidth, int boxHeight)
+    {
+        int anchorX = view.targetsStrata() ? map.strataX(view) : strataLookX;
+        int center = (left + right) / 2;
+        int reach = map.doorReach() + DETAIL_GAP;
+        boolean onRight = anchorX >= center;
+        int ringsReach = RINGS_CLEARANCE * map.scale();
+        boolean reachesRings = strataTabletY(boxHeight, boxWidth) < map.chartTop() + ringsReach;
+
+        int x = onRight ? anchorX + reach : anchorX - reach - boxWidth;
+        if (fits(x, boxWidth) && !(reachesRings && overRings(x, boxWidth, center, ringsReach)))
+            return x;
+
+        // No room beside it: as far across as the screen goes, which still leaves the door and the root's end in view
+        x = onRight ? left + EDGE : right - EDGE - boxWidth;
+        if (reachesRings && overRings(x, boxWidth, center, ringsReach))
+            x = onRight ? center - ringsReach - boxWidth : center + ringsReach;
+        return Math.clamp(x, left + EDGE, Math.max(left + EDGE, right - EDGE - boxWidth));
+    }
+
+    private boolean fits(int x, int boxWidth)
+    {
+        return x >= left + EDGE && x + boxWidth <= right - EDGE;
+    }
+
+    private static boolean overRings(int x, int boxWidth, int center, int ringsReach)
+    {
+        return x < center + ringsReach && x + boxWidth > center - ringsReach;
+    }
+
+    /**
+     * Standing on the strata, as low as the whisper lets it.
+     */
+    private int strataTabletY(int boxHeight, int boxWidth)
+    {
+        int center = (left + right) / 2;
+        int x = view.targetsStrata() ? map.strataX(view) : strataLookX;
+        boolean nearWhisper = whisperHalf > 0 && Math.abs(x - center) < whisperHalf + boxWidth + map.doorReach() + DETAIL_GAP;
+        int lowest = (nearWhisper ? height - PAD - LINE - SECTION_GAP : height - EDGE) - boxHeight;
+        return Math.max(EDGE, lowest);
+    }
+
+    private int tabletHeight(Tablet content)
+    {
+        boolean hasPrimary = content.primaryText() != null;
+        boolean hasQuiet = content.quietText() != null;
+        return PAD * 2 + (content.head().size() + content.body().size() + content.status().size()) * LINE + PLATE_GAP
+                + (content.cost() >= 0 ? SECTION_GAP + COST_HEAD + COST_ROW : 0)
+                + (content.bar() >= 0 ? 5 : 0)
+                + (hasPrimary ? BUTTON_H + SECTION_GAP : 0)
+                + (hasQuiet ? QUIET_H + (hasPrimary ? ABANDON_GAP : SECTION_GAP) : 0);
+    }
+
+    private void extractTablet(GuiGraphicsExtractor graphics, Tablet content, int x, int y, int boxWidth, int boxHeight, int inner)
+    {
+        tablet = new Bounds(x, y, boxWidth, boxHeight);
+        ResearchScreen.tablet(graphics, tablet);
+
+        int textX = x + PAD;
+        int textY = y + PAD;
+        textY = extractLines(graphics, content.head(), textX, textY) + PLATE_GAP;
+        textY = extractLines(graphics, content.body(), textX, textY);
+        if (content.cost() >= 0)
+            textY = extractCost(graphics, content.cost(), content.canPay(), textX, textY);
+        textY = extractLines(graphics, content.status(), textX, textY);
+
+        if (content.bar() >= 0)
+        {
+            graphics.fill(textX, textY + 1, textX + inner, textY + 3, BAR_BACK);
+            graphics.fill(textX, textY + 1, textX + (int) (inner * content.bar()), textY + 3, content.barColor());
+            textY += 5;
+        }
+
+        boolean hasPrimary = content.primaryText() != null;
+        if (hasPrimary)
+        {
+            place(primary, textX, textY + SECTION_GAP, inner);
+            primary.setMessage(content.primaryText());
+            primary.active = content.primaryActive();
+            textY += SECTION_GAP + BUTTON_H;
+        }
+        if (content.quietText() != null)
+        {
+            // Set well apart, as a slip off the plate above would cost minutes of searching
+            if (hasPrimary)
+                graphics.fill(textX, textY + ABANDON_GAP / 2, textX + inner, textY + ABANDON_GAP / 2 + 1, ResearchScreen.RULE_COLOR);
+            place(quiet, textX, textY + (hasPrimary ? ABANDON_GAP : SECTION_GAP), inner);
+            quiet.setMessage(content.quietText());
+        }
+    }
+
+    /**
+     * What is known of the Daedalus depends on who looks: a player who has not studied it only learns that it is there, and what would make it out.
+     */
+    private Tablet strataTablet(int inner)
+    {
+        var strata = view.strata();
+        var phase = view.phaseValue();
+        boolean known = strata.known();
+        boolean isTarget = view.targetsStrata();
+        boolean connected = phase == Phase.CONNECTED;
+        int nameColor = ARGB.opaque(known ? ArmillaryMapView.strataStateRgb(view) : ResearchScreen.MUTED_COLOR);
+
+        var head = new ArrayList<Line>();
+        var body = new ArrayList<Line>();
+        if (known)
+        {
+            split(head, Component.translatable("voidheart.armillary.strata.name"), inner, nameColor);
+            if (strata.district().isPresent())
+                split(head, Component.translatable("voidheart.armillary.strata.district", strata.district().get()), inner, ResearchScreen.TEXT_COLOR);
+            else
+                split(head, Component.translatable("voidheart.armillary.strata.district.unknown"), inner, ResearchScreen.MUTED_COLOR);
+            split(body, Component.translatable("voidheart.armillary.strata.danger"), inner, ResearchScreen.TEXT_COLOR);
+            split(body, Component.translatable("voidheart.armillary.strata.size"), inner, ResearchScreen.MUTED_COLOR);
+        }
+        else
+        {
+            split(head, Component.translatable("voidheart.armillary.strata.unknown"), inner, nameColor);
+            split(body, Component.translatable("voidheart.armillary.strata.shadow"), inner, ResearchScreen.TEXT_COLOR);
+            split(body, Component.translatable("voidheart.armillary.strata.study", Component.translatable(Research.nameKey(ArmillaryTile.DAEDALUS_RESEARCH))), inner, ResearchScreen.LACK_COLOR);
+        }
+
+        var status = new ArrayList<Line>();
+        float bar = -1;
+        int barColor = ResearchScreen.ACTIVE_COLOR;
+        if (isTarget && phase == Phase.SEARCHING)
+        {
+            split(status, Component.translatable("voidheart.research.left", ResearchScreen.duration(secondsOfSearchLeft())), inner, ResearchScreen.MUTED_COLOR);
+            bar = searchProgress();
+        }
+        else if (isTarget && connected && view.isStable())
+            split(status, Component.translatable("voidheart.armillary.strata.holds"), inner, ResearchScreen.MUTED_COLOR);
+        else if (isTarget && connected)
+        {
+            split(status, Component.translatable("voidheart.research.left", ResearchScreen.duration(secondsOfConnectionLeft())), inner, ResearchScreen.LACK_COLOR);
+            bar = view.connectionDuration() > 0 ? Math.min(1, secondsOfConnectionLeft() * 20 / view.connectionDuration()) : 0;
+            barColor = ResearchScreen.LACK_COLOR;
+        }
+        else if (connected)
+            split(status, Component.translatable("voidheart.armillary.screen.busy"), inner, ResearchScreen.MUTED_COLOR);
+        else if (known && !isTarget && phase == Phase.SEARCHING)
+            split(status, Component.translatable("voidheart.armillary.screen.lose_search"), inner, ResearchScreen.LACK_COLOR);
+        else if (known && !isTarget && phase == Phase.REACHED)
+            split(status, Component.translatable("voidheart.armillary.screen.lose_path"), inner, ResearchScreen.LACK_COLOR);
+        else if (known && !isTarget)
+            split(status, Component.translatable("voidheart.armillary.screen.search_takes", ResearchScreen.duration(strata.searchDuration() / 20D)), inner, ResearchScreen.MUTED_COLOR);
+
+        Component primaryText = null;
+        boolean primaryActive = true;
+        if (known && !connected && !isTarget)
+            primaryText = Component.translatable(phase == Phase.SCANNING ? "voidheart.armillary.screen.search" : "voidheart.armillary.screen.search_instead");
+        else if (known && isTarget && phase == Phase.REACHED)
+        {
+            primaryText = openText(strata.cost());
+            primaryActive = canPay(strata.cost());
+        }
+
+        Component quietText = null;
+        if (known && isTarget && !connected)
+            quietText = Component.translatable(phase == Phase.REACHED ? "voidheart.armillary.screen.abandon_path" : "voidheart.armillary.screen.abandon_search");
+        else if (isTarget && connected && view.isStable())
+            quietText = Component.translatable("voidheart.armillary.strata.sever");
+
+        int cost = known && !connected ? strata.cost() : -1;
+        return new Tablet(head, body, cost, canPay(strata.cost()), status, bar, barColor, primaryText, primaryActive, quietText);
+    }
+
+    private Tablet bubbleTablet(BubbleView bubble, int inner)
+    {
         var phase = view.phaseValue();
         boolean isTarget = bubble.id() == view.target();
         boolean connected = phase == Phase.CONNECTED;
@@ -390,8 +647,6 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         boolean hasPrimary = !connected && (!isTarget || phase == Phase.REACHED);
         boolean hasQuiet = isTarget && !connected;
 
-        int boxWidth = Math.clamp((int) (width * 0.3F), DETAIL_MIN, DETAIL_MAX);
-        int inner = boxWidth - PAD * 2;
         int nameColor = ARGB.opaque(ArmillaryMapView.stateRgb(view, bubble));
         var theme = DungeonTheme.byId(bubble.theme());
 
@@ -431,57 +686,9 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         if (bubble.fadesIn() != BubbleView.NEVER && bubble.fadesIn() < LEAVING_TICKS)
             split(status, Component.translatable("voidheart.armillary.bubble.fading"), inner, ResearchScreen.LACK_COLOR);
 
-        int boxHeight = PAD * 2 + (head.size() + body.size() + status.size()) * LINE + PLATE_GAP
-                + (showCost ? SECTION_GAP + COST_HEAD + COST_ROW : 0)
-                + (bar >= 0 ? 5 : 0)
-                + (hasPrimary ? BUTTON_H + SECTION_GAP : 0)
-                + (hasQuiet ? QUIET_H + (hasPrimary ? ABANDON_GAP : SECTION_GAP) : 0);
-
-        int bubbleX = map.bubbleX(bubble);
-        int reach = map.radius(bubble) + DETAIL_GAP;
-        boolean onRight = bubbleX >= (left + right) / 2;
-        int x = onRight ? bubbleX + reach : bubbleX - reach - boxWidth;
-        if (x < left + EDGE || x + boxWidth > right - EDGE)
-            x = onRight ? bubbleX - reach - boxWidth : bubbleX + reach;
-        x = Math.clamp(x, left + EDGE, Math.max(left + EDGE, right - EDGE - boxWidth));
-        int center = (left + right) / 2;
-        boolean overWhisper = whisperHalf > 0 && x < center + whisperHalf && x + boxWidth > center - whisperHalf;
-        int lowest = (overWhisper ? height - PAD - LINE - SECTION_GAP : height - EDGE) - boxHeight;
-        int y = Math.clamp(map.bubbleY(bubble) - boxHeight / 2, EDGE, Math.max(EDGE, lowest));
-
-        tablet = new Bounds(x, y, boxWidth, boxHeight);
-        ResearchScreen.tablet(graphics, tablet);
-
-        int textX = x + PAD;
-        int textY = y + PAD;
-        textY = extractLines(graphics, head, textX, textY) + PLATE_GAP;
-        textY = extractLines(graphics, body, textX, textY);
-        if (showCost)
-            textY = extractCost(graphics, bubble, textX, textY, inner);
-        textY = extractLines(graphics, status, textX, textY);
-
-        if (bar >= 0)
-        {
-            graphics.fill(textX, textY + 1, textX + inner, textY + 3, BAR_BACK);
-            graphics.fill(textX, textY + 1, textX + (int) (inner * bar), textY + 3, barColor);
-            textY += 5;
-        }
-
-        if (hasPrimary)
-        {
-            place(primary, textX, textY + SECTION_GAP, inner);
-            primary.setMessage(primaryText(bubble));
-            primary.active = !isTarget || canPay(bubble);
-            textY += SECTION_GAP + BUTTON_H;
-        }
-        if (hasQuiet)
-        {
-            // Set well apart, as a slip off the plate above would cost minutes of searching
-            if (hasPrimary)
-                graphics.fill(textX, textY + ABANDON_GAP / 2, textX + inner, textY + ABANDON_GAP / 2 + 1, ResearchScreen.RULE_COLOR);
-            place(quiet, textX, textY + (hasPrimary ? ABANDON_GAP : SECTION_GAP), inner);
-            quiet.setMessage(Component.translatable(phase == Phase.REACHED ? "voidheart.armillary.screen.abandon_path" : "voidheart.armillary.screen.abandon_search"));
-        }
+        var quietText = hasQuiet ? Component.translatable(phase == Phase.REACHED ? "voidheart.armillary.screen.abandon_path" : "voidheart.armillary.screen.abandon_search") : null;
+        return new Tablet(head, body, showCost ? VoidBubble.openCost(bubble.difficulty()) : -1, canPay(bubble), status, bar, barColor, hasPrimary ? primaryText(bubble) : null,
+                !isTarget || canPay(bubble), quietText);
     }
 
     private static void place(ResearchButton button, int x, int y, int width)
@@ -497,8 +704,12 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         if (bubble.id() != view.target())
             return Component.translatable(view.phaseValue() == Phase.SCANNING ? "voidheart.armillary.screen.search" : "voidheart.armillary.screen.search_instead");
 
-        int cost = VoidBubble.openCost(bubble.difficulty());
-        if (canPay(bubble))
+        return openText(VoidBubble.openCost(bubble.difficulty()));
+    }
+
+    private Component openText(int cost)
+    {
+        if (canPay(cost))
             return Component.translatable("voidheart.armillary.screen.open", pearls(cost));
         return Component.translatable("voidheart.armillary.screen.short", pearls(cost - view.pearls()));
     }
@@ -528,7 +739,7 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
     /**
      * The price is known from the first look, long before a search has been waited for. It goes red for whoever could not pay it yet.
      */
-    private int extractCost(GuiGraphicsExtractor graphics, BubbleView bubble, int x, int y, int inner)
+    private int extractCost(GuiGraphicsExtractor graphics, int pearlCost, boolean canPay, int x, int y)
     {
         y += SECTION_GAP;
         var heading = Component.translatable("voidheart.armillary.screen.to_open");
@@ -536,10 +747,10 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         tabletText.add(heading.getString());
         y += COST_HEAD;
 
-        var cost = pearls(VoidBubble.openCost(bubble.difficulty()));
+        var cost = pearls(pearlCost);
         graphics.fill(x, y, x + GLYPH_SIZE, y + GLYPH_SIZE, ResearchItemPage.SLOT_PLATE);
         graphics.item(pearl, x, y);
-        graphics.text(font, cost, x + GLYPH_SIZE + SECTION_GAP, y + SECTION_GAP, canPay(bubble) ? ResearchScreen.FRONTIER_COLOR : ResearchScreen.LACK_COLOR);
+        graphics.text(font, cost, x + GLYPH_SIZE + SECTION_GAP, y + SECTION_GAP, canPay ? ResearchScreen.FRONTIER_COLOR : ResearchScreen.LACK_COLOR);
         tabletText.add(cost.getString());
         return y + COST_ROW;
     }
@@ -555,6 +766,17 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
 
     private void pressPrimary()
     {
+        if (selected == ArmillaryChart.STRATA)
+        {
+            if (!view.strata().known() || view.phaseValue() == Phase.CONNECTED)
+                return;
+            if (!view.targetsStrata())
+                send(ActionKind.TARGET, ArmillaryChart.STRATA);
+            else if (view.phaseValue() == Phase.REACHED && canPay(view.strata().cost()))
+                send(ActionKind.OPEN, -1);
+            return;
+        }
+
         var bubble = bubble(selected);
         if (bubble == null || view.phaseValue() == Phase.CONNECTED)
             return;
@@ -578,13 +800,18 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         return true;
     }
 
+    /**
+     * The strata comes last, the deepest of all.
+     */
     private void moveSelection(int by)
     {
-        var order = view.bubbles().stream().filter(bubble -> !bubble.broken()).sorted(Comparator.comparingInt(map::bubbleY)).map(BubbleView::id).toList();
-        if (order.isEmpty())
-            return;
+        var order = new ArrayList<>(view.bubbles().stream().filter(bubble -> !bubble.broken()).sorted(Comparator.comparingInt(map::bubbleY)).map(BubbleView::id).toList());
+        order.add(ArmillaryChart.STRATA);
 
-        selected = order.get(Math.clamp(order.indexOf(selected) + by, 0, order.size() - 1));
+        int at = order.indexOf(selected);
+        selected = order.get(Math.clamp(at == -1 && by < 0 ? order.size() - 1 : at + by, 0, order.size() - 1));
+        if (selected == ArmillaryChart.STRATA && !view.targetsStrata())
+            strataLookX = (left + right) / 2;
     }
 
     @Override
@@ -616,6 +843,17 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
             selected = bubble.id();
             // Never at the price of a path already found, which takes reading the tablet first
             if (doubleClick && again && (view.target() == -1 || view.target() == bubble.id()))
+                pressPrimary();
+            return true;
+        }
+
+        if (map.isOverStrata(event.x(), event.y()))
+        {
+            boolean again = lastClicked == ArmillaryChart.STRATA;
+            lastClicked = ArmillaryChart.STRATA;
+            selected = ArmillaryChart.STRATA;
+            strataLookX = (int) event.x();
+            if (doubleClick && again && (view.target() == -1 || view.targetsStrata()))
                 pressPrimary();
             return true;
         }
@@ -677,6 +915,14 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         super.removed();
     }
 
+    /**
+     * Somewhere on the strata, away from the door, for tests to click.
+     */
+    public float[] strataSpot()
+    {
+        return new float[] { (left + right) / 2F + (right - left) / 5F, map.strataTop() + (height - map.strataTop()) / 2F };
+    }
+
     public float[] bubbleCenter(int id)
     {
         var bubble = bubble(id);
@@ -691,6 +937,24 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
     public int[] quietCenter()
     {
         return new int[] { quiet.getX() + quiet.getWidth() / 2, quiet.getY() + quiet.getHeight() / 2 };
+    }
+
+    public boolean isRevealing()
+    {
+        return map.isRevealing();
+    }
+
+    public String quietLabel()
+    {
+        return quiet.visible ? quiet.getMessage().getString() : "";
+    }
+
+    /**
+     * Just under the door the root came down on, on the strata itself.
+     */
+    public float[] strataDoor()
+    {
+        return new float[] { map.strataX(view), map.doorY(view) + 2 * map.scale() };
     }
 
     public boolean primaryVisible()

@@ -86,8 +86,24 @@ class ArmillaryRootsTest
             for (int point = 0; point < branch.xs().length; point++)
             {
                 assertThat(branch.xs()[point]).isBetween(0F, 1F);
-                assertThat(branch.ys()[point]).isBetween(0F, 1F);
+                assertThat(branch.ys()[point]).as("above the strata").isBetween(0F, ArmillaryChart.STRATA_TOP);
             }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { 0, 1, 7, 123456789, -987654321 })
+    void rootToTheStrata_endsOnItsLip_andNoneDigsIn(long seed)
+    {
+        var branches = ArmillaryRoots.grow(seed, SOURCE_X, 0.2F, ArmillaryChart.STRATA_TOP, 0);
+        var main = main(branches);
+        assertThat(main.xs()[main.segments()]).isCloseTo(0.2F, within(1.0E-4F));
+        assertThat(main.ys()[main.segments()]).isCloseTo(ArmillaryChart.STRATA_TOP, within(1.0E-4F));
+
+        for (var branch : branches)
+        {
+            for (float y : branch.ys())
+                assertThat(y).isLessThanOrEqualTo(ArmillaryChart.STRATA_TOP);
         }
     }
 
