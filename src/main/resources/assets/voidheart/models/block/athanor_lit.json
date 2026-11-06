@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:block/athanor",
+  "textures": {
+    "mouth": "voidheart:block/athanor_mouth_lit"
+  }
+}

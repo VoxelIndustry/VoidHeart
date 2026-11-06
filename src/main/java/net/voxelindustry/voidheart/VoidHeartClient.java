@@ -91,6 +91,8 @@ import net.voxelindustry.voidheart.client.render.tormenter.TormenterHeads;
 import net.voxelindustry.voidheart.client.render.VoidAltarRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRender;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
+import net.voxelindustry.voidheart.common.content.athanor.CrucibleTile;
+import net.voxelindustry.voidheart.client.render.AthanorRender;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -109,6 +111,8 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<VoidPillarTile>(ctx, VoidPillarTile::getStack,
                 pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.ATHANOR, AthanorRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.CRUCIBLE, ctx -> new FloatingItemRender<CrucibleTile>(ctx, CrucibleTile::getStack, 0.8));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_HEART, VoidHeartRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.EXPERIENCE_SKULL, ExperienceSkullRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.EYE_BOTTLE, EyeBottleRender::new);

@@ -6,6 +6,7 @@ import me.shedaniel.rei.api.common.registry.display.ServerDisplayRegistry;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
+import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -20,6 +21,7 @@ public class VoidHeartREICommonPlugin implements REICommonPlugin
     {
         registry.register(Identifier.fromNamespaceAndPath(MODID, "altar"), AltarRecipeDisplay.SERIALIZER);
         registry.register(Identifier.fromNamespaceAndPath(MODID, "shatter_forge"), ShatterForgeRecipeDisplay.SERIALIZER);
+        registry.register(Identifier.fromNamespaceAndPath(MODID, "athanor"), AthanorRecipeDisplay.SERIALIZER);
     }
 
     @Override
@@ -32,5 +34,9 @@ public class VoidHeartREICommonPlugin implements REICommonPlugin
         registry.beginRecipeFiller(ShatterForgeRecipe.class)
                 .filterType(VoidHeartRecipes.SHATTER_FORGE_TYPE)
                 .fill(ShatterForgeRecipeDisplay::new);
+
+        registry.beginRecipeFiller(AthanorRecipe.class)
+                .filterType(VoidHeartRecipes.ATHANOR_TYPE)
+                .fill(AthanorRecipeDisplay::new);
     }
 }

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VGV",
+    "GEG",
+    "VGV"
+  ],
+  "key": {
+    "V": "voidheart:voidstone_bricks",
+    "G": "voidheart:ravenous_gold_ingot",
+    "E": "voidheart:ender_shard"
+  },
+  "result": {
+    "id": "voidheart:aspect_intake"
+  }
+}

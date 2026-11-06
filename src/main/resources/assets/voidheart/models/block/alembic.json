@@ -1,0 +1,96 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "voidheart:block/voidstone_bricks",
+    "stone": "voidheart:block/voidstone_bricks",
+    "base": "voidheart:block/voidstone_polished",
+    "steel": "voidheart:block/seething_steel_block"
+  },
+  "elements": [
+    {
+      "name": "collar",
+      "from": [3, 0, 3],
+      "to": [13, 3, 13],
+      "faces": {
+        "north": {"texture": "#base"},
+        "east": {"texture": "#base"},
+        "south": {"texture": "#base"},
+        "west": {"texture": "#base"},
+        "down": {"texture": "#base"}
+      }
+    },
+    {
+      "name": "bulb",
+      "from": [2, 3, 2],
+      "to": [14, 11, 14],
+      "faces": {
+        "north": {"texture": "#stone"},
+        "east": {"texture": "#stone"},
+        "south": {"texture": "#stone"},
+        "west": {"texture": "#stone"},
+        "up": {"texture": "#base"},
+        "down": {"texture": "#base"}
+      }
+    },
+    {
+      "name": "band",
+      "from": [1, 6, 1],
+      "to": [15, 7, 15],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "south": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "neck",
+      "from": [5, 11, 5],
+      "to": [11, 15, 11],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "south": {"texture": "#steel"},
+        "west": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "knob",
+      "from": [6, 15, 6],
+      "to": [10, 16, 10],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "south": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "spout",
+      "from": [7, 8, 0],
+      "to": [9, 10, 2],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "spout_tip",
+      "from": [7, 6, 0],
+      "to": [9, 8, 1],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "south": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    }
+  ]
+}

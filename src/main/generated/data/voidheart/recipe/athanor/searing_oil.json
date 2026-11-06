@@ -1,0 +1,31 @@
+{
+  "type": "voidheart:athanor",
+  "aspects": {
+    "voidheart:fiery": 500
+  },
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:glass_bottle"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:sulfur"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:quicksilver"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:searing_oil"
+      }
+    ]
+  },
+  "time": 200
+}

@@ -17,9 +17,11 @@ public class VoidHeartREIPlugin implements REIClientPlugin
     {
         registry.add(new AltarRecipeCategory());
         registry.add(new ShatterForgeRecipeCategory());
+        registry.add(new AthanorRecipeCategory());
 
         registry.addWorkstations(AltarRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.VOID_ALTAR));
         registry.addWorkstations(ShatterForgeRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.SHATTER_FORGE));
+        registry.addWorkstations(AthanorRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.ATHANOR));
     }
 
     @Override

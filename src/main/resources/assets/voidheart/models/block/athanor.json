@@ -1,0 +1,148 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "voidheart:block/voidstone_bricks",
+    "stone": "voidheart:block/voidstone_bricks",
+    "base": "voidheart:block/voidstone_polished",
+    "steel": "voidheart:block/seething_steel_block",
+    "mouth": "voidheart:block/athanor_mouth"
+  },
+  "elements": [
+    {
+      "name": "plinth",
+      "from": [1, 0, 1],
+      "to": [15, 2, 15],
+      "faces": {
+        "north": {"texture": "#base"},
+        "east": {"texture": "#base"},
+        "south": {"texture": "#base"},
+        "west": {"texture": "#base"},
+        "up": {"texture": "#base"},
+        "down": {"texture": "#base", "cullface": "down"}
+      }
+    },
+    {
+      "name": "body",
+      "from": [2, 2, 6],
+      "to": [14, 14, 14],
+      "faces": {
+        "north": {"texture": "#mouth"},
+        "east": {"texture": "#stone"},
+        "south": {"texture": "#stone"},
+        "west": {"texture": "#stone"}
+      }
+    },
+    {
+      "name": "frame_left",
+      "from": [2, 2, 2],
+      "to": [5, 14, 6],
+      "faces": {
+        "north": {"texture": "#stone"},
+        "east": {"uv": [0, 0, 4, 12], "texture": "#mouth"},
+        "west": {"texture": "#stone"}
+      }
+    },
+    {
+      "name": "frame_right",
+      "from": [11, 2, 2],
+      "to": [14, 14, 6],
+      "faces": {
+        "north": {"texture": "#stone"},
+        "east": {"texture": "#stone"},
+        "west": {"uv": [0, 0, 4, 12], "texture": "#mouth"}
+      }
+    },
+    {
+      "name": "lintel",
+      "from": [5, 10, 2],
+      "to": [11, 14, 6],
+      "faces": {
+        "north": {"texture": "#stone"},
+        "down": {"uv": [5, 0, 11, 4], "texture": "#mouth"}
+      }
+    },
+    {
+      "name": "sill",
+      "from": [5, 2, 2],
+      "to": [11, 4, 6],
+      "faces": {
+        "north": {"texture": "#stone"},
+        "up": {"uv": [5, 12, 11, 16], "texture": "#mouth"}
+      }
+    },
+    {
+      "name": "lip_left",
+      "from": [4, 4, 1],
+      "to": [5, 10, 2],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "lip_right",
+      "from": [11, 4, 1],
+      "to": [12, 10, 2],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "lip_top",
+      "from": [4, 10, 1],
+      "to": [12, 11, 2],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "lip_bottom",
+      "from": [4, 3, 1],
+      "to": [12, 4, 2],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "band",
+      "from": [1, 12, 1],
+      "to": [15, 13, 15],
+      "faces": {
+        "north": {"texture": "#steel"},
+        "east": {"texture": "#steel"},
+        "south": {"texture": "#steel"},
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"},
+        "down": {"texture": "#steel"}
+      }
+    },
+    {
+      "name": "cap",
+      "from": [1, 14, 1],
+      "to": [15, 16, 15],
+      "faces": {
+        "north": {"texture": "#base"},
+        "east": {"texture": "#base"},
+        "south": {"texture": "#base"},
+        "west": {"texture": "#base"},
+        "up": {"texture": "#base"},
+        "down": {"texture": "#base"}
+      }
+    }
+  ]
+}

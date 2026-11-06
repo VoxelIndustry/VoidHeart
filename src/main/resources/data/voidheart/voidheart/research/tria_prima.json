@@ -1,0 +1,25 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "x": -0.96,
+  "y": -0.7,
+  "icon": "voidheart:athanor",
+  "insight_cost": 10,
+  "knowledge_cost": 700,
+  "knowledge_per_second": 1.25,
+  "requires": [
+    "voidheart:shatter_forge"
+  ],
+  "unlocks": [
+    "voidheart:athanor",
+    "voidheart:alembic",
+    "voidheart:crucible",
+    "voidheart:aspect_intake"
+  ],
+  "recipes": [
+    "voidheart:altar/athanor",
+    "voidheart:alembic",
+    "voidheart:crucible",
+    "voidheart:aspect_intake"
+  ]
+}

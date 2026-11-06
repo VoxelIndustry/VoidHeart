@@ -52,6 +52,9 @@ public class VoidHeartItems
     public static Item RUBRUM_SHARD;
     public static Item MEMORIAM_SHARD;
     public static Item KERNACIAN_CORE;
+    public static Item SALT;
+    public static Item QUICKSILVER;
+    public static Item SEARING_OIL;
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
 
@@ -82,6 +85,10 @@ public class VoidHeartItems
         RUBRUM_SHARD = registerItem("rubrum_shard", properties -> new LoreItem(properties, "voidheart.rubrum_shard.lore"));
         MEMORIAM_SHARD = registerItem("memoriam_shard", properties -> new LoreItem(properties, "voidheart.memoriam_shard.lore"));
         KERNACIAN_CORE = registerItem("kernacian_core", properties -> new LoreItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC), "voidheart.kernacian_core.lore"));
+
+        SALT = registerItem("salt", properties -> new LoreItem(properties, "voidheart.salt.lore"));
+        QUICKSILVER = registerItem("quicksilver", properties -> new LoreItem(properties, "voidheart.quicksilver.lore"));
+        SEARING_OIL = registerItem("searing_oil", properties -> new LoreItem(properties.stacksTo(16), "voidheart.searing_oil.lore"));
     }
 
     public static void registerSpawnEggs()
