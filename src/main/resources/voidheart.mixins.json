@@ -12,6 +12,8 @@
     "MixinThrownEnderpearlDungeon"
   ],
   "client": [
+    "client.MixinAtmosphericFogClarity",
+    "client.MixinBossHealthOverlayInsight",
     "client.MixinCameraTremor",
     "client.MixinClientLevelBarrierDisguise",
     "client.MixinGuiGraphicsOil",

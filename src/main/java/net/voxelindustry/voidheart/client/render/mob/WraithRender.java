@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
+import net.voxelindustry.voidheart.client.InsightSight;
 import net.voxelindustry.voidheart.client.model.mob.WraithModel;
 import net.voxelindustry.voidheart.client.render.state.WraithRenderState;
 import net.voxelindustry.voidheart.common.content.mob.Wraith;
@@ -28,6 +29,7 @@ public class WraithRender extends MobRenderer<Wraith, WraithRenderState, WraithM
     {
         super(context, new WraithModel(context.bakeLayer(WraithModel.LAYER)), 0.45F);
         addLayer(new VoidGlowLayer<>(this, GLOW));
+        addLayer(new InsightSilhouetteLayer<>(this, state -> state.insight));
     }
 
     @Override
@@ -43,6 +45,7 @@ public class WraithRender extends MobRenderer<Wraith, WraithRenderState, WraithM
         state.crossing = wraith.isCrossing();
         state.aggressive = wraith.isAggressive();
         state.attack = wraith.getSwingAnimation(partialTicks);
+        state.insight = InsightSight.silhouette(wraith, partialTicks, state.crossing);
     }
 
     @Override

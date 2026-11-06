@@ -10,4 +10,5 @@ public class StalkingWraithRenderState extends LivingEntityRenderState
     public float smile;
     public float attack;
     public float presence;
+    public float insight;
 }

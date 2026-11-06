@@ -35,6 +35,24 @@ public final class VoidHeartEffects
             Identifier.fromNamespaceAndPath(MODID, "stillwater"),
             new DisplayEffect(MobEffectCategory.BENEFICIAL, STILLWATER_COLOR));
 
+    private static final int INSIGHT_COLOR = 0x8A3DF0;
+    private static final int CLARITY_COLOR = 0x6BDBC0;
+
+    /**
+     * Insight: wall-crossers show through stone, a Bishop about to cast its lance gathers light first, and a Dragoon's adaptation can be read. All drawn on
+     * the drinker's client.
+     */
+    public static final Holder<MobEffect> INSIGHT = Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT,
+            Identifier.fromNamespaceAndPath(MODID, "insight"),
+            new DisplayEffect(MobEffectCategory.BENEFICIAL, INSIGHT_COLOR));
+
+    /**
+     * Clarity: the fog of the dungeons and the Daedalus starts and ends farther away.
+     */
+    public static final Holder<MobEffect> CLARITY = Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT,
+            Identifier.fromNamespaceAndPath(MODID, "clarity"),
+            new DisplayEffect(MobEffectCategory.BENEFICIAL, CLARITY_COLOR));
+
     private VoidHeartEffects()
     {
     }

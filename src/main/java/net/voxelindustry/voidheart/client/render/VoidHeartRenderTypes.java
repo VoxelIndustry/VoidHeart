@@ -39,4 +39,19 @@ public class VoidHeartRenderTypes
             .build();
 
     public static final RenderType MARKER = RenderType.create(MODID + "_marker", RenderSetup.builder(MARKER_PIPELINE).sortOnUpload().createRenderSetup());
+
+    /**
+     * Vanilla eyes, added rather than blended and drawn only where something nearer already covers it, so a mob shows through stone and nowhere else.
+     * Depth is reversed in 26.3, so "behind" is LESS_THAN. The bias pulls the fragments toward the camera, so the mob's own body doesn't let its copy through.
+     */
+    private static final RenderPipeline SILHOUETTE_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_NO_LIGHTMAP_SNIPPET, RenderPipelines.EYES_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/silhouette"))
+            .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
+            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false, 3.0F, 30.0F))
+            .build();
+
+    private static final Identifier SILHOUETTE_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/insight_silhouette.png");
+
+    public static final RenderType SILHOUETTE = RenderType.create(MODID + "_silhouette",
+            RenderSetup.builder(SILHOUETTE_PIPELINE).withTexture("Sampler0", SILHOUETTE_TEXTURE).createRenderSetup());
 }

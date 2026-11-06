@@ -33,8 +33,21 @@ public final class Elixirs
      */
     public static final int BULWARK_AMPLIFIER   = 5;
 
+    public static final int INSIGHT_TICKS       = 3 * 60 * 20;
+    public static final int CLARITY_TICKS       = 5 * 60 * 20;
+
     private Elixirs()
     {
+    }
+
+    public static Item.Properties insight(Item.Properties properties)
+    {
+        return drink(properties, new MobEffectInstance(VoidHeartEffects.INSIGHT, INSIGHT_TICKS));
+    }
+
+    public static Item.Properties clarity(Item.Properties properties)
+    {
+        return drink(properties, new MobEffectInstance(VoidHeartEffects.CLARITY, CLARITY_TICKS));
     }
 
     public static Item.Properties emberDraught(Item.Properties properties)

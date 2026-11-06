@@ -211,6 +211,11 @@ public class RecipesProvider extends FabricRecipeProvider
             offerAthanorRecipe("bulwark_elixir", new ItemStack(VoidHeartItems.BULWARK_ELIXIR), Items.GLASS_BOTTLE, 240,
                     Map.of(EssenceRegistry.STILLNESS, 200, EssenceRegistry.FIERY, 200),
                     VoidHeartItems.QUICKSILVER, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAthanorRecipe("insight_elixir", new ItemStack(VoidHeartItems.INSIGHT_ELIXIR), Items.GLASS_BOTTLE, 240,
+                    Map.of(EssenceRegistry.STILLNESS, 200, EssenceRegistry.FIERY, 200),
+                    VoidHeartItems.QUICKSILVER, VoidHeartItems.WRIGGLING_BRAIN, Items.SPIDER_EYE);
+            offerAthanorRecipe("clarity_draught", new ItemStack(VoidHeartItems.CLARITY_DRAUGHT), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.STILLNESS, 300),
+                    VoidHeartItems.QUICKSILVER, VoidHeartBlocks.GLOW_ALGAE, VoidHeartBlocks.LUMEN_CORAL);
 
             // The heart binding is done by an onCraft callback registered on this id, see VoidHeartRecipes
             saveAltarRecipe(new AltarRecipe(altarRecipeId("voidheart"), ingredient(VoidHeartItems.VOID_HEART), ALTAR_TIME), VoidHeartItems.VOID_HEART);

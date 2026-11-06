@@ -1,0 +1,36 @@
+{
+  "type": "voidheart:athanor",
+  "aspects": {
+    "voidheart:fiery": 200,
+    "voidheart:stillness": 200
+  },
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:glass_bottle"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:quicksilver"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wriggling_brain"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:spider_eye"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:insight_elixir"
+      }
+    ]
+  },
+  "time": 240
+}

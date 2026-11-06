@@ -61,6 +61,8 @@ public class VoidHeartItems
     public static Item EMBER_DRAUGHT;
     public static Item STILLWATER;
     public static Item BULWARK_ELIXIR;
+    public static Item INSIGHT_ELIXIR;
+    public static Item CLARITY_DRAUGHT;
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
 
@@ -98,6 +100,8 @@ public class VoidHeartItems
         EMBER_DRAUGHT = registerItem("ember_draught", properties -> new LoreItem(Elixirs.emberDraught(properties), "voidheart.ember_draught.lore"));
         STILLWATER = registerItem("stillwater", properties -> new LoreItem(Elixirs.stillwater(properties), "voidheart.stillwater.lore"));
         BULWARK_ELIXIR = registerItem("bulwark_elixir", properties -> new LoreItem(Elixirs.bulwark(properties), "voidheart.bulwark_elixir.lore"));
+        INSIGHT_ELIXIR = registerItem("insight_elixir", properties -> new LoreItem(Elixirs.insight(properties), "voidheart.insight_elixir.lore"));
+        CLARITY_DRAUGHT = registerItem("clarity_draught", properties -> new LoreItem(Elixirs.clarity(properties), "voidheart.clarity_draught.lore"));
     }
 
     public static void registerSpawnEggs()

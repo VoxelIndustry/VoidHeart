@@ -510,6 +510,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "stillwater_minutes" -> wholeNumber(Elixirs.STILLWATER_TICKS / 1200D);
             case "bulwark_seconds" -> wholeNumber(Elixirs.BULWARK_TICKS / 20D);
             case "bulwark_health" -> wholeNumber(4 * (Elixirs.BULWARK_AMPLIFIER + 1));
+            case "insight_minutes" -> wholeNumber(Elixirs.INSIGHT_TICKS / 1200D);
+            case "clarity_minutes" -> wholeNumber(Elixirs.CLARITY_TICKS / 1200D);
             default -> name;
         };
     }

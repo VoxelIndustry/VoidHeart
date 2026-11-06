@@ -16,7 +16,9 @@ import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.InsightSight;
 import net.voxelindustry.voidheart.client.model.mob.FallenBishopModel;
+import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
 import net.voxelindustry.voidheart.client.render.state.FallenBishopRenderState;
 import net.voxelindustry.voidheart.common.content.mob.FallenBishop;
 
@@ -24,7 +26,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * While charging, a thin wavering line shows where the lance will go, turning steady and bright the moment its aim locks. It then flares into a thick beam that thins
- * out and is gone in a few ticks.
+ * out and is gone in a few ticks. Under Insight, light gathers in at the crook's orb before the charge even starts.
  */
 public class FallenBishopRender extends MobRenderer<FallenBishop, FallenBishopRenderState, FallenBishopModel>
 {
@@ -45,6 +47,18 @@ public class FallenBishopRender extends MobRenderer<FallenBishop, FallenBishopRe
     private static final float LOCKED_RADIUS = 0.03F;
     private static final float CORE_RADIUS = 0.1F;
     private static final float FLARE_RADIUS = 0.26F;
+
+    // Insight's warning: a soft core that swells, and rings drawn in toward it
+    private static final int GATHER_COLOR = 0x6BDBC0;
+    private static final int GATHER_CORE_ALPHA = 150;
+    private static final float GATHER_CORE_MIN = 0.06F;
+    private static final float GATHER_CORE_MAX = 0.2F;
+    private static final int GATHER_RING_ALPHA = 120;
+    private static final int GATHER_RINGS = 3;
+    private static final float GATHER_RING_FROM = 0.75F;
+    private static final float GATHER_RING_WIDTH = 0.05F;
+    private static final float GATHER_PERIOD_TICKS = 12;
+    private static final int GATHER_SEGMENTS = 12;
 
     public FallenBishopRender(EntityRendererProvider.Context context)
     {
@@ -98,6 +112,15 @@ public class FallenBishopRender extends MobRenderer<FallenBishop, FallenBishopRe
             state.lanceFrom = null;
             state.lanceTo = null;
         }
+
+        if (bishop.isLanceReady() && InsightSight.active())
+        {
+            state.gatherAt = bishop.lanceOrigin(partialTicks).subtract(bishop.getPosition(partialTicks));
+            state.gatherTicks = bishop.readyTicks + partialTicks;
+            state.gather = Mth.clamp(state.gatherTicks / FallenBishop.LANCE_WARN_TICKS, 0, 1);
+        }
+        else
+            state.gatherAt = null;
     }
 
     @Override
@@ -111,6 +134,70 @@ public class FallenBishopRender extends MobRenderer<FallenBishop, FallenBishopRe
             poseStack.translate(state.lanceFrom.x, state.lanceFrom.y, state.lanceFrom.z);
             submitLance(poseStack, collector, state.lanceTo.subtract(state.lanceFrom), state.lanceTicks);
             poseStack.popPose();
+        }
+
+        if (state.gatherAt != null)
+        {
+            poseStack.pushPose();
+            poseStack.translate(state.gatherAt.x, state.gatherAt.y, state.gatherAt.z);
+            poseStack.rotate(camera.orientation);
+            float gather = state.gather;
+            float ticks = state.gatherTicks;
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
+            {
+                disc(pose, buffer, Mth.lerp(gather, GATHER_CORE_MIN, GATHER_CORE_MAX), ARGB.color(Math.round(GATHER_CORE_ALPHA * (0.4F + 0.6F * gather)), GATHER_COLOR));
+                for (int ring = 0; ring < GATHER_RINGS; ring++)
+                {
+                    // Each ring closes in from wide and faint to tight and bright, then starts over
+                    float phase = Mth.frac(ticks / GATHER_PERIOD_TICKS + (float) ring / GATHER_RINGS);
+                    float radius = Mth.lerp(phase, GATHER_RING_FROM, GATHER_CORE_MIN);
+                    ring(pose, buffer, radius, ARGB.color(Math.round(GATHER_RING_ALPHA * phase * gather), GATHER_COLOR));
+                }
+            });
+            poseStack.popPose();
+        }
+    }
+
+    /**
+     * A flat disc facing the camera, full color at the middle and gone at the edge.
+     */
+    private static void disc(PoseStack.Pose pose, VertexConsumer buffer, float radius, int color)
+    {
+        int clear = ARGB.color(0, color);
+        for (int i = 0; i < GATHER_SEGMENTS; i++)
+        {
+            float a0 = i * Mth.TWO_PI / GATHER_SEGMENTS;
+            float a1 = (i + 1) * Mth.TWO_PI / GATHER_SEGMENTS;
+            buffer.addVertex(pose, 0, 0, 0).setColor(color);
+            buffer.addVertex(pose, 0, 0, 0).setColor(color);
+            buffer.addVertex(pose, Mth.cos(a1) * radius, Mth.sin(a1) * radius, 0).setColor(clear);
+            buffer.addVertex(pose, Mth.cos(a0) * radius, Mth.sin(a0) * radius, 0).setColor(clear);
+        }
+    }
+
+    /**
+     * A soft ring facing the camera, brightest along its radius and fading to either side.
+     */
+    private static void ring(PoseStack.Pose pose, VertexConsumer buffer, float radius, int color)
+    {
+        int clear = ARGB.color(0, color);
+        float inner = Math.max(0, radius - GATHER_RING_WIDTH);
+        float outer = radius + GATHER_RING_WIDTH;
+        for (int i = 0; i < GATHER_SEGMENTS; i++)
+        {
+            float c0 = Mth.cos(i * Mth.TWO_PI / GATHER_SEGMENTS);
+            float s0 = Mth.sin(i * Mth.TWO_PI / GATHER_SEGMENTS);
+            float c1 = Mth.cos((i + 1) * Mth.TWO_PI / GATHER_SEGMENTS);
+            float s1 = Mth.sin((i + 1) * Mth.TWO_PI / GATHER_SEGMENTS);
+            buffer.addVertex(pose, c0 * inner, s0 * inner, 0).setColor(clear);
+            buffer.addVertex(pose, c0 * radius, s0 * radius, 0).setColor(color);
+            buffer.addVertex(pose, c1 * radius, s1 * radius, 0).setColor(color);
+            buffer.addVertex(pose, c1 * inner, s1 * inner, 0).setColor(clear);
+
+            buffer.addVertex(pose, c0 * radius, s0 * radius, 0).setColor(color);
+            buffer.addVertex(pose, c0 * outer, s0 * outer, 0).setColor(clear);
+            buffer.addVertex(pose, c1 * outer, s1 * outer, 0).setColor(clear);
+            buffer.addVertex(pose, c1 * radius, s1 * radius, 0).setColor(color);
         }
     }
 

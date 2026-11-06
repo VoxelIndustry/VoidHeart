@@ -13,11 +13,15 @@
   "unlocks": [
     "voidheart:ember_draught",
     "voidheart:stillwater",
-    "voidheart:bulwark_elixir"
+    "voidheart:bulwark_elixir",
+    "voidheart:insight_elixir",
+    "voidheart:clarity_draught"
   ],
   "recipes": [
     "voidheart:athanor/ember_draught",
     "voidheart:athanor/stillwater",
-    "voidheart:athanor/bulwark_elixir"
+    "voidheart:athanor/bulwark_elixir",
+    "voidheart:athanor/insight_elixir",
+    "voidheart:athanor/clarity_draught"
   ]
 }

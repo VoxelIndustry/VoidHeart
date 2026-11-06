@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
+import net.voxelindustry.voidheart.client.InsightSight;
 import net.voxelindustry.voidheart.client.model.mob.StalkingWraithModel;
 import net.voxelindustry.voidheart.client.model.mob.StalkingWraithMouthModel;
 import net.voxelindustry.voidheart.client.render.state.StalkingWraithRenderState;
@@ -38,6 +39,7 @@ public class StalkingWraithRender extends MobRenderer<StalkingWraith, StalkingWr
     {
         super(context, new StalkingWraithModel(context.bakeLayer(StalkingWraithModel.LAYER)), SHADOW);
         addLayer(new VoidGlowLayer<>(this, GLOW));
+        addLayer(new InsightSilhouetteLayer<>(this, state -> state.insight));
         addLayer(new MouthLayer(this, new StalkingWraithMouthModel(context.bakeLayer(StalkingWraithMouthModel.LAYER))));
     }
 
@@ -57,6 +59,7 @@ public class StalkingWraithRender extends MobRenderer<StalkingWraith, StalkingWr
         state.smile = Mth.lerp(partialTicks, wraith.smileO, wraith.smile);
         state.presence = Mth.lerp(partialTicks, wraith.presenceO, wraith.presence);
         state.attack = wraith.getSwingAnimation(partialTicks);
+        state.insight = InsightSight.silhouette(wraith, partialTicks, state.crossing);
     }
 
     @Override
