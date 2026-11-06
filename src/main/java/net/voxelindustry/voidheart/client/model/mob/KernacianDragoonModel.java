@@ -116,6 +116,12 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
         }
     }
 
+    /**
+     * Where the veins of the seventh kind take their texture: one even patch, lit in the glow texture, so a ridge of any length reads the same.
+     */
+    private static final int VEIN_U = 0;
+    private static final int VEIN_V = 116;
+
     public static LayerDefinition createBodyLayer()
     {
         var mesh = new MeshDefinition();
@@ -154,6 +160,9 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
         head.addOrReplaceChild("right_fin", CubeListBuilder.create().texOffs(70, 104).mirror().addBox(-0.5F, -4, 0, 1, 4, 5),
                 PartPose.offsetAndRotation(4.5F, -2, -2, 0, FIN_SWEEP, 0));
 
+        // Veins from the core are raised ridges, half sunk so no face lies on the surface they run along
+        head.addOrReplaceChild("kernacian_1", CubeListBuilder.create().texOffs(VEIN_U, VEIN_V).addBox(-0.5F, -1, -2.5F, 1, 2, 1), PartPose.ZERO);
+
         addArm(root, "right_arm", -9.5F, -1);
         addArm(root, "left_arm", 9.5F, 1);
         addLeg(root, "right_leg", -3.5F, false);
@@ -170,6 +179,13 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
                 .texOffs(66, 48).addBox(-0.5F, -8, 6, 1, 1, 4)
                 .texOffs(66, 48).addBox(-0.5F, -5, 6, 1, 1, 4)
                 .texOffs(66, 48).addBox(-0.5F, -2, 6, 1, 1, 4), PartPose.ZERO);
+        // Down the chest from the neck, then out along a cross ridge and down again, split so no two ridges overlap
+        body.addOrReplaceChild("kernacian_1", CubeListBuilder.create()
+                .texOffs(VEIN_U, VEIN_V).addBox(-0.5F, -9, -5.5F, 1, 6, 1)
+                .texOffs(VEIN_U, VEIN_V).addBox(-4.5F, -4, -5.5F, 4, 1, 1)
+                .texOffs(VEIN_U, VEIN_V).addBox(0.5F, -4, -5.5F, 4, 1, 1)
+                .texOffs(VEIN_U, VEIN_V).addBox(-4.5F, -3, -5.5F, 1, 2, 1)
+                .texOffs(VEIN_U, VEIN_V).addBox(3.5F, -3, -5.5F, 1, 2, 1), PartPose.ZERO);
         body.addOrReplaceChild("projectile_2", CubeListBuilder.create().texOffs(90, 48).addBox(-5, -8, -7.5F, 10, 7, 1), PartPose.ZERO);
         body.addOrReplaceChild("explosion_2", CubeListBuilder.create().texOffs(38, 63).addBox(-7.5F, -10.5F, -6, 15, 4, 2), PartPose.ZERO);
 
@@ -220,6 +236,10 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
                 .texOffs(58, 48).addBox(studFrom, 11, -0.5F, 3, 1, 1)
                 .texOffs(58, 48).addBox(studFrom, 14, -0.5F, 3, 1, 1), PartPose.ZERO);
         arm.addOrReplaceChild("explosion_3", CubeListBuilder.create().texOffs(72, 63).addBox(-4, -4.5F, -4.5F, 8, 3, 9), PartPose.ZERO);
+        // Down the front of the upper arm, then along the inner side of the forearm, clear of the blade and the rune plate
+        arm.addOrReplaceChild("kernacian_2", CubeListBuilder.create()
+                .texOffs(VEIN_U, VEIN_V).addBox(-0.5F, 2, -2.5F, 1, 6, 1)
+                .texOffs(VEIN_U, VEIN_V).addBox(-outward * 2.5F - 0.5F, 9, -0.5F, 1, 7, 1), PartPose.ZERO);
         arm.addOrReplaceChild("magic_2", CubeListBuilder.create().texOffs(30, 87).addBox(-2, 10, -2.6F, 4, 6, 0), PartPose.ZERO);
         // The shield grows on the left arm only, the one it would raise
         if (outward > 0)
@@ -239,6 +259,11 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
                 .texOffs(66, 20).addBox(-3, 16, -4, 6, 2, 7);
         var leg = root.addOrReplaceChild(name, builder, PartPose.offset(x, 6, 0));
         leg.addOrReplaceChild("blade_2", CubeListBuilder.create().texOffs(26, 48).addBox(-3, 1, -3.5F, 6, 6, 1), PartPose.ZERO);
+        // Down the outer side of the whole leg
+        float outer = mirror ? 2 : -3;
+        leg.addOrReplaceChild("kernacian_3", CubeListBuilder.create()
+                .texOffs(VEIN_U, VEIN_V).addBox(outer, 1, -0.5F, 1, 8, 1)
+                .texOffs(VEIN_U, VEIN_V).addBox(outer, 9, -0.5F, 1, 7, 1), PartPose.ZERO);
         leg.addOrReplaceChild("explosion_1", CubeListBuilder.create().texOffs(22, 63).addBox(-3, 8, -4, 6, 4, 2), PartPose.ZERO);
     }
 

@@ -32,6 +32,7 @@ import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 import org.joml.Vector3f;
@@ -177,7 +178,7 @@ public class MalignantBoulder extends VoidMonster
             ward(level, source);
             return false;
         }
-        return super.hurtServer(level, source, damage);
+        return super.hurtServer(level, source, OilCoating.againstConstruct(source, damage));
     }
 
     private void ward(ServerLevel level, DamageSource source)

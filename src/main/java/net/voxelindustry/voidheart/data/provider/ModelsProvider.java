@@ -250,6 +250,7 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.SEARING_OIL, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.CONCUSSIVE_OIL, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.ARCANE_OIL, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.KERNACIAN_OIL, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_FLASK, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_FLASK, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SEETHING_STEEL_FLASK, ModelTemplates.FLAT_ITEM);

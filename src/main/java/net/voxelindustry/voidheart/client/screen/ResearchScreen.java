@@ -512,6 +512,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "searing_charges" -> wholeNumber(OilType.SEARING.charges());
             case "concussive_charges" -> wholeNumber(OilType.CONCUSSIVE.charges());
             case "arcane_charges" -> wholeNumber(OilType.ARCANE.charges());
+            case "kernacian_charges" -> wholeNumber(OilType.KERNACIAN.charges());
+            case "construct_percent" -> wholeNumber(Math.round(OilCoating.CONSTRUCT_BONUS * 100));
             case "arrows_per_flask" -> wholeNumber(OilCoating.ARROWS_PER_FLASK);
             case "rubrum_percent" -> wholeNumber(Math.round((Brew.PROLONGED_SCALE - 1) * 100));
             case "copper_percent" -> wholeNumber(Math.round(SinVessel.COVETOUS_COPPER.durationScale() * 100));

@@ -210,6 +210,9 @@ public class RecipesProvider extends FabricRecipeProvider
             offerAthanorRecipe("arcane_oil", new ItemStack(VoidHeartItems.ARCANE_OIL), Items.GLASS_BOTTLE, 200,
                     Map.of(EssenceRegistry.STILLNESS, 250, EssenceRegistry.FIERY, 250),
                     Items.SULFUR, VoidHeartItems.QUICKSILVER, Items.LAPIS_LAZULI);
+            offerAthanorRecipe("kernacian_oil", new ItemStack(VoidHeartItems.KERNACIAN_OIL), Items.GLASS_BOTTLE, 300,
+                    Map.of(EssenceRegistry.STILLNESS, 500, EssenceRegistry.FIERY, 500),
+                    Items.SULFUR, VoidHeartItems.QUICKSILVER, VoidHeartItems.KERNACIAN_CORE);
             offerAthanorRecipe("ember_draught", new ItemStack(VoidHeartItems.EMBER_DRAUGHT), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.FIERY, 300),
                     VoidHeartItems.QUICKSILVER, VoidHeartItems.RUBRUM_SHARD, VoidHeartBlocks.SULFIDE_CRUST);
             offerAthanorRecipe("stillwater", new ItemStack(VoidHeartItems.STILLWATER), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.STILLNESS, 300),

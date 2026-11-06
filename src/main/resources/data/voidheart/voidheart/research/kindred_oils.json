@@ -12,10 +12,12 @@
   ],
   "unlocks": [
     "voidheart:concussive_oil",
-    "voidheart:arcane_oil"
+    "voidheart:arcane_oil",
+    "voidheart:kernacian_oil"
   ],
   "recipes": [
     "voidheart:athanor/concussive_oil",
-    "voidheart:athanor/arcane_oil"
+    "voidheart:athanor/arcane_oil",
+    "voidheart:athanor/kernacian_oil"
   ]
 }

@@ -43,6 +43,7 @@ public final class OilEmbers
     private static final double VIEW_SIDE       = 1.15;
     private static final double VIEW_DOWN       = 0.75;
 
+    private static final ParticleOptions KERNACIAN_MOTE   = new DustParticleOptions(OilType.KERNACIAN.color(), 0.6F);
     private static final ParticleOptions CONCUSSIVE_GRIT = new DustParticleOptions(OilType.CONCUSSIVE.color(), 0.7F);
 
     private static final Map<Entity, Boolean> WAS_SWINGING = new WeakHashMap<>();
@@ -93,6 +94,7 @@ public final class OilEmbers
             case SEARING -> ParticleTypes.SMALL_FLAME;
             case CONCUSSIVE -> CONCUSSIVE_GRIT;
             case ARCANE -> ParticleTypes.ENCHANTED_HIT;
+            case KERNACIAN -> KERNACIAN_MOTE;
         };
     }
 

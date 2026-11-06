@@ -148,6 +148,8 @@ public class InsightClientTest implements FabricClientGameTest
         for (int i = 0; i < DragoonAdaptation.MAX_HITS; i++)
             packed = DragoonAdaptation.adapt(packed, Kind.FIRE);
         packed = DragoonAdaptation.adapt(packed, Kind.MAGIC);
+        for (int i = 0; i < 4; i++)
+            packed = DragoonAdaptation.adapt(packed, Kind.KERNACIAN);
         int adapted = packed;
 
         server.runOnServer(minecraft ->

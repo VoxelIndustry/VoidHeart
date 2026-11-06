@@ -43,6 +43,11 @@ public final class OilCoating
      */
     public static final int   SEETHING_WEAR        = 1;
     /**
+     * Share more a kernacian hit deals to the constructs the Dragoon was made beside, plain and from a stronger brew.
+     */
+    public static final float CONSTRUCT_BONUS      = 0.3F;
+    public static final float STRONG_CONSTRUCT_BONUS = 0.5F;
+    /**
      * Arrows one flask coats.
      */
     public static final int   ARROWS_PER_FLASK     = 16;
@@ -156,7 +161,25 @@ public final class OilCoating
             case SEARING -> target.igniteForSeconds(strong ? STRONG_FIRE_SECONDS : SEARING_FIRE_SECONDS);
             case CONCUSSIVE -> concuss(target, source, strong ? STRONG_KNOCKBACK : CONCUSSIVE_KNOCKBACK);
             case ARCANE -> dispel(target, strong ? STRONG_STRIPS : ARCANE_STRIPS);
+            // Its whole effect is on the damage, before the hit lands, see againstConstruct
+            case KERNACIAN ->
+            {
+            }
         }
+    }
+
+    /**
+     * @return the damage a construct takes from this hit, more when it was struck with kernacian oil
+     */
+    public static float againstConstruct(DamageSource source, float damage)
+    {
+        var stack = coatedStackOf(source);
+        if (stack == null)
+            return damage;
+        var coating = coatingOf(stack);
+        if (coating.type() != OilType.KERNACIAN)
+            return damage;
+        return damage * (1 + (coating.strong() ? STRONG_CONSTRUCT_BONUS : CONSTRUCT_BONUS));
     }
 
     /**

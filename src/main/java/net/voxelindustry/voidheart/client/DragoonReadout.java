@@ -25,11 +25,14 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public final class DragoonReadout
 {
     public static final int  OFFSET_Y     = 7;
-    public static final int  CELL_WIDTH   = 30;
+    /**
+     * Seven cells of this width fill the boss bar's 182 pixels.
+     */
+    public static final int  CELL_WIDTH   = 26;
     public static final int  ICON_SIZE    = 7;
     public static final int  BAR_X        = 9;
     public static final int  BAR_Y        = 2;
-    public static final int  BAR_WIDTH    = 19;
+    public static final int  BAR_WIDTH    = 15;
     public static final int  BAR_HEIGHT   = 3;
     public static final int  BAR_BACK     = 0xFF1B1017;
     public static final int  BAR_FILL     = 0xFF8A3DF0;

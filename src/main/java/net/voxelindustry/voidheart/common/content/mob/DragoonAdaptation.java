@@ -13,7 +13,11 @@ public final class DragoonAdaptation
         PROJECTILE,
         FIRE,
         EXPLOSION,
-        MAGIC
+        MAGIC,
+        /**
+         * Only Kernacian Oil deals it. Appended last so saved counts keep their slots, and seven kinds of four bits still fit the int.
+         */
+        KERNACIAN
     }
 
     public static final int MAX_HITS = 10;

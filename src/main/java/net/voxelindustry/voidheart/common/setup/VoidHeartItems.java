@@ -62,6 +62,7 @@ public class VoidHeartItems
     public static Item SEARING_OIL;
     public static Item CONCUSSIVE_OIL;
     public static Item ARCANE_OIL;
+    public static Item KERNACIAN_OIL;
     public static Item ARROGANT_IRON_FLASK;
     public static Item RAVENOUS_GOLD_FLASK;
     public static Item SEETHING_STEEL_FLASK;
@@ -112,6 +113,8 @@ public class VoidHeartItems
         SEETHING_STEEL_FLASK = registerFlask(SinVessel.SEETHING_STEEL);
         COVETOUS_COPPER_FLASK = registerFlask(SinVessel.COVETOUS_COPPER);
         LISTLESS_LEAD_FLASK = registerFlask(SinVessel.LISTLESS_LEAD);
+        KERNACIAN_OIL = registerItem("kernacian_oil", properties -> new OilFlaskItem(properties.stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC), OilType.KERNACIAN,
+                "voidheart.kernacian_oil.lore", "voidheart.oil_flask.lore"));
         ARCANE_OIL = registerItem("arcane_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.ARCANE, "voidheart.arcane_oil.lore", "voidheart.oil_flask.lore"));
         EMBER_DRAUGHT = registerItem("ember_draught", properties -> new LoreItem(Elixirs.emberDraught(properties), "voidheart.ember_draught.lore"));
         STILLWATER = registerItem("stillwater", properties -> new LoreItem(Elixirs.stillwater(properties), "voidheart.stillwater.lore"));
