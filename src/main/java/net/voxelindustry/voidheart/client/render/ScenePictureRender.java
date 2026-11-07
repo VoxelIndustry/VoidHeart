@@ -125,19 +125,10 @@ public class ScenePictureRender extends PictureInPictureRenderer<ScenePictureRen
 
     private static void putModel(PoseStack.Pose pose, com.mojang.blaze3d.vertex.VertexConsumer buffer, BlockState state, QuadInstance instance, int alpha)
     {
-        for (var part : ForgePreviewRender.partsOf(state))
+        for (var quad : ForgePreviewRender.quadsOf(state))
         {
-            for (var quad : part.getQuads(null))
-            {
-                instance.setColor(shaded(quad.direction(), alpha));
-                buffer.putBakedQuad(pose, quad, instance);
-            }
-            for (var direction : Direction.values())
-            {
-                instance.setColor(shaded(direction, alpha));
-                for (var quad : part.getQuads(direction))
-                    buffer.putBakedQuad(pose, quad, instance);
-            }
+            instance.setColor(shaded(quad.direction(), alpha));
+            buffer.putBakedQuad(pose, quad, instance);
         }
     }
 

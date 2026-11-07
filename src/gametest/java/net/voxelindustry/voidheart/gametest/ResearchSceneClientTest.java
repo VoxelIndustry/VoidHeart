@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.client.scene.ResearchScenes;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.beam.BeamResolver;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.RecipeSheet;
@@ -32,10 +33,12 @@ public class ResearchSceneClientTest implements FabricClientGameTest
     private static final int      GROUND     = -61;
     private static final BlockPos REPOSITORY = new BlockPos(0, GROUND + 1, 3);
     private static final BlockPos ALTAR      = new BlockPos(20, GROUND + 1, 20);
+    private static final BlockPos ATHANOR_POS = new BlockPos(30, GROUND + 2, 20);
 
     private static final Identifier ALTAR_RITE = id("altar_rite");
     private static final Identifier VOID_FLESH = id("void_flesh");
     private static final Identifier FORGE      = id("shatter_forge");
+    private static final Identifier ATHANOR    = id("tria_prima");
     private static final Identifier ARCHIVE    = id("archive_expansion");
     private static final Identifier HUSBANDRY  = id("void_husbandry");
 
@@ -75,6 +78,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
                 var data = knowledge(minecraft);
                 data.grant(VOID_FLESH);
                 data.grant(FORGE);
+                data.grant(ATHANOR);
                 data.grant(ARCHIVE);
             });
             context.waitTicks(30);
@@ -145,6 +149,17 @@ public class ResearchSceneClientTest implements FabricClientGameTest
             context.waitTicks(3);
             context.takeScreenshot("research-scene-forge-window-320x240-preview");
             resize(context, 854, 480, 2);
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            context.waitTicks(3);
+
+            click(context, position(context, ATHANOR));
+            hover(context, new int[] { 5, 5 });
+            click(context, context.computeOnClient(client -> screen(client).actionPosition()));
+            context.waitTicks(3);
+            if (!context.computeOnClient(client -> screen(client).sceneOpen()))
+                throw new AssertionError("Tria Prima should open the athanor's scene");
+            hover(context, new int[] { 2, 2 });
+            captureSteps(context, "athanor");
 
             context.getInput().pressKey(InputConstants.KEY_ESCAPE);
             context.waitTicks(3);
@@ -345,6 +360,13 @@ public class ResearchSceneClientTest implements FabricClientGameTest
         tile.searchPillars();
         if (tile.foundPillars() != 8)
             throw new AssertionError("The altar scene's pillars should all count for a real altar, found " + tile.foundPillars());
+
+        var athanorScene = ResearchScenes.of(ATHANOR).orElseThrow();
+        for (var place : athanorScene.finished())
+            level.setBlockAndUpdate(ATHANOR_POS.offset(place.pos()), place.state());
+        var layout = ((AthanorTile) level.getBlockEntity(ATHANOR_POS)).getLayout();
+        if (!layout.canBrew() || !layout.intake() || layout.crucibles().size() != 2)
+            throw new AssertionError("The athanor scene should build an athanor a real one accepts, found " + layout);
     }
 
     private static void captureSteps(ClientGameTestContext context, String name)

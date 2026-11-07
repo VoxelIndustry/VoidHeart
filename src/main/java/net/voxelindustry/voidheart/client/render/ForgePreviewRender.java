@@ -11,7 +11,10 @@ import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.client.render.state.ShatterForgeRenderState.HintKind;
 import net.voxelindustry.voidheart.client.util.MathUtil;
-import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.data.AtlasIds;
+import net.fabricmc.fabric.api.client.renderer.v1.Renderer;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
@@ -45,7 +48,7 @@ public class ForgePreviewRender
             Identifier.fromNamespaceAndPath(VoidHeart.MODID, "ravenous_collector"),
             Identifier.fromNamespaceAndPath(VoidHeart.MODID, "textures/block/ravenous_collector.png"));
 
-    private static final Map<BlockState, List<BlockStateModelPart>> PARTS_CACHE = new HashMap<>();
+    private static final Map<BlockState, List<BakedQuad>> QUADS_CACHE = new HashMap<>();
     private static final RandomSource                              RANDOM      = RandomSource.create();
 
     static void collectHints(ShatterForgeTile forge, List<HintDraw> hints)
@@ -110,14 +113,23 @@ public class ForgePreviewRender
         };
     }
 
-    static List<BlockStateModelPart> partsOf(BlockState state)
+    /**
+     * The quads a block shows in the world, emitted through Fabric's renderer so that models choosing their sprites in emitQuads,
+     * such as the conduit's and monolith's connected faces, look the same here. Collecting the model's parts would skip that step.
+     */
+    static List<BakedQuad> quadsOf(BlockState state)
     {
-        return PARTS_CACHE.computeIfAbsent(state, key ->
+        return QUADS_CACHE.computeIfAbsent(state, key ->
         {
-            var parts = new java.util.ArrayList<BlockStateModelPart>();
+            var minecraft = Minecraft.getInstance();
+            var mesh = Renderer.get().mutableMesh();
             RANDOM.setSeed(42);
-            Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(key).collectParts(RANDOM, parts);
-            return parts;
+            minecraft.getModelManager().getBlockStateModelSet().get(key).emitQuads(mesh.emitter(), BlockAndTintGetter.EMPTY, BlockPos.ZERO, key, RANDOM, direction -> false);
+
+            var sprites = minecraft.getAtlasManager().getAtlasOrThrow(AtlasIds.BLOCKS).spriteFinder();
+            var quads = new java.util.ArrayList<BakedQuad>(mesh.size());
+            mesh.forEach(quad -> quads.add(quad.toBakedQuad(sprites.find(quad))));
+            return quads;
         });
     }
 
@@ -151,7 +163,7 @@ public class ForgePreviewRender
                 continue;
             }
 
-            var parts = partsOf(hint.ghostState());
+            var quads = quadsOf(hint.ghostState());
             var instance = hint.kind() == HintKind.CONFLICT ? conflict : ghost;
 
             poseStack.pushPose();
@@ -164,16 +176,8 @@ public class ForgePreviewRender
             }
             collector.submitCustomGeometry(poseStack, RenderTypes.translucentMovingBlock(), (pose, buffer) ->
             {
-                for (var part : parts)
-                {
-                    for (var quad : part.getQuads(null))
-                        buffer.putBakedQuad(pose, quad, instance);
-                    for (var direction : Direction.values())
-                    {
-                        for (var quad : part.getQuads(direction))
-                            buffer.putBakedQuad(pose, quad, instance);
-                    }
-                }
+                for (var quad : quads)
+                    buffer.putBakedQuad(pose, quad, instance);
             });
             poseStack.popPose();
 

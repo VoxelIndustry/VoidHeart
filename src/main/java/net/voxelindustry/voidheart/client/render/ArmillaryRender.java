@@ -302,23 +302,15 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         var conflict = hintInstance(CONFLICT_COLOR);
         for (var hint : state.hints)
         {
-            var parts = ForgePreviewRender.partsOf(hint.block());
+            var quads = ForgePreviewRender.quadsOf(hint.block());
             var instance = hint.conflict() ? conflict : ghost;
 
             poseStack.pushPose();
             poseStack.translate(hint.offset().getX(), hint.offset().getY(), hint.offset().getZ());
             collector.submitCustomGeometry(poseStack, RenderTypes.translucentMovingBlock(), (pose, buffer) ->
             {
-                for (var part : parts)
-                {
-                    for (var quad : part.getQuads(null))
-                        buffer.putBakedQuad(pose, quad, instance);
-                    for (var direction : Direction.values())
-                    {
-                        for (var quad : part.getQuads(direction))
-                            buffer.putBakedQuad(pose, quad, instance);
-                    }
-                }
+                for (var quad : quads)
+                    buffer.putBakedQuad(pose, quad, instance);
             });
             poseStack.popPose();
         }
