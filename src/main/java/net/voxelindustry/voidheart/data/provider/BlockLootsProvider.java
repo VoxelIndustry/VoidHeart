@@ -42,6 +42,8 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
         this.dropSelf(VoidHeartBlocks.ASPECT_INTAKE);
         this.dropSelf(VoidHeartBlocks.COGITANT);
         this.dropSelf(VoidHeartBlocks.VOID_LOOM);
+        this.dropSelf(VoidHeartBlocks.MENDING_ALTAR);
+        this.add(VoidHeartBlocks.VOID_DOOR, this::createDoorTable);
         for (var prop : DaedalusProp.values())
             this.dropSelf(VoidHeartBlocks.daedalusProp(prop));
 
