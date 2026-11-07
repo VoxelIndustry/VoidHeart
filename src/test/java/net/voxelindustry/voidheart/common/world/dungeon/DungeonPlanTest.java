@@ -340,6 +340,22 @@ class DungeonPlanTest
         }
     }
 
+    /**
+     * A corridor flight ends on a step level with the floor it climbs to, not below a full block that has to be jumped onto.
+     */
+    @ParameterizedTest
+    @MethodSource("dungeons")
+    void corridorStairs_endOnAStepLevelWithTheUpperFloor(DungeonBlueprint blueprint)
+    {
+        var plan = DungeonPlan.generate(blueprint);
+        var grid = plan.grid();
+        for (var top : plan.stairTops())
+        {
+            short cell = grid.cell(top.x(), top.y(), top.z());
+            assertThat(DungeonCell.material(cell)).as("%s", top).isEqualTo(STAIRS);
+            assertThat(DungeonCell.facing(cell)).as("%s", top).isEqualTo(top.up());        }
+    }
+
     @ParameterizedTest
     @MethodSource("dungeons")
     void generation_isDeterministic(DungeonBlueprint blueprint)
