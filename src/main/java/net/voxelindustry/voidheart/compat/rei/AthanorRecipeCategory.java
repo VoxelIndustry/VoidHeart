@@ -57,8 +57,8 @@ public class AthanorRecipeCategory implements DisplayCategory<AthanorRecipeDispl
         List<Widget> widgets = new ArrayList<>();
 
         var inputs = display.getInputEntries();
-        int baseX = bounds.x + 30;
-        int baseY = bounds.y + 26;
+        int baseX = bounds.x + 26;
+        int baseY = bounds.y + 24;
 
         if (!inputs.isEmpty())
             widgets.add(Widgets.createSlot(new Point(baseX, baseY)).entries(inputs.get(0)).markInput());
@@ -68,24 +68,27 @@ public class AthanorRecipeCategory implements DisplayCategory<AthanorRecipeDispl
             widgets.add(Widgets.createSlot(new Point(baseX + offset[0], baseY + offset[1])).entries(inputs.get(i)).markInput());
         }
 
-        int arrowX = baseX + 34;
+        // Clear of the right reagent slot, which ends 38 past the base.
+        int arrowX = baseX + 44;
+        int resultX = arrowX + 32;
         widgets.add(Widgets.createArrow(new Point(arrowX, baseY)).animationDurationTicks(display.getTime()));
-        widgets.add(Widgets.createResultSlotBackground(new Point(arrowX + 34, baseY)));
-        widgets.add(Widgets.createSlot(new Point(arrowX + 34, baseY)).entries(display.getOutputEntries().isEmpty() ? List.of() : display.getOutputEntries().get(0))
+        widgets.add(Widgets.createResultSlotBackground(new Point(resultX, baseY)));
+        widgets.add(Widgets.createSlot(new Point(resultX, baseY)).entries(display.getOutputEntries().isEmpty() ? List.of() : display.getOutputEntries().get(0))
                 .disableBackground().markOutput());
 
-        int textX = bounds.getMaxX() - 40;
-        int lineY = bounds.y + 8;
-        widgets.add(Widgets.createLabel(new Point(textX, lineY),
+        widgets.add(Widgets.createLabel(new Point(arrowX + 12, baseY - 12),
                         Component.translatable(MODID + ".athanor_brewing.time", SECONDS_FORMAT.format(display.getTime() / 20D)))
                 .centered().noShadow().color(0xFF404040, 0xFFBBBBBB));
-        lineY += 12;
+
+        // Essence costs sit under the result, below its background.
+        int textX = resultX + 8;
+        int lineY = baseY + 26;
         for (var aspect : display.getAspects().entrySet())
         {
             widgets.add(Widgets.createLabel(new Point(textX, lineY),
                             Component.translatable(MODID + ".rei.shatter_forge.aspect", Component.translatable(aspect.getKey().translatableName()), aspect.getValue()))
                     .centered().noShadow().color(aspectColor(aspect.getKey()), aspectColor(aspect.getKey())));
-            lineY += 12;
+            lineY += 10;
         }
         return widgets;
     }

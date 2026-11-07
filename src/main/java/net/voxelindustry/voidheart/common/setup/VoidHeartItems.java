@@ -118,7 +118,7 @@ public class VoidHeartItems
         KERNACIAN_CORE = registerItem("kernacian_core", properties -> new LoreItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC), "voidheart.kernacian_core.lore"));
 
         SALT = registerItem("salt", properties -> new SaltItem(properties, "voidheart.salt.lore", "voidheart.salt.use"));
-        QUICKSILVER = registerItem("quicksilver", properties -> new LoreItem(properties, "voidheart.quicksilver.lore"));
+        QUICKSILVER = registerItem("quicksilver", Item::new);
         SEARING_OIL = registerItem("searing_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.SEARING, "voidheart.searing_oil.lore", "voidheart.oil_flask.lore"));
         CONCUSSIVE_OIL = registerItem("concussive_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.CONCUSSIVE, "voidheart.concussive_oil.lore", "voidheart.oil_flask.lore"));
         ARROGANT_IRON_FLASK = registerFlask(SinVessel.ARROGANT_IRON);

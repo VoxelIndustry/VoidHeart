@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:item/flask/elixir",
+  "textures": {
+    "skin": "voidheart:item/flask/bulwark_elixir"
+  }
+}

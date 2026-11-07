@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:item/flask/oil",
+  "textures": {
+    "skin": "voidheart:item/flask/arcane_oil"
+  }
+}

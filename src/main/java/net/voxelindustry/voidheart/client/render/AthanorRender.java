@@ -59,7 +59,7 @@ public class AthanorRender implements BlockEntityRenderer<AthanorTile, AthanorRe
 
         var blockState = tile.getBlockState();
         state.facing = blockState.hasProperty(HorizontalDirectionalBlock.FACING) ? blockState.getValue(HorizontalDirectionalBlock.FACING) : Direction.NORTH;
-        itemModelResolver.updateForTopItem(state.item, tile.getStack(), ItemDisplayContext.FIXED, tile.getLevel(), null, (int) tile.getBlockPos().asLong());
+        itemModelResolver.updateForTopItem(state.item, FlaskModels.forDisplay(tile.getStack()), ItemDisplayContext.FIXED, tile.getLevel(), null, (int) tile.getBlockPos().asLong());
     }
 
     @Override

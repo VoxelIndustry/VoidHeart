@@ -9,6 +9,7 @@ import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.athanor.AspectIntakeTile;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.athanor.CrucibleTile;
+import net.voxelindustry.voidheart.common.content.flask.PlacedFlasksTile;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftTile;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.depths.SmokerVentTile;
@@ -82,12 +83,14 @@ public class VoidHeartTiles
     public static BlockEntityType<AthanorTile> ATHANOR;
     public static BlockEntityType<CrucibleTile> CRUCIBLE;
     public static BlockEntityType<AspectIntakeTile> ASPECT_INTAKE;
+    public static BlockEntityType<PlacedFlasksTile> PLACED_FLASKS;
 
     public static void registerTiles()
     {
         registerTile(ATHANOR = FabricBlockEntityTypeBuilder.create(AthanorTile::new, VoidHeartBlocks.ATHANOR).build(), "athanor");
         registerTile(CRUCIBLE = FabricBlockEntityTypeBuilder.create(CrucibleTile::new, VoidHeartBlocks.CRUCIBLE).build(), "crucible");
         registerTile(ASPECT_INTAKE = FabricBlockEntityTypeBuilder.create(AspectIntakeTile::new, VoidHeartBlocks.ASPECT_INTAKE).build(), "aspect_intake");
+        registerTile(PLACED_FLASKS = FabricBlockEntityTypeBuilder.create(PlacedFlasksTile::new, VoidHeartBlocks.PLACED_FLASKS).build(), "placed_flasks");
 
         registerTile(SMOKER_VENT = FabricBlockEntityTypeBuilder.create(SmokerVentTile::new, VoidHeartBlocks.SMOKER_VENT).build(), "smoker_vent");
 

@@ -19,6 +19,11 @@ public class VoidHeartTags
     public static TagKey<Block> ASPECT_STILLNESS_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "aspect_stillness"));
     public static TagKey<Block> ASPECT_FIERY_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "aspect_fiery"));
 
+    /**
+     * Flasks and bottles that can be set down on a block by sneaking with one in hand.
+     */
+    public static final TagKey<Item> PLACEABLE_FLASKS = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "placeable_flasks"));
+
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "pillar_place_instead_of_store"));
 
     public static final TagKey<Item> KNOWLEDGE_FAINT = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/faint"));

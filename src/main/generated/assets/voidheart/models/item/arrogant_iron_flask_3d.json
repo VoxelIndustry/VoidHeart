@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:item/flask/round",
+  "textures": {
+    "skin": "voidheart:item/flask/arrogant_iron_flask"
+  }
+}

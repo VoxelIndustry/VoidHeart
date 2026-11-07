@@ -65,6 +65,8 @@ public class AthanorBlock extends HorizontalDirectionalBlock implements EntityBl
     @Override
     protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
+        if (isAthanorPart(heldStack))
+            return InteractionResult.PASS;
         if (!(world.getBlockEntity(pos) instanceof AthanorTile athanor))
             return InteractionResult.SUCCESS;
         if (world.isClientSide())
@@ -90,6 +92,16 @@ public class AthanorBlock extends HorizontalDirectionalBlock implements EntityBl
             athanor.setStack(serverPlayer, ItemStack.EMPTY);
         }
         return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * Parts of the athanor itself are placed against it rather than set inside as a base.
+     */
+    private static boolean isAthanorPart(ItemStack stack)
+    {
+        return stack.is(VoidHeartBlocks.ALEMBIC.asItem())
+                || stack.is(VoidHeartBlocks.CRUCIBLE.asItem())
+                || stack.is(VoidHeartBlocks.ATHANOR.asItem());
     }
 
     @Override
