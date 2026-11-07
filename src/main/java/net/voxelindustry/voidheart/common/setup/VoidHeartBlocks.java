@@ -769,7 +769,8 @@ public class VoidHeartBlocks
     private static void registerAthanorBlocks()
     {
         ATHANOR = registerBlock("athanor", AthanorBlock::new, athanorPart()
-                .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 13 : 4), true);
+                .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 13 : 4),
+                (block, properties) -> new LoreBlockItem(block, properties, MODID + ".athanor.lore"));
         ALEMBIC = registerBlock("alembic", AlembicBlock::new, athanorPart(), true);
         CRUCIBLE = registerBlock("crucible", CrucibleBlock::new, athanorPart(), true);
         ASPECT_INTAKE = registerBlock("aspect_intake", AspectIntakeBlock::new, BlockBehaviour.Properties.of()

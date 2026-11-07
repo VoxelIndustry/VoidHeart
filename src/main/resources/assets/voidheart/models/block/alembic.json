@@ -53,7 +53,8 @@
         "north": {"texture": "#steel"},
         "east": {"texture": "#steel"},
         "south": {"texture": "#steel"},
-        "west": {"texture": "#steel"}
+        "west": {"texture": "#steel"},
+        "up": {"texture": "#steel"}
       }
     },
     {

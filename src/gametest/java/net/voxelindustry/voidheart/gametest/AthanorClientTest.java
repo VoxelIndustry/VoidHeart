@@ -86,7 +86,18 @@ public class AthanorClientTest implements FabricClientGameTest
             if (server.computeOnServer(minecraft -> athanor(minecraft).isBrewing()))
                 throw new AssertionError("Expected no brew without an alembic");
 
-            server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(ALEMBIC, VoidHeartBlocks.ALEMBIC.defaultBlockState()));
+            // The alembic is placed by a real click on top of the core, which keeps its bottle
+            aimFrom(context, server, 0.5, GROUND_Y + 1.5, -1.5, 0.5, CORE.getY() + 1, 0.5, 5);
+            server.runCommand("item replace entity @a weapon.mainhand with voidheart:alembic");
+            context.getInput().pressKey(options -> options.keyUse);
+            context.waitTicks(5);
+            server.runOnServer(minecraft ->
+            {
+                if (!minecraft.overworld().getBlockState(ALEMBIC).is(VoidHeartBlocks.ALEMBIC))
+                    throw new AssertionError("Expected the clicked alembic placed on the core, found " + minecraft.overworld().getBlockState(ALEMBIC));
+                if (!athanor(minecraft).getStack().is(Items.GLASS_BOTTLE))
+                    throw new AssertionError("Expected the core to keep its bottle, got " + athanor(minecraft).getStack());
+            });
             // Searing oil is locked until whoever set the base has its research
             context.waitTicks(3 * AthanorTile.CHECK_INTERVAL);
             if (server.computeOnServer(minecraft -> athanor(minecraft).isBrewing()))
@@ -124,6 +135,8 @@ public class AthanorClientTest implements FabricClientGameTest
             context.takeScreenshot("athanor-brewing-corner");
             aimFrom(context, server, 2.5, GROUND_Y + 3, 3.5, 0.5, CORE.getY() + 0.8, 0.5, 4);
             context.takeScreenshot("athanor-brewing-back");
+            aimFrom(context, server, 0.5, GROUND_Y + 2.2, -0.9, 0.5, ALEMBIC.getY() + 0.9, 0.5, 4);
+            context.takeScreenshot(TestScreenshotOptions.of("athanor-alembic-top").withSize(1280, 720));
 
             // Jade over the core while it brews
             context.getInput().pressKey(InputConstants.KEY_F1);
@@ -168,10 +181,27 @@ public class AthanorClientTest implements FabricClientGameTest
             server.runCommand("give @a voidheart:salt");
             server.runCommand("give @a voidheart:quicksilver");
             server.runCommand("give @a voidheart:searing_oil");
+            for (var brew : new String[]{"concussive_oil", "arcane_oil", "kernacian_oil", "ember_draught", "stillwater", "bulwark_elixir", "insight_elixir",
+                    "clarity_draught", "seething_steel_flask"})
+                server.runCommand("give @a voidheart:" + brew);
+            // The survival inventory shows every slot, the creative one only the hotbar
+            server.runCommand("gamemode survival @a");
             context.waitTicks(5);
             context.getInput().pressKey(options -> options.keyInventory);
             context.waitTicks(10);
             context.takeScreenshot("athanor-inventory");
+            var tooltips = context.computeOnClient(minecraft ->
+            {
+                var tooltipContext = net.minecraft.world.item.Item.TooltipContext.of(minecraft.level);
+                var flag = net.minecraft.world.item.TooltipFlag.NORMAL;
+                return new String[]{
+                        String.join("|", new ItemStack(VoidHeartBlocks.ATHANOR).getTooltipLines(tooltipContext, minecraft.player, flag).stream().map(line -> line.getString()).toList()),
+                        String.join("|", new ItemStack(VoidHeartItems.QUICKSILVER).getTooltipLines(tooltipContext, minecraft.player, flag).stream().map(line -> line.getString()).toList())};
+            });
+            if (!tooltips[0].contains("Are you proud now Master Thaumaturge?"))
+                throw new AssertionError("Expected the athanor's lore in its tooltip, got " + tooltips[0]);
+            if (!tooltips[1].equals("Quicksilver"))
+                throw new AssertionError("Expected quicksilver to show only its name, got " + tooltips[1]);
             context.getInput().pressKey(InputConstants.KEY_ESCAPE);
             context.waitTicks(5);
 
