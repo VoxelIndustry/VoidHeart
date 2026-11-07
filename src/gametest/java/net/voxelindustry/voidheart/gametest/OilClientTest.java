@@ -42,6 +42,7 @@ public class OilClientTest implements FabricClientGameTest
     private static final int GROUND_Y = -60;
     private static final int SHOT_DRAW_TICKS = 25;
     private static final int SHOT_FLIGHT_TICKS = 20;
+    private static final int BOW_PITCH = 4;
     /**
      * Menu slots of the first two hotbar slots in the player's own inventory menu.
      */
@@ -374,14 +375,16 @@ public class OilClientTest implements FabricClientGameTest
             player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BOW));
             player.setItemInHand(InteractionHand.OFF_HAND, arrows);
         });
-        server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 facing 6.5 " + (GROUND_Y + 1.2) + " 0.5");
+        // Facing aims from the feet, which sent the arrow over the zombie's head, so aim from the eyes at its chest instead
+        server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 -90 " + BOW_PITCH);
         context.waitTicks(5);
         context.getInput().holdKeyFor(options -> options.keyUse, SHOT_DRAW_TICKS);
         context.waitTicks(SHOT_FLIGHT_TICKS);
         server.runOnServer(minecraft ->
         {
             var zombie = minecraft.overworld().getEntities(EntityTypes.ZOMBIE, entity -> true).getFirst();
-            expect(zombie.getHealth() < zombie.getMaxHealth(), "Expected the bow's arrow to hit the zombie");
+            // More than the noon sun's burning alone would take
+            expect(zombie.getHealth() <= zombie.getMaxHealth() - 4, "Expected the bow's arrow to hit the zombie, it has " + zombie.getHealth() + "/" + zombie.getMaxHealth());
             expect(zombie.isOnFire(), "Expected an arrow loosed from a bow with searing arrows to set the zombie alight");
             zombie.discard();
 
