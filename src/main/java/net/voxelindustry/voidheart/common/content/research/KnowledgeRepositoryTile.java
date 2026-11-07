@@ -19,11 +19,14 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Only remembers who it answers to: the knowledge itself belongs to that player and outlives the block. It looks around for the Knowledge Columns that let them hold more.
+ * Only remembers who it answers to: the knowledge itself belongs to that player and outlives the block. It looks around for the Knowledge Columns that let them hold more,
+ * the Cogitants that gather more, a Void Loom and the Meat Proxies that bear strain.
  * Clients are told what it is doing so that it shows without opening the screen. That is read back from its owner each time, so it is never saved.
  */
 public class KnowledgeRepositoryTile extends TileBase
@@ -109,15 +112,54 @@ public class KnowledgeRepositoryTile extends TileBase
         if (!level.hasChunksAt(from, to))
             return;
 
-        boolean usable = data.columnCapacity(Knowledge.tree(server.registryAccess())) > 0;
+        var owner = repository.owner.get();
+        var tree = Knowledge.tree(server.registryAccess());
+        boolean usable = data.columnCapacity(tree) > 0;
+        boolean thinking = data.cogitantRate(tree) > 0;
+        int cogitantLimit = Knowledge.rules().cogitants();
+        int proxyLimit = Knowledge.rules().proxies();
+
         int columns = 0;
+        int cogitants = 0;
+        boolean loom = false;
+        var proxies = new HashMap<UUID, Double>();
+        var proxyTiles = new ArrayList<MeatProxyTile>();
         for (var scanned : BlockPos.betweenClosed(from, to))
         {
             var scannedState = level.getBlockState(scanned);
-            if (scannedState.is(VoidHeartBlocks.KNOWLEDGE_COLUMN) && level.getBlockEntity(scanned) instanceof KnowledgeColumnTile column && column.claim(pos, repository.owner.get(), usable))
+            if (scannedState.is(VoidHeartBlocks.KNOWLEDGE_COLUMN) && level.getBlockEntity(scanned) instanceof KnowledgeColumnTile column && column.claim(pos, owner, usable))
                 columns += Integer.bitCount(KnowledgeColumnBlock.maskOf(scannedState));
+            else if (scannedState.is(VoidHeartBlocks.COGITANT) && level.getBlockEntity(scanned) instanceof CogitantTile cogitant)
+            {
+                // Those past the limit are left free, so that they show as idle and can serve another repository
+                if (cogitants >= cogitantLimit)
+                    cogitant.release(pos);
+                else if (cogitant.claim(pos, owner, thinking))
+                    cogitants++;
+            }
+            else if (scannedState.is(VoidHeartBlocks.VOID_LOOM) && level.getBlockEntity(scanned) instanceof VoidLoomTile weaver)
+            {
+                if (loom)
+                    weaver.release(pos);
+                else
+                    loom = weaver.claim(pos, owner, true);
+            }
+            else if (scannedState.is(VoidHeartBlocks.MEAT_PROXY) && level.getBlockEntity(scanned) instanceof MeatProxyTile proxy)
+            {
+                if (proxyTiles.size() >= proxyLimit)
+                    proxy.release(pos);
+                else if (proxy.claim(pos, owner, true))
+                {
+                    proxies.put(proxy.getId(), proxy.getLeft());
+                    proxyTiles.add(proxy);
+                }
+            }
         }
-        Knowledge.reportColumns(server, repository.owner.get(), here, columns);
+        Knowledge.reportColumns(server, owner, here, columns);
+
+        var left = Knowledge.reportUpgrades(server, owner, here, cogitants, loom, proxies);
+        for (var proxy : proxyTiles)
+            proxy.wearTo(level, left.getOrDefault(proxy.getId(), proxy.getLeft()));
     }
 
     public static void clientTick(Level world, BlockPos pos, BlockState state, KnowledgeRepositoryTile repository)
@@ -141,7 +183,7 @@ public class KnowledgeRepositoryTile extends TileBase
         var running = data.getActive().filter(id -> bound && tree.containsKey(id));
         double cap = data.cap(rules, tree);
 
-        var nowStatus = KnowledgeRepositoryStatus.of(bound, running.isPresent(), data.getKnowledge(), cap);
+        var nowStatus = KnowledgeRepositoryStatus.of(bound, running.isPresent(), bound && data.isStrained(rules, tree), data.getKnowledge(), cap);
         var nowIcon = running.map(id -> tree.get(id).icon());
         float nowProgress = running.map(id -> (float) (data.getProgress().getOrDefault(id, 0D) / tree.get(id).knowledgeCost())).orElse(0F);
         float nowFill = cap > 0 ? Mth.clamp((float) (data.getKnowledge() / cap), 0, 1) : 0;

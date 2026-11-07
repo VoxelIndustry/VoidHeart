@@ -68,6 +68,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryConnections;
+import net.voxelindustry.voidheart.common.content.armillary.DaedalusConnections;
 import net.voxelindustry.voidheart.common.setup.VoidHeartWorld;
 import net.voxelindustry.voidheart.common.world.VoidChunkGenerator;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -140,7 +141,6 @@ public class VoidHeart implements ModInitializer
         VoidHeartWorld.registerGeneration();
 
         ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
-        ServerTickEvents.START_LEVEL_TICK.register(VoidHeartTicker::tickWorld);
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BarnacleInfection::tickServer);
@@ -163,7 +163,9 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDaedalus::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ArmillaryConnections::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(DaedalusConnections::tickServer);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ArmillaryConnections.onJoin(handler.getPlayer()));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> DaedalusConnections.onJoin(handler.getPlayer()));
         UseItemCallback.EVENT.register(DungeonTeleportLock::onUseItem);
         ServerPlayerEvents.LEAVE.register(Curses::onLeave);
 
@@ -208,6 +210,9 @@ public class VoidHeart implements ModInitializer
 
         VOID_WORLD_KEY = ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath(MODID, "void"));
         VOID_DIMENSION_KEY = ResourceKey.create(Registries.DIMENSION_TYPE, Identifier.fromNamespaceAndPath(MODID, "void"));
+
+        Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, Identifier.fromNamespaceAndPath(MODID, "dungeon_size"),
+                net.voxelindustry.voidheart.common.world.dungeon.DungeonSizeCondition.MAP_CODEC);
 
         Registry.register(
                 BuiltInRegistries.CHUNK_GENERATOR,

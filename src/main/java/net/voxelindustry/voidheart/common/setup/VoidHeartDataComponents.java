@@ -69,6 +69,8 @@ public class VoidHeartDataComponents
     public static DataComponentType<TormenterSouls>  TORMENTER_SOULS;
     public static DataComponentType<WeaponOil>       WEAPON_OIL;
     public static DataComponentType<Brew>            BREW;
+    /** Seconds of strained research a Meat Proxy can still bear. */
+    public static DataComponentType<Double>          PROXY_ENDURANCE;
 
     public static void registerComponents()
     {
@@ -83,6 +85,7 @@ public class VoidHeartDataComponents
         TORMENTER_SOULS = register("tormenter_souls", TormenterSouls.CODEC);
         WEAPON_OIL = register("weapon_oil", WeaponOil.CODEC);
         BREW = register("brew", Brew.CODEC);
+        PROXY_ENDURANCE = register("proxy_endurance", Codec.DOUBLE);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

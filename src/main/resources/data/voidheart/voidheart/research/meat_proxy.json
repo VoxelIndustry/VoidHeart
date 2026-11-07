@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "archive",
+  "x": 0.54,
+  "y": 0.98,
+  "icon": "voidheart:meat_proxy",
+  "insight_cost": 14,
+  "knowledge_cost": 1800,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:cogitation"
+  ],
+  "unlocks": [
+    "voidheart:meat_proxy"
+  ],
+  "recipes": [
+    "voidheart:altar/meat_proxy"
+  ]
+}

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -35,7 +36,7 @@ class PlayerKnowledgeTest
 
     private static Research research(int insights, double cost, List<Identifier> requires, double passive, double cap)
     {
-        return new Research(1, Constellation.RITES, 0, 0, ITEM, insights, cost, 1, requires, passive, cap, List.of(), List.of());
+        return new Research(1, Constellation.RITES, 0, 0, ITEM, insights, cost, 1, requires, passive, cap, 0, 0, List.of(), List.of());
     }
 
     private PlayerKnowledge data;
@@ -305,5 +306,199 @@ class PlayerKnowledgeTest
         data.grant(CHILD);
 
         assertThat(data.rate(RULES, TREE)).isCloseTo(0.5, within(1E-9));
+    }
+
+    private static final UUID PROXY = new UUID(0, 7);
+
+    private static Map<Identifier, Research> strainedTree(int strain)
+    {
+        return Map.of(ROOT, new Research(1, Constellation.ARCHIVE, 0, 0, ITEM, 1, 10, 1, List.of(), 0, 70, 0.05, strain, List.of(), List.of()));
+    }
+
+    private void startStrained(Map<Identifier, Research> tree)
+    {
+        data.addInsights(1);
+        data.reveal(ROOT, tree);
+        data.addKnowledge(20);
+        data.toggleActive(ROOT);
+    }
+
+    @Test
+    void settle_givenStrainBeyondTolerance_thenResearchWaitsWhileKnowledgeGathers()
+    {
+        var tree = strainedTree(20);
+        data.attune(1);
+        startStrained(tree);
+
+        assertThat(data.isStrained(RULES, tree)).isTrue();
+        data.settle(seconds(10), RULES, tree);
+
+        assertThat(data.getProgress().getOrDefault(ROOT, 0D)).isZero();
+        assertThat(data.getKnowledge()).isCloseTo(21, within(1E-9));
+    }
+
+    @Test
+    void settle_givenProxyBearingTheRest_thenResearchRunsAndWearsIt()
+    {
+        var tree = strainedTree(20);
+        data.attune(1);
+        data.reportProxies(Map.of(PROXY, 100D));
+        startStrained(tree);
+
+        assertThat(data.isStrained(RULES, tree)).isFalse();
+        assertThat(data.settle(seconds(10), RULES, tree)).contains(ROOT);
+
+        assertThat(data.getProxies().get(PROXY)).isCloseTo(90, within(1E-9));
+    }
+
+    @Test
+    void settle_givenProxyGivingOut_thenResearchPausesWhereItWas()
+    {
+        var tree = strainedTree(20);
+        data.attune(1);
+        data.reportProxies(Map.of(PROXY, 4D));
+        startStrained(tree);
+
+        assertThat(data.settle(seconds(10), RULES, tree)).isEmpty();
+
+        assertThat(data.getProgress().get(ROOT)).isCloseTo(4, within(1E-9));
+        assertThat(data.getProxies().get(PROXY)).isZero();
+        assertThat(data.isStrained(RULES, tree)).isTrue();
+    }
+
+    @Test
+    void settle_givenStrainWithinTolerance_thenProxiesRest()
+    {
+        var tree = strainedTree(20);
+        data.attune(2);
+        data.reportProxies(Map.of(PROXY, 100D));
+        startStrained(tree);
+
+        data.settle(seconds(10), RULES, tree);
+
+        assertThat(data.getProxies().get(PROXY)).isEqualTo(100);
+    }
+
+    @Test
+    void reportProxies_keepsTheWearAppliedSinceTheyWereSeen()
+    {
+        data.reportProxies(Map.of(PROXY, 100D));
+        var tree = strainedTree(20);
+        data.attune(1);
+        startStrained(tree);
+        data.settle(seconds(5), RULES, tree);
+
+        var left = data.reportProxies(Map.of(PROXY, 100D, new UUID(0, 8), 50D));
+
+        assertThat(left.get(PROXY)).isCloseTo(95, within(1E-9));
+        assertThat(left.get(new UUID(0, 8))).isEqualTo(50);
+    }
+
+    @Test
+    void attune_onlyRises()
+    {
+        assertThat(data.attune(2)).isTrue();
+        assertThat(data.attune(1)).isFalse();
+        assertThat(data.attune(Strain.MAX_ATTUNEMENT + 1)).isFalse();
+        assertThat(data.getAttunement()).isEqualTo(2);
+    }
+
+    @Test
+    void rate_countsCogitantsUpToTheLimitOnceResearched()
+    {
+        var tree = strainedTree(0);
+        data.setUpgrades(20, false);
+        assertThat(data.rate(RULES, tree)).isEqualTo(0.1);
+
+        data.grant(ROOT);
+
+        assertThat(data.rate(RULES, tree)).isCloseTo(0.1 + 12 * 0.05, within(1E-9));
+    }
+
+    @Test
+    void insightCost_givenLoom_thenGrowsAQuarterSlower()
+    {
+        data.addKnowledge(10 + 12);
+        data.buyInsight(RULES);
+        data.buyInsight(RULES);
+        data.setUpgrades(0, true);
+
+        assertThat(data.insightCost(RULES)).isCloseTo(10 * 1.15 * 1.15, within(1E-9));
+    }
+
+    @Test
+    void bind_toAnotherRepository_thenForgetsWhatStoodAroundIt()
+    {
+        data.setUpgrades(3, true);
+        data.reportProxies(Map.of(PROXY, 10D));
+
+        data.bind(Optional.empty());
+
+        assertThat(data.getCogitants()).isZero();
+        assertThat(data.hasLoom()).isFalse();
+        assertThat(data.getProxies()).isEmpty();
+    }
+
+    @Test
+    void codec_keepsAttunementUpgradesAndProxies()
+    {
+        data.attune(2);
+        data.setUpgrades(4, true);
+        data.reportProxies(Map.of(PROXY, 12.5));
+        data.settle(seconds(60), RULES, TREE);
+
+        var saved = PlayerKnowledge.CODEC.encodeStart(NbtOps.INSTANCE, data).getOrThrow();
+        var loaded = PlayerKnowledge.CODEC.parse(NbtOps.INSTANCE, saved).getOrThrow();
+
+        assertThat(loaded.getAttunement()).isEqualTo(2);
+        assertThat(loaded.getCogitants()).isEqualTo(4);
+        assertThat(loaded.hasLoom()).isTrue();
+        assertThat(loaded.getProxies()).containsEntry(PROXY, 12.5);
+        assertThat(loaded.getInsightTrickle()).isCloseTo(data.getInsightTrickle(), within(1E-9)).isGreaterThan(0);
+    }
+
+    @Test
+    void settle_givenThreeProxies_thenTheyMakeSixInsightsAnHour()
+    {
+        data.reportProxies(Map.of(new UUID(0, 1), 100D, new UUID(0, 2), 100D, new UUID(0, 3), 100D));
+        int before = data.getInsights();
+
+        data.settle(seconds(3600), RULES, TREE);
+
+        assertThat(data.getInsights() - before).isEqualTo(6);
+    }
+
+    @Test
+    void settle_givenMoreProxiesThanCount_thenOnlyThreeThink()
+    {
+        data.reportProxies(Map.of(new UUID(0, 1), 100D, new UUID(0, 2), 100D, new UUID(0, 3), 100D, new UUID(0, 4), 100D));
+        int before = data.getInsights();
+
+        data.settle(seconds(3600), RULES, TREE);
+
+        assertThat(data.getInsights() - before).isEqualTo(6);
+    }
+
+    @Test
+    void settle_cutIntoPieces_thenProxiesKeepTheirPartialInsight()
+    {
+        data.reportProxies(Map.of(PROXY, 100D));
+        int before = data.getInsights();
+        for (int minute = 1; minute <= 45; minute++)
+            data.settle(seconds(minute * 60), RULES, TREE);
+
+        assertThat(data.getInsights() - before).isEqualTo(1);
+        assertThat(data.getInsightTrickle()).isCloseTo(0.5, within(1E-9));
+    }
+
+    @Test
+    void settle_givenWornOutProxy_thenItThinksNoMore()
+    {
+        data.reportProxies(Map.of(PROXY, 0D));
+        int before = data.getInsights();
+
+        data.settle(seconds(3600), RULES, TREE);
+
+        assertThat(data.getInsights()).isEqualTo(before);
     }
 }

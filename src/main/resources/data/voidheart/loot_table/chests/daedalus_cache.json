@@ -1,0 +1,75 @@
+{
+  "type": "minecraft:chest",
+  "random_sequence": "voidheart:chests/daedalus_cache",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:random_chance",
+        "chance": 0.5
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:spark_of_understanding"
+        }
+      ]
+    },
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 2,
+        "max": 4
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:void_pearl",
+          "weight": 4,
+          "modifier": {
+            "type": "minecraft:set_count",
+            "count": {
+              "type": "minecraft:uniform",
+              "min": 1,
+              "max": 3
+            },
+            "add": false
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:ender_shard",
+          "weight": 6,
+          "modifier": {
+            "type": "minecraft:set_count",
+            "count": {
+              "type": "minecraft:uniform",
+              "min": 2,
+              "max": 6
+            },
+            "add": false
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:memoriam_shard",
+          "weight": 2,
+          "modifier": {
+            "type": "minecraft:set_count",
+            "count": {
+              "type": "minecraft:uniform",
+              "min": 1,
+              "max": 2
+            },
+            "add": false
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:wriggling_brain",
+          "weight": 3
+        }
+      ]
+    }
+  ]
+}

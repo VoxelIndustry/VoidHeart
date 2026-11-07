@@ -6,7 +6,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.client.CameraType;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.InteractionHand;
@@ -35,7 +34,8 @@ import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Predicate;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * What the eyes of the Still Depths do against a real player: flocking, lunging, spitting, stalking and the bolts they fire.
@@ -57,8 +57,7 @@ public class VoidEyeBehaviourClientTest implements FabricClientGameTest
             save = world.getWorldSave();
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule spawn_mobs false");
             server.runCommand("gamerule immediate_respawn true");
             server.runCommand("difficulty hard");
@@ -321,7 +320,7 @@ public class VoidEyeBehaviourClientTest implements FabricClientGameTest
             expect(lost == 5 * HARD_SCALING, "A bite should deal 5 damage, scaled by Hard, lost " + lost);
         });
         clearScene(server);
-        server.runOnServer(VoidEyeBehaviourClientTest::heal);
+        server.runOnServer(GameTestKit::heal);
     }
 
     /**
@@ -348,7 +347,7 @@ public class VoidEyeBehaviourClientTest implements FabricClientGameTest
         waitFor(context, server, 500, "A maw should find its way around the wall", minecraft ->
                 minecraft.overworld().getEntities(VoidHeartEntities.EYE_MAW, Entity::isAlive).stream().anyMatch(maw -> maw.getZ() > 1.5));
         clearScene(server);
-        server.runOnServer(VoidEyeBehaviourClientTest::heal);
+        server.runOnServer(GameTestKit::heal);
     }
 
     private static void checkLargeMaw(ClientGameTestContext context, TestServerContext server)
@@ -472,7 +471,7 @@ public class VoidEyeBehaviourClientTest implements FabricClientGameTest
         // Then it backs away
         waitFor(context, server, 80, "It should back off after firing", minecraft -> reach(first(minecraft, VoidHeartEntities.ARCANE_EYE), player(minecraft)) > 5.5);
         clearScene(server);
-        server.runOnServer(VoidEyeBehaviourClientTest::heal);
+        server.runOnServer(GameTestKit::heal);
     }
 
     /**
@@ -510,7 +509,7 @@ public class VoidEyeBehaviourClientTest implements FabricClientGameTest
         context.waitTick();
         context.takeScreenshot("eye-arcane-bolt");
         clearScene(server);
-        server.runOnServer(VoidEyeBehaviourClientTest::heal);
+        server.runOnServer(GameTestKit::heal);
     }
 
     private static void checkBolt(ClientGameTestContext context, TestServerContext server)
@@ -649,16 +648,7 @@ public class VoidEyeBehaviourClientTest implements FabricClientGameTest
 
     private static void set(LargeEyeMaw large, String name, int value)
     {
-        try
-        {
-            Field field = LargeEyeMaw.class.getDeclaredField(name);
-            field.setAccessible(true);
-            field.setInt(large, value);
-        }
-        catch (ReflectiveOperationException exception)
-        {
-            throw new AssertionError(exception);
-        }
+        setIntField(large, LargeEyeMaw.class, name, value);
     }
 
     private static double reach(Entity eye, ServerPlayer player)
@@ -686,67 +676,5 @@ public class VoidEyeBehaviourClientTest implements FabricClientGameTest
     {
         var at = server.computeOnServer(minecraft -> minecraft.overworld().getEntities(type, Entity::isAlive).getFirst().getBoundingBox().getCenter());
         aimCamera(server, feetX, feetY, feetZ, at.x, at.y, at.z);
-    }
-
-    private static <T extends Mob> T spawn(MinecraftServer minecraft, EntityType<T> type, double x, double y, double z)
-    {
-        var level = minecraft.overworld();
-        var mob = type.create(level, EntitySpawnReason.COMMAND);
-        mob.snapTo(x, y, z, 90, 0);
-        level.addFreshEntity(mob);
-        return mob;
-    }
-
-    private static <T extends Entity> T first(MinecraftServer minecraft, EntityType<T> type)
-    {
-        return minecraft.overworld().getEntities(type, Entity::isAlive).getFirst();
-    }
-
-    private static void heal(MinecraftServer minecraft)
-    {
-        var player = player(minecraft);
-        player.setHealth(player.getMaxHealth());
-    }
-
-    private static void clearScene(TestServerContext server)
-    {
-        server.runCommand("kill @e[type=!player]");
-    }
-
-    private static void tp(TestServerContext server, double x, double y, double z)
-    {
-        server.runCommand("tp @a " + x + " " + y + " " + z);
-    }
-
-    private static void aimCamera(TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
-    {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
-    }
-
-    private static void waitFor(ClientGameTestContext context, TestServerContext server, int maxTicks, String message, Predicate<MinecraftServer> condition)
-    {
-        for (int tick = 0; tick < maxTicks; tick++)
-        {
-            if (server.computeOnServer(condition::test))
-                return;
-            context.waitTick();
-        }
-        throw new AssertionError(message + " within " + maxTicks + " ticks");
-    }
-
-    private static void expect(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 }

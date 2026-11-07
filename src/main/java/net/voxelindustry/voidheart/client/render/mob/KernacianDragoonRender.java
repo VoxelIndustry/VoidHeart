@@ -1,22 +1,18 @@
 package net.voxelindustry.voidheart.client.render.mob;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
-import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.model.mob.KernacianDragoonModel;
+import net.voxelindustry.voidheart.client.render.BeamTube;
 import net.voxelindustry.voidheart.client.render.state.KernacianDragoonRenderState;
 import net.voxelindustry.voidheart.common.content.mob.KernacianDragoon;
 
@@ -116,12 +112,9 @@ public class KernacianDragoonRender extends MobRenderer<KernacianDragoon, Kernac
 
     private static void submitBeam(PoseStack poseStack, SubmitNodeCollector collector, Vec3 beam, float ticks)
     {
-        float length = (float) beam.length();
-        if (length < 0.01F)
+        float length = BeamTube.alignTo(poseStack, beam);
+        if (length == 0)
             return;
-        var direction = beam.scale(1 / length);
-        poseStack.rotate(Axis.YP.rotation(Mth.HALF_PI - (float) Mth.atan2(direction.z, direction.x)));
-        poseStack.rotate(Axis.XP.rotation((float) Math.acos(Mth.clamp(direction.y, -1, 1))));
 
         float rise = Mth.clamp(ticks / EASE_TICKS, 0, 1);
         float fall = Mth.clamp((KernacianDragoon.BEAM_FIRE_TICKS - ticks) / EASE_TICKS, 0, 1);
@@ -132,40 +125,6 @@ public class KernacianDragoonRender extends MobRenderer<KernacianDragoon, Kernac
         float scroll = Mth.frac(-ticks * 0.3F);
         float spin = ticks * 0.4F;
 
-        collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(BEAM, false),
-                (pose, buffer) -> tube(pose, buffer, CORE_COLOR, length, coreRadius, spin, scroll, length * 2));
-        collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(BEAM, true),
-                (pose, buffer) -> tube(pose, buffer, flareColor, length, flareRadius, -spin, scroll, length));
-    }
-
-    /**
-     * A square tube along +y, turned around its axis by the given angle.
-     */
-    private static void tube(PoseStack.Pose pose, VertexConsumer buffer, int color, float length, float radius, float angle, float vStart, float vLength)
-    {
-        for (int side = 0; side < 4; side++)
-        {
-            float a0 = angle + side * Mth.HALF_PI;
-            float a1 = a0 - Mth.HALF_PI;
-            float x0 = Mth.cos(a0) * radius;
-            float z0 = Mth.sin(a0) * radius;
-            float x1 = Mth.cos(a1) * radius;
-            float z1 = Mth.sin(a1) * radius;
-
-            vertex(pose, buffer, color, x0, length, z0, 1, vStart + vLength);
-            vertex(pose, buffer, color, x0, 0, z0, 1, vStart);
-            vertex(pose, buffer, color, x1, 0, z1, 0, vStart);
-            vertex(pose, buffer, color, x1, length, z1, 0, vStart + vLength);
-        }
-    }
-
-    private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, int color, float x, float y, float z, float u, float v)
-    {
-        buffer.addVertex(pose, x, y, z)
-                .setColor(color)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(LightCoordsUtil.FULL_BRIGHT)
-                .setNormal(pose, 0, 1, 0);
+        BeamTube.submitCoreAndFlare(poseStack, collector, BEAM, length, spin, scroll, CORE_COLOR, coreRadius, flareColor, flareRadius);
     }
 }

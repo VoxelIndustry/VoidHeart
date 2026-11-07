@@ -33,6 +33,7 @@ public class ArmillaryProvider implements IServerDataProvider<BlockAccessor>
         tag.putBoolean("formed", armillary.isFormed());
         tag.putInt("phase", chart.getPhase().ordinal());
         tag.putInt("bubbles", chart.liveBubbles());
+        tag.putBoolean("daedalus", chart.targetsStrata());
         tag.putInt("percent", chart.getSearchDuration() == 0 ? 0 : 100 * chart.getSearchTicks() / chart.getSearchDuration());
     }
 
@@ -57,7 +58,7 @@ public class ArmillaryProvider implements IServerDataProvider<BlockAccessor>
                 case SCANNING -> Component.translatable(MODID + ".jade.armillary.scanning", data.getIntOr("bubbles", 0));
                 case SEARCHING -> Component.translatable(MODID + ".jade.armillary.searching", data.getIntOr("percent", 0));
                 case REACHED -> Component.translatable(MODID + ".jade.armillary.reached");
-                case CONNECTED -> Component.translatable(MODID + ".jade.armillary.connected");
+                case CONNECTED -> Component.translatable(MODID + (data.getBooleanOr("daedalus", false) ? ".jade.armillary.connected_daedalus" : ".jade.armillary.connected"));
             });
         }
 

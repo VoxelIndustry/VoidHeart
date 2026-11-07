@@ -12,6 +12,8 @@ import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 
 import java.util.Optional;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * A table shows the hollows of a house and of a tunnel through a hill when asked. Following a player, it turns to
  * the hollows by itself as a roof closes over them, showing both for a while, and back once they are in the open.
@@ -32,8 +34,7 @@ public class OculusCavingClientTest implements FabricClientGameTest
             var server = world.getServer();
             var connection = world.getConnection();
             connection.waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
 
             // A stone house east of the table, and a hill west of it with a tunnel running through
             fill(server, 10, GROUND + 1, -5, 20, GROUND + 7, 5, "stone_bricks");

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/cogitant"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_wriggling_brain": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:wriggling_brain"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_wriggling_brain"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/cogitant"
+    ]
+  }
+}

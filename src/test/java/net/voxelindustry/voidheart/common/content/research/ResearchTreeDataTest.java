@@ -25,7 +25,7 @@ class ResearchTreeDataTest
     private static final Path DATA      = Path.of("src/main/resources/data/voidheart");
     private static final Path GENERATED = Path.of("src/main/generated/data/voidheart");
 
-    private static final KnowledgeRules RULES = new KnowledgeRules(0.1, 30, 10, 1.2);
+    private static final KnowledgeRules RULES = new KnowledgeRules(0.1, 30, 10, 1.1);
     private static final int[] COLUMNS_BUILT_BY_TIER = { 6, 45, 72 };
 
     private static final Map<Identifier, Research> TREE = new HashMap<>();
@@ -195,7 +195,7 @@ class ResearchTreeDataTest
     }
 
     /**
-     * The price of insights outgrows the base cap at the 8th one, so every research must stay payable from the archives reachable at its tier, with a fair number of columns built by then.
+     * The price of insights outgrows the base cap at the 13th one, so every research must stay payable from the archives reachable at its tier, with a fair number of columns built by then.
      */
     @Test
     void tree_everyResearchIsPayableWithinTheCapOfItsTier()

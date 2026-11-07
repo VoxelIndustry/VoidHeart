@@ -166,6 +166,7 @@ public final class DaedalusPalette
         setState(PIPE_X, rod.setValue(BlockStateProperties.FACING, Direction.EAST));
         setState(PIPE_Y, rod.setValue(BlockStateProperties.FACING, Direction.UP));
         setState(PIPE_Z, rod.setValue(BlockStateProperties.FACING, Direction.SOUTH));
+        setState(CACHE, Blocks.BARREL.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP));
     }
 
     private static BlockState voidLamp(int corruption)

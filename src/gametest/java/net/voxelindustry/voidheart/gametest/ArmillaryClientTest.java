@@ -7,12 +7,9 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.world.TestWorldSave;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Hud;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -41,6 +38,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * The whole way into a dungeon: building the instrument, finding and reaching a bubble, paying to open it, crossing both ways, the warnings, and being thrown out.
  */
@@ -62,8 +61,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
             save = world.getWorldSave();
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamerule show_advancement_messages false");
             server.runCommand("gamemode creative @a");
             context.waitTicks(10);
@@ -85,7 +83,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
             sweepBase(context, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
             checkBaseBlocks(context, server);
-            check(context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().hud(1)) == 0, "A new armillary should have nothing to show on its dial");
+            expect(context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().hud(1)) == 0, "A new armillary should have nothing to show on its dial");
 
             int target = checkChart(context, server);
             checkDialWhenReached(context, server);
@@ -125,7 +123,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
             placeBase(minecraft, false);
         });
         context.waitTicks(FORMED_TICKS);
-        check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "A rebuilt armillary should form");
+        expect(onServer(server, minecraft -> armillary(minecraft).isFormed()), "A rebuilt armillary should form");
     }
 
     /**
@@ -148,7 +146,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.waitTicks(5);
         aimAt(context, server, feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5, core.getX() + 0.5, core.getY() + 0.9, core.getZ() + 0.5);
         rightClick(context);
-        check(overlay(context).equals("A force is interfering with your attempt"), "A core used inside a dungeon should be refused, the action bar shows: " + overlay(context));
+        expect(overlay(context).equals("A force is interfering with your attempt"), "A core used inside a dungeon should be refused, the action bar shows: " + overlay(context));
 
         server.runCommand("gamemode creative @a");
         server.runOnServer(minecraft -> player(minecraft).teleportTo(minecraft.overworld(), 3.5, CORE.getY(), 0.5, Set.of(), 0, 0, false));
@@ -166,7 +164,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var chart = armillary(minecraft).getChart();
-            chart.target(chart.bubbles().getFirst().id(), ArmillaryTile.rules());
+            chart.target(chart.bubbles().getFirst().id(), ArmillaryTile.rules(), RandomSource.create());
             chart.advanceSearch(0.4F);
 
             var address = new DungeonAddress(DungeonSize.SMALL, DungeonTheme.FOREST, 1, 903);
@@ -181,20 +179,20 @@ public class ArmillaryClientTest implements FabricClientGameTest
      */
     private static void checkAfterReload(ClientGameTestContext context, TestServerContext server)
     {
-        check(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "The player should come back inside the dungeon");
-        check(onServer(server, minecraft -> ArmillaryConnections.get(minecraft).get(DungeonAddress.at(player(minecraft).getBlockX(), player(minecraft).getBlockZ()))) != null,
+        expect(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "The player should come back inside the dungeon");
+        expect(onServer(server, minecraft -> ArmillaryConnections.get(minecraft).get(DungeonAddress.at(player(minecraft).getBlockX(), player(minecraft).getBlockZ()))) != null,
                 "The connection should survive a reload");
 
         context.waitTicks(20 * 25);
-        check(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The connection should still end after a reload");
+        expect(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The connection should still end after a reload");
         context.waitTicks(30);
 
-        check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "The armillary should still be formed after a reload");
+        expect(onServer(server, minecraft -> armillary(minecraft).isFormed()), "The armillary should still be formed after a reload");
         checkBaseShape(server, true, "A reloaded armillary");
         var phase = onServer(server, minecraft -> armillary(minecraft).getChart().getPhase());
-        check(phase == ArmillaryChart.Phase.SEARCHING, "The search should survive a reload, the chart is " + phase);
+        expect(phase == ArmillaryChart.Phase.SEARCHING, "The search should survive a reload, the chart is " + phase);
         var ticks = onServer(server, minecraft -> armillary(minecraft).getChart().getSearchTicks());
-        check(ticks > 0, "The search should keep its progress, it is at " + ticks + " ticks");
+        expect(ticks > 0, "The search should keep its progress, it is at " + ticks + " ticks");
     }
 
     /**
@@ -206,7 +204,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         {
             var found = onServer(server, minecraft -> minecraft.getRecipeManager().getRecipes().stream()
                     .anyMatch(recipe -> recipe.id().identifier().getPath().contains(BuiltInRegistries.BLOCK.getKey(part).getPath())));
-            check(found, "Nothing makes " + BuiltInRegistries.BLOCK.getKey(part));
+            expect(found, "Nothing makes " + BuiltInRegistries.BLOCK.getKey(part));
         }
     }
 
@@ -237,11 +235,6 @@ public class ArmillaryClientTest implements FabricClientGameTest
         return (ArmillaryTile) minecraft.level.getBlockEntity(CORE);
     }
 
-    private static ServerPlayer player(MinecraftServer server)
-    {
-        return server.getPlayerList().getPlayers().getFirst();
-    }
-
     private static <T> T onServer(TestServerContext server, Function<MinecraftServer, T> function)
     {
         return server.computeOnServer(function::apply);
@@ -252,20 +245,9 @@ public class ArmillaryClientTest implements FabricClientGameTest
         server.runOnServer(minecraft -> action.accept(armillary(minecraft)));
     }
 
-    private static void check(boolean condition, String message)
-    {
-        if (!condition)
-            throw new AssertionError(message);
-    }
-
     private static void aimAt(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)
     {
-        double dx = x - feetX;
-        double dy = y - (feetY + 1.62);
-        double dz = z - feetZ;
-        double yaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        server.runCommand("execute in " + dimension(context, server) + " run tp @a " + feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch);
+        server.runCommand("execute in " + dimension(context, server) + " run tp @a " + aimedPose(feetX, feetY, feetZ, x, y, z));
         context.waitTicks(10);
     }
 
@@ -277,21 +259,6 @@ public class ArmillaryClientTest implements FabricClientGameTest
     private static void aimAtHub(ClientGameTestContext context, TestServerContext server)
     {
         aimAt(context, server, 3.5, CORE.getY(), 0.5, 0.5, HUB.getY() + 0.5, 0.5);
-    }
-
-    private static void rightClick(ClientGameTestContext context)
-    {
-        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
-        context.waitTicks(5);
-    }
-
-    private static void guiClick(ClientGameTestContext context, float x, float y)
-    {
-        double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
-        context.getInput().setCursorPos(x * scale, y * scale);
-        context.waitTicks(2);
-        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
-        context.waitTicks(5);
     }
 
     private static ArmillaryScreen screen(Minecraft minecraft)
@@ -316,44 +283,16 @@ public class ArmillaryClientTest implements FabricClientGameTest
 
     private static void captureSizes(ClientGameTestContext context, String name)
     {
-        size(context, 640, 480, 2);
+        resize(context, 640, 480, 2);
         context.takeScreenshot(name + "-320x240");
-        size(context, 1920, 1080, 4);
+        resize(context, 1920, 1080, 4);
         context.takeScreenshot(name + "-480x270");
-        size(context, 1920, 1080, 3);
+        resize(context, 1920, 1080, 3);
         context.takeScreenshot(name + "-640x360");
-        size(context, 1920, 1080, 2);
+        resize(context, 1920, 1080, 2);
         context.takeScreenshot(name + "-960x540");
-        size(context, 854, 480, 2);
+        resize(context, 854, 480, 2);
         context.takeScreenshot(name);
-    }
-
-    private static void size(ClientGameTestContext context, int width, int height, int scale)
-    {
-        context.getInput().resizeWindow(width, height);
-        context.runOnClient(minecraft ->
-        {
-            minecraft.options.guiScale().set(scale);
-            minecraft.resizeGui();
-        });
-        context.waitTicks(4);
-    }
-
-    private static String overlay(ClientGameTestContext context)
-    {
-        return context.computeOnClient(minecraft ->
-        {
-            try
-            {
-                var field = Hud.class.getDeclaredField("overlayMessageString");
-                field.setAccessible(true);
-                var message = (Component) field.get(minecraft.gui.hud);
-                return message == null ? "" : message.getString();
-            } catch (ReflectiveOperationException e)
-            {
-                throw new AssertionError(e);
-            }
-        });
     }
 
     /**
@@ -363,12 +302,12 @@ public class ArmillaryClientTest implements FabricClientGameTest
     {
         server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(CORE, VoidHeartBlocks.ARMILLARY_CORE.defaultBlockState()));
         context.waitTicks(FORMED_TICKS);
-        check(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A lone core should not form");
+        expect(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A lone core should not form");
 
         aimAt(context, server, 2.5, CORE.getY(), 2.5, 0.5, CORE.getY() + 0.9, 0.5);
         rightClick(context);
-        check(onServer(server, minecraft -> armillary(minecraft).isPreviewActive()), "Using a lone core should show the base it needs");
-        check(overlay(context).contains("chiseled voidstone"), "Using a lone core should say what it needs, the action bar shows: " + overlay(context));
+        expect(onServer(server, minecraft -> armillary(minecraft).isPreviewActive()), "Using a lone core should show the base it needs");
+        expect(overlay(context).contains("chiseled voidstone"), "Using a lone core should say what it needs, the action bar shows: " + overlay(context));
         context.getInput().pressKey(InputConstants.KEY_F1);
         context.waitTicks(5);
         aimAt(context, server, 4.5, CORE.getY() + 1.5, 4.5, 0.5, CORE.getY() + 1, 0.5);
@@ -377,12 +316,12 @@ public class ArmillaryClientTest implements FabricClientGameTest
 
         server.runOnServer(minecraft -> placeBase(minecraft, true));
         context.waitTicks(FORMED_TICKS);
-        check(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A base missing a block should not form");
+        expect(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A base missing a block should not form");
 
         server.runOnServer(minecraft -> placeBase(minecraft, false));
         context.waitTicks(FORMED_TICKS);
-        check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "A whole base should form");
-        check(onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "A formed armillary should keep its middle clickable");
+        expect(onServer(server, minecraft -> armillary(minecraft).isFormed()), "A whole base should form");
+        expect(onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "A formed armillary should keep its middle clickable");
         checkBaseShape(server, true, "A whole base");
         context.getInput().pressKey(InputConstants.KEY_F1);
         context.takeScreenshot("armillary-rising");
@@ -391,17 +330,17 @@ public class ArmillaryClientTest implements FabricClientGameTest
 
         server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(CORE.offset(1, 3, 1), Blocks.STONE.defaultBlockState()));
         context.waitTicks(FORMED_TICKS);
-        check(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A block in the way of the rings should stop them");
-        check(onServer(server, minecraft -> !minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "A stopped armillary should take its middle away");
+        expect(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A block in the way of the rings should stop them");
+        expect(onServer(server, minecraft -> !minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "A stopped armillary should take its middle away");
         checkBaseShape(server, false, "A stopped armillary");
 
         aimAt(context, server, 2.5, CORE.getY(), 2.5, 0.5, CORE.getY() + 0.9, 0.5);
         rightClick(context);
-        check(overlay(context).contains("left free"), "Using a blocked core should say why, the action bar shows: " + overlay(context));
+        expect(overlay(context).contains("left free"), "Using a blocked core should say why, the action bar shows: " + overlay(context));
 
         server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(CORE.offset(1, 3, 1), Blocks.AIR.defaultBlockState()));
         context.waitTicks(FORMED_TICKS + RISEN_TICKS);
-        check(onServer(server, minecraft -> armillary(minecraft).isFormed()), "Clearing the way should bring the rings back");
+        expect(onServer(server, minecraft -> armillary(minecraft).isFormed()), "Clearing the way should bring the rings back");
         checkBaseShape(server, true, "An armillary with its way cleared");
 
         server.runOnServer(minecraft -> player(minecraft).setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(VoidHeartBlocks.ARMILLARY_CORE)));
@@ -419,10 +358,10 @@ public class ArmillaryClientTest implements FabricClientGameTest
             {
                 var state = level.getBlockState(part.pos());
                 var wanted = formed ? part.formed() : part.block().defaultBlockState();
-                check(state == wanted, who + " should have " + wanted + " at " + part.pos() + ", found " + state);
+                expect(state == wanted, who + " should have " + wanted + " at " + part.pos() + ", found " + state);
             }
-            check(level.getBlockState(CORE).getValue(ArmillaryCoreBlock.FORMED) == formed, who + " should have a core showing formed=" + formed);
-            check(armillary(minecraft).getBlockState().getValue(ArmillaryCoreBlock.FORMED) == formed, who + " should have told its tile");
+            expect(level.getBlockState(CORE).getValue(ArmillaryCoreBlock.FORMED) == formed, who + " should have a core showing formed=" + formed);
+            expect(armillary(minecraft).getBlockState().getValue(ArmillaryCoreBlock.FORMED) == formed, who + " should have told its tile");
         });
     }
 
@@ -436,7 +375,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
             aimAt(context, server, target[0], CORE.getY(), target[1], target[2], CORE.getY() + 0.5, target[3]);
             rightClick(context);
             context.waitTicks(5);
-            check(context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Using the base at " + target[2] + " " + target[3] + " should open the map");
+            expect(context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Using the base at " + target[2] + " " + target[3] + " should open the map");
             context.runOnClient(minecraft -> minecraft.player.closeContainer());
             context.waitTicks(5);
         }
@@ -447,10 +386,10 @@ public class ArmillaryClientTest implements FabricClientGameTest
             var pickaxe = new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE);
             for (var part : ArmillaryLayout.base(CORE))
             {
-                check(pickaxe.isCorrectToolForDrops(part.formed()), "A pickaxe should be right for " + part.formed());
+                expect(pickaxe.isCorrectToolForDrops(part.formed()), "A pickaxe should be right for " + part.formed());
                 var drops = Block.getDrops(part.formed(), level, part.pos(), null, player(minecraft), pickaxe);
-                check(drops.size() == 1 && drops.getFirst().is(part.block().asItem()), part.pos() + " should drop " + part.block() + ", it drops " + drops);
-                check(level.getBlockState(part.pos()).getCloneItemStack(level, part.pos(), false).is(part.block().asItem()), "Picking " + part.pos() + " should give " + part.block());
+                expect(drops.size() == 1 && drops.getFirst().is(part.block().asItem()), part.pos() + " should drop " + part.block() + ", it drops " + drops);
+                expect(level.getBlockState(part.pos()).getCloneItemStack(level, part.pos(), false).is(part.block().asItem()), "Picking " + part.pos() + " should give " + part.block());
             }
         });
 
@@ -461,16 +400,16 @@ public class ArmillaryClientTest implements FabricClientGameTest
             level.destroyBlock(broken.pos(), true, player(minecraft));
             return level.getEntitiesOfClass(ItemEntity.class, new AABB(broken.pos()).inflate(1)).stream().anyMatch(item -> item.getItem().is(broken.block().asItem()));
         });
-        check(dropped, "Breaking " + broken.pos() + " should leave its block on the ground");
+        expect(dropped, "Breaking " + broken.pos() + " should leave its block on the ground");
         context.waitTicks(FORMED_TICKS);
-        check(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A broken base should stop the armillary");
+        expect(!onServer(server, minecraft -> armillary(minecraft).isFormed()), "A broken base should stop the armillary");
         server.runOnServer(minecraft ->
         {
             var level = minecraft.overworld();
-            check(level.getBlockState(broken.pos()).isAir(), "The broken piece should stay gone");
+            expect(level.getBlockState(broken.pos()).isAir(), "The broken piece should stay gone");
             for (var part : ArmillaryLayout.base(CORE))
-                check(part.pos().equals(broken.pos()) || level.getBlockState(part.pos()).is(part.block()), part.pos() + " should be its block again");
-            check(!level.getBlockState(CORE).getValue(ArmillaryCoreBlock.FORMED), "The core should be a cube again");
+                expect(part.pos().equals(broken.pos()) || level.getBlockState(part.pos()).is(part.block()), part.pos() + " should be its block again");
+            expect(!level.getBlockState(CORE).getValue(ArmillaryCoreBlock.FORMED), "The core should be a cube again");
             level.getEntitiesOfClass(ItemEntity.class, new AABB(CORE).inflate(3)).forEach(ItemEntity::discard);
         });
         context.getInput().pressKey(InputConstants.KEY_F1);
@@ -534,7 +473,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         aimAtHub(context, server);
         rightClick(context);
         context.waitTicks(5);
-        check(context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Using the middle of the rings should open the map");
+        expect(context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Using the middle of the rings should open the map");
         context.takeScreenshot("armillary-map-empty");
 
         var deepest = onServer(server, minecraft ->
@@ -550,48 +489,48 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.takeScreenshot("armillary-map-found");
 
         var center = context.computeOnClient(minecraft -> screen(minecraft).bubbleCenter(deepest.id()));
-        check(center != null, "The screen should have been told about the bubble");
+        expect(center != null, "The screen should have been told about the bubble");
         double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
         context.getInput().setCursorPos(center[0] * scale, center[1] * scale);
         context.waitTicks(3);
         context.takeScreenshot("armillary-map-hover");
 
-        guiClick(context, center[0], center[1]);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getTargetId()) == -1, "A click should only look at a bubble");
-        check(selected(context) == deepest.id(), "A click should select the bubble");
-        check(tablet(context).contains("5 void pearls"), "The price should show from the first look, the tablet says " + tablet(context));
-        check(String.join(" ", tablet(context)).contains("Nothing comes back from here whole."), "The depth should say how dangerous it is, the tablet says " + tablet(context));
-        check(String.join(" ", tablet(context)).contains("8m 00s to search"), "The search time should show before committing to it, the tablet says " + tablet(context));
-        check(primaryLabel(context).equals("Search for a path"), "A bubble on its own should offer a search, not " + primaryLabel(context));
+        click(context, center[0], center[1], 5);
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getTargetId()) == -1, "A click should only look at a bubble");
+        expect(selected(context) == deepest.id(), "A click should select the bubble");
+        expect(tablet(context).contains("5 void pearls"), "The price should show from the first look, the tablet says " + tablet(context));
+        expect(String.join(" ", tablet(context)).contains("Nothing comes back from here whole."), "The depth should say how dangerous it is, the tablet says " + tablet(context));
+        expect(String.join(" ", tablet(context)).contains("8m 00s to search"), "The search time should show before committing to it, the tablet says " + tablet(context));
+        expect(primaryLabel(context).equals("Search for a path"), "A bubble on its own should offer a search, not " + primaryLabel(context));
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         context.takeScreenshot("armillary-map-tablet");
 
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(2);
-        check(selected(context) == -1 && context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Escape should let go of the tablet before the screen");
+        expect(selected(context) == -1 && context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof ArmillaryScreen), "Escape should let go of the tablet before the screen");
         context.getInput().pressKey(InputConstants.KEY_DOWN);
         context.waitTicks(2);
-        check(selected(context) != -1, "The down key should walk the bubbles");
+        expect(selected(context) != -1, "The down key should walk the bubbles");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(2);
 
-        guiClick(context, center[0], center[1]);
+        click(context, center[0], center[1], 5);
         var plate = context.computeOnClient(minecraft -> screen(minecraft).primaryCenter());
-        guiClick(context, plate[0], plate[1]);
+        click(context, plate[0], plate[1], 5);
         context.waitTicks(5);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getTargetId()) == deepest.id(), "The plate should start the search");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getTargetId()) == deepest.id(), "The plate should start the search");
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(25);
-        check(tablet(context).stream().anyMatch(line -> line.endsWith(" left")), "A running search should say how long it has left, the tablet says " + tablet(context));
+        expect(tablet(context).stream().anyMatch(line -> line.endsWith(" left")), "A running search should say how long it has left, the tablet says " + tablet(context));
         context.takeScreenshot("armillary-map-search-tablet");
 
         int other = onServer(server, minecraft -> armillary(minecraft).getChart().bubbles().stream().filter(bubble -> bubble.id() != deepest.id()).findFirst().orElseThrow().id());
         var otherCenter = context.computeOnClient(minecraft -> screen(minecraft).bubbleCenter(other));
-        guiClick(context, otherCenter[0], otherCenter[1]);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getTargetId()) == deepest.id(), "Looking at another bubble should not lose the search");
-        check(String.join(" ", tablet(context)).contains("The search under way will be lost."), "Another bubble should warn what it would cost, the tablet says " + tablet(context));
-        check(primaryLabel(context).equals("Search here instead"), "Another bubble should offer to search there instead, not " + primaryLabel(context));
+        click(context, otherCenter[0], otherCenter[1], 5);
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getTargetId()) == deepest.id(), "Looking at another bubble should not lose the search");
+        expect(String.join(" ", tablet(context)).contains("The search under way will be lost."), "Another bubble should warn what it would cost, the tablet says " + tablet(context));
+        expect(primaryLabel(context).equals("Search here instead"), "Another bubble should offer to search there instead, not " + primaryLabel(context));
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         context.takeScreenshot("armillary-map-search-other");
@@ -614,12 +553,12 @@ public class ArmillaryClientTest implements FabricClientGameTest
 
         act(server, armillary -> armillary.advanceSearch(1));
         context.waitTicks(8);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.REACHED, "A finished search should reach the bubble");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.REACHED, "A finished search should reach the bubble");
         context.takeScreenshot("armillary-map-reached-bloom");
         context.waitTicks(60);
-        check(selected(context) == deepest.id(), "Reaching a bubble should bring up its tablet");
+        expect(selected(context) == deepest.id(), "Reaching a bubble should bring up its tablet");
         int gap = context.computeOnClient(minecraft -> screen(minecraft).plateGap());
-        check(gap >= 8, "Abandoning should stand well apart from opening, they are " + gap + " apart");
+        expect(gap >= 8, "Abandoning should stand well apart from opening, they are " + gap + " apart");
         context.takeScreenshot("armillary-map-reached");
         return deepest.id();
     }
@@ -635,8 +574,8 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.waitTicks(DIAL_SETTLE_TICKS);
         float hud = context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().hud(1));
         float shown = context.computeOnClient(minecraft -> clientArmillary(minecraft).getDisplay().arc(1));
-        check(hud == 1, name + " should show the dial, it stands at " + hud);
-        check(Math.abs(shown - arc) < 0.04F, name + " should light " + arc + " of the dial, it shows " + shown);
+        expect(hud == 1, name + " should show the dial, it stands at " + hud);
+        expect(Math.abs(shown - arc) < 0.04F, name + " should light " + arc + " of the dial, it shows " + shown);
         context.takeScreenshot(name);
         context.getInput().pressKey(InputConstants.KEY_F1);
     }
@@ -699,36 +638,36 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.waitTicks(5);
 
         context.waitTicks(25);
-        check(!context.computeOnClient(minecraft -> screen(minecraft).primaryActive()), "Opening should not be on offer without the pearls");
-        check(primaryLabel(context).equals("Short by 5 void pearls"), "The plate should say what is missing, not " + primaryLabel(context));
+        expect(!context.computeOnClient(minecraft -> screen(minecraft).primaryActive()), "Opening should not be on offer without the pearls");
+        expect(primaryLabel(context).equals("Short by 5 void pearls"), "The plate should say what is missing, not " + primaryLabel(context));
         context.takeScreenshot("armillary-map-no-pearls");
 
         var button = context.computeOnClient(minecraft -> screen(minecraft).primaryCenter());
-        guiClick(context, button[0], button[1]);
+        click(context, button[0], button[1], 5);
         context.waitTicks(5);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.REACHED, "Without pearls the bubble should stay shut");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.REACHED, "Without pearls the bubble should stay shut");
 
         int cost = onServer(server, minecraft -> armillary(minecraft).getChart().target().openCost());
         server.runOnServer(minecraft -> player(minecraft).getInventory().add(new ItemStack(VoidHeartItems.VOID_PEARL, cost + 2)));
         context.waitTicks(25);
-        check(context.computeOnClient(minecraft -> screen(minecraft).primaryActive()), "With the pearls in hand opening should be on offer");
-        check(primaryLabel(context).equals("Open: 5 void pearls"), "The plate should give the price, not " + primaryLabel(context));
+        expect(context.computeOnClient(minecraft -> screen(minecraft).primaryActive()), "With the pearls in hand opening should be on offer");
+        expect(primaryLabel(context).equals("Open: 5 void pearls"), "The plate should give the price, not " + primaryLabel(context));
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         captureSizes(context, "armillary-map-can-open");
 
         button = context.computeOnClient(minecraft -> screen(minecraft).primaryCenter());
-        guiClick(context, button[0], button[1]);
+        click(context, button[0], button[1], 5);
         context.waitTicks(10);
 
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "Paying should open the bubble");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "Paying should open the bubble");
         int left = onServer(server, minecraft -> player(minecraft).getInventory().countItem(VoidHeartItems.VOID_PEARL));
-        check(left == 2, "Opening should cost exactly " + cost + " pearls, " + left + " are left of " + (cost + 2));
-        check(onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The middle of the rings should show an open portal");
+        expect(left == 2, "Opening should cost exactly " + cost + " pearls, " + left + " are left of " + (cost + 2));
+        expect(onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The middle of the rings should show an open portal");
         context.takeScreenshot("armillary-map-connected-bloom");
         context.waitTicks(45);
-        check(tablet(context).stream().anyMatch(line -> line.endsWith(" left")), "An open connection should say how long it has left, the tablet says " + tablet(context));
-        check(!context.computeOnClient(minecraft -> screen(minecraft).primaryVisible()), "Nothing is left to do on the map once a way stands open");
+        expect(tablet(context).stream().anyMatch(line -> line.endsWith(" left")), "An open connection should say how long it has left, the tablet says " + tablet(context));
+        expect(!context.computeOnClient(minecraft -> screen(minecraft).primaryVisible()), "Nothing is left to do on the map once a way stands open");
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(2);
         captureSizes(context, "armillary-map-connected");
@@ -747,7 +686,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         aimAtHub(context, server);
         rightClick(context);
         context.waitTicks(40);
-        check(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "The portal should lead into the dungeon");
+        expect(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "The portal should lead into the dungeon");
         context.waitTicks(40);
 
         var rift = onServer(server, ArmillaryClientTest::riftPosition);
@@ -759,14 +698,14 @@ public class ArmillaryClientTest implements FabricClientGameTest
 
         rightClick(context);
         context.waitTicks(20);
-        check(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The rift should lead back");
+        expect(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The rift should lead back");
         double distance = onServer(server, minecraft -> Math.sqrt(player(minecraft).blockPosition().distSqr(CORE)));
-        check(distance <= 8, "The rift should land the player beside the armillary, " + distance + " blocks away");
+        expect(distance <= 8, "The rift should land the player beside the armillary, " + distance + " blocks away");
 
         aimAtHub(context, server);
         rightClick(context);
         context.waitTicks(40);
-        check(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "The portal should still lead into the dungeon");
+        expect(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "The portal should still lead into the dungeon");
     }
 
     private static BlockPos riftPosition(MinecraftServer minecraft)
@@ -777,7 +716,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         int[] rift = plan.returnRift();
         var pos = address.origin().offset(rift[0], rift[1], rift[2]);
         var block = player.level().getBlockState(pos).getBlock();
-        check(block == VoidHeartBlocks.ARMILLARY_RIFT, "The plan's rift should be placed in the world, found " + BuiltInRegistries.BLOCK.getKey(block));
+        expect(block == VoidHeartBlocks.ARMILLARY_RIFT, "The plan's rift should be placed in the world, found " + BuiltInRegistries.BLOCK.getKey(block));
         return pos;
     }
 
@@ -789,13 +728,13 @@ public class ArmillaryClientTest implements FabricClientGameTest
         var address = onServer(server, minecraft -> DungeonAddress.at(player(minecraft).getBlockX(), player(minecraft).getBlockZ()));
         server.runOnServer(minecraft -> ArmillaryConnections.get(minecraft).decayIn(address, ArmillaryConnections.now(minecraft) + 20 * 60 + 5));
         context.waitTicks(15);
-        check(overlay(context).contains("collapsing"), "Expected the last minute's warning, the action bar shows: " + overlay(context));
+        expect(overlay(context).contains("collapsing"), "Expected the last minute's warning, the action bar shows: " + overlay(context));
 
         server.runOnServer(minecraft -> ArmillaryConnections.get(minecraft).decayIn(address, ArmillaryConnections.now(minecraft) + 20 * 10 + 8));
         context.waitTicks(20);
-        check(overlay(context).contains("closes in 10"), "Expected the countdown, the action bar shows: " + overlay(context));
-        check(context.computeOnClient(minecraft -> ArmillaryTremor.isShaking()), "The ground should shake in the last minute");
-        check(context.computeOnClient(minecraft -> Math.abs(minecraft.gameRenderer.mainCamera().yRot() - minecraft.player.getYRot()) > 0.001F
+        expect(overlay(context).contains("closes in 10"), "Expected the countdown, the action bar shows: " + overlay(context));
+        expect(context.computeOnClient(minecraft -> ArmillaryTremor.isShaking()), "The ground should shake in the last minute");
+        expect(context.computeOnClient(minecraft -> Math.abs(minecraft.gameRenderer.mainCamera().yRot() - minecraft.player.getYRot()) > 0.001F
                                                     || Math.abs(minecraft.gameRenderer.mainCamera().xRot() - minecraft.player.getXRot()) > 0.001F),
                 "The view should be shaken away from where the player looks");
         context.getInput().pressKey(InputConstants.KEY_F1);
@@ -803,22 +742,22 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.getInput().pressKey(InputConstants.KEY_F1);
 
         context.waitTicks(20 * 10);
-        check(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The collapse should throw the player out");
+        expect(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The collapse should throw the player out");
         double distance = onServer(server, minecraft -> Math.sqrt(player(minecraft).blockPosition().distSqr(CORE)));
-        check(distance <= 8, "The player should land beside the armillary, " + distance + " blocks away");
-        check(onServer(server, minecraft -> ArmillaryConnections.get(minecraft).get(address)) == null, "The connection should be gone");
+        expect(distance <= 8, "The player should land beside the armillary, " + distance + " blocks away");
+        expect(onServer(server, minecraft -> ArmillaryConnections.get(minecraft).get(address)) == null, "The connection should be gone");
 
         context.waitTicks(30);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.SCANNING, "The armillary should go back to scanning");
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().bubble(target).broken()), "The bubble should be left broken");
-        check(!onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The portal should close");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.SCANNING, "The armillary should go back to scanning");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().bubble(target).broken()), "The bubble should be left broken");
+        expect(!onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The portal should close");
         context.waitTicks(20);
         context.takeScreenshot("armillary-after-collapse");
 
         aimAtHub(context, server);
         rightClick(context);
         context.waitTicks(10);
-        check(context.computeOnClient(minecraft -> screen(minecraft).whisper()).equals("The way has closed."), "Someone thrown back should be told, the map says " + context.computeOnClient(minecraft -> screen(minecraft).whisper()));
+        expect(context.computeOnClient(minecraft -> screen(minecraft).whisper()).equals("The way has closed."), "Someone thrown back should be told, the map says " + context.computeOnClient(minecraft -> screen(minecraft).whisper()));
         context.getInput().setCursorPos(2, 2);
         context.waitTicks(5);
         context.takeScreenshot("armillary-map-reopened-after-collapse");
@@ -835,7 +774,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         {
             var chart = armillary(minecraft).getChart();
             var found = chart.find(ArmillaryTile.rules(), randomForDifficulty(3));
-            chart.target(found.id(), ArmillaryTile.rules());
+            chart.target(found.id(), ArmillaryTile.rules(), RandomSource.create());
             chart.advanceSearch(1);
             return found.id();
         });
@@ -844,14 +783,14 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.waitTicks(30);
 
         var plate = context.computeOnClient(minecraft -> screen(minecraft).primaryCenter());
-        guiClick(context, plate[0], plate[1]);
+        click(context, plate[0], plate[1], 5);
         context.waitTicks(30);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "The plate should open the bubble");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "The plate should open the bubble");
 
         act(server, armillary -> armillary.decayIn(1));
         context.getInput().setCursorPos(2, 2);
         context.waitFor(minecraft -> screen(minecraft).whisper().equals("The way has closed."), 200);
-        check(selected(context) == -1, "The tablet should let go of a bubble that broke");
+        expect(selected(context) == -1, "The tablet should let go of a bubble that broke");
         context.takeScreenshot("armillary-map-collapse-start");
         context.waitTicks(20);
         context.takeScreenshot("armillary-map-collapse-root");
@@ -859,8 +798,8 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.takeScreenshot("armillary-map-broken");
 
         var center = context.computeOnClient(minecraft -> screen(minecraft).bubbleCenter(bubble));
-        guiClick(context, center[0], center[1]);
-        check(selected(context) == -1, "A broken bubble should not be selectable");
+        click(context, center[0], center[1], 5);
+        expect(selected(context) == -1, "A broken bubble should not be selectable");
         context.getInput().setCursorPos(2, 2);
 
         ageChart(server, ArmillaryChart.RUIN_TICKS / 2);
@@ -871,7 +810,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         context.takeScreenshot("armillary-map-broken-late");
         ageChart(server, ArmillaryChart.RUIN_TICKS / 4);
         context.waitTicks(25);
-        check(onServer(server, minecraft -> armillary(minecraft).getChart().bubble(bubble)) == null, "A broken bubble should end up gone");
+        expect(onServer(server, minecraft -> armillary(minecraft).getChart().bubble(bubble)) == null, "A broken bubble should end up gone");
         context.runOnClient(minecraft -> minecraft.player.closeContainer());
         context.waitTicks(5);
     }
@@ -900,14 +839,14 @@ public class ArmillaryClientTest implements FabricClientGameTest
             return address;
         });
         context.waitTicks(40);
-        check(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The short connection should already have thrown the player out");
+        expect(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The short connection should already have thrown the player out");
 
         server.runOnServer(minecraft -> VoidDungeons.enter(player(minecraft), closed));
         context.waitTicks(30);
-        check(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "A command can still put a player inside a closed dungeon");
+        expect(dimension(context, server).equals(VoidDungeons.WORLD_KEY.identifier().toString()), "A command can still put a player inside a closed dungeon");
         server.runOnServer(minecraft -> ArmillaryConnections.onJoin(player(minecraft)));
         context.waitTicks(30);
-        check(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "Joining inside a closed dungeon should send the player back");
+        expect(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "Joining inside a closed dungeon should send the player back");
     }
 
     /**
@@ -930,20 +869,20 @@ public class ArmillaryClientTest implements FabricClientGameTest
             level.destroyBlock(CORE, false);
             for (var part : ArmillaryLayout.base(CORE))
             {
-                check(level.getBlockState(part.pos()).is(part.block()), "Breaking the core should give " + part.pos() + " its block back");
+                expect(level.getBlockState(part.pos()).is(part.block()), "Breaking the core should give " + part.pos() + " its block back");
                 level.setBlockAndUpdate(part.pos(), Blocks.AIR.defaultBlockState());
             }
         });
-        check(onServer(server, minecraft -> !minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "Breaking the core should take its middle away");
-        check(onServer(server, minecraft -> ArmillaryConnections.get(minecraft).get(address)) != null, "The connection should outlive the armillary");
+        expect(onServer(server, minecraft -> !minecraft.overworld().getBlockState(HUB).is(VoidHeartBlocks.ARMILLARY_HUB)), "Breaking the core should take its middle away");
+        expect(onServer(server, minecraft -> ArmillaryConnections.get(minecraft).get(address)) != null, "The connection should outlive the armillary");
 
         context.waitTicks(20 * 9);
-        check(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The collapse should still throw the player out");
+        expect(dimension(context, server).equals(Level.OVERWORLD.identifier().toString()), "The collapse should still throw the player out");
         double distance = onServer(server, minecraft -> Math.sqrt(player(minecraft).blockPosition().distSqr(CORE)));
-        check(distance <= 8, "The player should land where the armillary stood, " + distance + " blocks away");
+        expect(distance <= 8, "The player should land where the armillary stood, " + distance + " blocks away");
 
         var drops = onServer(server, minecraft -> Block.getDrops(VoidHeartBlocks.ARMILLARY_CORE.defaultBlockState(), minecraft.overworld(), CORE, null,
                 player(minecraft), new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE)));
-        check(drops.stream().anyMatch(stack -> stack.is(VoidHeartBlocks.ARMILLARY_CORE.asItem())), "A core mined with a pickaxe should drop itself, got " + drops);
+        expect(drops.stream().anyMatch(stack -> stack.is(VoidHeartBlocks.ARMILLARY_CORE.asItem())), "A core mined with a pickaxe should drop itself, got " + drops);
     }
 }

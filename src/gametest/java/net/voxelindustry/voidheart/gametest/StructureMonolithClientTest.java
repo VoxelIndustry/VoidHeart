@@ -13,6 +13,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Generated structures only ever hold broken monoliths, as lone ones do, since an intact one drops itself when mined.
  */
@@ -28,8 +30,7 @@ public class StructureMonolithClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode spectator @a");
             server.runCommand("forceload add -16 -16 80 80");
             context.waitTicks(20);

@@ -34,7 +34,6 @@ import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryBlock;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeState;
-import net.voxelindustry.voidheart.common.content.research.PlayerKnowledge;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
@@ -42,6 +41,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Walks the whole loop: a monolith gives a tablet, the tablet makes a repository, the repository feeds and refines, and research opens up a locked recipe.
@@ -67,8 +68,7 @@ public class ResearchClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 10");
             context.waitTicks(5);
@@ -91,12 +91,12 @@ public class ResearchClientTest implements FabricClientGameTest
             context.takeScreenshot("research-repository");
             server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
 
-            var before = server.computeOnServer(minecraft -> data(minecraft).getKnowledge());
-            server.runOnServer(minecraft -> data(minecraft).addKnowledge(-before));
+            var before = server.computeOnServer(minecraft -> knowledge(minecraft).getKnowledge());
+            server.runOnServer(minecraft -> knowledge(minecraft).addKnowledge(-before));
             context.waitTicks(100);
             server.runOnServer(minecraft ->
             {
-                double gathered = data(minecraft).getKnowledge();
+                double gathered = knowledge(minecraft).getKnowledge();
                 if (gathered < 0.4 || gathered > 0.7)
                     throw new AssertionError("Expected 5s of passive knowledge at 0.1/s, got " + gathered);
             });
@@ -105,8 +105,8 @@ public class ResearchClientTest implements FabricClientGameTest
             {
                 var player = player(minecraft);
                 player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                use(player, REPOSITORY);
-                data(minecraft).addKnowledge(25);
+                useOn(player, REPOSITORY);
+                knowledge(minecraft).addKnowledge(25);
             });
             context.waitFor(client -> client.gui.screen() instanceof ResearchScreen);
             context.waitTicks(30);
@@ -124,8 +124,10 @@ public class ResearchClientTest implements FabricClientGameTest
             var bought = context.computeOnClient(client -> ResearchScreen.snapshot);
             if (bought.insights() != 1 || !bought.revealed().contains(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")) || bought.revealed().contains(PATIENT_STUDY))
                 throw new AssertionError("Only the root should have been revealed, the other one is not connected yet: " + bought);
-            if (Math.abs(bought.nextInsightCost() - 12) > 1E-6)
-                throw new AssertionError("Expected the next insight 20% pricier, got " + bought.nextInsightCost());
+            // Priced from the config, whose float growth is not exactly 1.1
+            double growth = net.voxelindustry.voidheart.common.config.VoidHeartConfig.get().insightCostGrowth;
+            if (Math.abs(bought.nextInsightCost() - 10 * growth) > 1E-6)
+                throw new AssertionError("Expected the next insight " + growth + " times pricier, got " + bought.nextInsightCost());
 
             send(context, KnowledgePayloads.Action.Kind.TOGGLE, Optional.of(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")));
             context.waitFor(client -> ResearchScreen.snapshot.completed().contains(Identifier.fromNamespaceAndPath(MODID, "archive_expansion")), 400 * 20);
@@ -152,22 +154,6 @@ public class ResearchClientTest implements FabricClientGameTest
     private static void send(ClientGameTestContext context, KnowledgePayloads.Action.Kind kind, Optional<Identifier> research)
     {
         context.runOnClient(client -> ClientPlayNetworking.send(new KnowledgePayloads.Action(kind, research)));
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
-    }
-
-    private static PlayerKnowledge data(MinecraftServer minecraft)
-    {
-        return Knowledge.of(minecraft, player(minecraft).getUUID());
-    }
-
-    private static void use(ServerPlayer player, BlockPos pos)
-    {
-        var hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
-        player.gameMode.useItemOn(player, player.level(), player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
     }
 
     private static double tabletRate(ServerPlayer player)
@@ -225,7 +211,7 @@ public class ResearchClientTest implements FabricClientGameTest
 
         level.setBlockAndUpdate(REPOSITORY, Blocks.LECTERN.defaultBlockState().setValue(LecternBlock.HAS_BOOK, true));
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET, 2));
-        use(player, REPOSITORY);
+        useOn(player, REPOSITORY);
         player.closeContainer();
 
         if (!level.getBlockState(REPOSITORY).is(Blocks.LECTERN))
@@ -241,7 +227,7 @@ public class ResearchClientTest implements FabricClientGameTest
 
         level.setBlockAndUpdate(REPOSITORY, Blocks.LECTERN.defaultBlockState().setValue(LecternBlock.FACING, Direction.EAST));
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET, 2));
-        use(player, REPOSITORY);
+        useOn(player, REPOSITORY);
 
         if (!level.getBlockState(REPOSITORY).is(VoidHeartBlocks.KNOWLEDGE_REPOSITORY))
             throw new AssertionError("The tablet should turn the lectern into a repository, got " + level.getBlockState(REPOSITORY));
@@ -251,9 +237,9 @@ public class ResearchClientTest implements FabricClientGameTest
             throw new AssertionError("The tablet should be used up, " + player.getMainHandItem().getCount() + " left of 2");
         if (!(level.getBlockEntity(REPOSITORY) instanceof KnowledgeRepositoryTile tile) || tile.getOwner().filter(player.getUUID()::equals).isEmpty())
             throw new AssertionError("The repository should answer to who placed the tablet");
-        if (data(minecraft).getRepository().isEmpty())
+        if (knowledge(minecraft).getRepository().isEmpty())
             throw new AssertionError("The player should be bound to the repository");
-        if (data(minecraft).rate(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())) != (double) 0.1F)
+        if (knowledge(minecraft).rate(Knowledge.rules(), Knowledge.tree(minecraft.registryAccess())) != (double) 0.1F)
             throw new AssertionError("A bound player should gather at the base rate");
 
         // The rest of the test looks at it from the north
@@ -280,7 +266,7 @@ public class ResearchClientTest implements FabricClientGameTest
         if (!menuFilledForAltar(player).getSlot(0).getItem().isEmpty())
             throw new AssertionError("The altar recipe should give nothing before its research");
 
-        data(minecraft).grant(ALTAR_RITE);
+        knowledge(minecraft).grant(ALTAR_RITE);
 
         if (!menuFilledForAltar(player).getSlot(0).getItem().is(VoidHeartBlocks.VOID_ALTAR.asItem()))
             throw new AssertionError("The altar recipe should work once researched");
@@ -304,13 +290,13 @@ public class ResearchClientTest implements FabricClientGameTest
     private static void feedingDiminishes(MinecraftServer minecraft)
     {
         var player = player(minecraft);
-        data(minecraft).addKnowledge(-data(minecraft).getKnowledge());
+        knowledge(minecraft).addKnowledge(-knowledge(minecraft).getKnowledge());
 
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.GHAST_TEAR, 3));
-        use(player, REPOSITORY);
-        use(player, REPOSITORY);
+        useOn(player, REPOSITORY);
+        useOn(player, REPOSITORY);
 
-        double knowledge = data(minecraft).getKnowledge();
+        double knowledge = knowledge(minecraft).getKnowledge();
         if (knowledge < 6.5 || knowledge > 6.6)
             throw new AssertionError("Expected 5 + 1.5 from two ghast tears, got " + knowledge);
         if (player.getMainHandItem().getCount() != 1)
@@ -355,7 +341,7 @@ public class ResearchClientTest implements FabricClientGameTest
         // Takes the item back, then tries again with the research done
         clickAltar(context);
         context.waitTicks(10);
-        server.runOnServer(minecraft -> data(minecraft).grant(VOID_FLESH));
+        server.runOnServer(minecraft -> knowledge(minecraft).grant(VOID_FLESH));
         clickAltar(context);
         context.waitTicks(10);
 
@@ -394,7 +380,7 @@ public class ResearchClientTest implements FabricClientGameTest
     {
         var player = player(minecraft);
         var level = player.level();
-        double knowledge = data(minecraft).getKnowledge();
+        double knowledge = knowledge(minecraft).getKnowledge();
 
         var drops = Block.getDrops(level.getBlockState(REPOSITORY), level, REPOSITORY, level.getBlockEntity(REPOSITORY), player, new ItemStack(Items.DIAMOND_PICKAXE));
         if (drops.stream().noneMatch(stack -> stack.is(Items.LECTERN)) || drops.stream().noneMatch(stack -> stack.is(VoidHeartItems.KNOWLEDGE_TABLET)))
@@ -402,9 +388,9 @@ public class ResearchClientTest implements FabricClientGameTest
 
         level.destroyBlock(REPOSITORY, false);
 
-        if (data(minecraft).getRepository().isPresent())
+        if (knowledge(minecraft).getRepository().isPresent())
             throw new AssertionError("The player should no longer be bound to a destroyed repository");
-        if (data(minecraft).getKnowledge() < knowledge)
+        if (knowledge(minecraft).getKnowledge() < knowledge)
             throw new AssertionError("Knowledge should survive the repository");
     }
 
@@ -414,7 +400,7 @@ public class ResearchClientTest implements FabricClientGameTest
         var saved = KnowledgeState.CODEC.encodeStart(NbtOps.INSTANCE, state).getOrThrow();
         var loaded = KnowledgeState.CODEC.parse(NbtOps.INSTANCE, saved).getOrThrow().of(player(minecraft).getUUID());
 
-        var original = data(minecraft);
+        var original = knowledge(minecraft);
         if (!loaded.getCompleted().equals(original.getCompleted()) || loaded.getInsightsBought() != original.getInsightsBought())
             throw new AssertionError("Saved knowledge should load back the same");
     }

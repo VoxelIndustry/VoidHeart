@@ -1,0 +1,14 @@
+{
+  "tier": 3,
+  "constellation": "travel",
+  "x": 0.08,
+  "y": -0.92,
+  "icon": "minecraft:oxidized_chiseled_copper",
+  "insight_cost": 9,
+  "knowledge_cost": 3000,
+  "knowledge_per_second": 2,
+  "strain": 45,
+  "requires": [
+    "voidheart:armillary"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/void_vein"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_void_amalgam": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:void_amalgam"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_void_amalgam"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/void_vein"
+    ]
+  }
+}

@@ -13,6 +13,8 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * The furniture of the Daedalus on its own in daylight: what each piece drops, how it looks placed from the front and from above, and as items.
  */
@@ -34,8 +36,7 @@ public class DaedalusPropsClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode spectator @a");
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 

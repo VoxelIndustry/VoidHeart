@@ -10,5 +10,5 @@
   "requires": [
     "voidheart:archive_expansion"
   ],
-  "column_capacity": 200
+  "column_capacity": 275
 }

@@ -5,22 +5,19 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.PlayerKnowledge;
-import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Drives the repository screen with real clicks and keys, and captures it at each stage of a player's progress and at the sizes it is played at.
@@ -40,11 +37,6 @@ public class ResearchScreenClientTest implements FabricClientGameTest
     private static final Identifier VAST        = id("vast_archive");
     private static final Identifier PORTAL      = id("portal_flexion");
 
-    private static Identifier id(String path)
-    {
-        return Identifier.fromNamespaceAndPath(MODID, path);
-    }
-
     @Override
     public void runTest(ClientGameTestContext context)
     {
@@ -52,8 +44,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 10");
             context.waitTicks(5);
@@ -66,7 +57,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
                 use(player);
                 player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                 use(player);
-                data(minecraft).addKnowledge(4);
+                knowledge(minecraft).addKnowledge(4);
             });
             context.waitFor(client -> client.gui.screen() instanceof ResearchScreen);
             context.waitTicks(30);
@@ -97,7 +88,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             hover(context, new int[] { 5, 5 });
             context.waitTicks(8);
 
-            server.runOnServer(minecraft -> data(minecraft).addKnowledge(21));
+            server.runOnServer(minecraft -> knowledge(minecraft).addKnowledge(21));
             context.waitTicks(25);
             context.takeScreenshot("research-ui-can-craft");
             context.waitTicks(150);
@@ -146,7 +137,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 data.addKnowledge(-data.getKnowledge() + 20);
             });
             context.waitTicks(25);
@@ -155,7 +146,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 data.grant(ALTAR_RITE);
                 data.grant(VOID_FLESH);
                 data.grant(ARCHIVE);
@@ -210,7 +201,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 data.addKnowledge(-data.getKnowledge());
                 data.bind(java.util.Optional.of(net.minecraft.core.GlobalPos.of(player(minecraft).level().dimension(), REPOSITORY)));
             });
@@ -219,7 +210,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 data.grant(FAR_SIGHT);
                 data.grant(FORGE);
                 data.grant(PORTAL);
@@ -245,7 +236,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 data.addKnowledge(9000);
             });
             context.waitTicks(30);
@@ -260,7 +251,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
             server.runOnServer(minecraft ->
             {
-                var data = data(minecraft);
+                var data = knowledge(minecraft);
                 var tree = Knowledge.tree(minecraft.registryAccess());
                 data.addInsights(100);
                 tree.keySet().forEach(data::grant);
@@ -276,42 +267,15 @@ public class ResearchScreenClientTest implements FabricClientGameTest
     private static void captureSizes(ClientGameTestContext context, String name)
     {
         context.getInput().setCursorPos(2, 2);
-        size(context, 854, 480, 2);
+        resize(context, 854, 480, 2);
         context.takeScreenshot("research-ui-" + name + "-427x240");
-        size(context, 1920, 1080, 4);
+        resize(context, 1920, 1080, 4);
         context.takeScreenshot("research-ui-" + name + "-480x270");
-        size(context, 1920, 1080, 3);
+        resize(context, 1920, 1080, 3);
         context.takeScreenshot("research-ui-" + name + "-640x360");
-        size(context, 1920, 1080, 2);
+        resize(context, 1920, 1080, 2);
         context.takeScreenshot("research-ui-" + name + "-960x540");
-        size(context, 854, 480, 2);
-    }
-
-    private static void size(ClientGameTestContext context, int width, int height, int scale)
-    {
-        context.getInput().resizeWindow(width, height);
-        context.runOnClient(client ->
-        {
-            client.options.guiScale().set(scale);
-            client.resizeGui();
-        });
-        context.waitTicks(4);
-    }
-
-    private static void click(ClientGameTestContext context, int[] guiPosition)
-    {
-        double scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
-        context.getInput().setCursorPos(guiPosition[0] * scale, guiPosition[1] * scale);
-        context.waitTicks(2);
-        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
-        context.waitTicks(2);
-    }
-
-    private static void hover(ClientGameTestContext context, int[] guiPosition)
-    {
-        double scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
-        context.getInput().setCursorPos(guiPosition[0] * scale, guiPosition[1] * scale);
-        context.waitTicks(3);
+        resize(context, 854, 480, 2);
     }
 
     private static ResearchScreen screen(Minecraft client)
@@ -319,19 +283,8 @@ public class ResearchScreenClientTest implements FabricClientGameTest
         return (ResearchScreen) client.gui.screen();
     }
 
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
-    }
-
-    private static PlayerKnowledge data(MinecraftServer minecraft)
-    {
-        return Knowledge.of(minecraft, player(minecraft).getUUID());
-    }
-
     private static void use(ServerPlayer player)
     {
-        var hit = new BlockHitResult(Vec3.atCenterOf(REPOSITORY), Direction.UP, REPOSITORY, false);
-        player.gameMode.useItemOn(player, player.level(), player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
+        useOn(player, REPOSITORY);
     }
 }

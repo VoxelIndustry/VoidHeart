@@ -18,8 +18,6 @@ import net.minecraft.client.sounds.SoundEventListener;
 import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
@@ -31,7 +29,6 @@ import net.voxelindustry.voidheart.client.curse.RaptureCurse;
 import net.voxelindustry.voidheart.client.curse.RaptureFieldLayout;
 import net.voxelindustry.voidheart.client.curse.RaptureRiseParticle;
 import net.voxelindustry.voidheart.common.curse.CurseKind;
-import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.curse.RaptureLift;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -46,6 +43,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.OptionalLong;
+
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * The sky opens its eyes and they find the player, the ground comes apart upward, the sky tears open overhead and really lifts them, then it all lets go.
@@ -156,8 +155,7 @@ public class RaptureClientTest implements FabricClientGameTest
         {
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
-            server.runCommand("time set midnight");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "midnight");
             server.runCommand("weather clear");
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 0");
@@ -1453,18 +1451,6 @@ public class RaptureClientTest implements FabricClientGameTest
         {
             throw new AssertionError("Could not read the sky captures", e);
         }
-    }
-
-    private static void expectRunning(TestServerContext server, CurseKind expected, String what)
-    {
-        var actual = server.computeOnServer(minecraft -> Curses.running(player(minecraft)));
-        if (actual != expected)
-            throw new AssertionError("Expected " + what + ", the server runs " + actual);
-    }
-
-    private static ServerPlayer player(MinecraftServer minecraft)
-    {
-        return minecraft.getPlayerList().getPlayers().getFirst();
     }
 
     private record HeightSample(int age, double y)

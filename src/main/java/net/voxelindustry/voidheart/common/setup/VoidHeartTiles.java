@@ -27,7 +27,10 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
+import net.voxelindustry.voidheart.common.content.research.CogitantTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
+import net.voxelindustry.voidheart.common.content.research.MeatProxyTile;
+import net.voxelindustry.voidheart.common.content.research.VoidLoomTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleNestTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
@@ -46,6 +49,9 @@ public class VoidHeartTiles
     public static BlockEntityType<VoidPillarTile> VOID_PILLAR;
     public static BlockEntityType<KnowledgeRepositoryTile> KNOWLEDGE_REPOSITORY;
     public static BlockEntityType<KnowledgeColumnTile>     KNOWLEDGE_COLUMN;
+    public static BlockEntityType<CogitantTile>            COGITANT;
+    public static BlockEntityType<VoidLoomTile>            VOID_LOOM;
+    public static BlockEntityType<MeatProxyTile>           MEAT_PROXY;
     public static BlockEntityType<VoidHeartTile> VOID_HEART;
     public static BlockEntityType<ArmillaryTile> ARMILLARY;
     public static BlockEntityType<ArmillaryRiftTile> ARMILLARY_RIFT;
@@ -117,6 +123,9 @@ public class VoidHeartTiles
         registerTile(KNOWLEDGE_COLUMN =
                         FabricBlockEntityTypeBuilder.create(KnowledgeColumnTile::new, VoidHeartBlocks.KNOWLEDGE_COLUMN).build(),
                 "knowledge_column");
+        registerTile(COGITANT = FabricBlockEntityTypeBuilder.create(CogitantTile::new, VoidHeartBlocks.COGITANT).build(), "cogitant");
+        registerTile(VOID_LOOM = FabricBlockEntityTypeBuilder.create(VoidLoomTile::new, VoidHeartBlocks.VOID_LOOM).build(), "void_loom");
+        registerTile(MEAT_PROXY = FabricBlockEntityTypeBuilder.create(MeatProxyTile::new, VoidHeartBlocks.MEAT_PROXY).build(), "meat_proxy");
 
         registerTile(VOID_HEART =
                         FabricBlockEntityTypeBuilder.create(VoidHeartTile::new, VoidHeartBlocks.VOID_HEART).build(),

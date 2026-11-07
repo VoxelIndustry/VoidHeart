@@ -144,11 +144,6 @@ public final class RoomCanvas
             fill(v0, y0, u0, v1, y1, u1, material);
     }
 
-    public DungeonMaterial getUV(int u, int y, int v)
-    {
-        return alongX ? get(u, y, v) : get(v, y, u);
-    }
-
     /**
      * A closed room: floor, walls and ceiling around air.
      */

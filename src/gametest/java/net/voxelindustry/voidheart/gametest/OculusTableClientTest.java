@@ -8,6 +8,8 @@ import net.voxelindustry.voidheart.client.render.oculus.OculusRenderer;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.oculus.OculusView;
 
+import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
+
 /**
  * Builds recognizable land around a table and captures its hologram from a few angles.
  * Screenshots land in the client game test run directory.
@@ -26,8 +28,7 @@ public class OculusTableClientTest implements FabricClientGameTest
             var connection = world.getConnection();
             connection.waitForChunksRender();
 
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
+            freezeTime(server, "noon");
             buildLand(server);
 
             server.runCommand("fill -1 " + TABLE.getY() + " -1 1 " + TABLE.getY() + " 1 voidheart:oculus_table");
