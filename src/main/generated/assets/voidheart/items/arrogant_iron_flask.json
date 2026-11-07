@@ -1,6 +1,19 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "voidheart:item/arrogant_iron_flask"
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/arrogant_iron_flask"
+        },
+        "when": "gui"
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "voidheart:item/arrogant_iron_flask_3d"
+    },
+    "property": "minecraft:display_context"
   }
 }

@@ -33,6 +33,7 @@
       "net.voxelindustry.voidheart.gametest.KnowledgeRepositoryFxClientTest",
       "net.voxelindustry.voidheart.gametest.ShatterForgeClientTest",
       "net.voxelindustry.voidheart.gametest.AthanorClientTest",
+      "net.voxelindustry.voidheart.gametest.FlaskClientTest",
       "net.voxelindustry.voidheart.gametest.OilClientTest",
       "net.voxelindustry.voidheart.gametest.ElixirClientTest",
       "net.voxelindustry.voidheart.gametest.InsightClientTest",

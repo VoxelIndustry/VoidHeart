@@ -32,6 +32,8 @@ Keep sizes, colors, alphas and timings in named constants at the top of the clas
 | Large, mostly static geometry | Cached GPU meshes built off-thread | `client/render/oculus/OculusRenderer` |
 | Expensive, unchanging GUI content | Bake once into a texture and blit it | `TravelMapScreen` |
 | A block item that shows its GeckoLib block model | Special item model and `GeoItemRenderer` | `RavenousCollectorItemRender` |
+| An item that is 3D in the world but flat in screens | Item model `select` on `display_context` with only `gui` flat, as `ModelsProvider.generateFlask` does. The `FIXED` context then draws the 3D model in block entity renderers | `PlacedFlasksRender`, `AthanorRender` |
+| A vanilla item drawn with a mod model in one renderer only | Copy the stack and set `DataComponents.ITEM_MODEL` to a mod `items/` definition, so vanilla's own model stays untouched | `FlaskModels.forDisplay` |
 | A block item drawn like its block entity renderer | `SpecialModelRenderer` with a record argument, one new draw state per submit since geometry is built later in the frame. Slots cache what they first drew, so it stays still | `MalignantTormenterItemRender` |
 
 Block entity renderers read the world in `extractRenderState` and only draw from that state when submitting. `RavenousRelayRender` is a short example. World-level drawing goes through `LevelRenderEvents`, registered in `VoidHeartClient`.

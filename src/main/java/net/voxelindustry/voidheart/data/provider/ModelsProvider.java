@@ -14,8 +14,12 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.data.models.model.TextureSlot;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.client.data.models.model.TexturedModel;
 import net.minecraft.client.renderer.item.properties.select.ComponentContents;
+import net.minecraft.client.renderer.item.properties.select.DisplayContext;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.BlockFamily;
 import net.minecraft.data.BlockFamilies;
@@ -67,6 +71,11 @@ public class ModelsProvider extends FabricModelProvider
 
     private static final ModelTemplate SURFACE_GROWTH_TEMPLATE = new ModelTemplate(
             Optional.of(Identifier.fromNamespaceAndPath(MODID, "block/template_surface_growth")), Optional.empty(), TextureSlot.CROSS);
+
+    /**
+     * The skin a 3D flask model reads its liquid, glass and cork from, hand-written templates in assets/voidheart/models/item/flask.
+     */
+    private static final TextureSlot FLASK_SKIN = TextureSlot.create("skin");
 
     private BlockModelGenerators generator;
 
@@ -232,6 +241,18 @@ public class ModelsProvider extends FabricModelProvider
         generator.registerSimpleItemModel(table, item);
     }
 
+    /**
+     * A flask drawn flat in screens and as its 3D shape everywhere else, so it stands in the athanor's mouth and on a block.
+     */
+    private static void generateFlask(ItemModelGenerators generator, Item item, String shape)
+    {
+        var flat = ItemModelUtils.plainModel(generator.createFlatItemModel(item, ModelTemplates.FLAT_ITEM));
+        var template = new ModelTemplate(Optional.of(Identifier.fromNamespaceAndPath(MODID, "item/flask/" + shape)), Optional.of("_3d"), FLASK_SKIN);
+        var skin = new TextureMapping().put(FLASK_SKIN, new Material(Identifier.fromNamespaceAndPath(MODID, "item/flask/" + BuiltInRegistries.ITEM.getKey(item).getPath())));
+        var solid = ItemModelUtils.plainModel(template.create(item, skin, generator.modelOutput));
+        generator.itemModelOutput.accept(item, ItemModelUtils.select(new DisplayContext(), solid, ItemModelUtils.when(ItemDisplayContext.GUI, flat)));
+    }
+
     @Override
     public void generateItemModels(ItemModelGenerators generator)
     {
@@ -247,20 +268,20 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.WRIGGLING_BRAIN, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SALT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.QUICKSILVER, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.SEARING_OIL, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.CONCUSSIVE_OIL, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.ARCANE_OIL, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.KERNACIAN_OIL, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_FLASK, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_FLASK, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.SEETHING_STEEL_FLASK, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_FLASK, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_FLASK, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.EMBER_DRAUGHT, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.STILLWATER, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.BULWARK_ELIXIR, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.INSIGHT_ELIXIR, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.CLARITY_DRAUGHT, ModelTemplates.FLAT_ITEM);
+        generateFlask(generator, VoidHeartItems.SEARING_OIL, "oil");
+        generateFlask(generator, VoidHeartItems.CONCUSSIVE_OIL, "oil");
+        generateFlask(generator, VoidHeartItems.ARCANE_OIL, "oil");
+        generateFlask(generator, VoidHeartItems.KERNACIAN_OIL, "oil");
+        generateFlask(generator, VoidHeartItems.ARROGANT_IRON_FLASK, "round");
+        generateFlask(generator, VoidHeartItems.RAVENOUS_GOLD_FLASK, "round");
+        generateFlask(generator, VoidHeartItems.SEETHING_STEEL_FLASK, "round");
+        generateFlask(generator, VoidHeartItems.COVETOUS_COPPER_FLASK, "round");
+        generateFlask(generator, VoidHeartItems.LISTLESS_LEAD_FLASK, "round");
+        generateFlask(generator, VoidHeartItems.EMBER_DRAUGHT, "elixir");
+        generateFlask(generator, VoidHeartItems.STILLWATER, "elixir");
+        generateFlask(generator, VoidHeartItems.BULWARK_ELIXIR, "elixir");
+        generateFlask(generator, VoidHeartItems.INSIGHT_ELIXIR, "elixir");
+        generateFlask(generator, VoidHeartItems.CLARITY_DRAUGHT, "elixir");
         generator.generateFlatItem(VoidHeartItems.VOID_VEIN, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.VOID_MARROW, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.IDEA_ABOUT_THE_VOID, ModelTemplates.FLAT_ITEM);

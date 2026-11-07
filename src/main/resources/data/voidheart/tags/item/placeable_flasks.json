@@ -1,0 +1,19 @@
+{
+  "values": [
+    "minecraft:glass_bottle",
+    "voidheart:searing_oil",
+    "voidheart:concussive_oil",
+    "voidheart:arcane_oil",
+    "voidheart:kernacian_oil",
+    "voidheart:ember_draught",
+    "voidheart:stillwater",
+    "voidheart:bulwark_elixir",
+    "voidheart:insight_elixir",
+    "voidheart:clarity_draught",
+    "voidheart:arrogant_iron_flask",
+    "voidheart:ravenous_gold_flask",
+    "voidheart:seething_steel_flask",
+    "voidheart:covetous_copper_flask",
+    "voidheart:listless_lead_flask"
+  ]
+}

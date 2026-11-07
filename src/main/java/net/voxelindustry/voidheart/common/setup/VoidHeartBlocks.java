@@ -48,6 +48,7 @@ import net.voxelindustry.voidheart.common.ley.anchor.OldAnchorBlock;
 import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.block.VoidMonolithBlock;
 import net.voxelindustry.voidheart.common.item.LoreBlockItem;
+import net.voxelindustry.voidheart.common.content.flask.PlacedFlasksBlock;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
 import net.voxelindustry.voidheart.common.content.depths.AttachedGrowthBlock;
@@ -185,6 +186,7 @@ public class VoidHeartBlocks
     public static Block CRUCIBLE;
     public static Block ASPECT_INTAKE;
     public static Block SALT_WARD;
+    public static Block PLACED_FLASKS;
     public static Block ARMILLARY_CORE;
     public static Block ARMILLARY_BASE_SIDE;
     public static Block ARMILLARY_BASE_CORNER;
@@ -792,6 +794,17 @@ public class VoidHeartBlocks
                 .sound(SoundType.SAND)
                 .pushReaction(PushReaction.POPPED)));
         LandPathTypeRegistry.register(SALT_WARD, PathType.DAMAGE_CAUTIOUS, null);
+
+        // Set down from a flask rather than placed, so it has no item and drops the flasks it holds
+        var flasksId = Identifier.fromNamespaceAndPath(MODID, "placed_flasks");
+        PLACED_FLASKS = Registry.register(BuiltInRegistries.BLOCK, flasksId, new PlacedFlasksBlock(BlockBehaviour.Properties.of()
+                .setId(ResourceKey.create(Registries.BLOCK, flasksId))
+                .mapColor(MapColor.NONE)
+                .noOcclusion()
+                .strength(0.2F)
+                .noLootTable()
+                .sound(SoundType.GLASS)
+                .pushReaction(PushReaction.POPPED)));
     }
 
     /**

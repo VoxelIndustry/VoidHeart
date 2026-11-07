@@ -2,6 +2,8 @@ package net.voxelindustry.voidheart;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.voxelindustry.voidheart.common.content.flask.PlacedFlasksBlock;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -136,6 +138,7 @@ public class VoidHeart implements ModInitializer
         PORTAL_LINK_CRITERION = Registry.register(BuiltInRegistries.TRIGGER_TYPES, PortalLinkCriterion.ID, new PortalLinkCriterion());
 
         Knowledge.register();
+        UseBlockCallback.EVENT.register(PlacedFlasksBlock::place);
 
         VoidHeartRecipes.registerRecipes();
         VoidHeartWorld.registerGeneration();
