@@ -680,8 +680,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         int boxHeight = PAD * 2 + CARD_HEADER + rows.stream().mapToInt(row -> row == null ? GROOVE : CARD_ROW).sum() + GROOVE + font.lineHeight;
 
         var readout = readoutBounds();
-        int x = readout.x();
         int bottom = readout.y() - 2;
+        int x = readout.x();
         cardBounds = new Bounds(x, bottom - boxHeight, boxWidth, boxHeight);
 
         float eased = 1 - (1 - cardOpen) * (1 - cardOpen) * (1 - cardOpen);
@@ -960,10 +960,15 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         if (x < left + 6 || x + boxWidth > right - 6)
             x = onRight ? left + 6 : right - 6 - boxWidth;
         boolean overButton = x < insightButton.getX() + insightButton.getWidth() + 4 && x + boxWidth > insightButton.getX() - 4;
-        int lowest = (overButton ? insightButton.getY() - 4 : height - 6) - boxHeight;
+        var readout = readoutBounds();
+        boolean overReadout = x < readout.x() + readout.width() + 4;
+        int lowest = (overButton ? insightButton.getY() - 4 : overReadout ? readout.y() - 4 : height - 6) - boxHeight;
         int y = Math.clamp(map.nodeY(selected) - boxHeight / 2, 6, Math.max(6, lowest));
 
-        detailBounds = new Bounds(x, y, boxWidth, boxHeight);
+        var bounds = new Bounds(x, y, boxWidth, boxHeight);
+        if (cardOpen > 0 && overlaps(bounds, cardBounds))
+            return;
+        detailBounds = bounds;
         tablet(graphics, detailBounds);
 
         int textY = y + PAD;
@@ -1523,6 +1528,33 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     public void holdScene(int step)
     {
         sceneView.holdAtEndOf(step);
+    }
+
+    public List<Identifier> shownNodes()
+    {
+        return tree.entrySet().stream().filter(entry -> stateOf(entry.getKey(), entry.getValue()) != NodeState.HIDDEN).map(Map.Entry::getKey).sorted().toList();
+    }
+
+    private static boolean overlaps(Bounds first, Bounds second)
+    {
+        return first != null && second != null
+                && first.x() < second.x() + second.width() && second.x() < first.x() + first.width()
+                && first.y() < second.y() + second.height() && second.y() < first.y() + first.height();
+    }
+
+    public boolean cardOverlapsDetail()
+    {
+        return overlaps(cardBounds, detailBounds);
+    }
+
+    public boolean detailShown()
+    {
+        return detailBounds != null;
+    }
+
+    public boolean cardOpen()
+    {
+        return cardOpen >= 1;
     }
 
     public Identifier selected()
