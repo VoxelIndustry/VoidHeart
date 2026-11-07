@@ -38,6 +38,7 @@ public final class ResearchScenes
 
     private static final Identifier ALTAR_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "altar_rite");
     private static final Identifier FORGE_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "shatter_forge");
+    private static final Identifier ATHANOR_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "tria_prima");
 
     // Not a block of the mod: pale, so that the void's dark stone and what floats above it stand out from the ground
     private static final Block FLOOR = Blocks.SMOOTH_STONE;
@@ -54,7 +55,7 @@ public final class ResearchScenes
 
     public static boolean has(Identifier research)
     {
-        return research.equals(ALTAR_RESEARCH) || research.equals(FORGE_RESEARCH);
+        return research.equals(ALTAR_RESEARCH) || research.equals(FORGE_RESEARCH) || research.equals(ATHANOR_RESEARCH);
     }
 
     /**
@@ -66,6 +67,7 @@ public final class ResearchScenes
         {
             case "void_altar" -> Optional.of(ALTAR_RESEARCH);
             case "shatter_forge", "void_monolith", "void_conduit" -> Optional.of(FORGE_RESEARCH);
+            case "athanor", "alembic", "crucible", "aspect_intake" -> Optional.of(ATHANOR_RESEARCH);
             default -> Optional.empty();
         };
     }
@@ -74,7 +76,12 @@ public final class ResearchScenes
     {
         if (!has(research))
             return Optional.empty();
-        return Optional.of(BUILT.computeIfAbsent(research, id -> id.equals(ALTAR_RESEARCH) ? altar() : forge()));
+        return Optional.of(BUILT.computeIfAbsent(research, id ->
+        {
+            if (id.equals(ALTAR_RESEARCH))
+                return altar();
+            return id.equals(FORGE_RESEARCH) ? forge() : athanor();
+        }));
     }
 
     private static BlockState lit(BlockState state)
@@ -207,6 +214,75 @@ public final class ResearchScenes
         expected.stream().filter(block -> block.part() == ShatterForgeLayout.Part.CONDUIT)
                 .forEach(block -> scene.place(0, block.pos(), ForgePreviewRender.ghostState(block, conduits)));
         scene.flight(25, 0, Scene.Moment.NEVER, new ItemStack(VoidHeartItems.RAVENOUS_GOLD_INGOT), above(forge, 1.35F), above(forge, 1.35F));
+
+        return scene.build();
+    }
+
+    /**
+     * Brews searing oil: the glass bottle in the mouth, sulfur and quicksilver in two crucibles, and the fiery aspect drawn up through the intake.
+     * The intake sits in a gap of the floor so that the athanor and its crucibles stand on the ground, and is set first since the athanor then hides it.
+     */
+    private static Scene athanor()
+    {
+        var athanor = BlockPos.ZERO;
+        var alembic = athanor.above();
+        var intake = athanor.below();
+        var crucibles = List.of(athanor.east(), athanor.west());
+        var reagents = new Item[] { Items.SULFUR, VoidHeartItems.QUICKSILVER };
+
+        var athanorState = VoidHeartBlocks.ATHANOR.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH);
+        var alembicState = VoidHeartBlocks.ALEMBIC.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH);
+        var crucibleState = VoidHeartBlocks.CRUCIBLE.defaultBlockState();
+
+        var mouth = new Vec3(0.5, 0.45, 1.15);
+        var close = new SceneView(165, 30, 5, 0.5F, 0.8F, 0.5F);
+        var whole = new SceneView(160, 36, 6.5F, 0.5F, 0.6F, 0.5F);
+        var below = new SceneView(160, 45, 6, 0.5F, 0, 0.5F);
+        var brew = new SceneView(190, 32, 6, 0.5F, 0.7F, 0.5F);
+
+        var scene = Scene.builder(id("athanor"))
+                .floor(-3, -3, 3, -1, -1, FLOOR.defaultBlockState())
+                .floor(-3, 1, 3, 3, -1, FLOOR.defaultBlockState())
+                .floor(-3, 0, -1, 0, -1, FLOOR.defaultBlockState())
+                .floor(1, 0, 3, 0, -1, FLOOR.defaultBlockState());
+
+        scene.step("intake", 70, below, above(intake, 1));
+        scene.place(10, intake, VoidHeartBlocks.ASPECT_INTAKE.defaultBlockState());
+        scene.highlight(10, scene.next(), intake);
+
+        scene.step("athanor", 50, close, above(athanor, 1));
+        scene.place(10, athanor, athanorState);
+
+        scene.step("alembic", 50, close, above(alembic, 1));
+        scene.place(10, alembic, alembicState);
+        scene.highlight(10, scene.next(), alembic);
+
+        scene.step("crucibles", 70, whole, above(crucibles.getFirst(), 0.7F));
+        for (int index = 0; index < crucibles.size(); index++)
+        {
+            scene.place(10 + index * 12, crucibles.get(index), crucibleState);
+            scene.highlight(10 + index * 12, scene.next(), crucibles.get(index));
+        }
+
+        var brewStep = new Scene.Moment(6, 0);
+        var resultStep = new Scene.Moment(7, 0);
+
+        scene.use("base", 50, close, mouth);
+        scene.flight(10, 14, resultStep, new ItemStack(Items.GLASS_BOTTLE), mouth.add(0, 1.2, 0.6), mouth);
+
+        scene.use("reagents", 70, whole, above(crucibles.getFirst(), 0.85F));
+        for (int index = 0; index < crucibles.size(); index++)
+        {
+            var crucible = crucibles.get(index);
+            scene.flight(10 + index * 16, 12, resultStep, new ItemStack(reagents[index]), above(crucible, 2), above(crucible, 0.85F));
+        }
+
+        scene.step("brew", 160, brew, above(alembic, 1));
+        scene.place(20, athanor, lit(athanorState));
+
+        scene.step("result", 80, close, mouth);
+        scene.place(0, athanor, athanorState);
+        scene.flight(10, 0, Scene.Moment.NEVER, new ItemStack(VoidHeartItems.SEARING_OIL), mouth, mouth);
 
         return scene.build();
     }
