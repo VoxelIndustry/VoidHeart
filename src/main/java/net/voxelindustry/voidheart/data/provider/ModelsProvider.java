@@ -53,7 +53,7 @@ public class ModelsProvider extends FabricModelProvider
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "knowledge_tablet", "knowledge_repository", "knowledge_column", "shoulder_eye", "permeable_barrier", "beam_focus",
             "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix", "cogitant", "meat_proxy", "void_loom",
-            "athanor", "alembic", "crucible"
+            "athanor", "alembic", "crucible", "mending_altar"
     );
 
     /**
@@ -116,6 +116,19 @@ public class ModelsProvider extends FabricModelProvider
         registerDepths();
         registerAthanor();
         registerDaedalusDecor();
+        registerRepairAndDoor();
+    }
+
+    /**
+     * The mending altar is the void altar's shape in amber, hand-written as children of its model. The void door is a vanilla door with its own textures.
+     */
+    private void registerRepairAndDoor()
+    {
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidHeartBlocks.MENDING_ALTAR)
+                .with(BlockModelGenerators.createBooleanModelDispatch(BlockStateProperties.LIT,
+                        plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.MENDING_ALTAR, "_lit")),
+                        plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.MENDING_ALTAR)))));
+        generator.createDoor(VoidHeartBlocks.VOID_DOOR);
     }
 
     private void registerDaedalusDecor()

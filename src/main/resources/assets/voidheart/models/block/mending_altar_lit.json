@@ -1,0 +1,7 @@
+{
+  "parent": "voidheart:block/void_altar",
+  "textures": {
+    "0": "voidheart:block/mending_altar_lit",
+    "particle": "voidheart:block/mending_altar_lit"
+  }
+}

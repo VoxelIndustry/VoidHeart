@@ -53,6 +53,8 @@
       "net.voxelindustry.voidheart.gametest.DungeonTeleportClientTest",
       "net.voxelindustry.voidheart.gametest.StillDepthsClientTest",
       "net.voxelindustry.voidheart.gametest.ArmillaryClientTest",
+      "net.voxelindustry.voidheart.gametest.CreativeTabClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidDoorAndMendingAltarClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusAccessClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusPropsClientTest",

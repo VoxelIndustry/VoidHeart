@@ -3,12 +3,14 @@ package net.voxelindustry.voidheart.compat.rei;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
+import me.shedaniel.rei.api.client.registry.entry.CollapsibleEntryRegistry;
 import me.shedaniel.rei.api.client.registry.screen.OverlayDecider;
 import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
 import me.shedaniel.rei.api.common.util.EntryStacks;
 import me.shedaniel.rei.plugin.client.BuiltinClientPlugin;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
 import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
@@ -17,8 +19,12 @@ import net.voxelindustry.voidheart.common.content.oil.Brews;
 import net.voxelindustry.voidheart.common.content.oil.SinVessel;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 
+import java.util.Arrays;
 import java.util.List;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class VoidHeartREIPlugin implements REIClientPlugin
 {
@@ -64,6 +70,13 @@ public class VoidHeartREIPlugin implements REIClientPlugin
         lines.addAll(List.of(text));
         lines.add(Component.translatable("voidheart.rei.refinement.research"));
         return lines;
+    }
+
+    @Override
+    public void registerCollapsibleEntries(CollapsibleEntryRegistry registry)
+    {
+        registry.group(Identifier.fromNamespaceAndPath(MODID, "daedalus_props"), Component.translatable("voidheart.rei.group.daedalus_props"),
+                Arrays.stream(DaedalusProp.values()).map(prop -> EntryStacks.of(VoidHeartBlocks.daedalusProp(prop))).toList());
     }
 
     @Override

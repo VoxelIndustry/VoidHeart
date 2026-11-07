@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "voidheart:block/mending_altar"
+    },
+    "lit=true": {
+      "model": "voidheart:block/mending_altar_lit"
+    }
+  }
+}
