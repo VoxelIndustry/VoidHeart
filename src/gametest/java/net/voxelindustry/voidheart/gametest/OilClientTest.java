@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
@@ -39,6 +40,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 public class OilClientTest implements FabricClientGameTest
 {
     private static final int GROUND_Y = -60;
+    private static final int SHOT_DRAW_TICKS = 25;
+    private static final int SHOT_FLIGHT_TICKS = 20;
     /**
      * Menu slots of the first two hotbar slots in the player's own inventory menu.
      */
@@ -202,6 +205,7 @@ public class OilClientTest implements FabricClientGameTest
             });
             otherOils(server);
             arrows(context, server);
+            realShots(context, server);
 
             // Embers off the held blade, in first person and from the front
             server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 0 10");
@@ -343,6 +347,68 @@ public class OilClientTest implements FabricClientGameTest
             expect(zombie.isOnFire(), "Expected a searing arrow to set the zombie alight");
             dragoon.discard();
             zombie.discard();
+        });
+    }
+
+    /**
+     * Through real input: a bow drawn and loosed with oiled arrows in the offhand shoots an oiled arrow, and a thrown coated trident keeps its coat.
+     */
+    private static void realShots(ClientGameTestContext context, TestServerContext server)
+    {
+        var held = server.computeOnServer(minecraft -> player(minecraft).getMainHandItem().copy());
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var zombie = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
+            zombie.setNoAi(true);
+            zombie.snapTo(6.5, GROUND_Y, 0.5, 0, 0);
+            level.addFreshEntity(zombie);
+            var dragoon = VoidHeartEntities.KERNACIAN_DRAGOON.create(level, EntitySpawnReason.COMMAND);
+            dragoon.setNoAi(true);
+            dragoon.snapTo(0.5, GROUND_Y, 3.5, 0, 0);
+            level.addFreshEntity(dragoon);
+
+            var player = player(minecraft);
+            var arrows = new ItemStack(Items.ARROW, 4);
+            OilCoating.coatArrows(arrows, OilType.SEARING);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BOW));
+            player.setItemInHand(InteractionHand.OFF_HAND, arrows);
+        });
+        server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 facing 6.5 " + (GROUND_Y + 1.2) + " 0.5");
+        context.waitTicks(5);
+        context.getInput().holdKeyFor(options -> options.keyUse, SHOT_DRAW_TICKS);
+        context.waitTicks(SHOT_FLIGHT_TICKS);
+        server.runOnServer(minecraft ->
+        {
+            var zombie = minecraft.overworld().getEntities(EntityTypes.ZOMBIE, entity -> true).getFirst();
+            expect(zombie.getHealth() < zombie.getMaxHealth(), "Expected the bow's arrow to hit the zombie");
+            expect(zombie.isOnFire(), "Expected an arrow loosed from a bow with searing arrows to set the zombie alight");
+            zombie.discard();
+
+            var trident = new ItemStack(Items.TRIDENT);
+            OilCoating.coat(trident, OilType.SEARING);
+            var player = player(minecraft);
+            player.setItemInHand(InteractionHand.MAIN_HAND, trident);
+            player.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+        });
+        server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 facing 0.5 " + (GROUND_Y + 1.2) + " 3.5");
+        context.waitTicks(5);
+        context.getInput().holdKeyFor(options -> options.keyUse, SHOT_DRAW_TICKS);
+        context.waitTicks(SHOT_FLIGHT_TICKS);
+        server.runOnServer(minecraft ->
+        {
+            var dragoon = minecraft.overworld().getEntities(VoidHeartEntities.KERNACIAN_DRAGOON, entity -> true).getFirst();
+            int packed = dragoon.adaptation();
+            var thrown = minecraft.overworld().getEntities(EntityTypes.TRIDENT, entity -> true).stream()
+                    .map(trident -> trident.position() + " " + OilCoating.coatingOf(trident.getPickupItemStackOrigin())).toList();
+            expect(DragoonAdaptation.count(packed, Kind.FIRE) == 1, "Expected a thrown searing trident to count as fire, got " + DragoonAdaptation.count(packed, Kind.FIRE)
+                    + ", projectile " + DragoonAdaptation.count(packed, Kind.PROJECTILE) + ", health " + dragoon.getHealth() + "/" + dragoon.getMaxHealth() + " at "
+                    + dragoon.position() + ", tridents " + thrown + ", in hand " + player(minecraft).getMainHandItem() + ", pitch " + player(minecraft).getXRot());
+            expect(DragoonAdaptation.count(packed, Kind.PROJECTILE) == 0, "Expected a thrown searing trident not to count as a projectile");
+            dragoon.discard();
+            minecraft.overworld().getEntities(EntityTypes.TRIDENT, entity -> true).forEach(net.minecraft.world.entity.Entity::discard);
+            minecraft.overworld().getEntities(EntityTypes.ARROW, entity -> true).forEach(net.minecraft.world.entity.Entity::discard);
+            player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, held);
         });
     }
 

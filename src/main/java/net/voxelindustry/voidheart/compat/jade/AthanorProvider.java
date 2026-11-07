@@ -8,8 +8,10 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.client.BrewTooltip;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.oil.Brews;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -49,7 +51,7 @@ public class AthanorProvider implements StreamServerDataProvider<BlockAccessor, 
         }
 
         return new Data(athanor.getStack(),
-                recipe == null ? ItemStack.EMPTY : recipe.getOutput(),
+                recipe == null ? ItemStack.EMPTY : Brews.apply(recipe.getOutput().copy(), athanor.getBrew()),
                 athanor.isBrewing() ? athanor.brewProgress() : -1F,
                 athanor.getLayout().alembic(),
                 athanor.getLayout().intake(),
@@ -102,6 +104,7 @@ public class AthanorProvider implements StreamServerDataProvider<BlockAccessor, 
                     tooltip.append(JadeUI.item(data.base()));
                     tooltip.append(JadeUI.progressArrow(Math.max(0, data.progress())));
                     tooltip.append(JadeUI.item(data.output()));
+                    BrewTooltip.lines(Brews.brewOf(data.output())).forEach(tooltip::add);
                 }
 
                 if (!data.alembic())

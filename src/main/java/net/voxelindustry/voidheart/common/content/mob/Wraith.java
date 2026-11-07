@@ -301,8 +301,19 @@ public class Wraith extends VoidMonster
             return null;
 
         var emergeAt = emergeSpot(hit);
-        if (emergeAt == null || !mayGoTo(emergeAt) || SaltWard.isWardedBelow(level(), BlockPos.containing(emergeAt)))
+        if (emergeAt == null || !mayGoTo(emergeAt))
             return null;
+        var salt = SaltWard.wardBelow(level(), BlockPos.containing(emergeAt));
+        if (salt != null)
+        {
+            // The salt on the far side answers, so a wraith turned away there shows why it stays put
+            if (saltCrackleDelay == 0 && level() instanceof ServerLevel level)
+            {
+                SaltWard.crackle(level, salt);
+                saltCrackleDelay = SALT_CRACKLE_TICKS;
+            }
+            return null;
+        }
         return new Route(hit.getBlockPos(), hit.getDirection(), emergeAt);
     }
 

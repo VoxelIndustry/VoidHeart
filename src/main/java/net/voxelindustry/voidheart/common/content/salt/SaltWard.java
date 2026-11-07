@@ -80,12 +80,20 @@ public final class SaltWard
      */
     public static boolean isWardedBelow(LevelReader level, BlockPos pos)
     {
+        return wardBelow(level, pos) != null;
+    }
+
+    /**
+     * @return the salt that wards the spot, as {@link #isWardedBelow} finds it, or null
+     */
+    public static @Nullable BlockPos wardBelow(LevelReader level, BlockPos pos)
+    {
         for (var near : BlockPos.betweenClosed(pos.offset(-1, -FALL_DEPTH, -1), pos.offset(1, 1, 1)))
         {
             if (isSalt(level, near))
-                return true;
+                return near.immutable();
         }
-        return false;
+        return null;
     }
 
     /**

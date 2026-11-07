@@ -98,7 +98,8 @@ public final class InsightMemory
      */
     public static float alpha(LivingEntity entity)
     {
-        if (!(entity instanceof Enemy) || !remembers())
+        // Runs for every living thing drawn each frame, so the common case of nothing remembered costs one check
+        if (LAST_SEEN.isEmpty() || !(entity instanceof Enemy) || !remembers())
             return 0;
         var seen = LAST_SEEN.get(entity.getId());
         if (seen == null || IN_VIEW.contains(entity.getId()))

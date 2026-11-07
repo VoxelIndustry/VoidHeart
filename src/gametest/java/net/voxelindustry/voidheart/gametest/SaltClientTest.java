@@ -209,6 +209,19 @@ public class SaltClientTest implements FabricClientGameTest
         server.runCommand("fill " + (PATCH_X - 8) + " " + FEET + " " + (PATCH_Z - 8) + " " + (PATCH_X + 8) + " " + FEET + " " + (PATCH_Z + 8) + " air");
     }
 
+    private static int crackleDelay(net.voxelindustry.voidheart.common.content.mob.Wraith wraith)
+    {
+        try
+        {
+            var field = net.voxelindustry.voidheart.common.content.mob.Wraith.class.getDeclaredField("saltCrackleDelay");
+            field.setAccessible(true);
+            return field.getInt(wraith);
+        } catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError(e);
+        }
+    }
+
     /**
      * A walled room the player waits in and a wraith outside it. Bare, the wraith comes through the wall. With salt along the inner foot of every wall there
      * is nowhere it can come out, so it never starts, wherever it walks around to.
@@ -240,6 +253,7 @@ public class SaltClientTest implements FabricClientGameTest
             saltSquare(minecraft, x + 7, z + 1, x + 7, z + 7);
             spawn(minecraft, VoidHeartEntities.WRAITH, x + 14.5, z + 4.5);
         });
+        boolean crackled = false;
         for (int tick = 0; tick < WATCH_TICKS; tick++)
         {
             server.runOnServer(minecraft ->
@@ -250,8 +264,17 @@ public class SaltClientTest implements FabricClientGameTest
                 boolean inside = wraith.getX() > x && wraith.getX() < x + 8 && wraith.getZ() > z && wraith.getZ() < z + 8;
                 expect(!inside, "The wraith should stay outside the room, at " + wraith.position());
             });
+            // It never sets foot on salt out there, so only a refused route can have crackled
+            if (!crackled && server.computeOnServer(minecraft -> crackleDelay(first(minecraft, VoidHeartEntities.WRAITH))) > 0)
+            {
+                crackled = true;
+                context.getInput().pressKey(InputConstants.KEY_F1);
+                context.takeScreenshot("salt-route-crackle");
+                context.getInput().pressKey(InputConstants.KEY_F1);
+            }
             context.waitTick();
         }
+        expect(crackled, "The salt should crackle when it turns a wraith's route away");
         server.runCommand("tp @a " + (x + 3.5) + " " + (FEET + 2) + " " + (z + 4.5) + " 90 30");
         context.getInput().pressKey(InputConstants.KEY_F1);
         context.waitTicks(3);

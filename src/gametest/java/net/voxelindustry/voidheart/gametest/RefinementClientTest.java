@@ -30,6 +30,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEffects;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -85,8 +87,8 @@ public class RefinementClientTest implements FabricClientGameTest
             showTooltip(context, server, searing, "Azurium", "Rubrum");
 
             // Stillwater in gold, with Rubrum: three times as long as plain, and hungry for as long
-            var stillwater = brew(context, server, new ItemStack(VoidHeartItems.RAVENOUS_GOLD_FLASK), VoidHeartItems.QUICKSILVER, VoidHeartBlocks.STILL_KELP,
-                    VoidHeartBlocks.STILL_ANEMONE, VoidHeartItems.RUBRUM_SHARD);
+            var stillwater = brew(context, server, "refinement-brewing-jade", new ItemStack(VoidHeartItems.RAVENOUS_GOLD_FLASK), VoidHeartItems.QUICKSILVER,
+                    VoidHeartBlocks.STILL_KELP, VoidHeartBlocks.STILL_ANEMONE, VoidHeartItems.RUBRUM_SHARD);
             expect(stillwater.is(VoidHeartItems.STILLWATER), "Expected stillwater from a gold flask, got " + stillwater);
             showTooltip(context, server, stillwater, "Ravenous Gold", "Rubrum");
             server.runOnServer(minecraft ->
@@ -270,11 +272,26 @@ public class RefinementClientTest implements FabricClientGameTest
      */
     private static ItemStack brew(ClientGameTestContext context, TestServerContext server, ItemStack base, ItemLike... reagents)
     {
+        return brew(context, server, null, base, reagents);
+    }
+
+    /**
+     * @param jadeShot a screenshot to take of Jade over the core once the brew starts, or null
+     */
+    private static ItemStack brew(ClientGameTestContext context, TestServerContext server, @Nullable String jadeShot, ItemStack base, ItemLike... reagents)
+    {
         setUp(server, base, reagents);
         for (int tick = 0; tick < 4 * AthanorTile.CHECK_INTERVAL; tick++)
         {
             if (server.computeOnServer(minecraft -> athanor(minecraft).isBrewing()))
             {
+                if (jadeShot != null)
+                {
+                    // Between two crucibles, which would hide the core from straight in front
+                    server.runCommand("tp @a -1.5 " + GROUND_Y + " -1.5 -45 2");
+                    context.waitTicks(20);
+                    context.takeScreenshot(jadeShot);
+                }
                 for (int wait = 0; wait < BREW_WAIT && server.computeOnServer(minecraft -> athanor(minecraft).isBrewing()); wait++)
                     context.waitTick();
                 return server.computeOnServer(minecraft -> athanor(minecraft).getStack().copy());
