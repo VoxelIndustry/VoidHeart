@@ -8,6 +8,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -25,14 +26,17 @@ import net.minecraft.world.item.SwingAnimationType;
 import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
+import org.jspecify.annotations.Nullable;
 
 import java.util.EnumSet;
 
@@ -52,10 +56,15 @@ public class FallenBishop extends VoidMonster
     public static final int BLOW_TICKS = 14;
     public static final int BLOW_HIT_TICK = 6;
     public static final int BLOW_COOLDOWN = 10;
+    /**
+     * How long before its lance can be cast a Bishop counts as ready, which only Insight shows.
+     */
+    public static final int LANCE_WARN_TICKS = 20;
 
     private static final EntityDataAccessor<Integer> DATA_LANCE = SynchedEntityData.defineId(FallenBishop.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Vector3fc> DATA_AIM = SynchedEntityData.defineId(FallenBishop.class, EntityDataSerializers.VECTOR3);
     private static final EntityDataAccessor<Boolean> DATA_KNEELING = SynchedEntityData.defineId(FallenBishop.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DATA_LANCE_READY = SynchedEntityData.defineId(FallenBishop.class, EntityDataSerializers.BOOLEAN);
 
     private static final int EXPERIENCE = 60;
     private static final float MELEE_DAMAGE = 16;
@@ -89,11 +98,16 @@ public class FallenBishop extends VoidMonster
     public float raiseO;
     public float kneel;
     public float kneelO;
+    /**
+     * Ticks its lance has been ready for, on the client.
+     */
+    public int readyTicks;
 
     public FallenBishop(EntityType<? extends FallenBishop> type, Level level)
     {
         super(type, level);
         xpReward = EXPERIENCE;
+        setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, SaltWard.FALLEN_MALUS);
     }
 
     public static AttributeSupplier.Builder createAttributes()
@@ -164,6 +178,7 @@ public class FallenBishop extends VoidMonster
         builder.define(DATA_LANCE, 0);
         builder.define(DATA_AIM, new Vector3f());
         builder.define(DATA_KNEELING, false);
+        builder.define(DATA_LANCE_READY, false);
     }
 
     @Override
@@ -208,6 +223,7 @@ public class FallenBishop extends VoidMonster
             kneelO = kneel;
             raise = Mth.approach(raise, lanceTicks() > 0 ? 1 : 0, RAISE_PER_TICK);
             kneel = Mth.approach(kneel, isKneeling() ? 1 : 0, KNEEL_PER_TICK);
+            readyTicks = isLanceReady() ? readyTicks + 1 : 0;
         }
     }
 
@@ -221,6 +237,37 @@ public class FallenBishop extends VoidMonster
         int lance = lanceTicks();
         if (lance > CHARGE_TICKS)
             entityData.set(DATA_LANCE, lance >= CHARGE_TICKS + LINGER_TICKS ? 0 : lance + 1);
+        entityData.set(DATA_LANCE_READY, lance == 0 && !isKneeling() && lanceCooldown <= LANCE_WARN_TICKS && canLance(getTarget()));
+    }
+
+    /**
+     * A heavy blow breaks off a lance still charging, and the Bishop has to wait out its cooldown before the next one.
+     */
+    public void breakLance()
+    {
+        int lance = lanceTicks();
+        if (lance == 0 || lance > CHARGE_TICKS)
+            return;
+
+        entityData.set(DATA_LANCE, 0);
+        lanceCooldown = LANCE_INTERVAL;
+        playSound(SoundEvents.FIRE_EXTINGUISH, 0.8F, 1.4F);
+    }
+
+    /**
+     * Whether its lance is about to be cast at what it hunts, synced so the client can warn under Insight.
+     */
+    public boolean isLanceReady()
+    {
+        return entityData.get(DATA_LANCE_READY);
+    }
+
+    private boolean canLance(@Nullable LivingEntity target)
+    {
+        if (target == null || !target.isAlive())
+            return false;
+        double distance = distanceTo(target);
+        return distance >= LANCE_MIN_RANGE && distance <= LANCE_RANGE && getSensing().hasLineOfSight(target);
     }
 
     @Override
@@ -298,11 +345,9 @@ public class FallenBishop extends VoidMonster
         public boolean canUse()
         {
             var target = getTarget();
-            if (target == null || !target.isAlive() || lanceCooldown > 0 || lanceTicks() > 0)
+            if (lanceCooldown > 0 || lanceTicks() > 0)
                 return false;
-
-            double distance = distanceTo(target);
-            return distance >= LANCE_MIN_RANGE && distance <= LANCE_RANGE && getSensing().hasLineOfSight(target);
+            return canLance(target);
         }
 
         @Override

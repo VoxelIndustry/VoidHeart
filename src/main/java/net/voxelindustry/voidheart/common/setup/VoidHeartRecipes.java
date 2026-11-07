@@ -8,6 +8,7 @@ import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
+import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
@@ -23,9 +24,11 @@ public class VoidHeartRecipes
 {
     public static final SteamLayerRecipeType<AltarRecipe> ALTAR_TYPE = new SteamLayerRecipeType<>((type, identifier) -> new AltarRecipe(identifier));
     public static final SteamLayerRecipeType<ShatterForgeRecipe> SHATTER_FORGE_TYPE = new SteamLayerRecipeType<>((type, identifier) -> new ShatterForgeRecipe(identifier));
+    public static final SteamLayerRecipeType<AthanorRecipe> ATHANOR_TYPE = new SteamLayerRecipeType<>((type, identifier) -> new AthanorRecipe(identifier));
 
     public static RecipeCategory<AltarRecipe> ALTAR_CATEGORY;
     public static RecipeCategory<ShatterForgeRecipe> SHATTER_FORGE_CATEGORY;
+    public static RecipeCategory<AthanorRecipe> ATHANOR_CATEGORY;
 
     private static final Identifier VOIDHEART_RECIPE = Identifier.fromNamespaceAndPath(MODID, "altar/voidheart");
 
@@ -40,6 +43,10 @@ public class VoidHeartRecipes
         RecipeManager.addCategory(SHATTER_FORGE_CATEGORY = new RecipeCategory<>(
                 Identifier.fromNamespaceAndPath(MODID, "shatter_forge"),
                 SHATTER_FORGE_TYPE
+        ));
+        RecipeManager.addCategory(ATHANOR_CATEGORY = new RecipeCategory<>(
+                Identifier.fromNamespaceAndPath(MODID, "athanor"),
+                ATHANOR_TYPE
         ));
     }
 

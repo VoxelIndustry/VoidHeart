@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -55,6 +57,7 @@ public class FallenElder extends VoidMonster
     {
         super(type, level);
         xpReward = EXPERIENCE;
+        setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, SaltWard.FALLEN_MALUS);
     }
 
     public static AttributeSupplier.Builder createAttributes()

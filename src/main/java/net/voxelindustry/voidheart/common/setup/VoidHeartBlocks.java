@@ -1,6 +1,13 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.fabricmc.fabric.api.registry.LandPathTypeRegistry;
+import net.minecraft.world.level.pathfinder.PathType;
+import net.voxelindustry.voidheart.common.content.salt.SaltWardBlock;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeletonHeadBlock;
+import net.voxelindustry.voidheart.common.content.athanor.AlembicBlock;
+import net.voxelindustry.voidheart.common.content.athanor.AspectIntakeBlock;
+import net.voxelindustry.voidheart.common.content.athanor.AthanorBlock;
+import net.voxelindustry.voidheart.common.content.athanor.CrucibleBlock;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleNestBlock;
 import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -31,6 +38,7 @@ import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -171,6 +179,12 @@ public class VoidHeartBlocks
     public static Block EYE_BOTTLE;
 
     public static Block SHATTER_FORGE;
+
+    public static Block ATHANOR;
+    public static Block ALEMBIC;
+    public static Block CRUCIBLE;
+    public static Block ASPECT_INTAKE;
+    public static Block SALT_WARD;
     public static Block ARMILLARY_CORE;
     public static Block ARMILLARY_BASE_SIDE;
     public static Block ARMILLARY_BASE_CORNER;
@@ -596,6 +610,7 @@ public class VoidHeartBlocks
 
         registerDepthsBlocks();
         registerDaedalusProps();
+        registerAthanorBlocks();
 
         SMALL_AZURIUM_BUNDLE = registerSmallBundle("azurium", MapColor.COLOR_BLUE, 1, 6);
         MEDIUM_AZURIUM_BUNDLE = registerMediumBundle("azurium", MapColor.COLOR_BLUE, 3, 10);
@@ -749,6 +764,47 @@ public class VoidHeartBlocks
                     .pushReaction(PushReaction.POPPED);
             DAEDALUS_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new DaedalusPropBlock(blockProperties, prop, shape), properties, true));
         }
+    }
+
+    private static void registerAthanorBlocks()
+    {
+        ATHANOR = registerBlock("athanor", AthanorBlock::new, athanorPart()
+                .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 13 : 4), true);
+        ALEMBIC = registerBlock("alembic", AlembicBlock::new, athanorPart(), true);
+        CRUCIBLE = registerBlock("crucible", CrucibleBlock::new, athanorPart(), true);
+        ASPECT_INTAKE = registerBlock("aspect_intake", AspectIntakeBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(1.5F, 6.0F)
+                .sound(SoundType.STONE), true);
+
+        // Laid from salt rather than placed, so it has no item and drops nothing
+        var saltId = Identifier.fromNamespaceAndPath(MODID, "salt_ward");
+        SALT_WARD = Registry.register(BuiltInRegistries.BLOCK, saltId, new SaltWardBlock(BlockBehaviour.Properties.of()
+                .setId(ResourceKey.create(Registries.BLOCK, saltId))
+                .mapColor(MapColor.SNOW)
+                .noCollision()
+                .noOcclusion()
+                .instabreak()
+                .noLootTable()
+                .sound(SoundType.SAND)
+                .pushReaction(PushReaction.POPPED)));
+        LandPathTypeRegistry.register(SALT_WARD, PathType.DAMAGE_CAUTIOUS, null);
+    }
+
+    /**
+     * Voidstone banded with seething steel, so it sounds and maps like stone.
+     */
+    private static BlockBehaviour.Properties athanorPart()
+    {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .sound(SoundType.STONE)
+                .noOcclusion()
+                .requiresCorrectToolForDrops()
+                .strength(4F, 10.0F);
     }
 
     private static void registerDepthsBlocks()

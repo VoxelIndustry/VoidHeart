@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "I I",
+    " I "
+  ],
+  "key": {
+    "I": "voidheart:covetous_copper_ingot"
+  },
+  "result": {
+    "id": "voidheart:covetous_copper_flask",
+    "count": 3
+  }
+}

@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltItem;
 import net.voxelindustry.voidheart.common.content.research.InsightItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGraftItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
@@ -18,6 +19,10 @@ import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarr
 import net.voxelindustry.voidheart.common.content.research.KnowledgeTabletItem;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeItem;
 import net.voxelindustry.voidheart.common.item.LoreItem;
+import net.voxelindustry.voidheart.common.content.oil.Elixirs;
+import net.voxelindustry.voidheart.common.content.oil.OilFlaskItem;
+import net.voxelindustry.voidheart.common.content.oil.OilType;
+import net.voxelindustry.voidheart.common.content.oil.SinVessel;
 import net.voxelindustry.voidheart.common.item.VoidAmalgamItem;
 import net.voxelindustry.voidheart.common.item.VoidHeartItem;
 import net.voxelindustry.voidheart.common.item.PortalCoreItem;
@@ -60,6 +65,22 @@ public class VoidHeartItems
     public static Item RUBRUM_SHARD;
     public static Item MEMORIAM_SHARD;
     public static Item KERNACIAN_CORE;
+    public static Item SALT;
+    public static Item QUICKSILVER;
+    public static Item SEARING_OIL;
+    public static Item CONCUSSIVE_OIL;
+    public static Item ARCANE_OIL;
+    public static Item KERNACIAN_OIL;
+    public static Item ARROGANT_IRON_FLASK;
+    public static Item RAVENOUS_GOLD_FLASK;
+    public static Item SEETHING_STEEL_FLASK;
+    public static Item COVETOUS_COPPER_FLASK;
+    public static Item LISTLESS_LEAD_FLASK;
+    public static Item EMBER_DRAUGHT;
+    public static Item STILLWATER;
+    public static Item BULWARK_ELIXIR;
+    public static Item INSIGHT_ELIXIR;
+    public static Item CLARITY_DRAUGHT;
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
 
@@ -95,6 +116,24 @@ public class VoidHeartItems
         RUBRUM_SHARD = registerItem("rubrum_shard", properties -> new LoreItem(properties, "voidheart.rubrum_shard.lore"));
         MEMORIAM_SHARD = registerItem("memoriam_shard", properties -> new LoreItem(properties, "voidheart.memoriam_shard.lore"));
         KERNACIAN_CORE = registerItem("kernacian_core", properties -> new LoreItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC), "voidheart.kernacian_core.lore"));
+
+        SALT = registerItem("salt", properties -> new SaltItem(properties, "voidheart.salt.lore", "voidheart.salt.use"));
+        QUICKSILVER = registerItem("quicksilver", properties -> new LoreItem(properties, "voidheart.quicksilver.lore"));
+        SEARING_OIL = registerItem("searing_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.SEARING, "voidheart.searing_oil.lore", "voidheart.oil_flask.lore"));
+        CONCUSSIVE_OIL = registerItem("concussive_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.CONCUSSIVE, "voidheart.concussive_oil.lore", "voidheart.oil_flask.lore"));
+        ARROGANT_IRON_FLASK = registerFlask(SinVessel.ARROGANT_IRON);
+        RAVENOUS_GOLD_FLASK = registerFlask(SinVessel.RAVENOUS_GOLD);
+        SEETHING_STEEL_FLASK = registerFlask(SinVessel.SEETHING_STEEL);
+        COVETOUS_COPPER_FLASK = registerFlask(SinVessel.COVETOUS_COPPER);
+        LISTLESS_LEAD_FLASK = registerFlask(SinVessel.LISTLESS_LEAD);
+        KERNACIAN_OIL = registerItem("kernacian_oil", properties -> new OilFlaskItem(properties.stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC), OilType.KERNACIAN,
+                "voidheart.kernacian_oil.lore", "voidheart.oil_flask.lore"));
+        ARCANE_OIL = registerItem("arcane_oil", properties -> new OilFlaskItem(properties.stacksTo(16), OilType.ARCANE, "voidheart.arcane_oil.lore", "voidheart.oil_flask.lore"));
+        EMBER_DRAUGHT = registerItem("ember_draught", properties -> new LoreItem(Elixirs.emberDraught(properties), "voidheart.ember_draught.lore"));
+        STILLWATER = registerItem("stillwater", properties -> new LoreItem(Elixirs.stillwater(properties), "voidheart.stillwater.lore"));
+        BULWARK_ELIXIR = registerItem("bulwark_elixir", properties -> new LoreItem(Elixirs.bulwark(properties), "voidheart.bulwark_elixir.lore"));
+        INSIGHT_ELIXIR = registerItem("insight_elixir", properties -> new LoreItem(Elixirs.insight(properties), "voidheart.insight_elixir.lore"));
+        CLARITY_DRAUGHT = registerItem("clarity_draught", properties -> new LoreItem(Elixirs.clarity(properties), "voidheart.clarity_draught.lore"));
     }
 
     public static void registerSpawnEggs()
@@ -123,6 +162,14 @@ public class VoidHeartItems
     private static void registerSpawnEgg(String mob, EntityType<?> type)
     {
         SPAWN_EGGS.add(registerItem(mob + "_spawn_egg", properties -> new SpawnEggItem(properties.spawnEgg(type))));
+    }
+
+    /**
+     * A sin-metal flask, set in the athanor in place of a glass bottle.
+     */
+    private static Item registerFlask(SinVessel vessel)
+    {
+        return registerItem(vessel.flaskName(), properties -> new LoreItem(properties.stacksTo(16), vessel.traitKey(), "voidheart.sin_flask.lore"));
     }
 
     public static <T extends Item> T registerItem(String name, Function<Properties, T> factory)

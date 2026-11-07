@@ -1,6 +1,9 @@
 package net.voxelindustry.voidheart.client.render.mob;
 
+import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
+import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.voxelindustry.voidheart.client.InsightMemory;
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderers;
@@ -87,7 +90,16 @@ public final class VoidMobRenderers
         {
             if (renderer instanceof AvatarRenderer<?> avatar)
                 helper.register(new BarnacleGrowthLayer(avatar, context.bakeLayer(BarnacleGrowthModel.LAYER)));
+            // Any mob can be remembered under Insight brewed with Memoriam, but wraiths show through walls anyway
+            if (!InsightMemory.ignores(type))
+                helper.register(memoryLayer(renderer));
         });
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static InsightSilhouetteLayer<?, ?> memoryLayer(LivingEntityRenderer<?, ?, ?> renderer)
+    {
+        return new InsightSilhouetteLayer(renderer, state -> ((FabricRenderState) state).getDataOrDefault(InsightMemory.ALPHA, 0F));
     }
 
     private static EntityRendererProvider<CorruptedCrab> crab(CorruptedCrab.Size size)

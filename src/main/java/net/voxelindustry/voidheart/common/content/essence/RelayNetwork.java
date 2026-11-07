@@ -214,12 +214,27 @@ public final class RelayNetwork
      */
     public static Map<BlockPos, IEssenceReceiver> suppliers(Level level, BlockPos collectorPos, EssenceType aspect)
     {
+        return suppliersFrom(level, collectorPos, relay -> relay.linkedCollectors().contains(collectorPos), aspect);
+    }
+
+    /**
+     * Storages holding the aspect, reachable through the relays linked to a receiver, the receiver itself left out. Nearer storages come first.
+     */
+    public static Map<BlockPos, IEssenceReceiver> suppliersOfReceiver(Level level, BlockPos receiverPos, EssenceType aspect)
+    {
+        var suppliers = suppliersFrom(level, receiverPos, relay -> relay.linkedReceivers().contains(receiverPos), aspect);
+        suppliers.remove(receiverPos);
+        return suppliers;
+    }
+
+    private static Map<BlockPos, IEssenceReceiver> suppliersFrom(Level level, BlockPos origin, Predicate<RavenousRelayTile> linkedToOrigin, EssenceType aspect)
+    {
         var suppliers = new LinkedHashMap<BlockPos, IEssenceReceiver>();
         var visited = new HashSet<BlockPos>();
         var queue = new ArrayDeque<RavenousRelayTile>();
-        forEachTileInRange(level, collectorPos, RavenousRelayTile.RANGE, tile ->
+        forEachTileInRange(level, origin, RavenousRelayTile.RANGE, tile ->
         {
-            if (tile instanceof RavenousRelayTile relay && relay.linkedCollectors().contains(collectorPos) && visited.add(relay.getBlockPos()))
+            if (tile instanceof RavenousRelayTile relay && linkedToOrigin.test(relay) && visited.add(relay.getBlockPos()))
                 queue.add(relay);
         });
 

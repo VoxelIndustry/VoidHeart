@@ -1,0 +1,16 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "voidheart:block/salt_ward",
+    "edge": "voidheart:block/salt_ward_edge"
+  },
+  "elements": [
+    {
+      "from": [ 0, 0.5, 0 ],
+      "to": [ 16, 0.5, 16 ],
+      "faces": {
+        "up": { "uv": [ 0, 0, 16, 16 ], "texture": "#edge" }
+      }
+    }
+  ]
+}

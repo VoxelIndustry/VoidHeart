@@ -48,7 +48,8 @@ public class ModelsProvider extends FabricModelProvider
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "knowledge_tablet", "knowledge_repository", "knowledge_column", "shoulder_eye", "permeable_barrier", "beam_focus",
-            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix", "cogitant", "meat_proxy", "void_loom"
+            "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix", "cogitant", "meat_proxy", "void_loom",
+            "athanor", "alembic", "crucible"
     );
 
     /**
@@ -104,6 +105,33 @@ public class ModelsProvider extends FabricModelProvider
         registerBeholder(VoidHeartBlocks.BEHOLDER);
 
         registerDepths();
+        registerAthanor();
+    }
+
+    /**
+     * The core and alembic turn to face whoever placed them, the core glowing once lit. Their shapes and the crucible's are hand-written.
+     */
+    private void registerAthanor()
+    {
+        var idle = plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.ATHANOR));
+        var lit = plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.ATHANOR, "_lit"));
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidHeartBlocks.ATHANOR)
+                .with(PropertyDispatch.initial(BlockStateProperties.LIT).select(false, idle).select(true, lit))
+                .with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidHeartBlocks.ALEMBIC,
+                        plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.ALEMBIC)))
+                .with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(VoidHeartBlocks.CRUCIBLE,
+                plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.CRUCIBLE))));
+
+        var intakeTextures = new TextureMapping()
+                .put(TextureSlot.SIDE, TextureMapping.getBlockTexture(VoidHeartBlocks.ASPECT_INTAKE, "_side"))
+                .put(TextureSlot.BOTTOM, TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_BRICKS))
+                .put(TextureSlot.TOP, TextureMapping.getBlockTexture(VoidHeartBlocks.ASPECT_INTAKE, "_top"));
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(VoidHeartBlocks.ASPECT_INTAKE,
+                plainVariant(ModelTemplates.CUBE_BOTTOM_TOP.create(VoidHeartBlocks.ASPECT_INTAKE, intakeTextures, generator.modelOutput))));
     }
 
     /**
@@ -217,6 +245,22 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRIGGLING_BRAIN, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.SALT, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.QUICKSILVER, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.SEARING_OIL, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.CONCUSSIVE_OIL, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.ARCANE_OIL, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.KERNACIAN_OIL, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_FLASK, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_FLASK, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.SEETHING_STEEL_FLASK, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_FLASK, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_FLASK, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.EMBER_DRAUGHT, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.STILLWATER, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.BULWARK_ELIXIR, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.INSIGHT_ELIXIR, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.CLARITY_DRAUGHT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.VOID_VEIN, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.VOID_MARROW, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.IDEA_ABOUT_THE_VOID, ModelTemplates.FLAT_ITEM);

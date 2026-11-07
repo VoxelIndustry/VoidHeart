@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "I I",
+    " I "
+  ],
+  "key": {
+    "I": "voidheart:seething_steel_ingot"
+  },
+  "result": {
+    "id": "voidheart:seething_steel_flask",
+    "count": 3
+  }
+}

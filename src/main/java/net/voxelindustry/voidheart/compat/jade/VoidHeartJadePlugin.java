@@ -2,6 +2,8 @@ package net.voxelindustry.voidheart.compat.jade;
 
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
+import net.voxelindustry.voidheart.common.content.athanor.AthanorBlock;
+import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
@@ -39,6 +41,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     private final RepositoryUpgradeProvider repositoryUpgradeProvider = new RepositoryUpgradeProvider();
     private final MalignantTormenterProvider malignantTormenterProvider = new MalignantTormenterProvider();
     private final ArmillaryProvider armillaryProvider = new ArmillaryProvider();
+    private final AthanorProvider athanorProvider = new AthanorProvider();
 
     @Override
     public void register(IWailaCommonRegistration registration)
@@ -55,6 +58,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockDataProvider(repositoryUpgradeProvider, MeatProxyTile.class);
         registration.registerBlockDataProvider(malignantTormenterProvider, MalignantTormenterTile.class);
         registration.registerBlockDataProvider(armillaryProvider, ArmillaryTile.class);
+        registration.registerBlockDataProvider(athanorProvider, AthanorTile.class);
     }
 
     @Override
@@ -70,6 +74,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockComponent(new RepositoryUpgradeProvider.Client(), RepositoryUpgradeBlock.class);
         registration.registerBlockComponent(new MalignantTormenterProvider.Client(), MalignantTormenterBlock.class);
         registration.registerBlockComponent(new ArmillaryProvider.Client(), ArmillaryCoreBlock.class);
+        registration.registerBlockComponent(new AthanorProvider.Client(athanorProvider), AthanorBlock.class);
 
         registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
         registration.addRayTraceCallback(new MalignantTormenterPartRedirect(registration));

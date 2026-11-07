@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
@@ -147,6 +148,13 @@ public class VoidHeart implements ModInitializer
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(TormenterSoulHarvest::onDeath);
+        // A killing blow lands too, though the damage event skips it
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damage, blocked) ->
+        {
+            if (!blocked)
+                OilCoating.onHitLanded(entity, source);
+        });
+        ServerLivingEntityEvents.AFTER_DEATH.register(OilCoating::onHitLanded);
         ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
 
         Corruption.register();

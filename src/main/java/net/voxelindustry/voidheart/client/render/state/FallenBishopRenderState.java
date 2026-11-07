@@ -12,4 +12,7 @@ public class FallenBishopRenderState extends LivingEntityRenderState
     public @Nullable Vec3 lanceFrom;
     public @Nullable Vec3 lanceTo;
     public float lanceTicks;
+    public @Nullable Vec3 gatherAt;
+    public float gather;
+    public float gatherTicks;
 }

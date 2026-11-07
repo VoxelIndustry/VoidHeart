@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/alembic",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/alembic"
+    },
+    "facing=south": {
+      "model": "voidheart:block/alembic",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/alembic",
+      "y": 270
+    }
+  }
+}

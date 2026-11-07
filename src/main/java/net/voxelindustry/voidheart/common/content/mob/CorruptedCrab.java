@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.voxelindustry.voidheart.common.content.salt.SaltWard;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -52,6 +54,7 @@ public class CorruptedCrab extends CrawlerMonster
         super(type, level);
         this.size = size;
         xpReward = size.experience;
+        setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, SaltWard.CRAB_MALUS);
     }
 
     public static AttributeSupplier.Builder createAttributes(Size size)

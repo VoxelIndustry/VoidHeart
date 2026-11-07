@@ -1,0 +1,27 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "x": -0.3,
+  "y": -0.68,
+  "icon": "voidheart:ravenous_gold_flask",
+  "insight_cost": 10,
+  "knowledge_cost": 900,
+  "knowledge_per_second": 1.25,
+  "requires": [
+    "voidheart:tria_prima"
+  ],
+  "unlocks": [
+    "voidheart:arrogant_iron_flask",
+    "voidheart:ravenous_gold_flask",
+    "voidheart:seething_steel_flask",
+    "voidheart:covetous_copper_flask",
+    "voidheart:listless_lead_flask"
+  ],
+  "recipes": [
+    "voidheart:arrogant_iron_flask",
+    "voidheart:ravenous_gold_flask",
+    "voidheart:seething_steel_flask",
+    "voidheart:covetous_copper_flask",
+    "voidheart:listless_lead_flask"
+  ]
+}

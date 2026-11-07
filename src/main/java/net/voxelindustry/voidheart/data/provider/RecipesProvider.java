@@ -26,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
+import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -138,6 +139,9 @@ public class RecipesProvider extends FabricRecipeProvider
             offerShatterForgeRecipe(Items.RAW_IRON, Items.IRON_INGOT, 2, 2, 3, 60, 1000, EssenceRegistry.FIERY);
             offerShatterForgeRecipe(Items.IRON_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, 1, 2, 3, 60, 1000, EssenceRegistry.FIERY);
             offerShatterForgeRecipe(Items.IRON_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, 1, 2, 3, 60, 1000, EssenceRegistry.STILLNESS);
+            // The principles of alchemy, sulfur being taken as vanilla gives it
+            offerShatterForgeRecipe(Blocks.CINNABAR, VoidHeartItems.QUICKSILVER, 2, 2, 3, 60, 1000, EssenceRegistry.FIERY);
+            offerShatterForgeRecipe(VoidHeartBlocks.ABYSSAL_SILT, VoidHeartItems.SALT, 2, 1, 2, 60, 500, EssenceRegistry.STILLNESS);
 
             // Tier 2: mixed aspects, requires a Beam Focus
             offerShatterForgeRecipe(Items.DIAMOND, Items.ECHO_SHARD, 1, 100, 5, 3000, Map.of(EssenceRegistry.STILLNESS, 2, EssenceRegistry.FIERY, 2));
@@ -218,6 +222,36 @@ public class RecipesProvider extends FabricRecipeProvider
                     Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.RAVENOUS_GOLD_INGOT);
 
+            offerAltarRecipe("athanor", VoidHeartBlocks.ATHANOR, Blocks.BLAST_FURNACE,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+
+            // Athanor: the base sits in the core, one reagent in each crucible
+            offerAthanorRecipe("searing_oil", new ItemStack(VoidHeartItems.SEARING_OIL), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.FIERY, 500),
+                    Items.SULFUR, VoidHeartItems.QUICKSILVER);
+            offerAthanorRecipe("concussive_oil", new ItemStack(VoidHeartItems.CONCUSSIVE_OIL), Items.GLASS_BOTTLE, 200,
+                    Map.of(EssenceRegistry.STILLNESS, 400, EssenceRegistry.FIERY, 100),
+                    Items.SULFUR, VoidHeartItems.QUICKSILVER, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAthanorRecipe("arcane_oil", new ItemStack(VoidHeartItems.ARCANE_OIL), Items.GLASS_BOTTLE, 200,
+                    Map.of(EssenceRegistry.STILLNESS, 250, EssenceRegistry.FIERY, 250),
+                    Items.SULFUR, VoidHeartItems.QUICKSILVER, Items.LAPIS_LAZULI);
+            offerAthanorRecipe("kernacian_oil", new ItemStack(VoidHeartItems.KERNACIAN_OIL), Items.GLASS_BOTTLE, 300,
+                    Map.of(EssenceRegistry.STILLNESS, 500, EssenceRegistry.FIERY, 500),
+                    Items.SULFUR, VoidHeartItems.QUICKSILVER, VoidHeartItems.KERNACIAN_CORE);
+            offerAthanorRecipe("ember_draught", new ItemStack(VoidHeartItems.EMBER_DRAUGHT), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.FIERY, 300),
+                    VoidHeartItems.QUICKSILVER, VoidHeartItems.RUBRUM_SHARD, VoidHeartBlocks.SULFIDE_CRUST);
+            offerAthanorRecipe("stillwater", new ItemStack(VoidHeartItems.STILLWATER), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.STILLNESS, 300),
+                    VoidHeartItems.QUICKSILVER, VoidHeartBlocks.STILL_KELP, VoidHeartBlocks.STILL_ANEMONE);
+            offerAthanorRecipe("bulwark_elixir", new ItemStack(VoidHeartItems.BULWARK_ELIXIR), Items.GLASS_BOTTLE, 240,
+                    Map.of(EssenceRegistry.STILLNESS, 200, EssenceRegistry.FIERY, 200),
+                    VoidHeartItems.QUICKSILVER, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAthanorRecipe("insight_elixir", new ItemStack(VoidHeartItems.INSIGHT_ELIXIR), Items.GLASS_BOTTLE, 240,
+                    Map.of(EssenceRegistry.STILLNESS, 200, EssenceRegistry.FIERY, 200),
+                    VoidHeartItems.QUICKSILVER, VoidHeartItems.WRIGGLING_BRAIN, Items.SPIDER_EYE);
+            offerAthanorRecipe("clarity_draught", new ItemStack(VoidHeartItems.CLARITY_DRAUGHT), Items.GLASS_BOTTLE, 200, Map.of(EssenceRegistry.STILLNESS, 300),
+                    VoidHeartItems.QUICKSILVER, VoidHeartBlocks.GLOW_ALGAE, VoidHeartBlocks.LUMEN_CORAL);
+
             // The heart binding is done by an onCraft callback registered on this id, see VoidHeartRecipes
             saveAltarRecipe(new AltarRecipe(altarRecipeId("voidheart"), ingredient(VoidHeartItems.VOID_HEART), ALTAR_TIME), VoidHeartItems.VOID_HEART);
         }
@@ -254,6 +288,18 @@ public class RecipesProvider extends FabricRecipeProvider
                 ingredientList[i] = ingredient(ingredients[i]);
 
             saveAltarRecipe(new AltarRecipe(altarRecipeId(name), new ItemStackRecipeIngredient(output, false), ingredient(catalyst), time, ingredientList), catalyst);
+        }
+
+        private void offerAthanorRecipe(String name, ItemStack output, ItemLike base, int time, Map<EssenceType, Integer> aspects, ItemLike... reagents)
+        {
+            var reagentStacks = new ItemStack[reagents.length];
+            for (var i = 0; i < reagents.length; i++)
+                reagentStacks[i] = new ItemStack(reagents[i]);
+
+            var recipeId = Identifier.fromNamespaceAndPath(MODID, "athanor/" + name);
+            new RecipeBaseBuilder(new AthanorRecipe(recipeId, output, new ItemStack(base), time, aspects, reagentStacks), RecipeCategory.MISC)
+                    .unlockedBy(getHasName(base), has(base))
+                    .save(this.output, recipeId.toString());
         }
 
         private void saveAltarRecipe(AltarRecipe recipe, ItemLike unlockedBy)

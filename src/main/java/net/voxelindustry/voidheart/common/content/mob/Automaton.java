@@ -1,9 +1,12 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
+import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 
 /**
  * Old armor walking with nothing alive inside it, so nothing that works on flesh works on it.
@@ -13,6 +16,12 @@ public abstract class Automaton extends VoidMonster
     protected Automaton(EntityType<? extends Automaton> type, Level level)
     {
         super(type, level);
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage)
+    {
+        return super.hurtServer(level, source, OilCoating.againstConstruct(source, damage));
     }
 
     @Override

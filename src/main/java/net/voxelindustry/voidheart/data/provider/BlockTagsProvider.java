@@ -30,6 +30,11 @@ public class BlockTagsProvider extends FabricTagsProvider.BlockTagsProvider
                 .setReplace(false)
                 .add(VoidHeartBlocks.ABYSSAL_SILT.builtInRegistryHolder().key());
 
+        // Water washes laid salt off the floor
+        builder(BlockTags.WASHED_AWAY_BY_FLUIDS)
+                .setReplace(false)
+                .add(VoidHeartBlocks.SALT_WARD.builtInRegistryHolder().key());
+
         var walls = builder(BlockTags.WALLS)
                 .setReplace(false);
 

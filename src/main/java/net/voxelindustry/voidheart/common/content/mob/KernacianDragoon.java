@@ -39,6 +39,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.mob.DragoonAdaptation.Kind;
+import net.voxelindustry.voidheart.common.content.oil.Elixirs;
+import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.voxelindustry.voidheart.common.content.mob.DragoonClimb.Probe;
 import net.voxelindustry.voidheart.common.content.mob.DragoonClimb.Step;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
@@ -585,6 +587,10 @@ public class KernacianDragoon extends Automaton
      */
     public static @Nullable Kind kindOf(DamageSource source)
     {
+        // A coated weapon's hit counts only as its oil, never as the weapon too
+        var coated = OilCoating.kindOf(source);
+        if (coated != null)
+            return coated;
         if (source.is(MalignantBoulder.MAGIC))
             return Kind.MAGIC;
         if (source.is(DamageTypeTags.IS_EXPLOSION))
@@ -677,7 +683,7 @@ public class KernacianDragoon extends Automaton
         {
             if (player.getBoundingBox().inflate(BEAM_HIT_RADIUS).clip(from, to).isEmpty())
                 continue;
-            if (player.hurtServer(level, damageSources().source(DAMAGE, this), againstFireProtection(player, BEAM_DAMAGE)))
+            if (player.hurtServer(level, damageSources().source(DAMAGE, this), Elixirs.againstVoidFire(player, againstFireProtection(player, BEAM_DAMAGE))))
                 player.igniteForSeconds(BURN_SECONDS);
         }
     }

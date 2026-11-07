@@ -7,4 +7,5 @@ public class WraithRenderState extends LivingEntityRenderState
     public boolean crossing;
     public boolean aggressive;
     public float attack;
+    public float insight;
 }
