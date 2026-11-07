@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.VoidHeart;
@@ -190,6 +191,7 @@ public class VoidDungeonClientTest implements FabricClientGameTest
         {
             checkPlaced(minecraft, address, plan, name);
             checkHandBuiltPockets(minecraft, address, plan, name);
+            checkStairTops(minecraft, address, plan, name);
         });
 
         int[] entry = plan.entry();
@@ -224,6 +226,37 @@ public class VoidDungeonClientTest implements FabricClientGameTest
             waitForChunks.run();
             context.takeScreenshot(name + "-" + placement.template().file());
             break;
+        }
+
+        var tops = plan.stairTops();
+        if (!tops.isEmpty())
+        {
+            var top = tops.get(tops.size() / 2);
+            var up = top.up();
+            look(server, origin, top.x() + 0.5 - up.getStepX() * 3, top.y() - 3 + 1.6, top.z() + 0.5 - up.getStepZ() * 3, top.x() + 0.5, top.y() + 0.5, top.z() + 0.5);
+            context.waitTicks(10);
+            waitForChunks.run();
+            context.takeScreenshot(name + "-stair-climb");
+
+            look(server, origin, top.x() + 0.5 + up.getStepX() * 2, top.y() + 1 + 1.6, top.z() + 0.5 + up.getStepZ() * 2, top.x() + 0.5 - up.getStepX() * 2, top.y() - 1.0, top.z() + 0.5 - up.getStepZ() * 2);
+            context.waitTicks(10);
+            waitForChunks.run();
+            context.takeScreenshot(name + "-stair-landing");
+        }
+    }
+
+    /**
+     * Every corridor flight ends on a stair level with the floor above, not on a full block to jump onto.
+     */
+    private static void checkStairTops(MinecraftServer minecraft, DungeonAddress address, DungeonPlan plan, String name)
+    {
+        var level = level(minecraft);
+        var origin = address.origin();
+        for (var top : plan.stairTops())
+        {
+            var state = level.getBlockState(origin.offset(top.x(), top.y(), top.z()));
+            if (!(state.getBlock() instanceof StairBlock))
+                throw new AssertionError(name + ": the flight climbing " + top.up() + " ends on " + state + " at " + top);
         }
     }
 

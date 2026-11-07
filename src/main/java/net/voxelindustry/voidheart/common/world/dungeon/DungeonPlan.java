@@ -119,6 +119,27 @@ public final class DungeonPlan
         return layout.rooms;
     }
 
+    /**
+     * Where each corridor flight's top step lies, across its width, level with the floor it climbs to.
+     */
+    public List<StairTop> stairTops()
+    {
+        var tops = new ArrayList<StairTop>();
+        for (var stair : layout.stairs)
+        {
+            var up = stair.ascending();
+            boolean alongX = up.getAxis() == Direction.Axis.X;
+            int along = up.getAxisDirection() == Direction.AxisDirection.POSITIVE ? CELL : 0;
+            for (int lateral = 1; lateral < CELL; lateral++)
+                tops.add(new StairTop(plane(stair.i()) + (alongX ? along : lateral), plane(stair.j()) + CELL, plane(stair.k()) + (alongX ? lateral : along), up));
+        }
+        return tops;
+    }
+
+    public record StairTop(int x, int y, int z, Direction up)
+    {
+    }
+
     public List<DungeonTemplate.Placement> templates()
     {
         return templates;
@@ -624,7 +645,8 @@ public final class DungeonPlan
         for (int y = 0; y < along; y++)
             grid.set(x, y0 + y, z, y == 0 ? FLOOR : built(WALL));
 
-        if (along == 0 || along == CELL)
+        // The top step is level with the upper floor, so the flight is walked onto it rather than jumped
+        if (along == 0)
             grid.set(x, y0 + along, z, FLOOR);
         else
             grid.set(x, y0 + along, z, STAIRS, up);
