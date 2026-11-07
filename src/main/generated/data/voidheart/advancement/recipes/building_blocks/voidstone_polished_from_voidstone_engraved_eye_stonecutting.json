@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:voidstone_polished_from_voidstone_engraved_eye_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone_engraved_eye": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:voidstone_engraved_eye"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_voidstone_engraved_eye"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:voidstone_polished_from_voidstone_engraved_eye_stonecutting"
+    ]
+  }
+}

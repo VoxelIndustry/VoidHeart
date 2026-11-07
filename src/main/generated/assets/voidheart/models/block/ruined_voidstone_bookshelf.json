@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "voidheart:block/voidstone_polished",
+    "side": "voidheart:block/ruined_voidstone_bookshelf"
+  }
+}

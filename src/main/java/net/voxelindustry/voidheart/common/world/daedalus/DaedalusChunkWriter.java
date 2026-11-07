@@ -62,10 +62,11 @@ final class DaedalusChunkWriter
                     {
                         for (int x = 0; x < SECTION; x++)
                         {
+                            int below = index - SECTION * SECTION;
                             int material = cells[index++] & 0xFF;
                             if (material == AIR)
                                 continue;
-                            var state = palette.state(material, minX + x, baseY + y, minZ + z);
+                            var state = palette.state(material, below >= 0 ? cells[below] & 0xFF : AIR, minX + x, baseY + y, minZ + z);
                             section.setBlockState(x, y, z, state, false);
                             if (state.hasBlockEntity())
                             {

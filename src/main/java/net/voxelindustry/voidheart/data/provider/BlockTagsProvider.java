@@ -35,6 +35,11 @@ public class BlockTagsProvider extends FabricTagsProvider.BlockTagsProvider
                 .setReplace(false)
                 .add(VoidHeartBlocks.SALT_WARD.builtInRegistryHolder().key());
 
+        builder(BlockTags.ENCHANTMENT_POWER_PROVIDER)
+                .setReplace(false)
+                .add(VoidHeartBlocks.VOIDSTONE_BOOKSHELF.builtInRegistryHolder().key())
+                .add(VoidHeartBlocks.RUINED_VOIDSTONE_BOOKSHELF.builtInRegistryHolder().key());
+
         var walls = builder(BlockTags.WALLS)
                 .setReplace(false);
 
