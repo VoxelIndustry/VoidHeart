@@ -29,6 +29,8 @@ public final class BrewTooltip
             lines.add(at++, Component.translatable("voidheart.brew.empowered").withStyle(ChatFormatting.AQUA));
         if (brew.prolonged())
             lines.add(at++, Component.translatable("voidheart.brew.prolonged").withStyle(ChatFormatting.RED));
+        if (brew.remembering())
+            lines.add(at++, Component.translatable("voidheart.brew.remembering").withStyle(ChatFormatting.LIGHT_PURPLE));
         if (brew.vessel().isPresent())
             lines.add(at, Component.translatable(brew.vessel().get().traitKey()).withStyle(ChatFormatting.GOLD));
     }

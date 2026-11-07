@@ -60,14 +60,29 @@ public final class InsightSight
         if (distance > range)
             return 0;
         // In plain view the mob is simply seen, and its far limbs behind its own body mustn't light up
-        if (!crossing && clear(entity, eye, center) && clear(entity, eye, center.add(0, entity.getBbHeight() * 0.4, 0)))
+        if (!crossing && inPlainView(entity, eye))
             return 0;
 
         float reach = 1 - Mth.clamp((float) (distance - full) / (range - full), 0, 1);
-        // Each mob breathes on its own beat, so a group doesn't pulse as one
+        return (crossing ? CROSSING_ALPHA : SILHOUETTE_ALPHA) * reach * breath(entity);
+    }
+
+    /**
+     * @return a gentle pulse from 1 down to 1 - {@link #BREATH_DEPTH}, on each mob's own beat so a group doesn't pulse as one
+     */
+    public static float breath(Entity entity)
+    {
         float phase = (Util.getMillis() + entity.getId() * 977L) % BREATH_MILLIS / (float) BREATH_MILLIS;
-        float breath = 1 - BREATH_DEPTH * (0.5F + 0.5F * Mth.sin(phase * Mth.TWO_PI));
-        return (crossing ? CROSSING_ALPHA : SILHOUETTE_ALPHA) * reach * breath;
+        return 1 - BREATH_DEPTH * (0.5F + 0.5F * Mth.sin(phase * Mth.TWO_PI));
+    }
+
+    /**
+     * Whether nothing stands between the eye and the mob's middle, nor its upper body.
+     */
+    public static boolean inPlainView(Entity entity, Vec3 eye)
+    {
+        var center = entity.position().add(0, entity.getBbHeight() / 2, 0);
+        return clear(entity, eye, center) && clear(entity, eye, center.add(0, entity.getBbHeight() * 0.4, 0));
     }
 
     private static boolean clear(Entity entity, Vec3 from, Vec3 to)

@@ -23,6 +23,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.voxelindustry.voidheart.client.scene.ResearchScenes;
+import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.common.content.oil.Brew;
 import net.voxelindustry.voidheart.common.content.oil.Elixirs;
 import net.voxelindustry.voidheart.common.content.oil.OilCoating;
@@ -516,6 +517,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "construct_percent" -> wholeNumber(Math.round(OilCoating.CONSTRUCT_BONUS * 100));
             case "arrows_per_flask" -> wholeNumber(OilCoating.ARROWS_PER_FLASK);
             case "rubrum_percent" -> wholeNumber(Math.round((Brew.PROLONGED_SCALE - 1) * 100));
+            case "memory_seconds" -> wholeNumber(InsightMemory.MEMORY_MILLIS / 1000D);
             case "copper_percent" -> wholeNumber(Math.round(SinVessel.COVETOUS_COPPER.durationScale() * 100));
             case "salt_cells" -> wholeNumber(SaltPatch.CELLS_PER_SALT);
             case "salt_size" -> wholeNumber(SaltPatch.MAX_SIZE);

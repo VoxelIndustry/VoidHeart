@@ -105,7 +105,7 @@ public final class Brews
         // Pride brooks no other brew beside it, so they go before its own takes hold
         if (brew.in(SinVessel.ARROGANT_IRON))
             effects.add(new RemoveStatusEffectsConsumeEffect(HolderSet.direct(VoidHeartEffects.EMBER_WARD, VoidHeartEffects.STILLWATER, VoidHeartEffects.INSIGHT,
-                    VoidHeartEffects.CLARITY)));
+                    VoidHeartEffects.CLARITY, VoidHeartEffects.RECOLLECTION)));
 
         int longest = 0;
         for (var effect : consumable.onConsumeEffects())
@@ -127,6 +127,9 @@ public final class Brews
             effects.add(new ApplyStatusEffectsConsumeEffect(changed, probability));
         }
 
+        // Memoriam lets Insight remember, for as long as the Insight lasts
+        if (longest > 0 && brew.remembering())
+            effects.add(new ApplyStatusEffectsConsumeEffect(new MobEffectInstance(VoidHeartEffects.RECOLLECTION, longest)));
         if (longest > 0 && brew.in(SinVessel.RAVENOUS_GOLD))
             effects.add(new ApplyStatusEffectsConsumeEffect(new MobEffectInstance(MobEffects.HUNGER, longest)));
         if (longest > 0 && brew.in(SinVessel.LISTLESS_LEAD))
@@ -140,10 +143,21 @@ public final class Brews
      */
     public static Optional<Brew> brewFor(ItemStack product, boolean empowered, boolean prolonged, @Nullable SinVessel vessel)
     {
+        return brewFor(product, empowered, prolonged, false, vessel);
+    }
+
+    /**
+     * @return the shards and vessel a brew would take from what sits in the athanor, or empty if the product can't take them: a vessel that can't hold
+     * it, shards on what isn't a drink or an oil, or Memoriam on anything but Insight
+     */
+    public static Optional<Brew> brewFor(ItemStack product, boolean empowered, boolean prolonged, boolean remembering, @Nullable SinVessel vessel)
+    {
         if (vessel != null && !holds(vessel, product))
             return Optional.empty();
         if ((empowered || prolonged) && !refines(product))
             return Optional.empty();
-        return Optional.of(new Brew(empowered, prolonged, Optional.ofNullable(vessel)));
+        if (remembering && !product.is(VoidHeartItems.INSIGHT_ELIXIR))
+            return Optional.empty();
+        return Optional.of(new Brew(empowered, prolonged, remembering, Optional.ofNullable(vessel)));
     }
 }

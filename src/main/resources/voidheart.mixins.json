@@ -13,6 +13,7 @@
   ],
   "client": [
     "client.MixinAtmosphericFogClarity",
+    "client.MixinLivingEntityRendererMemory",
     "client.MixinBossHealthOverlayInsight",
     "client.MixinCameraTremor",
     "client.MixinClientLevelBarrierDisguise",

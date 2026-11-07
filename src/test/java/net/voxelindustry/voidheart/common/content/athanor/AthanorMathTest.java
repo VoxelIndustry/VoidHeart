@@ -131,6 +131,15 @@ class AthanorMathTest
     }
 
     @Test
+    void asides_combineThreeKindsSmallestFirst()
+    {
+        var slots = List.of("azurium", "rubrum", "memoriam", "quicksilver");
+        var ways = AthanorMath.<String>asides(slots, "azurium"::equals, "rubrum"::equals, "memoriam"::equals);
+        assertThat(ways).extracting(Arrays::toString)
+                .containsExactly("[]", "[0]", "[1]", "[2]", "[0, 1]", "[0, 2]", "[1, 2]", "[0, 1, 2]");
+    }
+
+    @Test
     void asides_offerEachShardOfAKindButNeverTwoOfIt()
     {
         var slots = List.of("rubrum", "quicksilver", "rubrum");

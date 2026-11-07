@@ -53,6 +53,15 @@ public final class VoidHeartEffects
             Identifier.fromNamespaceAndPath(MODID, "clarity"),
             new DisplayEffect(MobEffectCategory.BENEFICIAL, CLARITY_COLOR));
 
+    private static final int RECOLLECTION_COLOR = 0xBFA9E8;
+
+    /**
+     * Recollection, from Insight brewed with Memoriam: a hostile mob seen in plain view stays marked for a while after it goes out of sight.
+     */
+    public static final Holder<MobEffect> RECOLLECTION = Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT,
+            Identifier.fromNamespaceAndPath(MODID, "recollection"),
+            new DisplayEffect(MobEffectCategory.BENEFICIAL, RECOLLECTION_COLOR));
+
     private VoidHeartEffects()
     {
     }

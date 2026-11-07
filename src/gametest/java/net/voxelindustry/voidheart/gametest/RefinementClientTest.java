@@ -16,6 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
+import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.athanor.CrucibleTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
@@ -44,6 +45,7 @@ public class RefinementClientTest implements FabricClientGameTest
     private static final BlockPos ALEMBIC = CORE.above();
     private static final List<BlockPos> CRUCIBLES = List.of(CORE.east(), CORE.west(), CORE.north(), CORE.south());
     private static final int BREW_WAIT = 600;
+    private static final int MEMORY_X = 20;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -133,6 +135,8 @@ public class RefinementClientTest implements FabricClientGameTest
             expect(ember.is(VoidHeartItems.EMBER_DRAUGHT) && Brews.brewOf(ember).prolonged() && !Brews.brewOf(ember).empowered(),
                     "Expected a longer ember draught, got " + ember + " " + Brews.brewOf(ember));
 
+            memoriam(context, server);
+
             // Vessels refuse what they can't hold
             var refusedElixir = brew(context, server, new ItemStack(VoidHeartItems.SEETHING_STEEL_FLASK), VoidHeartItems.QUICKSILVER, VoidHeartBlocks.STILL_KELP,
                     VoidHeartBlocks.STILL_ANEMONE);
@@ -160,6 +164,74 @@ public class RefinementClientTest implements FabricClientGameTest
             context.getInput().pressKey(com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE);
             context.waitTicks(5);
         }
+    }
+
+    /**
+     * Insight brewed with Memoriam remembers: a husk seen in plain view keeps a fading silhouette once a wall hides it, gone after the memory runs out,
+     * and plain Insight shows nothing of it.
+     */
+    private static void memoriam(ClientGameTestContext context, TestServerContext server)
+    {
+        var insight = brew(context, server, new ItemStack(Items.GLASS_BOTTLE), VoidHeartItems.QUICKSILVER, VoidHeartItems.WRIGGLING_BRAIN, Items.SPIDER_EYE,
+                VoidHeartItems.MEMORIAM_SHARD);
+        expect(insight.is(VoidHeartItems.INSIGHT_ELIXIR) && Brews.brewOf(insight).remembering(), "Expected a remembering Insight, got " + insight + " " + Brews.brewOf(insight));
+        showTooltip(context, server, insight, "Memoriam");
+        var refused = brew(context, server, new ItemStack(Items.GLASS_BOTTLE), VoidHeartItems.QUICKSILVER, VoidHeartBlocks.STILL_KELP, VoidHeartBlocks.STILL_ANEMONE,
+                VoidHeartItems.MEMORIAM_SHARD);
+        expect(refused.isEmpty(), "Expected Memoriam to change nothing but Insight, got " + refused);
+
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            insight.copy().finishUsingItem(minecraft.overworld(), player);
+            expect(player.hasEffect(VoidHeartEffects.INSIGHT) && player.hasEffect(VoidHeartEffects.RECOLLECTION), "Expected Insight and Recollection, got "
+                    + player.getActiveEffects());
+            var husk = net.minecraft.world.entity.EntityTypes.HUSK.create(minecraft.overworld(), net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+            husk.setNoAi(true);
+            husk.snapTo(MEMORY_X + 0.5, GROUND_Y, 6.5, 180, 0);
+            husk.setYBodyRot(180);
+            minecraft.overworld().addFreshEntity(husk);
+        });
+        server.runCommand("tp @a " + (MEMORY_X + 0.5) + " " + GROUND_Y + " 0.5 0 0");
+        context.waitTicks(20);
+        expect(context.computeOnClient(minecraft -> InsightMemory.remembered()) == 1, "Expected the husk in plain view remembered");
+        expect(context.computeOnClient(minecraft -> InsightMemory.alpha(husk(minecraft))) == 0, "Expected no silhouette while the husk is in plain view");
+
+        server.runCommand("fill " + (MEMORY_X - 3) + " " + GROUND_Y + " 3 " + (MEMORY_X + 3) + " " + (GROUND_Y + 3) + " 3 stone");
+        context.waitTicks(2 * InsightMemory.CHECK_TICKS);
+        float early = context.computeOnClient(minecraft -> InsightMemory.alpha(husk(minecraft)));
+        expect(early > 0 && early <= InsightMemory.MEMORY_ALPHA, "Expected the hidden husk outlined, alpha " + early);
+        context.getInput().pressKey(com.mojang.blaze3d.platform.InputConstants.KEY_F1);
+        context.takeScreenshot("memoriam-remembered");
+        context.waitTicks((int) (InsightMemory.MEMORY_MILLIS / 50 * 0.7));
+        float late = context.computeOnClient(minecraft -> InsightMemory.alpha(husk(minecraft)));
+        expect(late > 0 && late < early, "Expected the outline fading, " + late + " after " + early);
+        context.takeScreenshot("memoriam-fading");
+        context.waitTicks((int) (InsightMemory.MEMORY_MILLIS / 50 * 0.4));
+        expect(context.computeOnClient(minecraft -> InsightMemory.alpha(husk(minecraft))) == 0, "Expected the memory gone after its time");
+        context.takeScreenshot("memoriam-gone");
+        context.getInput().pressKey(com.mojang.blaze3d.platform.InputConstants.KEY_F1);
+
+        // Plain Insight remembers nothing
+        server.runCommand("fill " + (MEMORY_X - 3) + " " + GROUND_Y + " 3 " + (MEMORY_X + 3) + " " + (GROUND_Y + 3) + " 3 air");
+        server.runCommand("effect clear @a voidheart:recollection");
+        context.waitTicks(20);
+        server.runCommand("fill " + (MEMORY_X - 3) + " " + GROUND_Y + " 3 " + (MEMORY_X + 3) + " " + (GROUND_Y + 3) + " 3 stone");
+        context.waitTicks(2 * InsightMemory.CHECK_TICKS);
+        expect(context.computeOnClient(minecraft -> InsightMemory.alpha(husk(minecraft))) == 0, "Expected plain Insight to show nothing of the husk");
+        server.runCommand("kill @e[type=husk]");
+        server.runCommand("fill " + (MEMORY_X - 3) + " " + GROUND_Y + " 3 " + (MEMORY_X + 3) + " " + (GROUND_Y + 3) + " 3 air");
+        server.runOnServer(minecraft -> player(minecraft).removeAllEffects());
+    }
+
+    private static net.minecraft.world.entity.monster.zombie.Husk husk(net.minecraft.client.Minecraft minecraft)
+    {
+        for (var entity : minecraft.level.entitiesForRendering())
+        {
+            if (entity instanceof net.minecraft.world.entity.monster.zombie.Husk husk)
+                return husk;
+        }
+        throw new AssertionError("Expected a husk on the client");
     }
 
     private static void build(MinecraftServer minecraft)

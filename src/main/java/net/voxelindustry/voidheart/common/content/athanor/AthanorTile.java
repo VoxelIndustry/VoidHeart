@@ -267,7 +267,8 @@ public class AthanorTile extends TileBase
         // A sin-metal flask is a bottle to every recipe, and decides after whether it can hold what that recipe makes
         var base = vessel == null ? stack : new ItemStack(Items.GLASS_BOTTLE);
         var asides = refining
-                ? AthanorMath.asides(crucibles, crucible -> crucible.getStack().is(VoidHeartItems.AZURIUM_SHARD), crucible -> crucible.getStack().is(VoidHeartItems.RUBRUM_SHARD))
+                ? AthanorMath.<CrucibleTile>asides(crucibles, crucible -> crucible.getStack().is(VoidHeartItems.AZURIUM_SHARD),
+                crucible -> crucible.getStack().is(VoidHeartItems.RUBRUM_SHARD), crucible -> crucible.getStack().is(VoidHeartItems.MEMORIAM_SHARD))
                 : List.of(new int[0]);
 
         for (var aside : asides)
@@ -279,6 +280,7 @@ public class AthanorTile extends TileBase
             reagents.removeAll(setAside);
             boolean empowered = setAside.stream().anyMatch(crucible -> crucible.getStack().is(VoidHeartItems.AZURIUM_SHARD));
             boolean prolonged = setAside.stream().anyMatch(crucible -> crucible.getStack().is(VoidHeartItems.RUBRUM_SHARD));
+            boolean remembering = setAside.stream().anyMatch(crucible -> crucible.getStack().is(VoidHeartItems.MEMORIAM_SHARD));
 
             for (var recipe : allRecipes())
             {
@@ -290,7 +292,7 @@ public class AthanorTile extends TileBase
                 if (assignment == null)
                     continue;
 
-                var brew = Brews.brewFor(recipe.getOutput(), empowered, prolonged, vessel);
+                var brew = Brews.brewFor(recipe.getOutput(), empowered, prolonged, remembering, vessel);
                 if (brew.isEmpty())
                     continue;
 

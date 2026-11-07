@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
 import net.voxelindustry.voidheart.client.ClarityFog;
 import net.voxelindustry.voidheart.client.OilEmbers;
 import net.voxelindustry.voidheart.client.BrewTooltip;
+import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.client.OilTooltip;
 import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
 import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
@@ -150,6 +151,7 @@ public class VoidHeartClient implements ClientModInitializer
         ItemTooltipCallback.EVENT.register(BrewTooltip::append);
         ClientTickEvents.END_CLIENT_TICK.register(OilEmbers::tick);
         ClientTickEvents.END_CLIENT_TICK.register(ClarityFog::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(InsightMemory::tick);
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);

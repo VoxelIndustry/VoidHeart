@@ -57,35 +57,48 @@ public final class AthanorMath
     }
 
     /**
-     * Ways to set shards aside from a recipe's reagents, to change the brew rather than feed it: none first, then one shard of either kind, then one of
-     * each. At most one shard of each kind counts.
+     * Ways to set shards aside from a recipe's reagents, to change the brew rather than feed it: none first, then one shard of any kind, then two, and so
+     * on. At most one shard of each kind counts.
      *
+     * @param kinds what tells each kind of shard, in the order its slots are tried
      * @return the slot indexes to set aside for each way, fewest first
      */
-    public static <S> List<int[]> asides(List<S> slots, Predicate<S> strengthens, Predicate<S> prolongs)
+    @SafeVarargs
+    public static <S> List<int[]> asides(List<S> slots, Predicate<S>... kinds)
     {
-        var strong = new ArrayList<Integer>();
-        var lasting = new ArrayList<Integer>();
-        for (int slot = 0; slot < slots.size(); slot++)
+        var byKind = new ArrayList<List<Integer>>();
+        for (var kind : kinds)
         {
-            if (strengthens.test(slots.get(slot)))
-                strong.add(slot);
-            else if (prolongs.test(slots.get(slot)))
-                lasting.add(slot);
+            var found = new ArrayList<Integer>();
+            for (int slot = 0; slot < slots.size(); slot++)
+            {
+                if (kind.test(slots.get(slot)))
+                    found.add(slot);
+            }
+            byKind.add(found);
         }
 
         var ways = new ArrayList<int[]>();
-        ways.add(new int[0]);
-        for (int slot : strong)
-            ways.add(new int[]{ slot });
-        for (int slot : lasting)
-            ways.add(new int[]{ slot });
-        for (int first : strong)
-        {
-            for (int second : lasting)
-                ways.add(new int[]{ first, second });
-        }
+        combine(byKind, 0, new ArrayList<>(), ways);
+        ways.sort(java.util.Comparator.comparingInt(way -> way.length));
         return ways;
+    }
+
+    private static void combine(List<List<Integer>> byKind, int kind, List<Integer> chosen, List<int[]> ways)
+    {
+        if (kind == byKind.size())
+        {
+            ways.add(chosen.stream().mapToInt(Integer::intValue).toArray());
+            return;
+        }
+        // Taking a shard of this kind comes before skipping it, so after the sort by size earlier kinds are tried first
+        for (int slot : byKind.get(kind))
+        {
+            chosen.add(slot);
+            combine(byKind, kind + 1, chosen, ways);
+            chosen.removeLast();
+        }
+        combine(byKind, kind + 1, chosen, ways);
     }
 
     /**
