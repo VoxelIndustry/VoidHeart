@@ -56,6 +56,7 @@
       "net.voxelindustry.voidheart.gametest.DaedalusAccessClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusPropsClientTest",
+      "net.voxelindustry.voidheart.gametest.DaedalusDecorClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusMobsClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusSpawningClientTest",
       "net.voxelindustry.voidheart.gametest.KernacianDragoonClientTest"

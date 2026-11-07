@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:voidstone_polished_from_voidstone_engraved_gear_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_voidstone_engraved_gear": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:voidstone_engraved_gear"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_voidstone_engraved_gear"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:voidstone_polished_from_voidstone_engraved_gear_stonecutting"
+    ]
+  }
+}

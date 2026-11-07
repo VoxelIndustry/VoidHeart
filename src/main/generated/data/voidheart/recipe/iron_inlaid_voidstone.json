@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "M": "minecraft:iron_ingot",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "VVV",
+    "VMV",
+    "VVV"
+  ],
+  "result": {
+    "count": 8,
+    "id": "voidheart:iron_inlaid_voidstone"
+  }
+}

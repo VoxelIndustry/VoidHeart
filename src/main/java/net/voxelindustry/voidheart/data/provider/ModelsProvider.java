@@ -115,6 +115,28 @@ public class ModelsProvider extends FabricModelProvider
 
         registerDepths();
         registerAthanor();
+        registerDaedalusDecor();
+    }
+
+    private void registerDaedalusDecor()
+    {
+        generator.createTrivialCube(VoidHeartBlocks.BRONZE_INLAID_VOIDSTONE);
+        generator.createTrivialCube(VoidHeartBlocks.IRON_INLAID_VOIDSTONE);
+        generator.createTrivialCube(VoidHeartBlocks.VOIDSTONE_ENGRAVED_GEAR);
+        generator.createTrivialCube(VoidHeartBlocks.VOIDSTONE_ENGRAVED_EYE);
+        generator.createTrivialCube(VoidHeartBlocks.CAGED_LAMP_AMBER);
+        generator.createTrivialCube(VoidHeartBlocks.CAGED_LAMP_TEAL);
+        generator.createTrivialCube(VoidHeartBlocks.CAGED_LAMP_PALE);
+
+        for (var rug : List.of(VoidHeartBlocks.UMBRAL_RUG, VoidHeartBlocks.VIOLET_RUG, VoidHeartBlocks.TEAL_RUG))
+            generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(rug, plainVariant(TexturedModel.CARPET.create(rug, generator.modelOutput))));
+
+        // Shelves end in polished voidstone, as vanilla ones end in planks
+        for (var shelf : List.of(VoidHeartBlocks.VOIDSTONE_BOOKSHELF, VoidHeartBlocks.RUINED_VOIDSTONE_BOOKSHELF))
+        {
+            var textures = TextureMapping.column(TextureMapping.getBlockTexture(shelf), TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_POLISHED));
+            generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(shelf, plainVariant(ModelTemplates.CUBE_COLUMN.create(shelf, textures, generator.modelOutput))));
+        }
     }
 
     /**

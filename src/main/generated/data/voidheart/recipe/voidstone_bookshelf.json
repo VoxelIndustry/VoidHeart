@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": "minecraft:book",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "VVV",
+    "BBB",
+    "VVV"
+  ],
+  "result": {
+    "id": "voidheart:voidstone_bookshelf"
+  }
+}

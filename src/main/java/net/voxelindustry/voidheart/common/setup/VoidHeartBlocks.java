@@ -31,6 +31,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.AmethystClusterBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
@@ -150,6 +151,19 @@ public class VoidHeartBlocks
     public static Block VOIDSTONE_PILLAR_SLAB;
     public static Block VOIDSTONE_PILLAR_STAIRS;
     public static Block VOIDSTONE_WEATHERED_PILLAR;
+
+    public static Block BRONZE_INLAID_VOIDSTONE;
+    public static Block IRON_INLAID_VOIDSTONE;
+    public static Block VOIDSTONE_ENGRAVED_GEAR;
+    public static Block VOIDSTONE_ENGRAVED_EYE;
+    public static Block CAGED_LAMP_AMBER;
+    public static Block CAGED_LAMP_TEAL;
+    public static Block CAGED_LAMP_PALE;
+    public static Block UMBRAL_RUG;
+    public static Block VIOLET_RUG;
+    public static Block TEAL_RUG;
+    public static Block VOIDSTONE_BOOKSHELF;
+    public static Block RUINED_VOIDSTONE_BOOKSHELF;
 
     public static Block VOID_LAMP;
 
@@ -417,7 +431,9 @@ public class VoidHeartBlocks
                         .sound(SoundType.STONE)
                         .strength(1.5F, 6.0F), true);
 
-        VOID_MONOLITH = registerBlock("void_monolith", VoidMonolithBlock::new, BlockBehaviour.Properties.of(), true);
+        registerDaedalusDecor();
+
+        VOID_MONOLITH =registerBlock("void_monolith", VoidMonolithBlock::new, BlockBehaviour.Properties.of(), true);
         VOID_MONOLITH_CAP = registerBlock("void_monolith_cap", Block::new, BlockBehaviour.Properties.of()
                         .mapColor(MapColor.COLOR_BLACK)
                         .instrument(NoteBlockInstrument.BASEDRUM)
@@ -932,6 +948,58 @@ public class VoidHeartBlocks
                 .isValidSpawn(VoidHeartBlocks::never)
                 .isSuffocating((state, level, pos) -> false)
                 .isViewBlocking((state, level, pos, box) -> false)));
+    }
+
+    /**
+     * Trim, lamps, panels, rugs and shelves the Daedalus is furnished with, so its rooms need no vanilla blocks that look out of place.
+     */
+    private static void registerDaedalusDecor()
+    {
+        BRONZE_INLAID_VOIDSTONE = registerBlock("bronze_inlaid_voidstone", Block::new, voidstoneProperties(), true);
+        IRON_INLAID_VOIDSTONE = registerBlock("iron_inlaid_voidstone", Block::new, voidstoneProperties(), true);
+        VOIDSTONE_ENGRAVED_GEAR = registerBlock("voidstone_engraved_gear", Block::new, voidstoneProperties(), true);
+        VOIDSTONE_ENGRAVED_EYE = registerBlock("voidstone_engraved_eye", Block::new, voidstoneProperties(), true);
+
+        CAGED_LAMP_AMBER = registerBlock("caged_lamp_amber", Block::new, lampProperties(MapColor.COLOR_ORANGE), true);
+        CAGED_LAMP_TEAL = registerBlock("caged_lamp_teal", Block::new, lampProperties(MapColor.COLOR_CYAN), true);
+        CAGED_LAMP_PALE = registerBlock("caged_lamp_pale", Block::new, lampProperties(MapColor.COLOR_LIGHT_BLUE), true);
+
+        UMBRAL_RUG = registerBlock("umbral_rug", CarpetBlock::new, rugProperties(MapColor.COLOR_BLACK), true);
+        VIOLET_RUG = registerBlock("violet_rug", CarpetBlock::new, rugProperties(MapColor.COLOR_PURPLE), true);
+        TEAL_RUG = registerBlock("teal_rug", CarpetBlock::new, rugProperties(MapColor.COLOR_CYAN), true);
+
+        VOIDSTONE_BOOKSHELF = registerBlock("voidstone_bookshelf", Block::new, voidstoneProperties(), true);
+        RUINED_VOIDSTONE_BOOKSHELF = registerBlock("ruined_voidstone_bookshelf", Block::new, voidstoneProperties(), true);
+    }
+
+    private static BlockBehaviour.Properties voidstoneProperties()
+    {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .sound(SoundType.STONE)
+                .strength(1.5F, 6.0F);
+    }
+
+    private static BlockBehaviour.Properties lampProperties(MapColor color)
+    {
+        return BlockBehaviour.Properties.of()
+                .mapColor(color)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .sound(SoundType.COPPER)
+                .strength(1.5F, 6.0F)
+                .lightLevel(state -> 15);
+    }
+
+    private static BlockBehaviour.Properties rugProperties(MapColor color)
+    {
+        return BlockBehaviour.Properties.of()
+                .mapColor(color)
+                .strength(0.1F)
+                .sound(SoundType.WOOL)
+                .ignitedByLava();
     }
 
     private static Block registerBlock(String name, Function<BlockBehaviour.Properties, Block> factory, BlockBehaviour.Properties properties, boolean inCreativeTab)

@@ -88,6 +88,18 @@ public final class DaedalusPalette
         return variants[DaedalusHash.pick(DaedalusHash.mix(DaedalusHash.mix(x * 31L + y) + z), variants.length)];
     }
 
+    /**
+     * Panels over open air are ceiling beams, which take the theme's plain panel so engravings only show on walls.
+     *
+     * @param below the material under this position, {@link DaedalusMaterial#AIR} at the bottom of the canvas
+     */
+    public BlockState state(int material, int below, int x, int y, int z)
+    {
+        if (material == DaedalusMaterial.PANEL.ordinal() && below == DaedalusMaterial.AIR.ordinal())
+            return options[material][0];
+        return state(material, x, y, z);
+    }
+
     public boolean covers(DaedalusMaterial material)
     {
         return material == DaedalusMaterial.PROP ? java.util.Arrays.stream(props).allMatch(java.util.Objects::nonNull) : options[material.ordinal()] != null;
@@ -140,7 +152,7 @@ public final class DaedalusPalette
         set(FLOOR_INLAY, VOIDSTONE_TILE_SMALL_CHISELED);
         set(CARPET, Blocks.AIR);
         set(CEILING, VOIDSTONE_BRICKS);
-        set(LAMP, Blocks.SEA_LANTERN);
+        set(LAMP, CAGED_LAMP_PALE);
         rails(VOIDSTONE_BRICKS_WALL);
         steps(VOIDSTONE_BRICKS_STAIRS, VOIDSTONE_BRICKS_SLAB);
         relics();
@@ -198,15 +210,15 @@ public final class DaedalusPalette
     private void archive()
     {
         set(WALL, VOIDSTONE_POLISHED, VOIDSTONE_POLISHED, VOIDSTONE_POLISHED, VOIDSTONE_BRICKS_VERTICAL);
-        set(PANEL, VOIDSTONE_BRICKS_VERTICAL);
+        set(PANEL, VOIDSTONE_BRICKS_VERTICAL, VOIDSTONE_BRICKS_VERTICAL, VOIDSTONE_BRICKS_VERTICAL, VOIDSTONE_BRICKS_VERTICAL, VOIDSTONE_ENGRAVED_EYE);
         set(TRIM, VOIDSTONE_CHISELED);
         set(FLOOR, VOIDSTONE_TILE_SMALL);
         set(FLOOR_TRIM, VOIDSTONE_TILE);
         set(CEILING, VOIDSTONE_POLISHED);
-        set(SHELF, Blocks.BOOKSHELF);
-        set(LAMP, Blocks.OCHRE_FROGLIGHT);
+        set(SHELF, VOIDSTONE_BOOKSHELF, VOIDSTONE_BOOKSHELF, VOIDSTONE_BOOKSHELF, RUINED_VOIDSTONE_BOOKSHELF);
+        set(LAMP, CAGED_LAMP_AMBER);
         set(FLOOR_INLAY, VOIDSTONE_POLISHED);
-        set(CARPET, vanilla("red_carpet"));
+        set(CARPET, UMBRAL_RUG);
     }
 
     private void warren()
@@ -224,14 +236,14 @@ public final class DaedalusPalette
     private void gallery()
     {
         set(WALL, VOIDSTONE_POLISHED);
-        set(PANEL, VOIDSTONE_BRICKS);
-        set(TRIM, Blocks.GILDED_BLACKSTONE);
+        set(PANEL, VOIDSTONE_BRICKS, VOIDSTONE_BRICKS, VOIDSTONE_BRICKS, VOIDSTONE_ENGRAVED_EYE);
+        set(TRIM, BRONZE_INLAID_VOIDSTONE);
         set(FLOOR, VOIDSTONE_TILE);
         set(FLOOR_TRIM, VOIDSTONE_POLISHED);
-        set(FLOOR_INLAY, Blocks.GILDED_BLACKSTONE);
+        set(FLOOR_INLAY, BRONZE_INLAID_VOIDSTONE);
         set(CEILING, VOIDSTONE_TILE_SMALL);
-        set(LAMP, Blocks.SHROOMLIGHT);
-        set(CARPET, vanilla("purple_carpet"));
+        set(LAMP, CAGED_LAMP_AMBER);
+        set(CARPET, VIOLET_RUG);
         steps(VOIDSTONE_POLISHED_STAIRS, VOIDSTONE_POLISHED_SLAB);
         rails(VOIDSTONE_POLISHED_WALL);
     }
@@ -239,13 +251,13 @@ public final class DaedalusPalette
     private void cistern()
     {
         set(WALL, ABYSSAL_ROCK, ABYSSAL_ROCK, VOIDSTONE_BRICKS);
-        set(PANEL, VOIDSTONE_POLISHED);
+        set(PANEL, VOIDSTONE_POLISHED, VOIDSTONE_POLISHED, VOIDSTONE_POLISHED, VOIDSTONE_ENGRAVED_GEAR);
         set(TRIM, VOIDSTONE_BRICKS_VERTICAL);
         set(FLOOR, VOIDSTONE_BRICKS, ABYSSAL_ROCK);
         set(FLOOR_TRIM, VOIDSTONE_POLISHED);
         set(CEILING, ABYSSAL_ROCK);
         set(COLUMN, VOIDSTONE_WEATHERED_PILLAR);
-        set(LAMP, Blocks.VERDANT_FROGLIGHT);
+        set(LAMP, CAGED_LAMP_TEAL);
         set(FLOOR_INLAY, VOIDSTONE_TILE);
         steps(ABYSSAL_ROCK_STAIRS, ABYSSAL_ROCK_SLAB);
         rails(ABYSSAL_ROCK_WALL);
@@ -254,14 +266,13 @@ public final class DaedalusPalette
     private void stairwell()
     {
         set(WALL, VOIDSTONE_BRICKS_VERTICAL, VOIDSTONE_BRICKS_VERTICAL, VOIDSTONE_POLISHED);
-        set(PANEL, VOIDSTONE_POLISHED);
-        set(TRIM, Blocks.CHISELED_POLISHED_BLACKSTONE);
+        set(PANEL, VOIDSTONE_POLISHED, VOIDSTONE_POLISHED, VOIDSTONE_POLISHED, VOIDSTONE_ENGRAVED_GEAR);
+        set(TRIM, IRON_INLAID_VOIDSTONE);
         set(FLOOR, VOIDSTONE_TILE);
         set(FLOOR_TRIM, VOIDSTONE_TILE_SMALL);
-        set(FLOOR_INLAY, Blocks.CHISELED_POLISHED_BLACKSTONE);
-        set(CARPET, vanilla("gray_carpet"));
+        set(CARPET, TEAL_RUG);
         set(CEILING, VOIDSTONE_POLISHED);
-        set(LAMP, Blocks.SEA_LANTERN);
+        set(LAMP, CAGED_LAMP_PALE);
         steps(VOIDSTONE_POLISHED_STAIRS, VOIDSTONE_POLISHED_SLAB);
         rails(VOIDSTONE_POLISHED_WALL);
     }

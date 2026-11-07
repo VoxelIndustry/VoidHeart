@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootSubProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoublePlantBlock;
@@ -52,6 +53,7 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
                 VoidHeartBlocks.CUT_LISTLESS_LEAD_STAIRS, VoidHeartBlocks.CUT_LISTLESS_LEAD_SLAB, VoidHeartBlocks.CUT_LISTLESS_LEAD_WALL);
 
         dropDepths();
+        dropDaedalusDecor();
 
         dropBundles(VoidHeartItems.AZURIUM_SHARD, VoidHeartBlocks.SMALL_AZURIUM_BUNDLE, VoidHeartBlocks.MEDIUM_AZURIUM_BUNDLE, VoidHeartBlocks.LARGE_AZURIUM_BUNDLE);
         dropBundles(VoidHeartItems.RUBRUM_SHARD, VoidHeartBlocks.SMALL_RUBRUM_BUNDLE, VoidHeartBlocks.MEDIUM_RUBRUM_BUNDLE, VoidHeartBlocks.LARGE_RUBRUM_BUNDLE);
@@ -80,6 +82,23 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
         this.dropSelf(VoidHeartBlocks.STILL_ANEMONE);
         this.dropSelf(VoidHeartBlocks.BARNACLE_CRUST);
         add(VoidHeartBlocks.GIANT_TUBE_WORMS, block -> createSinglePropConditionTable(block, DoublePlantBlock.HALF, DoubleBlockHalf.LOWER));
+    }
+
+    private void dropDaedalusDecor()
+    {
+        this.dropSelf(VoidHeartBlocks.BRONZE_INLAID_VOIDSTONE);
+        this.dropSelf(VoidHeartBlocks.IRON_INLAID_VOIDSTONE);
+        this.dropSelf(VoidHeartBlocks.VOIDSTONE_ENGRAVED_GEAR);
+        this.dropSelf(VoidHeartBlocks.VOIDSTONE_ENGRAVED_EYE);
+        this.dropSelf(VoidHeartBlocks.CAGED_LAMP_AMBER);
+        this.dropSelf(VoidHeartBlocks.CAGED_LAMP_TEAL);
+        this.dropSelf(VoidHeartBlocks.CAGED_LAMP_PALE);
+        this.dropSelf(VoidHeartBlocks.UMBRAL_RUG);
+        this.dropSelf(VoidHeartBlocks.VIOLET_RUG);
+        this.dropSelf(VoidHeartBlocks.TEAL_RUG);
+        // Like a vanilla bookshelf, only silk touch lifts it whole, and a ruined one has a single book left worth keeping
+        add(VoidHeartBlocks.VOIDSTONE_BOOKSHELF, block -> createSingleItemTableWithSilkTouch(block, Items.BOOK, ContextIntProviders.exactly(3)));
+        add(VoidHeartBlocks.RUINED_VOIDSTONE_BOOKSHELF, block -> createSingleItemTableWithSilkTouch(block, Items.BOOK, ContextIntProviders.exactly(1)));
     }
 
     private void dropBundles(Item shard, Block small, Block medium, Block large)

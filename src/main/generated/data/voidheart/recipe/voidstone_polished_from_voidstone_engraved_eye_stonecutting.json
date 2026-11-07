@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "voidheart:voidstone_engraved_eye",
+  "result": {
+    "id": "voidheart:voidstone_polished"
+  }
+}

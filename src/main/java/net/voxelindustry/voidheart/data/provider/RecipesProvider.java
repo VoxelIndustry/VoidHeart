@@ -14,11 +14,14 @@ import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.steamlayer.recipe.data.RecipeBaseBuilder;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
@@ -87,6 +90,65 @@ public class RecipesProvider extends FabricRecipeProvider
             });
         }
 
+        /**
+         * The rooms of the Daedalus are furnished with these, and players can build with them too. The ruined bookshelf is only found there.
+         */
+        private void buildDaedalusDecor()
+        {
+            inlaid(VoidHeartBlocks.BRONZE_INLAID_VOIDSTONE, Items.COPPER_INGOT);
+            inlaid(VoidHeartBlocks.IRON_INLAID_VOIDSTONE, Items.IRON_INGOT);
+
+            offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_ENGRAVED_GEAR, VoidHeartBlocks.VOIDSTONE_POLISHED);
+            offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_ENGRAVED_EYE, VoidHeartBlocks.VOIDSTONE_POLISHED);
+
+            cagedLamp(VoidHeartBlocks.CAGED_LAMP_AMBER, Items.GLOWSTONE);
+            cagedLamp(VoidHeartBlocks.CAGED_LAMP_TEAL, Items.SEA_LANTERN);
+            cagedLamp(VoidHeartBlocks.CAGED_LAMP_PALE, Items.END_ROD);
+
+            rug(VoidHeartBlocks.UMBRAL_RUG, DyeColor.BLACK);
+            rug(VoidHeartBlocks.VIOLET_RUG, DyeColor.PURPLE);
+            rug(VoidHeartBlocks.TEAL_RUG, DyeColor.CYAN);
+
+            shaped(RecipeCategory.BUILDING_BLOCKS, VoidHeartBlocks.VOIDSTONE_BOOKSHELF)
+                    .pattern("VVV").pattern("BBB").pattern("VVV")
+                    .define('V', VoidHeartBlocks.VOIDSTONE_POLISHED)
+                    .define('B', Items.BOOK)
+                    .unlockedBy(getHasName(VoidHeartBlocks.VOIDSTONE_POLISHED), has(VoidHeartBlocks.VOIDSTONE_POLISHED))
+                    .save(output);
+        }
+
+        private void inlaid(Block inlaid, Item metal)
+        {
+            shaped(RecipeCategory.BUILDING_BLOCKS, inlaid, 8)
+                    .pattern("VVV").pattern("VMV").pattern("VVV")
+                    .define('V', VoidHeartBlocks.VOIDSTONE_POLISHED)
+                    .define('M', metal)
+                    .unlockedBy(getHasName(VoidHeartBlocks.VOIDSTONE_POLISHED), has(VoidHeartBlocks.VOIDSTONE_POLISHED))
+                    .save(output);
+        }
+
+        private void cagedLamp(Block lamp, Item light)
+        {
+            shaped(RecipeCategory.BUILDING_BLOCKS, lamp, 2)
+                    .pattern("NVN").pattern("VLV").pattern("NVN")
+                    .define('N', Items.IRON_NUGGET)
+                    .define('V', VoidHeartBlocks.VOIDSTONE_POLISHED)
+                    .define('L', light)
+                    .unlockedBy(getHasName(light), has(light))
+                    .save(output);
+        }
+
+        private void rug(Block rug, DyeColor color)
+        {
+            var wool = Items.WOOL.pick(color);
+            shaped(RecipeCategory.DECORATIONS, rug, 3)
+                    .pattern("WAW")
+                    .define('W', wool)
+                    .define('A', Items.AMETHYST_SHARD)
+                    .unlockedBy(getHasName(wool), has(wool))
+                    .save(output);
+        }
+
         @Override
         public void buildRecipes()
         {
@@ -124,6 +186,8 @@ public class RecipesProvider extends FabricRecipeProvider
 
             smeltingResultFromBase(VoidHeartBlocks.VOIDSTONE_BRICKS_CRACKED, VoidHeartBlocks.VOIDSTONE_BRICKS);
             smeltingResultFromBase(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR);
+
+            buildDaedalusDecor();
 
             offerShatterForgeRecipe(Items.GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
             offerShatterForgeRecipe(Items.IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT);

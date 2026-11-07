@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "minecraft:amethyst_shard",
+    "W": "minecraft:cyan_wool"
+  },
+  "pattern": [
+    "WAW"
+  ],
+  "result": {
+    "count": 3,
+    "id": "voidheart:teal_rug"
+  }
+}

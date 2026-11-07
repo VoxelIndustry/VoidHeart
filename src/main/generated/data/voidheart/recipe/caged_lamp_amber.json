@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "L": "minecraft:glowstone",
+    "N": "minecraft:iron_nugget",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "NVN",
+    "VLV",
+    "NVN"
+  ],
+  "result": {
+    "count": 2,
+    "id": "voidheart:caged_lamp_amber"
+  }
+}

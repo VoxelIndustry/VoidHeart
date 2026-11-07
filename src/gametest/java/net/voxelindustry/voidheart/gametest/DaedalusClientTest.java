@@ -238,7 +238,7 @@ public class DaedalusClientTest implements FabricClientGameTest
             {
                 for (int x = minX; x < minX + 16; x++)
                 {
-                    var wanted = palette.state(canvas.raw(x, y, z), x, y, z);
+                    var wanted = palette.state(canvas.raw(x, y, z), y > 0 ? canvas.raw(x, y - 1, z) : 0, x, y, z);
                     var found = chunk.getBlockState(at.set(x, y, z));
                     if (nests.contains(at))
                     {
