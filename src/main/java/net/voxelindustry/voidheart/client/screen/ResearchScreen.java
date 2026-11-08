@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -1532,6 +1533,18 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     public void holdScene(int step)
     {
         sceneView.holdAtEndOf(step);
+    }
+
+    /** Every research description and item page as it would be shown, by key. */
+    public Map<String, String> describedTexts()
+    {
+        var texts = new TreeMap<String, String>();
+        tree.forEach((id, research) ->
+        {
+            texts.put(Research.descriptionKey(id), described(Research.descriptionKey(id)).getString());
+            research.unlocks().forEach(item -> texts.put(ResearchItemPage.pageKey(item), described(ResearchItemPage.pageKey(item)).getString()));
+        });
+        return texts;
     }
 
     public List<Identifier> shownNodes()
