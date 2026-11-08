@@ -242,6 +242,10 @@ public class KnowledgeColumnClientTest implements FabricClientGameTest
         context.waitTicks(3);
         context.takeScreenshot("column-page");
 
+        // Voidstone is found in the world, so the altar research that also makes it does not hide it
+        if (context.computeOnClient(client -> screen(client).conceals(id("voidstone"))))
+            throw new AssertionError("Voidstone should not be hidden behind the altar research");
+
         context.runOnClient(client -> client.player.closeContainer());
         context.waitFor(client -> client.gui.screen() == null);
     }

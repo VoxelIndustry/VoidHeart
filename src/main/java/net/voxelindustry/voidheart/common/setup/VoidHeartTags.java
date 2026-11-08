@@ -26,6 +26,11 @@ public class VoidHeartTags
 
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "pillar_place_instead_of_store"));
 
+    /**
+     * Items a player can come across in the world, so the research that also makes them never hides them.
+     */
+    public static final TagKey<Item> FOUND_IN_WORLD = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "found_in_world"));
+
     public static final TagKey<Item> KNOWLEDGE_FAINT = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/faint"));
     public static final TagKey<Item> KNOWLEDGE_LUCID = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/lucid"));
     public static final TagKey<Item> KNOWLEDGE_PROFOUND = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "knowledge/profound"));
