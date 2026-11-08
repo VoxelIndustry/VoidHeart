@@ -208,7 +208,8 @@ public class PlayerKnowledge
         // Strain beyond what the player bears lets the research run only as long as proxies carry it, knowledge still gathers for the rest
         int needed = Strain.proxiesNeeded(research.get().strain(), tolerance(), rules.proxyStrain());
         double covered = Strain.cover(proxies, needed, seconds).seconds();
-        var flow = KnowledgeMath.research(knowledge, cap(rules, tree), rate(rules, tree), cost - progress.getOrDefault(id, 0D), research.get().knowledgePerSecond(), covered);
+        double rate = rate(rules, tree);
+        var flow = KnowledgeMath.research(knowledge, cap(rules, tree), rate, cost - progress.getOrDefault(id, 0D), research.get().speed(rate), covered);
 
         knowledge = flow.knowledge();
         progress.put(id, cost - flow.remaining());

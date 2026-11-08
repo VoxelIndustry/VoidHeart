@@ -279,6 +279,9 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             });
             context.waitTicks(30);
             context.takeScreenshot("research-ui-all-read");
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            hover(context, new int[] { 2, 2 });
+            captureSizes(context, "all-read");
 
             context.runOnClient(client -> client.player.closeContainer());
             context.waitFor(client -> client.gui.screen() == null);
