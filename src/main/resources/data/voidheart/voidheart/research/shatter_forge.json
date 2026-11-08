@@ -12,10 +12,12 @@
   ],
   "unlocks": [
     "voidheart:shatter_forge",
-    "voidheart:void_monolith"
+    "voidheart:void_monolith",
+    "voidheart:void_conduit"
   ],
   "recipes": [
     "voidheart:altar/shatter_forge",
-    "voidheart:void_monolith"
+    "voidheart:void_monolith",
+    "voidheart:void_conduit"
   ]
 }

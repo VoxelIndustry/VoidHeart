@@ -1,7 +1,7 @@
 package net.voxelindustry.voidheart.client.screen;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.resources.language.I18n;
+import net.minecraft.locale.Language;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -118,7 +118,7 @@ final class ResearchText
     static Component of(String key, Knowing knowing)
     {
         MutableComponent built = Component.empty();
-        for (var segment : parse(I18n.get(key)))
+        for (var segment : parse(Language.getInstance().getOrDefault(key)))
         {
             if (segment.research() != null)
                 built.append(mention(Identifier.fromNamespaceAndPath(MODID, segment.research()), knowing));

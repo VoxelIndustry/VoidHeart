@@ -41,6 +41,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
     private static final Identifier ATHANOR    = id("tria_prima");
     private static final Identifier ARCHIVE    = id("archive_expansion");
     private static final Identifier HUSBANDRY  = id("void_husbandry");
+    private static final Identifier VAST       = id("vast_archive");
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -230,6 +231,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
             var data = knowledge(minecraft);
             data.addInsights(20);
             data.reveal(HUSBANDRY, Knowledge.tree(minecraft.registryAccess()));
+            data.reveal(VAST, Knowledge.tree(minecraft.registryAccess()));
         });
         context.waitTicks(30);
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
@@ -266,7 +268,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
     }
 
     /**
-     * A page's mention of a research leads back to the map, on that research. Void Husbandry is revealed but unfinished here, so it shows with its lock.
+     * A page's mention of a research leads back to the map, on that research. Vast Archive is revealed but unfinished here, so it shows with its lock.
      */
     private static void assertMentions(ClientGameTestContext context)
     {
@@ -283,11 +285,18 @@ public class ResearchSceneClientTest implements FabricClientGameTest
         context.takeScreenshot("research-page-item-link");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(3);
-        click(context, context.computeOnClient(client -> screen(client).pageMentionPosition(HUSBANDRY).orElseThrow()));
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(3);
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(3);
+        click(context, position(context, ARCHIVE));
+        click(context, context.computeOnClient(client -> screen(client).unlockPosition(0)));
+        hover(context, new int[] { 2, 2 });
+        click(context, context.computeOnClient(client -> screen(client).pageMentionPosition(VAST).orElseThrow()));
         hover(context, new int[] { 2, 2 });
         if (context.computeOnClient(client -> screen(client).pageItem()) != null)
             throw new AssertionError("A click on a mention should leave the pages for the map");
-        if (!HUSBANDRY.equals(context.computeOnClient(client -> screen(client).selected())))
+        if (!VAST.equals(context.computeOnClient(client -> screen(client).selected())))
             throw new AssertionError("A click on a mention should select the research it names");
         context.takeScreenshot("research-page-mention-highlight");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);

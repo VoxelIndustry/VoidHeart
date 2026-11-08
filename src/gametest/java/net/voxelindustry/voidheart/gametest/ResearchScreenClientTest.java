@@ -36,6 +36,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
     private static final Identifier HUSBANDRY   = id("void_husbandry");
     private static final Identifier VAST        = id("vast_archive");
     private static final Identifier PORTAL      = id("portal_flexion");
+    private static final Identifier ARMILLARY   = id("armillary");
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -213,6 +214,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
                 var data = knowledge(minecraft);
                 data.grant(FAR_SIGHT);
                 data.grant(FORGE);
+                data.grant(ARMILLARY);
                 data.grant(PORTAL);
                 data.grant(HUSBANDRY);
                 data.grant(VAST);
@@ -258,6 +260,13 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             });
             context.waitTicks(30);
             context.takeScreenshot("research-ui-all-read");
+
+            // Every text read on the map or a page, so a stray % or a missing key shows here rather than in play
+            context.computeOnClient(client -> screen(client).describedTexts()).forEach((key, text) ->
+            {
+                if (text.contains("Format error") || text.equals(key) || text.contains("((") || text.contains("[[") || text.contains("{{"))
+                    throw new AssertionError(key + " shows as: " + text);
+            });
 
             context.runOnClient(client -> client.player.closeContainer());
             context.waitFor(client -> client.gui.screen() == null);
