@@ -58,6 +58,7 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalLinkCriterio
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeRuneParticleEffect;
 import net.voxelindustry.voidheart.common.content.tormenter.TormenterSoulHarvest;
+import net.voxelindustry.voidheart.common.content.essence.SufferingHarvest;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
@@ -151,6 +152,7 @@ public class VoidHeart implements ModInitializer
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(TormenterSoulHarvest::onDeath);
+        ServerLivingEntityEvents.AFTER_DEATH.register(SufferingHarvest::onDeath);
         // A killing blow lands too, though the damage event skips it
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damage, blocked) ->
         {

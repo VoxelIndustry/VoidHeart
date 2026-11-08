@@ -1,5 +1,64 @@
 {
   "variants": {
-    "": { "model": "voidheart:block/ravenous_storage" }
+    "fill=0,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_0"
+    },
+    "fill=0,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_0"
+    },
+    "fill=1,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_1"
+    },
+    "fill=1,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_1"
+    },
+    "fill=2,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_2"
+    },
+    "fill=2,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_2"
+    },
+    "fill=3,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_3"
+    },
+    "fill=3,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_3"
+    },
+    "fill=4,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_4"
+    },
+    "fill=4,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_4"
+    },
+    "fill=5,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_5"
+    },
+    "fill=5,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_5"
+    },
+    "fill=6,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_6"
+    },
+    "fill=6,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_6"
+    },
+    "fill=7,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_7"
+    },
+    "fill=7,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_7"
+    },
+    "fill=8,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_8"
+    },
+    "fill=8,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_8"
+    },
+    "fill=9,part=base": {
+      "model": "voidheart:block/ravenous_storage_base_9"
+    },
+    "fill=9,part=pillar": {
+      "model": "voidheart:block/ravenous_storage_pillar_9"
+    }
   }
 }

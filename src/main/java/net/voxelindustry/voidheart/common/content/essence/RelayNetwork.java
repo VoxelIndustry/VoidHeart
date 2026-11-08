@@ -259,7 +259,7 @@ public final class RelayNetwork
     /**
      * Visits the block entities of loaded chunks within range of a block center.
      */
-    static void forEachTileInRange(Level level, BlockPos origin, int range, Consumer<BlockEntity> action)
+    public static void forEachTileInRange(Level level, BlockPos origin, int range, Consumer<BlockEntity> action)
     {
         var center = Vec3.atCenterOf(origin);
         for (var chunkX = (origin.getX() - range) >> 4; chunkX <= (origin.getX() + range) >> 4; chunkX++)

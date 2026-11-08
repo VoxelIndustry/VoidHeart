@@ -22,6 +22,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.essence.SufferingHarvest;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +71,7 @@ public class MalignantTormenterTile extends TileBase
             return;
 
         dropLoot(level, mob);
+        SufferingHarvest.emit(level, worldPosition, SufferingHarvest.yieldOf(mob.getMaxHealth()));
         scream(level, mob);
     }
 

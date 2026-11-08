@@ -36,6 +36,13 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
     private long searchBackoff = 0L;
 
     /**
+     * Where the essence last drawn without harvesting came from, a dying mob or a tormenter, and the game time its
+     * strands retract after.
+     */
+    private BlockPos drawSource;
+    private long     drawUntil;
+
+    /**
      * Game time until which a Shatter Forge needs more essence than this collector holds, relays then show it being
      * fed from storages.
      */
@@ -46,6 +53,7 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
     ////////////
 
     private static final int HARVEST_STRAND_TICKS = 20;
+    public static final  int DRAW_STRAND_TICKS    = 30;
 
     private BlockPos displayedHarvestPos;
     private int harvestStrandTicks;
@@ -64,7 +72,7 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
             return;
         }
 
-        if (collector.storage.isUnattuned())
+        if (collector.storage.isUnattuned() || collector.storage.type().consumables() == null)
             return;
 
         // Too full to take in another block: stop harvesting until essence is drawn
@@ -103,11 +111,12 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
     private void tickHarvestStrands()
     {
         previousHarvestStrandTicks = harvestStrandTicks;
-        if (harvestingPos != BlockPos.ZERO)
+        var source = harvestingPos != BlockPos.ZERO ? harvestingPos : isDrawing() ? drawSource : null;
+        if (source != null)
         {
-            if (!harvestingPos.equals(displayedHarvestPos))
+            if (!source.equals(displayedHarvestPos))
             {
-                displayedHarvestPos = harvestingPos;
+                displayedHarvestPos = source;
                 harvestStrandTicks = previousHarvestStrandTicks = 0;
             }
             harvestStrandTicks = Math.min(HARVEST_STRAND_TICKS, harvestStrandTicks + 1);
@@ -184,7 +193,31 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
 
     private boolean isBlockCollectable(BlockPos pos)
     {
-        return level.getBlockState(pos).is(storage.type().consumables());
+        var consumables = storage.type().consumables();
+        return consumables != null && level.getBlockState(pos).is(consumables);
+    }
+
+    /**
+     * Takes in essence that did not come from a harvested block, its strands reaching into the source for a moment.
+     *
+     * @return amount actually taken in
+     */
+    public int draw(EssenceType type, int amount, BlockPos source)
+    {
+        var drawn = storage.fill(type, amount);
+        if (drawn <= 0)
+            return 0;
+
+        drawSource = source.immutable();
+        drawUntil = level.getGameTime() + DRAW_STRAND_TICKS;
+        setChanged();
+        sync();
+        return drawn;
+    }
+
+    public boolean isDrawing()
+    {
+        return drawSource != null && level != null && level.getGameTime() < drawUntil;
     }
 
     @Override
@@ -197,6 +230,8 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
         var savedHarvestingPos = nbt.getLongOr("harvestingPos", 0L);
         harvestingPos = savedHarvestingPos == 0L ? BlockPos.ZERO : BlockPos.of(savedHarvestingPos);
         storage = nbt.read("storage", EssenceStorage.CODEC).orElse(storage);
+        drawSource = nbt.read("drawSource", BlockPos.CODEC).orElse(null);
+        drawUntil = nbt.getLongOr("drawUntil", 0L);
     }
 
     @Override
@@ -207,6 +242,11 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
         nbt.putLong("harvestingTickStart", harvestingTickStart);
         nbt.putLong("harvestingPos", harvestingPos.asLong());
         nbt.store("storage", EssenceStorage.CODEC, storage);
+        if (drawSource != null)
+        {
+            nbt.store("drawSource", BlockPos.CODEC, drawSource);
+            nbt.putLong("drawUntil", drawUntil);
+        }
     }
 
     @Override
@@ -224,7 +264,7 @@ public class RavenousCollectorTile extends TileBase implements GeoBlockEntity
         var controller = state.controller();
         if (state.isCurrentAnimation(COLLECTING) && !controller.hasAnimationFinished())
             return PlayState.CONTINUE;
-        if (!state.animatable().isHarvesting())
+        if (!state.animatable().isHarvesting() && !state.animatable().isDrawing())
             return PlayState.STOP;
 
         controller.reset();

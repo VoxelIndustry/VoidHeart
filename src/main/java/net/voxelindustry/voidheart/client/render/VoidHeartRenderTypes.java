@@ -29,6 +29,18 @@ public class VoidHeartRenderTypes
     public static final RenderType GLOW = RenderType.create(MODID + "_glow", RenderSetup.builder(GLOW_PIPELINE).createRenderSetup());
 
     /**
+     * Same glow, seen through terrain: for what is hidden by definition, such as a relay link a wall blocks.
+     */
+    private static final RenderPipeline GLOW_THROUGH_PIPELINE = RenderPipeline.builder(RenderPipelines.LIGHTNING_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/glow_through"))
+            .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+            .withCull(false)
+            .build();
+
+    public static final RenderType GLOW_THROUGH = RenderType.create(MODID + "_glow_through", RenderSetup.builder(GLOW_THROUGH_PIPELINE).createRenderSetup());
+
+    /**
      * Same quads blended over what is behind instead of added to it, so their hue survives on bright backgrounds.
      */
     private static final RenderPipeline MARKER_PIPELINE = RenderPipeline.builder(RenderPipelines.LIGHTNING_SNIPPET)
