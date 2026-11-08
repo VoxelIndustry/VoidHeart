@@ -38,6 +38,7 @@ import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryMe
 import net.voxelindustry.voidheart.common.content.research.RecipeSheet;
 import net.voxelindustry.voidheart.common.content.research.Research;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 import org.joml.Vector2i;
 
 import java.util.ArrayDeque;
@@ -540,7 +541,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     private Component described(String key)
     {
-        return ResearchText.of(key, new ResearchText.Knowing(tree, id -> stateOf(id, tree.get(id)), this::ownerOf, this::textValue));
+        return ResearchText.of(key, new ResearchText.Knowing(tree, id -> stateOf(id, tree.get(id)), item -> foundInWorld(item) ? Optional.empty() : ownerOf(item), this::textValue));
     }
 
     private String textValue(String name)
@@ -581,8 +582,15 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         };
     }
 
+    private static boolean foundInWorld(Identifier item)
+    {
+        return BuiltInRegistries.ITEM.getValue(item).builtInRegistryHolder().is(VoidHeartTags.FOUND_IN_WORLD);
+    }
+
     private Optional<Constellation> concealedIn(Identifier item)
     {
+        if (foundInWorld(item))
+            return Optional.empty();
         return ownerOf(item).filter(owner -> stateOf(owner, tree.get(owner)) == NodeState.HIDDEN).map(owner -> tree.get(owner).constellation());
     }
 
@@ -1600,6 +1608,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     public int[] pageSlotPosition(Identifier item)
     {
         return pages.peek().slotPosition(item);
+    }
+
+    public boolean conceals(Identifier item)
+    {
+        return concealedIn(item).isPresent();
     }
 
     public List<int[]> pageRiteIconPositions()
