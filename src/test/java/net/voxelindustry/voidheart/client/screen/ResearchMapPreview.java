@@ -38,9 +38,6 @@ class ResearchMapPreview
         folder.mkdirs();
 
         var shipped = ResearchTrees.shipped();
-        var rebalanced = new TreeMap<>(shipped);
-        rebalanced.put(ResearchTrees.id("armillary"), ResearchTrees.requiring(shipped.get(ResearchTrees.id("armillary")), "shatter_forge"));
-        rebalanced.put(ResearchTrees.id("portal_flexion"), ResearchTrees.requiring(shipped.get(ResearchTrees.id("portal_flexion")), "armillary"));
         var grown = new TreeMap<>(shipped);
         grown.put(ResearchTrees.id("void_lens"), ResearchTrees.research(Constellation.ARTIFICES, 3, "far_sight"));
 
@@ -48,7 +45,6 @@ class ResearchMapPreview
         {
             String eye = ResearchMapView.eyeScale(height) == 1 ? "_small_eye" : "_large_eye";
             draw(shipped, height, new File(folder, "shipped" + eye + ".png"));
-            draw(rebalanced, height, new File(folder, "rebalanced" + eye + ".png"));
             draw(grown, height, new File(folder, "grown" + eye + ".png"));
         }
     }
