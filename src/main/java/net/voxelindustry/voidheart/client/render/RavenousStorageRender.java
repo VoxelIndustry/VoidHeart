@@ -83,28 +83,34 @@ public class RavenousStorageRender implements BlockEntityRenderer<RavenousStorag
         if (!state.shown)
             return;
 
-        collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(VoidBeamRender.VEIL_TEXTURE, true), (pose, buffer) ->
-        {
-            var top = Mth.lerp(state.fill, EMPTY_TOP, FULL_TOP);
-            var phase = (state.seed & 0xFF) / 40F;
-            // The surface of the body heaves slowly, the core reaches a little above it
-            var surface = top + (state.fill > 0 ? SURFACE_WAVE * Mth.sin(state.time * SURFACE_SPEED + phase) : 0);
-            var v = state.time * SCROLL;
+        collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(VoidBeamRender.VEIL_TEXTURE, true),
+                (pose, buffer) -> essence(pose, buffer, BOTTOM, Mth.lerp(state.fill, EMPTY_TOP, FULL_TOP), FULL_TOP, state.fill, state.color, state.time, state.seed));
+    }
 
-            box(pose, buffer, HALO_HALF, surface, ARGB.color(Math.round(HALO_ALPHA * 255), state.color), v * 0.5F);
-            box(pose, buffer, BODY_HALF, surface, ARGB.color(Math.round(BODY_ALPHA * 255), state.color), v);
-            var core = ARGB.srgbLerp(CORE_WHITE, state.color, 0xFFFFFF);
-            box(pose, buffer, CORE_HALF, Math.min(FULL_TOP, surface + CORE_HALF), ARGB.color(Math.round(CORE_ALPHA * 255), core), v * 1.5F);
-        });
+    /**
+     * A column of essence centered on the block, from {@code bottom} up to about {@code top}: a bright core in a
+     * translucent body, in a faint halo, its surface heaving. The core never passes {@code ceiling}.
+     */
+    static void essence(PoseStack.Pose pose, VertexConsumer buffer, float bottom, float top, float ceiling, float fill, int color, float time, long seed)
+    {
+        var phase = (seed & 0xFF) / 40F;
+        // The surface of the body heaves slowly, the core reaches a little above it
+        var surface = top + (fill > 0 ? SURFACE_WAVE * Mth.sin(time * SURFACE_SPEED + phase) : 0);
+        var v = time * SCROLL;
+
+        box(pose, buffer, HALO_HALF, bottom, surface, ARGB.color(Math.round(HALO_ALPHA * 255), color), v * 0.5F);
+        box(pose, buffer, BODY_HALF, bottom, surface, ARGB.color(Math.round(BODY_ALPHA * 255), color), v);
+        var core = ARGB.srgbLerp(CORE_WHITE, color, 0xFFFFFF);
+        box(pose, buffer, CORE_HALF, bottom, Math.min(ceiling, surface + CORE_HALF), ARGB.color(Math.round(CORE_ALPHA * 255), core), v * 1.5F);
     }
 
     /**
      * Box centered on the block, from the rim up, its sides scrolling upward. Its bottom sits on the rim and is left out.
      */
-    private static void box(PoseStack.Pose pose, VertexConsumer buffer, float half, float top, int color, float scroll)
+    private static void box(PoseStack.Pose pose, VertexConsumer buffer, float half, float bottom, float top, int color, float scroll)
     {
         float x0 = 0.5F - half, x1 = 0.5F + half, z0 = 0.5F - half, z1 = 0.5F + half;
-        float y0 = BOTTOM, y1 = top;
+        float y0 = bottom, y1 = top;
         float v0 = -scroll, v1 = (y1 - y0) - scroll;
 
         quad(pose, buffer, color, Direction.NORTH, x1, y1, z0, x1, y0, z0, x0, y0, z0, x0, y1, z0, v0, v1);

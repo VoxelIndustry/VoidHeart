@@ -1,5 +1,236 @@
 {
   "variants": {
-    "": { "model": "voidheart:block/ravenous_storage_matrix" }
+    "fill=0,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=0,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_0"
+    },
+    "fill=0,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_0",
+      "x": 180
+    },
+    "fill=0,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_0",
+      "x": 90
+    },
+    "fill=0,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_0",
+      "x": 90,
+      "y": 90
+    },
+    "fill=0,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_0",
+      "x": 90,
+      "y": 180
+    },
+    "fill=0,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_0",
+      "x": 90,
+      "y": 270
+    },
+    "fill=1,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=1,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_1"
+    },
+    "fill=1,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_1",
+      "x": 180
+    },
+    "fill=1,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_1",
+      "x": 90
+    },
+    "fill=1,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_1",
+      "x": 90,
+      "y": 90
+    },
+    "fill=1,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_1",
+      "x": 90,
+      "y": 180
+    },
+    "fill=1,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_1",
+      "x": 90,
+      "y": 270
+    },
+    "fill=2,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=2,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_2"
+    },
+    "fill=2,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_2",
+      "x": 180
+    },
+    "fill=2,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_2",
+      "x": 90
+    },
+    "fill=2,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_2",
+      "x": 90,
+      "y": 90
+    },
+    "fill=2,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_2",
+      "x": 90,
+      "y": 180
+    },
+    "fill=2,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_2",
+      "x": 90,
+      "y": 270
+    },
+    "fill=3,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=3,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_3"
+    },
+    "fill=3,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_3",
+      "x": 180
+    },
+    "fill=3,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_3",
+      "x": 90
+    },
+    "fill=3,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_3",
+      "x": 90,
+      "y": 90
+    },
+    "fill=3,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_3",
+      "x": 90,
+      "y": 180
+    },
+    "fill=3,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_3",
+      "x": 90,
+      "y": 270
+    },
+    "fill=4,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=4,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_4"
+    },
+    "fill=4,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_4",
+      "x": 180
+    },
+    "fill=4,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_4",
+      "x": 90
+    },
+    "fill=4,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_4",
+      "x": 90,
+      "y": 90
+    },
+    "fill=4,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_4",
+      "x": 90,
+      "y": 180
+    },
+    "fill=4,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_4",
+      "x": 90,
+      "y": 270
+    },
+    "fill=5,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=5,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_5"
+    },
+    "fill=5,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_5",
+      "x": 180
+    },
+    "fill=5,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_5",
+      "x": 90
+    },
+    "fill=5,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_5",
+      "x": 90,
+      "y": 90
+    },
+    "fill=5,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_5",
+      "x": 90,
+      "y": 180
+    },
+    "fill=5,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_5",
+      "x": 90,
+      "y": 270
+    },
+    "fill=6,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=6,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_6"
+    },
+    "fill=6,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_6",
+      "x": 180
+    },
+    "fill=6,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_6",
+      "x": 90
+    },
+    "fill=6,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_6",
+      "x": 90,
+      "y": 90
+    },
+    "fill=6,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_6",
+      "x": 90,
+      "y": 180
+    },
+    "fill=6,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_6",
+      "x": 90,
+      "y": 270
+    },
+    "fill=7,part=base": {
+      "model": "voidheart:block/ravenous_storage_matrix"
+    },
+    "fill=7,part=pillar_top": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_7"
+    },
+    "fill=7,part=pillar_bottom": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_7",
+      "x": 180
+    },
+    "fill=7,part=pillar_north": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_7",
+      "x": 90
+    },
+    "fill=7,part=pillar_east": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_7",
+      "x": 90,
+      "y": 90
+    },
+    "fill=7,part=pillar_south": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_7",
+      "x": 90,
+      "y": 180
+    },
+    "fill=7,part=pillar_west": {
+      "model": "voidheart:block/ravenous_storage_matrix_column_7",
+      "x": 90,
+      "y": 270
+    }
   }
 }

@@ -132,12 +132,22 @@ public class RavenousRelayTile extends TileBase
         {
             var point = from.lerp(to, i / (double) steps);
             cursor.set(point.x, point.y, point.z);
-            if (cursor.equals(worldPosition) || cursor.equals(target))
+            if (cursor.equals(worldPosition) || cursor.equals(target) || isPartOf(level.getBlockState(cursor), cursor, target))
                 continue;
             if (!level.getBlockState(cursor).getCollisionShape(level, cursor).isEmpty())
                 return false;
         }
         return true;
+    }
+
+    /**
+     * The pillars of a storage and the columns of a matrix belong to the block they rise from, so they never hide it.
+     */
+    private static boolean isPartOf(BlockState state, BlockPos pos, BlockPos target)
+    {
+        if (state.getBlock() instanceof RavenousStorageBlock)
+            return state.getValue(RavenousStorageBlock.PART) == RavenousStorageBlock.RavenousStoragePart.PILLAR && pos.below().equals(target);
+        return RavenousStorageMatrixBlock.isColumnOf(state, pos, target);
     }
 
     /**

@@ -25,6 +25,10 @@ import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock.RavenousStoragePart;
+import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock.RavenousStorageMatrixPart;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.essence.StorageFill;
 import net.voxelindustry.voidheart.common.content.essence.SufferingHarvest;
@@ -76,6 +80,7 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
             showStorageRow(context, server);
             showItems(context, server);
             checkStorageBreaksWhole(server);
+            checkMatrix(context, server);
         }
     }
 
@@ -371,6 +376,7 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
             var inventory = player(minecraft).getInventory();
             inventory.setItem(0, new ItemStack(VoidHeartBlocks.RAVENOUS_RELAY));
             inventory.setItem(1, new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE));
+            inventory.setItem(2, new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX));
             inventory.setSelectedSlot(0);
         });
         aimFrom(context, server, ROW_X + 3.5, FEET + 3, -8, ROW_X + 3.5, FEET + 3, 10, 15);
@@ -378,6 +384,10 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
         context.getInput().pressKey(InputConstants.KEY_2);
         context.waitTicks(15);
         context.takeScreenshot("essence-storage-in-hand");
+        context.getInput().pressKey(InputConstants.KEY_3);
+        context.waitTicks(15);
+        context.takeScreenshot("essence-matrix-in-hand");
+        server.runOnServer(minecraft -> player(minecraft).getInventory().setSelectedSlot(0));
     }
 
     private static void checkStorageBreaksWhole(TestServerContext server)
@@ -409,6 +419,135 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         });
         server.runCommand("kill @e[type=item]");
+    }
+
+    private static final BlockPos MATRIX_GROUND = new BlockPos(90, FEET - 1, 0);
+    private static final BlockPos MATRIX        = MATRIX_GROUND.above(2);
+    private static final BlockPos MATRIX_RELAY  = MATRIX.east(5);
+    private static final BlockPos MATRIX_SOURCE = MATRIX.east(8);
+
+    /**
+     * A core with a column on each face, placed by a real click, its slots each filling the column of their face.
+     */
+    private static void checkMatrix(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var inventory = player(minecraft).getInventory();
+            inventory.setSelectedSlot(0);
+            inventory.setItem(0, new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX));
+        });
+        aimFrom(context, server, MATRIX.getX() + 0.5, FEET + 1, MATRIX.getZ() - 0.8, MATRIX.getX() + 0.5, FEET, MATRIX.getZ() + 0.5, 5);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(5);
+
+        server.runOnServer(minecraft ->
+        {
+            var level = level(minecraft);
+            var core = level.getBlockState(MATRIX);
+            expect(core.is(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX) && core.getValue(RavenousStorageMatrixBlock.PART) == RavenousStorageMatrixPart.BASE,
+                    "the matrix core is not one block above the ground clicked, found " + core);
+            for (var face : RavenousStorageMatrixBlock.FACES)
+            {
+                var column = level.getBlockState(MATRIX.relative(face));
+                expect(column.is(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX) && column.getValue(RavenousStorageMatrixBlock.PART) == RavenousStorageMatrixPart.of(face),
+                        "no column on the " + face + " face of the matrix, found " + column);
+                expect(level.getBlockEntity(MATRIX.relative(face)) == null, "the " + face + " column has a block entity of its own");
+            }
+            player(minecraft).getInventory().setItem(0, ItemStack.EMPTY);
+
+            // Without room for all six columns, it does not place
+            var player = player(minecraft);
+            var blocked = MATRIX.west(4);
+            level.setBlockAndUpdate(blocked.east(), Blocks.STONE.defaultBlockState());
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX));
+            useOn(player, blocked.below(2));
+            expect(!level.getBlockState(blocked).is(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX), "a matrix was placed with no room for a column");
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            level.setBlockAndUpdate(blocked.east(), Blocks.AIR.defaultBlockState());
+
+            // Each slot fills the column of its face, in slot order
+            var matrix = matrixTile(minecraft);
+            matrix.receive(EssenceRegistry.STILLNESS, RavenousStorageMatrixTile.CAPACITY);
+            matrix.receive(EssenceRegistry.FIERY, RavenousStorageMatrixTile.CAPACITY / 4);
+            matrix.receive(EssenceRegistry.SUFFERING, RavenousStorageMatrixTile.CAPACITY / 2);
+            matrix.receive(EssenceRegistry.CONTRAVOID, RavenousStorageMatrixTile.CAPACITY * 3 / 4);
+            int[] amounts = {RavenousStorageMatrixTile.CAPACITY, RavenousStorageMatrixTile.CAPACITY / 4, RavenousStorageMatrixTile.CAPACITY / 2,
+                    RavenousStorageMatrixTile.CAPACITY * 3 / 4, 0, 0};
+            for (int slot = 0; slot < amounts.length; slot++)
+            {
+                var face = RavenousStorageMatrixBlock.FACES[slot];
+                var expected = StorageFill.fillOf(amounts[slot], RavenousStorageMatrixTile.CAPACITY, StorageFill.MATRIX_MAX_FILL);
+                var shown = level.getBlockState(MATRIX.relative(face)).getValue(RavenousStorageMatrixBlock.FILL);
+                expect(shown == expected, "the " + face + " column shows fill " + shown + ", expected " + expected);
+            }
+
+            // Every block of it outlines the whole matrix, reaching as far as the full column on top
+            var coreOutline = level.getBlockState(MATRIX).getShape(level, MATRIX).bounds();
+            expect(near(coreOutline.maxY, 2), "the core outline spans " + coreOutline);
+            for (var face : RavenousStorageMatrixBlock.FACES)
+            {
+                var beside = MATRIX.relative(face);
+                var outline = level.getBlockState(beside).getShape(level, beside).bounds().move(face.getStepX(), face.getStepY(), face.getStepZ());
+                expect(outline.equals(coreOutline), "the " + face + " column outlines " + outline + " instead of the whole matrix " + coreOutline);
+            }
+
+            // A relay in line with a column still reaches the core behind it
+            level.setBlockAndUpdate(MATRIX_RELAY, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
+            expect(RavenousRelayTile.scanLinks(level, MATRIX_RELAY).receivers().contains(MATRIX), "a relay does not see the matrix core past its own column");
+            level.setBlockAndUpdate(MATRIX_SOURCE, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
+            var source = collector(minecraft, MATRIX_SOURCE).storage();
+            source.attune(EssenceRegistry.FIERY);
+            source.fill(EssenceRegistry.FIERY, RavenousCollectorTile.CAPACITY);
+        });
+
+        waitFor(context, server, 200, "the relay carried no essence into the matrix",
+                minecraft -> matrixTile(minecraft).amountOf(EssenceRegistry.FIERY) > RavenousStorageMatrixTile.CAPACITY / 4);
+        context.runOnClient(minecraft ->
+        {
+            if (!(minecraft.level.getBlockEntity(MATRIX) instanceof RavenousStorageMatrixTile tile) || tile.amountOf(EssenceRegistry.SUFFERING) == 0)
+                throw new AssertionError("the client does not see the essence the matrix holds");
+        });
+
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, MATRIX.getX() + 3.5, FEET + 2.5, MATRIX.getZ() + 3.5, MATRIX.getX() + 0.5, MATRIX.getY() + 0.5, MATRIX.getZ() + 0.5, 10);
+        context.takeScreenshot("matrix-south-east");
+        aimFrom(context, server, MATRIX.getX() - 3, FEET + 0.5, MATRIX.getZ() - 3.5, MATRIX.getX() + 0.5, MATRIX.getY() + 0.5, MATRIX.getZ() + 0.5, 5);
+        context.takeScreenshot("matrix-north-west");
+        aimFrom(context, server, MATRIX.getX() + 4, FEET + 0.5, MATRIX.getZ() - 1, MATRIX.getX() + 0.5, MATRIX.getY() + 0.5, MATRIX.getZ() + 0.5, 5);
+        context.takeScreenshot("matrix-relay");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, MATRIX.getX() + 0.5, FEET + 0.2, MATRIX.getZ() - 2.6, MATRIX.getX() + 0.5, MATRIX.getY() + 0.4, MATRIX.getZ() - 0.6, 5);
+        context.takeScreenshot("matrix-selection");
+
+        // Breaking a column breaks the core, which drops the matrix with its essence
+        server.runOnServer(minecraft ->
+        {
+            var level = level(minecraft);
+            var player = player(minecraft);
+            var held = matrixTile(minecraft).storage().copy();
+            player.setGameMode(GameType.SURVIVAL);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+            player.gameMode.destroyBlock(MATRIX.north());
+            expect(level.getBlockState(MATRIX).isAir(), "breaking a column left the core");
+            for (var face : RavenousStorageMatrixBlock.FACES)
+                expect(level.getBlockState(MATRIX.relative(face)).isAir(), "breaking a column left the " + face + " column");
+            var drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(MATRIX).inflate(3), item -> item.getItem().is(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX.asItem()));
+            expect(drops.size() == 1, "breaking a column dropped " + drops.size() + " matrices");
+            var stored = drops.getFirst().getItem().get(VoidHeartDataComponents.MULTI_ESSENCE_STORAGE);
+            expect(stored != null && stored.amountOf(EssenceRegistry.SUFFERING) == held.amountOf(EssenceRegistry.SUFFERING)
+                    && stored.amountOf(EssenceRegistry.STILLNESS) == held.amountOf(EssenceRegistry.STILLNESS), "the dropped matrix lost its essence");
+            player.setGameMode(GameType.CREATIVE);
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        });
+        server.runCommand("kill @e[type=item]");
+    }
+
+    private static RavenousStorageMatrixTile matrixTile(MinecraftServer minecraft)
+    {
+        if (level(minecraft).getBlockEntity(MATRIX) instanceof RavenousStorageMatrixTile tile)
+            return tile;
+        throw new AssertionError("No matrix core at " + MATRIX);
     }
 
     private static void placeStorage(ServerLevel level, BlockPos pos, EssenceStorage stored)

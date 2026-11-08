@@ -91,6 +91,7 @@ import net.voxelindustry.voidheart.client.render.VoidLoomRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeRepositoryRender;
 import net.voxelindustry.voidheart.client.render.RavenousRelayRender;
 import net.voxelindustry.voidheart.client.render.RavenousStorageRender;
+import net.voxelindustry.voidheart.client.render.RavenousStorageMatrixRender;
 import net.voxelindustry.voidheart.client.render.RelayLinkPreviewRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeColumnOutline;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterRender;
@@ -166,6 +167,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.AFTER_BLOCK_OUTLINE_EXTRACTION.register(KnowledgeColumnOutline::afterExtraction);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE, RavenousStorageRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE_MATRIX, RavenousStorageMatrixRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.MALIGNANT_TORMENTER, MalignantTormenterRender::new);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "malignant_tormenter"), MalignantTormenterItemRender.Unbaked.MAP_CODEC);
         BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_COLUMN, KnowledgeColumnRender::new);

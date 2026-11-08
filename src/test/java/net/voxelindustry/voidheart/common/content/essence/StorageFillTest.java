@@ -39,4 +39,13 @@ class StorageFillTest
         assertThat(StorageFill.pillarTop(0)).isGreaterThan(12);
         assertThat(StorageFill.pillarTop(StorageFill.MAX_FILL)).isEqualTo(32);
     }
+
+    @Test
+    void matrixColumnsFillTheirNeighbourExactly()
+    {
+        assertThat(StorageFill.fillOf(1, 32_000, StorageFill.MATRIX_MAX_FILL)).isEqualTo(1);
+        assertThat(StorageFill.fillOf(32_000, 32_000, StorageFill.MATRIX_MAX_FILL)).isEqualTo(StorageFill.MATRIX_MAX_FILL);
+        assertThat(StorageFill.matrixColumnLength(0)).isPositive();
+        assertThat(StorageFill.matrixColumnLength(StorageFill.MATRIX_MAX_FILL)).isEqualTo(16);
+    }
 }
