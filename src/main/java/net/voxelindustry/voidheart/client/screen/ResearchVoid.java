@@ -43,6 +43,9 @@ final class ResearchVoid
     private static final int   LIGHT_LEVELS    = 4;
     static final int           LIP_BRIGHT      = 0xFF7A62A8;
     private static final float STONE_SHADOW    = 12;
+    /** How dark the floor of the hole gets, and how far above the bottom it is darkest. */
+    private static final float FLOOR_SHADOW    = 0.8F;
+    private static final int   FLOOR_DARKEST   = 12;
 
     static final float[][] BAYER = {
             { 0 / 16F, 8 / 16F, 2 / 16F, 10 / 16F },
@@ -55,9 +58,52 @@ final class ResearchVoid
     {
     }
 
-    static void bake(Minecraft minecraft, Identifier target, int width, int height, int left, int right, List<Light> lights, long seed)
+    /**
+     * The slab alone, with the hole left clear but for the shadow its torn edge casts, so that the map can be drawn under it and pan beneath its edge.
+     * The floor of the hole darkens too, from floorTop down, so what is panned under the readouts sinks into the dark rather than fights them.
+     */
+    static void bakeSlab(Minecraft minecraft, Identifier target, int width, int height, int left, int right, int floorTop, long seed)
     {
-        upload(minecraft, target, paint(minecraft, width, height, left, right, lights, seed, (x, y) -> 0));
+        var stone = readStone(minecraft);
+        var image = new NativeImage(width, height, false);
+        for (int y = 0; y < height; y++)
+        {
+            int edgeLeft = edgeLeft(y, left, seed);
+            int edgeRight = edgeRight(y, right, seed);
+            for (int x = 0; x < width; x++)
+            {
+                if (x < edgeLeft || x >= edgeRight)
+                    image.setPixel(x, y, stoneAt(stone, x, y, Math.min(Math.abs(x - edgeLeft), Math.abs(x - edgeRight)), seed));
+                else
+                {
+                    float wall = Math.min(x - edgeLeft, edgeRight - 1 - x);
+                    float shadow = wall < INNER_SHADOW ? (1 - wall / INNER_SHADOW) * 0.85F : 0;
+                    float floor = Math.clamp((y - floorTop) / (float) Math.max(1, height - FLOOR_DARKEST - floorTop), 0, 1) * FLOOR_SHADOW;
+                    shadow = Math.max(shadow, floor);
+                    image.setPixel(x, y, ARGB.color((int) (shadow * 255), DEEP_COLOR));
+                }
+            }
+        }
+        if (stone != null)
+            stone.close();
+        upload(minecraft, target, image);
+    }
+
+    /**
+     * The dark seen through the hole, painted in the map's own units so that it pans with the map: its smoke and stars stay where they are among the
+     * researches, and its light stays around them.
+     *
+     * @param minX where the painted dark starts, in the map's units
+     */
+    static void bakeDepths(Minecraft minecraft, Identifier target, int minX, int minY, int width, int height, List<Light> lights, long seed)
+    {
+        var image = new NativeImage(Math.max(1, width), Math.max(1, height), false);
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+                image.setPixel(x, y, voidAt(minX + x, minY + y, INNER_SHADOW, 0, lights, seed));
+        }
+        upload(minecraft, target, image);
     }
 
     static NativeImage paint(Minecraft minecraft, int width, int height, int left, int right, List<Light> lights, long seed, Shade shade)
@@ -143,6 +189,9 @@ final class ResearchVoid
 
     static int voidAt(int x, int y, float wall, float dark, List<Light> lights, long seed)
     {
+        // A dither cell keyed to the map rather than the texture, so the light's steps do not shimmer as the map pans
+        int cellX = Math.floorMod(x, 4);
+        int cellY = Math.floorMod(y, 4);
         float light = 0;
         float red = 0;
         float green = 0;
@@ -160,7 +209,7 @@ final class ResearchVoid
         // Each island lights the dark in its own hue, and they mix where they meet
         int litColor = light > 0 ? ARGB.color(255, (int) (red / light), (int) (green / light), (int) (blue / light)) : 0xFF000000 | LIT_RGB;
         // Stepped and dithered, so the light stops at an edge rather than fading into everything
-        light = light < LIGHT_EDGE ? 0 : (float) Math.floor(Math.min(1, light) * LIGHT_LEVELS + BAYER[y & 3][x & 3]) / LIGHT_LEVELS;
+        light = light < LIGHT_EDGE ? 0 : (float) Math.floor(Math.min(1, light) * LIGHT_LEVELS + BAYER[cellY][cellX]) / LIGHT_LEVELS;
 
         float warpX = smooth(x * SMOKE_SCALE, y * SMOKE_SCALE, seed) * 3;
         float smoke = smooth(x * SMOKE_SCALE * 1.7F + warpX, y * SMOKE_SCALE * 1.7F, seed + 17) * 0.65F

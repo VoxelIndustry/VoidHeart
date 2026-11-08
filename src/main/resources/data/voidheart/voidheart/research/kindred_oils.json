@@ -1,8 +1,6 @@
 {
   "tier": 3,
   "constellation": "rites",
-  "x": -0.34,
-  "y": -0.4,
   "icon": "voidheart:concussive_oil",
   "insight_cost": 10,
   "knowledge_cost": 900,

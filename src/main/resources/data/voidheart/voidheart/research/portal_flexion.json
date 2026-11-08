@@ -1,8 +1,6 @@
 {
   "tier": 2,
   "constellation": "travel",
-  "x": -0.2,
-  "y": -0.98,
   "icon": "voidheart:portal_core",
   "insight_cost": 6,
   "knowledge_cost": 300,

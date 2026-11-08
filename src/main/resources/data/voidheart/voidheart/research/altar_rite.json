@@ -1,8 +1,6 @@
 {
   "tier": 1,
   "constellation": "rites",
-  "x": -0.36,
-  "y": 0.0,
   "icon": "voidheart:void_altar",
   "insight_cost": 1,
   "knowledge_cost": 15,

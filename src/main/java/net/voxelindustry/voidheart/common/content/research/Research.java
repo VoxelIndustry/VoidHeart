@@ -6,17 +6,15 @@ import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
-/** A node of the tree, from data/voidheart/voidheart/research, placed on the island of its constellation around the eye at 0. Its recipes are the crafting and altar recipes refused until it is done, and unlocks is what they make, since a client is never told the recipes.
+/** A node of the tree, from data/voidheart/voidheart/research, on the island of its constellation. Where it shows on the map is worked out from its requirements, see the client's ResearchMapPlan. Its recipes are the crafting and altar recipes refused until it is done, and unlocks is what they make, since a client is never told the recipes.
  * Strain is what running it weighs on the player, see {@link Strain}. */
-public record Research(int tier, Constellation constellation, double x, double y, Identifier icon, int insightCost, double knowledgeCost, double knowledgePerSecond,
+public record Research(int tier, Constellation constellation, Identifier icon, int insightCost, double knowledgeCost, double knowledgePerSecond,
                        List<Identifier> requires, double passiveBonus, double columnCapacity, double cogitantRate, int strain, List<Identifier> unlocks,
                        List<Identifier> recipes)
 {
     public static final Codec<Research> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.intRange(1, 16).fieldOf("tier").forGetter(Research::tier),
             Constellation.CODEC.fieldOf("constellation").forGetter(Research::constellation),
-            Codec.doubleRange(-1, 1).fieldOf("x").forGetter(Research::x),
-            Codec.doubleRange(-1, 1).fieldOf("y").forGetter(Research::y),
             Identifier.CODEC.fieldOf("icon").forGetter(Research::icon),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("insight_cost").forGetter(Research::insightCost),
             Codec.doubleRange(0.001, Double.MAX_VALUE).fieldOf("knowledge_cost").forGetter(Research::knowledgeCost),

@@ -125,6 +125,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     private static final Identifier VOID_A = Identifier.fromNamespaceAndPath(MODID, "dynamic/research_void");
     private static final Identifier VOID_B = Identifier.fromNamespaceAndPath(MODID, "dynamic/research_void_previous");
+    private static final Identifier SLAB   = Identifier.fromNamespaceAndPath(MODID, "dynamic/research_slab");
+    /** How far the cursor moves on the bare map before a press pans rather than lets go of the selection. */
+    private static final int        PAN_SLOP = 3;
+    /** How far one notch of the wheel pans the map. */
+    private static final int        PAN_STEP = 24;
 
     enum NodeState
     {
@@ -161,6 +166,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private ResearchInsightButton     insightButton;
     private List<Identifier>          frontier = List.of();
 
+    /** Where the map was panned to, kept for the next time the screen opens. */
+    private static double              panX;
+    private static double              panY;
+
     private Identifier                 voidCurrent = VOID_A;
     private Identifier                 voidPrevious = VOID_B;
     private KnowledgePayloads.Snapshot seen;
@@ -181,6 +190,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private int                        fedScroll;
     private int                        left;
     private int                        right;
+    /** Where a press on the bare map started, until it is let go: a press that moves pans the map, and one that does not lets go of the selection. */
+    private double                     pressX = Double.NaN;
+    private double                     pressY;
+    private boolean                    panning;
     private ResearchSceneView          sceneView;
     private final List<Unlock>         unlockSlots = new ArrayList<>();
     private final List<ResearchText.Placed> detailLines = new ArrayList<>();
@@ -200,9 +213,10 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         int rim = Math.clamp((int) (width * 0.045F), RIM_MIN, RIM_MAX);
         left = rim;
         right = width - rim;
-        map = new ResearchMapView(font, tree, left, right, height, seed());
+        map = new ResearchMapView(font, tree, left, right, height, seed(), panX, panY);
 
         hasPrevious = false;
+        ResearchVoid.bakeSlab(minecraft, SLAB, width, height, left, right, height - ResearchMapView.INSIGHT_TOP, seed());
         bake(voidCurrent);
         rebuildFrontier();
         if (seen == null)
@@ -237,7 +251,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     private void bake(Identifier target)
     {
-        ResearchVoid.bake(minecraft, target, width, height, left, right, map.lights(), seed());
+        var depths = map.depths();
+        ResearchVoid.bakeDepths(minecraft, target, depths.minX(), depths.minY(), depths.width(), depths.height(), map.lights(), seed());
     }
 
     private static void send(Action.Kind kind, Identifier research)
@@ -284,7 +299,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             if (!before.revealed().contains(id) && !before.completed().contains(id) && tree.containsKey(id))
             {
                 map.bloom(id, false);
-                selected = id;
+                choose(id);
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.SCULK_CLICKING, 1.4F));
                 grew = true;
             }
@@ -436,18 +451,20 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     {
         syncSnapshot();
 
-        graphics.blit(RenderPipelines.GUI_TEXTURED, voidCurrent, 0, 0, 0, 0, width, height, width, height);
+        map.extractDepths(graphics, voidCurrent, 0xFFFFFFFF);
         if (hasPrevious)
         {
             float fade = (Util.getMillis() - bakedAt) / (float) FADE_MILLIS;
             if (fade < 1)
-                graphics.blit(RenderPipelines.GUI_TEXTURED, voidPrevious, 0, 0, 0, 0, width, height, width, height, ARGB.white(1 - fade));
+                map.extractDepths(graphics, voidPrevious, ARGB.white(1 - fade));
             else
                 hasPrevious = false;
         }
 
         float fullness = snapshot.cap() > 0 ? (float) Math.min(1, shownKnowledge() / snapshot.cap()) : 0;
-        map.extract(graphics, mouseX, mouseY, voidCurrent, width, height, fullness, !starving(), canRefine(), selected, modal() ? null : hoveredNode(mouseX, mouseY));
+        map.extract(graphics, mouseX, mouseY, voidCurrent, height, fullness, !starving(), canRefine(), selected, modal() ? null : hoveredNode(mouseX, mouseY));
+        // The slab lies over the map, so what is panned past the hole's torn edge goes under the stone
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SLAB, 0, 0, 0, 0, width, height, width, height);
 
         insightButton.active = canRefine();
         insightButton.visible = !modal();
@@ -575,7 +592,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         pages.clear();
         fedOpen = false;
         lastClicked = null;
-        selected = research;
+        choose(research);
         map.bloom(research, stateOf(research, tree.get(research)) == NodeState.DONE);
         minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.SCULK_CLICKING, 1.4F));
     }
@@ -1342,9 +1359,74 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         if (insightButton.isMouseOver(event.x(), event.y()))
             return super.mouseClicked(event, doubleClick);
 
+        if (event.x() >= left && event.x() < right)
+        {
+            pressX = event.x();
+            pressY = event.y();
+            panning = false;
+            return true;
+        }
+
         selected = null;
         fedOpen = false;
         return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY)
+    {
+        if (Double.isNaN(pressX) || event.button() != InputConstants.MOUSE_BUTTON_LEFT)
+            return super.mouseDragged(event, dragX, dragY);
+
+        if (!panning && Math.hypot(event.x() - pressX, event.y() - pressY) >= PAN_SLOP)
+        {
+            panning = true;
+            map.panBy(event.x() - pressX, event.y() - pressY);
+        }
+        else if (panning)
+            map.panBy(dragX, dragY);
+        rememberPan();
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event)
+    {
+        if (Double.isNaN(pressX) || event.button() != InputConstants.MOUSE_BUTTON_LEFT)
+            return super.mouseReleased(event);
+
+        if (!panning)
+        {
+            selected = null;
+            fedOpen = false;
+        }
+        pressX = Double.NaN;
+        panning = false;
+        return true;
+    }
+
+    /** Lets the map rest where it does when first opened, for tests that pan it. */
+    public static void resetPan()
+    {
+        panX = 0;
+        panY = 0;
+    }
+
+    private void rememberPan()
+    {
+        panX = map.panX();
+        panY = map.panY();
+    }
+
+    /** Brings what was just chosen into view, for a choice made where the map was not looked at, from the keyboard or a link. */
+    private void choose(Identifier research)
+    {
+        selected = research;
+        if (research != null)
+        {
+            map.reveal(research);
+            rememberPan();
+        }
     }
 
     @Override
@@ -1353,6 +1435,14 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         if (fedOpen && fedBounds != null && fedBounds.contains(mouseX, mouseY))
         {
             fedScroll -= (int) Math.signum(scrollY);
+            return true;
+        }
+        if (map.canPan() && !modal() && mouseX >= left && mouseX < right && !overTablet(mouseX, mouseY))
+        {
+            // The wheel pans down and up, and across with shift held, as a trackpad's sideways scroll does
+            boolean across = minecraft.hasShiftDown();
+            map.panBy((across ? scrollY : scrollX) * PAN_STEP, across ? 0 : scrollY * PAN_STEP);
+            rememberPan();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -1437,7 +1527,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
     public int[] eyePosition()
     {
-        return new int[] { (int) map.projection().centerX(), (int) map.projection().centerY() };
+        return new int[] { map.eyeX(), map.eyeY() };
     }
 
     public int[] actionPosition()
@@ -1588,7 +1678,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             return;
 
         fedOpen = false;
-        selected = order.get(Math.clamp(order.indexOf(selected) + by, 0, order.size() - 1));
+        choose(order.get(Math.clamp(order.indexOf(selected) + by, 0, order.size() - 1)));
     }
 
     @Override

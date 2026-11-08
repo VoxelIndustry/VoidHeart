@@ -36,7 +36,7 @@ class PlayerKnowledgeTest
 
     private static Research research(int insights, double cost, List<Identifier> requires, double passive, double cap)
     {
-        return new Research(1, Constellation.RITES, 0, 0, ITEM, insights, cost, 1, requires, passive, cap, 0, 0, List.of(), List.of());
+        return new Research(1, Constellation.RITES, ITEM, insights, cost, 1, requires, passive, cap, 0, 0, List.of(), List.of());
     }
 
     private PlayerKnowledge data;
@@ -326,7 +326,7 @@ class PlayerKnowledgeTest
 
     private static Map<Identifier, Research> strainedTree(int strain)
     {
-        return Map.of(ROOT, new Research(1, Constellation.ARCHIVE, 0, 0, ITEM, 1, 10, 1, List.of(), 0, 70, 0.05, strain, List.of(), List.of()));
+        return Map.of(ROOT, new Research(1, Constellation.ARCHIVE, ITEM, 1, 10, 1, List.of(), 0, 70, 0.05, strain, List.of(), List.of()));
     }
 
     private void startStrained(Map<Identifier, Research> tree)
