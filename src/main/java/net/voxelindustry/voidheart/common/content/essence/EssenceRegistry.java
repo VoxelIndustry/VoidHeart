@@ -39,10 +39,20 @@ public class EssenceRegistry
     public static ResourceKey<EssenceType> KEY_EMPTY;
     public static ResourceKey<EssenceType> KEY_STILLNESS;
     public static ResourceKey<EssenceType> KEY_FIERY;
+    public static ResourceKey<EssenceType> KEY_SUFFERING;
+    public static ResourceKey<EssenceType> KEY_CONTRAVOID;
 
     public static EssenceType EMPTY;
     public static EssenceType STILLNESS;
     public static EssenceType FIERY;
+    /**
+     * Drawn from mobs dying near a collector, rather than from blocks.
+     */
+    public static EssenceType SUFFERING;
+    /**
+     * Born where the void reacts with the world. Nothing gathers it yet.
+     */
+    public static EssenceType CONTRAVOID;
 
     public static void bootstrap()
     {
@@ -63,6 +73,16 @@ public class EssenceRegistry
                 VoidHeartTags.ASPECT_FIERY_TAG,
                 Items.LAVA_BUCKET)
         ).get();
+        KEY_SUFFERING = ESSENCE_REGISTRY.getResourceKey(SUFFERING = createEssenceType("suffering",
+                MODID + ".aspect.suffering",
+                null,
+                Items.ROTTEN_FLESH)
+        ).get();
+        KEY_CONTRAVOID = ESSENCE_REGISTRY.getResourceKey(CONTRAVOID = createEssenceType("contravoid",
+                MODID + ".aspect.contravoid",
+                null,
+                null)
+        ).get();
     }
 
     private static EssenceType createEssenceType(String identifierPath, String translatableName, TagKey<Block> consumables, Item catalyst)
@@ -75,6 +95,6 @@ public class EssenceRegistry
 
     public static EssenceType getTypeFromCatalyst(ItemStack stack)
     {
-        return ESSENCE_REGISTRY.stream().filter(type -> stack.is(type.catalyst())).findFirst().orElse(null);
+        return ESSENCE_REGISTRY.stream().filter(type -> type.catalyst() != null && type != EMPTY && stack.is(type.catalyst())).findFirst().orElse(null);
     }
 }

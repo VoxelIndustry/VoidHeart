@@ -1,13 +1,15 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
-import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock.RavenousStoragePart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
-public class RavenousStorageTile extends BlockEntity implements IEssenceReceiver
+public class RavenousStorageTile extends TileBase implements IEssenceReceiver
 {
     public static final int CAPACITY = 32_000;
 
@@ -37,7 +39,7 @@ public class RavenousStorageTile extends BlockEntity implements IEssenceReceiver
 
         var received = storage.fill(type, amount);
         if (received > 0)
-            setChanged();
+            changed();
         return received;
     }
 
@@ -52,8 +54,32 @@ public class RavenousStorageTile extends BlockEntity implements IEssenceReceiver
     {
         var extracted = storage.drain(type, amount);
         if (extracted > 0)
-            setChanged();
+            changed();
         return extracted;
+    }
+
+    /**
+     * Saved, shown to clients drawing the essence held, and raised or lowered on the pillars.
+     */
+    private void changed()
+    {
+        setChanged();
+        if (level == null || level.isClientSide())
+            return;
+
+        sync();
+        var fill = StorageFill.fillOf(storage.amount(), storage.maximumAmount());
+        setFill(worldPosition, fill);
+        var above = worldPosition.above();
+        if (level.getBlockState(above).is(getBlockState().getBlock()) && level.getBlockState(above).getValue(RavenousStorageBlock.PART) == RavenousStoragePart.PILLAR)
+            setFill(above, fill);
+    }
+
+    private void setFill(BlockPos pos, int fill)
+    {
+        var state = level.getBlockState(pos);
+        if (state.hasProperty(RavenousStorageBlock.FILL) && state.getValue(RavenousStorageBlock.FILL) != fill)
+            level.setBlock(pos, state.setValue(RavenousStorageBlock.FILL, fill), Block.UPDATE_CLIENTS);
     }
 
     @Override
@@ -75,7 +101,7 @@ public class RavenousStorageTile extends BlockEntity implements IEssenceReceiver
     public void restoreStorage(EssenceStorage source)
     {
         storage = source.copy();
-        setChanged();
+        changed();
     }
 
     public EssenceStorage storage()

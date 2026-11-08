@@ -45,6 +45,8 @@ public class VoidBeamRender
     static final int UNATTUNED_COLOR = 0x5EF2A6;
     private static final int STILLNESS_COLOR = 0x7FB8FF;
     private static final int FIERY_COLOR     = 0xFF8A3D;
+    private static final int SUFFERING_COLOR  = 0xC0182F;
+    private static final int CONTRAVOID_COLOR = 0xE9DDFF;
 
     private static final int VEILS_PER_LAYER = 6;
     private static final int VEIL_COUNT      = VEILS_PER_LAYER * 2;
@@ -447,6 +449,8 @@ public class VoidBeamRender
         {
             case "stillness" -> STILLNESS_COLOR;
             case "fiery" -> FIERY_COLOR;
+            case "suffering" -> SUFFERING_COLOR;
+            case "contravoid" -> CONTRAVOID_COLOR;
             default -> UNATTUNED_COLOR;
         };
     }

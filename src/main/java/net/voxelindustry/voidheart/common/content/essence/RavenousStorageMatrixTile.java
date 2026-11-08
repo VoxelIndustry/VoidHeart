@@ -3,11 +3,15 @@ package net.voxelindustry.voidheart.common.content.essence;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.Block;
+import net.voxelindustry.steamlayer.tile.TileBase;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
-public class RavenousStorageMatrixTile extends BlockEntity implements IEssenceReceiver
+/**
+ * Six aspects, each slot showing on its own face of the matrix, its column reaching out as it fills.
+ */
+public class RavenousStorageMatrixTile extends TileBase implements IEssenceReceiver
 {
     public static final int CAPACITY = 32_000;
 
@@ -29,7 +33,7 @@ public class RavenousStorageMatrixTile extends BlockEntity implements IEssenceRe
     {
         var received = storage.fill(type, amount);
         if (received > 0)
-            setChanged();
+            changed();
         return received;
     }
 
@@ -44,7 +48,7 @@ public class RavenousStorageMatrixTile extends BlockEntity implements IEssenceRe
     {
         var extracted = storage.drain(type, amount);
         if (extracted > 0)
-            setChanged();
+            changed();
         return extracted;
     }
 
@@ -67,7 +71,37 @@ public class RavenousStorageMatrixTile extends BlockEntity implements IEssenceRe
     public void restoreStorage(MultiEssenceStorage source)
     {
         storage = source.copy();
+        changed();
+    }
+
+    private void changed()
+    {
         setChanged();
+        if (level == null || level.isClientSide())
+            return;
+        sync();
+        refreshColumns();
+    }
+
+    /**
+     * Raises or lowers each column to the fill of the slot on its face.
+     */
+    public void refreshColumns()
+    {
+        if (level == null || level.isClientSide())
+            return;
+
+        var faces = RavenousStorageMatrixBlock.FACES;
+        for (int slot = 0; slot < faces.length && slot < storage.storageCount(); slot++)
+        {
+            var pos = worldPosition.relative(faces[slot]);
+            var state = level.getBlockState(pos);
+            if (!RavenousStorageMatrixBlock.isColumnOf(state, pos, worldPosition))
+                continue;
+            var fill = StorageFill.fillOf(storage.amounts()[slot], storage.maximumAmount(), StorageFill.MATRIX_MAX_FILL);
+            if (state.getValue(RavenousStorageMatrixBlock.FILL) != fill)
+                level.setBlock(pos, state.setValue(RavenousStorageMatrixBlock.FILL, fill), Block.UPDATE_CLIENTS);
+        }
     }
 
     public MultiEssenceStorage storage()

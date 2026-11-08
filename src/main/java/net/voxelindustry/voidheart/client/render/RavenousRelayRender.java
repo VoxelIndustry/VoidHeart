@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
@@ -18,17 +19,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Strands carrying essence through the relay: from each collector or storage it draws from into its core, and from its
+ * Beams carrying essence through the relay: from each collector or storage it draws from into its core, and from its
  * core into the next relay, storage, or the collector a Shatter Forge feeds.
  */
 public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTile, RavenousRelayRender.State>
 {
-    private static final int  STRANDS = 3;
-    private static final Vec3 CENTER  = new Vec3(0.5, 0.5, 0.5);
+    private static final Vec3 CENTER = new Vec3(0.5, 0.5, 0.5);
+
+    // Distance from a block center to where a beam leaves or enters it
+    private static final float RELAY_INSET     = 0.15F;
+    private static final float COLLECTOR_INSET = 0.2F;
+    private static final float STORAGE_INSET   = 0.45F;
 
     public static class State extends BlockEntityRenderState
     {
-        public final List<EssenceStrandRender.Bundle> bundles = new ArrayList<>();
+        public final List<RelayBeamRender.Beam> beams = new ArrayList<>();
         public float time;
     }
 
@@ -47,25 +52,33 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
     {
         BlockEntityRenderer.super.extractRenderState(relay, state, partialTicks, cameraPosition, breakProgress);
 
-        state.time = relay.getLevel().getGameTime() + partialTicks;
-        state.bundles.clear();
+        var level = relay.getLevel();
+        state.time = level.getGameTime() + partialTicks;
+        state.beams.clear();
 
         var origin = relay.getBlockPos();
         var color = VoidBeamRender.aspectColor(relay.getDisplayedAspect());
-        relay.getIncomingStrands(partialTicks).forEach((source, growth) ->
+        relay.getIncomingStrands(partialTicks).forEach((source, link) ->
+                state.beams.add(beam(relative(source, origin), inset(level, source), CENTER, RELAY_INSET, link, color)));
+        relay.getOutgoingStrands(partialTicks).forEach((target, link) ->
+                state.beams.add(beam(CENTER, RELAY_INSET, relative(target, origin), inset(level, target), link, color)));
+    }
+
+    private static RelayBeamRender.Beam beam(Vec3 source, float sourceInset, Vec3 target, float targetInset, RavenousRelayTile.Link link, int color)
+    {
+        var direction = target.subtract(source).normalize();
+        return new RelayBeamRender.Beam(source.add(direction.scale(sourceInset)), target.subtract(direction.scale(targetInset)),
+                link.growth(), link.active(), color);
+    }
+
+    private static float inset(Level level, BlockPos pos)
+    {
+        return switch (level.getBlockEntity(pos))
         {
-            // Rooted on the collector core, or on the face of the storage the forge draws from
-            var inset = relay.getLevel().getBlockEntity(source) instanceof RavenousCollectorTile ? 0.2F : 0.5F;
-            if (growth > 0)
-                state.bundles.add(new EssenceStrandRender.Bundle(relative(source, origin), CENTER, inset, 0.1F, 0.05F, growth, color,
-                        source.asLong() ^ origin.asLong(), STRANDS));
-        });
-        relay.getOutgoingStrands(partialTicks).forEach((target, growth) ->
-        {
-            if (growth > 0)
-                state.bundles.add(new EssenceStrandRender.Bundle(CENTER, relative(target, origin), 0.2F, 0.08F, 0.12F, growth, color,
-                        target.asLong() * 31 + origin.asLong(), STRANDS));
-        });
+            case RavenousRelayTile ignored -> RELAY_INSET;
+            case RavenousCollectorTile ignored -> COLLECTOR_INSET;
+            case null, default -> STORAGE_INSET;
+        };
     }
 
     private static Vec3 relative(BlockPos pos, BlockPos origin)
@@ -76,13 +89,13 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
     @Override
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
-        if (state.bundles.isEmpty())
+        if (state.beams.isEmpty())
             return;
 
         collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(VoidBeamRender.VEIL_TEXTURE, true), (pose, buffer) ->
         {
-            for (var bundle : state.bundles)
-                EssenceStrandRender.render(pose, buffer, bundle, state.time);
+            for (var beam : state.beams)
+                RelayBeamRender.render(pose, buffer, beam, state.time);
         });
     }
 

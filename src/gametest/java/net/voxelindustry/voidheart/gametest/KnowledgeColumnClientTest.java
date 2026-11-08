@@ -22,6 +22,7 @@ import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
+import net.voxelindustry.voidheart.common.content.research.KnowledgeMath;
 import net.voxelindustry.voidheart.common.content.research.RepositoryBoundTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeState;
@@ -216,8 +217,129 @@ public class KnowledgeColumnClientTest implements FabricClientGameTest
             }
             server.runCommand("tick unfreeze");
 
+            selectAndBreakSingleColumns(context, server);
+
             context.getInput().pressKey(InputConstants.KEY_F1);
         }
+    }
+
+    /**
+     * Each column is selected where it floats and on its own, and breaking one leaves the others of its space linked where they were.
+     */
+    private static void selectAndBreakSingleColumns(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = player(minecraft).level();
+            var state = level.getBlockState(CLUSTER);
+            var shape = state.getShape(level, CLUSTER);
+            var highest = 0F;
+            for (int quarter = 0; quarter < 4; quarter++)
+            {
+                float rise = KnowledgeColumnBlock.restingRise(CLUSTER, quarter);
+                highest = Math.max(highest, rise);
+                var top = new Vec3(KnowledgeMath.columnCenterX(quarter), 1 + rise - 0.01, KnowledgeMath.columnCenterZ(quarter));
+                var under = new Vec3(KnowledgeMath.columnCenterX(quarter), rise - 0.01, KnowledgeMath.columnCenterZ(quarter));
+                if (!contains(shape, top) || contains(shape, under))
+                    throw new AssertionError("The selection of column " + quarter + " does not follow it to " + rise + " above its space");
+            }
+            if (Math.abs(shape.max(Direction.Axis.Y) - (1 + highest)) > 1.0E-6)
+                throw new AssertionError("The selection reaches " + shape.max(Direction.Axis.Y) + ", the highest column " + (1 + highest));
+            if (state.getCollisionShape(level, CLUSTER).max(Direction.Axis.Y) > 1)
+                throw new AssertionError("Columns should still collide within their own space");
+        });
+
+        // The north west column, from the west
+        float rise = KnowledgeColumnBlock.restingRise(CLUSTER, 0);
+        aimFrom(context, server, CLUSTER.getX() - 1.6, GROUND + 1, CLUSTER.getZ() + 0.25, CLUSTER.getX(), CLUSTER.getY() + rise + 0.5, CLUSTER.getZ() + 0.25, 5);
+        expectClient(context, "the player is not looking at the north west column", client -> client.hitResult instanceof BlockHitResult hit && hit.getBlockPos().equals(CLUSTER)
+                && KnowledgeColumnBlock.quarterHit(client.level.getBlockState(CLUSTER), CLUSTER, hit.getLocation(), hit.getDirection()) == 0);
+        context.runOnClient(client ->
+        {
+            var outline = outlineOf(client);
+            if (outline == null)
+                throw new AssertionError("No outline is drawn on the column looked at");
+            var box = outline.shape().bounds();
+            // Its wave moves it up to 1.5 pixels around where it rests
+            if (box.minX != 0 || box.maxX != 0.5 || box.minZ != 0 || box.maxZ != 0.5 || Math.abs(box.minY - rise) > 1.6 / 16 || Math.abs(box.getYsize() - 1) > 1.0E-6)
+                throw new AssertionError("The outline should frame the north west column alone where it floats, got " + box);
+        });
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        context.takeScreenshot("column-outline-single");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        // In creative it goes at once, alone
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            expectMaskNow(minecraft, CLUSTER, 0b1110);
+            expectLink(minecraft, CLUSTER, player(minecraft).getUUID());
+            expectActive(minecraft, CLUSTER, true);
+        });
+        context.runOnClient(client ->
+        {
+            if (KnowledgeColumnBlock.maskOf(client.level.getBlockState(CLUSTER)) != 0b1110)
+                throw new AssertionError("The client sees " + Integer.toBinaryString(KnowledgeColumnBlock.maskOf(client.level.getBlockState(CLUSTER))) + " after one column broke");
+            if (!(client.level.getBlockEntity(CLUSTER) instanceof KnowledgeColumnTile tile) || !tile.isActive())
+                throw new AssertionError("The columns left lost their link on the client");
+        });
+
+        // In survival it is mined and drops only itself: the north east one, now seen through the free quarter
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            player.getInventory().clearContent();
+            player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+        });
+        server.runCommand("kill @e[type=item]");
+        float eastRise = KnowledgeColumnBlock.restingRise(CLUSTER, 1);
+        aimFrom(context, server, CLUSTER.getX() - 1.6, GROUND + 1, CLUSTER.getZ() + 0.25, CLUSTER.getX() + 0.5, CLUSTER.getY() + eastRise + 0.5, CLUSTER.getZ() + 0.25, 5);
+        context.takeScreenshot("column-mine-aim");
+        // Held off the ground by aimFrom, which mines five times slower
+        context.getInput().holdMouseFor(InputConstants.MOUSE_BUTTON_LEFT, 80);
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            expectMaskNow(minecraft, CLUSTER, 0b1100);
+            var level = player(minecraft).level();
+            var dropped = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(CLUSTER).inflate(3),
+                    item -> item.getItem().is(VoidHeartBlocks.KNOWLEDGE_COLUMN.asItem())).stream().mapToInt(item -> item.getItem().getCount()).sum()
+                    // Standing this close, the player may already have picked it up
+                    + player(minecraft).getInventory().countItem(VoidHeartBlocks.KNOWLEDGE_COLUMN.asItem());
+            if (dropped != 1)
+                throw new AssertionError("Mining one column dropped " + dropped);
+            player(minecraft).setGameMode(net.minecraft.world.level.GameType.CREATIVE);
+            player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        });
+        server.runCommand("kill @e[type=item]");
+    }
+
+    private static net.minecraft.client.renderer.state.level.BlockOutlineRenderState outlineOf(Minecraft client)
+    {
+        try
+        {
+            var field = net.minecraft.client.renderer.LevelRenderer.class.getDeclaredField("levelRenderState");
+            field.setAccessible(true);
+            return ((net.minecraft.client.renderer.state.level.LevelRenderState) field.get(client.levelRenderer)).blockOutlineRenderState;
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError("Cannot read the outline drawn", e);
+        }
+    }
+
+    private static boolean contains(net.minecraft.world.phys.shapes.VoxelShape shape, Vec3 point)
+    {
+        return shape.toAabbs().stream().anyMatch(box -> box.contains(point));
+    }
+
+    private static void expectMaskNow(MinecraftServer minecraft, BlockPos pos, int mask)
+    {
+        var state = player(minecraft).level().getBlockState(pos);
+        if (!state.is(VoidHeartBlocks.KNOWLEDGE_COLUMN) || KnowledgeColumnBlock.maskOf(state) != mask)
+            throw new AssertionError("Expected columns " + Integer.toBinaryString(mask) + " at " + pos + ", found " + state);
     }
 
     private static void openColumnPage(ClientGameTestContext context, TestServerContext server)

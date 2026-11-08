@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -14,6 +15,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnBlock;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeColumnTile;
@@ -33,11 +35,9 @@ public class KnowledgeColumnRender implements BlockEntityRenderer<KnowledgeColum
     private static final RenderType INACTIVE_TYPE = RenderTypes.entitySolid(Identifier.fromNamespaceAndPath(MODID, "textures/block/knowledge_column_inactive.png"));
 
     private static final float HALF_WIDTH        = 4 / 16F;
-    // Keeps the lowest point of the wave off the ground
-    private static final float BOTTOM            = 2 / 16F;
-    // Larger than the most the wave can do between two touching columns, about 1.1/16, so that their heights stay apart at every moment
-    private static final float HEIGHT_STEP       = 2 / 16F;
-    private static final float WAVE_HEIGHT       = 1.5F / 16;
+    // Resting heights are in KnowledgeColumnBlock, which selects each column where it floats. Its height step is larger than the most the wave can
+    // do between two touching columns, about 1.1/16, so that their heights stay apart at every moment
+    private static final float WAVE_HEIGHT       = KnowledgeColumnBlock.COLUMN_WAVE_HEIGHT;
     private static final int   WAVE_PERIOD_TICKS = 140;
     private static final float WAVELENGTH_BLOCKS = 6;
     private static final float RISE_TICKS        = 30;
@@ -54,6 +54,8 @@ public class KnowledgeColumnRender implements BlockEntityRenderer<KnowledgeColum
         public int variety;
         public boolean linked;
         public final float[] rises = new float[4];
+        /** Columns the cracks of breaking show on: only the one the player breaks, when it is this player. */
+        public int crackedMask;
     }
 
     public KnowledgeColumnRender(BlockEntityRendererProvider.Context context)
@@ -72,26 +74,38 @@ public class KnowledgeColumnRender implements BlockEntityRenderer<KnowledgeColum
         BlockEntityRenderer.super.extractRenderState(tile, state, partialTicks, cameraPosition, breakProgress);
 
         var pos = tile.getBlockPos();
+        state.mask = KnowledgeColumnBlock.maskOf(tile.getBlockState());
+        state.variety = pos.hashCode();
+        state.linked = tile.isActive();
+        for (int quarter = 0; quarter < state.rises.length; quarter++)
+            state.rises[quarter] = rise(tile, quarter, partialTicks);
+
+        state.crackedMask = state.mask;
+        var minecraft = Minecraft.getInstance();
+        if (state.breakProgress != null && minecraft.gameMode != null && minecraft.gameMode.isDestroying()
+                && minecraft.hitResult instanceof BlockHitResult hit && hit.getBlockPos().equals(pos))
+            state.crackedMask = 1 << KnowledgeColumnBlock.quarterHit(tile.getBlockState(), pos, hit.getLocation(), hit.getDirection());
+    }
+
+    /**
+     * How high a column floats above its space at this moment, rising or settling as it is linked or unlinked.
+     */
+    public static float rise(KnowledgeColumnTile tile, int quarter, float partialTicks)
+    {
+        var pos = tile.getBlockPos();
         // Horizontal only, so that a stack rises as one and its columns never run into each other
         var center = tile.getClusterCenter();
         long gameTime = tile.getLevel().getGameTime();
         float time = gameTime % WAVE_PERIOD_TICKS + partialTicks;
 
-        state.mask = KnowledgeColumnBlock.maskOf(tile.getBlockState());
-        state.variety = pos.hashCode();
-        state.linked = tile.isActive();
-
         float change = Math.clamp((gameTime - tile.getLinkChangedAt() + partialTicks) / RISE_TICKS, 0, 1);
         float eased = change * change * (3 - 2 * change);
-        float lift = state.linked ? eased : 1 - eased;
-        for (int quarter = 0; quarter < state.rises.length; quarter++)
-        {
-            double dx = pos.getX() + KnowledgeMath.columnCenterX(quarter) - center.x;
-            double dz = pos.getZ() + KnowledgeMath.columnCenterZ(quarter) - center.z;
-            float wave = WAVE_HEIGHT * (float) KnowledgeMath.columnWave(time, Math.sqrt(dx * dx + dz * dz), WAVE_PERIOD_TICKS, WAVELENGTH_BLOCKS);
-            int level = KnowledgeMath.columnHeightLevel(pos.getX() * 2 + (quarter & 1), pos.getZ() * 2 + (quarter >> 1));
-            state.rises[quarter] = lift * (BOTTOM + WAVE_HEIGHT + level * HEIGHT_STEP + wave);
-        }
+        float lift = tile.isActive() ? eased : 1 - eased;
+
+        double dx = pos.getX() + KnowledgeMath.columnCenterX(quarter) - center.x;
+        double dz = pos.getZ() + KnowledgeMath.columnCenterZ(quarter) - center.z;
+        float wave = WAVE_HEIGHT * (float) KnowledgeMath.columnWave(time, Math.sqrt(dx * dx + dz * dz), WAVE_PERIOD_TICKS, WAVELENGTH_BLOCKS);
+        return lift * (KnowledgeColumnBlock.restingRise(pos, quarter) + wave);
     }
 
     @Override
@@ -102,14 +116,19 @@ public class KnowledgeColumnRender implements BlockEntityRenderer<KnowledgeColum
         var breaking = state.breakProgress;
         if (breaking != null)
             collector.submitCustomGeometry(poseStack, ModelBakery.DESTROY_TYPES.get(breaking.progress()),
-                    (pose, buffer) -> columns(state, pose, new SheetedDecalTextureGenerator(buffer, breaking.cameraPose(), 1)));
+                    (pose, buffer) -> columns(state, state.crackedMask, pose, new SheetedDecalTextureGenerator(buffer, breaking.cameraPose(), 1)));
     }
 
     private static void columns(State state, PoseStack.Pose pose, VertexConsumer buffer)
     {
+        columns(state, state.mask, pose, buffer);
+    }
+
+    private static void columns(State state, int mask, PoseStack.Pose pose, VertexConsumer buffer)
+    {
         for (int quarter = 0; quarter < state.rises.length; quarter++)
         {
-            if ((state.mask & 1 << quarter) == 0)
+            if ((mask & 1 << quarter) == 0)
                 continue;
 
             float x = (float) KnowledgeMath.columnCenterX(quarter);

@@ -63,6 +63,7 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlockIt
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageItemBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlockItem;
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterBlock;
@@ -592,13 +593,17 @@ public class VoidHeartBlocks
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
+                .noOcclusion()
+                .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), RavenousStorageBlockItem::new);
         RAVENOUS_STORAGE_MATRIX = registerBlock("ravenous_storage_matrix", RavenousStorageMatrixBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
                 .requiresCorrectToolForDrops()
                 .strength(1.5F, 6.0F)
-                .sound(SoundType.STONE), RavenousStorageBlockItem::new);
+                .noOcclusion()
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.STONE), RavenousStorageMatrixBlockItem::new);
         RAVENOUS_RELAY = registerBlock("ravenous_relay", RavenousRelayBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)

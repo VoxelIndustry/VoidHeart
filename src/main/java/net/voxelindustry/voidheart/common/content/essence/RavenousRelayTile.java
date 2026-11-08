@@ -77,33 +77,52 @@ public class RavenousRelayTile extends TileBase
     private void scan()
     {
         lastScan = level.getGameTime();
+        var links = scanLinks(level, worldPosition);
         linkedRelays.clear();
+        linkedRelays.addAll(links.relays());
         linkedCollectors.clear();
+        linkedCollectors.addAll(links.collectors());
         linkedReceivers.clear();
+        linkedReceivers.addAll(links.receivers());
+    }
 
-        RelayNetwork.forEachTileInRange(level, worldPosition, RANGE, tile ->
+    /**
+     * What a relay at a position links to, and what is in range but out of its sight.
+     */
+    public record Links(List<BlockPos> relays, List<BlockPos> collectors, List<BlockPos> receivers, List<BlockPos> blocked)
+    {
+    }
+
+    /**
+     * Collectors, storages and relays a relay at this position links to, whether or not one stands there. The client
+     * uses it to show the links of a hovered relay, and those of one about to be placed.
+     */
+    public static Links scanLinks(Level level, BlockPos origin)
+    {
+        var links = new Links(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        RelayNetwork.forEachTileInRange(level, origin, RANGE, tile ->
         {
-            List<BlockPos> links;
-            if (tile == this)
+            List<BlockPos> kind;
+            if (tile.getBlockPos().equals(origin))
                 return;
             else if (tile instanceof RavenousRelayTile)
-                links = linkedRelays;
+                kind = links.relays();
             else if (tile instanceof RavenousCollectorTile)
-                links = linkedCollectors;
+                kind = links.collectors();
             else if (tile instanceof IEssenceReceiver)
-                links = linkedReceivers;
+                kind = links.receivers();
             else
                 return;
 
-            if (hasLineOfSight(tile.getBlockPos()))
-                links.add(tile.getBlockPos().immutable());
+            (hasLineOfSight(level, origin, tile.getBlockPos()) ? kind : links.blocked()).add(tile.getBlockPos().immutable());
         });
+        return links;
     }
 
     /**
      * Only blocks with a collision shape break the link, the two ends excluded.
      */
-    private boolean hasLineOfSight(BlockPos target)
+    private static boolean hasLineOfSight(Level level, BlockPos worldPosition, BlockPos target)
     {
         var from = Vec3.atCenterOf(worldPosition);
         var to = Vec3.atCenterOf(target);
@@ -113,12 +132,22 @@ public class RavenousRelayTile extends TileBase
         {
             var point = from.lerp(to, i / (double) steps);
             cursor.set(point.x, point.y, point.z);
-            if (cursor.equals(worldPosition) || cursor.equals(target))
+            if (cursor.equals(worldPosition) || cursor.equals(target) || isPartOf(level.getBlockState(cursor), cursor, target))
                 continue;
             if (!level.getBlockState(cursor).getCollisionShape(level, cursor).isEmpty())
                 return false;
         }
         return true;
+    }
+
+    /**
+     * The pillars of a storage and the columns of a matrix belong to the block they rise from, so they never hide it.
+     */
+    private static boolean isPartOf(BlockState state, BlockPos pos, BlockPos target)
+    {
+        if (state.getBlock() instanceof RavenousStorageBlock)
+            return state.getValue(RavenousStorageBlock.PART) == RavenousStorageBlock.RavenousStoragePart.PILLAR && pos.below().equals(target);
+        return RavenousStorageMatrixBlock.isColumnOf(state, pos, target);
     }
 
     /**
@@ -156,7 +185,7 @@ public class RavenousRelayTile extends TileBase
     /**
      * @return growth of the strands from each collector drained, 0 when retracted and 1 when they reach this relay
      */
-    public Map<BlockPos, Float> getIncomingStrands(float partialTicks)
+    public Map<BlockPos, Link> getIncomingStrands(float partialTicks)
     {
         return strandGrowths(incomingStrands, partialTicks);
     }
@@ -164,15 +193,23 @@ public class RavenousRelayTile extends TileBase
     /**
      * @return growth of the strands toward each relay or storage fed, 0 when retracted and 1 when they reach it
      */
-    public Map<BlockPos, Float> getOutgoingStrands(float partialTicks)
+    public Map<BlockPos, Link> getOutgoingStrands(float partialTicks)
     {
         return strandGrowths(outgoingStrands, partialTicks);
     }
 
-    private static Map<BlockPos, Float> strandGrowths(Map<BlockPos, int[]> strands, float partialTicks)
+    /**
+     * @param growth 0 when retracted, 1 when reaching the other end
+     * @param active whether essence still flows, a link no longer active fades from its source toward its target
+     */
+    public record Link(float growth, boolean active)
     {
-        var growths = new HashMap<BlockPos, Float>();
-        strands.forEach((pos, ticks) -> growths.put(pos, Mth.lerp(partialTicks, ticks[1], ticks[0]) / STRAND_TICKS));
+    }
+
+    private static Map<BlockPos, Link> strandGrowths(Map<BlockPos, int[]> strands, float partialTicks)
+    {
+        var growths = new HashMap<BlockPos, Link>();
+        strands.forEach((pos, ticks) -> growths.put(pos, new Link(Mth.lerp(partialTicks, ticks[1], ticks[0]) / STRAND_TICKS, ticks[0] >= ticks[1] && ticks[0] > 0)));
         return growths;
     }
 

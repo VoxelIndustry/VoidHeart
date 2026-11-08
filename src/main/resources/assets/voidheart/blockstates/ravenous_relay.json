@@ -1,5 +1,30 @@
 {
   "variants": {
-    "": { "model": "voidheart:block/ravenous_relay" }
+    "facing=up": {
+      "model": "voidheart:block/ravenous_relay"
+    },
+    "facing=down": {
+      "model": "voidheart:block/ravenous_relay",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "voidheart:block/ravenous_relay",
+      "x": 90
+    },
+    "facing=east": {
+      "model": "voidheart:block/ravenous_relay",
+      "x": 90,
+      "y": 90
+    },
+    "facing=south": {
+      "model": "voidheart:block/ravenous_relay",
+      "x": 90,
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/ravenous_relay",
+      "x": 90,
+      "y": 270
+    }
   }
 }
