@@ -1,8 +1,6 @@
 {
   "tier": 1,
   "constellation": "archive",
-  "x": 0.58,
-  "y": 0.42,
   "icon": "minecraft:sculk_sensor",
   "insight_cost": 2,
   "knowledge_cost": 30,

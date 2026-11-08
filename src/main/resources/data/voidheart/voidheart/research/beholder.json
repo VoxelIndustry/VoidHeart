@@ -1,8 +1,6 @@
 {
   "tier": 3,
   "constellation": "artifices",
-  "x": -0.84,
-  "y": 0.82,
   "icon": "voidheart:beholder",
   "insight_cost": 18,
   "knowledge_cost": 1500,

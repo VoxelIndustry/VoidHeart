@@ -1,8 +1,6 @@
 {
   "tier": 1,
   "constellation": "archive",
-  "x": 0.38,
-  "y": 0.0,
   "icon": "voidheart:knowledge_column",
   "insight_cost": 1,
   "knowledge_cost": 20,

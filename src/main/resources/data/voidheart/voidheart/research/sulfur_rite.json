@@ -1,8 +1,6 @@
 {
   "tier": 3,
   "constellation": "rites",
-  "x": -0.68,
-  "y": -1.0,
   "icon": "voidheart:searing_oil",
   "insight_cost": 10,
   "knowledge_cost": 750,

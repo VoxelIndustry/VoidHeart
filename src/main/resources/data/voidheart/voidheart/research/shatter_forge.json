@@ -1,8 +1,6 @@
 {
   "tier": 2,
   "constellation": "rites",
-  "x": -0.7,
-  "y": -0.46,
   "icon": "voidheart:shatter_forge",
   "insight_cost": 6,
   "knowledge_cost": 150,

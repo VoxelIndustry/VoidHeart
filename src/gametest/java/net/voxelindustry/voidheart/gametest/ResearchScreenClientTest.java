@@ -292,6 +292,31 @@ public class ResearchScreenClientTest implements FabricClientGameTest
                     throw new AssertionError(key + " shows as: " + text);
             });
 
+            // The map keeps its spacing on a small screen and pans instead, by dragging the bare dark and by the wheel
+            int[] rest = context.computeOnClient(client -> screen(client).eyePosition());
+            hover(context, new int[] { rest[0], rest[1] + 55 });
+            context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
+            context.waitTicks(1);
+            for (int step = 0; step < 8; step++)
+            {
+                context.getInput().moveCursor(30, 10);
+                context.waitTicks(1);
+            }
+            context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            int[] dragged = context.computeOnClient(client -> screen(client).eyePosition());
+            if (dragged[0] <= rest[0] || dragged[1] <= rest[1])
+                throw new AssertionError("Dragging the map did not pan it: eye at " + rest[0] + "," + rest[1] + " then " + dragged[0] + "," + dragged[1]);
+            context.takeScreenshot("research-ui-panned-427x240");
+
+            context.getInput().scroll(-4);
+            context.waitTicks(3);
+            int[] scrolled = context.computeOnClient(client -> screen(client).eyePosition());
+            if (scrolled[1] >= dragged[1])
+                throw new AssertionError("The wheel did not pan the map: eye at " + dragged[1] + " then " + scrolled[1]);
+            context.takeScreenshot("research-ui-scrolled-427x240");
+            context.runOnClient(client -> ResearchScreen.resetPan());
+
             context.runOnClient(client -> client.player.closeContainer());
             context.waitFor(client -> client.gui.screen() == null);
         }

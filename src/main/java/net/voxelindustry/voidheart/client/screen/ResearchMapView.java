@@ -9,12 +9,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Util;
 import net.minecraft.world.item.ItemStack;
-import net.voxelindustry.voidheart.client.screen.ResearchLayout.Projection;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen.NodeState;
 import net.voxelindustry.voidheart.common.content.research.Constellation;
 import net.voxelindustry.voidheart.common.content.research.Research;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +27,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The hole in the slab: an eye that opens as knowledge fills, islands of research around it, and the dark between them.
+ * <p>
+ * The map keeps its size on every screen. Where the screen is too small for it, it pans under the slab; where it is larger, the dark simply goes on.
  */
 final class ResearchMapView
 {
@@ -44,7 +46,8 @@ final class ResearchMapView
     private static final int PUPIL_U       = 80;
     private static final int PUPIL_W       = 6;
     private static final int PUPIL_H       = 20;
-    private static final int LARGE_EYE_MIN = 350;
+    /** From this screen height the eye is drawn at twice its sprite's size. Below it, it would crowd the little of the map a small screen shows. */
+    static final int         LARGE_EYE_MIN = 350;
 
     private static final float MIN_OPEN = 0.24F;
     private static final float LOWER_LID_REST = 0.5F;
@@ -59,7 +62,21 @@ final class ResearchMapView
     private static final int  LABEL_DROP      = 4;
     static final int          LABEL_BACK_COLOR = 0xC8050308;
     private static final int  TEAR_CLEARANCE  = 18;
-    private static final int  LINK_PIECES     = 20;
+    /** Kept clear of the eye beyond the insights circling it, so a research never crowds them. */
+    private static final int  EYE_CLEARANCE   = 2;
+    /** Where the insight button starts above the bottom of the screen: the map pans until a research can be brought above it. */
+    static final int          INSIGHT_TOP     = 45;
+    static final int          NAME_HEIGHT     = 10;
+    /** How far the light around the eye and around each research reaches. */
+    private static final double LIGHT_REACH   = 144;
+    /** How far in from the slab's torn edge the map counts as shown, so a research panned to the edge is never half under the stone. */
+    static final int          VIEW_INSET      = 12;
+    /** Dark left beyond the map's edge when it is panned all the way. */
+    private static final int  PAN_MARGIN      = 10;
+    /** How long the map takes to glide most of the way to a research chosen from the keyboard or a link. */
+    private static final float GLIDE_MILLIS   = 90;
+    /** Kept clear between a watcher and the map, so the eyes in the dark never peer from under a research. */
+    private static final int  WATCHER_CLEAR   = 20;
     private static final int  BLOOM_DOTS      = 32;
     private static final int  WATCHERS        = 9;
     private static final int  WATCHER_FLINCH  = 46;
@@ -75,8 +92,6 @@ final class ResearchMapView
     private static final float GLOW_HALF_WIDTH = 1.6F;
     private static final float CORE_HALF_WIDTH = 0.55F;
     private static final float ROOT_STEP       = 1 / 64F;
-    private static final float BOW_SHARE       = 0.12F;
-    private static final float BOW_MAX         = 8;
     private static final int   DASH_PIECES     = 2;
     private static final float BRIDGE_STRENGTH = 0.6F;
 
@@ -99,7 +114,19 @@ final class ResearchMapView
 
     private final Font                      font;
     private final Map<Identifier, Research> tree;
-    private final Projection                projection;
+    private final ResearchMapPlan           plan;
+    private final ResearchMapPlan.Bounds    depths;
+    private final int[]                     rangeX;
+    private final int[]                     rangeY;
+    private final int                       centerX;
+    private final int                       centerY;
+    /** Where the eye is on screen now, and where it is gliding to. */
+    private double                          eyeX;
+    private double                          eyeY;
+    private double                          goalX;
+    private double                          goalY;
+    private long                            glidedAt;
+    private final List<ResearchMapPlan.Link> paths;
     private final List<Link>                links = new ArrayList<>();
     private final List<Watcher>             watchers = new ArrayList<>();
     private final List<Bloom>               blooms = new ArrayList<>();
@@ -108,101 +135,219 @@ final class ResearchMapView
     private final int                       right;
     private final int                       mapWidth;
     private final int                       eyeScale;
+    private final int                       height;
     private long                            startledAt = -1;
 
-    ResearchMapView(Font font, Map<Identifier, Research> tree, int left, int right, int height, long seed)
+    /**
+     * @param panX how far the eye was panned from where it rests, carried over from the last time the map was shown
+     * @param panY likewise
+     */
+    ResearchMapView(Font font, Map<Identifier, Research> tree, int left, int right, int height, long seed, double panX, double panY)
     {
         this.font = font;
         this.tree = tree;
         this.left = left;
         this.right = right;
+        this.height = height;
         this.mapWidth = right - left;
+        this.eyeScale = eyeScale(height);
 
-        this.projection = ResearchLayout.projection(left, right, height);
-        this.eyeScale = height >= LARGE_EYE_MIN ? 2 : 1;
+        var nameWidths = new EnumMap<Constellation, Integer>(Constellation.class);
+        for (var constellation : Constellation.values())
+            nameWidths.put(constellation, SIGIL_SIZE + SIGIL_GAP + font.width(Component.translatable(constellation.nameKey())));
+        this.plan = ResearchMapPlan.plan(tree, new ResearchMapPlan.Frame(eyeHalfWidth(eyeScale), eyeHalfHeight(eyeScale), NODE_SIZE, nameWidths, NAME_HEIGHT));
+        this.paths = plan.links();
 
-        tree.forEach((id, research) ->
-        {
-            if (research.requires().isEmpty())
-                links.add(linkOf(null, id));
-            research.requires().stream().filter(tree::containsKey).forEach(parent -> links.add(linkOf(parent, id)));
-        });
+        var bounds = plan.bounds();
+        int viewLeft = left + VIEW_INSET;
+        int viewRight = right - VIEW_INSET;
+        int viewTop = VIEW_INSET;
+        int viewBottom = height - INSIGHT_TOP;
+        this.rangeX = ResearchMapPlan.eyeRange(bounds.minX(), bounds.maxX(), viewLeft, viewRight, PAN_MARGIN);
+        this.rangeY = ResearchMapPlan.eyeRange(bounds.minY(), bounds.maxY(), viewTop, viewBottom, PAN_MARGIN);
+        // At rest the eye is as near the middle as the map allows, and a map that fits is never panned
+        this.centerX = Math.clamp((viewLeft + viewRight) / 2, rangeX[0], rangeX[1]);
+        this.centerY = Math.clamp((viewTop + viewBottom) / 2, rangeY[0], rangeY[1]);
+        if (bounds.width() + PAN_MARGIN * 2 <= viewRight - viewLeft)
+            rangeX[0] = rangeX[1] = centerX;
+        if (bounds.height() + PAN_MARGIN * 2 <= viewBottom - viewTop)
+            rangeY[0] = rangeY[1] = centerY;
+
+        // The dark is painted once for every place the map can be panned to, so that panning never repaints it
+        this.depths = new ResearchMapPlan.Bounds(left - rangeX[1], -rangeY[1], right - rangeX[0], height - rangeY[0]);
+        place(centerX + panX, centerY + panY);
+        goalX = eyeX;
+        goalY = eyeY;
 
         var random = new Random(seed);
-        for (int i = 0; i < WATCHERS * 8 && watchers.size() < WATCHERS; i++)
+        for (int i = 0; i < WATCHERS * 12 && watchers.size() < WATCHERS; i++)
         {
-            int x = left + 14 + random.nextInt(Math.max(1, mapWidth - 28));
-            int y = 12 + random.nextInt(Math.max(1, height - 24));
-            double dx = (x - projection.centerX()) / projection.radiusX();
-            double dy = (y - projection.centerY()) / projection.radiusY();
-            if (dx * dx + dy * dy > 0.8)
+            int x = depths.minX() + 14 + random.nextInt(Math.max(1, depths.width() - 28));
+            int y = depths.minY() + 12 + random.nextInt(Math.max(1, depths.height() - 24));
+            boolean clear = x < bounds.minX() - WATCHER_CLEAR || x > bounds.maxX() + WATCHER_CLEAR || y < bounds.minY() - WATCHER_CLEAR || y > bounds.maxY() + WATCHER_CLEAR
+                    || plan.nodes().values().stream().allMatch(node -> Math.abs(node.x() - x) > NODE_SIZE + WATCHER_CLEAR || Math.abs(node.y() - y) > NODE_SIZE + WATCHER_CLEAR)
+                    && Math.abs(x) > eyeHalfWidth(eyeScale) + WATCHER_CLEAR * 2;
+            if (clear)
                 watchers.add(new Watcher(x, y, random.nextFloat()));
         }
     }
 
-    Projection projection()
+    /** The eye keeps to whole sprite pixels, so it steps between two sizes rather than growing with the screen. */
+    static int eyeScale(int height)
     {
-        return projection;
+        return height >= LARGE_EYE_MIN ? 2 : 1;
     }
 
-    private Link linkOf(Identifier parent, Identifier child)
+    /** Half the width the map keeps clear for the eye and the insights circling it. The researches keep their spacing either way, only the space around the eye changes. */
+    static double eyeHalfWidth(int scale)
     {
-        var to = tree.get(child);
-        double angle = Math.atan2(to.y(), to.x());
-        float startX = (float) projection.x(parent == null ? ResearchLayout.EYE_REACH * Math.cos(angle) : tree.get(parent).x());
-        float startY = (float) projection.y(parent == null ? ResearchLayout.EYE_REACH * Math.sin(angle) : tree.get(parent).y());
-        float acrossX = (float) projection.x(to.x()) - startX;
-        float acrossY = (float) projection.y(to.y()) - startY;
-        float span = Math.max(1, (float) Math.hypot(acrossX, acrossY));
-        // A branch leaning the same way along its whole length reads as grown rather than wired
-        float bow = Math.min(BOW_MAX, span * BOW_SHARE) * ((child.hashCode() & 1) == 0 ? 1 : -1);
+        return SCLERA_W * scale / 2D + MOTES_REACH + EYE_CLEARANCE;
+    }
 
-        var xs = new float[LINK_PIECES + 1];
-        var ys = new float[LINK_PIECES + 1];
-        float length = 0;
-        for (int i = 0; i <= LINK_PIECES; i++)
+    static double eyeHalfHeight(int scale)
+    {
+        return SCLERA_H * scale / 2D + MOTES_REACH + EYE_CLEARANCE;
+    }
+
+    /** Puts the eye at this point of the screen, as far as the map can be panned, and moves everything with it. */
+    private void place(double x, double y)
+    {
+        double clampedX = Math.clamp(x, rangeX[0], rangeX[1]);
+        double clampedY = Math.clamp(y, rangeY[0], rangeY[1]);
+        if (!links.isEmpty() && Math.round(clampedX) == Math.round(eyeX) && Math.round(clampedY) == Math.round(eyeY))
         {
-            double t = i / (double) LINK_PIECES;
-            float along = (float) ((t + smooth(t)) / 2);
-            float offset = (float) Math.sin(t * Math.PI) * bow;
-            xs[i] = startX + acrossX * along - acrossY / span * offset;
-            ys[i] = startY + acrossY * along + acrossX / span * offset;
-            if (i > 0)
-                length += (float) Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+            eyeX = clampedX;
+            eyeY = clampedY;
+            return;
         }
-        boolean bridge = parent != null && tree.get(parent).constellation() != to.constellation();
-        return new Link(parent, child, bridge, xs, ys, length);
+        eyeX = clampedX;
+        eyeY = clampedY;
+        links.clear();
+        for (var link : paths)
+            links.add(linkOf(link));
     }
 
-    private static double smooth(double t)
+    /** Drags the map along with the cursor. */
+    void panBy(double dx, double dy)
     {
-        double clamped = Math.clamp(t, 0, 1);
-        return clamped * clamped * (3 - 2 * clamped);
+        place(eyeX + dx, eyeY + dy);
+        goalX = eyeX;
+        goalY = eyeY;
+    }
+
+    /** Glides the map until a research is in view, if it is not already. */
+    void reveal(Identifier id)
+    {
+        var node = plan.nodes().get(id);
+        if (node == null)
+            return;
+        int margin = NODE_SIZE / 2 + PAN_MARGIN;
+        double x = originX() + node.x();
+        double y = originY() + node.y();
+        double towardX = x < left + VIEW_INSET + margin ? left + VIEW_INSET + margin - x : x > right - VIEW_INSET - margin ? right - VIEW_INSET - margin - x : 0;
+        double towardY = y < VIEW_INSET + margin ? VIEW_INSET + margin - y : y > height - INSIGHT_TOP - margin ? height - INSIGHT_TOP - margin - y : 0;
+        goalX = Math.clamp(eyeX + towardX, rangeX[0], rangeX[1]);
+        goalY = Math.clamp(eyeY + towardY, rangeY[0], rangeY[1]);
+        glidedAt = Util.getMillis();
+    }
+
+    private void glide(long now)
+    {
+        if (Math.abs(goalX - eyeX) < 0.5 && Math.abs(goalY - eyeY) < 0.5)
+            return;
+        float share = 1 - (float) Math.exp(-Math.max(0, now - glidedAt) / GLIDE_MILLIS);
+        glidedAt = now;
+        place(eyeX + (goalX - eyeX) * share, eyeY + (goalY - eyeY) * share);
+    }
+
+    /** How far the eye is from where it rests, to carry over to the next time the map is shown. */
+    double panX()
+    {
+        return goalX - centerX;
+    }
+
+    double panY()
+    {
+        return goalY - centerY;
+    }
+
+    boolean canPan()
+    {
+        return rangeX[0] != rangeX[1] || rangeY[0] != rangeY[1];
+    }
+
+    private int originX()
+    {
+        return (int) Math.round(eyeX);
+    }
+
+    private int originY()
+    {
+        return (int) Math.round(eyeY);
+    }
+
+    /** What the dark behind the map is painted over, in the map's own units around the eye. */
+    ResearchMapPlan.Bounds depths()
+    {
+        return depths;
+    }
+
+    /** Draws the dark behind the map where the map is panned to now. */
+    void extractDepths(GuiGraphicsExtractor graphics, Identifier texture, int color)
+    {
+        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, originX() + depths.minX(), originY() + depths.minY(), 0, 0, depths.width(), depths.height(),
+                depths.width(), depths.height(), color);
+    }
+
+    int eyeX()
+    {
+        return originX();
+    }
+
+    int eyeY()
+    {
+        return originY();
+    }
+
+    private Link linkOf(ResearchMapPlan.Link link)
+    {
+        float length = 0;
+        for (int i = 1; i < link.xs().length; i++)
+            length += (float) Math.hypot(link.xs()[i] - link.xs()[i - 1], link.ys()[i] - link.ys()[i - 1]);
+        boolean bridge = link.parent() != null && tree.get(link.parent()).constellation() != tree.get(link.child()).constellation();
+        var xs = new float[link.xs().length];
+        var ys = new float[link.ys().length];
+        for (int i = 0; i < xs.length; i++)
+        {
+            xs[i] = link.xs()[i] + originX();
+            ys[i] = link.ys()[i] + originY();
+        }
+        return new Link(link.parent(), link.child(), bridge, xs, ys, length);
     }
 
     int nodeX(Identifier id)
     {
-        return (int) Math.round(projection.x(tree.get(id).x()));
+        return plan.nodes().get(id).x() + originX();
     }
 
     int nodeY(Identifier id)
     {
-        return (int) Math.round(projection.y(tree.get(id).y()));
+        return plan.nodes().get(id).y() + originY();
     }
 
     /**
-     * Where the light falls: around the eye, and around all that is known or within reach.
+     * Where the light falls: around the eye, and around all that is known or within reach. In the map's own units, as the dark is painted.
      */
     List<ResearchVoid.Light> lights()
     {
         var lights = new ArrayList<ResearchVoid.Light>();
-        double reach = Math.max(38, projection.radiusY() * 0.5);
-        lights.add(new ResearchVoid.Light(projection.centerX(), projection.centerY(), reach * 0.9, 0.95, ResearchVoid.LIT_RGB));
+        double reach = LIGHT_REACH * 0.5;
+        lights.add(new ResearchVoid.Light(0, 0, reach * 0.9, 0.95, ResearchVoid.LIT_RGB));
         tree.forEach((id, research) ->
         {
             var state = ResearchScreen.stateOf(id, research);
             if (state != NodeState.HIDDEN)
-                lights.add(new ResearchVoid.Light(nodeX(id), nodeY(id), reach * (state == NodeState.UNKNOWN ? 0.42 : 0.62), state == NodeState.UNKNOWN ? 0.34 : 0.62, ConstellationLook.of(research.constellation()).lightRgb()));
+                lights.add(new ResearchVoid.Light(plan.nodes().get(id).x(), plan.nodes().get(id).y(), reach * (state == NodeState.UNKNOWN ? 0.42 : 0.62), state == NodeState.UNKNOWN ? 0.34 : 0.62, ConstellationLook.of(research.constellation()).lightRgb()));
         });
         return lights;
     }
@@ -221,6 +366,7 @@ final class ResearchMapView
     {
         return tree.entrySet().stream()
                 .filter(entry -> ResearchScreen.stateOf(entry.getKey(), entry.getValue()) != NodeState.HIDDEN)
+                .filter(entry -> mouseX >= left && mouseX < right)
                 .filter(entry -> Math.abs(mouseX - nodeX(entry.getKey())) <= NODE_SIZE / 2D && Math.abs(mouseY - nodeY(entry.getKey())) <= NODE_SIZE / 2D)
                 .map(Map.Entry::getKey)
                 .findFirst();
@@ -231,7 +377,7 @@ final class ResearchMapView
      */
     int orbitY()
     {
-        return (int) projection.centerY() - SCLERA_H * eyeScale / 2 - MOTES_REACH;
+        return originY() - SCLERA_H * eyeScale / 2 - MOTES_REACH;
     }
 
     void startle(long at)
@@ -239,10 +385,11 @@ final class ResearchMapView
         startledAt = at;
     }
 
-    void extract(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Identifier background, int screenW, int screenH,
+    void extract(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Identifier background, int screenH,
                  float fullness, boolean flowing, boolean canRefine, Identifier selected, Identifier hovered)
     {
         long now = Util.getMillis();
+        glide(now);
         var lineage = new HashSet<Identifier>();
         addLineage(selected, lineage);
         addLineage(hovered, lineage);
@@ -252,7 +399,7 @@ final class ResearchMapView
         extractWatchers(graphics, mouseX, mouseY, now);
         extractEmbers(graphics, now);
         links.forEach(link -> extractLink(graphics, link, lineage, running, flowing, now));
-        extractEye(graphics, running, mouseX, mouseY, background, screenW, screenH, fullness, canRefine, now);
+        extractEye(graphics, running, mouseX, mouseY, background, fullness, canRefine, now);
         extractInsights(graphics, now);
         extractNames(graphics, selected, hovered);
         tree.forEach((id, research) -> extractNode(graphics, id, research, now));
@@ -263,7 +410,7 @@ final class ResearchMapView
 
     private void addLineage(Identifier id, Set<Identifier> into)
     {
-        for (var at = id; at != null && tree.containsKey(at) && into.add(at); at = ResearchLayout.parentOf(tree.get(at), tree))
+        for (var at = id; at != null && tree.containsKey(at) && into.add(at); at = ResearchMapPlan.parentOf(tree.get(at), tree))
         {
         }
     }
@@ -276,12 +423,14 @@ final class ResearchMapView
         for (var watcher : watchers)
         {
             float wave = (float) Math.sin((now / 7000D + watcher.phase()) * Math.PI * 2);
-            if (wave < 0.35F || Math.hypot(mouseX - watcher.x(), mouseY - watcher.y()) < WATCHER_FLINCH)
+            int x = watcher.x() + originX();
+            int y = watcher.y() + originY();
+            if (wave < 0.35F || Math.hypot(mouseX - x, mouseY - y) < WATCHER_FLINCH)
                 continue;
 
             int color = ARGB.color((int) (70 + 150 * (wave - 0.35F) / 0.65F), ResearchScreen.KNOWN_RGB);
-            graphics.fill(watcher.x(), watcher.y(), watcher.x() + 1, watcher.y() + 3, color);
-            graphics.fill(watcher.x() + 4, watcher.y(), watcher.x() + 5, watcher.y() + 3, color);
+            graphics.fill(x, y, x + 1, y + 3, color);
+            graphics.fill(x + 4, y, x + 5, y + 3, color);
         }
     }
 
@@ -316,7 +465,7 @@ final class ResearchMapView
         int rgb = burning ? ResearchScreen.ACTIVE_RGB : state == NodeState.DONE ? ResearchScreen.KNOWN_RGB : walked ? ResearchScreen.FRONTIER_RGB : ResearchScreen.REVEALED_RGB;
         float strength = traced || burning ? 1 : (state == NodeState.DONE ? 0.62F : walked ? 0.78F : 0.3F) * (link.bridge() ? BRIDGE_STRENGTH : 1);
 
-        for (int i = 0; i < LINK_PIECES; i++)
+        for (int i = 0; i < ResearchMapPlan.LINK_PIECES; i++)
         {
             // Within a constellation its figure is drawn whole, and what crosses to another is only a thread of dashes
             if (link.bridge() && i / DASH_PIECES % 2 == 1)
@@ -325,7 +474,7 @@ final class ResearchMapView
             float fade = strength;
             // What has not been read yet is only reached for, the branch thinning out before it arrives
             if (state == NodeState.UNKNOWN)
-                fade *= 1 - 0.62F * (i + 1) / LINK_PIECES;
+                fade *= 1 - 0.62F * (i + 1) / ResearchMapPlan.LINK_PIECES;
             TravelMapScreen.line(graphics, link.xs()[i], link.ys()[i], link.xs()[i + 1], link.ys()[i + 1], GLOW_HALF_WIDTH, ARGB.color((int) (48 * fade), rgb));
             TravelMapScreen.line(graphics, link.xs()[i], link.ys()[i], link.xs()[i + 1], link.ys()[i + 1], CORE_HALF_WIDTH, ARGB.color((int) (235 * fade), rgb));
         }
@@ -348,8 +497,8 @@ final class ResearchMapView
         float drift = (now % 10_000_000L) / 1000F * speed;
         for (float along = drift % spacing; along < link.length(); along += spacing)
         {
-            float t = along / link.length() * LINK_PIECES;
-            int piece = Math.min(LINK_PIECES - 1, (int) t);
+            float t = along / link.length() * ResearchMapPlan.LINK_PIECES;
+            int piece = Math.min(ResearchMapPlan.LINK_PIECES - 1, (int) t);
             float within = t - piece;
             float x = link.xs()[piece] + (link.xs()[piece + 1] - link.xs()[piece]) * within;
             float y = link.ys()[piece] + (link.ys()[piece + 1] - link.ys()[piece]) * within;
@@ -376,10 +525,12 @@ final class ResearchMapView
     /**
      * Lids are the background itself drawn back over the eye a column at a time, so they cut any curve at no more than a few hundred quads.
      */
-    private void extractEye(GuiGraphicsExtractor graphics, Set<Identifier> running, int mouseX, int mouseY, Identifier background, int screenW, int screenH, float fullness, boolean canRefine, long now)
+    private void extractEye(GuiGraphicsExtractor graphics, Set<Identifier> running, int mouseX, int mouseY, Identifier background, float fullness, boolean canRefine, long now)
     {
-        int centerX = (int) projection.centerX();
-        int centerY = (int) projection.centerY();
+        int centerX = originX();
+        int centerY = originY();
+        int depthsX = centerX + depths.minX();
+        int depthsY = centerY + depths.minY();
         int halfW = SCLERA_W * eyeScale / 2;
         int halfH = SCLERA_H * eyeScale / 2;
 
@@ -425,8 +576,8 @@ final class ResearchMapView
             int lower = Math.round(lidHeight(across, halfH, lowerOpen));
             int x = centerX + column;
 
-            graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY - halfH - 1, x, centerY - halfH - 1, eyeScale, halfH + 1 - upper, screenW, screenH);
-            graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY + lower, x, centerY + lower, eyeScale, halfH + 1 - lower, screenW, screenH);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY - halfH - 1, x - depthsX, centerY - halfH - 1 - depthsY, eyeScale, halfH + 1 - upper, depths.width(), depths.height());
+            graphics.blit(RenderPipelines.GUI_TEXTURED, background, x, centerY + lower, x - depthsX, centerY + lower - depthsY, eyeScale, halfH + 1 - lower, depths.width(), depths.height());
         }
 
         // Between the background and the lids' edges, so that a branch ends tucked under the lid whatever its slant
@@ -455,8 +606,8 @@ final class ResearchMapView
         for (int mote = 0; mote < count; mote++)
         {
             double angle = mote * Math.PI * 2 / count + now * MOTES_SPEED;
-            int x = (int) (projection.centerX() + Math.cos(angle) * radiusX);
-            int y = (int) (projection.centerY() + Math.sin(angle) * radiusY);
+            int x = (int) (originX() + Math.cos(angle) * radiusX);
+            int y = (int) (originY() + Math.sin(angle) * radiusY);
             graphics.fill(x, y, x + 2, y + 2, ARGB.color(230, ResearchScreen.FRONTIER_RGB));
         }
     }
@@ -559,22 +710,20 @@ final class ResearchMapView
             boolean looked = selected != null && tree.get(selected).constellation() == constellation || hovered != null && tree.get(hovered).constellation() == constellation;
             int alpha = looked ? 255 : NAME_REST_ALPHA;
             var look = ConstellationLook.of(constellation);
-            if (!tree.containsKey(look.nameAnchor()))
+            var place = plan.names().get(constellation);
+            if (place == null)
                 continue;
 
-            var name = Component.translatable(constellation.nameKey());
-            int width = SIGIL_SIZE + SIGIL_GAP + font.width(name);
-            int x = Math.clamp(nodeX(look.nameAnchor()) + look.nameX() - width / 2, left + TEAR_CLEARANCE, Math.max(left + TEAR_CLEARANCE, right - TEAR_CLEARANCE - width));
-            int y = nodeY(look.nameAnchor()) + look.nameY() - SIGIL_SIZE / 2;
-
+            int x = place.x() + originX();
+            int y = place.y() + originY();
             sigil(graphics, constellation, x, y, alpha);
-            graphics.text(font, name, x + SIGIL_SIZE + SIGIL_GAP, y + 1, ARGB.color(alpha, look.rgb()));
+            graphics.text(font, Component.translatable(constellation.nameKey()), x + SIGIL_SIZE + SIGIL_GAP, y + 1, ARGB.color(alpha, look.rgb()));
         }
     }
 
     /**
      * A name only shows for what is running and for what the cursor is on. It never leaves the hole in the stone,
-     * and the running name gives way rather than cover another research.
+     * and the running name gives way rather than cover another research or a constellation's name.
      */
     private void extractLabel(GuiGraphicsExtractor graphics, Identifier id, Research research, Identifier selected, Identifier hovered, int screenH)
     {
@@ -611,8 +760,15 @@ final class ResearchMapView
 
     private boolean coversResearch(Identifier id, int centerX, int top, int width, int height)
     {
-        if (Math.abs(centerX - projection.centerX()) < width / 2D + SCLERA_W * eyeScale / 2D && Math.abs(top + height / 2D - projection.centerY()) < height / 2D + SCLERA_H * eyeScale / 2D)
+        if (Math.abs(centerX - originX()) < width / 2D + SCLERA_W * eyeScale / 2D && Math.abs(top + height / 2D - originY()) < height / 2D + SCLERA_H * eyeScale / 2D)
             return true;
+        for (var name : plan.names().values())
+        {
+            int nameX = name.x() + originX();
+            int nameY = name.y() + originY();
+            if (Math.abs(centerX - (nameX + name.width() / 2D)) < (width + name.width()) / 2D && top < nameY + name.height() && nameY < top + height)
+                return true;
+        }
         for (var other : tree.keySet())
         {
             if (other.equals(id) || ResearchScreen.stateOf(other, tree.get(other)) == NodeState.HIDDEN)

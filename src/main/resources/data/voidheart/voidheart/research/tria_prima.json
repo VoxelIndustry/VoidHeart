@@ -1,8 +1,6 @@
 {
   "tier": 3,
   "constellation": "rites",
-  "x": -0.78,
-  "y": -0.74,
   "icon": "voidheart:athanor",
   "insight_cost": 10,
   "knowledge_cost": 700,

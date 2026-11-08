@@ -1,8 +1,6 @@
 {
   "tier": 3,
   "constellation": "archive",
-  "x": 0.98,
-  "y": 0.42,
   "icon": "minecraft:echo_shard",
   "insight_cost": 22,
   "knowledge_cost": 3000,
