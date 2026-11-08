@@ -1,6 +1,11 @@
 package net.voxelindustry.voidheart.common.content.research;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import org.jspecify.annotations.Nullable;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -23,6 +28,9 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 
 /**
@@ -39,7 +47,21 @@ public class KnowledgeColumnBlock extends Block implements EntityBlock
     /** Indexed by {@link KnowledgeMath#columnQuarter}. */
     private static final BooleanProperty[] QUARTERS = { NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST };
 
+    /** Full quarters of the space, for collision: the columns float and bob, and walking on them stays steady. */
     private static final VoxelShape[] SHAPES = new VoxelShape[1 << QUARTERS.length];
+
+    // How high a column linked to a repository floats at rest, before its wave moves it
+    public static final float COLUMN_BOTTOM      = 2 / 16F;
+    public static final float COLUMN_WAVE_HEIGHT = 1.5F / 16;
+    public static final float COLUMN_HEIGHT_STEP = 2 / 16F;
+
+    private static final int COLUMN_LEVELS = 5;
+
+    /** Selection shapes, each column where it floats at rest, keyed by {@link #outlineKey}. */
+    private static final Map<Integer, VoxelShape> OUTLINES = new ConcurrentHashMap<>();
+
+    // Into the face hit, so that a hit on the side between two columns tells which one it was
+    private static final double HIT_NUDGE = 1.0E-3;
 
     static
     {
@@ -126,10 +148,124 @@ public class KnowledgeColumnBlock extends Block implements EntityBlock
         return base.setValue(QUARTERS[targetQuarter(context)], true);
     }
 
+    /**
+     * Each column where it floats at rest, reaching into the space above, so that it is picked where it is seen. The
+     * outline then shows only the column hovered, following its wave.
+     */
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
     {
+        var mask = maskOf(state);
+        var active = world.getBlockEntity(pos) instanceof KnowledgeColumnTile tile && tile.isActive();
+        return OUTLINES.computeIfAbsent(outlineKey(mask, active, pos), key ->
+        {
+            var shape = Shapes.empty();
+            for (int quarter = 0; quarter < QUARTERS.length; quarter++)
+            {
+                if ((mask & 1 << quarter) != 0)
+                    shape = Shapes.or(shape, columnShape(quarter, active ? restingRise(pos, quarter) : 0));
+            }
+            return shape;
+        });
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
+    {
         return SHAPES[maskOf(state)];
+    }
+
+    private static int outlineKey(int mask, boolean active, BlockPos pos)
+    {
+        int levels = 0;
+        for (int quarter = QUARTERS.length - 1; quarter >= 0; quarter--)
+            levels = levels * COLUMN_LEVELS + heightLevel(pos, quarter);
+        return mask | (active ? 1 << QUARTERS.length : 0) | levels << QUARTERS.length + 1;
+    }
+
+    private static int heightLevel(BlockPos pos, int quarter)
+    {
+        return KnowledgeMath.columnHeightLevel(pos.getX() * 2 + (quarter & 1), pos.getZ() * 2 + (quarter >> 1));
+    }
+
+    /** How high above its space a linked column floats when its wave is at rest. */
+    public static float restingRise(BlockPos pos, int quarter)
+    {
+        return COLUMN_BOTTOM + COLUMN_WAVE_HEIGHT + heightLevel(pos, quarter) * COLUMN_HEIGHT_STEP;
+    }
+
+    /** A column one block tall, raised by rise blocks. */
+    public static VoxelShape columnShape(int quarter, double rise)
+    {
+        double x = (quarter & 1) * 8;
+        double z = (quarter >> 1) * 8;
+        return box(x, rise * 16, z, x + 8, rise * 16 + 16, z + 8);
+    }
+
+    /**
+     * The column of a space a hit landed on, or the nearest one there when the hit falls between them.
+     */
+    public static int quarterHit(BlockState state, BlockPos pos, Vec3 location, Direction face)
+    {
+        var inside = location.subtract(face.getUnitVec3().scale(HIT_NUDGE));
+        int quarter = KnowledgeMath.columnQuarter(inside.x - pos.getX(), inside.z - pos.getZ());
+        int mask = maskOf(state);
+        if ((mask & 1 << quarter) != 0)
+            return quarter;
+
+        int nearest = quarter;
+        double best = Double.MAX_VALUE;
+        for (int candidate = 0; candidate < QUARTERS.length; candidate++)
+        {
+            if ((mask & 1 << candidate) == 0)
+                continue;
+            double dx = pos.getX() + KnowledgeMath.columnCenterX(candidate) - inside.x;
+            double dz = pos.getZ() + KnowledgeMath.columnCenterZ(candidate) - inside.z;
+            if (dx * dx + dz * dz < best)
+            {
+                best = dx * dx + dz * dz;
+                nearest = candidate;
+            }
+        }
+        return nearest;
+    }
+
+    /**
+     * The column a player is breaking: the one they look at, found again on each side since the server is only told the space.
+     */
+    public static int quarterBroken(BlockState state, BlockPos pos, Player player)
+    {
+        if (player.pick(player.blockInteractionRange(), 1, false) instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK
+                && hit.getBlockPos().equals(pos))
+            return quarterHit(state, pos, hit.getLocation(), hit.getDirection());
+        return quarterHit(state, pos, Vec3.atCenterOf(pos), Direction.UP);
+    }
+
+    /**
+     * What is left of a space once a player breaks the column they look at, or null when it was the last one and the
+     * space goes with it.
+     */
+    public static @Nullable BlockState remainingAfterBreak(BlockState state, BlockPos pos, Player player)
+    {
+        if (!(state.getBlock() instanceof KnowledgeColumnBlock) || Integer.bitCount(maskOf(state)) <= 1)
+            return null;
+        return state.setValue(QUARTERS[quarterBroken(state, pos, player)], false);
+    }
+
+    /**
+     * Only the broken column drops, and its particles fill its own quarter.
+     */
+    @Override
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player)
+    {
+        var broken = state;
+        if (Integer.bitCount(maskOf(state)) > 1)
+        {
+            int quarter = quarterBroken(state, pos, player);
+            broken = defaultBlockState().setValue(NORTH_WEST, false).setValue(QUARTERS[quarter], true);
+        }
+        super.playerWillDestroy(level, pos, broken, player);
+        return broken;
     }
 
     @Override
