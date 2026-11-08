@@ -18,13 +18,17 @@ import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
+import net.voxelindustry.voidheart.common.content.essence.StorageParts;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * Shows what a relay links to: thin lines from the hovered relay to every relay, collector and storage it reaches,
  * and, while a relay is held, from where it would be placed, along with what sits in range but out of its sight.
+ * A hovered storage or matrix shows the relays that link to it the same way.
  */
 public class RelayLinkPreviewRender
 {
@@ -52,6 +56,10 @@ public class RelayLinkPreviewRender
     private static long                             scannedAt;
     private static RavenousRelayTile.@Nullable Links scanned;
 
+    private static @Nullable BlockPos       reachedTarget;
+    private static long                     reachedAt;
+    private static @Nullable List<BlockPos> reached;
+
     public static void collectSubmits(LevelRenderContext context)
     {
         var minecraft = Minecraft.getInstance();
@@ -75,7 +83,12 @@ public class RelayLinkPreviewRender
                 return;
         }
         else
+        {
+            var storage = StorageParts.holderOf(level.getBlockState(hit.getBlockPos()), hit.getBlockPos());
+            if (storage != null)
+                storageLinks(context, level, storage);
             return;
+        }
 
         var links = links(level, origin);
         var levelState = context.levelState();
@@ -109,6 +122,42 @@ public class RelayLinkPreviewRender
     }
 
     /**
+     * Lines from each relay that links to the storage, running toward it as its essence would.
+     */
+    private static void storageLinks(LevelRenderContext context, Level level, BlockPos storage)
+    {
+        var relays = relaysReaching(level, storage);
+        if (relays.isEmpty())
+            return;
+
+        var levelState = context.levelState();
+        var camera = levelState.cameraRenderState.pos;
+        var time = (levelState.gameTime % 24000L) + levelState.worldPartialTicks;
+        var color = aspectColor(level, storage);
+        context.submitNodeCollector().submitCustomGeometry(context.poseStack(), VoidHeartRenderTypes.GLOW, (pose, buffer) ->
+        {
+            var to = Vec3.atCenterOf(storage);
+            for (var relay : relays)
+            {
+                dashes(pose, buffer, Vec3.atCenterOf(relay), to, camera, color, time);
+                outline(pose, buffer, bounds(relay).inflate(OUTLINE_INFLATE), camera, ARGB.color(OUTLINE_ALPHA, RELAY_COLOR));
+            }
+        });
+    }
+
+    private static List<BlockPos> relaysReaching(Level level, BlockPos storage)
+    {
+        var now = level.getGameTime();
+        if (reached == null || !storage.equals(reachedTarget) || now - reachedAt >= RESCAN_TICKS || now < reachedAt)
+        {
+            reached = RavenousRelayTile.relaysReaching(level, storage);
+            reachedTarget = storage.immutable();
+            reachedAt = now;
+        }
+        return reached;
+    }
+
+    /**
      * Rescanned a few times a second, the line of sight checks being too many to run every frame.
      */
     private static RavenousRelayTile.Links links(Level level, BlockPos origin)
@@ -136,7 +185,12 @@ public class RelayLinkPreviewRender
 
     private static void link(PoseStack.Pose pose, VertexConsumer buffer, Vec3 from, BlockPos target, Vec3 camera, int color, float time)
     {
-        var to = Vec3.atCenterOf(target);
+        dashes(pose, buffer, from, Vec3.atCenterOf(target), camera, color, time);
+        outline(pose, buffer, bounds(target).inflate(OUTLINE_INFLATE), camera, ARGB.color(OUTLINE_ALPHA, color));
+    }
+
+    private static void dashes(PoseStack.Pose pose, VertexConsumer buffer, Vec3 from, Vec3 to, Vec3 camera, int color, float time)
+    {
         var direction = to.subtract(from).normalize();
         var start = from.add(direction.scale(END_INSET));
         var end = to.subtract(direction.scale(END_INSET));
@@ -151,7 +205,6 @@ public class RelayLinkPreviewRender
             ribbon(pose, buffer, a, b, camera, LINE_GLOW_WIDTH, ARGB.color((int) (GLOW_ALPHA * wave), color));
             ribbon(pose, buffer, a, b, camera, LINE_HALF_WIDTH, ARGB.color((int) (LINE_ALPHA * wave), color));
         }
-        outline(pose, buffer, bounds(target).inflate(OUTLINE_INFLATE), camera, ARGB.color(OUTLINE_ALPHA, color));
     }
 
     /**
