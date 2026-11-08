@@ -360,7 +360,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private double knowledgeChange()
     {
         var research = activeResearch();
-        return research.isPresent() && !tooStrained(research.get()) ? snapshot.rate() - research.get().knowledgePerSecond() : snapshot.rate();
+        return research.isPresent() && !tooStrained(research.get()) ? -research.get().knowledgePerSecond() : snapshot.rate();
     }
 
     /** Whether a research weighs more than the player and their proxies bear, which stops it from starting or keeps it waiting. */
@@ -389,14 +389,14 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         double progress = snapshot.progress().getOrDefault(id, 0D);
         if (snapshot.active().filter(id::equals).isEmpty() || tooStrained(research))
             return progress;
-        return Math.min(research.knowledgeCost(), progress + (starving() ? snapshot.rate() : research.knowledgePerSecond()) * secondsSinceSnapshot());
+        return Math.min(research.knowledgeCost(), progress + (starving() ? snapshot.rate() : research.speed(snapshot.rate())) * secondsSinceSnapshot());
     }
 
     private double secondsToFinish(Identifier id, Research research)
     {
         if (tooStrained(research))
             return Double.POSITIVE_INFINITY;
-        return KnowledgeMath.secondsToFinish(shownKnowledge(), snapshot.rate(), research.knowledgeCost() - shownProgress(id, research), research.knowledgePerSecond());
+        return KnowledgeMath.secondsToFinish(shownKnowledge(), snapshot.rate(), research.knowledgeCost() - shownProgress(id, research), research.speed(snapshot.rate()));
     }
 
     private boolean canRefine()
@@ -729,7 +729,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
         var rows = new ArrayList<CardRow>();
         rows.add(new CardRow(Component.translatable("voidheart.research.card.gathering"), String.format(Locale.ROOT, "%.2f/s", snapshot.rate()), TEXT_COLOR));
-        activeResearch().ifPresent(research -> rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format(Locale.ROOT, "%.2f/s", research.knowledgePerSecond()), TEXT_COLOR)));
+        activeResearch().ifPresent(research ->
+        {
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format(Locale.ROOT, "%.2f/s", research.knowledgePerSecond()), TEXT_COLOR));
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.advancing"), String.format(Locale.ROOT, "%.2f/s", starving() ? snapshot.rate() : research.speed(snapshot.rate())), TEXT_COLOR));
+        });
         rows.add(new CardRow(Component.translatable("voidheart.research.card.holds"), wholeNumber(snapshot.cap()), TEXT_COLOR));
         rows.add(new CardRow(Component.translatable("voidheart.research.card.columns"), wholeNumber(snapshot.columns().count()), TEXT_COLOR));
         var upgrades = snapshot.upgrades();
