@@ -1,0 +1,14 @@
+{
+  "tier": 3,
+  "constellation": "archive",
+  "x": 0.14,
+  "y": 0.98,
+  "icon": "minecraft:sculk_shrieker",
+  "insight_cost": 16,
+  "knowledge_cost": 1500,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:cogitation"
+  ],
+  "cogitant_rate": 0.06
+}

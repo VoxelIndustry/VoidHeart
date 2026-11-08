@@ -30,6 +30,12 @@ public record Research(int tier, Constellation constellation, double x, double y
             Identifier.CODEC.listOf().optionalFieldOf("recipes", List.of()).forGetter(Research::recipes)
     ).apply(instance, Research::new));
 
+    /** How fast it progresses while stored knowledge lasts: its own burn from the store, and everything gathered meanwhile on top. */
+    public double speed(double gathering)
+    {
+        return knowledgePerSecond + gathering;
+    }
+
     public static String nameKey(Identifier id)
     {
         return "research." + id.getNamespace() + "." + id.getPath();

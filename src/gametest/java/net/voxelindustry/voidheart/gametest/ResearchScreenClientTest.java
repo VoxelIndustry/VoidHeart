@@ -190,6 +190,27 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             hover(context, new int[] { 5, 5 });
             context.takeScreenshot("research-ui-detail-running");
 
+            for (var node : context.computeOnClient(client -> screen(client).shownNodes()))
+            {
+                if (context.computeOnClient(client -> screen(client).selected()) != null)
+                {
+                    context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+                    context.waitTicks(3);
+                }
+                click(context, context.computeOnClient(client -> screen(client).nodePosition(node)));
+                if (!node.equals(context.computeOnClient(client -> screen(client).selected())))
+                    continue;
+                hover(context, context.computeOnClient(client -> screen(client).readoutPosition()));
+                context.waitFor(client -> screen(client).cardOpen());
+                context.takeScreenshot("research-ui-card-beside-" + node.getPath());
+                if (context.computeOnClient(client -> screen(client).cardOverlapsDetail()))
+                    throw new AssertionError("The knowledge card should not be drawn over the tablet of " + node);
+                hover(context, new int[] { 5, 5 });
+                context.waitFor(client -> screen(client).detailShown());
+            }
+            if (context.computeOnClient(client -> screen(client).selected()) == null)
+                click(context, context.computeOnClient(client -> screen(client).nodePosition(FAR_SIGHT)));
+
             context.getInput().pressKey(InputConstants.KEY_ESCAPE);
             context.waitTicks(3);
             if (context.computeOnClient(client -> screen(client).selected()) != null)
@@ -260,6 +281,9 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             });
             context.waitTicks(30);
             context.takeScreenshot("research-ui-all-read");
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            hover(context, new int[] { 2, 2 });
+            captureSizes(context, "all-read");
 
             // Every text read on the map or a page, so a stray % or a missing key shows here rather than in play
             context.computeOnClient(client -> screen(client).describedTexts()).forEach((key, text) ->

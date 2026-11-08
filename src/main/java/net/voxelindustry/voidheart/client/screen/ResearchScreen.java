@@ -361,7 +361,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private double knowledgeChange()
     {
         var research = activeResearch();
-        return research.isPresent() && !tooStrained(research.get()) ? snapshot.rate() - research.get().knowledgePerSecond() : snapshot.rate();
+        return research.isPresent() && !tooStrained(research.get()) ? -research.get().knowledgePerSecond() : snapshot.rate();
     }
 
     /** Whether a research weighs more than the player and their proxies bear, which stops it from starting or keeps it waiting. */
@@ -390,14 +390,14 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         double progress = snapshot.progress().getOrDefault(id, 0D);
         if (snapshot.active().filter(id::equals).isEmpty() || tooStrained(research))
             return progress;
-        return Math.min(research.knowledgeCost(), progress + (starving() ? snapshot.rate() : research.knowledgePerSecond()) * secondsSinceSnapshot());
+        return Math.min(research.knowledgeCost(), progress + (starving() ? snapshot.rate() : research.speed(snapshot.rate())) * secondsSinceSnapshot());
     }
 
     private double secondsToFinish(Identifier id, Research research)
     {
         if (tooStrained(research))
             return Double.POSITIVE_INFINITY;
-        return KnowledgeMath.secondsToFinish(shownKnowledge(), snapshot.rate(), research.knowledgeCost() - shownProgress(id, research), research.knowledgePerSecond());
+        return KnowledgeMath.secondsToFinish(shownKnowledge(), snapshot.rate(), research.knowledgeCost() - shownProgress(id, research), research.speed(snapshot.rate()));
     }
 
     private boolean canRefine()
@@ -681,8 +681,8 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         int boxHeight = PAD * 2 + CARD_HEADER + rows.stream().mapToInt(row -> row == null ? GROOVE : CARD_ROW).sum() + GROOVE + font.lineHeight;
 
         var readout = readoutBounds();
-        int x = readout.x();
         int bottom = readout.y() - 2;
+        int x = readout.x();
         cardBounds = new Bounds(x, bottom - boxHeight, boxWidth, boxHeight);
 
         float eased = 1 - (1 - cardOpen) * (1 - cardOpen) * (1 - cardOpen);
@@ -730,7 +730,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
 
         var rows = new ArrayList<CardRow>();
         rows.add(new CardRow(Component.translatable("voidheart.research.card.gathering"), String.format(Locale.ROOT, "%.2f/s", snapshot.rate()), TEXT_COLOR));
-        activeResearch().ifPresent(research -> rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format(Locale.ROOT, "%.2f/s", research.knowledgePerSecond()), TEXT_COLOR)));
+        activeResearch().ifPresent(research ->
+        {
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.burning"), String.format(Locale.ROOT, "%.2f/s", research.knowledgePerSecond()), TEXT_COLOR));
+            rows.add(new CardRow(Component.translatable("voidheart.research.card.advancing"), String.format(Locale.ROOT, "%.2f/s", starving() ? snapshot.rate() : research.speed(snapshot.rate())), TEXT_COLOR));
+        });
         rows.add(new CardRow(Component.translatable("voidheart.research.card.holds"), wholeNumber(snapshot.cap()), TEXT_COLOR));
         rows.add(new CardRow(Component.translatable("voidheart.research.card.columns"), wholeNumber(snapshot.columns().count()), TEXT_COLOR));
         var upgrades = snapshot.upgrades();
@@ -961,10 +965,15 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         if (x < left + 6 || x + boxWidth > right - 6)
             x = onRight ? left + 6 : right - 6 - boxWidth;
         boolean overButton = x < insightButton.getX() + insightButton.getWidth() + 4 && x + boxWidth > insightButton.getX() - 4;
-        int lowest = (overButton ? insightButton.getY() - 4 : height - 6) - boxHeight;
+        var readout = readoutBounds();
+        boolean overReadout = x < readout.x() + readout.width() + 4;
+        int lowest = (overButton ? insightButton.getY() - 4 : overReadout ? readout.y() - 4 : height - 6) - boxHeight;
         int y = Math.clamp(map.nodeY(selected) - boxHeight / 2, 6, Math.max(6, lowest));
 
-        detailBounds = new Bounds(x, y, boxWidth, boxHeight);
+        var bounds = new Bounds(x, y, boxWidth, boxHeight);
+        if (cardOpen > 0 && overlaps(bounds, cardBounds))
+            return;
+        detailBounds = bounds;
         tablet(graphics, detailBounds);
 
         int textY = y + PAD;
@@ -1536,6 +1545,33 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             research.unlocks().forEach(item -> texts.put(ResearchItemPage.pageKey(item), described(ResearchItemPage.pageKey(item)).getString()));
         });
         return texts;
+    }
+
+    public List<Identifier> shownNodes()
+    {
+        return tree.entrySet().stream().filter(entry -> stateOf(entry.getKey(), entry.getValue()) != NodeState.HIDDEN).map(Map.Entry::getKey).sorted().toList();
+    }
+
+    private static boolean overlaps(Bounds first, Bounds second)
+    {
+        return first != null && second != null
+                && first.x() < second.x() + second.width() && second.x() < first.x() + first.width()
+                && first.y() < second.y() + second.height() && second.y() < first.y() + first.height();
+    }
+
+    public boolean cardOverlapsDetail()
+    {
+        return overlaps(cardBounds, detailBounds);
+    }
+
+    public boolean detailShown()
+    {
+        return detailBounds != null;
+    }
+
+    public boolean cardOpen()
+    {
+        return cardOpen >= 1;
     }
 
     public Identifier selected()

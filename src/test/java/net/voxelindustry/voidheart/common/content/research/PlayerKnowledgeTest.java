@@ -209,7 +209,7 @@ class PlayerKnowledgeTest
         assertThat(data.getActive()).contains(ROOT);
         data.settle(seconds(2), RULES, TREE);
         double progress = data.getProgress().get(ROOT);
-        assertThat(progress).isCloseTo(2, within(1E-9));
+        assertThat(progress).isCloseTo(2.2, within(1E-9));
 
         data.toggleActive(ROOT);
         assertThat(data.getActive()).isEmpty();
@@ -235,6 +235,20 @@ class PlayerKnowledgeTest
         assertThat(data.getCompleted()).contains(ROOT);
         assertThat(data.getActive()).isEmpty();
         assertThat(data.getKnowledge()).isEqualTo(100);
+    }
+
+    @Test
+    void settle_givenStoredKnowledge_thenAdvancesAtItsBurnPlusWhatIsGathered()
+    {
+        data.addInsights(1);
+        data.reveal(ROOT, TREE);
+        data.addKnowledge(30);
+        data.toggleActive(ROOT);
+
+        data.settle(seconds(5), RULES, TREE);
+
+        assertThat(data.getProgress().get(ROOT)).isCloseTo(5.5, within(1E-9));
+        assertThat(data.getKnowledge()).isCloseTo(25, within(1E-9));
     }
 
     @Test
@@ -348,7 +362,8 @@ class PlayerKnowledgeTest
         assertThat(data.isStrained(RULES, tree)).isFalse();
         assertThat(data.settle(seconds(10), RULES, tree)).contains(ROOT);
 
-        assertThat(data.getProxies().get(PROXY)).isCloseTo(90, within(1E-9));
+        // Done once 10 is poured at its burn of 1 and the 0.1 gathered on top
+        assertThat(data.getProxies().get(PROXY)).isCloseTo(100 - 10 / 1.1, within(1E-9));
     }
 
     @Test
@@ -361,7 +376,7 @@ class PlayerKnowledgeTest
 
         assertThat(data.settle(seconds(10), RULES, tree)).isEmpty();
 
-        assertThat(data.getProgress().get(ROOT)).isCloseTo(4, within(1E-9));
+        assertThat(data.getProgress().get(ROOT)).isCloseTo(4.4, within(1E-9));
         assertThat(data.getProxies().get(PROXY)).isZero();
         assertThat(data.isStrained(RULES, tree)).isTrue();
     }
