@@ -120,6 +120,20 @@ public class RavenousRelayTile extends TileBase
     }
 
     /**
+     * Relays that link to the collector or storage at this position, the other way round from {@link #scanLinks}.
+     */
+    public static List<BlockPos> relaysReaching(Level level, BlockPos target)
+    {
+        var relays = new ArrayList<BlockPos>();
+        RelayNetwork.forEachTileInRange(level, target, RANGE, tile ->
+        {
+            if (tile instanceof RavenousRelayTile && hasLineOfSight(level, tile.getBlockPos(), target))
+                relays.add(tile.getBlockPos().immutable());
+        });
+        return relays;
+    }
+
+    /**
      * Only blocks with a collision shape break the link, the two ends excluded.
      */
     private static boolean hasLineOfSight(Level level, BlockPos worldPosition, BlockPos target)

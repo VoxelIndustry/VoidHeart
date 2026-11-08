@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
@@ -31,6 +32,7 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixB
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.essence.StorageFill;
+import net.voxelindustry.voidheart.common.content.essence.StorageParts;
 import net.voxelindustry.voidheart.common.content.essence.SufferingHarvest;
 import net.voxelindustry.voidheart.common.content.tormenter.TormenterSouls;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -296,7 +298,27 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
         aimFrom(context, server, 45.5, FEET + 2.5, 0.5, 45.5, FEET - 0.5, 2.5, 5);
         context.takeScreenshot("relay-placement-preview");
         server.runOnServer(minecraft -> player(minecraft).getInventory().setItem(0, ItemStack.EMPTY));
+
+        // A storage knows the relays that reach it, the same ones whose links include it
+        server.runOnServer(minecraft ->
+        {
+            var level = level(minecraft);
+            var reaching = RavenousRelayTile.relaysReaching(level, STORAGE);
+            expect(reaching.contains(SECOND_RELAY), "the storage is not reached by the relay that fills it, found " + reaching);
+            for (var relay : reaching)
+                expect(RavenousRelayTile.scanLinks(level, relay).receivers().contains(STORAGE), "the storage counts " + relay + " which does not link to it");
+            expect(STORAGE.equals(StorageParts.holderOf(level.getBlockState(STORAGE.above()), STORAGE.above())), "the pillar does not lead to its base");
+            expect(RavenousRelayTile.relaysReaching(level, HIDDEN_STORAGE).isEmpty(), "the hidden storage counts a relay out of its sight");
+        });
+
+        // Hovering its pillars shows the relays that reach it, and Jade shows the storage itself
+        aimFrom(context, server, STORAGE.getX() + 1.8, FEET + 2.5, STORAGE.getZ() - 1, STORAGE.getX() + 0.84, FEET + 0.9, STORAGE.getZ() + 0.16, 5);
+        expectClient(context, "the player is not looking at the storage pillars", minecraft -> minecraft.hitResult instanceof BlockHitResult hit
+                && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(STORAGE.above()));
+        context.takeScreenshot("storage-hover-links");
         context.getInput().pressKey(InputConstants.KEY_F1);
+        context.waitTicks(20);
+        context.takeScreenshot("storage-pillar-jade");
     }
 
     /**
