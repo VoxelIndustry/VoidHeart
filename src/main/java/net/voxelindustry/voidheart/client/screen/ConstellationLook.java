@@ -16,6 +16,7 @@ record ConstellationLook(int rgb, int lightRgb, int sigilU)
     private static final ConstellationLook ARTIFICES = new ConstellationLook(0xD880C8, 0x5C1F4E, 10);
     private static final ConstellationLook ARCHIVE   = new ConstellationLook(0xCDB36E, 0x4E4420, 20);
     private static final ConstellationLook TRAVEL    = new ConstellationLook(0x7FB2EA, 0x1E4060, 30);
+    private static final ConstellationLook DEITIES   = new ConstellationLook(0xD8586A, 0x4A0E16, 40);
 
     static ConstellationLook of(Constellation constellation)
     {
@@ -25,6 +26,7 @@ record ConstellationLook(int rgb, int lightRgb, int sigilU)
             case ARTIFICES -> ARTIFICES;
             case ARCHIVE -> ARCHIVE;
             case TRAVEL -> TRAVEL;
+            case DEITIES -> DEITIES;
         };
     }
 }

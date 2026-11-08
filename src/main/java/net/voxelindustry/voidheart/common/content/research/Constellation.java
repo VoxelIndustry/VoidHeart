@@ -6,14 +6,15 @@ import net.minecraft.util.StringRepresentable;
 import java.util.Locale;
 
 /**
- * What a research is about: making and gathering, useful devices, the repository itself, or going elsewhere.
+ * What a research is about: making and gathering, useful devices, the repository itself, going elsewhere, or what waits in the void.
  */
 public enum Constellation implements StringRepresentable
 {
     RITES,
     ARTIFICES,
     ARCHIVE,
-    TRAVEL;
+    TRAVEL,
+    DEITIES;
 
     public static final Codec<Constellation> CODEC = StringRepresentable.fromEnum(Constellation::values);
 

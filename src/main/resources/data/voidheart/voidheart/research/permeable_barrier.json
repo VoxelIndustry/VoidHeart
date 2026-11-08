@@ -1,0 +1,17 @@
+{
+  "tier": 1,
+  "constellation": "artifices",
+  "icon": "voidheart:permeable_barrier_item",
+  "insight_cost": 2,
+  "knowledge_cost": 40,
+  "knowledge_per_second": 0.25,
+  "requires": [
+    "voidheart:altar_rite"
+  ],
+  "unlocks": [
+    "voidheart:permeable_barrier_item"
+  ],
+  "recipes": [
+    "voidheart:altar/permeable_barrier_item"
+  ]
+}

@@ -272,6 +272,30 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.waitTicks(10);
             context.takeScreenshot("research-ui-craft-many-hover");
 
+            // The Deities stay hidden until the Daedalus is done, and Maw comes further through behind the map with each one read
+            hover(context, new int[] { 2, 2 });
+            if (context.computeOnClient(client -> screen(client).mawStage()) != -1)
+                throw new AssertionError("The Deities show before the Daedalus is done");
+            server.runOnServer(minecraft -> knowledge(minecraft).grant(id("daedalus")));
+            context.waitTicks(20);
+            captureMaw(context, 0);
+            String[] deities = { "hunger_beneath", "litany_of_teeth", "gullet", "maw" };
+            for (int stage = 1; stage <= deities.length; stage++)
+            {
+                var research = id(deities[stage - 1]);
+                server.runOnServer(minecraft -> knowledge(minecraft).grant(research));
+                context.waitTicks(20);
+                captureMaw(context, stage);
+            }
+            // A tendril mid-lash, caught in the first second of its cycle at most
+            context.waitTicks(17);
+            context.takeScreenshot("research-ui-maw-4-later-427x240");
+
+            // Sealed off, the ravine shuts and is stitched across, and the flesh leaves the stone
+            server.runOnServer(minecraft -> knowledge(minecraft).grant(id("sealed_mind")));
+            context.waitTicks(20);
+            captureMaw(context, 5);
+
             server.runOnServer(minecraft ->
             {
                 var data = knowledge(minecraft);
@@ -320,6 +344,19 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.runOnClient(client -> client.player.closeContainer());
             context.waitFor(client -> client.gui.screen() == null);
         }
+    }
+
+    private static void captureMaw(ClientGameTestContext context, int stage)
+    {
+        context.runOnClient(client -> screen(client).deselect());
+        context.waitTicks(2);
+        int seen = context.computeOnClient(client -> screen(client).mawStage());
+        if (seen != stage)
+            throw new AssertionError("Maw should be at stage " + stage + " but is at " + seen);
+        resize(context, 1920, 1080, 2);
+        context.takeScreenshot("research-ui-maw-" + stage + "-960x540");
+        resize(context, 854, 480, 2);
+        context.takeScreenshot("research-ui-maw-" + stage + "-427x240");
     }
 
     private static void captureSizes(ClientGameTestContext context, String name)
