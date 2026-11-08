@@ -46,8 +46,8 @@ final class ResearchMapView
     private static final int PUPIL_U       = 80;
     private static final int PUPIL_W       = 6;
     private static final int PUPIL_H       = 20;
-    /** From this screen height the eye is drawn at twice its sprite's size. Below it, it would crowd the little of the map a small screen shows. */
-    static final int         LARGE_EYE_MIN = 350;
+    /** The eye is drawn at its sprite's own size on every screen, so it never dwarfs the researches around it. */
+    static final int         EYE_SCALE     = 1;
 
     private static final float MIN_OPEN = 0.24F;
     private static final float LOWER_LID_REST = 0.5F;
@@ -115,11 +115,11 @@ final class ResearchMapView
     private final Font                      font;
     private final Map<Identifier, Research> tree;
     private final ResearchMapPlan           plan;
-    private final ResearchMapPlan.Bounds    depths;
-    private final int[]                     rangeX;
-    private final int[]                     rangeY;
-    private final int                       centerX;
-    private final int                       centerY;
+    private ResearchMapPlan.Bounds          depths;
+    private int[]                           rangeX;
+    private int[]                           rangeY;
+    private int                             centerX;
+    private int                             centerY;
     /** Where the eye is on screen now, and where it is gliding to. */
     private double                          eyeX;
     private double                          eyeY;
@@ -127,6 +127,7 @@ final class ResearchMapView
     private double                          goalY;
     private long                            glidedAt;
     private final List<ResearchMapPlan.Link> paths;
+    private final MawView                   maw;
     private final List<Link>                links = new ArrayList<>();
     private final List<Watcher>             watchers = new ArrayList<>();
     private final List<Bloom>               blooms = new ArrayList<>();
@@ -150,34 +151,17 @@ final class ResearchMapView
         this.right = right;
         this.height = height;
         this.mapWidth = right - left;
-        this.eyeScale = eyeScale(height);
+        this.eyeScale = EYE_SCALE;
 
         var nameWidths = new EnumMap<Constellation, Integer>(Constellation.class);
         for (var constellation : Constellation.values())
             nameWidths.put(constellation, SIGIL_SIZE + SIGIL_GAP + font.width(Component.translatable(constellation.nameKey())));
         this.plan = ResearchMapPlan.plan(tree, new ResearchMapPlan.Frame(eyeHalfWidth(eyeScale), eyeHalfHeight(eyeScale), NODE_SIZE, nameWidths, NAME_HEIGHT));
         this.paths = plan.links();
+        this.maw = new MawView(tree, plan.nodes(), seed);
 
+        fit(panX, panY);
         var bounds = plan.bounds();
-        int viewLeft = left + VIEW_INSET;
-        int viewRight = right - VIEW_INSET;
-        int viewTop = VIEW_INSET;
-        int viewBottom = height - INSIGHT_TOP;
-        this.rangeX = ResearchMapPlan.eyeRange(bounds.minX(), bounds.maxX(), viewLeft, viewRight, PAN_MARGIN);
-        this.rangeY = ResearchMapPlan.eyeRange(bounds.minY(), bounds.maxY(), viewTop, viewBottom, PAN_MARGIN);
-        // At rest the eye is as near the middle as the map allows, and a map that fits is never panned
-        this.centerX = Math.clamp((viewLeft + viewRight) / 2, rangeX[0], rangeX[1]);
-        this.centerY = Math.clamp((viewTop + viewBottom) / 2, rangeY[0], rangeY[1]);
-        if (bounds.width() + PAN_MARGIN * 2 <= viewRight - viewLeft)
-            rangeX[0] = rangeX[1] = centerX;
-        if (bounds.height() + PAN_MARGIN * 2 <= viewBottom - viewTop)
-            rangeY[0] = rangeY[1] = centerY;
-
-        // The dark is painted once for every place the map can be panned to, so that panning never repaints it
-        this.depths = new ResearchMapPlan.Bounds(left - rangeX[1], -rangeY[1], right - rangeX[0], height - rangeY[0]);
-        place(centerX + panX, centerY + panY);
-        goalX = eyeX;
-        goalY = eyeY;
 
         var random = new Random(seed);
         for (int i = 0; i < WATCHERS * 12 && watchers.size() < WATCHERS; i++)
@@ -192,10 +176,42 @@ final class ResearchMapView
         }
     }
 
-    /** The eye keeps to whole sprite pixels, so it steps between two sizes rather than growing with the screen. */
-    static int eyeScale(int height)
+    /**
+     * Works out how far the map can pan: over the researches and names, and over Maw too once it has come through, since it grows beyond them.
+     */
+    private void fit(double panX, double panY)
     {
-        return height >= LARGE_EYE_MIN ? 2 : 1;
+        var bounds = plan.bounds();
+        var mouth = maw.bounds();
+        if (mouth != null)
+            bounds = new ResearchMapPlan.Bounds(Math.min(bounds.minX(), mouth.minX()), Math.min(bounds.minY(), mouth.minY()), Math.max(bounds.maxX(), mouth.maxX()),
+                    Math.max(bounds.maxY(), mouth.maxY()));
+        int viewLeft = left + VIEW_INSET;
+        int viewRight = right - VIEW_INSET;
+        int viewTop = VIEW_INSET;
+        int viewBottom = height - INSIGHT_TOP;
+        rangeX = ResearchMapPlan.eyeRange(bounds.minX(), bounds.maxX(), viewLeft, viewRight, PAN_MARGIN);
+        rangeY = ResearchMapPlan.eyeRange(bounds.minY(), bounds.maxY(), viewTop, viewBottom, PAN_MARGIN);
+        // At rest the eye is as near the middle as the map allows, and a map that fits is never panned
+        centerX = Math.clamp((viewLeft + viewRight) / 2, rangeX[0], rangeX[1]);
+        centerY = Math.clamp((viewTop + viewBottom) / 2, rangeY[0], rangeY[1]);
+        if (bounds.width() + PAN_MARGIN * 2 <= viewRight - viewLeft)
+            rangeX[0] = rangeX[1] = centerX;
+        if (bounds.height() + PAN_MARGIN * 2 <= viewBottom - viewTop)
+            rangeY[0] = rangeY[1] = centerY;
+
+        // The dark is painted once for every place the map can be panned to, so that panning never repaints it
+        depths = new ResearchMapPlan.Bounds(left - rangeX[1], -rangeY[1], right - rangeX[0], height - rangeY[0]);
+        links.clear();
+        place(centerX + panX, centerY + panY);
+        goalX = eyeX;
+        goalY = eyeY;
+    }
+
+    /** Pans again over what the map now covers, once Maw has come further through, keeping where the player had it. */
+    void refit()
+    {
+        fit(panX(), panY());
     }
 
     /** Half the width the map keeps clear for the eye and the insights circling it. The researches keep their spacing either way, only the space around the eye changes. */
@@ -299,6 +315,12 @@ final class ResearchMapView
                 depths.width(), depths.height(), color);
     }
 
+    /** How far Maw has come through behind the map, or -1 while the Deities are hidden. */
+    int mawStage()
+    {
+        return maw.stage();
+    }
+
     int eyeX()
     {
         return originX();
@@ -343,6 +365,7 @@ final class ResearchMapView
         var lights = new ArrayList<ResearchVoid.Light>();
         double reach = LIGHT_REACH * 0.5;
         lights.add(new ResearchVoid.Light(0, 0, reach * 0.9, 0.95, ResearchVoid.LIT_RGB));
+        maw.addLight(lights);
         tree.forEach((id, research) ->
         {
             var state = ResearchScreen.stateOf(id, research);
@@ -390,6 +413,7 @@ final class ResearchMapView
     {
         long now = Util.getMillis();
         glide(now);
+        maw.extract(graphics, originX(), originY(), mouseX, mouseY, now);
         var lineage = new HashSet<Identifier>();
         addLineage(selected, lineage);
         addLineage(hovered, lineage);

@@ -254,11 +254,11 @@ public class PlayerKnowledge
     }
 
     /**
-     * A research can only be revealed from the roots of the tree or next to what the player already has.
+     * A research can only be revealed from the roots of the tree or next to what the player already has, and not while something still hides it.
      */
     public boolean isDiscoverable(Research research)
     {
-        return research.requires().isEmpty() || research.requires().stream().anyMatch(completed::contains);
+        return research.isDiscoverable(completed);
     }
 
     public boolean reveal(Identifier id, Map<Identifier, Research> tree)

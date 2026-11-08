@@ -194,6 +194,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     private double                     pressX = Double.NaN;
     private double                     pressY;
     private boolean                    panning;
+    private boolean                    crusted;
     private ResearchSceneView          sceneView;
     private final List<Unlock>         unlockSlots = new ArrayList<>();
     private final List<ResearchText.Placed> detailLines = new ArrayList<>();
@@ -216,7 +217,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         map = new ResearchMapView(font, tree, left, right, height, seed(), panX, panY);
 
         hasPrevious = false;
-        ResearchVoid.bakeSlab(minecraft, SLAB, width, height, left, right, height - ResearchMapView.INSIGHT_TOP, seed());
+        bakeSlab();
         bake(voidCurrent);
         rebuildFrontier();
         if (seen == null)
@@ -249,6 +250,13 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return minecraft.player == null ? 0 : minecraft.player.getUUID().getLeastSignificantBits();
     }
 
+    /** Bakes the slab, crusted with flesh once Maw has come all the way through. */
+    private void bakeSlab()
+    {
+        crusted = map.mawStage() == MawFlesh.STAGES - 1;
+        ResearchVoid.bakeSlab(minecraft, SLAB, width, height, left, right, height - ResearchMapView.INSIGHT_TOP, crusted, seed());
+    }
+
     private void bake(Identifier target)
     {
         var depths = map.depths();
@@ -268,7 +276,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             return NodeState.ACTIVE;
         if (snapshot.revealed().contains(id))
             return NodeState.REVEALED;
-        if (research.requires().isEmpty() || research.requires().stream().anyMatch(snapshot.completed()::contains))
+        if (research.isDiscoverable(snapshot.completed()))
             return NodeState.UNKNOWN;
         return NodeState.HIDDEN;
     }
@@ -319,10 +327,13 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         {
             tree.forEach((id, research) ->
             {
-                if (stateOf(id, research) == NodeState.UNKNOWN && research.requires().stream().anyMatch(requirement -> snapshot.completed().contains(requirement) && !before.completed().contains(requirement)))
+                if (stateOf(id, research) == NodeState.UNKNOWN && !research.isDiscoverable(before.completed()))
                     map.appear(id);
             });
+            map.refit();
             swapVoids();
+            if (crusted != (map.mawStage() == MawFlesh.STAGES - 1))
+                bakeSlab();
         }
         rebuildFrontier();
     }
@@ -1523,6 +1534,18 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     {
         var readout = readoutBounds();
         return new int[] { readout.x() + readout.width() / 2, readout.y() + readout.height() / 2 };
+    }
+
+    public int mawStage()
+    {
+        return map.mawStage();
+    }
+
+    /** Lets go of whatever is selected, for tests that capture the bare map. */
+    public void deselect()
+    {
+        selected = null;
+        lastClicked = null;
     }
 
     public int[] eyePosition()

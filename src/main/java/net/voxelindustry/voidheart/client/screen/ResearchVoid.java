@@ -46,6 +46,9 @@ final class ResearchVoid
     /** How dark the floor of the hole gets, and how far above the bottom it is darkest. */
     private static final float FLOOR_SHADOW    = 0.8F;
     private static final int   FLOOR_DARKEST   = 12;
+    /** How far flesh can eat into the stone and spill into the hole once it crusts the edge. */
+    private static final float CRUST_STONE     = 9;
+    private static final float CRUST_HOLE      = 7;
 
     static final float[][] BAYER = {
             { 0 / 16F, 8 / 16F, 2 / 16F, 10 / 16F },
@@ -62,7 +65,7 @@ final class ResearchVoid
      * The slab alone, with the hole left clear but for the shadow its torn edge casts, so that the map can be drawn under it and pan beneath its edge.
      * The floor of the hole darkens too, from floorTop down, so what is panned under the readouts sinks into the dark rather than fights them.
      */
-    static void bakeSlab(Minecraft minecraft, Identifier target, int width, int height, int left, int right, int floorTop, long seed)
+    static void bakeSlab(Minecraft minecraft, Identifier target, int width, int height, int left, int right, int floorTop, boolean crusted, long seed)
     {
         var stone = readStone(minecraft);
         var image = new NativeImage(width, height, false);
@@ -72,7 +75,10 @@ final class ResearchVoid
             int edgeRight = edgeRight(y, right, seed);
             for (int x = 0; x < width; x++)
             {
-                if (x < edgeLeft || x >= edgeRight)
+                int crust = crusted ? crustAt(x, y, x < edgeLeft || x >= edgeRight ? Math.min(Math.abs(x - edgeLeft), Math.abs(x - edgeRight)) : -Math.min(x - edgeLeft, edgeRight - 1 - x), seed) : 0;
+                if (crust != 0)
+                    image.setPixel(x, y, crust);
+                else if (x < edgeLeft || x >= edgeRight)
                     image.setPixel(x, y, stoneAt(stone, x, y, Math.min(Math.abs(x - edgeLeft), Math.abs(x - edgeRight)), seed));
                 else
                 {
@@ -132,6 +138,33 @@ final class ResearchVoid
         if (stone != null)
             stone.close();
         return image;
+    }
+
+    /**
+     * Flesh grown over the torn edge once Maw has come all the way through: lumps that eat a little into the stone and spill a little into the hole, thicker
+     * in some places than others. Returns 0 where there is none.
+     *
+     * @param fromEdge how far into the stone, or negative how far into the hole
+     */
+    static int crustAt(int x, int y, int fromEdge, long seed)
+    {
+        float into = CRUST_STONE * (0.35F + 0.65F * smooth(y * 0.06F, 4.2F, seed + 77));
+        float out = CRUST_HOLE * smooth(y * 0.09F, 8.8F, seed + 79);
+        if (fromEdge > into || -fromEdge > out)
+            return 0;
+        if (fromEdge > into - 1.5F || -fromEdge > out - 1.5F)
+            return MawFlesh.FLESH_DARK;
+        int lumpY = Math.floorDiv(y, 5);
+        int lumpX = Math.floorDiv(fromEdge + 20, 4);
+        float speck = hash(x, y, seed + 81);
+        if (speck < 0.1F)
+            return MawFlesh.FLESH_SPECK;
+        if (speck > 0.93F)
+            return MawFlesh.FLESH_SHINE;
+        // A seam between two lumps now and then, so the crust reads as heaped rather than striped
+        if (Math.floorMod(y, 5) == 0 && hash(lumpX, lumpY, seed + 85) < 0.55F)
+            return MawFlesh.FLESH_DARK;
+        return MawFlesh.flesh((int) (hash(lumpX, lumpY, seed + 83) * 6));
     }
 
     static int edgeLeft(int y, int left, long seed)

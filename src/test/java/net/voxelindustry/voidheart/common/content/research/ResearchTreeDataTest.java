@@ -28,6 +28,8 @@ class ResearchTreeDataTest
     private static final KnowledgeRules RULES = new KnowledgeRules(0.1, 30, 10, 1.1);
     private static final int[] COLUMNS_BUILT_BY_TIER = { 6, 45, 72 };
 
+    private static final Identifier SEALED_MIND = Identifier.fromNamespaceAndPath("voidheart", "sealed_mind");
+
     private static final Map<Identifier, Research> TREE = new HashMap<>();
 
     @BeforeAll
@@ -49,13 +51,19 @@ class ResearchTreeDataTest
     {
         assertThat(TREE.values().stream().map(Research::tier).distinct()).containsExactlyInAnyOrder(1, 2, 3);
 
-        TREE.values().forEach(research ->
+        TREE.forEach((id, research) ->
         {
+            // Sealing Maw off ends the longest chain in the tree, past the Daedalus and four Deities, so it is priced under its tier to stay payable
+            if (id.equals(SEALED_MIND))
+            {
+                assertThat(research.insightCost()).as("price of %s", id).isBetween(6, 8);
+                return;
+            }
             switch (research.tier())
             {
-                case 1 -> assertThat(research.insightCost()).isBetween(1, 2);
-                case 2 -> assertThat(research.insightCost()).isBetween(6, 8);
-                default -> assertThat(research.insightCost()).isGreaterThan(8);
+                case 1 -> assertThat(research.insightCost()).as("price of %s", id).isBetween(1, 2);
+                case 2 -> assertThat(research.insightCost()).as("price of %s", id).isBetween(6, 8);
+                default -> assertThat(research.insightCost()).as("price of %s", id).isGreaterThan(8);
             }
         });
     }
@@ -66,7 +74,9 @@ class ResearchTreeDataTest
         TREE.forEach((id, research) ->
         {
             assertThat(TREE.keySet()).as("requirements of %s", id).containsAll(research.requires());
-            if (research.requires().isEmpty())
+            assertThat(TREE.keySet()).as("what hides %s", id).containsAll(research.hiddenUntil());
+            // A root hidden until something late is done is as late as what hides it
+            if (research.requires().isEmpty() && research.hiddenUntil().isEmpty())
                 assertThat(research.tier()).as("tier of root %s", id).isEqualTo(1);
         });
     }
@@ -225,8 +235,11 @@ class ResearchTreeDataTest
         while (step != null)
         {
             chain.add(step);
-            var requires = TREE.get(step).requires();
-            step = requires.isEmpty() ? null : requires.getFirst();
+            var research = TREE.get(step);
+            // What hides a research has to be paid for before it, as surely as what it hangs from
+            for (var hider : research.hiddenUntil())
+                chainOf(hider).stream().filter(hidden -> !chain.contains(hidden)).forEach(chain::add);
+            step = research.requires().isEmpty() ? null : research.requires().getFirst();
         }
         return chain;
     }

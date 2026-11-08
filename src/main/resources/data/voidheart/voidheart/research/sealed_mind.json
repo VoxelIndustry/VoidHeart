@@ -1,0 +1,12 @@
+{
+  "tier": 3,
+  "constellation": "deities",
+  "icon": "minecraft:string",
+  "insight_cost": 8,
+  "knowledge_cost": 12000,
+  "knowledge_per_second": 4,
+  "strain": 70,
+  "requires": [
+    "voidheart:maw"
+  ]
+}

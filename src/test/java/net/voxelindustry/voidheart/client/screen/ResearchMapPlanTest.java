@@ -24,16 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ResearchMapPlanTest
 {
     private static final int NODE      = ResearchMapView.NODE_SIZE;
-    /** Screen heights that show the small eye and the large one. */
-    private static final int SMALL_EYE = 240;
-    private static final int LARGE_EYE = 540;
 
-    /** Each tree around the small eye of a small screen and the large eye of a large one. */
     static Stream<Arguments> trees()
     {
-        return Stream.of(Arguments.of("shipped", ResearchTrees.shipped()), Arguments.of("grown", grown()),
-                        Arguments.of("crowded", crowded()))
-                .flatMap(tree -> Stream.of(SMALL_EYE, LARGE_EYE).map(height -> Arguments.of(tree.get()[0], tree.get()[1], height)));
+        return Stream.of(Arguments.of("shipped", ResearchTrees.shipped()), Arguments.of("grown", grown()), Arguments.of("crowded", crowded()));
     }
 
     static TreeMap<Identifier, Research> grown()
@@ -54,11 +48,11 @@ class ResearchMapPlanTest
         return tree;
     }
 
-    @ParameterizedTest(name = "{0} at {2} high")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("trees")
-    void nodesNeverOverlap(String name, TreeMap<Identifier, Research> tree, int height)
+    void nodesNeverOverlap(String name, TreeMap<Identifier, Research> tree)
     {
-        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame(height));
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
         var ids = new ArrayList<>(tree.keySet());
         for (int a = 0; a < ids.size(); a++)
         {
@@ -71,11 +65,11 @@ class ResearchMapPlanTest
         }
     }
 
-    @ParameterizedTest(name = "{0} at {2} high")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("trees")
-    void namesNeverCoverNodesOrEachOther(String name, TreeMap<Identifier, Research> tree, int height)
+    void namesNeverCoverNodesOrEachOther(String name, TreeMap<Identifier, Research> tree)
     {
-        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame(height));
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
         plan.names().forEach((constellation, label) ->
         {
             plan.nodes().forEach((id, node) -> assertThat(overlaps(label, node)).as("%s name over %s", constellation, id).isFalse());
@@ -87,22 +81,22 @@ class ResearchMapPlanTest
         });
     }
 
-    @ParameterizedTest(name = "{0} at {2} high")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("trees")
-    void nothingEntersTheEye(String name, TreeMap<Identifier, Research> tree, int height)
+    void nothingEntersTheEye(String name, TreeMap<Identifier, Research> tree)
     {
-        var frame = ResearchTrees.frame(height);
+        var frame = ResearchTrees.frame();
         var plan = ResearchMapPlan.plan(tree, frame);
         plan.nodes().forEach((id, node) -> assertThat(touchesEye(frame, node.x() - NODE / 2D, node.y() - NODE / 2D, NODE, NODE)).as("%s on the eye", id).isFalse());
         plan.names().forEach((constellation, label) ->
                 assertThat(touchesEye(frame, label.x(), label.y(), label.width(), label.height())).as("%s name on the eye", constellation).isFalse());
     }
 
-    @ParameterizedTest(name = "{0} at {2} high")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("trees")
-    void boundsHoldTheWholeMap(String name, TreeMap<Identifier, Research> tree, int height)
+    void boundsHoldTheWholeMap(String name, TreeMap<Identifier, Research> tree)
     {
-        var frame = ResearchTrees.frame(height);
+        var frame = ResearchTrees.frame();
         var plan = ResearchMapPlan.plan(tree, frame);
         var bounds = plan.bounds();
         plan.nodes().forEach((id, node) ->
@@ -123,11 +117,11 @@ class ResearchMapPlanTest
         assertThat(bounds.maxY()).isGreaterThanOrEqualTo((int) frame.eyeHalfHeight());
     }
 
-    @ParameterizedTest(name = "{0} at {2} high")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("trees")
-    void childrenSitBeyondTheirParents(String name, TreeMap<Identifier, Research> tree, int height)
+    void childrenSitBeyondTheirParents(String name, TreeMap<Identifier, Research> tree)
     {
-        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame(height));
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
         tree.keySet().forEach(id ->
         {
             var parent = plan.parentOf(id);
@@ -136,11 +130,11 @@ class ResearchMapPlanTest
         });
     }
 
-    @ParameterizedTest(name = "{0} at {2} high")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("trees")
-    void everyResearchAndRequirementIsDrawn(String name, TreeMap<Identifier, Research> tree, int height)
+    void everyResearchAndRequirementIsDrawn(String name, TreeMap<Identifier, Research> tree)
     {
-        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame(height));
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
         assertThat(plan.nodes()).containsOnlyKeys(tree.keySet());
         long requirements = tree.values().stream().mapToLong(research -> research.requires().isEmpty() ? 1 : research.requires().stream().filter(tree::containsKey).count()).sum();
         assertThat(plan.links()).hasSize((int) requirements);
@@ -153,8 +147,8 @@ class ResearchMapPlanTest
     {
         var sorted = ResearchTrees.shipped();
         var hashed = new HashMap<>(sorted);
-        var first = ResearchMapPlan.plan(sorted, ResearchTrees.frame(SMALL_EYE));
-        var second = ResearchMapPlan.plan(hashed, ResearchTrees.frame(SMALL_EYE));
+        var first = ResearchMapPlan.plan(sorted, ResearchTrees.frame());
+        var second = ResearchMapPlan.plan(hashed, ResearchTrees.frame());
         assertThat(second.nodes()).isEqualTo(first.nodes());
         assertThat(second.names()).isEqualTo(first.names());
         assertThat(second.bounds()).isEqualTo(first.bounds());
@@ -164,8 +158,8 @@ class ResearchMapPlanTest
     @Test
     void oneMoreResearchMovesTheRestLittle()
     {
-        var before = ResearchMapPlan.plan(ResearchTrees.shipped(), ResearchTrees.frame(SMALL_EYE));
-        var after = ResearchMapPlan.plan(grown(), ResearchTrees.frame(SMALL_EYE));
+        var before = ResearchMapPlan.plan(ResearchTrees.shipped(), ResearchTrees.frame());
+        var after = ResearchMapPlan.plan(grown(), ResearchTrees.frame());
 
         double total = 0;
         double most = 0;
@@ -200,7 +194,7 @@ class ResearchMapPlanTest
     @MethodSource("sizes")
     void everyScreenCanShowEveryResearch(int width, int height)
     {
-        var plan = ResearchMapPlan.plan(crowded(), ResearchTrees.frame(height));
+        var plan = ResearchMapPlan.plan(crowded(), ResearchTrees.frame());
         var bounds = plan.bounds();
         int[] view = ResearchTrees.view(width, height);
         int[] across = ResearchMapPlan.eyeRange(bounds.minX(), bounds.maxX(), view[0], view[2], 10);

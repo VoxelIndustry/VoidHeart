@@ -1,0 +1,12 @@
+{
+  "tier": 3,
+  "constellation": "deities",
+  "icon": "minecraft:rotten_flesh",
+  "insight_cost": 9,
+  "knowledge_cost": 2500,
+  "knowledge_per_second": 2,
+  "strain": 25,
+  "hidden_until": [
+    "voidheart:daedalus"
+  ]
+}

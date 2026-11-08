@@ -29,7 +29,7 @@ class ResearchMapPreview
     private static final int SCALE = 2;
 
     private static final Map<Constellation, Color> COLORS = Map.of(Constellation.RITES, new Color(0xE08A5E), Constellation.ARTIFICES, new Color(0xD880C8),
-            Constellation.ARCHIVE, new Color(0xCDB36E), Constellation.TRAVEL, new Color(0x7FB2EA));
+            Constellation.ARCHIVE, new Color(0xCDB36E), Constellation.TRAVEL, new Color(0x7FB2EA), Constellation.DEITIES, new Color(0xD8586A));
 
     @Test
     void drawMaps() throws IOException
@@ -41,18 +41,14 @@ class ResearchMapPreview
         var grown = new TreeMap<>(shipped);
         grown.put(ResearchTrees.id("void_lens"), ResearchTrees.research(Constellation.ARTIFICES, 3, "far_sight"));
 
-        for (int height : new int[] { 240, 540 })
-        {
-            String eye = ResearchMapView.eyeScale(height) == 1 ? "_small_eye" : "_large_eye";
-            draw(shipped, height, new File(folder, "shipped" + eye + ".png"));
-            draw(grown, height, new File(folder, "grown" + eye + ".png"));
-        }
+        draw(shipped, new File(folder, "shipped.png"));
+        draw(grown, new File(folder, "grown.png"));
     }
 
-    /** The whole map around the eye a screen this high shows, with what each screen size showing that eye sees of it at rest outlined. */
-    private static void draw(Map<Identifier, Research> tree, int eyeHeight, File file) throws IOException
+    /** The whole map at its one size, with what each screen size shows of it at rest outlined. */
+    private static void draw(Map<Identifier, Research> tree, File file) throws IOException
     {
-        var frame = ResearchTrees.frame(eyeHeight);
+        var frame = ResearchTrees.frame();
         long start = System.nanoTime();
         var plan = ResearchMapPlan.plan(tree, frame);
         System.out.printf("%s: %.1f ms%n", file.getName(), (System.nanoTime() - start) / 1e6);
@@ -77,8 +73,6 @@ class ResearchMapPreview
         for (int i = 0; i < ResearchTrees.SIZES.length; i++)
         {
             int[] size = ResearchTrees.SIZES[i];
-            if (ResearchMapView.eyeScale(size[1]) != ResearchMapView.eyeScale(eyeHeight))
-                continue;
             int[] view = ResearchTrees.view(size[0], size[1]);
             int[] across = ResearchMapPlan.eyeRange(bounds.minX(), bounds.maxX(), view[0], view[2], 10);
             int[] down = ResearchMapPlan.eyeRange(bounds.minY(), bounds.maxY(), view[1], view[3], 10);

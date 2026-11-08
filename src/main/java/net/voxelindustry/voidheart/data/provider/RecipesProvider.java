@@ -282,6 +282,12 @@ public class RecipesProvider extends FabricRecipeProvider
                     Items.SPIDER_EYE, VoidHeartItems.VOID_PEARL, Items.SLIME_BALL,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
 
+            // A membrane is what lets some things through and not others
+            offerAltarRecipe("permeable_barrier_item", VoidHeartItems.PERMEABLE_BARRIER, Items.PHANTOM_MEMBRANE,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    Blocks.GLASS, Blocks.GLASS);
+
             offerAltarRecipe("malignant_tormenter", VoidHeartBlocks.MALIGNANT_TORMENTER, Blocks.SOUL_SAND,
                     Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH, Items.ROTTEN_FLESH,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.RAVENOUS_GOLD_INGOT);

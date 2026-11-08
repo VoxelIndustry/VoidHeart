@@ -1,0 +1,12 @@
+{
+  "tier": 3,
+  "constellation": "deities",
+  "icon": "minecraft:crimson_fungus",
+  "insight_cost": 9,
+  "knowledge_cost": 9000,
+  "knowledge_per_second": 3.5,
+  "strain": 60,
+  "requires": [
+    "voidheart:gullet"
+  ]
+}

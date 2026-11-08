@@ -26,7 +26,7 @@ final class ResearchTrees
     private static final int GLYPH_WIDEST = 6;
 
     private static final Map<Constellation, String> NAMES = Map.of(Constellation.RITES, "The Rites", Constellation.ARTIFICES, "Artifices",
-            Constellation.ARCHIVE, "The Archive", Constellation.TRAVEL, "Art of Travel");
+            Constellation.ARCHIVE, "The Archive", Constellation.TRAVEL, "Art of Travel", Constellation.DEITIES, "The Deities");
 
     private ResearchTrees()
     {
@@ -74,10 +74,10 @@ final class ResearchTrees
         return NAMES.get(constellation);
     }
 
-    /** The sizes the map is laid out with on a screen of this height: only the eye's changes. */
-    static ResearchMapPlan.Frame frame(int height)
+    /** The sizes the map is laid out with, the same on every screen. */
+    static ResearchMapPlan.Frame frame()
     {
-        int scale = ResearchMapView.eyeScale(height);
+        int scale = ResearchMapView.EYE_SCALE;
         var widths = new EnumMap<Constellation, Integer>(Constellation.class);
         NAMES.forEach((constellation, name) -> widths.put(constellation, ResearchMapView.SIGIL_SIZE + ResearchMapView.SIGIL_GAP + name.length() * GLYPH_WIDEST));
         return new ResearchMapPlan.Frame(ResearchMapView.eyeHalfWidth(scale), ResearchMapView.eyeHalfHeight(scale), ResearchMapView.NODE_SIZE, widths, ResearchMapView.NAME_HEIGHT);
