@@ -57,7 +57,8 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
  * with a rubrum construct's charge, then fed Contravoid by a relay and Fiery by the review command. Its output needs all three large pylons around it.
  * It warns when its essence runs dry and recovers when refilled, warns on a breach and recovers when the block is set back, shuts down safely from
  * redstone halfway through a countdown, freezes while its chunk is unloaded, and finally fails: the core gives way to a void wound, the nearest ley
- * node takes the failure's taint, and the fuel inside is lost.
+ * node takes the failure's taint, and the fuel inside is lost. Broken open, the shell shows the wound's crack kept inside the core's spot, and a relay
+ * in front of the opening pays it shut.
  * Run it alone with -PgameTest=ContravoidReactor.
  */
 public class ContravoidReactorClientTest implements FabricClientGameTest
@@ -112,6 +113,7 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
                 shutDownMidCountdown(context, server);
                 freezeWhileUnloaded(context, server, () -> world.getConnection().waitForChunksRender());
                 failInward(context, server);
+                closeOpenedWound(context, server);
             } finally
             {
                 server.runOnServer(minecraft -> VoidWounds.install(previous));
@@ -551,6 +553,45 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
         context.getInput().pressKey(InputConstants.KEY_F1);
     }
 
+    /**
+     * Broken open from the south, the shell shows the wound's crack kept inside the core's spot. A relay in front of the opening still closes it the
+     * normal way, with no intake between.
+     */
+    private static void closeOpenedWound(ClientGameTestContext context, TestServerContext server)
+    {
+        var opening = CORE.south();
+        var relay = CORE.offset(0, 1, 5);
+        var collector = new BlockPos(3, F, 6);
+        server.runOnServer(minecraft ->
+        {
+            expect(wound(minecraft).isConfined(), "A wound inside the whole shell should keep its crack inside the core's spot");
+            player(minecraft).gameMode.destroyBlock(opening);
+            expect(minecraft.overworld().getBlockState(opening).isAir(), "The player should break the shell open");
+        });
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, 0.5, F, 3.2, 0.5, F + 1.05, 0.5, 20);
+        context.takeScreenshot("reactor-wound-inside");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            level.setBlockAndUpdate(collector, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
+            var tile = (RavenousCollectorTile) level.getBlockEntity(collector);
+            tile.storage().attune(EssenceRegistry.CONTRAVOID);
+            tile.storage().fill(EssenceRegistry.CONTRAVOID, RavenousCollectorTile.CAPACITY);
+            level.setBlockAndUpdate(relay, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
+        });
+        context.waitTicks(50);
+        server.runOnServer(minecraft ->
+        {
+            var linked = (RavenousRelayTile) minecraft.overworld().getBlockEntity(relay);
+            expect(linked.linkedReceivers().contains(CORE), "A relay in front of the opening should link to the wound, it links to " + linked.linkedReceivers());
+        });
+        waitFor(context, server, 1_500, "The relay should pay the wound's cost through the opening", minecraft -> wound(minecraft).isClosing());
+        waitFor(context, server, 80, "The wound should draw shut", minecraft -> minecraft.overworld().getBlockState(CORE).isAir());
+    }
+
     // Helpers
 
     private static void relight(ClientGameTestContext context, TestServerContext server)
@@ -590,6 +631,13 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
         if (minecraft.overworld().getBlockEntity(CORE) instanceof ContravoidReactorTile core)
             return core;
         throw new AssertionError("No Contravoid Reactor at " + CORE.toShortString());
+    }
+
+    private static VoidFissureTile wound(MinecraftServer minecraft)
+    {
+        if (minecraft.overworld().getBlockEntity(CORE) instanceof VoidFissureTile wound)
+            return wound;
+        throw new AssertionError("No wound at " + CORE.toShortString());
     }
 
     private static ReactorIntakeTile intake(MinecraftServer minecraft, BlockPos pos)

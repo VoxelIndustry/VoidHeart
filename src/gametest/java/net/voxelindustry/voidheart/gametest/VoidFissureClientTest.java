@@ -379,6 +379,7 @@ public class VoidFissureClientTest implements FabricClientGameTest
             if (!(level.getBlockEntity(scene.wound()) instanceof VoidFissureTile wound))
                 throw new AssertionError("No wound tile");
             expect(wound.isWound() && wound.lastOutput() == 0 && wound.averageOutput() == 0, "A wound should give no energy");
+            expect(!wound.isConfined(), "A wound on open ground should keep its full crack");
             expect(wound.cost() == 8000, "Closing a size 4 wound should cost 8000, costs " + wound.cost());
             expect(Math.abs(wound.seepRadius(level.getGameTime()) - 10) < 0.2F, "The wound's seep should be 10 blocks");
             float near = VoidSeep.strengthAt(level, scene.wound().relative(Direction.UP));

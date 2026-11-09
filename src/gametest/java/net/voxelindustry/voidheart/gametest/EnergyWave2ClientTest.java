@@ -72,8 +72,8 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
  * through a pylon and fills a collector attuned to Contravoid with an azurium shard. Relays carry that Contravoid, and Fiery from a collector attuned
  * with a lava bucket, into the two intakes of a Contravoid reactor, which a real click lights from the construct's charge. Lit, it powers an athanor's
  * brew at the far end of a chain of pylons. Its Fiery then runs out, nothing refills it, and once the countdown ends a void wound takes the core's
- * place inside the standing shell while the nearest node takes the failure's taint. Opened from the side, the wound takes Contravoid from a relay
- * until it draws shut.
+ * place inside the standing shell, its crack kept to that spot, while the nearest node takes the failure's taint. The relay that fed the west intake
+ * then pays the wound Contravoid through the intake until it draws shut, and the shell is never broken.
  * Run it alone with -PgameTest=EnergyWave2.
  */
 public class EnergyWave2ClientTest implements FabricClientGameTest
@@ -151,18 +151,6 @@ public class EnergyWave2ClientTest implements FabricClientGameTest
             return at(49, 1, 10);
         }
 
-        // The middle of the shell's south face, opened to reach the wound
-        BlockPos opening()
-        {
-            return core().south();
-        }
-
-        // In front of the opening and a little above it: low enough to see in under the shell's top, high enough to leave the view through it clear
-        BlockPos woundRelay()
-        {
-            return at(10, 2, 5);
-        }
-
         double x(double dx)
         {
             return node.x() + dx;
@@ -207,7 +195,7 @@ public class EnergyWave2ClientTest implements FabricClientGameTest
                 lightFromConstruct(context, server, scene);
                 checkReactorPowersBrew(context, server, scene);
                 starveIntoFailure(context, server, scene);
-                closeWound(context, server, scene);
+                closeWoundThroughIntake(context, server, scene);
             } finally
             {
                 tracked = null;
@@ -568,49 +556,50 @@ public class EnergyWave2ClientTest implements FabricClientGameTest
     }
 
     /**
-     * Broken open from the side, the wound inside is in reach of a relay, which pays it Contravoid from the spike's collector until it draws shut.
+     * The shell stays whole: the wound keeps its crack inside the core's spot, and the relay that fed the west intake pays it Contravoid through the
+     * intake until it draws shut. No relay links to the wound itself.
      */
-    private static void closeWound(ClientGameTestContext context, TestServerContext server, Scene scene)
+    private static void closeWoundThroughIntake(ClientGameTestContext context, TestServerContext server, Scene scene)
     {
         var core = scene.core();
-        server.runOnServer(minecraft ->
-        {
-            var player = player(minecraft);
-            player.gameMode.destroyBlock(scene.opening());
-            expect(minecraft.overworld().getBlockState(scene.opening()).isAir(), "The player should break the shell open");
-        });
+        server.runOnServer(minecraft -> expect(wound(minecraft, core).isConfined(), "A wound inside the whole shell should keep its crack inside the core's spot"));
+
+        // Close up on the two faces an open wound's crack would cut through
         context.getInput().pressKey(InputConstants.KEY_F1);
-        aimFrom(context, server, scene.x(10.5), F, scene.z(5.5), scene.x(10.5), F + 1.1, scene.z(0.5), 20);
-        context.takeScreenshot("wave2-wound-open");
+        aimFrom(context, server, scene.x(10.5), F, scene.z(3.4), scene.x(10.5), F + 1, scene.z(1.5), 20);
+        context.takeScreenshot("wave2-wound-shell-south");
+        aimFrom(context, server, scene.x(13.1), F, scene.z(2.2), scene.x(11.5), F + 1, scene.z(0.5), 5);
+        context.takeScreenshot("wave2-wound-shell-east");
         context.getInput().pressKey(InputConstants.KEY_F1);
 
-        server.runOnServer(minecraft ->
-        {
-            collector(minecraft, scene.contravoid()).storage().fill(EssenceRegistry.CONTRAVOID, RavenousCollectorTile.CAPACITY);
-            minecraft.overworld().setBlockAndUpdate(scene.woundRelay(), VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
-        });
-        context.waitTicks(50);
+        server.runOnServer(minecraft -> collector(minecraft, scene.contravoid()).storage().fill(EssenceRegistry.CONTRAVOID, RavenousCollectorTile.CAPACITY));
+        waitFor(context, server, 2_400, "The relay should pay the wound's cost through the west intake", minecraft -> wound(minecraft, core).isClosing());
         server.runOnServer(minecraft ->
         {
             var level = minecraft.overworld();
-            var relay = (RavenousRelayTile) level.getBlockEntity(scene.woundRelay());
-            expect(relay.linkedReceivers().contains(core) && relay.linkedRelays().contains(scene.contravoidRelay()), "The new relay should link to the wound "
-                    + "through the opening, and to the Contravoid relay, it links to receivers " + relay.linkedReceivers() + " and relays " + relay.linkedRelays());
+            var tile = wound(minecraft, core);
+            expect(tile.paid() >= tile.cost(), "The wound should be paid in full");
+            expect(level.getBlockEntity(scene.contravoidRelay()) instanceof RavenousRelayTile relay && relay.linkedReceivers().equals(List.of(core.west())),
+                    "The relay should still link to the west intake alone, not to the wound");
+            expect(intake(minecraft, core.west()).amount() == 0, "The intake should pass everything on into the wound, it kept " + intake(minecraft, core.west()).amount());
         });
 
-        waitFor(context, server, 2_400, "The relay should pay the wound's cost", minecraft -> wound(minecraft, core).isClosing());
-        context.getInput().pressKey(InputConstants.KEY_F1);
-        aimFrom(context, server, scene.x(10.5), F, scene.z(5.5), scene.x(10.5), F + 1.1, scene.z(0.5), 10);
-        context.takeScreenshot("wave2-wound-closing");
-        server.runOnServer(minecraft -> expect(wound(minecraft, core).paid() >= wound(minecraft, core).cost(), "The wound should be paid in full"));
-
         waitFor(context, server, 80, "The wound should draw shut", minecraft -> minecraft.overworld().getBlockState(core).isAir());
-        server.runOnServer(minecraft -> expect(VoidSeep.strengthAt(minecraft.overworld(), core) == 0, "A closed wound should seep no more"));
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            expect(VoidSeep.strengthAt(level, core) == 0, "A closed wound should seep no more");
+            var standing = ReactorLayout.shell(Direction.Axis.X).stream()
+                    .filter(expected -> level.getBlockState(core.offset(expected.offset())).is(stateFor(expected.part()))).count();
+            expect(standing == 26, "The shell should stay whole through the closing, " + standing + " blocks stand");
+        });
         context.waitTicks(10);
-        context.takeScreenshot("wave2-wound-scar");
+        expectClient(context, "The closed wound should leave a confined scar on the client", minecraft ->
+                FissureScars.scars().stream().anyMatch(scar -> scar.pos().equals(core) && scar.wound() && scar.confined()));
         context.getInput().pressKey(InputConstants.KEY_F1);
-        expectClient(context, "The closed wound should leave a scar on the client", minecraft ->
-                FissureScars.scars().stream().anyMatch(scar -> scar.pos().equals(core) && scar.wound()));
+        aimFrom(context, server, scene.x(16), F + 3, scene.z(-5), scene.x(10.5), F + 1, scene.z(0.5), 10);
+        context.takeScreenshot("wave2-wound-closed");
+        context.getInput().pressKey(InputConstants.KEY_F1);
     }
 
     // Helpers
