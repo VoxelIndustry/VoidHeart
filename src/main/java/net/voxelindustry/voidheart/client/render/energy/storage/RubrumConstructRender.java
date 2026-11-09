@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.AmethystClusterBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.BlockQuads;
 import net.voxelindustry.voidheart.common.energy.storage.ConstructBundles;
 import net.voxelindustry.voidheart.common.energy.storage.ConstructFrameBlock;
 import net.voxelindustry.voidheart.common.energy.storage.ConstructLayout;

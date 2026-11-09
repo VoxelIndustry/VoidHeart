@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.client.render.energy.storage;
+package net.voxelindustry.voidheart.client.render.energy;
 
 import net.fabricmc.fabric.api.client.renderer.v1.Renderer;
 import net.minecraft.client.Minecraft;
@@ -17,9 +17,9 @@ import java.util.Map;
 
 /**
  * The quads a block state shows in the world, emitted through Fabric's renderer as ForgePreviewRender does, cached per
- * state since the socket bundles and preview ghosts reuse a handful of states every frame.
+ * state since the rubrum construct's bundles and the construct and reactor preview ghosts reuse a handful of states every frame.
  */
-final class BlockQuads
+public final class BlockQuads
 {
     private static final Map<BlockState, Cached> CACHE  = new HashMap<>();
     private static final RandomSource            RANDOM = RandomSource.create();
@@ -35,7 +35,7 @@ final class BlockQuads
     {
     }
 
-    static List<BakedQuad> of(BlockState state)
+    public static List<BakedQuad> of(BlockState state)
     {
         var minecraft = Minecraft.getInstance();
         var model = minecraft.getModelManager().getBlockStateModelSet().get(state);

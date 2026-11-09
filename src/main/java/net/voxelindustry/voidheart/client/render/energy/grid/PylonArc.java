@@ -7,9 +7,9 @@ import java.util.List;
 
 /**
  * Animation of one arc between two pylons, advanced once per client tick: its jag, the leaps running along it, and the forks it throws at cap.
- * Each arc rolls its own timings, so a chain never twitches in step.
+ * Each arc rolls its own timings, so a chain never twitches in step. The Deep Siphon's arcs from an armillary use it too.
  */
-final class PylonArc
+public final class PylonArc
 {
     static final int   MIN_JOINTS    = 6;
     static final float JOINT_SPACING = 1.5F;
@@ -35,7 +35,7 @@ final class PylonArc
     /**
      * A bright stretch running from the giving pylon to the receiving one.
      */
-    static final class Leap
+    public static final class Leap
     {
         final int duration;
         int age;
@@ -45,7 +45,7 @@ final class PylonArc
             this.duration = duration;
         }
 
-        float progress(float partialTicks)
+        public float progress(float partialTicks)
         {
             return Math.min(1, (age + partialTicks) / duration);
         }
@@ -59,6 +59,7 @@ final class PylonArc
     }
 
     private final RandomSource random;
+    private final float        jag;
 
     float[] offsets = new float[0];
     final List<Leap> leaps = new ArrayList<>();
@@ -72,9 +73,21 @@ final class PylonArc
 
     PylonArc(long seed)
     {
+        this(seed, JAG, false);
+    }
+
+    /**
+     * @param jag       how far each joint strays from the straight line
+     * @param staggered starts partway to its first leap, so the arcs one source throws together don't leap in step
+     */
+    public PylonArc(long seed, float jag, boolean staggered)
+    {
         random = RandomSource.create(seed);
+        this.jag = jag;
         untilJag = 1 + random.nextInt(JAG_TICKS_MAX);
         untilFork = FORK_EVERY_MIN + random.nextInt(FORK_EVERY_MAX - FORK_EVERY_MIN + 1);
+        if (staggered)
+            leapCredit = random.nextFloat();
     }
 
     static int jointsFor(double length)
@@ -83,10 +96,10 @@ final class PylonArc
     }
 
     /**
-     * @param load    flow over the smaller cap of the two ends, 0 when idle
+     * @param load    flow over the smaller cap of the two ends, 0 when idle. Leaps come faster with it, and forks only near 1.
      * @return whether a leap started this tick
      */
-    boolean tick(double length, float load)
+    public boolean tick(double length, float load)
     {
         int wanted = jointsFor(length);
         if (wanted != joints)
@@ -132,7 +145,7 @@ final class PylonArc
     private void rejag()
     {
         for (int i = 0; i < offsets.length; i++)
-            offsets[i] = (random.nextFloat() * 2 - 1) * JAG;
+            offsets[i] = (random.nextFloat() * 2 - 1) * jag;
     }
 
     private Fork fork()
@@ -146,8 +159,24 @@ final class PylonArc
                 FORK_LENGTH_MIN + random.nextFloat() * (FORK_LENGTH_MAX - FORK_LENGTH_MIN), jag, new int[] { life });
     }
 
-    int joints()
+    public int joints()
     {
         return joints;
+    }
+
+    /**
+     * Each joint's stray on the arc's two sides, two floats a joint.
+     */
+    public float[] offsets()
+    {
+        return offsets;
+    }
+
+    /**
+     * The leaps running along it now.
+     */
+    public List<Leap> leaps()
+    {
+        return leaps;
     }
 }

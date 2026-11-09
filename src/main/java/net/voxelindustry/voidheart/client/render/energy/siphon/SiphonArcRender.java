@@ -13,6 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.grid.PylonArc;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.energy.grid.AzuriumPylonTile;
 import net.voxelindustry.voidheart.common.energy.grid.PylonBundle;
@@ -52,6 +53,12 @@ public final class SiphonArcRender
     private static final int   CORE_ALPHA      = 190;
     private static final int   HALO_ALPHA      = 60;
     private static final float LEAP_WIDEN      = 1.5F;
+    private static final float JAG             = 0.2F;
+    private static final float LEAP_LENGTH     = 1.2F;
+    // A siphon delivers the same every tick, so its arcs leap at a steady 2 a second: two thirds of a pylon arc's rate at cap, short of its forks
+    private static final float FLOW_LOAD       = 2 / 3F;
+    private static final int   FADE_IN_TICKS   = 6;
+    private static final int   FADE_OUT_TICKS  = 12;
     private static final int   LEAP_SLICES     = 6;
     private static final int   LEAP_CORE_ALPHA = 255;
     private static final int   LEAP_HALO_ALPHA = 140;
@@ -63,11 +70,39 @@ public final class SiphonArcRender
     /** Armillaries loaded on the client, kept by the block entity load and unload events. */
     static final Set<ArmillaryTile> ARMILLARIES = ConcurrentHashMap.newKeySet();
 
-    private static final Map<ArcKey, SiphonArc> ARCS            = new HashMap<>();
+    private static final Map<ArcKey, FadingArc> ARCS            = new HashMap<>();
     private static final Map<ArcKey, Long>      SOUND_COOLDOWNS = new HashMap<>();
 
     private record ArcKey(BlockPos armillary, BlockPos pylon)
     {
+    }
+
+    /**
+     * A pylon arc that fades in and out with the siphon's flow.
+     */
+    private static final class FadingArc
+    {
+        final PylonArc arc;
+        float fade;
+        float previousFade;
+        long  seenAt;
+
+        FadingArc(long seed)
+        {
+            arc = new PylonArc(seed, JAG, true);
+        }
+
+        boolean tick(double length, boolean flowing)
+        {
+            previousFade = fade;
+            fade = flowing ? Math.min(1, fade + 1F / FADE_IN_TICKS) : Math.max(0, fade - 1F / FADE_OUT_TICKS);
+            return arc.tick(length, flowing ? FLOW_LOAD : 0);
+        }
+
+        float fade(float partialTicks)
+        {
+            return previousFade + (fade - previousFade) * partialTicks;
+        }
     }
 
     private record Link(BlockPos armillary, BlockPos pylon, Vec3 from, Vec3 to)
@@ -146,7 +181,7 @@ public final class SiphonArcRender
         {
             boolean flows = flowing.getOrDefault(link.armillary(), false);
             var key = key(link.armillary(), link.pylon());
-            var arc = flows ? ARCS.computeIfAbsent(key, k -> new SiphonArc(k.hashCode())) : ARCS.get(key);
+            var arc = flows ? ARCS.computeIfAbsent(key, k -> new FadingArc(k.hashCode())) : ARCS.get(key);
             if (arc == null)
                 continue;
             arc.seenAt = time;
@@ -199,17 +234,17 @@ public final class SiphonArcRender
             for (var link : visible)
             {
                 var arc = ARCS.get(key(link.armillary(), link.pylon()));
-                if (arc == null || arc.joints() == 0)
+                if (arc == null || arc.arc.joints() == 0)
                     continue;
                 float fade = arc.fade(partialTicks);
                 if (fade <= 0)
                     continue;
-                drawArc(pose, buffer, eye, arc, relative(link.from(), camera), relative(link.to(), camera), fade, partialTicks);
+                drawArc(pose, buffer, eye, arc.arc, relative(link.from(), camera), relative(link.to(), camera), fade, partialTicks);
             }
         });
     }
 
-    private static void drawArc(PoseStack.Pose pose, VertexConsumer buffer, Vector3f eye, SiphonArc arc, Vector3f from, Vector3f to, float fade, float partialTicks)
+    private static void drawArc(PoseStack.Pose pose, VertexConsumer buffer, Vector3f eye, PylonArc arc, Vector3f from, Vector3f to, float fade, float partialTicks)
     {
         var points = jagged(from, to, arc);
         for (int i = 0; i + 1 < points.length; i++)
@@ -223,16 +258,17 @@ public final class SiphonArcRender
         for (int i = 1; i < points.length; i++)
             lengths[i] = length += points[i].distance(points[i - 1]);
         // Leaps run outward, from the rings to the pylon
-        for (var leap : arc.leaps)
+        for (var leap : arc.leaps())
         {
-            float head = leap.progress(partialTicks) * (length + SiphonArc.LEAP_LENGTH);
-            stretch(pose, buffer, eye, points, lengths, head - SiphonArc.LEAP_LENGTH, head, length, fade);
+            float head = leap.progress(partialTicks) * (length + LEAP_LENGTH);
+            stretch(pose, buffer, eye, points, lengths, head - LEAP_LENGTH, head, length, fade);
         }
     }
 
-    private static Vector3f[] jagged(Vector3f from, Vector3f to, SiphonArc arc)
+    private static Vector3f[] jagged(Vector3f from, Vector3f to, PylonArc arc)
     {
         int segments = arc.joints();
+        var offsets = arc.offsets();
         var direction = new Vector3f(to).sub(from);
         var side = perpendicular(direction);
         var up = new Vector3f(direction).cross(side).normalize();
@@ -242,8 +278,8 @@ public final class SiphonArcRender
             var point = new Vector3f(from).lerp(to, i / (float) segments);
             if (i > 0 && i < segments)
             {
-                point.add(side.x * arc.offsets[i * 2], side.y * arc.offsets[i * 2], side.z * arc.offsets[i * 2]);
-                point.add(up.x * arc.offsets[i * 2 + 1], up.y * arc.offsets[i * 2 + 1], up.z * arc.offsets[i * 2 + 1]);
+                point.add(side.x * offsets[i * 2], side.y * offsets[i * 2], side.z * offsets[i * 2]);
+                point.add(up.x * offsets[i * 2 + 1], up.y * offsets[i * 2 + 1], up.z * offsets[i * 2 + 1]);
             }
             points[i] = point;
         }

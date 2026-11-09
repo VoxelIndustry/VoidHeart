@@ -22,6 +22,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.BlockQuads;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorContent;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorTile;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorCycle.Phase;
@@ -761,7 +762,7 @@ public class ContravoidReactorRender implements BlockEntityRenderer<ContravoidRe
 
         for (var draw : state.ghosts)
         {
-            var quads = ReactorGhostQuads.of(draw.state());
+            var quads = BlockQuads.of(draw.state());
             var instance = draw.conflict() ? conflict : ghost;
             poseStack.pushPose();
             poseStack.translate(draw.offset().getX(), draw.offset().getY(), draw.offset().getZ());
