@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_large_azurium_bundle": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:large_azurium_bundle"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/contravoid_reactor_core"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_large_azurium_bundle"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/contravoid_reactor_core"
+    ]
+  }
+}

@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "voidheart:block/cut_listless_lead"
+    "bottom": "voidheart:block/reactor_containment_top",
+    "side": "voidheart:block/reactor_containment",
+    "top": "voidheart:block/reactor_containment_top"
   }
 }

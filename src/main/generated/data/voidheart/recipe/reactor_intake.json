@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "E": "voidheart:ender_shard",
+    "G": "voidheart:ravenous_gold_ingot",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "VGV",
+    "GEG",
+    "VGV"
+  ],
+  "result": {
+    "id": "voidheart:reactor_intake"
+  }
+}
