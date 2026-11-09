@@ -7,7 +7,7 @@ import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorJade;
 import net.voxelindustry.voidheart.common.energy.siphon.DeepSiphonJade;
 import net.voxelindustry.voidheart.common.energy.spike.LeySpikeJade;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumJade;
-import net.voxelindustry.voidheart.common.energy.tear.VoidTearJade;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureJade;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
 
@@ -27,7 +27,7 @@ public final class EnergyJade
         LeyStoneJade.register(registration);
         RavenousEngineJade.register(registration);
         LeySpikeJade.register(registration);
-        VoidTearJade.register(registration);
+        VoidFissureJade.register(registration);
         ContravoidReactorJade.register(registration);
         DeepSiphonJade.register(registration);
     }
@@ -39,7 +39,7 @@ public final class EnergyJade
         LeyStoneJade.registerClient(registration);
         RavenousEngineJade.registerClient(registration);
         LeySpikeJade.registerClient(registration);
-        VoidTearJade.registerClient(registration);
+        VoidFissureJade.registerClient(registration);
         ContravoidReactorJade.registerClient(registration);
         DeepSiphonJade.registerClient(registration);
     }

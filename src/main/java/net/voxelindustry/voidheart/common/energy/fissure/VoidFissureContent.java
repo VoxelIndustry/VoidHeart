@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.common.energy.tear;
+package net.voxelindustry.voidheart.common.energy.fissure;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -9,18 +9,18 @@ import net.voxelindustry.voidheart.common.energy.EnergyPlaceholders;
 /**
  * Startup registrar for W9 Rift, called once by EnergySetup. The ids start as placeholders, which the package replaces with its real content.
  */
-public final class VoidTearContent
+public final class VoidFissureContent
 {
-    public static Block VOID_TEAR;
+    public static Block VOID_FISSURE;
     public static Block VOID_WOUND;
 
-    private VoidTearContent()
+    private VoidFissureContent()
     {
     }
 
     public static void register()
     {
-        VOID_TEAR = EnergyPlaceholders.block("void_tear", MapColor.COLOR_BLACK);
+        VOID_FISSURE = EnergyPlaceholders.block("void_fissure", MapColor.COLOR_BLACK);
         VOID_WOUND = EnergyPlaceholders.block("void_wound", MapColor.COLOR_BLACK);
     }
 

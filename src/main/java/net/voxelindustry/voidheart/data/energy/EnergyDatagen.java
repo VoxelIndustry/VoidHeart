@@ -19,7 +19,7 @@ import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorDatage
 import net.voxelindustry.voidheart.common.energy.siphon.DeepSiphonDatagen;
 import net.voxelindustry.voidheart.common.energy.spike.LeySpikeDatagen;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumDatagen;
-import net.voxelindustry.voidheart.common.energy.tear.VoidTearDatagen;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureDatagen;
 
 import static net.minecraft.client.data.models.BlockModelGenerators.plainVariant;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -43,7 +43,7 @@ public final class EnergyDatagen
         LeyStoneDatagen.blockModels(generators);
         RavenousEngineDatagen.blockModels(generators);
         LeySpikeDatagen.blockModels(generators);
-        VoidTearDatagen.blockModels(generators);
+        VoidFissureDatagen.blockModels(generators);
         ContravoidReactorDatagen.blockModels(generators);
         DeepSiphonDatagen.blockModels(generators);
     }
@@ -55,7 +55,7 @@ public final class EnergyDatagen
         LeyStoneDatagen.itemModels(generators);
         RavenousEngineDatagen.itemModels(generators);
         LeySpikeDatagen.itemModels(generators);
-        VoidTearDatagen.itemModels(generators);
+        VoidFissureDatagen.itemModels(generators);
         ContravoidReactorDatagen.itemModels(generators);
         DeepSiphonDatagen.itemModels(generators);
     }
@@ -67,7 +67,7 @@ public final class EnergyDatagen
         LeyStoneDatagen.recipes(recipes);
         RavenousEngineDatagen.recipes(recipes);
         LeySpikeDatagen.recipes(recipes);
-        VoidTearDatagen.recipes(recipes);
+        VoidFissureDatagen.recipes(recipes);
         ContravoidReactorDatagen.recipes(recipes);
         DeepSiphonDatagen.recipes(recipes);
     }
@@ -82,7 +82,7 @@ public final class EnergyDatagen
         LeyStoneDatagen.loot(loot);
         RavenousEngineDatagen.loot(loot);
         LeySpikeDatagen.loot(loot);
-        VoidTearDatagen.loot(loot);
+        VoidFissureDatagen.loot(loot);
         ContravoidReactorDatagen.loot(loot);
         DeepSiphonDatagen.loot(loot);
     }
@@ -94,7 +94,7 @@ public final class EnergyDatagen
         LeyStoneDatagen.tags(tags);
         RavenousEngineDatagen.tags(tags);
         LeySpikeDatagen.tags(tags);
-        VoidTearDatagen.tags(tags);
+        VoidFissureDatagen.tags(tags);
         ContravoidReactorDatagen.tags(tags);
         DeepSiphonDatagen.tags(tags);
     }

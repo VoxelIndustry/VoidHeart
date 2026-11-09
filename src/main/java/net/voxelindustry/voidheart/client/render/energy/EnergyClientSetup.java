@@ -7,7 +7,7 @@ import net.voxelindustry.voidheart.client.render.energy.reactor.ContravoidReacto
 import net.voxelindustry.voidheart.client.render.energy.siphon.DeepSiphonClient;
 import net.voxelindustry.voidheart.client.render.energy.spike.LeySpikeClient;
 import net.voxelindustry.voidheart.client.render.energy.storage.RubrumClient;
-import net.voxelindustry.voidheart.client.render.energy.tear.VoidTearClient;
+import net.voxelindustry.voidheart.client.render.energy.fissure.VoidFissureClient;
 
 /**
  * The energy system's one client startup call from VoidHeartClient, handing off to each package's client registrar.
@@ -25,7 +25,7 @@ public final class EnergyClientSetup
         LeyStoneClient.register();
         RavenousEngineClient.register();
         LeySpikeClient.register();
-        VoidTearClient.register();
+        VoidFissureClient.register();
         ContravoidReactorClient.register();
         DeepSiphonClient.register();
     }

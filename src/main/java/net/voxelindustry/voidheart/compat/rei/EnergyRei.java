@@ -9,7 +9,7 @@ import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorRei;
 import net.voxelindustry.voidheart.common.energy.siphon.DeepSiphonRei;
 import net.voxelindustry.voidheart.common.energy.spike.LeySpikeRei;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumRei;
-import net.voxelindustry.voidheart.common.energy.tear.VoidTearRei;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureRei;
 
 /**
  * VoidHeartREIPlugin's one call into the energy system, handing off to each package.
@@ -27,7 +27,7 @@ public final class EnergyRei
         LeyStoneRei.registerCategories(registry);
         RavenousEngineRei.registerCategories(registry);
         LeySpikeRei.registerCategories(registry);
-        VoidTearRei.registerCategories(registry);
+        VoidFissureRei.registerCategories(registry);
         ContravoidReactorRei.registerCategories(registry);
         DeepSiphonRei.registerCategories(registry);
     }
@@ -39,7 +39,7 @@ public final class EnergyRei
         LeyStoneRei.registerDisplays(registry);
         RavenousEngineRei.registerDisplays(registry);
         LeySpikeRei.registerDisplays(registry);
-        VoidTearRei.registerDisplays(registry);
+        VoidFissureRei.registerDisplays(registry);
         ContravoidReactorRei.registerDisplays(registry);
         DeepSiphonRei.registerDisplays(registry);
     }
