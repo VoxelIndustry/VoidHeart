@@ -12,6 +12,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.ley_taint.LeyTaintLook;
+import net.voxelindustry.voidheart.client.render.energy.ley_taint.LeyTaintView;
 import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorView;
@@ -46,6 +48,16 @@ public final class OculusLeyLayer
     private static final int DORMANT_ANCHOR_COLOR = 0x8A6A94;
     private static final int FULL_BRIGHT = 0xF000F0;
     private static final float NAME_SCALE = 1 / 110F;
+    /**
+     * A tainted node tints its downstream lines all along, fading to this share at their far end, and its upstream lines over
+     * this last share of their length.
+     */
+    private static final float TAINT_DOWNSTREAM_END = 0.4F;
+    private static final float TAINT_UPSTREAM_SHARE = 0.25F;
+    /**
+     * Halos dim this much under full taint, so a breached line reads as dark rather than glowing.
+     */
+    private static final float TAINT_HALO_DIM = 0.7F;
 
     private record Received(OculusLeyPayloads.Layer layer, int scale, long tick)
     {
@@ -141,6 +153,11 @@ public final class OculusLeyLayer
         if (pieces <= 0 || heights.size() < 2)
             return;
 
+        float fromTaint = taintStrength(line.fromX(), line.fromZ());
+        float toTaint = taintStrength(line.toX(), line.toZ());
+        int fromTone = taintTone(line.fromX(), line.fromZ());
+        int toTone = taintTone(line.toX(), line.toZ());
+
         var previous = pointOn(projector, line, 0);
         for (int piece = 1; piece <= pieces; piece++)
         {
@@ -154,10 +171,21 @@ public final class OculusLeyLayer
                 var start = previous.subtract(camera).toVector3f();
                 var end = next.subtract(camera).toVector3f();
                 var side = facingSide(start, end);
+                float mid = (float) (t - 0.5 / pieces);
+                float fromWeight = fromTaint * (1 - (1 - TAINT_DOWNSTREAM_END) * mid);
+                float toWeight = toTaint * Math.clamp(1 - (1 - mid) / TAINT_UPSTREAM_SHARE, 0, 1);
+                float taint = Math.max(fromWeight, toWeight);
+                int tone = fromWeight >= toWeight ? fromTone : toTone;
                 if (core)
-                    ribbon(pose, buffer, start, end, side, CORE_HALF_WIDTH, ARGB.color(255, (int) (150 + 70 * pulse), (int) (90 + 70 * pulse), 255));
+                {
+                    int color = ARGB.color(255, (int) (150 + 70 * pulse), (int) (90 + 70 * pulse), 255);
+                    ribbon(pose, buffer, start, end, side, CORE_HALF_WIDTH, taint > 0 ? ARGB.srgbLerp(taint, color, ARGB.opaque(tone)) : color);
+                }
                 else
-                    ribbon(pose, buffer, start, end, side, GLOW_HALF_WIDTH, ARGB.color((int) (50 + 60 * pulse), 140, 80, 255));
+                {
+                    int color = ARGB.color((int) ((50 + 60 * pulse) * (1 - TAINT_HALO_DIM * taint)), 140, 80, 255);
+                    ribbon(pose, buffer, start, end, side, GLOW_HALF_WIDTH, taint > 0 ? withRgb(color, ARGB.srgbLerp(taint, color, tone)) : color);
+                }
             }
             previous = next;
         }
@@ -189,6 +217,9 @@ public final class OculusLeyLayer
         var top = new Vector3f(bottom).add(0, 0.08F + node.lines() * 0.02F, 0);
         var side = facingSide(bottom, top);
         int rgb = NODE_COLORS[node.kind().ordinal()];
+        var tainted = LeyTaintView.at(node.x(), node.z());
+        if (tainted != null)
+            rgb = ARGB.srgbLerp(LeyTaintLook.oculusStrength(tainted.stage()), rgb, LeyTaintLook.oculusTone(tainted.stage())) & 0xFFFFFF;
         float halfWidth = 0.01F + 0.002F * node.lines();
         if (core)
         {
@@ -225,6 +256,9 @@ public final class OculusLeyLayer
 
         var center = position.add(0, 0.06, 0).subtract(camera).toVector3f();
         int rgb = anchor.active() ? ACTIVE_ANCHOR_COLOR : DORMANT_ANCHOR_COLOR;
+        var tainted = anchor.active() ? LeyTaintView.at(anchor.x(), anchor.z()) : null;
+        if (tainted != null)
+            rgb = ARGB.srgbLerp(tainted.flicker().mauve(LeyTaintView.ticks()), ACTIVE_ANCHOR_COLOR, DORMANT_ANCHOR_COLOR) & 0xFFFFFF;
         gem(pose, buffer, center, 0.045F * 2.2F, ARGB.color(70, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
         gem(pose, buffer, center, 0.045F, ARGB.color(230, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
     }
@@ -247,6 +281,26 @@ public final class OculusLeyLayer
         context.submitNodeCollector().submitText(poseStack, -font.width(name) / 2F, 0, name, false, Font.DisplayMode.NORMAL, FULL_BRIGHT,
                 anchor.active() ? 0xFF9FF3E8 : 0xFFB8A9C9, 0x40000000, 0);
         poseStack.popPose();
+    }
+
+    /**
+     * How strongly the node at these coordinates tints the ley layer, 0 when it is clean.
+     */
+    private static float taintStrength(int x, int z)
+    {
+        var node = LeyTaintView.at(x, z);
+        return node == null ? 0 : LeyTaintLook.oculusStrength(node.stage());
+    }
+
+    private static int taintTone(int x, int z)
+    {
+        var node = LeyTaintView.at(x, z);
+        return node == null ? 0 : LeyTaintLook.oculusTone(node.stage());
+    }
+
+    private static int withRgb(int color, int rgb)
+    {
+        return ARGB.color(ARGB.alpha(color), rgb & 0xFFFFFF);
     }
 
     /**
