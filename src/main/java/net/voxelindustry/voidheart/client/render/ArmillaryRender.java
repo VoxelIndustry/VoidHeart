@@ -145,46 +145,59 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
         submitHints(state, poseStack, collector);
-        if (state.formation <= 0)
+        submitRings(poseStack, collector, state.formation, state.angles, state.falter, state.warmth, state.time, state.ringLight,
+                state.portal ? state.portalOpened : 0, state.portalRgb, state.toCamera);
+        if (state.formation > 0 && state.dial.alpha > 0)
+            ArmillaryDialRender.submit(state.dial, poseStack, collector);
+    }
+
+    /**
+     * The rings and the portal between them, over a core at the pose's origin. Research scenes draw them through here too.
+     *
+     * @param portalOpened how open the portal is, 0 for none
+     * @param toCamera     from the middle of the rings to the camera
+     */
+    public static void submitRings(PoseStack poseStack, SubmitNodeCollector collector, float formation, float[] angles, float falter, float warmth, float time,
+                                   int ringLight, float portalOpened, int portalRgb, Vec3 toCamera)
+    {
+        if (formation <= 0)
             return;
 
-        float eased = state.formation * state.formation * (3 - 2 * state.formation);
-        float sag = state.falter * state.falter * FALTER_SAG * (1 + Mth.sin(state.time * 0.13F));
+        float eased = formation * formation * (3 - 2 * formation);
+        float sag = falter * falter * FALTER_SAG * (1 + Mth.sin(time * 0.13F));
         float height = Mth.lerp(eased, RISE_FROM, CENTER_HEIGHT) - sag;
 
         poseStack.pushPose();
         poseStack.translate(0.5F, height, 0.5F);
         poseStack.scale(eased, eased, eased);
 
-        poseStack.rotate(new Quaternionf().rotationY(angle(state, 0)).rotateZ(OUTER_TILT));
-        ring(poseStack, collector, RenderTypes.entitySolid(OUTER_TEXTURE), 0, -1, state.ringLight);
-        pins(poseStack, collector, RenderTypes.entitySolid(OUTER_TEXTURE), RADII[1] + THICKNESS[1] / 2, RADII[0] - THICKNESS[0] / 2, Direction.Axis.X, state.ringLight);
+        poseStack.rotate(new Quaternionf().rotationY(angle(angles, falter, time, 0)).rotateZ(OUTER_TILT));
+        ring(poseStack, collector, RenderTypes.entitySolid(OUTER_TEXTURE), 0, -1, ringLight);
+        pins(poseStack, collector, RenderTypes.entitySolid(OUTER_TEXTURE), RADII[1] + THICKNESS[1] / 2, RADII[0] - THICKNESS[0] / 2, Direction.Axis.X, ringLight);
 
-        poseStack.rotate(new Quaternionf().rotationX(angle(state, 1)));
-        ring(poseStack, collector, RenderTypes.entitySolid(MIDDLE_TEXTURE), 1, -1, state.ringLight);
-        pins(poseStack, collector, RenderTypes.entitySolid(MIDDLE_TEXTURE), RADII[2] + THICKNESS[2] / 2, RADII[1] - THICKNESS[1] / 2, Direction.Axis.Y, state.ringLight);
+        poseStack.rotate(new Quaternionf().rotationX(angle(angles, falter, time, 1)));
+        ring(poseStack, collector, RenderTypes.entitySolid(MIDDLE_TEXTURE), 1, -1, ringLight);
+        pins(poseStack, collector, RenderTypes.entitySolid(MIDDLE_TEXTURE), RADII[2] + THICKNESS[2] / 2, RADII[1] - THICKNESS[1] / 2, Direction.Axis.Y, ringLight);
 
-        poseStack.rotate(new Quaternionf().rotationY(angle(state, 2)));
-        ring(poseStack, collector, RenderTypes.entitySolid(INNER_TEXTURE), 2, lerpColor(state.warmth, INNER_COLD_TINT, INNER_TINT),
-                lerpLight(state.warmth, state.ringLight, FULL_BRIGHT));
-        int haloAlpha = Math.round(INNER_HALO_ALPHA * state.warmth);
+        poseStack.rotate(new Quaternionf().rotationY(angle(angles, falter, time, 2)));
+        ring(poseStack, collector, RenderTypes.entitySolid(INNER_TEXTURE), 2, lerpColor(warmth, INNER_COLD_TINT, INNER_TINT),
+                lerpLight(warmth, ringLight, FULL_BRIGHT));
+        int haloAlpha = Math.round(INNER_HALO_ALPHA * warmth);
         if (haloAlpha > 0)
             collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> innerHalo(pose, buffer, haloAlpha));
         poseStack.popPose();
 
-        if (state.portal)
-            ArmillaryPortalRender.submit(poseStack, collector, new Vec3(0.5, CENTER_HEIGHT - sag, 0.5), state.toCamera, PORTAL_RADIUS, state.portalOpened, state.portalRgb, state.time);
-        if (state.dial.alpha > 0)
-            ArmillaryDialRender.submit(state.dial, poseStack, collector);
+        if (portalOpened > 0)
+            ArmillaryPortalRender.submit(poseStack, collector, new Vec3(0.5, CENTER_HEIGHT - sag, 0.5), toCamera, PORTAL_RADIUS, portalOpened, portalRgb, time);
     }
 
     /**
      * A ring's own angle, with a stutter that grows as a connection fails.
      */
-    private static float angle(State state, int ring)
+    private static float angle(float[] angles, float falter, float time, int ring)
     {
-        float wobble = Mth.sin(state.time * (0.31F + ring * 0.17F) + ring * 2) * Mth.sin(state.time * 0.047F + ring);
-        return state.angles[ring] + wobble * state.falter * state.falter * FALTER_JITTER;
+        float wobble = Mth.sin(time * (0.31F + ring * 0.17F) + ring * 2) * Mth.sin(time * 0.047F + ring);
+        return angles[ring] + wobble * falter * falter * FALTER_JITTER;
     }
 
     private static void ring(PoseStack poseStack, SubmitNodeCollector collector, RenderType type, int ring, int tint, int light)

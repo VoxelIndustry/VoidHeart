@@ -16,11 +16,13 @@ import net.minecraft.util.ARGB;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.state.ShatterForgeRenderState;
 import net.voxelindustry.voidheart.client.render.state.VoidAltarRenderState;
 import net.voxelindustry.voidheart.client.scene.Scene;
 import net.voxelindustry.voidheart.client.scene.SceneFrame;
 import net.voxelindustry.voidheart.client.scene.SceneView;
+import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
@@ -277,6 +279,19 @@ public class ScenePictureRender extends PictureInPictureRenderer<ScenePictureRen
             altar.coolProgress = frame.cool();
             altar.cameraDistanceSqr = 0;
             CraftingVoidRender.submitVoidCube(altar, poseStack, collector);
+        }
+
+        var rings = frame.rings();
+        if (rings != null && scene.rings() != null)
+        {
+            var core = scene.rings().core();
+            // The viewer looks along the stage's +Z, so the camera lies back along -Z once the view's turn is undone
+            var look = new org.joml.Matrix4f(state.view().matrix()).invert().transformDirection(new Vector3f(0, 0, -1));
+            poseStack.pushPose();
+            poseStack.translate(core.getX(), core.getY(), core.getZ());
+            ArmillaryRender.submitRings(poseStack, collector, rings.formation(), rings.angles(), rings.falter(), rings.warmth(), state.worldTime(), FULL_BRIGHT,
+                    rings.portal(), scene.rings().portal(), new Vec3(look.x, look.y, look.z));
+            poseStack.popPose();
         }
     }
 }

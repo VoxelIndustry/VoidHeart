@@ -1661,6 +1661,12 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         sceneView.holdAtEndOf(step);
     }
 
+    /** Holds the scene still a number of ticks into a step. */
+    public void holdScene(int step, int offset)
+    {
+        sceneView.holdAt(step, offset);
+    }
+
     /** Every research description and item page as it would be shown, by key. */
     public Map<String, String> describedTexts()
     {
