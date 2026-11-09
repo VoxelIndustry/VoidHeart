@@ -67,6 +67,9 @@ public final class SeepCreatures
             double angle = random.nextDouble() * Math.PI * 2;
             double distance = MIN_DISTANCE + random.nextDouble() * (radius - MIN_DISTANCE);
             var column = BlockPos.containing(origin.getX() + 0.5 + Math.cos(angle) * distance, origin.getY(), origin.getZ() + 0.5 + Math.sin(angle) * distance);
+            // Reading a column at the seep's edge must never load or generate its chunk
+            if (!level.isPositionEntityTicking(column))
+                continue;
             var feet = floor(level, column);
             if (feet == null || level.getNearestPlayer(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5, PLAYER_BUFFER, false) != null)
                 continue;

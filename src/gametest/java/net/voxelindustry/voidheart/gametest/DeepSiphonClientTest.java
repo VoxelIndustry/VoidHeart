@@ -253,6 +253,14 @@ public class DeepSiphonClientTest implements FabricClientGameTest
         expect(onServer(server, minecraft -> daedalus(minecraft).players().isEmpty()), "Nobody should be left in the Daedalus");
         expect(onServer(server, minecraft -> holdsChunk(minecraft, siphon)), "A siphon whose way holds should keep its chunk loaded");
 
+        // Siphons in one chunk share its ticket: a second one coming and going must leave the first one's hold in place
+        var second = (siphon.getX() & 15) < 15 ? siphon.east() : siphon.west();
+        server.runCommand("execute in " + VoidDaedalus.WORLD_KEY.identifier() + " run setblock " + at(second) + " voidheart:deep_siphon");
+        context.waitTicks(5);
+        server.runCommand("execute in " + VoidDaedalus.WORLD_KEY.identifier() + " run setblock " + at(second) + " air");
+        context.waitTicks(5);
+        expect(onServer(server, minecraft -> holdsChunk(minecraft, siphon)), "Removing a second siphon in the same chunk should keep the first one's hold");
+
         context.waitTicks(SETTLE);
         long before = DRAWN.get();
         long noticeBefore = onServer(server, minecraft -> siphon(minecraft, siphon).notice().banked());

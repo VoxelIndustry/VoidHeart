@@ -51,7 +51,12 @@ final class ReactorWarningSound extends AbstractTickableSoundInstance
      */
     static void follow(ContravoidReactorTile reactor)
     {
-        if (reactor.animation().warnStrength(0) <= 0 || PLAYING.containsKey(reactor))
+        if (reactor.animation().warnStrength(0) <= 0)
+            return;
+        // The sound manager can stop a pair without a last tick, on a resource reload or leaving the world, so a pair still listed may be gone
+        var manager = Minecraft.getInstance().getSoundManager();
+        PLAYING.values().removeIf(pair -> !manager.isActive(pair[0]) && !manager.isActive(pair[1]));
+        if (PLAYING.containsKey(reactor))
             return;
         var sounds = new ReactorWarningSound[]{
                 new ReactorWarningSound(reactor, SoundEvents.BEACON_AMBIENT, false),

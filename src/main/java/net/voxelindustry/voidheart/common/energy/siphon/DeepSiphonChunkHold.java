@@ -39,8 +39,14 @@ public final class DeepSiphonChunkHold
         level.getChunkSource().addTicketWithRadius(TICKET, ChunkPos.containing(siphon), TICKET_RADIUS);
     }
 
+    /**
+     * Siphons in one chunk share its single ticket, so it is only let go once no other siphon there still holds it.
+     */
     public static void release(ServerLevel level, BlockPos siphon)
     {
+        if (level.hasChunkAt(siphon) && level.getChunkAt(siphon).getBlockEntities().values().stream()
+                .anyMatch(tile -> tile instanceof DeepSiphonTile other && !other.getBlockPos().equals(siphon) && other.holdsChunk()))
+            return;
         level.getChunkSource().removeTicketWithRadius(TICKET, ChunkPos.containing(siphon), TICKET_RADIUS);
     }
 }

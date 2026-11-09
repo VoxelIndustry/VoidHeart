@@ -210,6 +210,11 @@ public class DeepSiphonTile extends TileBase
         chunkHeld = wanted;
     }
 
+    boolean holdsChunk()
+    {
+        return Boolean.TRUE.equals(chunkHeld);
+    }
+
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
