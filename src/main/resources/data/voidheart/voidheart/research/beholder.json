@@ -6,7 +6,7 @@
   "knowledge_cost": 1500,
   "knowledge_per_second": 2,
   "requires": [
-    "voidheart:far_sight"
+    "voidheart:ley_sense"
   ],
   "unlocks": [
     "voidheart:beholder"

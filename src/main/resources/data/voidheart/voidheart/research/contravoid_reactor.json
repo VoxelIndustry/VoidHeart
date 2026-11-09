@@ -1,0 +1,11 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:contravoid_reactor_core",
+  "insight_cost": 14,
+  "knowledge_cost": 3500,
+  "knowledge_per_second": 2.5,
+  "requires": [
+    "voidheart:ley_conversion"
+  ]
+}
