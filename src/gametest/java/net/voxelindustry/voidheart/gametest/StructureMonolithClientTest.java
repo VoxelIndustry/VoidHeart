@@ -58,8 +58,28 @@ public class StructureMonolithClientTest implements FabricClientGameTest
             context.waitTicks(40);
             context.takeScreenshot("structure-generated-circle");
 
+            showCapstone(context, server);
+
             context.getInput().pressKey(InputConstants.KEY_F1);
         }
+    }
+
+    /**
+     * The monolith cap's model names its own capstone texture, which must exist rather than fall back to the missing texture.
+     */
+    private static void showCapstone(ClientGameTestContext context, TestServerContext server)
+    {
+        var texture = Identifier.fromNamespaceAndPath(MODID, "textures/block/monolith/capstone.png");
+        if (!context.computeOnClient(minecraft -> minecraft.getResourceManager().getResource(texture).isPresent()))
+            throw new AssertionError("The monolith cap's texture " + texture + " is missing");
+
+        server.runCommand("setblock -8 " + GROUND + " 24 " + MODID + ":void_monolith");
+        server.runCommand("setblock -8 " + (GROUND + 1) + " 24 " + MODID + ":void_monolith");
+        server.runCommand("setblock -8 " + (GROUND + 2) + " 24 " + MODID + ":void_monolith_cap");
+        server.runCommand("setblock -6 " + GROUND + " 24 " + MODID + ":void_monolith_cap");
+        server.runCommand("tp @a -5.5 " + (GROUND + 2.5) + " 21.5 facing -7 " + (GROUND + 1.2) + " 24.5");
+        context.waitTicks(40);
+        context.takeScreenshot("monolith-capstone");
     }
 
     private static void assertTemplate(ClientGameTestContext context, TestServerContext server, String template, BlockPos at, boolean holdsMonoliths)

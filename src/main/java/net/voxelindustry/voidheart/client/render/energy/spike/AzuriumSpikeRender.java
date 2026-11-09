@@ -1,8 +1,10 @@
 package net.voxelindustry.voidheart.client.render.energy.spike;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -12,7 +14,9 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -25,6 +29,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.function.UnaryOperator;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -34,8 +40,9 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  * <p>
  * Render types: the stake and collar are solid, depth-writing and world-lit like a block, since the block itself draws nothing (the lean is the
  * tile's). The collar's faces stand a pixel outside the stake's, and the facets cross the stake at an angle, so no faces share a plane. Bands and the arc
- * are additive {@code GLOW}, order independent; bands sit a fraction of a pixel outside the crystal, whose depth hides their far side. Per spike and
- * frame: 42 solid quads, up to about 40 band quads, and up to about 200 arc quads for a 16-block arc, rebuilt each frame, nothing cached.
+ * are additive {@code GLOW}, order independent; bands sit a fraction of a pixel outside the crystal, whose depth hides their far side. While either
+ * block is mined, the solid parts are drawn again with the vanilla crumbling decal, which sits on their own faces. Per spike and frame: 42 solid
+ * quads (twice that while mined), up to about 40 band quads, and up to about 200 arc quads for a 16-block arc, rebuilt each frame, nothing cached.
  */
 public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile, AzuriumSpikeRender.State>
 {
@@ -124,7 +131,7 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
     @Override
     public void extractRenderState(AzuriumSpikeTile tile, State state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress)
     {
-        BlockEntityRenderer.super.extractRenderState(tile, state, partialTicks, cameraPosition, breakProgress);
+        BlockEntityRenderer.super.extractRenderState(tile, state, partialTicks, cameraPosition, breakProgress != null ? breakProgress : crumbling(tile, cameraPosition));
 
         var animation = tile.animation();
         state.leanDegrees = tile.leanDegrees();
@@ -148,6 +155,33 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
         }
     }
 
+    /**
+     * The game never hands cracks to a block entity drawn off screen, as this one must be for its arc, so it looks for its own, on the base or the tip.
+     */
+    private static ModelFeatureRenderer.@Nullable CrumblingOverlay crumbling(AzuriumSpikeTile tile, Vec3 cameraPosition)
+    {
+        if (!(tile.getLevel() instanceof ClientLevel level))
+            return null;
+
+        var destruction = level.destructionProgress();
+        if (destruction.isEmpty())
+            return null;
+
+        var pos = tile.getBlockPos();
+        var furthest = Math.max(progressAt(destruction.get(pos.asLong())), progressAt(destruction.get(pos.above().asLong())));
+        if (furthest < 0)
+            return null;
+
+        var cameraPose = new PoseStack();
+        cameraPose.translate(pos.getX() - cameraPosition.x, pos.getY() - cameraPosition.y, pos.getZ() - cameraPosition.z);
+        return new ModelFeatureRenderer.CrumblingOverlay(furthest, cameraPose.last());
+    }
+
+    private static int progressAt(@Nullable SortedSet<BlockDestructionProgress> progresses)
+    {
+        return progresses == null || progresses.isEmpty() ? -1 : progresses.last().getProgress();
+    }
+
     private static Quaternionf lean(float yawDegrees, float leanDegrees)
     {
         return new Quaternionf().rotateY(yawDegrees * Mth.DEG_TO_RAD).rotateX(leanDegrees * Mth.DEG_TO_RAD);
@@ -160,7 +194,28 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
         poseStack.translate(0.5F, 0, 0.5F);
         poseStack.rotate(lean(state.leanYaw, state.leanDegrees));
 
-        collector.submitCustomGeometry(poseStack, CRYSTAL_TYPE, (pose, buffer) -> stake(pose, buffer, state.lightCoords));
+        solid(state, poseStack, collector, CRYSTAL_TYPE, COLLAR_TYPE, UnaryOperator.identity());
+        var breaking = state.breakProgress;
+        if (breaking != null)
+        {
+            var crumbling = ModelBakery.DESTROY_TYPES.get(breaking.progress());
+            solid(state, poseStack, collector, crumbling, crumbling, buffer -> new SheetedDecalTextureGenerator(buffer, breaking.cameraPose(), 1));
+        }
+        if (state.fade > 0)
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> bands(pose, buffer, state));
+        poseStack.popPose();
+
+        if (state.fade > 0 && state.arcEnd != null)
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> arc(pose, buffer, state));
+    }
+
+    /**
+     * The stake, its facets and its collar: once in their own textures, and again under the cracks while mined.
+     */
+    private static void solid(State state, PoseStack poseStack, SubmitNodeCollector collector, RenderType crystalType, RenderType collarType,
+                              UnaryOperator<VertexConsumer> wrap)
+    {
+        collector.submitCustomGeometry(poseStack, crystalType, (pose, buffer) -> stake(pose, wrap.apply(buffer), state.lightCoords));
         for (var facet : FACETS)
         {
             poseStack.pushPose();
@@ -168,18 +223,12 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
             poseStack.rotateDegrees(Axis.YP, facet[2]);
             poseStack.rotateDegrees(Axis.ZP, -facet[3]);
             // Starts inside the stake, so its foot is hidden in the crystal
-            collector.submitCustomGeometry(poseStack, CRYSTAL_TYPE, (pose, buffer) ->
-                    box(pose, buffer, state.lightCoords, -FACET_HALF, -FACET_HALF, -FACET_HALF, FACET_HALF, facet[1], FACET_HALF, STAKE_HEIGHT));
+            collector.submitCustomGeometry(poseStack, crystalType, (pose, buffer) ->
+                    box(pose, wrap.apply(buffer), state.lightCoords, -FACET_HALF, -FACET_HALF, -FACET_HALF, FACET_HALF, facet[1], FACET_HALF, STAKE_HEIGHT));
             poseStack.popPose();
         }
-        collector.submitCustomGeometry(poseStack, COLLAR_TYPE, (pose, buffer) ->
-                box(pose, buffer, state.lightCoords, -COLLAR_HALF, COLLAR_BOTTOM, -COLLAR_HALF, COLLAR_HALF, COLLAR_TOP, COLLAR_HALF, 1));
-        if (state.fade > 0)
-            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> bands(pose, buffer, state));
-        poseStack.popPose();
-
-        if (state.fade > 0 && state.arcEnd != null)
-            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> arc(pose, buffer, state));
+        collector.submitCustomGeometry(poseStack, collarType, (pose, buffer) ->
+                box(pose, wrap.apply(buffer), state.lightCoords, -COLLAR_HALF, COLLAR_BOTTOM, -COLLAR_HALF, COLLAR_HALF, COLLAR_TOP, COLLAR_HALF, 1));
     }
 
     private static void stake(PoseStack.Pose pose, VertexConsumer buffer, int light)
