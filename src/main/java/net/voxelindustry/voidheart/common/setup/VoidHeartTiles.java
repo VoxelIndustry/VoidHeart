@@ -182,7 +182,7 @@ public class VoidHeartTiles
                 "barnacle_nest");
     }
 
-    private static void registerTile(BlockEntityType<?> type, String name)
+    public static void registerTile(BlockEntityType<?> type, String name)
     {
         Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, name), type);
     }

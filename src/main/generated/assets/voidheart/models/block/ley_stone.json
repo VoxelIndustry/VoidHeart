@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "voidheart:block/ley_anchor_top_inactive",
+    "side": "voidheart:block/ley_anchor_side_inactive"
+  }
+}

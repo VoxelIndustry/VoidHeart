@@ -17,6 +17,7 @@ import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
 import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProviders;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -56,6 +57,7 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
 
         dropDepths();
         dropDaedalusDecor();
+        EnergyDatagen.loot(this);
 
         dropBundles(VoidHeartItems.AZURIUM_SHARD, VoidHeartBlocks.SMALL_AZURIUM_BUNDLE, VoidHeartBlocks.MEDIUM_AZURIUM_BUNDLE, VoidHeartBlocks.LARGE_AZURIUM_BUNDLE);
         dropBundles(VoidHeartItems.RUBRUM_SHARD, VoidHeartBlocks.SMALL_RUBRUM_BUNDLE, VoidHeartBlocks.MEDIUM_RUBRUM_BUNDLE, VoidHeartBlocks.LARGE_RUBRUM_BUNDLE);

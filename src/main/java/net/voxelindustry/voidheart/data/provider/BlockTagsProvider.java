@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
+import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -61,5 +62,7 @@ public class BlockTagsProvider extends FabricTagsProvider.BlockTagsProvider
         var aspectFiery = builder(VoidHeartTags.ASPECT_FIERY_TAG)
                 .setReplace(false);
         aspectFiery.add(Blocks.LAVA.builtInRegistryHolder().key());
+
+        EnergyDatagen.tags(this::builder);
     }
 }

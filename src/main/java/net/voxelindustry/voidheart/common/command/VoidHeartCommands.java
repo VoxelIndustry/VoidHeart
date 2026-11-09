@@ -15,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.energy.EnergyCommands;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 import net.voxelindustry.voidheart.common.world.pocket.PocketBlueprint;
 import net.voxelindustry.voidheart.common.world.pocket.PocketBuilder;
@@ -116,6 +117,7 @@ public class VoidHeartCommands
         LeyCommands.register(builder);
         CurseCommands.register(builder);
         ResearchCommands.register(builder);
+        EnergyCommands.register(builder);
 
         dispatcher.register(builder);
     }
