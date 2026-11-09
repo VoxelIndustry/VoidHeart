@@ -2,8 +2,6 @@ package net.voxelindustry.voidheart.common.energy.engine;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -17,17 +15,15 @@ import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
 import net.voxelindustry.voidheart.common.content.essence.MultiEssenceStorage;
-import net.voxelindustry.voidheart.common.content.essence.RelayNetwork;
 import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
+import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
+import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
-
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The maw of a Ravenous Engine. Relays link to it as they do to an athanor's intake and fill one tank per essence. Each tick it burns one essence into
@@ -49,8 +45,6 @@ public class RavenousEngineTile extends TileBase implements IEssenceReceiver
     private static final double OUTPUT_SMOOTHING   = 0.1;
     private static final int    TARGET_SCAN_TICKS  = 40;
     // The largest field a pylon projects, a large azurium bundle's
-    private static final int    PYLON_REACH        = 16;
-    private static final Identifier PYLON_ID       = Identifier.fromNamespaceAndPath(MODID, "azurium_pylon");
 
     private MultiEssenceStorage tank = new MultiEssenceStorage(RavenousEngineBalance.TANK, EngineFuel.values().length);
     @Nullable
@@ -144,7 +138,7 @@ public class RavenousEngineTile extends TileBase implements IEssenceReceiver
 
     /**
      * Where the output arc lands: a creative well whose field covers the engine, since those answer first, or else the bundle of the nearest pylon whose
-     * field may cover it.
+     * field covers the engine, which is where the grid takes what it accepts.
      */
     static Optional<BlockPos> findTarget(ServerLevel level, BlockPos pos)
     {
@@ -155,15 +149,9 @@ public class RavenousEngineTile extends TileBase implements IEssenceReceiver
         if (well.isPresent())
             return well;
 
-        var pylons = new ArrayList<BlockPos>();
-        RelayNetwork.forEachTileInRange(level, pos, PYLON_REACH, tile ->
-        {
-            if (PYLON_ID.equals(BuiltInRegistries.BLOCK.getKey(tile.getBlockState().getBlock())))
-                pylons.add(tile.getBlockPos().immutable());
-        });
-        return pylons.stream()
-                .min((a, b) -> Double.compare(a.distToCenterSqr(center), b.distToCenterSqr(center)))
-                .map(BlockPos::above);
+        return VoidGrid.pylonsCovering(level, pos).stream()
+                .map(GridLayout.Pylon::bundle)
+                .min((a, b) -> Double.compare(a.distToCenterSqr(center), b.distToCenterSqr(center)));
     }
 
     private void animate(Level level)
