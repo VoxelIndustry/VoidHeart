@@ -1,11 +1,17 @@
 {
   "tier": 3,
   "constellation": "rites",
-  "icon": "voidheart:void_fissure",
+  "icon": "voidheart:fissure_seed",
   "insight_cost": 10,
   "knowledge_cost": 1200,
   "knowledge_per_second": 1.5,
   "requires": [
     "voidheart:void_energy"
+  ],
+  "unlocks": [
+    "voidheart:fissure_seed"
+  ],
+  "recipes": [
+    "voidheart:altar/fissure_seed"
   ]
 }

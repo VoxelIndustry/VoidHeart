@@ -7,7 +7,7 @@ import net.voxelindustry.voidheart.VoidHeart;
 import java.util.Objects;
 
 /**
- * Wounds left where something failed, such as a reactor. Until the tears install theirs, opening one only leaves a line in the log.
+ * Wounds left where something failed, such as a reactor. The Void Fissure installs the real ones; until it does, opening one only leaves a line in the log.
  */
 public final class VoidWounds
 {

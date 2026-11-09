@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * How strongly the void seeps in around tears and wounds. The tears install themselves through {@link VoidSeep#install}.
+ * How strongly the void seeps in around Void Fissures and void wounds. The fissures install the real seep through {@link VoidSeep#install}.
  */
 @FunctionalInterface
 public interface VoidSeepProvider

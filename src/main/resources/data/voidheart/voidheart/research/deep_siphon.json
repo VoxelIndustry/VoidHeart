@@ -7,5 +7,11 @@
   "knowledge_per_second": 2,
   "requires": [
     "voidheart:daedalus"
+  ],
+  "unlocks": [
+    "voidheart:deep_siphon"
+  ],
+  "recipes": [
+    "voidheart:altar/deep_siphon"
   ]
 }

@@ -2,7 +2,9 @@ package net.voxelindustry.voidheart.common.content.research;
 
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
+import net.minecraft.SharedConstants;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +29,9 @@ class ResearchMigrationTest
     @BeforeAll
     static void loadTree() throws IOException
     {
+        // PlayerKnowledge reaches the registries, which fail on first touch, and keep failing for every later test in the run, unless Minecraft is set up
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
         try (var files = Files.list(Path.of("src/main/resources/data/voidheart/voidheart/research")))
         {
             for (var file : files.toList())

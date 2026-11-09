@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 
 import java.util.Map;
@@ -50,7 +51,7 @@ public class EssenceRegistry
      */
     public static EssenceType SUFFERING;
     /**
-     * Born where the void reacts with the world. Nothing gathers it yet.
+     * Born where the void reacts with the world, such as a spike bleeding a tainted ley node. Collectors attune to it with an azurium shard.
      */
     public static EssenceType CONTRAVOID;
 
@@ -81,7 +82,7 @@ public class EssenceRegistry
         KEY_CONTRAVOID = ESSENCE_REGISTRY.getResourceKey(CONTRAVOID = createEssenceType("contravoid",
                 MODID + ".aspect.contravoid",
                 null,
-                null)
+                VoidHeartItems.AZURIUM_SHARD)
         ).get();
     }
 

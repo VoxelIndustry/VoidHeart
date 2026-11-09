@@ -60,6 +60,15 @@ public class LatticeLeyFlow implements LeyFlowProvider
         return LEDGER.claim(new LinePool(edge.from(), edge.to()), claimant.asLong(), attachment.position(), lineFlow(level, topology.get(), edge), amount, tick);
     }
 
+    /**
+     * Records a grant of nothing, so the claimant keeps its place among claimants at the same point if it claims again within the hold.
+     */
+    @Override
+    public void release(ServerLevel level, BlockPos claimant)
+    {
+        claim(level, claimant, 0);
+    }
+
     @Override
     public float taint(ServerLevel level, long nodeId)
     {
