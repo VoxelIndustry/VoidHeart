@@ -7,7 +7,7 @@ import net.minecraft.util.Mth;
 import java.util.Objects;
 
 /**
- * The seep around void tears and wounds. Wards weaken by it, and corruption rises faster inside it.
+ * The seep around Void Fissures and void wounds. Wards weaken by it, and corruption rises faster inside it.
  */
 public final class VoidSeep
 {
