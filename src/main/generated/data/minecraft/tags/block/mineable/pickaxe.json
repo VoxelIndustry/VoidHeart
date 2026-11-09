@@ -166,6 +166,21 @@
     "voidheart:cut_covetous_copper_wall",
     "voidheart:cut_listless_lead_stairs",
     "voidheart:cut_listless_lead_slab",
-    "voidheart:cut_listless_lead_wall"
+    "voidheart:cut_listless_lead_wall",
+    "voidheart:azurium_pylon",
+    "voidheart:rubrum_construct_core",
+    "voidheart:rubrum_construct_frame",
+    "voidheart:cell_socket",
+    "voidheart:ley_stone",
+    "voidheart:ley_ward",
+    "voidheart:ley_grower",
+    "voidheart:ravenous_engine",
+    "voidheart:azurium_spike",
+    "voidheart:void_fissure",
+    "voidheart:void_wound",
+    "voidheart:contravoid_reactor_core",
+    "voidheart:reactor_containment",
+    "voidheart:reactor_intake",
+    "voidheart:deep_siphon"
   ]
 }

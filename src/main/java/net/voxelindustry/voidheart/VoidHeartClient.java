@@ -66,6 +66,7 @@ import net.voxelindustry.voidheart.client.render.EyeBottleRender;
 import net.voxelindustry.voidheart.client.render.FloatingItemRender;
 import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
 import net.voxelindustry.voidheart.client.render.LeyDebugRender;
+import net.voxelindustry.voidheart.client.render.energy.EnergyClientSetup;
 import net.voxelindustry.voidheart.client.render.oculus.OculusControls;
 import net.voxelindustry.voidheart.client.render.oculus.OculusFigurine;
 import net.voxelindustry.voidheart.client.render.oculus.OculusLeyLayer;
@@ -134,6 +135,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_COLLECTOR, RavenousCollectorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PERMEABLE_BARRIER, PermeableBarrierRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.BEHOLDER, BeholderRender::new);
+        EnergyClientSetup.register();
 
         ModelLayerRegistry.registerModelLayer(ShoulderEyeModel.LAYER, ShoulderEyeModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(VigilFigureModel.LAYER, VigilFigureModel::createBodyLayer);

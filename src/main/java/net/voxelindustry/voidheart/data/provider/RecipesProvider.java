@@ -10,6 +10,7 @@ import net.minecraft.data.BlockFamilies;
 import net.minecraft.data.BlockFamily;
 import net.minecraft.data.BlockFamily.Variant;
 import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.resources.Identifier;
@@ -34,6 +35,8 @@ import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
+import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
+import net.voxelindustry.voidheart.data.energy.EnergyRecipes;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -324,6 +327,39 @@ public class RecipesProvider extends FabricRecipeProvider
 
             // The heart binding is done by an onCraft callback registered on this id, see VoidHeartRecipes
             saveAltarRecipe(new AltarRecipe(altarRecipeId("voidheart"), ingredient(VoidHeartItems.VOID_HEART), ALTAR_TIME), VoidHeartItems.VOID_HEART);
+
+            EnergyDatagen.recipes(energyRecipes());
+        }
+
+        private EnergyRecipes energyRecipes()
+        {
+            var provider = this;
+            return new EnergyRecipes()
+            {
+                @Override
+                public RecipeProvider provider()
+                {
+                    return provider;
+                }
+
+                @Override
+                public RecipeOutput output()
+                {
+                    return output;
+                }
+
+                @Override
+                public void altar(String name, ItemLike output, ItemLike catalyst, ItemLike... ingredients)
+                {
+                    offerAltarRecipe(name, output, catalyst, ingredients);
+                }
+
+                @Override
+                public void shatterForge(ItemLike input, ItemLike output, int outputCount, int time, int monolithCount, int draw, Map<EssenceType, Integer> aspects)
+                {
+                    offerShatterForgeRecipe(input, output, outputCount, time, monolithCount, draw, aspects);
+                }
+            };
         }
 
         private static ItemLike[] eight(ItemLike ingredient)

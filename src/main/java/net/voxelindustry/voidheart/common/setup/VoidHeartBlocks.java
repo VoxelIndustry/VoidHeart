@@ -1007,12 +1007,12 @@ public class VoidHeartBlocks
                 .ignitedByLava();
     }
 
-    private static Block registerBlock(String name, Function<BlockBehaviour.Properties, Block> factory, BlockBehaviour.Properties properties, boolean inCreativeTab)
+    public static Block registerBlock(String name, Function<BlockBehaviour.Properties, Block> factory, BlockBehaviour.Properties properties, boolean inCreativeTab)
     {
         return registerBlock(name, factory, properties, BlockItem::new, inCreativeTab);
     }
 
-    private static Block registerBlock(String name,
+    public static Block registerBlock(String name,
                                        Function<BlockBehaviour.Properties, Block> factory,
                                        BlockBehaviour.Properties properties,
                                        BiFunction<Block, Item.Properties, Item> itemFactory)
@@ -1020,7 +1020,7 @@ public class VoidHeartBlocks
         return registerBlock(name, factory, properties, itemFactory, true);
     }
 
-    private static Block registerBlock(String name,
+    public static Block registerBlock(String name,
                                        Function<BlockBehaviour.Properties, Block> factory,
                                        BlockBehaviour.Properties properties,
                                        BiFunction<Block, Item.Properties, Item> itemFactory,

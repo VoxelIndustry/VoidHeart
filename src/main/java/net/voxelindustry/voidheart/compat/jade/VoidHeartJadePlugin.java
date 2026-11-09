@@ -59,6 +59,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockDataProvider(malignantTormenterProvider, MalignantTormenterTile.class);
         registration.registerBlockDataProvider(armillaryProvider, ArmillaryTile.class);
         registration.registerBlockDataProvider(athanorProvider, AthanorTile.class);
+        EnergyJade.register(registration);
     }
 
     @Override
@@ -80,5 +81,6 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.addRayTraceCallback(new MalignantTormenterPartRedirect(registration));
         registration.addRayTraceCallback(new RavenousStoragePartRedirect(registration));
         registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);
+        EnergyJade.registerClient(registration);
     }
 }

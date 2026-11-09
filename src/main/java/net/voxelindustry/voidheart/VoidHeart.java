@@ -31,6 +31,7 @@ import net.minecraft.world.level.dimension.DimensionType;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
 import net.voxelindustry.voidheart.common.curse.Corruption;
+import net.voxelindustry.voidheart.common.energy.EnergySetup;
 import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
@@ -129,6 +130,7 @@ public class VoidHeart implements ModInitializer
 
         VoidHeartTiles.registerTiles();
         VoidHeartMenus.registerMenus();
+        EnergySetup.register();
 
         ITEMGROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(MODID, "item_group"), FabricCreativeModeTab.builder()
                 .icon(() -> new ItemStack(VoidHeartItems.VOID_HEART))

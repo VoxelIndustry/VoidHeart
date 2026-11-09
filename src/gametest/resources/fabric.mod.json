@@ -62,7 +62,19 @@
       "net.voxelindustry.voidheart.gametest.DaedalusDecorClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusMobsClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusSpawningClientTest",
-      "net.voxelindustry.voidheart.gametest.KernacianDragoonClientTest"
+      "net.voxelindustry.voidheart.gametest.KernacianDragoonClientTest",
+      "net.voxelindustry.voidheart.gametest.EnergyFoundationClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidGridClientTest",
+      "net.voxelindustry.voidheart.gametest.RubrumStorageClientTest",
+      "net.voxelindustry.voidheart.gametest.LeyFlowClientTest",
+      "net.voxelindustry.voidheart.gametest.LeyStoneClientTest",
+      "net.voxelindustry.voidheart.gametest.RavenousEngineClientTest",
+      "net.voxelindustry.voidheart.gametest.MachineRetrofitClientTest",
+      "net.voxelindustry.voidheart.gametest.EnergyResearchClientTest",
+      "net.voxelindustry.voidheart.gametest.LeySpikeClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidFissureClientTest",
+      "net.voxelindustry.voidheart.gametest.ContravoidReactorClientTest",
+      "net.voxelindustry.voidheart.gametest.DeepSiphonClientTest"
     ]
   },
   "depends": {

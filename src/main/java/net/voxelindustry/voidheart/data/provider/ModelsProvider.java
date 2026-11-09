@@ -34,6 +34,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
+import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
 
 import java.util.List;
 import java.util.Optional;
@@ -117,6 +118,7 @@ public class ModelsProvider extends FabricModelProvider
         registerAthanor();
         registerDaedalusDecor();
         registerRepairAndDoor();
+        EnergyDatagen.blockModels(generator);
     }
 
     /**
@@ -323,6 +325,7 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.SPARK_OF_UNDERSTANDING, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.TAINTED_BREAKTHROUGH, ModelTemplates.FLAT_ITEM);
         VoidHeartItems.SPAWN_EGGS.forEach(egg -> generator.generateFlatItem(egg, ModelTemplates.FLAT_ITEM));
+        EnergyDatagen.itemModels(generator);
 
         for (var name : HAND_WRITTEN_ITEM_MODELS)
             generator.itemModelOutput.accept(BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(MODID, name)), ItemModelUtils.plainModel(itemModel(name)));

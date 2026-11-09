@@ -38,6 +38,7 @@ public class VoidHeartREIPlugin implements REIClientPlugin
         registry.addWorkstations(AltarRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.VOID_ALTAR));
         registry.addWorkstations(ShatterForgeRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.SHATTER_FORGE));
         registry.addWorkstations(AthanorRecipeCategory.IDENTIFIER, EntryStacks.of(VoidHeartBlocks.ATHANOR));
+        EnergyRei.registerCategories(registry);
     }
 
     /**
@@ -63,6 +64,7 @@ public class VoidHeartREIPlugin implements REIClientPlugin
                     Component.translatable(vessel.traitKey()),
                     Component.translatable("voidheart.rei.refinement.holds_" + holds)));
         }
+        EnergyRei.registerDisplays(registry);
     }
 
     private static List<Component> refinement(List<Component> lines, Component... text)
