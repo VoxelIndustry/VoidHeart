@@ -9,6 +9,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.data.provider.AdvancementsProvider;
 import net.voxelindustry.voidheart.data.provider.BlockLootsProvider;
 import net.voxelindustry.voidheart.data.provider.BlockTagsProvider;
+import net.voxelindustry.voidheart.data.provider.EntityTypeTagsProvider;
 import net.voxelindustry.voidheart.data.provider.ModelsProvider;
 import net.voxelindustry.voidheart.data.provider.RecipesProvider;
 
@@ -118,6 +119,7 @@ public class VoidHeartDataGenerator implements DataGeneratorEntrypoint
         pack.addProvider(AdvancementsProvider::new);
         pack.addProvider(ModelsProvider::new);
         pack.addProvider(BlockTagsProvider::new);
+        pack.addProvider(EntityTypeTagsProvider::new);
         pack.addProvider(BlockLootsProvider::new);
         pack.addProvider(RecipesProvider::new);
     }
