@@ -21,6 +21,8 @@ import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,6 +143,14 @@ public final class DaedalusConnections extends SavedData
     public @Nullable Integer entryOf(UUID player)
     {
         return entries.get(player);
+    }
+
+    /**
+     * Every connection still open, severed or not, so something in the Daedalus can find the way onto its bridge without a player who came in by it.
+     */
+    public Collection<Connection> openConnections()
+    {
+        return Collections.unmodifiableCollection(open.values());
     }
 
     /**

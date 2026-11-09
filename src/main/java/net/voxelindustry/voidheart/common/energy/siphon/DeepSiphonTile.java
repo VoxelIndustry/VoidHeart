@@ -24,7 +24,7 @@ import net.voxelindustry.voidheart.common.world.daedalus.DaedalusMob;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import org.jspecify.annotations.Nullable;
 
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.SplittableRandom;
 
 /**
@@ -33,7 +33,7 @@ import java.util.SplittableRandom;
  * network around it. It only draws what is taken, and everything taken adds to the Daedalus' notice of it, spent as waves of mobs climbing onto the bridge
  * once a player comes near.
  * <p>
- * It finds its way from the players who came in by one: whoever stands in the Daedalus by the way onto its bridge, the one who placed it first of all.
+ * It takes up the way its placer came in by, and while unbound or severed, the newest open way onto its bridge, with or without anyone inside.
  * While the way holds, it keeps its own chunk ticking.
  */
 public class DeepSiphonTile extends TileBase
@@ -142,24 +142,17 @@ public class DeepSiphonTile extends TileBase
     }
 
     /**
-     * Takes up the way onto its bridge, held by an armillary and not severed, from whoever came into the Daedalus by it.
+     * Takes up the newest way onto its bridge that is open and not severed, whether or not anyone came into the Daedalus by it.
      */
     public void relink(ServerLevel level)
     {
         var footing = footing();
         if (footing == null)
             return;
-        var connections = DaedalusConnections.get(level.getServer());
-        var tried = new HashSet<Integer>();
-        for (var player : level.players())
-        {
-            var entry = connections.entryOf(player.getUUID());
-            if (entry != null && tried.add(entry) && isWayOntoBridge(level, connections.get(entry), footing))
-            {
-                bind(entry);
-                return;
-            }
-        }
+        DaedalusConnections.get(level.getServer()).openConnections().stream()
+                .filter(connection -> isWayOntoBridge(level, connection, footing))
+                .max(Comparator.comparingInt(DaedalusConnections.Connection::id))
+                .ifPresent(connection -> bind(connection.id()));
     }
 
     /**
