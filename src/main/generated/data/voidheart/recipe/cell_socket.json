@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "G": "voidheart:ravenous_gold_ingot",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    " G ",
+    "VVV"
+  ],
+  "result": {
+    "id": "voidheart:cell_socket"
+  }
+}

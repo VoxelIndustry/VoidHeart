@@ -1,0 +1,63 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            16,
+            13
+          ]
+        },
+        "north": {
+          "cullface": "north",
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            16,
+            13
+          ]
+        },
+        "south": {
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            16,
+            13
+          ]
+        },
+        "up": {
+          "cullface": "up",
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            16,
+            13
+          ]
+        }
+      },
+      "from": [
+        0,
+        6,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "beam": "voidheart:block/rubrum_construct_beam",
+    "gold": "voidheart:block/cut_ravenous_gold",
+    "particle": "voidheart:block/rubrum_construct_frame",
+    "pillar": "voidheart:block/rubrum_construct_pillar"
+  }
+}
