@@ -19,6 +19,10 @@ final class CrackShape
     // A wound is ragged, and wider than any fissure stage
     static final float         WOUND_LENGTH    = 6.5F;
     static final float         WOUND_HALF      = 0.62F;
+    // A wound closed in on every side, as in a failed reactor's shell, keeps to its own block, rim included
+    static final float         CONFINED_LENGTH = 0.9F;
+    static final float         CONFINED_HALF   = 0.2F;
+    static final float         CONFINED_REACH  = 0.48F;
 
     private static final float TAPER_POWER     = 0.55F;
     // The middle of the crack meanders in two slow waves, with a little jitter at each joint
@@ -50,6 +54,16 @@ final class CrackShape
     static float fissureHalf(float width)
     {
         return width <= 0 ? 0 : HALF_BASE + HALF_PER_WIDTH * (width - 1);
+    }
+
+    static float woundLength(boolean confined)
+    {
+        return confined ? CONFINED_LENGTH : WOUND_LENGTH;
+    }
+
+    static float woundHalf(boolean confined)
+    {
+        return confined ? CONFINED_HALF : WOUND_HALF;
     }
 
     interface Jag

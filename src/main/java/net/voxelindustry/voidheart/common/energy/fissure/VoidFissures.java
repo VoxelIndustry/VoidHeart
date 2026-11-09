@@ -96,7 +96,7 @@ public final class VoidFissures
 
     /**
      * Opens a wound where something failed, exactly at {@code pos} and replacing whatever stands there, so a failed reactor's wound takes the
-     * core's place inside its shell.
+     * core's place inside its shell. Closed in on every side, as by an intact shell, its crack keeps to its own block.
      *
      * @param size the width it seeps at, 1 to 5; anything else is clamped, and a reactor's wound is {@link VoidFissureBalance#WOUND_SIZE}
      */
@@ -105,7 +105,24 @@ public final class VoidFissures
         var axis = Math.floorMod(pos.hashCode(), 2) == 0 ? Direction.Axis.X : Direction.Axis.Z;
         level.setBlock(pos, VoidFissureContent.VOID_WOUND.defaultBlockState().setValue(VoidFissureBlock.AXIS, axis), 3);
         if (level.getBlockEntity(pos) instanceof VoidFissureTile wound)
+        {
+            wound.confine(isEnclosed(level, pos));
             wound.open(level, size, level.getGameTime());
+        }
+    }
+
+    /**
+     * Whether a full face closes the spot in on every side.
+     */
+    private static boolean isEnclosed(ServerLevel level, BlockPos pos)
+    {
+        for (var direction : Direction.values())
+        {
+            var side = pos.relative(direction);
+            if (!level.getBlockState(side).isFaceSturdy(level, side, direction.getOpposite()))
+                return false;
+        }
+        return true;
     }
 
     /**

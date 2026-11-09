@@ -75,6 +75,7 @@ public class VoidFissureRender implements BlockEntityRenderer<VoidFissureTile, V
     {
         public boolean axisX;
         public boolean wound;
+        public boolean confined;
         public long    seed;
         public float   length;
         public float   half;
@@ -108,6 +109,7 @@ public class VoidFissureRender implements BlockEntityRenderer<VoidFissureTile, V
         var blockState = tile.getBlockState();
         state.axisX = !blockState.hasProperty(VoidFissureBlock.AXIS) || blockState.getValue(VoidFissureBlock.AXIS) == Direction.Axis.X;
         state.wound = tile.isWound();
+        state.confined = state.wound && tile.isConfined();
         state.seed = tile.seed();
 
         var animation = tile.animation();
@@ -121,8 +123,8 @@ public class VoidFissureRender implements BlockEntityRenderer<VoidFissureTile, V
         tear = tear * tear * (3 - 2 * tear);
         if (state.wound)
         {
-            state.length = CrackShape.WOUND_LENGTH * tear;
-            state.half = CrackShape.WOUND_HALF * tear;
+            state.length = CrackShape.woundLength(state.confined) * tear;
+            state.half = CrackShape.woundHalf(state.confined) * tear;
         }
         else
         {
@@ -179,6 +181,12 @@ public class VoidFissureRender implements BlockEntityRenderer<VoidFissureTile, V
 
     private static void point(State state, float along, float across, float y, Vector3f out)
     {
+        if (state.confined)
+        {
+            // Inside a shell nothing may reach past the block, or it would show through the walls
+            along = Mth.clamp(along, -CrackShape.CONFINED_REACH, CrackShape.CONFINED_REACH);
+            across = Mth.clamp(across, -CrackShape.CONFINED_REACH, CrackShape.CONFINED_REACH);
+        }
         if (state.axisX)
             out.set(0.5F + along, y, 0.5F + across);
         else

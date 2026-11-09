@@ -57,6 +57,8 @@ public class VoidFissureTile extends TileBase implements IEssenceReceiver
     @Nullable
     private BlockPos outputTarget;
     private int      activity;
+    // A wound opened with full faces on every side, as inside a failed reactor's shell, keeps its crack to its own block
+    private boolean  confined;
 
     // Saved, server only
     private long nextSpawn = -1;
@@ -249,6 +251,20 @@ public class VoidFissureTile extends TileBase implements IEssenceReceiver
         return getBlockState().getBlock() instanceof VoidFissureBlock block && block.isWound();
     }
 
+    /**
+     * Whether it opened closed in on every side, so its crack stays inside its own block. Its seep is as wide as ever.
+     */
+    public boolean isConfined()
+    {
+        return confined;
+    }
+
+    void confine(boolean confined)
+    {
+        this.confined = confined;
+        setChanged();
+    }
+
     public int width()
     {
         return Math.round(width);
@@ -426,6 +442,7 @@ public class VoidFissureTile extends TileBase implements IEssenceReceiver
         nextSpawn = nbt.getLongOr("nextSpawn", -1);
         outputTarget = nbt.read("outputTarget", BlockPos.CODEC).orElse(null);
         activity = Math.clamp(nbt.getIntOr("activity", 0), 0, ACTIVITY_STEPS);
+        confined = nbt.getBooleanOr("confined", false);
     }
 
     @Override
@@ -442,5 +459,7 @@ public class VoidFissureTile extends TileBase implements IEssenceReceiver
         if (outputTarget != null)
             nbt.store("outputTarget", BlockPos.CODEC, outputTarget);
         nbt.putInt("activity", activity);
+        if (confined)
+            nbt.putBoolean("confined", true);
     }
 }

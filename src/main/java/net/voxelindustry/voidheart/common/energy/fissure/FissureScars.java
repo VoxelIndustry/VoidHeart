@@ -14,7 +14,7 @@ public final class FissureScars
 {
     public static final int FADE_TICKS = 1200;
 
-    public record Scar(BlockPos pos, Direction.Axis axis, float width, boolean wound, long seed, long since)
+    public record Scar(BlockPos pos, Direction.Axis axis, float width, boolean wound, boolean confined, long seed, long since)
     {
     }
 
@@ -29,7 +29,7 @@ public final class FissureScars
         var level = tile.getLevel();
         if (level == null || !tile.getBlockState().hasProperty(VoidFissureBlock.AXIS))
             return;
-        SCARS.add(new Scar(tile.getBlockPos(), tile.getBlockState().getValue(VoidFissureBlock.AXIS), tile.size(), tile.isWound(), tile.seed(),
+        SCARS.add(new Scar(tile.getBlockPos(), tile.getBlockState().getValue(VoidFissureBlock.AXIS), tile.size(), tile.isWound(), tile.isConfined(), tile.seed(),
                 tile.closingSince() + VoidFissureBalance.CLOSE_TICKS));
     }
 

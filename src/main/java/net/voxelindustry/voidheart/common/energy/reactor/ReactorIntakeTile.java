@@ -10,6 +10,7 @@ import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureTile;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -17,6 +18,9 @@ import org.jspecify.annotations.Nullable;
  * it against. Across the core, the other intake must hold the other side, so an empty intake takes only what its partner lacks.
  * <p>
  * It gives nothing back to the relays, so a Shatter Forge never draws its fuel away. Clients never need its contents, so it doesn't sync them.
+ * <p>
+ * Once a failed reactor's wound stands where the core was, what the relays bring goes on into the wound instead, so it can be paid shut without
+ * breaking the shell. The wound takes only Contravoid.
  */
 public class ReactorIntakeTile extends TileBase implements IEssenceReceiver
 {
@@ -95,6 +99,22 @@ public class ReactorIntakeTile extends TileBase implements IEssenceReceiver
         return null;
     }
 
+    /**
+     * The wound beside it, where a failed reactor's core stood.
+     */
+    @Nullable
+    public VoidFissureTile woundBeside()
+    {
+        if (level == null)
+            return null;
+        for (var direction : Direction.Plane.HORIZONTAL)
+        {
+            if (level.getBlockEntity(worldPosition.relative(direction)) instanceof VoidFissureTile wound && wound.isWound())
+                return wound;
+        }
+        return null;
+    }
+
     private boolean accepts(EssenceType type)
     {
         var contravoid = isContravoid(type);
@@ -112,12 +132,18 @@ public class ReactorIntakeTile extends TileBase implements IEssenceReceiver
     @Override
     public int spaceFor(EssenceType type)
     {
+        var wound = woundBeside();
+        if (wound != null)
+            return wound.spaceFor(type);
         return accepts(type) ? tank.maximumAmount() - tank.amount() : 0;
     }
 
     @Override
     public int receive(EssenceType type, int amount)
     {
+        var wound = woundBeside();
+        if (wound != null)
+            return wound.receive(type, amount);
         if (amount <= 0 || !accepts(type))
             return 0;
         if (tank.amount() == 0 && tank.type() != type)

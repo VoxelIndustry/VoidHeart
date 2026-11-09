@@ -241,7 +241,7 @@ final class SeepEffects
         }
 
         var tile = emitter.tile;
-        float crack = emitter.wound ? CrackShape.WOUND_LENGTH : CrackShape.fissureLength(tile.width());
+        float crack = emitter.wound ? CrackShape.woundLength(tile.isConfined()) : CrackShape.fissureLength(tile.width());
         emitter.vaporCredit += (VAPOR_BASE + VAPOR_PER_BLOCK * crack) * emitter.thinning;
         boolean axisX = tile.getBlockState().hasProperty(VoidFissureBlock.AXIS) && tile.getBlockState().getValue(VoidFissureBlock.AXIS) == Direction.Axis.X;
         while (emitter.vaporCredit >= 1)
@@ -346,7 +346,7 @@ final class SeepEffects
             float fade = 1 - Mth.clamp((time - scar.since()) / FissureScars.FADE_TICKS, 0, 1);
             if (fade <= 0 || Vec3.atCenterOf(scar.pos()).distanceToSqr(camera) > DRAW_DISTANCE * DRAW_DISTANCE)
                 continue;
-            float length = scar.wound() ? CrackShape.WOUND_LENGTH : CrackShape.fissureLength(Math.round(scar.width()));
+            float length = scar.wound() ? CrackShape.woundLength(scar.confined()) : CrackShape.fissureLength(Math.round(scar.width()));
             shape.build(scar.seed(), length, 0, scar.wound(), (joint, edge) -> 0, 0);
             int on = color(BRUISE, SCAR_ALPHA * fade);
             int off = color(BRUISE, 0);
