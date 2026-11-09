@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client.render.energy;
 import net.voxelindustry.voidheart.client.render.energy.engine.RavenousEngineClient;
 import net.voxelindustry.voidheart.client.render.energy.grid.VoidGridClient;
 import net.voxelindustry.voidheart.client.render.energy.ley.LeyStoneClient;
+import net.voxelindustry.voidheart.client.render.energy.ley_taint.LeyTaintClient;
 import net.voxelindustry.voidheart.client.render.energy.reactor.ContravoidReactorClient;
 import net.voxelindustry.voidheart.client.render.energy.siphon.DeepSiphonClient;
 import net.voxelindustry.voidheart.client.render.energy.spike.LeySpikeClient;
@@ -22,6 +23,7 @@ public final class EnergyClientSetup
     {
         VoidGridClient.register();
         RubrumClient.register();
+        LeyTaintClient.register();
         LeyStoneClient.register();
         RavenousEngineClient.register();
         LeySpikeClient.register();

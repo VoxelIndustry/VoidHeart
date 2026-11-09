@@ -1,13 +1,10 @@
 package net.voxelindustry.voidheart.common.ley.flow;
 
-import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.world.level.Level;
-import net.voxelindustry.voidheart.client.render.energy.ley_taint.LeyTaintClient;
 import net.voxelindustry.voidheart.common.ley.Ley;
 import net.voxelindustry.voidheart.common.ley.taint.LeyTaint;
 import net.voxelindustry.voidheart.common.ley.taint.LeyTaintPayload;
@@ -41,9 +38,5 @@ public final class LeyFlowContent
             LeyTaintSync.clear();
             LeyTopology.clear();
         });
-
-        // EnergyClientSetup has no W3 hook yet, so the client side registers from here until I1 moves this call there
-        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT)
-            LeyTaintClient.register();
     }
 }
