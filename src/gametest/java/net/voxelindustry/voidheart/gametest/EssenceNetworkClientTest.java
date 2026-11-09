@@ -36,6 +36,7 @@ import net.voxelindustry.voidheart.common.content.essence.StorageParts;
 import net.voxelindustry.voidheart.common.content.essence.SufferingHarvest;
 import net.voxelindustry.voidheart.common.content.tormenter.TormenterSouls;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
@@ -49,6 +50,7 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
     private static final int FEET = -60;
 
     private static final BlockPos DEATH_COLLECTOR   = new BlockPos(0, FEET, 0);
+    private static final BlockPos CONTRAVOID_COLLECTOR = new BlockPos(-6, FEET, 0);
     private static final BlockPos TORMENTER         = new BlockPos(20, FEET, 0);
     private static final BlockPos TORMENT_COLLECTOR = new BlockPos(23, FEET + 1, 0);
 
@@ -99,8 +101,15 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
             useOn(player, DEATH_COLLECTOR);
             expect(collector(minecraft, DEATH_COLLECTOR).storage().type() == EssenceRegistry.SUFFERING, "rotten flesh did not attune the collector to Suffering");
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-            expect(EssenceRegistry.ESSENCE_REGISTRY.stream().noneMatch(type -> type == EssenceRegistry.CONTRAVOID && type.catalyst() != null),
-                    "something attunes a collector to Contravoid");
+
+            // An azurium shard attunes a collector to Contravoid through the same interaction
+            level.setBlockAndUpdate(CONTRAVOID_COLLECTOR, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.AZURIUM_SHARD));
+            useOn(player, CONTRAVOID_COLLECTOR);
+            expect(collector(minecraft, CONTRAVOID_COLLECTOR).storage().type() == EssenceRegistry.CONTRAVOID,
+                    "an azurium shard did not attune the collector to Contravoid");
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            level.removeBlock(CONTRAVOID_COLLECTOR, false);
         });
 
         server.runOnServer(minecraft ->
