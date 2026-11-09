@@ -1,7 +1,67 @@
 {
   "variants": {
-    "": {
+    "part=beam_x_nn": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_x_nn"
+    },
+    "part=beam_x_np": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_x_np"
+    },
+    "part=beam_x_pn": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_x_pn"
+    },
+    "part=beam_x_pp": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_x_pp"
+    },
+    "part=beam_z_nn": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_z_nn"
+    },
+    "part=beam_z_np": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_z_np"
+    },
+    "part=beam_z_pn": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_z_pn"
+    },
+    "part=beam_z_pp": {
+      "model": "voidheart:block/rubrum_construct_frame_beam_z_pp"
+    },
+    "part=corner_nnn": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_nnn"
+    },
+    "part=corner_nnp": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_nnp"
+    },
+    "part=corner_npn": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_npn"
+    },
+    "part=corner_npp": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_npp"
+    },
+    "part=corner_pnn": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_pnn"
+    },
+    "part=corner_pnp": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_pnp"
+    },
+    "part=corner_ppn": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_ppn"
+    },
+    "part=corner_ppp": {
+      "model": "voidheart:block/rubrum_construct_frame_corner_ppp"
+    },
+    "part=loose": {
       "model": "voidheart:block/rubrum_construct_frame"
+    },
+    "part=pillar_nn": {
+      "model": "voidheart:block/rubrum_construct_frame_pillar_nn"
+    },
+    "part=pillar_np": {
+      "model": "voidheart:block/rubrum_construct_frame_pillar_np"
+    },
+    "part=pillar_pn": {
+      "model": "voidheart:block/rubrum_construct_frame_pillar_pn"
+    },
+    "part=pillar_pp": {
+      "model": "voidheart:block/rubrum_construct_frame_pillar_pp"
     }
   }
 }

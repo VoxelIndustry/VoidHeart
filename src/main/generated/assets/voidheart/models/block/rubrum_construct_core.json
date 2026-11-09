@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "voidheart:block/voidstone_engraved_eye"
+    "all": "voidheart:block/rubrum_construct_core"
   }
 }

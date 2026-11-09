@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_small_rubrum_bundle": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:small_rubrum_bundle"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:rubrum_cell"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_small_rubrum_bundle"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:rubrum_cell"
+    ]
+  }
+}

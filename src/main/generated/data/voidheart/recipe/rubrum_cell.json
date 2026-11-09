@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": "voidheart:small_rubrum_bundle",
+    "G": "voidheart:ravenous_gold_ingot",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    " G ",
+    "VBV",
+    " G "
+  ],
+  "result": {
+    "id": "voidheart:rubrum_cell"
+  }
+}
