@@ -7,5 +7,15 @@
   "knowledge_per_second": 0.75,
   "requires": [
     "voidheart:far_sight"
+  ],
+  "unlocks": [
+    "voidheart:ley_stone",
+    "voidheart:ley_ward",
+    "voidheart:ley_grower"
+  ],
+  "recipes": [
+    "voidheart:ley_stone",
+    "voidheart:ley_ward",
+    "voidheart:ley_grower"
   ]
 }
