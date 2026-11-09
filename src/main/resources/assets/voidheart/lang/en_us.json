@@ -934,7 +934,7 @@
   "voidheart.rei.reactor_containment.shell": "The shell of a Contravoid Reactor: a cube 3 blocks wide around the core, with a Reactor Intake at the middle of two opposite sides. Once whole, the middle of each other side opens a narrow slit onto the light within.",
   "voidheart.rei.reactor_containment.breach": "Breaking any of it while the reactor burns starts the warning, and setting it back in time ends it.",
   "voidheart.rei.reactor_intake.fuel": "Where Ravenous Relays deliver the reactor's fuel: Contravoid at one end, and Stillness, Fiery or Suffering essence at the other. Each holds %s, and an empty one only takes what the other end lacks. Broken, it keeps its fuel.",
-  "voidheart.rei.reactor_intake.wound": "Once a failed reactor leaves its wound, the intakes feed the wound: the Contravoid relays bring them goes into closing it.",
+  "voidheart.rei.reactor_intake.wound": "Once a failed reactor leaves its wound, the intakes feed it: the Contravoid that relays bring to them goes toward closing the wound.",
   "voidheart.rei.deep_siphon.draw": "Set on a bridge of the Daedalus while an Armillary Core holds the way onto it, it draws %s VE a tick up from the depths and sends it back through the rings.",
   "voidheart.rei.deep_siphon.hold": "What arrives pays for holding the way first, %s VE a tick, and the rest goes to the field of an Azurium Pylon around the armillary. It keeps drawing while everyone is back at the base.",
   "voidheart.rei.deep_siphon.notice": "The Daedalus notices what is taken. What the siphon draws calls things up out of the chasm, and they wait on the bridge for whoever comes through next.",
