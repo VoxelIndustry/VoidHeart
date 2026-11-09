@@ -51,6 +51,8 @@ public class LeySpikeClientTest implements FabricClientGameTest
     private static final int    WINDOWS   = 200;
     private static final int    HEAVY_TICKS = 2400;
     private static final float  FESTERING = 60;
+    // A stand-in entity id for whoever is mining, as the level tracks cracks per breaker
+    private static final int    BREAKER   = 779;
 
     // The stand-in machine draws after everything else in the overworld ticked, as a machine block entity would
     private static volatile BlockPos machine;
@@ -95,6 +97,7 @@ public class LeySpikeClientTest implements FabricClientGameTest
             checkContravoidFollowsTaint(context, server, scene);
             showJade(context, server, scene);
             sweep(context, server, scene);
+            showCracks(context, server, scene);
             checkBreakingDropsTheSpike(context, server, scene);
             ask = 0;
         }
@@ -445,6 +448,28 @@ public class LeySpikeClientTest implements FabricClientGameTest
         // From the far side of the lean
         aimFrom(context, server, scene.spike.getX() - 1.6, FLAT_FEET + 1.4, scene.spike.getZ() + 2.4, scene.spike.getX() + 0.5, FLAT_FEET + 1, scene.spike.getZ() + 0.5, 5);
         context.takeScreenshot("spike-other-side");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+    }
+
+    /**
+     * Only the renderer draws the spike, and the game hands no cracks to a block entity drawn off screen, so it must find them on the base and the tip.
+     */
+    private static void showCracks(ClientGameTestContext context, TestServerContext server, Scene scene)
+    {
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, scene.spike.getX() + 1.4, FLAT_FEET + 1.1, scene.spike.getZ() - 1.0, scene.spike.getX() + 0.5, FLAT_FEET + 1, scene.spike.getZ() + 0.5, 5);
+        context.takeScreenshot("spike-uncracked");
+        context.runOnClient(minecraft -> minecraft.level.destroyBlockProgress(BREAKER, scene.spike, 7));
+        context.waitTicks(2);
+        context.takeScreenshot("spike-cracks-base");
+        context.runOnClient(minecraft ->
+        {
+            minecraft.level.destroyBlockProgress(BREAKER, scene.spike, -1);
+            minecraft.level.destroyBlockProgress(BREAKER, scene.spike.above(), 9);
+        });
+        context.waitTicks(2);
+        context.takeScreenshot("spike-cracks-tip");
+        context.runOnClient(minecraft -> minecraft.level.destroyBlockProgress(BREAKER, scene.spike.above(), -1));
         context.getInput().pressKey(InputConstants.KEY_F1);
     }
 
