@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A rubrum construct's looks: the bundles in its sockets pointing at the core, the veins on its vertical edges lit
+ * A rubrum construct's looks: the braces across its faces, the bundles on them pointing at the core, the veins on its vertical edges lit
  * from the bottom up with its fill, the core's inset glowing faintly, tiny arcs off the azurium bundles while energy
  * moves, the bud growing on its frame, and the ghost of its frame while the loose core shows it.
  * <p>
@@ -111,6 +111,8 @@ public class RubrumConstructRender implements BlockEntityRenderer<RubrumConstruc
         public RubrumBudding.Stage budStage = RubrumBudding.Stage.NONE;
         public int              budLight;
         public final List<GhostDraw> ghosts = new ArrayList<>();
+        /** Light in the middle of each face, by direction, for its brace. */
+        public final int[]      faceLights = new int[6];
     }
 
     public RubrumConstructRender(BlockEntityRendererProvider.Context context)
@@ -139,6 +141,9 @@ public class RubrumConstructRender implements BlockEntityRenderer<RubrumConstruc
         state.bundles.clear();
         if (state.formed && state.layout != null)
         {
+            for (var face : Direction.values())
+                state.faceLights[face.ordinal()] = LightCoordsUtil.getLightCoords(level, tile.getBlockPos().relative(face, state.layout.half()));
+
             var sockets = ConstructLayout.sockets(state.layout);
             for (var socket = 0; socket < sockets.size(); socket++)
             {
@@ -182,6 +187,7 @@ public class RubrumConstructRender implements BlockEntityRenderer<RubrumConstruc
         if (!state.formed || state.layout == null)
             return;
 
+        ConstructBraces.submit(poseStack, collector, state.layout, state.faceLights);
         submitBundles(state, poseStack, collector);
         submitBudShard(state, poseStack, collector);
 
