@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
-      "model": "voidheart:block/ravenous_engine"
+    "part=chamber": {
+      "model": "voidheart:block/ravenous_engine_chamber"
+    },
+    "part=maw": {
+      "model": "voidheart:block/ravenous_engine_maw"
     }
   }
 }
