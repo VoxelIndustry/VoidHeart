@@ -1,0 +1,11 @@
+{
+  "tier": 3,
+  "constellation": "travel",
+  "icon": "voidheart:deep_siphon",
+  "insight_cost": 10,
+  "knowledge_cost": 3000,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:daedalus"
+  ]
+}
