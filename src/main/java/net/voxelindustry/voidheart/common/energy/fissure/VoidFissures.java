@@ -28,7 +28,7 @@ import java.util.WeakHashMap;
 public final class VoidFissures
 {
     private static final int RISE_TICKS = 20;
-    // A wound looks this far below where it was asked to open for the ground to lie on
+    // A wound opened by command looks this far below the spot asked for the ground to lie on
     private static final int WOUND_DROP = 8;
 
     private static final Map<ServerLevel, Set<VoidFissureTile>> LOADED = new WeakHashMap<>();
@@ -95,20 +95,23 @@ public final class VoidFissures
     }
 
     /**
-     * Opens a wound where a reactor failed: at {@code pos}, or on the ground below it if it hangs over air, replacing whatever stands there.
+     * Opens a wound where something failed, exactly at {@code pos} and replacing whatever stands there, so a failed reactor's wound takes the
+     * core's place inside its shell.
      *
-     * @param size the width it seeps at, 1 to 5; anything else is clamped, and a reactor's wound is 4 ({@link VoidFissureBalance#WOUND_SIZE})
+     * @param size the width it seeps at, 1 to 5; anything else is clamped, and a reactor's wound is {@link VoidFissureBalance#WOUND_SIZE}
      */
     public static void openWound(ServerLevel level, BlockPos pos, float size)
     {
-        var at = woundSpot(level, pos);
-        var axis = Math.floorMod(at.hashCode(), 2) == 0 ? Direction.Axis.X : Direction.Axis.Z;
-        level.setBlock(at, VoidFissureContent.VOID_WOUND.defaultBlockState().setValue(VoidFissureBlock.AXIS, axis), 3);
-        if (level.getBlockEntity(at) instanceof VoidFissureTile wound)
+        var axis = Math.floorMod(pos.hashCode(), 2) == 0 ? Direction.Axis.X : Direction.Axis.Z;
+        level.setBlock(pos, VoidFissureContent.VOID_WOUND.defaultBlockState().setValue(VoidFissureBlock.AXIS, axis), 3);
+        if (level.getBlockEntity(pos) instanceof VoidFissureTile wound)
             wound.open(level, size, level.getGameTime());
     }
 
-    private static BlockPos woundSpot(ServerLevel level, BlockPos pos)
+    /**
+     * Where a wound asked for at {@code pos} by command lies: there, or on the ground below it if it hangs over air.
+     */
+    static BlockPos woundSpot(ServerLevel level, BlockPos pos)
     {
         var at = pos;
         for (int i = 0; i < WOUND_DROP; i++)

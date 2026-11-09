@@ -95,8 +95,9 @@ public final class VoidFissureContent
 
     private static int wound(CommandContext<CommandSourceStack> context, float size) throws CommandSyntaxException
     {
-        var pos = BlockPosArgument.getLoadedBlockPos(context, "pos");
-        VoidWounds.open(context.getSource().getLevel(), pos, size);
+        var level = context.getSource().getLevel();
+        var pos = VoidFissures.woundSpot(level, BlockPosArgument.getLoadedBlockPos(context, "pos"));
+        VoidWounds.open(level, pos, size);
         context.getSource().sendSuccess(() -> Component.literal("Opened a wound of size " + size + " at " + pos.toShortString()), true);
         return 1;
     }

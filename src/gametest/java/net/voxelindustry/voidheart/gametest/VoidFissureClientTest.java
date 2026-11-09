@@ -23,7 +23,6 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.VoidSeep;
-import net.voxelindustry.voidheart.common.energy.VoidWounds;
 import net.voxelindustry.voidheart.common.energy.fissure.FissureScars;
 import net.voxelindustry.voidheart.common.energy.fissure.SeepCreatures;
 import net.voxelindustry.voidheart.common.energy.fissure.SeepMath;
@@ -46,7 +45,7 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
  *     <li>It powers a machine in a pylon's field, 16 a tick, and 32 once a small azurium bundle tears it wider; the wrong bundle does nothing.</li>
  *     <li>Inside its seep a powered ward weakens by the seep's strength, corruption rises faster, and the seep raises it on its own.</li>
  *     <li>The node of the line close by gains taint, and weak void creatures come through, up to the cap.</li>
- *     <li>{@code VoidWounds.open} leaves a wound on the ground that seeps and gives nothing.</li>
+ *     <li>A wound asked for by command lies on the ground, seeps and gives nothing.</li>
  *     <li>Width, seep and Contravoid paid survive a reload. A relay of Contravoid closes the fissure, a payment closes the wound, and both leave scars.</li>
  * </ul>
  */
@@ -366,11 +365,11 @@ public class VoidFissureClientTest implements FabricClientGameTest
     }
 
     /**
-     * A wound opened in the air drops onto the ground, gives nothing, and seeps once its seep has spread.
+     * A wound asked for in the air by command drops onto the ground, gives nothing, and seeps once its seep has spread.
      */
     private static void checkWound(ClientGameTestContext context, TestServerContext server, Scene scene)
     {
-        server.runOnServer(minecraft -> VoidWounds.open(minecraft.overworld(), scene.wound().above(3), 4));
+        server.runCommand("voidheart energy fissure wound " + at(scene.wound().above(3)) + " 4");
         server.runCommand("voidheart energy fissure " + at(scene.wound()) + " seep 10");
         context.waitTicks(40);
         server.runOnServer(minecraft ->

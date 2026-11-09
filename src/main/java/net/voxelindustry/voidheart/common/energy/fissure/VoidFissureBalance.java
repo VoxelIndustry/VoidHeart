@@ -59,7 +59,7 @@ public final class VoidFissureBalance
     public static final int CLOSE_COST_PER_WIDTH = 2000;
 
     /**
-     * The size a wound takes when none is given: it seeps like a width 4 fissure. Guess.
+     * The size of the wound a failed reactor leaves, and of one opened by command with no size: it seeps like a width 4 fissure. Guess.
      */
     public static final float WOUND_SIZE = 4;
 

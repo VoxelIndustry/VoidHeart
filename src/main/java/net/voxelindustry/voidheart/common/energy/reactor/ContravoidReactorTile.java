@@ -10,6 +10,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -19,6 +20,7 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.VoidWounds;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureBalance;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
@@ -236,9 +238,11 @@ public class ContravoidReactorTile extends TileBase
         level.playSound(null, pos, SoundEvents.WARDEN_HEARTBEAT, SoundSource.BLOCKS, 4F, 0.5F);
         level.playSound(null, pos, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.BLOCKS, 2F, 0.5F);
         setSlits(level, false);
-        level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 
-        VoidWounds.open(level, pos, ReactorBalance.WOUND_SIZE);
+        // The wound takes the core's place inside the shell, which stays standing. Should no wound open, the core still goes.
+        VoidWounds.open(level, pos, VoidFissureBalance.WOUND_SIZE);
+        if (level.getBlockState(pos).is(ContravoidReactorContent.CONTRAVOID_REACTOR_CORE))
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         LeyLattice.get(level).flatMap(lattice -> lattice.nearestNode(pos.getX(), pos.getZ()))
                 .ifPresent(node -> Ley.addTaint(level, node.id(), ReactorBalance.FAILURE_TAINT));
     }

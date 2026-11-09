@@ -55,11 +55,6 @@ public final class ReactorBalance
     public static final float FAILURE_TAINT = 60;
 
     /**
-     * Guess: the wound a failure opens, as a fissure width.
-     */
-    public static final float WOUND_SIZE = 4;
-
-    /**
      * W10's guess: what each intake holds.
      */
     public static final int INTAKE_TANK = 4_000;

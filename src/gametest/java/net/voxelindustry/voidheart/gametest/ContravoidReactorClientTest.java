@@ -20,6 +20,9 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.energy.VoidWounds;
 import net.voxelindustry.voidheart.common.energy.VoidWoundsProvider;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureBalance;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureContent;
+import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureTile;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridBalance;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
@@ -95,7 +98,7 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
             context.waitTicks(10);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            // Records every wound opened, then hands it to whichever provider is installed: the default only logs until the Void Fissure lands
+            // Records every wound opened, then hands it to the installed provider, so the Void Fissure's real wound opens
             var previous = server.computeOnServer(minecraft -> VoidWounds.provider());
             server.runOnServer(minecraft -> VoidWounds.install(recording(previous)));
             try
@@ -524,8 +527,10 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var level = minecraft.overworld();
-            expect(WOUNDS.equals(List.of(CORE.toShortString() + " size " + ReactorBalance.WOUND_SIZE)), "One wound of size " + ReactorBalance.WOUND_SIZE
-                    + " should open where the core stood, opened " + WOUNDS);
+            expect(WOUNDS.equals(List.of(CORE.toShortString() + " size " + VoidFissureBalance.WOUND_SIZE)), "One wound of size "
+                    + VoidFissureBalance.WOUND_SIZE + " should open where the core stood, opened " + WOUNDS);
+            expect(level.getBlockState(CORE).is(VoidFissureContent.VOID_WOUND) && level.getBlockEntity(CORE) instanceof VoidFissureTile wound
+                    && wound.isWound(), "A real wound should take the core's place, found " + level.getBlockState(CORE));
             var taint = Ley.taint(level, node.id());
             expect(taint >= Math.min(100, taintBefore + ReactorBalance.FAILURE_TAINT) - 1, "The nearest node should take " + ReactorBalance.FAILURE_TAINT
                     + " taint, went from " + taintBefore + " to " + taint);
