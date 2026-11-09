@@ -107,8 +107,8 @@ public class AzuriumSpikeTile extends TileBase
         if (step.ley() > 0)
             LeyConversion.convert(level, worldPosition, step.ley());
         else if (granted > 0)
-            // Ley.claim ignores a claim of nothing, which would leave the probe above held for others to wait on, so it is released at the provider
-            Ley.provider().claim(level, worldPosition, 0);
+            // Converting nothing, so the probe above is given back rather than held for others to wait on
+            Ley.release(level, worldPosition);
 
         if (step.credit() != credit)
             setChanged();

@@ -41,6 +41,15 @@ public final class Ley
     }
 
     /**
+     * Gives back what the claimant was granted, so claimants after it get that ley now rather than once the claim lapses.
+     * A claim of nothing does nothing, so a claimant that probed with {@link #claim} and then drew nothing releases it here.
+     */
+    public static void release(ServerLevel level, BlockPos claimant)
+    {
+        provider.release(level, claimant);
+    }
+
+    /**
      * From 0 to 100.
      */
     public static float taint(ServerLevel level, long nodeId)

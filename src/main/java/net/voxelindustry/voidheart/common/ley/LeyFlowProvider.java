@@ -22,6 +22,13 @@ public interface LeyFlowProvider
      */
     double claim(ServerLevel level, BlockPos claimant, double amount);
 
+    /**
+     * Gives back what the claimant was granted. A provider that holds no claims has nothing to give back.
+     */
+    default void release(ServerLevel level, BlockPos claimant)
+    {
+    }
+
     float taint(ServerLevel level, long nodeId);
 
     void addTaint(ServerLevel level, long nodeId, float amount);
