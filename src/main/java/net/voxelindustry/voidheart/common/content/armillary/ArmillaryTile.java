@@ -72,6 +72,13 @@ public class ArmillaryTile extends TileBase
     private static final float   FALTER_SPEED_DROP = 0.6F;
     /** How fast the rings still turn with nothing to draw on. */
     private static final float   UNPOWERED_SPIN    = 0.1F;
+    /** How fast the rings turn on part of what they draw. */
+    private static final float   WEAK_SPIN         = 0.5F;
+    /** How much of its light the inner ring keeps on part of what it draws. */
+    private static final float   WEAK_WARMTH       = 0.5F;
+    /** Ticks the inner ring takes to go cold once its power fails, and to light again once it comes back. */
+    private static final float   COOLING_TICKS     = 40;
+    private static final float   WARMING_TICKS     = 20;
     /** How long the siphon counts as flowing after it last delivered. */
     private static final int     SIPHON_FLOW_TICKS = 20;
 
@@ -116,6 +123,10 @@ public class ArmillaryTile extends TileBase
     private final float[] ringAngles        = new float[RINGS];
     private final float[] previousRingAngles = new float[RINGS];
     private       float   spin               = 1;
+    /** Client only: how lit the inner ring is, from cold lead at 0 to its full glow at 1. */
+    private       float   warmth             = 1;
+    private       float   previousWarmth     = 1;
+    private       boolean warmthKnown;
     private       float   formation;
     private       float   previousFormation;
     /** Client only, when the portal started to tear open. */
@@ -809,8 +820,23 @@ public class ArmillaryTile extends TileBase
         previousFormation = formation;
         formation += Mth.clamp(wanted - formation, -FORM_STEP, FORM_STEP);
 
-        float wantedSpin = spinOf(chart.getPhase(), stage) * (power == MachinePower.UNPOWERED ? UNPOWERED_SPIN : 1);
-        spin +=(wantedSpin - spin) * SPEED_EASE;
+        float wantedSpin = spinOf(chart.getPhase(), stage) * switch (power)
+        {
+            case UNPOWERED -> UNPOWERED_SPIN;
+            case WEAK -> WEAK_SPIN;
+            default -> 1;
+        };
+        spin += (wantedSpin - spin) * SPEED_EASE;
+
+        float wantedWarmth = warmthOf(power);
+        // An armillary loaded cold starts cold, rather than fading out as it comes into view
+        if (!warmthKnown)
+        {
+            warmth = wantedWarmth;
+            warmthKnown = true;
+        }
+        previousWarmth = warmth;
+        warmth += wantedWarmth < warmth ? Math.max(wantedWarmth - warmth, -1 / COOLING_TICKS) : Math.min(wantedWarmth - warmth, 1 / WARMING_TICKS);
 
         for (int ring = 0; ring < RINGS; ring++)
         {
@@ -852,6 +878,27 @@ public class ArmillaryTile extends TileBase
     public float falter()
     {
         return falterOf(stage);
+    }
+
+    /**
+     * How much of its light the inner ring wants for this power: all of it while paid or idle, half on a weak supply, none without.
+     */
+    public static float warmthOf(MachinePower power)
+    {
+        return switch (power)
+        {
+            case UNPOWERED -> 0;
+            case WEAK -> WEAK_WARMTH;
+            default -> 1;
+        };
+    }
+
+    /**
+     * How lit the inner ring is, eased between ticks.
+     */
+    public float warmth(float partialTicks)
+    {
+        return Mth.lerp(partialTicks, previousWarmth, warmth);
     }
 
     public float ringAngle(int ring, float partialTicks)

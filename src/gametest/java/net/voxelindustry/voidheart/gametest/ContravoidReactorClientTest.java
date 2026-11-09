@@ -551,6 +551,11 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
         aimFrom(context, server, 6, F + 3, -5, 0.5, F + 1, 0.5, 10);
         context.takeScreenshot("reactor-failed");
         context.getInput().pressKey(InputConstants.KEY_F1);
+
+        // The intakes now feed the wound where the core stood, and Jade says so
+        server.runOnServer(minecraft -> expect(intake(minecraft, EAST_INTAKE).woundBeside() != null, "The intakes should find the wound where the core stood"));
+        aimFrom(context, server, 4.5, F, 0.5, 2, F + 1.5, 0.5, 30);
+        context.takeScreenshot("reactor-jade-intake-wound");
     }
 
     /**

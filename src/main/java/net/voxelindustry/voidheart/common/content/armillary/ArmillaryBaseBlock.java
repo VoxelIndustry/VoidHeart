@@ -47,7 +47,10 @@ public class ArmillaryBaseBlock extends Block
         registerDefaultState(getStateDefinition().any().setValue(FACING, Direction.NORTH));
     }
 
-    private BlockPos corePos(BlockState state, BlockPos pos)
+    /**
+     * Where the core of the armillary this base belongs to stands.
+     */
+    public BlockPos corePos(BlockState state, BlockPos pos)
     {
         var facing = state.getValue(FACING);
         var core = pos.relative(facing.getOpposite());
