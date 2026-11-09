@@ -42,7 +42,29 @@ public class VoidHeartTags
     public static final TagKey<EntityType<?>> SALT_BURNED = TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "salt_burned"));
     public static final TagKey<EntityType<?>> TORMENTER_REFUSES = TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "tormenter_refuses"));
 
+    /**
+     * Every hostile mob of the mod, without projectiles, stains or the shoulder eye.
+     */
+    public static final TagKey<EntityType<?>> MOBS = mobTag("mobs");
+
+    public static final TagKey<EntityType<?>> MOBS_VOID_DUNGEON = mobTag("mobs/void_dungeon");
+    public static final TagKey<EntityType<?>> MOBS_DAEDALUS = mobTag("mobs/daedalus");
+
+    public static final TagKey<EntityType<?>> MOBS_FALLEN = mobTag("mobs/fallen");
+    public static final TagKey<EntityType<?>> MOBS_WRAITHS = mobTag("mobs/wraiths");
+    public static final TagKey<EntityType<?>> MOBS_PESTS = mobTag("mobs/pests");
+    public static final TagKey<EntityType<?>> MOBS_CRABS = mobTag("mobs/crabs");
+    public static final TagKey<EntityType<?>> MOBS_EYES = mobTag("mobs/eyes");
+    public static final TagKey<EntityType<?>> MOBS_CONSTRUCTS = mobTag("mobs/constructs");
+    public static final TagKey<EntityType<?>> MOBS_UNDEAD = mobTag("mobs/undead");
+    public static final TagKey<EntityType<?>> MOBS_BOSSES = mobTag("mobs/bosses");
+
     public static final TagKey<Structure> LEY_MINOR_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_minor_anchor"));
     public static final TagKey<Structure> LEY_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_anchor"));
     public static final TagKey<Structure> LEY_MAJOR_ANCHOR = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(MODID, "ley_major_anchor"));
+
+    private static TagKey<EntityType<?>> mobTag(String path)
+    {
+        return TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, path));
+    }
 }
