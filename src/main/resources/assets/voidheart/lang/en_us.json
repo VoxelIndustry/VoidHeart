@@ -1054,6 +1054,7 @@
   "voidheart.jade.reactor.powered": "Held shut down by redstone",
   "voidheart.jade.reactor.intake_empty": "Empty",
   "voidheart.jade.reactor.no_core": "No reactor core beside it",
+  "voidheart.jade.reactor.feeds_wound": "Feeds the wound where the core stood",
   "voidheart.reactor.cold": "Cold",
   "voidheart.reactor.incomplete": "The containment is incomplete",
   "voidheart.reactor.igniting": "Igniting: drawing void energy to light it",

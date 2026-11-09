@@ -63,6 +63,13 @@ public final class ContravoidReactorJade
             {
                 tag.putString("own", intake.held() == EssenceRegistry.EMPTY ? "" : intake.held().identifier().toString());
                 tag.putInt("ownAmount", intake.amount());
+                var wound = intake.woundBeside();
+                if (wound != null)
+                {
+                    tag.putInt("woundPaid", wound.paid());
+                    tag.putInt("woundCost", wound.cost());
+                    tag.putBoolean("woundClosing", wound.isClosing());
+                }
                 core = ContravoidReactorTile.coreAround(level, accessor.getPosition());
             }
             else
@@ -110,6 +117,13 @@ public final class ContravoidReactorJade
                 return;
             var tank = data.getIntOr("tank", 0);
 
+            if (data.contains("woundCost"))
+            {
+                tooltip.add(Component.translatable(MODID + ".jade.reactor.feeds_wound"));
+                tooltip.add(data.getBooleanOr("woundClosing", false) ? Component.translatable(MODID + ".jade.void_fissure.closing")
+                        : Component.translatable(MODID + ".jade.void_fissure.contravoid", data.getIntOr("woundPaid", 0), data.getIntOr("woundCost", 0)));
+                return;
+            }
             if (data.contains("own"))
             {
                 var own = data.getStringOr("own", "");
