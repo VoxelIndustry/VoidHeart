@@ -234,6 +234,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             {
                 var data = knowledge(minecraft);
                 data.grant(FAR_SIGHT);
+                data.grant(id("ley_sense"));
                 data.grant(FORGE);
                 data.grant(ARMILLARY);
                 data.grant(PORTAL);
