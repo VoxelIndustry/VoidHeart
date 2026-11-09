@@ -345,6 +345,9 @@ public class PortalFrameCoreTile extends PortalFrameTile
         starvedTicks = paid ? 0 : starvedTicks + 1;
         if (starvedTicks != before)
             setChanged();
+        // The grid can miss the first tick of a draw, so one short tick still reads as paid
+        if (starvedTicks == 1)
+            power = MachinePower.POWERED;
         if (dark ? paid : starvedTicks >= MachineEnergyBalance.PORTAL_STARVED_TICKS)
         {
             setDark(!dark);

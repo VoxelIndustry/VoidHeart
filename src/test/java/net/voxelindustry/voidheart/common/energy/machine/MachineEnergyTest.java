@@ -107,6 +107,24 @@ class MachineEnergyTest
     }
 
     @Test
+    void meterForgivesOneShortTick()
+    {
+        var meter = new PowerMeter();
+        for (int tick = 0; tick < PowerMeter.WINDOW; tick++)
+            meter.record(8, tick == 0 ? 0 : 8);
+        assertThat(meter.state()).isEqualTo(MachinePower.POWERED);
+
+        for (int tick = 0; tick < PowerMeter.WINDOW; tick++)
+            meter.record(8, tick < 2 ? 0 : 8);
+        assertThat(meter.state()).isEqualTo(MachinePower.WEAK);
+
+        var lone = new PowerMeter();
+        for (int tick = 0; tick < PowerMeter.WINDOW; tick++)
+            lone.record(tick == 0 ? 8 : 0, 0);
+        assertThat(lone.state()).isEqualTo(MachinePower.UNPOWERED);
+    }
+
+    @Test
     void powerOfADraw()
     {
         assertThat(MachinePower.of(0, 0)).isEqualTo(MachinePower.IDLE);
