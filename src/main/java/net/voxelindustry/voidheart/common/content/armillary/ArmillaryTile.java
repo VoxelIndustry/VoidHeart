@@ -110,6 +110,8 @@ public class ArmillaryTile extends TileBase
     /** Whether the deep siphon delivered here in the last second, synced for its look at the armillary. */
     @Getter
     private       boolean      siphonFlowing;
+    // Whether this armillary's chunk hold is placed, unknown until its first tick after loading
+    private @Nullable Boolean      chunksHeld;
 
     private final float[] ringAngles        = new float[RINGS];
     private final float[] previousRingAngles = new float[RINGS];
@@ -190,6 +192,23 @@ public class ArmillaryTile extends TileBase
             setChanged();
             sendViews(level);
         }
+        holdChunks(level);
+    }
+
+    /**
+     * Keeps the base around it ticking while it holds the Daedalus, and lets it go once the way closes. The first tick after loading also lets go of a
+     * ticket left from a way that closed while the world was off.
+     */
+    private void holdChunks(ServerLevel level)
+    {
+        boolean wanted = daedalus != ArmillaryRiftTile.NONE;
+        if (chunksHeld != null && chunksHeld == wanted)
+            return;
+        if (wanted)
+            ArmillaryChunkHold.hold(level, worldPosition);
+        else
+            ArmillaryChunkHold.release(level, worldPosition);
+        chunksHeld = wanted;
     }
 
     private boolean dialIsMoving()
@@ -693,8 +712,12 @@ public class ArmillaryTile extends TileBase
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
         super.preRemoveSideEffects(pos, state);
-        if (level instanceof ServerLevel serverLevel && daedalus != ArmillaryRiftTile.NONE)
-            DaedalusConnections.get(serverLevel.getServer()).sever(daedalus, ArmillaryConnections.now(serverLevel.getServer()));
+        if (level instanceof ServerLevel serverLevel)
+        {
+            if (daedalus != ArmillaryRiftTile.NONE)
+                DaedalusConnections.get(serverLevel.getServer()).sever(daedalus, ArmillaryConnections.now(serverLevel.getServer()));
+            ArmillaryChunkHold.release(serverLevel, pos);
+        }
     }
 
     /**
