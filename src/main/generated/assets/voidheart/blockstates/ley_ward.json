@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=east": {
+      "model": "voidheart:block/ley_ward",
+      "y": 90
+    },
+    "facing=north": {
       "model": "voidheart:block/ley_ward"
+    },
+    "facing=south": {
+      "model": "voidheart:block/ley_ward",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/ley_ward",
+      "y": 270
     }
   }
 }

@@ -1,0 +1,22 @@
+{
+  "values": [
+    {
+      "id": "#minecraft:crops",
+      "required": false
+    },
+    {
+      "id": "#minecraft:saplings",
+      "required": false
+    },
+    "minecraft:sugar_cane",
+    "minecraft:cactus",
+    "minecraft:sweet_berry_bush",
+    "minecraft:cocoa",
+    "minecraft:nether_wart",
+    "minecraft:bamboo_sapling",
+    "minecraft:bamboo",
+    "minecraft:kelp",
+    "minecraft:brown_mushroom",
+    "minecraft:red_mushroom"
+  ]
+}

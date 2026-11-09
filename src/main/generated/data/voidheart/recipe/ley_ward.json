@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "minecraft:amethyst_shard",
+    "B": "minecraft:stone_slab",
+    "L": "minecraft:lapis_lazuli",
+    "S": "minecraft:stone"
+  },
+  "pattern": [
+    " L ",
+    "SAS",
+    "BBB"
+  ],
+  "result": {
+    "id": "voidheart:ley_ward"
+  }
+}

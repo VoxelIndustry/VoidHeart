@@ -1,7 +1,34 @@
 {
   "variants": {
-    "": {
+    "facing=east,half=lower": {
+      "model": "voidheart:block/ley_stone",
+      "y": 90
+    },
+    "facing=east,half=upper": {
+      "model": "voidheart:block/ley_stone_upper",
+      "y": 90
+    },
+    "facing=north,half=lower": {
       "model": "voidheart:block/ley_stone"
+    },
+    "facing=north,half=upper": {
+      "model": "voidheart:block/ley_stone_upper"
+    },
+    "facing=south,half=lower": {
+      "model": "voidheart:block/ley_stone",
+      "y": 180
+    },
+    "facing=south,half=upper": {
+      "model": "voidheart:block/ley_stone_upper",
+      "y": 180
+    },
+    "facing=west,half=lower": {
+      "model": "voidheart:block/ley_stone",
+      "y": 270
+    },
+    "facing=west,half=upper": {
+      "model": "voidheart:block/ley_stone_upper",
+      "y": 270
     }
   }
 }
