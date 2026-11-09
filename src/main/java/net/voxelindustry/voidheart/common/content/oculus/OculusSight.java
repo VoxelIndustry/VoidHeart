@@ -8,6 +8,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.beholder.BeholderRegistry;
+import net.voxelindustry.voidheart.common.content.beholder.BeholderTile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,7 +102,7 @@ public record OculusSight(List<Source> sources)
     }
 
     /**
-     * The table sees around its center, and its owners' beholders in the same dimension see for it.
+     * The table sees around its center, and its owners' beholders in the same dimension see for it, as far as the ley reaching them lets them.
      */
     public static OculusSight of(ServerLevel level, BlockPos table)
     {
@@ -120,7 +121,9 @@ public record OculusSight(List<Source> sources)
         {
             if (sources.size() >= MAX_SOURCES)
                 break;
-            sources.add(new Source(beholder, config.beholderLowRange, config.beholderHighRange, true));
+            float sight = BeholderTile.sightAt(level, beholder);
+            if (sight > 0)
+                sources.add(new Source(beholder, Math.round(config.beholderLowRange * sight), Math.round(config.beholderHighRange * sight), true));
         }
         return new OculusSight(sources);
     }

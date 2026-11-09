@@ -99,6 +99,7 @@ public class OculusPerformanceClientTest implements FabricClientGameTest
             });
             int beholderX = x + 40;
             int beholderY = server.computeOnServer(minecraft -> minecraft.overworld().getHeight(Heightmap.Types.MOTION_BLOCKING, beholderX, z));
+            server.runCommand("setblock " + beholderX + " " + (beholderY - 2) + " " + z + " voidheart:creative_ley_stone");
             server.runCommand("setblock " + beholderX + " " + beholderY + " " + z + " voidheart:beholder");
             server.runCommand("tp @a " + (x + 0.5) + " " + (tableY + 9) + " " + (z + SIZE + 2) + " 180 52");
             context.waitTicks(40);

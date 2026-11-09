@@ -26,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryHubBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryLayout;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
+import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonAddress;
@@ -213,6 +214,18 @@ public class ArmillaryClientTest implements FabricClientGameTest
         var level = server.overworld();
         for (var pos : BlockPos.betweenClosed(CORE.offset(-12, -1, -12), CORE.offset(12, -1, 12)))
             level.setBlockAndUpdate(pos, Blocks.DEEPSLATE_TILES.defaultBlockState());
+        // Out of sight under the floor, it powers the searches, openings and holds
+        level.setBlockAndUpdate(CORE.below(8), CreativeEnergyContent.CREATIVE_VOID_WELL.defaultBlockState());
+    }
+
+    /**
+     * An opening gathers its void energy once a path holds, at most ARMILLARY_INTAKE a tick even from the creative well.
+     */
+    private static void waitForCharge(ClientGameTestContext context, TestServerContext server)
+    {
+        for (int wait = 0; wait < 60 && !onServer(server, minecraft -> armillary(minecraft).getCharge() >= armillary(minecraft).openingCost()); wait++)
+            context.waitTicks(20);
+        expect(onServer(server, minecraft -> armillary(minecraft).getCharge() >= armillary(minecraft).openingCost()), "The opening should gather its void energy from the well");
     }
 
     private static void placeBase(MinecraftServer server, boolean leaveOneOut)
@@ -649,6 +662,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
 
         int cost = onServer(server, minecraft -> armillary(minecraft).getChart().target().openCost());
         server.runOnServer(minecraft -> player(minecraft).getInventory().add(new ItemStack(VoidHeartItems.VOID_PEARL, cost + 2)));
+        waitForCharge(context, server);
         context.waitTicks(25);
         expect(context.computeOnClient(minecraft -> screen(minecraft).primaryActive()), "With the pearls in hand opening should be on offer");
         expect(primaryLabel(context).equals("Open: 5 void pearls"), "The plate should give the price, not " + primaryLabel(context));
@@ -778,6 +792,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
             chart.advanceSearch(1);
             return found.id();
         });
+        waitForCharge(context, server);
         aimAtHub(context, server);
         rightClick(context);
         context.waitTicks(30);

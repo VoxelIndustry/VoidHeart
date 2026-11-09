@@ -31,6 +31,7 @@ public class OculusFigurineClientTest implements FabricClientGameTest
             world.getConnection().waitForChunksRender();
             freezeTime(server, "noon");
             server.runCommand("fill -2 " + TABLE.getY() + " -2 2 " + TABLE.getY() + " 2 voidheart:oculus_table");
+            server.runCommand("setblock 0 " + (TABLE.getY() - 2) + " -12 voidheart:creative_ley_stone");
             server.runCommand("setblock 0 " + TABLE.getY() + " -12 voidheart:beholder");
             server.runCommand("gamemode creative @a");
             server.runCommand("item replace entity @a weapon.mainhand with diamond_sword");

@@ -22,6 +22,7 @@ import net.voxelindustry.voidheart.common.content.armillary.ArmillaryChart.Phase
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryMenu;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.research.Research;
+import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads.ActionKind;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads.BubbleView;
@@ -397,17 +398,27 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
                 else if (selected == -1)
                     text = Component.translatable("voidheart.armillary.screen.found");
             }
-            case SEARCHING -> text = Component.translatable("voidheart.armillary.screen.searching");
+            case SEARCHING ->
+            {
+                boolean stalled = view.powerValue() == MachinePower.UNPOWERED;
+                text = Component.translatable(stalled ? "voidheart.armillary.screen.searching.unpowered" : "voidheart.armillary.screen.searching");
+                if (stalled)
+                    color = ResearchScreen.LACK_COLOR;
+            }
             case REACHED ->
             {
-                text = Component.translatable("voidheart.armillary.screen.reached");
-                color = ResearchScreen.FRONTIER_COLOR;
+                boolean stalled = !view.isCharged() && view.powerValue() == MachinePower.UNPOWERED;
+                text = Component.translatable(view.isCharged() ? "voidheart.armillary.screen.reached"
+                        : stalled ? "voidheart.armillary.screen.reached.unpowered" : "voidheart.armillary.screen.reached.charging");
+                color = stalled ? ResearchScreen.LACK_COLOR : ResearchScreen.FRONTIER_COLOR;
             }
             case CONNECTED ->
             {
                 boolean holds = view.targetsStrata() && view.isStable();
-                text = Component.translatable(holds ? "voidheart.armillary.screen.connected.daedalus" : "voidheart.armillary.screen.connected." + view.stageValue().name().toLowerCase(Locale.ROOT));
-                color = ArmillaryMapView.failing(view) ? ResearchScreen.LACK_COLOR : ResearchScreen.KNOWN_COLOR;
+                boolean starved = holds && view.powerValue().isStarved();
+                text = Component.translatable(starved ? "voidheart.armillary.screen.connected.daedalus.starved"
+                        : holds ? "voidheart.armillary.screen.connected.daedalus" : "voidheart.armillary.screen.connected." + view.stageValue().name().toLowerCase(Locale.ROOT));
+                color = starved || ArmillaryMapView.failing(view) ? ResearchScreen.LACK_COLOR : ResearchScreen.KNOWN_COLOR;
             }
         }
 
@@ -599,8 +610,13 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         if (isTarget && phase == Phase.SEARCHING)
         {
             split(status, Component.translatable("voidheart.research.left", ResearchScreen.duration(secondsOfSearchLeft())), inner, ResearchScreen.MUTED_COLOR);
+            searchPower(status, inner);
             bar = searchProgress();
         }
+        else if (isTarget && phase == Phase.REACHED && !view.isCharged())
+            bar = charging(status, inner);
+        else if (isTarget && connected && view.isStable() && view.powerValue().isStarved())
+            split(status, Component.translatable("voidheart.armillary.strata.starved"), inner, ResearchScreen.LACK_COLOR);
         else if (isTarget && connected && view.isStable())
             split(status, Component.translatable("voidheart.armillary.strata.holds"), inner, ResearchScreen.MUTED_COLOR);
         else if (isTarget && connected)
@@ -625,7 +641,7 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         else if (known && isTarget && phase == Phase.REACHED)
         {
             primaryText = openText(strata.cost());
-            primaryActive = canPay(strata.cost());
+            primaryActive = canPay(strata.cost()) && view.isCharged();
         }
 
         Component quietText = null;
@@ -669,8 +685,11 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         if (isTarget && phase == Phase.SEARCHING)
         {
             split(status, Component.translatable("voidheart.research.left", ResearchScreen.duration(secondsOfSearchLeft())), inner, ResearchScreen.MUTED_COLOR);
+            searchPower(status, inner);
             bar = searchProgress();
         }
+        else if (isTarget && phase == Phase.REACHED && !view.isCharged())
+            bar = charging(status, inner);
         else if (isTarget && connected)
         {
             split(status, Component.translatable("voidheart.research.left", ResearchScreen.duration(secondsOfConnectionLeft())), inner, ArmillaryMapView.failing(view) ? ResearchScreen.LACK_COLOR : ResearchScreen.MUTED_COLOR);
@@ -688,7 +707,7 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
 
         var quietText = hasQuiet ? Component.translatable(phase == Phase.REACHED ? "voidheart.armillary.screen.abandon_path" : "voidheart.armillary.screen.abandon_search") : null;
         return new Tablet(head, body, showCost ? VoidBubble.openCost(bubble.difficulty()) : -1, canPay(bubble), status, bar, barColor, hasPrimary ? primaryText(bubble) : null,
-                !isTarget || canPay(bubble), quietText);
+                !isTarget || canPay(bubble) && view.isCharged(), quietText);
     }
 
     private static void place(ResearchButton button, int x, int y, int width)
@@ -709,9 +728,34 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
 
     private Component openText(int cost)
     {
-        if (canPay(cost))
-            return Component.translatable("voidheart.armillary.screen.open", pearls(cost));
-        return Component.translatable("voidheart.armillary.screen.short", pearls(cost - view.pearls()));
+        if (!canPay(cost))
+            return Component.translatable("voidheart.armillary.screen.short", pearls(cost - view.pearls()));
+        if (!view.isCharged())
+            return Component.translatable("voidheart.armillary.screen.charging", view.charge());
+        return Component.translatable("voidheart.armillary.screen.open", pearls(cost));
+    }
+
+    /**
+     * A search goes slower on a weak supply of void energy, and waits with none.
+     */
+    private void searchPower(List<Line> status, int inner)
+    {
+        var power = view.powerValue();
+        if (power == MachinePower.UNPOWERED)
+            split(status, Component.translatable("voidheart.armillary.screen.search_unpowered"), inner, ResearchScreen.LACK_COLOR);
+        else if (power == MachinePower.WEAK)
+            split(status, Component.translatable("voidheart.armillary.screen.search_weak"), inner, ResearchScreen.LACK_COLOR);
+    }
+
+    /**
+     * @return the bar's fill, how much of the opening's void energy has been gathered
+     */
+    private float charging(List<Line> status, int inner)
+    {
+        boolean stalled = view.powerValue() == MachinePower.UNPOWERED;
+        split(status, Component.translatable(stalled ? "voidheart.armillary.screen.charge_unpowered" : "voidheart.armillary.screen.charge", view.charge()), inner,
+                stalled ? ResearchScreen.LACK_COLOR : ResearchScreen.MUTED_COLOR);
+        return view.charge() / 100F;
     }
 
     private int extractLines(GuiGraphicsExtractor graphics, List<Line> lines, int x, int y)
