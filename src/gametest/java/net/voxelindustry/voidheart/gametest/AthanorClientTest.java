@@ -20,6 +20,7 @@ import net.voxelindustry.voidheart.common.content.athanor.CrucibleTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
+import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
@@ -232,6 +233,8 @@ public class AthanorClientTest implements FabricClientGameTest
         var level = minecraft.overworld();
         level.setBlockAndUpdate(INTAKE, VoidHeartBlocks.ASPECT_INTAKE.defaultBlockState());
         level.setBlockAndUpdate(CORE, VoidHeartBlocks.ATHANOR.defaultBlockState());
+        // Under the ground, it powers the brews
+        level.setBlockAndUpdate(INTAKE.below(2), CreativeEnergyContent.CREATIVE_VOID_WELL.defaultBlockState());
         level.setBlockAndUpdate(SULFUR_CRUCIBLE.below(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(QUICKSILVER_CRUCIBLE.below(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(SULFUR_CRUCIBLE, VoidHeartBlocks.CRUCIBLE.defaultBlockState());

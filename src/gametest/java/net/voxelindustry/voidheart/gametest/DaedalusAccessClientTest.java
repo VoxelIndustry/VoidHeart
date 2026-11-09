@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftTile;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.armillary.DaedalusConnections;
+import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -90,6 +91,18 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         level.setBlockAndUpdate(CORE, VoidHeartBlocks.ARMILLARY_CORE.defaultBlockState());
         for (var part : ArmillaryLayout.base(CORE))
             level.setBlockAndUpdate(part.pos(), part.block().defaultBlockState());
+        // Out of sight under the floor, it powers the search, the opening and the hold
+        level.setBlockAndUpdate(CORE.below(8), CreativeEnergyContent.CREATIVE_VOID_WELL.defaultBlockState());
+    }
+
+    /**
+     * The way gathers its void energy once the root reaches the strata, at most ARMILLARY_INTAKE a tick even from the creative well.
+     */
+    private static void waitForCharge(ClientGameTestContext context, TestServerContext server)
+    {
+        for (int wait = 0; wait < 80 && !onServer(server, minecraft -> armillary(minecraft).getCharge() >= armillary(minecraft).openingCost()); wait++)
+            context.waitTicks(20);
+        expect(onServer(server, minecraft -> armillary(minecraft).getCharge() >= armillary(minecraft).openingCost()), "The way should gather its void energy from the well");
     }
 
     /**
@@ -184,6 +197,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
             player(minecraft).getAbilities().invulnerable = true;
             player(minecraft).getInventory().add(new ItemStack(VoidHeartItems.VOID_PEARL, ArmillaryTile.daedalusCost() + 2));
         });
+        waitForCharge(context, server);
         context.waitTicks(VIEW_TICKS);
         expect(primaryLabel(context).equals("Open: 8 void pearls"), "The plate should give the price, not " + primaryLabel(context));
 
@@ -335,6 +349,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         });
         act(server, armillary -> armillary.advanceSearch(1));
         context.waitTicks(5);
+        waitForCharge(context, server);
         openChart(context, server);
         context.waitTicks(VIEW_TICKS);
         click(context, strataDoor(context)[0], strataDoor(context)[1], 5);

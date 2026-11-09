@@ -49,6 +49,7 @@ public class OculusCavingClientTest implements FabricClientGameTest
             server.runCommand("summon cow -17 " + (GROUND + 3) + " -2 {NoAI:1b,PersistenceRequired:1b}");
             fill(server, -2, TABLE.getY(), -2, 2, TABLE.getY(), 2, "voidheart:oculus_table");
             // Sees all the land shown, not just the table's own short sight
+            server.runCommand("setblock 0 " + (TABLE.getY() - 2) + " -12 voidheart:creative_ley_stone");
             server.runCommand("setblock 0 " + TABLE.getY() + " -12 voidheart:beholder");
             // Flying rather than spectating, as tables do not follow spectators
             server.runCommand("gamemode creative @a");

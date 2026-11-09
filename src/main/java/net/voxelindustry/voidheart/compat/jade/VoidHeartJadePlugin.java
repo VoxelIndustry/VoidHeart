@@ -5,6 +5,10 @@ import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
+import net.voxelindustry.voidheart.common.content.beholder.BeholderBlock;
+import net.voxelindustry.voidheart.common.content.beholder.BeholderTile;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
@@ -42,6 +46,8 @@ public class VoidHeartJadePlugin implements IWailaPlugin
     private final MalignantTormenterProvider malignantTormenterProvider = new MalignantTormenterProvider();
     private final ArmillaryProvider armillaryProvider = new ArmillaryProvider();
     private final AthanorProvider athanorProvider = new AthanorProvider();
+    private final PortalCoreProvider portalCoreProvider = new PortalCoreProvider();
+    private final BeholderProvider beholderProvider = new BeholderProvider();
 
     @Override
     public void register(IWailaCommonRegistration registration)
@@ -59,6 +65,8 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockDataProvider(malignantTormenterProvider, MalignantTormenterTile.class);
         registration.registerBlockDataProvider(armillaryProvider, ArmillaryTile.class);
         registration.registerBlockDataProvider(athanorProvider, AthanorTile.class);
+        registration.registerBlockDataProvider(portalCoreProvider, PortalFrameTile.class);
+        registration.registerBlockDataProvider(beholderProvider, BeholderTile.class);
         EnergyJade.register(registration);
     }
 
@@ -76,6 +84,8 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockComponent(new MalignantTormenterProvider.Client(), MalignantTormenterBlock.class);
         registration.registerBlockComponent(new ArmillaryProvider.Client(), ArmillaryCoreBlock.class);
         registration.registerBlockComponent(new AthanorProvider.Client(athanorProvider), AthanorBlock.class);
+        registration.registerBlockComponent(new PortalCoreProvider.Client(), PortalFrameBlock.class);
+        registration.registerBlockComponent(new BeholderProvider.Client(), BeholderBlock.class);
 
         registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
         registration.addRayTraceCallback(new MalignantTormenterPartRedirect(registration));
