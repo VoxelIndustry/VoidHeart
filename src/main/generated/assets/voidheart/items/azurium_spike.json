@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "voidheart:block/azurium_spike"
+    "model": "voidheart:item/azurium_spike"
   }
 }
