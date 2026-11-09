@@ -175,7 +175,7 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
         openChart(context, server);
         context.waitTicks(30);
         String label = context.computeOnClient(minecraft -> ((ArmillaryScreen) minecraft.gui.screen()).primaryLabel());
-        expect(label.startsWith("Gathering: "), "The plate should show the charge, not " + label);
+        expect(label.startsWith("Unpowered: ") && label.endsWith("%"), "The plate should show the charge as unpowered, not " + label);
         String reachedWhisper = context.computeOnClient(minecraft -> ((ArmillaryScreen) minecraft.gui.screen()).whisper());
         expect(reachedWhisper.equals("A path holds, but no void energy reaches it."), "The map should say the charge waits, it says: " + reachedWhisper);
         context.getInput().setCursorPos(2, 2);

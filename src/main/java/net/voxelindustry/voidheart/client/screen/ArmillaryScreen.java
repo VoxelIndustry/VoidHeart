@@ -731,7 +731,8 @@ public class ArmillaryScreen extends AbstractContainerScreen<ArmillaryMenu>
         if (!canPay(cost))
             return Component.translatable("voidheart.armillary.screen.short", pearls(cost - view.pearls()));
         if (!view.isCharged())
-            return Component.translatable("voidheart.armillary.screen.charging", view.charge());
+            return Component.translatable(view.powerValue() == MachinePower.UNPOWERED ? "voidheart.armillary.screen.charging_unpowered"
+                    : "voidheart.armillary.screen.charging", view.charge());
         return Component.translatable("voidheart.armillary.screen.open", pearls(cost));
     }
 

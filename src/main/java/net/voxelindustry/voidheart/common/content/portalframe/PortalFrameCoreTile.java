@@ -342,7 +342,8 @@ public class PortalFrameCoreTile extends PortalFrameTile
         if (!paid && partner == null)
             return;
         int before = starvedTicks;
-        starvedTicks = paid ? 0 : starvedTicks + 1;
+        // A dark pair waits only for power, so it has nothing left to count
+        starvedTicks = paid || dark ? 0 : starvedTicks + 1;
         if (starvedTicks != before)
             setChanged();
         // The grid can miss the first tick of a draw, so one short tick still reads as paid

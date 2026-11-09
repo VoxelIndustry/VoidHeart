@@ -206,6 +206,7 @@
   "voidheart.armillary.strata.starved": "Short of void energy, the hold will break",
   "voidheart.armillary.charging": "Gathering void energy to open the way: %s%%",
   "voidheart.armillary.screen.charging": "Gathering: %s%%",
+  "voidheart.armillary.screen.charging_unpowered": "Unpowered: %s%%",
   "voidheart.armillary.screen.charge": "Void energy gathered: %s%%",
   "voidheart.armillary.screen.charge_unpowered": "No void energy reaches it, %s%% gathered",
   "voidheart.armillary.screen.search_unpowered": "No void energy reaches it, the search waits.",
