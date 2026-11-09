@@ -20,10 +20,10 @@ public final class FoundationBalance
      * From the plan: a node's taint runs from 0 to 100.
      */
     public static final float MAX_TAINT = 100;
-    // PLACEHOLDER: the taint at which each stage begins
-    public static final float TAINTED_FROM   = 25;
+    // GUESS (N0): the taint at which each stage begins, the same as LeyFlowBalance and Ley.stage
+    public static final float TAINTED_FROM   = 20;
     public static final float FESTERING_FROM = 50;
-    public static final float BREACHED_FROM  = 75;
+    public static final float BREACHED_FROM  = 80;
 
     private FoundationBalance()
     {
