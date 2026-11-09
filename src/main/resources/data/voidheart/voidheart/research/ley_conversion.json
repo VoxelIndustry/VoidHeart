@@ -10,5 +10,11 @@
   ],
   "hidden_until": [
     "voidheart:void_energy"
+  ],
+  "unlocks": [
+    "voidheart:azurium_spike"
+  ],
+  "recipes": [
+    "voidheart:altar/azurium_spike"
   ]
 }
