@@ -90,6 +90,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.addRayTraceCallback(new PermeableBarrierDisguise(registration));
         registration.addRayTraceCallback(new MalignantTormenterPartRedirect(registration));
         registration.addRayTraceCallback(new RavenousStoragePartRedirect(registration));
+        registration.addRayTraceCallback(new ArmillaryBaseRedirect(registration));
         registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);
         EnergyJade.registerClient(registration);
     }
