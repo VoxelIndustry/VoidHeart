@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.gametest;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -9,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -31,6 +33,8 @@ import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalLinker;
 import net.voxelindustry.voidheart.common.energy.LeyPower;
 import net.voxelindustry.voidheart.common.energy.LeyPowerProvider;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.VoidNetworkProvider;
 import net.voxelindustry.voidheart.common.energy.machine.MachineEnergyBalance;
 import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -132,6 +136,8 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
         int searched = onServer(server, minecraft -> armillary(minecraft).getChart().getSearchTicks());
         expect(searched > 0, "A powered search should advance, it is at " + searched + " ticks");
         expect(armillaryPower(server) == MachinePower.POWERED, "A powered search should be POWERED, it is " + armillaryPower(server));
+        expectWarmth(context, 1, "A paid armillary's inner ring should glow fully");
+        ringShot(context, server, "retrofit-armillary-rings-powered");
         jadeShot(context, server, ARMILLARY, 2.5, 1, 0.5, 0.6, "retrofit-armillary-search-powered");
 
         // Cut: the search waits where it is, the rings slow, the screen and Jade say why
@@ -143,6 +149,8 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
         int still = onServer(server, minecraft -> armillary(minecraft).getChart().getSearchTicks());
         expect(still == stalled, "An unpowered search should wait, it went from " + stalled + " to " + still + " ticks");
         expectClient(context, "The client should know the armillary is unpowered", minecraft -> clientArmillary(minecraft).getPower() == MachinePower.UNPOWERED);
+        expectWarmth(context, 0, "An unpowered armillary's inner ring should have gone cold");
+        ringShot(context, server, "retrofit-armillary-rings-unpowered");
 
         openChart(context, server);
         String whisper = context.computeOnClient(minecraft -> ((ArmillaryScreen) minecraft.gui.screen()).whisper());
@@ -150,6 +158,24 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
         context.takeScreenshot("retrofit-armillary-search-unpowered-map");
         closeScreen(context);
         jadeShot(context, server, ARMILLARY, 2.5, 1, 0.5, 0.6, "retrofit-armillary-search-unpowered");
+        // Its base shows the armillary's state too, not just its own name
+        jadeShot(context, server, ARMILLARY.south().east(), 2, 0.5, 2, 0.5, "retrofit-armillary-base-jade");
+
+        // Weak: half of what it asks for, so the inner ring warms halfway and the rings turn at half speed
+        var network = server.computeOnServer(minecraft -> VoidEnergy.provider());
+        try
+        {
+            server.runOnServer(minecraft -> VoidEnergy.install(halfSupply()));
+            waitFor(context, server, 100, "A search on half its draw should be WEAK", minecraft -> armillary(minecraft).getPower() == MachinePower.WEAK);
+            context.waitTicks(30);
+            expectClient(context, "The client should know the armillary is weak", minecraft -> clientArmillary(minecraft).getPower() == MachinePower.WEAK);
+            expectWarmth(context, ArmillaryTile.warmthOf(MachinePower.WEAK), "A weak armillary's inner ring should glow halfway");
+            ringShot(context, server, "retrofit-armillary-rings-weak");
+        }
+        finally
+        {
+            server.runOnServer(minecraft -> VoidEnergy.install(network));
+        }
 
         // Restored: it picks up from where it waited
         setSource(server, ARMILLARY_WELL, true);
@@ -301,6 +327,25 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
                 minecraft -> ((AthanorTile) minecraft.level.getBlockEntity(ATHANOR)).getPower() == MachinePower.UNPOWERED);
         jadeShot(context, server, ATHANOR, 0.5, 0, -2.5, 0.5, "retrofit-athanor-unpowered");
 
+        // Weak: it brews on, slower, still lit, its fire guttering
+        var network = server.computeOnServer(minecraft -> VoidEnergy.provider());
+        try
+        {
+            server.runOnServer(minecraft -> VoidEnergy.install(halfSupply()));
+            waitFor(context, server, 100, "A brew on half its draw should be WEAK", minecraft -> athanor(minecraft).getPower() == MachinePower.WEAK);
+            expect(athanorLit(server), "A weak brew should stay lit");
+            int slow = onServer(server, minecraft -> athanor(minecraft).getProgress());
+            context.waitTicks(40);
+            expect(onServer(server, minecraft -> athanor(minecraft).getProgress()) > slow, "A weak brew should still advance");
+            expectClient(context, "The client should know the athanor is weak",
+                    minecraft -> ((AthanorTile) minecraft.level.getBlockEntity(ATHANOR)).getPower() == MachinePower.WEAK);
+            jadeShot(context, server, ATHANOR, 0.5, 0, -2.5, 0.5, "retrofit-athanor-weak");
+        }
+        finally
+        {
+            server.runOnServer(minecraft -> VoidEnergy.install(network));
+        }
+
         setSource(server, ATHANOR_WELL, true);
         context.waitTicks(SETTLE);
         expect(onServer(server, minecraft -> athanor(minecraft).getProgress()) > stillWaiting, "A brew powered again should go on");
@@ -398,6 +443,8 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
         int full = VoidHeartConfig.get().beholderLowRange;
         expect(beholderRange(server) == full, "A beholder with all its ley should see its whole range, " + full + ", it sees " + beholderRange(server));
         jadeShot(context, server, BEHOLDER, 0.5, 0, -2.5, 0.6, "retrofit-beholder-powered");
+        expectEye(context, 1, false, "A beholder with all its ley");
+        eyeShot(context, server, "retrofit-beholder-eye-powered");
 
         var previous = LeyPower.provider();
         try
@@ -408,6 +455,8 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
             int half = Math.round(full * 0.5F);
             expect(beholderRange(server) == half, "A beholder on half its ley should see half its range, " + half + ", it sees " + beholderRange(server));
             jadeShot(context, server, BEHOLDER, 0.5, 0, -2.5, 0.6, "retrofit-beholder-half");
+            expectEye(context, 0.5F, false, "A beholder on half its ley");
+            eyeShot(context, server, "retrofit-beholder-eye-half");
 
             LeyPower.install(fixedLey(0.05F));
             context.waitTicks(SETTLE);
@@ -415,6 +464,8 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
             expect(onServer(server, minecraft -> minecraft.overworld().getBlockEntity(BEHOLDER) instanceof BeholderTile beholder && beholder.sight() == 0),
                     "A starved beholder should be blind");
             jadeShot(context, server, BEHOLDER, 0.5, 0, -2.5, 0.6, "retrofit-beholder-blind");
+            expectEye(context, 0, true, "A blind beholder");
+            eyeShot(context, server, "retrofit-beholder-eye-blind");
         }
         finally
         {
@@ -424,6 +475,38 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
         setSource(server, LEY_STONE, true);
         context.waitTicks(SETTLE);
         expect(beholderRange(server) == full, "A beholder with its ley back should see its whole range again, it sees " + beholderRange(server));
+        jadeShot(context, server, BEHOLDER, 0.5, 0, -2.5, 0.6, "retrofit-beholder-woken");
+        expectEye(context, 1, false, "A beholder with its ley back");
+    }
+
+    /**
+     * The eye on the client: its iris as bright as the share it sees, and drowsed off, looking down at its pedestal, only when blind.
+     */
+    private static void expectEye(ClientGameTestContext context, float glow, boolean drowsing, String what)
+    {
+        String seen = context.computeOnClient(minecraft ->
+        {
+            var eye = (BeholderTile) minecraft.level.getBlockEntity(BEHOLDER);
+            return String.format(java.util.Locale.ROOT, "glow %.2f, drowse %.2f, pitch %.2f", eye.glow, eye.drowse, eye.eyePitch);
+        });
+        expectClient(context, what + " should shine at " + glow + " and " + (drowsing ? "" : "not ") + "drowse, it has " + seen, minecraft ->
+        {
+            var eye = (BeholderTile) minecraft.level.getBlockEntity(BEHOLDER);
+            return Math.abs(eye.glow - glow) < 0.02F && (drowsing ? eye.drowse > 0.98F && eye.eyePitch < -0.4F : eye.drowse < 0.02F);
+        });
+    }
+
+    /**
+     * The eye at night, close up and without the HUD, where its iris shows how much it sees.
+     */
+    private static void eyeShot(ClientGameTestContext context, TestServerContext server, String name)
+    {
+        freezeTime(server, "midnight");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, BEHOLDER.getX() + 1.6, FEET, BEHOLDER.getZ() - 1.4, BEHOLDER.getX() + 0.5, FEET + 0.75, BEHOLDER.getZ() + 0.5, 20);
+        context.takeScreenshot(name);
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        freezeTime(server, "noon");
     }
 
     private static LeyPowerProvider fixedLey(float supply)
@@ -443,6 +526,52 @@ public class MachineRetrofitClientTest implements FabricClientGameTest
     }
 
     // Helpers
+
+    /**
+     * Gives every machine half of what it draws, rounded up so a last unit still comes, from nowhere, so it runs WEAK.
+     */
+    private static VoidNetworkProvider halfSupply()
+    {
+        return new VoidNetworkProvider()
+        {
+            @Override
+            public long available(ServerLevel level, BlockPos pos)
+            {
+                return Long.MAX_VALUE / 2;
+            }
+
+            @Override
+            public long draw(ServerLevel level, BlockPos pos, long amount)
+            {
+                return (amount + 1) / 2;
+            }
+
+            @Override
+            public long offer(ServerLevel level, BlockPos pos, long amount)
+            {
+                return 0;
+            }
+        };
+    }
+
+    private static void expectWarmth(ClientGameTestContext context, float warmth, String message)
+    {
+        float seen = context.computeOnClient(minecraft -> clientArmillary(minecraft).warmth(1));
+        expect(Math.abs(seen - warmth) < 0.02F, message + ": its warmth is " + seen + ", not " + warmth);
+    }
+
+    /**
+     * The rings at night, close up and without the HUD, where the inner ring's glow or its absence shows.
+     */
+    private static void ringShot(ClientGameTestContext context, TestServerContext server, String name)
+    {
+        freezeTime(server, "midnight");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, ARMILLARY.getX() + 4.5, FEET + 1, ARMILLARY.getZ() + 0.5, ARMILLARY.getX() + 0.5, FEET + 2.5, ARMILLARY.getZ() + 0.5, 20);
+        context.takeScreenshot(name);
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        freezeTime(server, "noon");
+    }
 
     private static void setSource(TestServerContext server, BlockPos pos, boolean present)
     {

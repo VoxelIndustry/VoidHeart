@@ -55,6 +55,8 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
     private static final float PORTAL_OPEN_TICKS = 45;
 
     private static final int   INNER_TINT      = 0xFFE9E4FF;
+    /** The inner ring gone cold: plain lead, lit by the world around it. */
+    private static final int   INNER_COLD_TINT = 0xFFFFFFFF;
     private static final int   FULL_BRIGHT     = LightCoordsUtil.FULL_BRIGHT;
     private static final int   INNER_HALO_RGB  = 0xB9A6F2;
     private static final int   INNER_HALO_ALPHA = 46;
@@ -77,6 +79,7 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         final float[] angles = new float[ArmillaryTile.RINGS];
         float   formation;
         float   falter;
+        float   warmth;
         float   time;
         int     ringLight;
         boolean portal;
@@ -107,6 +110,7 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         state.time = ArmillaryPortalRender.animationTime(level.getGameTime(), partialTicks);
         state.formation = armillary.formation(partialTicks);
         state.falter = armillary.falter();
+        state.warmth = armillary.warmth(partialTicks);
         state.ringLight = LightCoordsUtil.getLightCoords(level, hub);
         for (int ring = 0; ring < ArmillaryTile.RINGS; ring++)
             state.angles[ring] = armillary.ringAngle(ring, partialTicks);
@@ -161,8 +165,11 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         pins(poseStack, collector, RenderTypes.entitySolid(MIDDLE_TEXTURE), RADII[2] + THICKNESS[2] / 2, RADII[1] - THICKNESS[1] / 2, Direction.Axis.Y, state.ringLight);
 
         poseStack.rotate(new Quaternionf().rotationY(angle(state, 2)));
-        ring(poseStack, collector, RenderTypes.entitySolid(INNER_TEXTURE), 2, INNER_TINT, FULL_BRIGHT);
-        collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> innerHalo(pose, buffer));
+        ring(poseStack, collector, RenderTypes.entitySolid(INNER_TEXTURE), 2, lerpColor(state.warmth, INNER_COLD_TINT, INNER_TINT),
+                lerpLight(state.warmth, state.ringLight, FULL_BRIGHT));
+        int haloAlpha = Math.round(INNER_HALO_ALPHA * state.warmth);
+        if (haloAlpha > 0)
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> innerHalo(pose, buffer, haloAlpha));
         poseStack.popPose();
 
         if (state.portal)
@@ -271,11 +278,11 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
     /**
      * Soft light around the inner ring, so it reads as glowing rather than merely pale.
      */
-    private static void innerHalo(PoseStack.Pose pose, VertexConsumer buffer)
+    private static void innerHalo(PoseStack.Pose pose, VertexConsumer buffer, int alpha)
     {
         int links = LINKS[2];
         float half = THICKNESS[2] / 2;
-        int core = ARGB.color(INNER_HALO_ALPHA, INNER_HALO_RGB);
+        int core = ARGB.color(alpha, INNER_HALO_RGB);
         int rim = ARGB.color(0, INNER_HALO_RGB);
         for (int link = 0; link < links; link++)
         {
@@ -291,6 +298,22 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
                 buffer.addVertex(pose, Mth.cos(to) * edge, Mth.sin(to) * edge, 0).setColor(core);
             }
         }
+    }
+
+    private static int lerpColor(float delta, int from, int to)
+    {
+        return ARGB.color(Mth.lerpInt(delta, ARGB.alpha(from), ARGB.alpha(to)), Mth.lerpInt(delta, ARGB.red(from), ARGB.red(to)),
+                Mth.lerpInt(delta, ARGB.green(from), ARGB.green(to)), Mth.lerpInt(delta, ARGB.blue(from), ARGB.blue(to)));
+    }
+
+    /**
+     * Blends packed light coordinates half by half, so a fade between world light and full bright has no visible steps.
+     */
+    private static int lerpLight(float delta, int from, int to)
+    {
+        int block = Mth.lerpInt(delta, from & 0xFFFF, to & 0xFFFF);
+        int sky = Mth.lerpInt(delta, from >>> 16, to >>> 16);
+        return block | sky << 16;
     }
 
     private static void submitHints(State state, PoseStack poseStack, SubmitNodeCollector collector)

@@ -46,6 +46,13 @@ public class BeholderTile extends TileBase
     public float eyeYaw;
     public float eyePitch;
     public long lastEyeNanos;
+    /**
+     * Client only: how bright the iris shines, how far it has drowsed off with no ley, and where its bob is, eased in game time. The glow starts unknown.
+     */
+    public float glow = Float.NaN;
+    public float drowse;
+    public float bobPhase;
+    public float lastLookTime = Float.NaN;
 
     public BeholderTile(BlockPos pos, BlockState state)
     {

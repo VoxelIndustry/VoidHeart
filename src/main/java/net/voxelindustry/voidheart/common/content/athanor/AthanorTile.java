@@ -54,6 +54,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public class AthanorTile extends TileBase
 {
     public static final int CHECK_INTERVAL = 10;
+    /** Share of its fire and smoke a brew on a weak supply still shows. */
+    private static final float WEAK_PARTICLE_SHARE = 0.5F;
     public static final Identifier REFINEMENT = Identifier.fromNamespaceAndPath(MODID, "refinement");
 
     private static final Codec<Map<Identifier, Integer>> GATHERED_CODEC = Codec.unboundedMap(Identifier.CODEC, Codec.INT);
@@ -272,6 +274,9 @@ public class AthanorTile extends TileBase
             return;
 
         var random = level.getRandom();
+        // A weak supply gutters the fire, so a slow brew shows without looking closer
+        if (power == MachinePower.WEAK && random.nextFloat() >= WEAK_PARTICLE_SHARE)
+            return;
         if (random.nextInt(4) == 0)
             level.addParticle(ParticleTypes.SMOKE, worldPosition.getX() + 0.5 + random.nextGaussian() * 0.06, worldPosition.getY() + 2.0,
                     worldPosition.getZ() + 0.5 + random.nextGaussian() * 0.06, 0, 0.03, 0);
