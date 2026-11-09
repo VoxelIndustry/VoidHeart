@@ -392,6 +392,11 @@ public class RubrumStorageClientTest implements FabricClientGameTest
         context.getInput().pressKey(InputConstants.KEY_F1);
         aimFrom(context, server, LARGE.getX() + 7.5, FLAT_FEET + 1, LARGE.getZ() - 3.5, LARGE.getX() + 0.5, LARGE.getY() + 0.5, LARGE.getZ() + 0.5, 5);
         context.takeScreenshot("rubrum-construct-large");
+        // Straight at a face, then grazing along it, for the brace and its plates against the frame
+        aimFrom(context, server, LARGE.getX() + 5.5, FLAT_FEET + 0.4, LARGE.getZ() + 0.5, LARGE.getX() + 0.5, LARGE.getY() + 0.5, LARGE.getZ() + 0.5, 5);
+        context.takeScreenshot("rubrum-construct-large-face");
+        aimFrom(context, server, LARGE.getX() + 3.6, FLAT_FEET + 0.4, LARGE.getZ() - 3.5, LARGE.getX() + 3.0, LARGE.getY() + 0.5, LARGE.getZ() + 0.5, 5);
+        context.takeScreenshot("rubrum-construct-large-grazing");
         context.getInput().pressKey(InputConstants.KEY_F1);
         return core(server, LARGE, RubrumConstructTile::stored);
     }
