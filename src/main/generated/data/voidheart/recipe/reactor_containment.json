@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "G": "voidheart:ravenous_gold_ingot",
+    "O": "minecraft:obsidian",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "VVV",
+    "GOG",
+    "VVV"
+  ],
+  "result": {
+    "count": 8,
+    "id": "voidheart:reactor_containment"
+  }
+}

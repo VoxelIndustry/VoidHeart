@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "slit=none": {
       "model": "voidheart:block/reactor_containment"
+    },
+    "slit=x_along_z": {
+      "model": "voidheart:block/reactor_containment_slit_x_along_z"
+    },
+    "slit=y_along_x": {
+      "model": "voidheart:block/reactor_containment_slit_y_along_x"
+    },
+    "slit=y_along_z": {
+      "model": "voidheart:block/reactor_containment_slit_y_along_z"
+    },
+    "slit=z_along_x": {
+      "model": "voidheart:block/reactor_containment_slit_z_along_x"
     }
   }
 }

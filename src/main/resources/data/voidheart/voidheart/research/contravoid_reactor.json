@@ -7,5 +7,15 @@
   "knowledge_per_second": 2.5,
   "requires": [
     "voidheart:ley_conversion"
+  ],
+  "unlocks": [
+    "voidheart:contravoid_reactor_core",
+    "voidheart:reactor_containment",
+    "voidheart:reactor_intake"
+  ],
+  "recipes": [
+    "voidheart:altar/contravoid_reactor_core",
+    "voidheart:reactor_containment",
+    "voidheart:reactor_intake"
   ]
 }
