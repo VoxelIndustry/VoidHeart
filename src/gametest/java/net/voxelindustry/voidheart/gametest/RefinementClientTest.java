@@ -26,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.voxelindustry.voidheart.common.content.oil.OilFlaskItem;
 import net.voxelindustry.voidheart.common.content.oil.OilType;
 import net.voxelindustry.voidheart.common.content.oil.SinVessel;
+import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEffects;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -242,6 +243,8 @@ public class RefinementClientTest implements FabricClientGameTest
         level.setBlockAndUpdate(INTAKE, VoidHeartBlocks.ASPECT_INTAKE.defaultBlockState());
         level.setBlockAndUpdate(CORE, VoidHeartBlocks.ATHANOR.defaultBlockState());
         level.setBlockAndUpdate(ALEMBIC, VoidHeartBlocks.ALEMBIC.defaultBlockState());
+        // Under the ground, it powers the brews
+        level.setBlockAndUpdate(INTAKE.below(2), CreativeEnergyContent.CREATIVE_VOID_WELL.defaultBlockState());
         for (var crucible : CRUCIBLES)
         {
             level.setBlockAndUpdate(crucible.below(), Blocks.STONE.defaultBlockState());

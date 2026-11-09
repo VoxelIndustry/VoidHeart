@@ -8,6 +8,13 @@
       "entries": [
         {
           "type": "minecraft:item",
+          "condition": {
+            "type": "minecraft:match_block",
+            "blocks": "voidheart:ley_stone",
+            "state": {
+              "half": "lower"
+            }
+          },
           "name": "voidheart:ley_stone"
         }
       ],

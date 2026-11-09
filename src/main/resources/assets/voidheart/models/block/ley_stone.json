@@ -1,0 +1,156 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": true,
+  "textures": {
+    "particle": "voidheart:block/ley_stone",
+    "side": "voidheart:block/ley_stone",
+    "front": "voidheart:block/ley_stone_front"
+  },
+  "elements": [
+    {
+      "name": "stone_0",
+      "from": [3, 0, 4],
+      "to": [13, 12, 12],
+      "faces": {
+        "north": {
+          "uv": [3, 4, 13, 16],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [3, 4, 13, 16],
+          "texture": "#side"
+        },
+        "east": {
+          "uv": [4, 4, 12, 16],
+          "texture": "#side"
+        },
+        "west": {
+          "uv": [4, 4, 12, 16],
+          "texture": "#side"
+        },
+        "up": {
+          "uv": [3, 4, 13, 12],
+          "texture": "#side"
+        },
+        "down": {
+          "uv": [3, 4, 13, 12],
+          "texture": "#side",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "name": "stone_1",
+      "from": [4, 12, 4.5],
+      "to": [13, 21, 11.5],
+      "faces": {
+        "north": {
+          "uv": [3.5, 0, 12.5, 9],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [3, 0, 12, 9],
+          "texture": "#side"
+        },
+        "east": {
+          "uv": [4.5, 0, 11.5, 9],
+          "texture": "#side"
+        },
+        "west": {
+          "uv": [4.5, 0, 11.5, 9],
+          "texture": "#side"
+        },
+        "up": {
+          "uv": [4, 4.5, 13, 11.5],
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "stone_2",
+      "from": [5, 21, 5],
+      "to": [13, 28, 11],
+      "faces": {
+        "north": {
+          "uv": [4, 9, 12, 16],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [3, 9, 11, 16],
+          "texture": "#side"
+        },
+        "east": {
+          "uv": [5, 9, 11, 16],
+          "texture": "#side"
+        },
+        "west": {
+          "uv": [5, 9, 11, 16],
+          "texture": "#side"
+        },
+        "up": {
+          "uv": [5, 5, 13, 11],
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "stone_3",
+      "from": [6.5, 28, 5.5],
+      "to": [12.5, 31, 10.5],
+      "faces": {
+        "north": {
+          "uv": [5.0, 0, 11.0, 3],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [3.5, 0, 9.5, 3],
+          "texture": "#side"
+        },
+        "east": {
+          "uv": [5.5, 0, 10.5, 3],
+          "texture": "#side"
+        },
+        "west": {
+          "uv": [5.5, 0, 10.5, 3],
+          "texture": "#side"
+        },
+        "up": {
+          "uv": [6.5, 5.5, 12.5, 10.5],
+          "texture": "#side"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, -3.5, 0],
+      "scale": [0.36, 0.36, 0.36]
+    },
+    "ground": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 2, 0],
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "fixed": {
+      "rotation": [0, 0, 0],
+      "translation": [0, -3.5, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 1.5, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "translation": [0, -1, 0],
+      "scale": [0.3, 0.3, 0.3]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 225, 0],
+      "translation": [0, -1, 0],
+      "scale": [0.3, 0.3, 0.3]
+    }
+  }
+}

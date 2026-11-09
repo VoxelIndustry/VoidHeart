@@ -8,13 +8,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
@@ -80,5 +84,11 @@ public class BeholderBlock extends Block implements EntityBlock
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new BeholderTile(pos, state);
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type)
+    {
+        return level.isClientSide() ? null : BaseEntityBlock.createTickerHelper(type, VoidHeartTiles.BEHOLDER, BeholderTile::tick);
     }
 }

@@ -1,0 +1,202 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#gold"
+        },
+        "east": {
+          "cullface": "east",
+          "texture": "#gold"
+        },
+        "north": {
+          "cullface": "north",
+          "texture": "#gold"
+        },
+        "south": {
+          "texture": "#gold"
+        },
+        "up": {
+          "texture": "#gold"
+        },
+        "west": {
+          "texture": "#gold"
+        }
+      },
+      "from": [
+        5,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        11,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            5,
+            13
+          ]
+        },
+        "north": {
+          "cullface": "north",
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            5,
+            13
+          ]
+        },
+        "south": {
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            5,
+            13
+          ]
+        },
+        "up": {
+          "texture": "#beam",
+          "uv": [
+            0,
+            3,
+            5,
+            13
+          ]
+        }
+      },
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        5,
+        10,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "east": {
+          "cullface": "east",
+          "texture": "#pillar",
+          "uv": [
+            3,
+            0,
+            13,
+            5
+          ]
+        },
+        "north": {
+          "cullface": "north",
+          "texture": "#pillar",
+          "uv": [
+            3,
+            0,
+            13,
+            5
+          ]
+        },
+        "south": {
+          "texture": "#pillar",
+          "uv": [
+            3,
+            0,
+            13,
+            5
+          ]
+        },
+        "west": {
+          "texture": "#pillar",
+          "uv": [
+            3,
+            0,
+            13,
+            5
+          ]
+        }
+      },
+      "from": [
+        6,
+        11,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#beam",
+          "uv": [
+            11,
+            3,
+            16,
+            13
+          ]
+        },
+        "east": {
+          "cullface": "east",
+          "texture": "#beam",
+          "uv": [
+            11,
+            3,
+            16,
+            13
+          ]
+        },
+        "up": {
+          "texture": "#beam",
+          "uv": [
+            11,
+            3,
+            16,
+            13
+          ]
+        },
+        "west": {
+          "texture": "#beam",
+          "uv": [
+            11,
+            3,
+            16,
+            13
+          ]
+        }
+      },
+      "from": [
+        6,
+        0,
+        11
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ]
+    }
+  ],
+  "textures": {
+    "beam": "voidheart:block/rubrum_construct_beam",
+    "gold": "voidheart:block/cut_ravenous_gold",
+    "particle": "voidheart:block/rubrum_construct_frame",
+    "pillar": "voidheart:block/rubrum_construct_pillar"
+  }
+}

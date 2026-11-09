@@ -53,6 +53,8 @@ public class OculusBeholderClientTest implements FabricClientGameTest
                 throw new AssertionError("Expected the unseen land to show its generated relief");
 
             int savedBefore = OculusChunkServer.savedAnswers();
+            // Under the ground, it gives the beholder all the ley it needs
+            setBlock(server, BEHOLDER.below(2), "voidheart:creative_ley_stone");
             setBlock(server, BEHOLDER, "voidheart:beholder");
             context.waitFor(minecraft -> OculusChunkServer.savedAnswers() > savedBefore, 2400);
             context.waitTicks(120);

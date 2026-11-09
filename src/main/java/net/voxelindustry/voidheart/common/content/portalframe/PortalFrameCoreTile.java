@@ -8,6 +8,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -16,6 +19,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.machine.MachineEnergyBalance;
+import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
@@ -28,6 +34,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * The core of a portal, which holds its link. A linked pair draws void energy while it is open, from the field around either core, and goes dark without it:
+ * it keeps its link but lets nobody through until power comes back.
+ */
 @Log4j2
 public class PortalFrameCoreTile extends PortalFrameTile
 {
@@ -53,6 +63,18 @@ public class PortalFrameCoreTile extends PortalFrameTile
     @Getter
     @Setter
     private UUID ownerPlayerUUID;
+
+    /**
+     * Linked but out of power: no interior, and unlit.
+     */
+    @Getter
+    private boolean      dark;
+    private int          starvedTicks;
+    /**
+     * How well the pair's draw was met on the last tick this core paid it. IDLE while the other core pays.
+     */
+    @Getter
+    private MachinePower power = MachinePower.IDLE;
 
     public PortalFrameCoreTile(BlockPos pos, BlockState state)
     {
@@ -87,6 +109,8 @@ public class PortalFrameCoreTile extends PortalFrameTile
         }
 
         ownerPlayerUUID = tag.read("ownerPlayerUUID", UUIDUtil.CODEC).orElse(null);
+        dark = tag.getBooleanOr("dark", false);
+        starvedTicks = tag.getIntOr("starvedTicks", 0);
     }
 
     @Override
@@ -123,6 +147,8 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
         if (ownerPlayerUUID != null)
             tag.store("ownerPlayerUUID", UUIDUtil.CODEC, ownerPlayerUUID);
+        tag.putBoolean("dark", dark);
+        tag.putInt("starvedTicks", starvedTicks);
 
         super.saveAdditional(tag);
     }
@@ -224,6 +250,8 @@ public class PortalFrameCoreTile extends PortalFrameTile
             throw new IllegalStateException("Cannot activate portal " + this + " without a link");
 
         isBroken = false;
+        dark = false;
+        starvedTicks = 0;
         level.setBlockAndUpdate(worldPosition, level.getBlockState(worldPosition)
                 .setValue(BlockStateProperties.LIT, true)
                 .setValue(StateProperties.BROKEN, false)
@@ -233,6 +261,13 @@ public class PortalFrameCoreTile extends PortalFrameTile
         if (heartData != null)
             heartData.addPortal(level, worldPosition);
 
+        placeInteriors();
+        refreshFrames();
+        setChanged();
+    }
+
+    private void placeInteriors()
+    {
         Direction facing = getFacing();
 
         Pair<BlockPos, BlockPos> interiorPoints = PortalFormer.excludeBorders(portalState);
@@ -259,13 +294,108 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
                     linkedInteriors.add(pos);
                 });
+    }
 
+    private void refreshFrames()
+    {
         for (BlockPos linkedFrame : List.copyOf(linkedFrames))
         {
             if (level.getBlockEntity(linkedFrame) instanceof PortalFrameTile frame && !frame.isCore())
                 frame.refreshLitStatus();
         }
+    }
 
+    public static void tick(Level level, BlockPos pos, BlockState state, PortalFrameCoreTile core)
+    {
+        if (level instanceof ServerLevel serverLevel)
+            core.tickServer(serverLevel);
+    }
+
+    /**
+     * One core of a pair pays for both: the one that sorts first, unless it isn't ticking. It draws from its own field, then from the other core's, so a
+     * portal into the pocket works with a pylon on either side. The pair only goes dark while both sides are loaded.
+     */
+    private void tickServer(ServerLevel level)
+    {
+        if (link == null || isBroken())
+        {
+            power = MachinePower.IDLE;
+            return;
+        }
+
+        var partner = tickingPartner(level);
+        if (partner != null && partner.paysBefore(this))
+        {
+            power = MachinePower.IDLE;
+            return;
+        }
+
+        long need = MachineEnergyBalance.PORTAL_HOLD;
+        long got = VoidEnergy.draw(level, worldPosition, need);
+        if (got < need && partner != null)
+            got += VoidEnergy.draw((ServerLevel) partner.getLevel(), partner.getBlockPos(), need - got);
+        power = MachinePower.of(need, got);
+
+        boolean paid = got >= need;
+        // Alone, a core can't reach the far side's field, so it holds as it is until that side loads, like any unloaded machine. This also keeps a
+        // pocket side without a pylon from trapping whoever is in there.
+        if (!paid && partner == null)
+            return;
+        int before = starvedTicks;
+        // A dark pair waits only for power, so it has nothing left to count
+        starvedTicks = paid || dark ? 0 : starvedTicks + 1;
+        if (starvedTicks != before)
+            setChanged();
+        // The grid can miss the first tick of a draw, so one short tick still reads as paid
+        if (starvedTicks == 1)
+            power = MachinePower.POWERED;
+        if (dark ? paid : starvedTicks >= MachineEnergyBalance.PORTAL_STARVED_TICKS)
+        {
+            setDark(!dark);
+            if (partner != null)
+                partner.setDark(dark);
+        }
+        else if (partner != null && partner.isDark() != dark)
+            partner.setDark(dark);
+    }
+
+    private boolean paysBefore(PortalFrameCoreTile other)
+    {
+        int byWorld = level.dimension().identifier().compareTo(other.getLevel().dimension().identifier());
+        return byWorld != 0 ? byWorld < 0 : getBlockPos().asLong() < other.getBlockPos().asLong();
+    }
+
+    /**
+     * The other core of the pair, only if it is loaded and ticking, so that paying never loads a chunk.
+     */
+    @Nullable
+    private PortalFrameCoreTile tickingPartner(ServerLevel level)
+    {
+        var target = level.getServer().getLevel(link.world());
+        if (target == null || !target.shouldTickBlocksAt(link.pos()))
+            return null;
+        if (!(target.getBlockEntity(link.pos()) instanceof PortalFrameCoreTile core) || core == this || core.isRemoved())
+            return null;
+        return core.getLink() != null && core.getLink().pointsTo(level, worldPosition) ? core : null;
+    }
+
+    /**
+     * Darkens a linked portal that lost its power, keeping its link, or opens it again once power is back.
+     */
+    void setDark(boolean dark)
+    {
+        if (this.dark == dark || link == null || !isStillInWorld())
+            return;
+
+        this.dark = dark;
+        starvedTicks = 0;
+        if (dark)
+            destroyInteriors();
+        else
+            placeInteriors();
+        level.setBlockAndUpdate(worldPosition, level.getBlockState(worldPosition).setValue(BlockStateProperties.LIT, !dark));
+        refreshFrames();
+        level.playSound(null, worldPosition, dark ? SoundEvents.BEACON_DEACTIVATE : SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6F, 1.4F);
         setChanged();
     }
 
@@ -274,6 +404,8 @@ public class PortalFrameCoreTile extends PortalFrameTile
         if (level == null || level.isClientSide())
             return;
 
+        dark = false;
+        starvedTicks = 0;
         if (link != null)
         {
             previousLink = link;

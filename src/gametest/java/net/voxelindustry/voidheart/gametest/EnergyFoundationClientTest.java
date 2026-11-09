@@ -17,6 +17,7 @@ import net.voxelindustry.voidheart.common.energy.LeyPower;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.ley.Ley;
+import net.voxelindustry.voidheart.common.ley.flow.LatticeLeyFlow;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
 import net.voxelindustry.voidheart.common.ley.TaintStage;
 
@@ -82,7 +83,8 @@ public class EnergyFoundationClientTest implements FabricClientGameTest
             checkWell(server, true, "A well after a reload");
             checkStone(server, true, "A stone after a reload");
             float taint = server.computeOnServer(minecraft -> Ley.taint(minecraft.overworld(), node));
-            expect(taint == FoundationBalance.FESTERING_FROM, "Node taint should survive a reload, it is " + taint);
+            // A resting node heals a little in the meantime, well under one point
+            expect(taint <= FoundationBalance.FESTERING_FROM && taint > FoundationBalance.FESTERING_FROM - 1, "Node taint should survive a reload, it is " + taint);
         }
     }
 
@@ -182,19 +184,21 @@ public class EnergyFoundationClientTest implements FabricClientGameTest
             Ley.addTaint(level, node.id(), FoundationBalance.FESTERING_FROM);
             expect(Ley.taint(level, node.id()) == FoundationBalance.FESTERING_FROM, "Taint should be stored on the node");
             expect(Ley.stage(level, node.id()) == TaintStage.FESTERING, "The node should be festering, it is " + Ley.stage(level, node.id()));
-            checkFlow(minecraft, node.x(), node.z(), node.power());
+            checkFlow(minecraft, node.id(), node.x(), node.z(), node.power());
             return node.id();
         });
     }
 
     /**
-     * Before the real flow lands, a node gives its raw power and claims never compete.
+     * On a node the real flow is the node's own, which taint has already cut below its raw power, and a small claim is granted in full.
      */
-    private static void checkFlow(MinecraftServer minecraft, int x, int z, float power)
+    private static void checkFlow(MinecraftServer minecraft, long id, int x, int z, float power)
     {
-        double flow = Ley.lineFlowAt(minecraft.overworld(), new BlockPos(x, FLAT_FEET, z));
-        expect(flow == power, "The default flow on a node should be its raw power " + power + ", got " + flow);
-        double claimed = Ley.claim(minecraft.overworld(), new BlockPos(x, FLAT_FEET, z), power / 2);
-        expect(claimed == power / 2, "A claim below the node's flow should be granted in full, got " + claimed);
+        var level = minecraft.overworld();
+        double flow = Ley.lineFlowAt(level, new BlockPos(x, FLAT_FEET, z));
+        expect(flow == LatticeLeyFlow.nodeFlow(level, id), "The flow on a node should be the node's flow " + LatticeLeyFlow.nodeFlow(level, id) + ", got " + flow);
+        expect(flow > 0 && flow < power, "A festering node should flow below its raw power " + power + ", got " + flow);
+        double claimed = Ley.claim(level, new BlockPos(x, FLAT_FEET, z), flow / 4);
+        expect(claimed == flow / 4, "A claim below the node's flow should be granted in full, got " + claimed);
     }
 }

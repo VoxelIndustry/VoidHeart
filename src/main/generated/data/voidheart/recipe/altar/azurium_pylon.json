@@ -1,0 +1,52 @@
+{
+  "type": "voidheart:altar",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:voidstone_pillar"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ravenous_gold_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ravenous_gold_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ravenous_gold_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:azurium_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:azurium_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:voidstone_polished"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:voidstone_polished"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ender_shard"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:azurium_pylon"
+      }
+    ]
+  },
+  "time": 20
+}

@@ -6,7 +6,7 @@
   "knowledge_cost": 700,
   "knowledge_per_second": 1.25,
   "requires": [
-    "voidheart:shatter_forge"
+    "voidheart:void_energy"
   ],
   "unlocks": [
     "voidheart:athanor",

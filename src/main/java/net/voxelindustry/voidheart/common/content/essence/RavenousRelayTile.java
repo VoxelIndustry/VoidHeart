@@ -8,6 +8,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.ArrayList;
@@ -155,12 +156,15 @@ public class RavenousRelayTile extends TileBase
     }
 
     /**
-     * The pillars of a storage and the columns of a matrix belong to the block they rise from, so they never hide it.
+     * The pillars of a storage, the columns of a matrix and the chamber of an engine belong to the block they rise from, so they
+     * never hide it.
      */
     private static boolean isPartOf(BlockState state, BlockPos pos, BlockPos target)
     {
         if (state.getBlock() instanceof RavenousStorageBlock)
             return state.getValue(RavenousStorageBlock.PART) == RavenousStorageBlock.RavenousStoragePart.PILLAR && pos.below().equals(target);
+        if (state.getBlock() instanceof RavenousEngineBlock)
+            return state.getValue(RavenousEngineBlock.PART) == RavenousEngineBlock.Part.CHAMBER && pos.below().equals(target);
         return RavenousStorageMatrixBlock.isColumnOf(state, pos, target);
     }
 

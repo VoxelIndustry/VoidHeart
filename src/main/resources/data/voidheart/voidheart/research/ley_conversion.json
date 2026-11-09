@@ -1,0 +1,14 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:azurium_spike",
+  "insight_cost": 10,
+  "knowledge_cost": 1200,
+  "knowledge_per_second": 1.5,
+  "requires": [
+    "voidheart:ley_sense"
+  ],
+  "hidden_until": [
+    "voidheart:void_energy"
+  ]
+}

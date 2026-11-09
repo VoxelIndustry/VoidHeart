@@ -25,6 +25,11 @@ import net.voxelindustry.voidheart.common.content.essence.RelayNetwork;
 import net.voxelindustry.voidheart.common.content.oil.Brew;
 import net.voxelindustry.voidheart.common.content.oil.Brews;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.machine.DrawCredit;
+import net.voxelindustry.voidheart.common.energy.machine.MachineEnergy;
+import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
+import net.voxelindustry.voidheart.common.energy.machine.PowerMeter;
 import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -43,7 +48,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 /**
  * The seething steel furnace at the heart of an athanor. Its base sits inside it. Once the reagents of the crucibles beside it answer a recipe, the
  * intake below gathers the aspects it needs, then the brew runs and leaves its product where the base was. Once refinement is researched, an Azurium
- * or Rubrum shard in a crucible the recipe doesn't use strengthens or prolongs the brew, and a sin-metal flask can stand in for the glass bottle.
+ * or Rubrum shard in a crucible the recipe doesn't use strengthens or prolongs the brew, and a sin-metal flask can stand in for the glass bottle. A brew draws
+ * void energy as it runs, slows on a weak supply and waits without one.
  */
 public class AthanorTile extends TileBase
 {
@@ -82,6 +88,14 @@ public class AthanorTile extends TileBase
     @Nullable
     private Brew brew;
 
+    private final DrawCredit   brewCredit = new DrawCredit();
+    private final PowerMeter   meter      = new PowerMeter();
+    /**
+     * How well the brew's draw is met, synced so the fire goes out while it waits.
+     */
+    @Getter
+    private       MachinePower power      = MachinePower.IDLE;
+
     public AthanorTile(BlockPos pos, BlockState state)
     {
         super(VoidHeartTiles.ATHANOR, pos, state);
@@ -106,6 +120,8 @@ public class AthanorTile extends TileBase
         brewing = tag.getBooleanOr("brewing", false);
         progress = tag.getIntOr("progress", 0);
         recipeId = tag.read("recipe", Identifier.CODEC).orElse(null);
+        power = MachinePower.byOrdinal(tag.getIntOr("power", 0));
+        meter.restore(power);
 
         gathered.clear();
         tag.read("gathered", GATHERED_CODEC).orElse(Map.of()).forEach((id, amount) ->
@@ -128,6 +144,7 @@ public class AthanorTile extends TileBase
         tag.putInt("progress", progress);
         if (recipeId != null)
             tag.store("recipe", Identifier.CODEC, recipeId);
+        tag.putInt("power", power.ordinal());
 
         var gatheredIds = new LinkedHashMap<Identifier, Integer>();
         gathered.forEach((type, amount) -> gatheredIds.put(type.identifier(), amount));
@@ -182,6 +199,15 @@ public class AthanorTile extends TileBase
                 return;
             }
 
+            long need = MachineEnergy.shareOfTick(brewCost(), recipe.getTime(), progress);
+            boolean paid = brewCredit.pay(need, amount -> VoidEnergy.draw((ServerLevel) level, worldPosition, amount));
+            recordPower(need, brewCredit.lastDrawn());
+            if (!paid)
+            {
+                setChanged();
+                return;
+            }
+
             progress++;
             if (progress >= recipe.getTime())
             {
@@ -198,14 +224,51 @@ public class AthanorTile extends TileBase
             return;
         }
 
+        recordPower(0, 0);
         if (stack.isEmpty() || Math.floorMod(level.getGameTime() + worldPosition.asLong(), CHECK_INTERVAL) != 0)
             return;
         evaluate();
     }
 
+    private void recordPower(long want, long got)
+    {
+        if (!meter.record(want, got))
+            return;
+        power = meter.state();
+        if (brewing)
+            setLit(power != MachinePower.UNPOWERED);
+        setChanged();
+        sync();
+    }
+
+    /**
+     * Void energy the whole of the current brew draws, more for each refinement. Nothing without a recipe.
+     */
+    public long brewCost()
+    {
+        var recipe = getCurrentRecipe();
+        if (recipe == null)
+            return 0;
+        int aspects = recipe.getAspects().values().stream().mapToInt(Integer::intValue).sum();
+        var brew = getBrew();
+        int refinements = (brew.empowered() ? 1 : 0) + (brew.prolonged() ? 1 : 0) + (brew.remembering() ? 1 : 0);
+        return MachineEnergy.brew(aspects, refinements);
+    }
+
+    /**
+     * What the brew under way draws each tick, on average, or nothing while it isn't brewing.
+     */
+    public long drawRate()
+    {
+        var recipe = getCurrentRecipe();
+        if (!brewing || recipe == null || recipe.getTime() <= 0)
+            return 0;
+        return Math.round(brewCost() / (double) recipe.getTime());
+    }
+
     private void clientTick()
     {
-        if (!brewing)
+        if (!brewing || power == MachinePower.UNPOWERED)
             return;
 
         var random = level.getRandom();
@@ -436,7 +499,7 @@ public class AthanorTile extends TileBase
     {
         brewing = true;
         progress = 0;
-        setLit(true);
+        setLit(power != MachinePower.UNPOWERED);
         level.playSound(null, worldPosition, SoundEvents.BLAZE_SHOOT, SoundSource.BLOCKS, 0.4F, 0.6F);
         setChanged();
         sync();

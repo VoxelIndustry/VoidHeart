@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_medium_azurium_bundle": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:medium_azurium_bundle"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/ravenous_engine"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_medium_azurium_bundle"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/ravenous_engine"
+    ]
+  }
+}

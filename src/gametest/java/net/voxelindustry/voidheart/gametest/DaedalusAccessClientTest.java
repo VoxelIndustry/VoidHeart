@@ -11,16 +11,20 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.TicketStorage;
 import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.client.screen.ArmillaryScreen;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryChart;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryChunkHold;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryHubBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryLayout;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftTile;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.armillary.DaedalusConnections;
+import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -90,6 +94,18 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         level.setBlockAndUpdate(CORE, VoidHeartBlocks.ARMILLARY_CORE.defaultBlockState());
         for (var part : ArmillaryLayout.base(CORE))
             level.setBlockAndUpdate(part.pos(), part.block().defaultBlockState());
+        // Out of sight under the floor, it powers the search, the opening and the hold
+        level.setBlockAndUpdate(CORE.below(8), CreativeEnergyContent.CREATIVE_VOID_WELL.defaultBlockState());
+    }
+
+    /**
+     * The way gathers its void energy once the root reaches the strata, at most ARMILLARY_INTAKE a tick even from the creative well.
+     */
+    private static void waitForCharge(ClientGameTestContext context, TestServerContext server)
+    {
+        for (int wait = 0; wait < 80 && !onServer(server, minecraft -> armillary(minecraft).getCharge() >= armillary(minecraft).openingCost()); wait++)
+            context.waitTicks(20);
+        expect(onServer(server, minecraft -> armillary(minecraft).getCharge() >= armillary(minecraft).openingCost()), "The way should gather its void energy from the well");
     }
 
     /**
@@ -184,6 +200,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
             player(minecraft).getAbilities().invulnerable = true;
             player(minecraft).getInventory().add(new ItemStack(VoidHeartItems.VOID_PEARL, ArmillaryTile.daedalusCost() + 2));
         });
+        waitForCharge(context, server);
         context.waitTicks(VIEW_TICKS);
         expect(primaryLabel(context).equals("Open: 8 void pearls"), "The plate should give the price, not " + primaryLabel(context));
 
@@ -227,6 +244,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         expect(onServer(server, minecraft -> !player(minecraft).level().getBlockState(feet.below()).isAir()), "The player should stand on a bridge");
         int id = onServer(server, minecraft -> armillary(minecraft).getDaedalusConnection());
         expect(onServer(server, minecraft -> DaedalusConnections.get(minecraft).entryOf(player(minecraft).getUUID())) == id, "The player should be known to have come in by this way");
+        expect(onServer(server, DaedalusAccessClientTest::holdsChunks), "An armillary holding the Daedalus should keep its chunks loaded");
 
         var rift = onServer(server, DaedalusAccessClientTest::findRift);
         expect(rift != null, "A rift should stand on the bridge near where the player arrives");
@@ -260,6 +278,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         int id = onServer(server, minecraft -> armillary(minecraft).getDaedalusConnection());
         expect(id != ArmillaryRiftTile.NONE && onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id)) != null, "The way should survive a reload");
         expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.CONNECTED, "The armillary should still hold the way");
+        checkChunksHeld(context, server);
 
         var rift = onServer(server, DaedalusAccessClientTest::findRift);
         expect(rift != null, "The rift should still stand");
@@ -310,6 +329,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         expect(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id)) == null, "The way should be gone");
 
         context.waitTicks(40);
+        expect(!onServer(server, DaedalusAccessClientTest::holdsChunks), "The armillary should let its chunks go once the way is gone");
         expect(onServer(server, minecraft -> armillary(minecraft).getChart().getPhase()) == ArmillaryChart.Phase.SCANNING, "The armillary should go back to scanning");
         expect(!onServer(server, minecraft -> minecraft.overworld().getBlockState(HUB).getValue(ArmillaryHubBlock.OPEN)), "The portal should close");
         expect(onServer(server, minecraft -> VoidDaedalus.level(minecraft).getBlockState(rift).isAir()), "The rift should go with its way");
@@ -335,6 +355,7 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         });
         act(server, armillary -> armillary.advanceSearch(1));
         context.waitTicks(5);
+        waitForCharge(context, server);
         openChart(context, server);
         context.waitTicks(VIEW_TICKS);
         click(context, strataDoor(context)[0], strataDoor(context)[1], 5);
@@ -348,6 +369,32 @@ public class DaedalusAccessClientTest implements FabricClientGameTest
         server.runOnServer(minecraft -> minecraft.overworld().destroyBlock(CORE, true));
         context.waitTicks(5);
         expect(onServer(server, minecraft -> DaedalusConnections.get(minecraft).get(id).isSevered()), "Breaking the core should sever the way");
+    }
+
+    /**
+     * With nobody left in the overworld, the base around the armillary keeps ticking ArmillaryChunkHold.TICKING_RADIUS chunks each way, and no further,
+     * and the hold stays paid.
+     */
+    private static void checkChunksHeld(ClientGameTestContext context, TestServerContext server)
+    {
+        expect(onServer(server, minecraft -> minecraft.overworld().players().isEmpty()), "Nobody should be left in the overworld");
+        expect(onServer(server, DaedalusAccessClientTest::holdsChunks), "The chunk hold should survive a reload");
+        context.waitTicks(40);
+        int reach = ArmillaryChunkHold.TICKING_RADIUS * 16;
+        expect(onServer(server, minecraft -> ticks(minecraft, CORE) && ticks(minecraft, CORE.offset(reach, 0, -reach))), "The armillary and the base around it should keep ticking");
+        expect(!onServer(server, minecraft -> ticks(minecraft, CORE.offset(reach + 32, 0, 0))), "The hold should not keep chunks ticking beyond its radius");
+        expect(onServer(server, minecraft -> armillary(minecraft).secondsBeforeSevered()) == -1, "The hold should stay paid with nobody in the overworld");
+    }
+
+    private static boolean holdsChunks(MinecraftServer minecraft)
+    {
+        var tickets = minecraft.overworld().getDataStorage().computeIfAbsent(TicketStorage.TYPE).getTickets(ChunkPos.containing(CORE).pack());
+        return tickets.stream().anyMatch(ticket -> ticket.getType() == ArmillaryChunkHold.TICKET);
+    }
+
+    private static boolean ticks(MinecraftServer minecraft, BlockPos pos)
+    {
+        return minecraft.overworld().shouldTickBlocksAt(ChunkPos.containing(pos).pack());
     }
 
     private static BlockPos findRift(MinecraftServer minecraft)

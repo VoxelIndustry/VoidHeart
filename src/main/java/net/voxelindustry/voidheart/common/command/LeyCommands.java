@@ -13,6 +13,7 @@ import net.voxelindustry.voidheart.common.ley.LeyLattice;
 import net.voxelindustry.voidheart.common.ley.LeyLatticeDump;
 import net.voxelindustry.voidheart.common.ley.anchor.OldAnchor;
 import net.voxelindustry.voidheart.common.ley.anchor.OldAnchors;
+import net.voxelindustry.voidheart.common.ley.flow.LeyFlowCommands;
 
 import javax.imageio.ImageIO;
 import java.io.IOException;
@@ -37,6 +38,8 @@ public class LeyCommands
                 .then(literal("info").executes(LeyCommands::info))
                 .then(literal("show").executes(LeyCommands::show))
                 .then(literal("anchor").executes(LeyCommands::anchor))
+                .then(LeyFlowCommands.taint())
+                .then(LeyFlowCommands.flow())
                 .then(literal("dump")
                         .executes(context -> dump(context, DEFAULT_DUMP_RADIUS))
                         .then(argument("radius", IntegerArgumentType.integer(256, 16384))

@@ -24,6 +24,12 @@ import net.voxelindustry.steamlayer.tile.TileBase;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeState;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.machine.DrawCredit;
+import net.voxelindustry.voidheart.common.energy.machine.MachineEnergy;
+import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
+import net.voxelindustry.voidheart.common.energy.machine.PowerMeter;
+import net.minecraft.server.MinecraftServer;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -42,6 +48,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
+import static net.voxelindustry.voidheart.common.energy.machine.MachineEnergyBalance.*;
 
 /**
  * The instrument itself: it checks its own structure, keeps the chart turning, and follows the connection it opened, which outlives it if it must.
@@ -63,6 +70,10 @@ public class ArmillaryTile extends TileBase
     private static final float   SEARCHING_SPEED   = 3;
     private static final float   REACHED_SPEED     = 0.5F;
     private static final float   FALTER_SPEED_DROP = 0.6F;
+    /** How fast the rings still turn with nothing to draw on. */
+    private static final float   UNPOWERED_SPIN    = 0.1F;
+    /** How long the siphon counts as flowing after it last delivered. */
+    private static final int     SIPHON_FLOW_TICKS = 20;
 
     /** What a player must have studied to make out the strata, and reach for it. */
     public static final Identifier DAEDALUS_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "daedalus");
@@ -82,7 +93,27 @@ public class ArmillaryTile extends TileBase
     /** How much of the connection is left, from 1 down to 0. */
     private float                    connectionLeft;
 
-    private final float[] ringAngles         = new float[RINGS];
+    private final DrawCredit   searchCredit = new DrawCredit();
+    private final PowerMeter   meter        = new PowerMeter();
+    /** How well what the rings draw is met, synced so they slow down without it. */
+    @Getter
+    private       MachinePower power        = MachinePower.IDLE;
+    /** Void energy gathered toward an opening. Kept when a path is abandoned, for the next one. */
+    @Getter
+    private       long         charge;
+    /** How far the hold of the Daedalus has fallen behind its draw. It is severed once that reaches HOLD_STARVED_TICKS of draw. */
+    @Getter
+    private       long         holdDebt;
+    /** What the deep siphon put aside here for the hold. */
+    private       long         siphonStore;
+    private       long         siphonUntil;
+    /** Whether the deep siphon delivered here in the last second, synced for its look at the armillary. */
+    @Getter
+    private       boolean      siphonFlowing;
+    // Whether this armillary's chunk hold is placed, unknown until its first tick after loading
+    private @Nullable Boolean      chunksHeld;
+
+    private final float[] ringAngles        = new float[RINGS];
     private final float[] previousRingAngles = new float[RINGS];
     private       float   spin               = 1;
     private       float   formation;
@@ -136,7 +167,7 @@ public class ArmillaryTile extends TileBase
             changed = followConnection(level);
         }
 
-        if (formed)
+        if (drawPower(level) && formed)
         {
             var event = chart.tick(rules(), level.getRandom());
             switch (event)
@@ -161,11 +192,174 @@ public class ArmillaryTile extends TileBase
             setChanged();
             sendViews(level);
         }
+        holdChunks(level);
+    }
+
+    /**
+     * Keeps the base around it ticking while it holds the Daedalus, and lets it go once the way closes. The first tick after loading also lets go of a
+     * ticket left from a way that closed while the world was off.
+     */
+    private void holdChunks(ServerLevel level)
+    {
+        boolean wanted = daedalus != ArmillaryRiftTile.NONE;
+        if (chunksHeld != null && chunksHeld == wanted)
+            return;
+        if (wanted)
+            ArmillaryChunkHold.hold(level, worldPosition);
+        else
+            ArmillaryChunkHold.release(level, worldPosition);
+        chunksHeld = wanted;
     }
 
     private boolean dialIsMoving()
     {
         return chart.getPhase() == ArmillaryChart.Phase.SEARCHING || chart.getPhase() == ArmillaryChart.Phase.CONNECTED;
+    }
+
+    /**
+     * Draws what the rings need this tick: a trickle while searching, a charge once a path holds, and a steady rate while the Daedalus is held open.
+     *
+     * @return whether the chart may move on, which a search only does while it is paid for
+     */
+    private boolean drawPower(ServerLevel level)
+    {
+        long want = 0;
+        long got = 0;
+        boolean chartRuns = true;
+
+        if (heldDaedalus(level) != null)
+        {
+            want = DAEDALUS_HOLD;
+            got = hold(level);
+        }
+        else if (formed && chart.getPhase() == ArmillaryChart.Phase.SEARCHING)
+        {
+            want = chart.targetsStrata() ? DAEDALUS_SEARCH : ARMILLARY_SEARCH;
+            chartRuns = searchCredit.pay(want, amount -> VoidEnergy.draw(level, worldPosition, amount));
+            got = searchCredit.lastDrawn();
+        }
+        else if (formed && chart.getPhase() == ArmillaryChart.Phase.REACHED && charge < openingCost())
+        {
+            want = Math.min(ARMILLARY_INTAKE, openingCost() - charge);
+            got = VoidEnergy.draw(level, worldPosition, want);
+            charge += got;
+            if (got > 0)
+                setChanged();
+        }
+
+        if (siphonFlowing && level.getGameTime() >= siphonUntil)
+        {
+            siphonFlowing = false;
+            sync();
+        }
+        if (meter.record(want, got))
+        {
+            power = meter.state();
+            setChanged();
+            sync();
+        }
+        return chartRuns;
+    }
+
+    private DaedalusConnections.@Nullable Connection heldDaedalus(ServerLevel level)
+    {
+        if (daedalus == ArmillaryRiftTile.NONE)
+            return null;
+        var open = DaedalusConnections.get(level.getServer()).get(daedalus);
+        return open == null || open.isSevered() ? null : open;
+    }
+
+    /**
+     * Pays the hold, from what the siphon put aside first. A shortfall is caught up later at up to twice the rate, and severs the way once it has run for
+     * HOLD_STARVED_TICKS of draw.
+     *
+     * @return what was paid this tick
+     */
+    private long hold(ServerLevel level)
+    {
+        long ask = DAEDALUS_HOLD + Math.min(holdDebt, DAEDALUS_HOLD);
+        long fromSiphon = Math.min(siphonStore, ask);
+        siphonStore -= fromSiphon;
+        long got = fromSiphon + VoidEnergy.draw(level, worldPosition, ask - fromSiphon);
+
+        long before = holdDebt;
+        holdDebt = Math.max(0, holdDebt + DAEDALUS_HOLD - got);
+        if (holdDebt != before)
+            setChanged();
+        if (holdDebt >= DAEDALUS_HOLD * HOLD_STARVED_TICKS)
+        {
+            holdDebt = 0;
+            if (sever())
+            {
+                play(VoidHeartSounds.ARMILLARY_BREAK);
+                setChanged();
+                sync();
+                sendViews(level);
+            }
+        }
+        return got;
+    }
+
+    /**
+     * Void energy an opening of the current path needs gathered first. Nothing without a path.
+     */
+    public long openingCost()
+    {
+        if (chart.targetsStrata())
+            return DAEDALUS_OPEN;
+        var target = chart.target();
+        return target == null ? 0 : MachineEnergy.dungeonOpening(target.size());
+    }
+
+    /**
+     * Whether a starved hold is on its way to being severed, and how many seconds are left if nothing comes, or -1 when the hold is paid.
+     */
+    public int secondsBeforeSevered()
+    {
+        if (holdDebt <= 0)
+            return -1;
+        return (int) Math.max(0, (DAEDALUS_HOLD * HOLD_STARVED_TICKS - holdDebt) / DAEDALUS_HOLD / 20);
+    }
+
+    /**
+     * The deep siphon's way out of the Daedalus: energy it draws there arrives at the armillary holding the way open. It pays the hold first, and the rest
+     * goes into the network around the armillary.
+     *
+     * @return how much was taken, which is nothing unless this armillary holds the Daedalus open
+     */
+    public long receiveFromDaedalus(long amount)
+    {
+        if (amount <= 0 || !(level instanceof ServerLevel serverLevel) || heldDaedalus(serverLevel) == null)
+            return 0;
+
+        long kept = Math.max(0, Math.min(amount, SIPHON_HOLD_STORE - siphonStore));
+        siphonStore += kept;
+        long taken = kept + VoidEnergy.offer(serverLevel, worldPosition, amount - kept);
+        if (taken > 0)
+        {
+            siphonUntil = serverLevel.getGameTime() + SIPHON_FLOW_TICKS;
+            if (!siphonFlowing)
+            {
+                siphonFlowing = true;
+                sync();
+            }
+            setChanged();
+        }
+        return taken;
+    }
+
+    /**
+     * The armillary holding a way into the Daedalus, for a deep siphon on that way's bridge. Only an armillary already loaded and ticking is found.
+     */
+    public static @Nullable ArmillaryTile holding(MinecraftServer server, int daedalusId)
+    {
+        var open = DaedalusConnections.get(server).get(daedalusId);
+        if (open == null)
+            return null;
+        var level = server.getLevel(open.dimension());
+        if (level == null || !level.shouldTickBlocksAt(open.armillary()))
+            return null;
+        return level.getBlockEntity(open.armillary()) instanceof ArmillaryTile armillary && armillary.daedalus == daedalusId ? armillary : null;
     }
 
     private void checkStructure(ServerLevel level)
@@ -268,6 +462,8 @@ public class ArmillaryTile extends TileBase
         if (open == null)
         {
             daedalus = ArmillaryRiftTile.NONE;
+            holdDebt = 0;
+            siphonStore = 0;
             connectionLeft = 0;
             stage = ConnectionTimeline.Stage.STABLE;
             chart.connectionClosed();
@@ -320,7 +516,8 @@ public class ArmillaryTile extends TileBase
         if (reveal)
             setChanged();
         var strata = ArmillaryPayloads.StrataView.of(chart, rules(), known, reveal, daedalusCost(), server.overworld().getSeed());
-        ServerPlayNetworking.send(player, ArmillaryPayloads.View.of(chart, rules(), stage, pearls, left, total, strata));
+        int charged = chart.getPhase() == ArmillaryChart.Phase.REACHED ? MachineEnergy.percent(charge, openingCost()) : ArmillaryPayloads.View.NO_CHARGE;
+        ServerPlayNetworking.send(player, ArmillaryPayloads.View.of(chart, rules(), stage, pearls, left, total, strata, charged, power));
     }
 
     private static int pearlsHeld(ServerPlayer player, int upTo)
@@ -429,8 +626,9 @@ public class ArmillaryTile extends TileBase
             return openDaedalus(player);
 
         var target = chart.target();
-        if (target == null || !pay(player, target.openCost()))
+        if (target == null || !charged(player) || !pay(player, target.openCost()))
             return false;
+        spendCharge();
 
         var server = player.level().getServer();
         var address = VoidDungeons.open(server, target.size(), target.theme(), target.difficulty());
@@ -448,6 +646,23 @@ public class ArmillaryTile extends TileBase
         return true;
     }
 
+    /**
+     * An opening first gathers its void energy, which the action bar reports while it isn't there yet.
+     */
+    private boolean charged(ServerPlayer player)
+    {
+        long cost = openingCost();
+        if (charge >= cost)
+            return true;
+        player.sendOverlayMessage(Component.translatable("voidheart.armillary.charging", MachineEnergy.percent(charge, cost)));
+        return false;
+    }
+
+    private void spendCharge()
+    {
+        charge = Math.max(0, charge - openingCost());
+    }
+
     private static boolean pay(ServerPlayer player, int cost)
     {
         if (player.isCreative())
@@ -461,8 +676,10 @@ public class ArmillaryTile extends TileBase
     private boolean openDaedalus(ServerPlayer player)
     {
         var point = chart.getStrata();
-        if (point == null || !knowsDaedalus(player) || !pay(player, daedalusCost()))
+        if (point == null || !knowsDaedalus(player) || !charged(player) || !pay(player, daedalusCost()))
             return false;
+        spendCharge();
+        holdDebt = 0;
 
         daedalus = DaedalusConnections.get(player.level().getServer()).open(level.dimension(), worldPosition, point).id();
         connectionLeft = 1;
@@ -495,8 +712,12 @@ public class ArmillaryTile extends TileBase
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
         super.preRemoveSideEffects(pos, state);
-        if (level instanceof ServerLevel serverLevel && daedalus != ArmillaryRiftTile.NONE)
-            DaedalusConnections.get(serverLevel.getServer()).sever(daedalus, ArmillaryConnections.now(serverLevel.getServer()));
+        if (level instanceof ServerLevel serverLevel)
+        {
+            if (daedalus != ArmillaryRiftTile.NONE)
+                DaedalusConnections.get(serverLevel.getServer()).sever(daedalus, ArmillaryConnections.now(serverLevel.getServer()));
+            ArmillaryChunkHold.release(serverLevel, pos);
+        }
     }
 
     /**
@@ -588,8 +809,8 @@ public class ArmillaryTile extends TileBase
         previousFormation = formation;
         formation += Mth.clamp(wanted - formation, -FORM_STEP, FORM_STEP);
 
-        float wantedSpin = spinOf(chart.getPhase(), stage);
-        spin += (wantedSpin - spin) * SPEED_EASE;
+        float wantedSpin = spinOf(chart.getPhase(), stage) * (power == MachinePower.UNPOWERED ? UNPOWERED_SPIN : 1);
+        spin +=(wantedSpin - spin) * SPEED_EASE;
 
         for (int ring = 0; ring < RINGS; ring++)
         {
@@ -658,6 +879,12 @@ public class ArmillaryTile extends TileBase
         stage = ConnectionTimeline.Stage.values()[Mth.clamp(tag.getIntOr("stage", 0), 0, ConnectionTimeline.Stage.values().length - 1)];
         previewUntil = tag.getLongOr("previewUntil", 0);
         connectionLeft = tag.getFloatOr("connectionLeft", 0);
+        power = MachinePower.byOrdinal(tag.getIntOr("power", 0));
+        meter.restore(power);
+        charge = tag.getLongOr("charge", 0);
+        holdDebt = tag.getLongOr("holdDebt", 0);
+        siphonStore = tag.getLongOr("siphonStore", 0);
+        siphonFlowing = tag.getBooleanOr("siphonFlowing", false);
 
         if (level != null && level.isClientSide() && !wasConnected && isConnected())
             portalOpenedAt = level.getGameTime();
@@ -676,6 +903,11 @@ public class ArmillaryTile extends TileBase
         tag.putInt("stage", stage.ordinal());
         tag.putLong("previewUntil", previewUntil);
         tag.putFloat("connectionLeft", connectionLeft);
+        tag.putInt("power", power.ordinal());
+        tag.putLong("charge", charge);
+        tag.putLong("holdDebt", holdDebt);
+        tag.putLong("siphonStore", siphonStore);
+        tag.putBoolean("siphonFlowing", siphonFlowing);
 
         super.saveAdditional(tag);
     }

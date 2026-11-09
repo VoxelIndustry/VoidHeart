@@ -36,6 +36,7 @@ import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryChunkHold;
 import net.voxelindustry.voidheart.common.content.altar.AltarExperienceParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarItemParticleEffect;
 import net.voxelindustry.voidheart.common.content.altar.AltarVoidParticleEffect;
@@ -129,6 +130,7 @@ public class VoidHeart implements ModInitializer
         ShoulderEyes.register();
 
         VoidHeartTiles.registerTiles();
+        ArmillaryChunkHold.register();
         VoidHeartMenus.registerMenus();
         EnergySetup.register();
 

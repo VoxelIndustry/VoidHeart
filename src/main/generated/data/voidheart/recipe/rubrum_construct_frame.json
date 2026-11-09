@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "G": "voidheart:ravenous_gold_ingot",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "VGV",
+    "V V",
+    "VGV"
+  ],
+  "result": {
+    "count": 6,
+    "id": "voidheart:rubrum_construct_frame"
+  }
+}

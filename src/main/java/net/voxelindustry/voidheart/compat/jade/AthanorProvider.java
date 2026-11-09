@@ -12,6 +12,7 @@ import net.voxelindustry.voidheart.client.BrewTooltip;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.oil.Brews;
+import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -56,7 +57,9 @@ public class AthanorProvider implements StreamServerDataProvider<BlockAccessor, 
                 athanor.getLayout().alembic(),
                 athanor.getLayout().intake(),
                 required,
-                gathered);
+                gathered,
+                athanor.getPower().ordinal(),
+                athanor.drawRate());
     }
 
     @Override
@@ -69,7 +72,7 @@ public class AthanorProvider implements StreamServerDataProvider<BlockAccessor, 
      * A negative progress means the athanor is not brewing.
      */
     public record Data(ItemStack base, ItemStack output, float progress, boolean alembic, boolean intake, Map<Identifier, Integer> required,
-                       Map<Identifier, Integer> gathered)
+                       Map<Identifier, Integer> gathered, int power, long draw)
     {
         private static final StreamCodec<RegistryFriendlyByteBuf, Map<Identifier, Integer>> ASPECTS =
                 ByteBufCodecs.map(LinkedHashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.VAR_INT);
@@ -82,6 +85,8 @@ public class AthanorProvider implements StreamServerDataProvider<BlockAccessor, 
                 ByteBufCodecs.BOOL, Data::intake,
                 ASPECTS, Data::required,
                 ASPECTS, Data::gathered,
+                ByteBufCodecs.VAR_INT, Data::power,
+                ByteBufCodecs.VAR_LONG, Data::draw,
                 Data::new);
     }
 
@@ -105,6 +110,17 @@ public class AthanorProvider implements StreamServerDataProvider<BlockAccessor, 
                     tooltip.append(JadeUI.progressArrow(Math.max(0, data.progress())));
                     tooltip.append(JadeUI.item(data.output()));
                     BrewTooltip.lines(Brews.brewOf(data.output())).forEach(tooltip::add);
+                }
+
+                if (data.progress() >= 0)
+                {
+                    var power = MachinePower.byOrdinal(data.power());
+                    if (power == MachinePower.UNPOWERED)
+                        tooltip.add(Component.translatable("voidheart.jade.athanor.unpowered").withStyle(ChatFormatting.RED));
+                    else if (power == MachinePower.WEAK)
+                        tooltip.add(Component.translatable("voidheart.jade.athanor.weak").withStyle(ChatFormatting.YELLOW));
+                    else
+                        tooltip.add(Component.translatable("voidheart.jade.machine.draw", data.draw()).withStyle(ChatFormatting.GRAY));
                 }
 
                 if (!data.alembic())

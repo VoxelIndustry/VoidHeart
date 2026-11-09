@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_rubrum_shard": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:rubrum_shard"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/rubrum_construct_core"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_rubrum_shard"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/rubrum_construct_core"
+    ]
+  }
+}

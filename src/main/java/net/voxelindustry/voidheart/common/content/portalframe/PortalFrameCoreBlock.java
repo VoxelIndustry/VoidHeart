@@ -20,7 +20,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -91,6 +94,12 @@ public class PortalFrameCoreBlock extends PortalFrameBlock
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new PortalFrameCoreTile(pos, state);
+    }
+
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type)
+    {
+        return level.isClientSide() ? null : BaseEntityBlock.createTickerHelper(type, VoidHeartTiles.PORTAL_FRAME_CORE, PortalFrameCoreTile::tick);
     }
 
     @Override

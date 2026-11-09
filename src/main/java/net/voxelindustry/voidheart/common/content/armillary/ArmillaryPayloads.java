@@ -10,6 +10,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -105,7 +106,7 @@ public final class ArmillaryPayloads
      * What an armillary's screen draws, sent every second while it is open and after every change.
      */
     public record View(List<BubbleView> bubbles, int target, int phase, int searchTicks, int searchDuration, int stage, int pearls, int connectionTicks, int connectionDuration,
-                       StrataView strata) implements CustomPacketPayload
+                       StrataView strata, int charge, int power) implements CustomPacketPayload
     {
         public static final Type<View> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "armillary_view"));
 
@@ -113,8 +114,10 @@ public final class ArmillaryPayloads
         public static final int FREE = -1;
         /** In place of a connection's length, for one that holds until it is severed. */
         public static final int STABLE = -1;
+        /** In place of an opening's charge, while no opening is on offer. */
+        public static final int NO_CHARGE = -1;
 
-        public static final View EMPTY = new View(List.of(), -1, 0, 0, 0, 0, 0, 0, 0, StrataView.NONE);
+        public static final View EMPTY = new View(List.of(), -1, 0, 0, 0, 0, 0, 0, 0, StrataView.NONE, NO_CHARGE, 0);
 
         public static final StreamCodec<RegistryFriendlyByteBuf, View> STREAM_CODEC = StreamCodec.composite(
                 BubbleView.STREAM_CODEC.apply(ByteBufCodecs.list()), View::bubbles,
@@ -127,15 +130,18 @@ public final class ArmillaryPayloads
                 ByteBufCodecs.VAR_INT, View::connectionTicks,
                 ByteBufCodecs.VAR_INT, View::connectionDuration,
                 StrataView.STREAM_CODEC, View::strata,
+                ByteBufCodecs.VAR_INT, View::charge,
+                ByteBufCodecs.VAR_INT, View::power,
                 View::new);
 
-        static View of(ArmillaryChart chart, ArmillaryChart.Rules rules, ConnectionTimeline.Stage stage, int pearls, int connectionTicks, int connectionDuration, StrataView strata)
+        static View of(ArmillaryChart chart, ArmillaryChart.Rules rules, ConnectionTimeline.Stage stage, int pearls, int connectionTicks, int connectionDuration, StrataView strata,
+                       int charge, MachinePower power)
         {
             var bubbles = new ArrayList<BubbleView>();
             for (var bubble : chart.bubbles())
                 bubbles.add(BubbleView.of(bubble, chart, rules));
             return new View(bubbles, chart.getTargetId(), chart.getPhase().ordinal(), chart.getSearchTicks(), chart.getSearchDuration(), stage.ordinal(), pearls, connectionTicks, connectionDuration,
-                    strata);
+                    strata, charge, power.ordinal());
         }
 
         public boolean targetsStrata()
@@ -151,6 +157,19 @@ public final class ArmillaryPayloads
         public ArmillaryChart.Phase phaseValue()
         {
             return ArmillaryChart.Phase.values()[phase];
+        }
+
+        /**
+         * Whether the opening on offer has gathered all its void energy.
+         */
+        public boolean isCharged()
+        {
+            return charge == NO_CHARGE || charge >= 100;
+        }
+
+        public MachinePower powerValue()
+        {
+            return MachinePower.byOrdinal(power);
         }
 
         public ConnectionTimeline.Stage stageValue()

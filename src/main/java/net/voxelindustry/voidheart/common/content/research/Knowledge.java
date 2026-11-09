@@ -85,12 +85,18 @@ public class Knowledge
         var state = KnowledgeState.get(server);
         var data = state.of(player);
         attuneToHeart(server, player, data);
-        var finished = data.settle(server.overworld().getGameTime(), rules(), tree(server.registryAccess()));
+        var tree = tree(server.registryAccess());
+        var online = server.getPlayerList().getPlayer(player);
+        // Granted once the player is in and can be told, which also covers someone away since before the research existed
+        var inherited = online != null && online.connection.hasClientLoaded() ? ResearchMigration.grantAddedParents(data, tree.keySet()) : List.<Identifier>of();
+        var finished = data.settle(server.overworld().getGameTime(), rules(), tree);
         state.setDirty();
 
-        var online = server.getPlayerList().getPlayer(player);
         if (online != null)
+        {
+            inherited.forEach(id -> online.sendSystemMessage(Component.translatable(MODID + ".research.inherited", Component.translatable(Research.nameKey(id)))));
             finished.ifPresent(id -> announceFinished(online, id));
+        }
         return data;
     }
 

@@ -71,6 +71,7 @@
       "net.voxelindustry.voidheart.gametest.RavenousEngineClientTest",
       "net.voxelindustry.voidheart.gametest.MachineRetrofitClientTest",
       "net.voxelindustry.voidheart.gametest.EnergyResearchClientTest",
+      "net.voxelindustry.voidheart.gametest.EnergyWave1ClientTest",
       "net.voxelindustry.voidheart.gametest.LeySpikeClientTest",
       "net.voxelindustry.voidheart.gametest.VoidFissureClientTest",
       "net.voxelindustry.voidheart.gametest.ContravoidReactorClientTest",

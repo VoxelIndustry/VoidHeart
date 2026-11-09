@@ -1,0 +1,27 @@
+{
+  "tier": 2,
+  "constellation": "rites",
+  "icon": "voidheart:azurium_pylon",
+  "insight_cost": 6,
+  "knowledge_cost": 200,
+  "knowledge_per_second": 0.75,
+  "requires": [
+    "voidheart:shatter_forge"
+  ],
+  "unlocks": [
+    "voidheart:azurium_pylon",
+    "voidheart:ravenous_engine",
+    "voidheart:rubrum_construct_core",
+    "voidheart:rubrum_construct_frame",
+    "voidheart:rubrum_cell",
+    "voidheart:cell_socket"
+  ],
+  "recipes": [
+    "voidheart:altar/azurium_pylon",
+    "voidheart:altar/ravenous_engine",
+    "voidheart:altar/rubrum_construct_core",
+    "voidheart:rubrum_construct_frame",
+    "voidheart:rubrum_cell",
+    "voidheart:cell_socket"
+  ]
+}
