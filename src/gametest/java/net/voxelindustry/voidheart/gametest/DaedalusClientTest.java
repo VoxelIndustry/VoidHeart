@@ -252,7 +252,8 @@ public class DaedalusClientTest implements FabricClientGameTest
                     if (DaedalusPalette.isRail(canvas.raw(x, y, z)))
                     {
                         var reshaped = Block.updateFromNeighbourShapes(found, level, at);
-                        expect(found.getBlock() instanceof WallBlock && reshaped == found, "At " + at + " the rail " + found + " should already be joined as " + reshaped);
+                        expect(found.getBlock() == wanted.getBlock() && found.getBlock() instanceof WallBlock, "At " + at + " the plan has a rail of " + wanted.getBlock() + " but the chunk has " + found);
+                        expect(reshaped == found, "At " + at + " the rail " + found + " should already be joined as " + reshaped);
                         rails[0]++;
                         if (found.getValue(WallBlock.UP))
                             rails[1]++;
