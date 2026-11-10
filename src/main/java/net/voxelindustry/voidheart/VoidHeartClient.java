@@ -31,6 +31,7 @@ import net.voxelindustry.voidheart.client.render.ArmillaryRender;
 import net.voxelindustry.voidheart.client.render.ArmillaryRiftRender;
 import net.voxelindustry.voidheart.client.screen.ArmillaryScreen;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
+import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
@@ -200,6 +201,7 @@ public class VoidHeartClient implements ClientModInitializer
             OculusMarkers.clear();
             OculusLeyLayer.clear();
             TormenterHeads.clear();
+            WallPassages.clearClient();
         });
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusLeyLayer::collectSubmits);
         ClientPlayNetworking.registerGlobalReceiver(OculusLeyPayloads.Layer.TYPE, OculusLeyLayer::receive);

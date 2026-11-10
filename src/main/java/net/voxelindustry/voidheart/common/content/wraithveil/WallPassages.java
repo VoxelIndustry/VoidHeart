@@ -238,6 +238,14 @@ public final class WallPassages
         removeClient(player);
     }
 
+    /**
+     * Forgets the client's tunnels on leaving a world, which goes with them.
+     */
+    public static void clearClient()
+    {
+        CLIENT.clear();
+    }
+
     private static void removeClient(Player player)
     {
         var active = CLIENT.remove(player.getUUID());
@@ -254,7 +262,8 @@ public final class WallPassages
         for (var at : BlockPos.betweenClosed(plan.tubeMin(), plan.tubeMax()))
         {
             var current = active.level.getBlockState(at);
-            if (current.isAir())
+            // A sign or banner has nothing to bump into, so a tunnel may hold one, but erasing it would lose what it shows: it stays
+            if (current.isAir() || current.hasBlockEntity())
                 continue;
             // Erasing it, or again after the server sent it back
             var pos = at.immutable();
