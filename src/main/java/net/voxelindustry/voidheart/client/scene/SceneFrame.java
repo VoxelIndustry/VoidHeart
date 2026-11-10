@@ -21,6 +21,7 @@ import java.util.List;
  * @param labels   words pinned to points of the scene, drawn over the stage
  * @param clicks   right clicks landing just now
  * @param actors   what its own renderer draws
+ * @param particles every particle alive just now
  * @param beam     how formed the beam is, 0 when there is none to draw
  * @param forming  whether the beam is coming or going, which it draws differently
  * @param warm     ticks since the altar's void began warming, 0 when it does not show
@@ -28,7 +29,7 @@ import java.util.List;
  * @param rings    the armillary's rings, null when the scene has none
  */
 public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<Lit> highlights, List<ShownItem> items,
-                         List<ShownReach> reaches, List<ShownLink> links, List<ShownOutline> outlines, List<ShownLabel> labels, List<ShownClick> clicks, List<ShownActor> actors,
+                         List<ShownReach> reaches, List<ShownLink> links, List<ShownOutline> outlines, List<ShownLabel> labels, List<ShownClick> clicks, List<ShownActor> actors, List<ShownParticle> particles,
                          float beam, boolean forming, int warm, int cool, @Nullable ShownRings rings)
 {
     private static final float APPEAR_TICKS    = 10;
@@ -107,6 +108,14 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
     {
     }
 
+    /**
+     * @param frame which of the sprite's pictures it shows: a frame of the atlas, or a slice of an item's picture, counted on past the last for what the item becomes
+     * @param size  half the side of its square, in blocks
+     */
+    public record ShownParticle(SceneEmitter.Sprite sprite, int frame, double x, double y, double z, float size, float alpha, int rgb)
+    {
+    }
+
     private static float ease(float t)
     {
         return t * t * (3 - 2 * t);
@@ -140,10 +149,11 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
         var labels = new ArrayList<ShownLabel>();
         var clicks = new ArrayList<ShownClick>();
         var actors = new ArrayList<ShownActor>();
+        var particles = new ArrayList<ShownParticle>();
 
-        for (var cue : scene.cues())
+        for (int index = 0; index < scene.cues().size(); index++)
         {
-            switch (cue)
+            switch (scene.cues().get(index))
             {
                 case Scene.Place place ->
                 {
@@ -218,6 +228,12 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
                     float working = ticks - actor.works().resolve(timeline);
                     actors.add(new ShownActor(actor.pos(), actor.role(), Math.min(1, since / APPEAR_TICKS), working < 0 ? -1 : working, actor.target(), actor.rgb(), actor.amount()));
                 }
+                case Scene.Particles let ->
+                {
+                    int from = let.from().resolve(timeline);
+                    // Its place in the script tells one emitter's specks from another's, and stays the same on every frame
+                    let.emitter().shown(index, ticks - from, (float) let.to().resolve(timeline) - from, particles);
+                }
                 case Scene.Click click ->
                 {
                     float since = ticks - click.at().resolve(timeline);
@@ -252,7 +268,7 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
         }
 
         var rings = scene.rings() == null ? null : rings(scene.rings(), timeline, ticks);
-        return new SceneFrame(List.copyOf(blocks.values()), ghosts, highlights, items, reaches, links, outlines, labels, clicks, actors, beam, forming, warm, cool, rings);
+        return new SceneFrame(List.copyOf(blocks.values()), ghosts, highlights, items, reaches, links, outlines, labels, clicks, actors, particles, beam, forming, warm, cool, rings);
     }
 
     /**

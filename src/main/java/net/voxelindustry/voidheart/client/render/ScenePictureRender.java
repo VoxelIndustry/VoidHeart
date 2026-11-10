@@ -136,6 +136,7 @@ public class ScenePictureRender extends PictureInPictureRenderer<ScenePictureRen
         submitItems(poseStack, collector, state);
         actors.submit(poseStack, collector, state.frame().actors(), toViewer(state.view()), state.worldTime());
         submitEffects(poseStack, collector, state);
+        SceneParticlesRender.submit(poseStack, collector, state.frame().particles(), state.view(), state.glowRgb());
     }
 
     /**

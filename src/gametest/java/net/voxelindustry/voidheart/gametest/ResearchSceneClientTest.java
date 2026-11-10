@@ -121,6 +121,10 @@ public class ResearchSceneClientTest implements FabricClientGameTest
 
             hover(context, new int[] { 2, 2 });
             captureSteps(context, "altar");
+            // The particles of the rite: the void gathering, an offering crumbling toward the altar, and the void let go
+            captureMoment(context, "altar-void-gathering", 4, 40);
+            captureMoment(context, "altar-drawing-offerings", 4, 68);
+            captureMoment(context, "altar-void-burst", 5, 66);
             assertControls(context);
 
             context.getInput().pressKey(InputConstants.KEY_ESCAPE);
@@ -141,6 +145,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
             context.waitTicks(3);
             hover(context, new int[] { 2, 2 });
             captureSteps(context, "forge");
+            captureMoment(context, "forge-beam-carrying", 5, 100);
 
             context.getInput().pressKey(InputConstants.KEY_F);
             context.waitTicks(3);
@@ -160,14 +165,15 @@ public class ResearchSceneClientTest implements FabricClientGameTest
             context.getInput().pressKey(InputConstants.KEY_ESCAPE);
             context.waitTicks(3);
 
-            click(context, position(context, ATHANOR));
-            hover(context, new int[] { 5, 5 });
-            click(context, context.computeOnClient(client -> screen(client).actionPosition()));
+            // Tria Prima lies off this window's part of the map since the map kept one size, so its scene is opened without the click
+            context.runOnClient(client -> screen(client).showScene(ATHANOR));
             context.waitTicks(3);
             if (!context.computeOnClient(client -> screen(client).sceneOpen()))
                 throw new AssertionError("Tria Prima should open the athanor's scene");
             hover(context, new int[] { 2, 2 });
             captureSteps(context, "athanor");
+            captureMoment(context, "athanor-brewing", 6, 100);
+            captureMoment(context, "athanor-done-puff", 7, 8);
             context.getInput().pressKey(InputConstants.KEY_ESCAPE);
             context.waitTicks(3);
 
@@ -180,6 +186,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
             hover(context, new int[] { 2, 2 });
             captureSteps(context, "armillary");
             // The rings halfway up, the portal tearing open, and the rings faltering before it closes
+            captureMoment(context, "armillary-reshaping", 4, 18);
             captureMoment(context, "armillary-rising", 4, 40);
             captureMoment(context, "armillary-portal-opening", 7, 105);
             captureMoment(context, "armillary-faltering", 9, 140);
