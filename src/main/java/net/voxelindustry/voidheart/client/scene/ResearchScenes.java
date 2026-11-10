@@ -18,15 +18,19 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The scenes a finished research can show. The scripts name real blocks and a real recipe: the Shatter Forge item at the altar, and gold ingots at the forge.
- * They are built on first use since blocks only exist once the game has registered them.
+ * They are built on first use since blocks only exist once the game has registered them. Those of the energy system are in EnergyScenes, and those of
+ * what is set down in the land in LandScenes.
  */
 public final class ResearchScenes
 {
@@ -36,12 +40,27 @@ public final class ResearchScenes
 
     public static final int FORGE_TRACK_PAIRS = 2;
 
-    private static final Identifier ALTAR_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "altar_rite");
-    private static final Identifier FORGE_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "shatter_forge");
-    private static final Identifier ATHANOR_RESEARCH = Identifier.fromNamespaceAndPath(MODID, "tria_prima");
-
     // Not a block of the mod: pale, so that the void's dark stone and what floats above it stand out from the ground
-    private static final Block FLOOR = Blocks.SMOOTH_STONE;
+    static final Block FLOOR = Blocks.SMOOTH_STONE;
+
+    private static final Map<Identifier, Supplier<Scene>> SCRIPTS = new LinkedHashMap<>();
+    // The research whose scene shows an item at work, by the item's path
+    private static final Map<String, Identifier>          ITEMS   = new HashMap<>();
+
+    static
+    {
+        script("altar_rite", ResearchScenes::altar, "void_altar");
+        // The forge's parts are shown in the forge's scene, whichever research teaches them
+        script("shatter_forge", ResearchScenes::forge, "shatter_forge", "void_monolith", "void_conduit");
+        script("tria_prima", ResearchScenes::athanor, "athanor", "alembic", "crucible", "aspect_intake");
+        script("void_energy", EnergyScenes::grid, "azurium_pylon", "ravenous_engine", "rubrum_construct_core", "rubrum_construct_frame");
+        script("contravoid_reactor", EnergyScenes::reactor, "contravoid_reactor_core", "reactor_containment", "reactor_intake");
+        script("ley_conversion", EnergyScenes::spike, "azurium_spike");
+        script("void_fissure", EnergyScenes::fissure, "fissure_seed");
+        script("ley_sense", LandScenes::stones, "ley_stone", "ley_ward", "ley_grower");
+        script("portal_flexion", LandScenes::portal, "portal_core");
+        script("permeable_barrier", LandScenes::barrier, "permeable_barrier_item");
+    }
 
     private static final float ITEM_HEIGHT = 1.25F;
     private static final Vec3  ALTAR_TOP   = new Vec3(0.5, 1.25, 0.5);
@@ -53,48 +72,60 @@ public final class ResearchScenes
     {
     }
 
+    private static void script(String research, Supplier<Scene> script, String... items)
+    {
+        SCRIPTS.put(id(research), script);
+        for (var item : items)
+            ITEMS.put(item, id(research));
+    }
+
     public static boolean has(Identifier research)
     {
-        return research.equals(ALTAR_RESEARCH) || research.equals(FORGE_RESEARCH) || research.equals(ATHANOR_RESEARCH);
+        return SCRIPTS.containsKey(research);
     }
 
     /**
-     * The research whose scene shows this item at work. The forge's parts are shown in the forge's scene, whichever research teaches them.
+     * Every research that has a scene, in the order they were written.
+     */
+    public static Set<Identifier> researches()
+    {
+        return SCRIPTS.keySet();
+    }
+
+    /**
+     * The research whose scene shows this item at work.
      */
     public static Optional<Identifier> forItem(Identifier item)
     {
-        return switch (item.getPath())
-        {
-            case "void_altar" -> Optional.of(ALTAR_RESEARCH);
-            case "shatter_forge", "void_monolith", "void_conduit" -> Optional.of(FORGE_RESEARCH);
-            case "athanor", "alembic", "crucible", "aspect_intake" -> Optional.of(ATHANOR_RESEARCH);
-            default -> Optional.empty();
-        };
+        return item.getNamespace().equals(MODID) ? Optional.ofNullable(ITEMS.get(item.getPath())) : Optional.empty();
     }
 
     public static Optional<Scene> of(Identifier research)
     {
-        if (!has(research))
+        var script = SCRIPTS.get(research);
+        if (script == null)
             return Optional.empty();
-        return Optional.of(BUILT.computeIfAbsent(research, id ->
+
+        var built = BUILT.get(research);
+        if (built == null)
         {
-            if (id.equals(ALTAR_RESEARCH))
-                return altar();
-            return id.equals(FORGE_RESEARCH) ? forge() : athanor();
-        }));
+            built = script.get();
+            BUILT.put(research, built);
+        }
+        return Optional.of(built);
     }
 
-    private static BlockState lit(BlockState state)
+    static BlockState lit(BlockState state)
     {
         return state.hasProperty(BlockStateProperties.LIT) ? state.setValue(BlockStateProperties.LIT, true) : state;
     }
 
-    private static Vec3 above(BlockPos pos, float height)
+    static Vec3 above(BlockPos pos, float height)
     {
         return new Vec3(pos.getX() + 0.5, pos.getY() + height, pos.getZ() + 0.5);
     }
 
-    private static Identifier id(String path)
+    static Identifier id(String path)
     {
         return Identifier.fromNamespaceAndPath(MODID, path);
     }

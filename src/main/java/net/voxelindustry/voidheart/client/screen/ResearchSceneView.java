@@ -18,11 +18,15 @@ import net.voxelindustry.voidheart.client.scene.SceneFrame;
 import net.voxelindustry.voidheart.client.scene.SceneTimeline;
 import net.voxelindustry.voidheart.client.scene.SceneView;
 
+import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 /**
  * Plays a scene on a large tablet over the map, or across the whole screen when more room is wanted.
- * The film runs by itself and holds each step long enough to read. Its marks jump between steps, and nothing else about it can be touched.
+ * The film runs by itself and holds each step long enough to read. Its marks jump between steps, and nothing else about it can be touched:
+ * pointing at something on the stage only names it.
  */
 final class ResearchSceneView
 {
@@ -55,6 +59,18 @@ final class ResearchSceneView
     private static final float HOLD_BEFORE_END = 15;
     private static final float STAGE_HUE       = 0.5F;
     private static final int   USE_ICON        = 18;
+
+    private static final int   PLATE_PAD       = 2;
+    private static final int   PLATE_COLOR     = 0x0B0810;
+    private static final int   PLATE_ALPHA     = 215;
+    private static final int   COUNT_AWAY      = 5;
+    private static final int   CLICK_ICON      = 18;
+    private static final int   CLICK_AWAY      = 5;
+    private static final int   PING_START      = 3;
+    private static final int   PING_GROW       = 9;
+    private static final float CLICK_HOLD      = 0.7F;
+    private static final int   ITEM_REACH      = 8;
+    private static final float BLOCK_REACH     = 0.55F;
 
     // Light enough for the darkest stone and items in a scene to stand out from it
     private static final int STAGE_COLOR  = 0xFF3F3A4A;
@@ -94,6 +110,9 @@ final class ResearchSceneView
     private float   ticks;
     private float   alive;
     private long    tickedAt = Util.getMillis();
+
+    private @Nullable SceneFrame shownFrame;
+    private @Nullable SceneView  shownView;
 
     private Rect tablet = new Rect(0, 0, 0, 0);
     private Rect stage  = new Rect(0, 0, 0, 0);
@@ -178,9 +197,13 @@ final class ResearchSceneView
         extractHeader(graphics, mouseX, mouseY);
 
         graphics.fillGradient(stage.x(), stage.y(), stage.right(), stage.bottom(), STAGE_COLOR, ARGB.srgbLerp(STAGE_HUE, STAGE_COLOR, 0xFF000000 | look.lightRgb()));
-        graphics.guiRenderState.addPicturesInPictureState(new ScenePictureRender.State(scene, SceneFrame.of(scene, timeline, ticks), view,
+        var frame = SceneFrame.of(scene, timeline, ticks);
+        shownFrame = frame;
+        shownView = view;
+        graphics.guiRenderState.addPicturesInPictureState(new ScenePictureRender.State(scene, frame, view,
                 view.blockSize(stage.width(), stage.height()), alive, look.rgb(), stage.x(), stage.y(), stage.right(), stage.bottom(), null));
 
+        extractMarks(graphics, frame, view);
         extractNote(graphics, step, view);
         extractFooter(graphics, mouseX, mouseY, step);
     }
@@ -196,6 +219,114 @@ final class ResearchSceneView
         graphics.text(font, title, tablet.x() + PAD, tablet.y() + (HEADER - font.lineHeight) / 2 + 1, TEXT_COLOR);
         icon(graphics, expand, fullScreen ? SHRINK_U : EXPAND_U, mouseX, mouseY);
         icon(graphics, close, CLOSE_U, mouseX, mouseY);
+    }
+
+    private int[] onStage(SceneView view, Vec3 point)
+    {
+        var at = view.project((float) point.x, (float) point.y, (float) point.z, stage.width(), stage.height());
+        return new int[] { stage.x() + Math.round(at[0]), stage.y() + Math.round(at[1]) };
+    }
+
+    /**
+     * A few words on a dark plate, kept whole inside the stage.
+     *
+     * @param centerX the middle of the plate
+     * @param top     its upper edge
+     */
+    private void plate(GuiGraphicsExtractor graphics, Component text, int centerX, int top, float alpha)
+    {
+        int width = font.width(text) + PLATE_PAD * 2;
+        int height = font.lineHeight + PLATE_PAD * 2 - 1;
+        int x = Math.clamp(centerX - width / 2, stage.x() + 1, Math.max(stage.x() + 1, stage.right() - width - 1));
+        int y = Math.clamp(top, stage.y() + 1, Math.max(stage.y() + 1, stage.bottom() - height - 1));
+
+        graphics.fill(x, y, x + width, y + height, ARGB.color((int) (PLATE_ALPHA * alpha), PLATE_COLOR));
+        graphics.outline(x, y, width, height, ARGB.color((int) (150 * alpha), look.rgb()));
+        // The font draws text of very low alpha opaque, so it waits for the plate
+        if (alpha > 0.1F)
+            graphics.text(font, text, x + PLATE_PAD, y + PLATE_PAD, ARGB.color((int) (255 * alpha), TEXT_COLOR), false);
+    }
+
+    /**
+     * What is written over the stage: how many of an item, the numbers of a reach, and where a click lands.
+     */
+    private void extractMarks(GuiGraphicsExtractor graphics, SceneFrame frame, SceneView view)
+    {
+        graphics.enableScissor(stage.x(), stage.y(), stage.right(), stage.bottom());
+
+        for (var item : frame.items())
+        {
+            if (item.stack().getCount() <= 1)
+                continue;
+            var at = onStage(view, new Vec3(item.x(), item.y(), item.z()));
+            var count = Component.literal("\u00d7" + item.stack().getCount());
+            plate(graphics, count, at[0] + COUNT_AWAY + font.width(count) / 2 + PLATE_PAD, at[1] + 1, 1);
+        }
+
+        for (var label : frame.labels())
+        {
+            var at = onStage(view, label.at());
+            plate(graphics, label.text(), at[0], at[1] - font.lineHeight / 2 - PLATE_PAD, label.alpha());
+        }
+
+        for (var click : frame.clicks())
+        {
+            var at = onStage(view, click.pos());
+            float fade = click.progress() < CLICK_HOLD ? 1 : 1 - (click.progress() - CLICK_HOLD) / (1 - CLICK_HOLD);
+
+            int reach = PING_START + (int) (PING_GROW * click.progress());
+            graphics.outline(at[0] - reach, at[1] - reach, reach * 2 + 1, reach * 2 + 1, ARGB.color((int) (230 * (1 - click.progress())), look.rgb()));
+            graphics.fill(at[0] - 1, at[1] - 1, at[0] + 2, at[1] + 2, ARGB.color((int) (255 * fade), look.rgb()));
+
+            int iconX = at[0] + CLICK_AWAY;
+            int iconY = at[1] - CLICK_ICON - CLICK_AWAY;
+            // A plate under the mouse, which a pale floor would otherwise swallow
+            graphics.fill(iconX + 1, iconY - 1, iconX + CLICK_ICON - 1, iconY + CLICK_ICON + 1, ARGB.color((int) (PLATE_ALPHA * fade), PLATE_COLOR));
+            graphics.outline(iconX + 1, iconY - 1, CLICK_ICON - 2, CLICK_ICON + 2, ARGB.color((int) (150 * fade), look.rgb()));
+            graphics.blit(RenderPipelines.GUI_TEXTURED, ResearchMapView.SPRITES, iconX, iconY, MOUSE_U, ICON_V, CLICK_ICON, CLICK_ICON, ICON, ICON,
+                    ResearchMapView.ATLAS, ResearchMapView.ATLAS, ARGB.color((int) (255 * fade), TEXT_COLOR));
+            if (click.sneak())
+            {
+                var sneak = Component.keybind("key.sneak").append(" +");
+                plate(graphics, sneak, iconX - font.width(sneak) / 2 - PLATE_PAD - 2, iconY + (CLICK_ICON - font.lineHeight) / 2 - PLATE_PAD, fade);
+            }
+        }
+
+        graphics.disableScissor();
+    }
+
+    /**
+     * The name of what the pointer is on: an item first since they float in front, then the nearest block under it. The floor is nothing to learn.
+     */
+    private @Nullable Component nameAt(double mouseX, double mouseY)
+    {
+        if (shownFrame == null || shownView == null || !stage.contains(mouseX, mouseY))
+            return null;
+
+        for (var item : shownFrame.items())
+        {
+            var at = onStage(shownView, new Vec3(item.x(), item.y(), item.z()));
+            if (Math.abs(mouseX - at[0]) <= ITEM_REACH && Math.abs(mouseY - at[1]) <= ITEM_REACH)
+                return item.stack().getHoverName();
+        }
+
+        float reach = shownView.blockSize(stage.width(), stage.height()) * BLOCK_REACH;
+        SceneFrame.ShownBlock found = null;
+        float nearest = Float.MAX_VALUE;
+        for (var block : shownFrame.blocks())
+        {
+            var center = Vec3.atCenterOf(block.pos());
+            var at = onStage(shownView, center);
+            if (Math.abs(mouseX - at[0]) > reach || Math.abs(mouseY - at[1]) > reach)
+                continue;
+            float depth = shownView.depth((float) center.x, (float) center.y, (float) center.z);
+            if (depth < nearest)
+            {
+                nearest = depth;
+                found = block;
+            }
+        }
+        return found == null ? null : found.state().getBlock().getName();
     }
 
     /**
@@ -371,7 +502,7 @@ final class ResearchSceneView
             return Component.translatable(fullScreen ? "voidheart.scene.shrink" : "voidheart.scene.expand");
         if (play.contains(mouseX, mouseY))
             return Component.translatable(ended() ? "voidheart.scene.replay" : paused ? "voidheart.scene.play" : "voidheart.scene.pause");
-        return null;
+        return nameAt(mouseX, mouseY);
     }
 
     int[] stageCenter()
@@ -412,6 +543,17 @@ final class ResearchSceneView
     boolean paused()
     {
         return paused;
+    }
+
+    void holdAt(int step, int offset)
+    {
+        paused = true;
+        ticks = timeline.at(step, offset);
+    }
+
+    int[] pointPosition(double x, double y, double z)
+    {
+        return shownView == null ? stageCenter() : onStage(shownView, new Vec3(x, y, z));
     }
 
     /**

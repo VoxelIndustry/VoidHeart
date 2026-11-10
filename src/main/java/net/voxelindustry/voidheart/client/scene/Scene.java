@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.client.scene;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,14 +44,64 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
         }
     }
 
-    public sealed interface Cue permits Place, Ghost, Highlight, Flight
+    /** In place of a color: the one of the research's constellation. */
+    public static final int THEME = -1;
+
+    public sealed interface Cue permits Place, Clear, Ghost, Highlight, Flight, Ring, Link, Outline, Label, Click, Actor
     {
+    }
+
+    /**
+     * What only its own renderer can show: blocks whose model is empty, and what machines do once they work.
+     */
+    public enum Role
+    {
+        COLLECTOR,
+        SPIKE,
+        ENGINE,
+        FISSURE,
+        /** A fissure closing over the two seconds after it starts to work. */
+        FISSURE_CLOSING,
+        BARRIER,
+        REACTOR
+    }
+
+    /**
+     * Something drawn by the renderer it has in the world, standing from one moment to another and at work from a third.
+     *
+     * @param works  when it starts doing what it does, never for something that only stands there
+     * @param target where what it sends goes, in scene blocks, when it sends anything
+     * @param rgb    the color of what it burns or carries, for those that take one
+     * @param amount how much of it there is, for those that come in sizes: the width of a fissure
+     */
+    public record Actor(Moment from, Moment to, BlockPos pos, Role role, Moment works, @Nullable Vec3 target, int rgb, float amount) implements Cue
+    {
+    }
+
+    /**
+     * How a link shows what it carries.
+     */
+    public enum Flow
+    {
+        /** A plain line: a distance, or two things that belong together. */
+        STILL,
+        /** Pulses running from start to end, as essence does between relays. */
+        PULSE,
+        /** A jagged arc, as energy leaps between pylons. */
+        ARC
     }
 
     /**
      * A block arriving. One that arrives where another already stands replaces it at once, which is how things light up.
      */
     public record Place(Moment at, BlockPos pos, BlockState state) implements Cue
+    {
+    }
+
+    /**
+     * A block leaving.
+     */
+    public record Clear(Moment at, BlockPos pos) implements Cue
     {
     }
 
@@ -66,6 +117,43 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
      * An item appearing at start, travelling to end, and staying there until it is gone.
      */
     public record Flight(Moment from, int travel, Moment gone, ItemStack stack, Vec3 start, Vec3 end) implements Cue
+    {
+    }
+
+    /**
+     * A reach: a dashed circle lying flat that spreads out from its middle, the way a pylon shows its field.
+     *
+     * @param radius in blocks from the center
+     */
+    public record Ring(Moment from, Moment to, Vec3 center, float radius, int rgb) implements Cue
+    {
+    }
+
+    /**
+     * A line from one point to another that grows from its start.
+     */
+    public record Link(Moment from, Moment to, Vec3 start, Vec3 end, int rgb, Flow flow) implements Cue
+    {
+    }
+
+    /**
+     * The edges of a box, around the room a structure takes or the blocks a gesture covers.
+     */
+    public record Outline(Moment from, Moment to, Vec3 min, Vec3 max, int rgb) implements Cue
+    {
+    }
+
+    /**
+     * A few words pinned to a point of the scene, for a number the picture cannot give by itself.
+     */
+    public record Label(Moment from, Moment to, Vec3 at, Component text) implements Cue
+    {
+    }
+
+    /**
+     * A right click landing on a point, once.
+     */
+    public record Click(Moment at, Vec3 pos, boolean sneak) implements Cue
     {
     }
 
@@ -111,6 +199,8 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
         {
             if (cue instanceof Place place)
                 finished.put(place.pos(), place);
+            else if (cue instanceof Clear clear)
+                finished.remove(clear.pos());
         }
         return List.copyOf(finished.values());
     }
@@ -177,6 +267,12 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
             return this;
         }
 
+        public Builder clear(int offset, BlockPos pos)
+        {
+            cues.add(new Clear(at(offset), pos));
+            return this;
+        }
+
         public Builder ghost(int offset, Moment to, BlockPos pos, BlockState state)
         {
             cues.add(new Ghost(at(offset), to, pos, state));
@@ -192,6 +288,63 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
         public Builder flight(int offset, int travel, Moment gone, ItemStack stack, Vec3 start, Vec3 end)
         {
             cues.add(new Flight(at(offset), travel, gone, stack, start, end));
+            return this;
+        }
+
+        public Builder ring(int offset, Moment to, Vec3 center, float radius, int rgb)
+        {
+            cues.add(new Ring(at(offset), to, center, radius, rgb));
+            return this;
+        }
+
+        public Builder link(int offset, Moment to, Vec3 start, Vec3 end, int rgb, Flow flow)
+        {
+            cues.add(new Link(at(offset), to, start, end, rgb, flow));
+            return this;
+        }
+
+        /** Around every block from one corner to the other, both included. */
+        public Builder outline(int offset, Moment to, BlockPos from, BlockPos until, int rgb)
+        {
+            var min = BlockPos.min(from, until);
+            var max = BlockPos.max(from, until);
+            cues.add(new Outline(at(offset), to, Vec3.atLowerCornerOf(min), Vec3.atLowerCornerOf(max.offset(1, 1, 1)), rgb));
+            return this;
+        }
+
+        public Builder label(int offset, Moment to, Vec3 at, Component text)
+        {
+            cues.add(new Label(at(offset), to, at, text));
+            return this;
+        }
+
+        /** A distance: a line between two points with what it measures written at its middle. */
+        public Builder measure(int offset, Moment to, Vec3 start, Vec3 end, Component text, int rgb)
+        {
+            link(offset, to, start, end, rgb, Flow.STILL);
+            return label(offset + 6, to, start.lerp(end, 0.5), text);
+        }
+
+        public Builder actor(int offset, Moment to, BlockPos pos, Role role)
+        {
+            return actor(offset, to, pos, role, Moment.NEVER, null, THEME, 1);
+        }
+
+        public Builder actor(int offset, Moment to, BlockPos pos, Role role, Moment works, @Nullable Vec3 target, int rgb, float amount)
+        {
+            cues.add(new Actor(at(offset), to, pos, role, works, target, rgb, amount));
+            return this;
+        }
+
+        public Builder click(int offset, Vec3 pos)
+        {
+            cues.add(new Click(at(offset), pos, false));
+            return this;
+        }
+
+        public Builder sneakClick(int offset, Vec3 pos)
+        {
+            cues.add(new Click(at(offset), pos, true));
             return this;
         }
 
