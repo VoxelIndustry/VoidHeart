@@ -37,8 +37,11 @@ public final class ResearchMapPlan
     private static final double SLICE_GAP   = 1;
     /** Where the first research growing from the eye is centred, pointing left. The rest follow anticlockwise. */
     private static final double FIRST_SLICE = Math.PI;
-    /** Each ring of the fan is this much larger than the one inside it. */
-    private static final double RING_GROWTH = 1.4;
+    /**
+     * Each ring of the fan is this much further out than the one inside it. Rings that grew by a share instead put a long line of researches so far out
+     * that settling could not bring it back in.
+     */
+    private static final double RING_STEP   = REACH;
     private static final double WEDGE_SHARE = 0.95;
     private static final int    NAME_SEARCH = 240;
     private static final int    NAME_STEP   = 2;
@@ -368,19 +371,21 @@ public final class ResearchMapPlan
             }
         }
 
+        /** Places one research in the middle of its wedge on its ring, then shares out what it can see of the next ring among its branches. */
         private void fan(int i, double low, double high, double radius, double[] x, double[] y)
         {
             double angle = (low + high) / 2;
             x[i] = Math.cos(angle) * radius;
             y[i] = Math.sin(angle) * radius;
 
-            double sight = Math.acos(1 / RING_GROWTH) * WEDGE_SHARE;
+            double next = radius + RING_STEP;
+            double sight = Math.acos(radius / next) * WEDGE_SHARE;
             double from = Math.min(high, angle + sight);
             double width = from - Math.max(low, angle - sight);
             for (int child : children[i])
             {
                 double share = width * leaves[child] / leaves[i];
-                fan(child, from - share, from, radius * RING_GROWTH, x, y);
+                fan(child, from - share, from, next, x, y);
                 from -= share;
             }
         }
