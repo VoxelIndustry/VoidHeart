@@ -15,9 +15,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.client.scene.ResearchScenes;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryLayout;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.beam.BeamResolver;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
+import net.voxelindustry.voidheart.common.energy.grid.PylonBundle;
 import net.voxelindustry.voidheart.common.content.research.RecipeSheet;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
@@ -34,11 +36,14 @@ public class ResearchSceneClientTest implements FabricClientGameTest
     private static final BlockPos REPOSITORY = new BlockPos(0, GROUND + 1, 3);
     private static final BlockPos ALTAR      = new BlockPos(20, GROUND + 1, 20);
     private static final BlockPos ATHANOR_POS = new BlockPos(30, GROUND + 2, 20);
+    private static final BlockPos ARMILLARY_POS = new BlockPos(40, GROUND + 1, 20);
 
     private static final Identifier ALTAR_RITE = id("altar_rite");
     private static final Identifier VOID_FLESH = id("void_flesh");
     private static final Identifier FORGE      = id("shatter_forge");
     private static final Identifier ATHANOR    = id("tria_prima");
+    private static final Identifier VOID_ENERGY = id("void_energy");
+    private static final Identifier ARMILLARY  = id("armillary");
     private static final Identifier ARCHIVE    = id("archive_expansion");
     private static final Identifier HUSBANDRY  = id("void_husbandry");
     private static final Identifier VAST       = id("vast_archive");
@@ -80,6 +85,8 @@ public class ResearchSceneClientTest implements FabricClientGameTest
                 data.grant(VOID_FLESH);
                 data.grant(FORGE);
                 data.grant(ATHANOR);
+                data.grant(VOID_ENERGY);
+                data.grant(ARMILLARY);
                 data.grant(ARCHIVE);
             });
             context.waitTicks(30);
@@ -161,6 +168,21 @@ public class ResearchSceneClientTest implements FabricClientGameTest
                 throw new AssertionError("Tria Prima should open the athanor's scene");
             hover(context, new int[] { 2, 2 });
             captureSteps(context, "athanor");
+            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+            context.waitTicks(3);
+
+            click(context, position(context, ARMILLARY));
+            hover(context, new int[] { 5, 5 });
+            click(context, context.computeOnClient(client -> screen(client).actionPosition()));
+            context.waitTicks(3);
+            if (!context.computeOnClient(client -> screen(client).sceneOpen()))
+                throw new AssertionError("Armillary should open the armillary's scene");
+            hover(context, new int[] { 2, 2 });
+            captureSteps(context, "armillary");
+            // The rings halfway up, the portal tearing open, and the rings faltering before it closes
+            captureMoment(context, "armillary-rising", 4, 40);
+            captureMoment(context, "armillary-portal-opening", 7, 105);
+            captureMoment(context, "armillary-faltering", 9, 140);
 
             context.getInput().pressKey(InputConstants.KEY_ESCAPE);
             context.waitTicks(3);
@@ -376,6 +398,22 @@ public class ResearchSceneClientTest implements FabricClientGameTest
         var layout = ((AthanorTile) level.getBlockEntity(ATHANOR_POS)).getLayout();
         if (!layout.canBrew() || !layout.intake() || layout.crucibles().size() != 2)
             throw new AssertionError("The athanor scene should build an athanor a real one accepts, found " + layout);
+
+        var armillaryScene = ResearchScenes.of(ARMILLARY).orElseThrow();
+        for (var place : armillaryScene.finished())
+            level.setBlockAndUpdate(ARMILLARY_POS.offset(place.pos()), place.state());
+        if (!ArmillaryLayout.isComplete(level, ARMILLARY_POS))
+            throw new AssertionError("The armillary scene should build a base a real armillary accepts, with room for its rings");
+        var bundle = PylonBundle.above(level, ARMILLARY_POS.offset(ResearchScenes.ARMILLARY_PYLON));
+        if (bundle == PylonBundle.NONE || ResearchScenes.ARMILLARY_PYLON.distSqr(BlockPos.ZERO) > (double) bundle.radius() * bundle.radius())
+            throw new AssertionError("The armillary scene's pylon should hold a bundle whose field reaches the core, found " + bundle);
+    }
+
+    private static void captureMoment(ClientGameTestContext context, String name, int step, int offset)
+    {
+        context.runOnClient(client -> screen(client).holdScene(step, offset));
+        context.waitTicks(2);
+        context.takeScreenshot("research-scene-" + name);
     }
 
     private static void captureSteps(ClientGameTestContext context, String name)

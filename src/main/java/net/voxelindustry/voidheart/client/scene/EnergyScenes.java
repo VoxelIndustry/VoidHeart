@@ -112,7 +112,7 @@ final class EnergyScenes
      */
     private static void field(Scene.Builder scene, int offset, Moment to, BlockPos pylon, PylonBundle size, double towardX, double towardZ)
     {
-        scene.ring(offset, to, ground(pylon), size.radius(), AZURIUM);
+        scene.reach(offset, to, ground(pylon), size.radius(), AZURIUM);
         scene.measure(offset + 8, to, onGround(pylon, 0, 0), onGround(pylon, towardX * size.radius(), towardZ * size.radius()), blocks(size.radius()), AZURIUM);
     }
 
@@ -342,7 +342,7 @@ final class EnergyScenes
         }
 
         scene.use("contravoid", 160, harvest, center(collector));
-        scene.ring(6, Moment.NEVER, ground(spike), LeySpikeBalance.CONTRAVOID_RANGE, CONTRAVOID);
+        scene.reach(6, Moment.NEVER, ground(spike), LeySpikeBalance.CONTRAVOID_RANGE, CONTRAVOID);
         scene.measure(14, Moment.NEVER, onGround(spike, 0, 0), onGround(spike, LeySpikeBalance.CONTRAVOID_RANGE, 0), blocks(LeySpikeBalance.CONTRAVOID_RANGE), CONTRAVOID);
         scene.actor(20, Moment.NEVER, collector, Role.COLLECTOR);
         scene.place(20, collector, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
@@ -411,7 +411,7 @@ final class EnergyScenes
         }
 
         scene.step("seep", 130, seep, new Vec3(0.5 - reach * 0.7, 0, 0.5 + reach * 0.7));
-        scene.ring(14, scene.next(), ground(fissure), reach, SEEP);
+        scene.reach(14, scene.next(), ground(fissure), reach, SEEP);
         scene.measure(26, scene.next(), onGround(fissure, 0, 0), onGround(fissure, -reach, 0), blocks(reach), SEEP);
 
         scene.step("close", 170, mend, center(relay));

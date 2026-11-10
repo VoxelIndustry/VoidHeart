@@ -19,8 +19,9 @@ import java.util.List;
  *
  * @param floor    blocks lying under the action from the first frame, neither animated nor part of what is taught
  * @param beam     the forge's beam, when the scene has one
+ * @param rings    an armillary's rings, when the scene has one
  */
-public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place> floor, @Nullable Beam beam, @Nullable VoidCube voidCube)
+public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place> floor, @Nullable Beam beam, @Nullable VoidCube voidCube, @Nullable Rings rings)
 {
     /**
      * @param view   where the camera moves to during this step
@@ -47,7 +48,7 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
     /** In place of a color: the one of the research's constellation. */
     public static final int THEME = -1;
 
-    public sealed interface Cue permits Place, Clear, Ghost, Highlight, Flight, Ring, Link, Outline, Label, Click, Actor
+    public sealed interface Cue permits Place, Clear, Ghost, Highlight, Flight, Reach, Link, Outline, Label, Click, Actor
     {
     }
 
@@ -121,11 +122,11 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
     }
 
     /**
-     * A reach: a dashed circle lying flat that spreads out from its middle, the way a pylon shows its field.
+     * How far something reaches: a dashed circle lying flat that spreads out from its middle, the way a pylon shows its field.
      *
      * @param radius in blocks from the center
      */
-    public record Ring(Moment from, Moment to, Vec3 center, float radius, int rgb) implements Cue
+    public record Reach(Moment from, Moment to, Vec3 center, float radius, int rgb) implements Cue
     {
     }
 
@@ -165,6 +166,24 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
     }
 
     public record VoidCube(Moment warms, Moment cools)
+    {
+    }
+
+    /**
+     * An armillary's rings over its core, rising, turning as fast as what the armillary is doing asks, and tearing a portal open between them.
+     *
+     * @param spins   changes of pace, in order. Until the first, the rings turn at their steady pace with the inner ring lit
+     * @param falters when the connection starts to fail, the rings stuttering worse until the portal closes
+     * @param portal  the colour of the portal's rim
+     */
+    public record Rings(BlockPos core, Moment rises, List<Spin> spins, Moment opens, Moment falters, Moment closes, int portal)
+    {
+    }
+
+    /**
+     * @param warmth how lit the inner ring wants to be, from cold at 0 to glowing at 1
+     */
+    public record Spin(Moment at, float spin, float warmth)
     {
     }
 
@@ -221,6 +240,14 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
         private Moment   beamForms;
         private Moment   beamDissolves;
         private VoidCube voidCube;
+
+        private BlockPos         ringsCore;
+        private Moment           ringsRise;
+        private final List<Spin> spins = new ArrayList<>();
+        private Moment           portalOpens   = Moment.NEVER;
+        private Moment           ringsFalter   = Moment.NEVER;
+        private Moment           portalCloses  = Moment.NEVER;
+        private int              portalRgb;
 
         private Builder(Identifier id)
         {
@@ -291,9 +318,9 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
             return this;
         }
 
-        public Builder ring(int offset, Moment to, Vec3 center, float radius, int rgb)
+        public Builder reach(int offset, Moment to, Vec3 center, float radius, int rgb)
         {
-            cues.add(new Ring(at(offset), to, center, radius, rgb));
+            cues.add(new Reach(at(offset), to, center, radius, rgb));
             return this;
         }
 
@@ -362,16 +389,47 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
             return this;
         }
 
+        public Builder rings(int offset, BlockPos core)
+        {
+            ringsCore = core;
+            ringsRise = at(offset);
+            return this;
+        }
+
+        public Builder spin(int offset, float spin, float warmth)
+        {
+            spins.add(new Spin(at(offset), spin, warmth));
+            return this;
+        }
+
+        public Builder portal(int offset, int rgb)
+        {
+            portalOpens = at(offset);
+            portalRgb = rgb;
+            return this;
+        }
+
+        /**
+         * The connection failing from this moment, until its portal closes at closes.
+         */
+        public Builder falter(int offset, Moment closes)
+        {
+            ringsFalter = at(offset);
+            portalCloses = closes;
+            return this;
+        }
+
         public Scene build()
         {
-            var scene = new Scene(id, List.copyOf(steps), List.copyOf(cues), List.copyOf(floor), null, voidCube);
+            var rings = ringsCore == null ? null : new Rings(ringsCore, ringsRise, List.copyOf(spins), portalOpens, ringsFalter, portalCloses, portalRgb);
+            var scene = new Scene(id, List.copyOf(steps), List.copyOf(cues), List.copyOf(floor), null, voidCube, rings);
             if (beamForge == null)
                 return scene;
 
             // The beam is resolved by the rules the real forge follows, so a scene whose structure would not work has no beam to show
             var view = new SceneBeamView(scene.finished());
             var resolution = BeamResolver.resolve(view, beamForge);
-            return new Scene(id, scene.steps(), scene.cues(), scene.floor(), new Beam(beamForms, beamDissolves, view, resolution.segments()), voidCube);
+            return new Scene(id, scene.steps(), scene.cues(), scene.floor(), new Beam(beamForms, beamDissolves, view, resolution.segments()), voidCube, rings);
         }
     }
 }

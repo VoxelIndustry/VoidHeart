@@ -1661,12 +1661,6 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         openScene(research);
     }
 
-    /** Holds the scene still part way through a step, on what happens then. */
-    public void holdScene(int step, int offset)
-    {
-        sceneView.holdAt(step, offset);
-    }
-
     /** Where a point of the scene's world is drawn. */
     public int[] scenePoint(double x, double y, double z)
     {
@@ -1684,6 +1678,12 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
     public void holdScene(int step)
     {
         sceneView.holdAtEndOf(step);
+    }
+
+    /** Holds the scene still a number of ticks into a step. */
+    public void holdScene(int step, int offset)
+    {
+        sceneView.holdAt(step, offset);
     }
 
     /** Every research description and item page as it would be shown, by key. */

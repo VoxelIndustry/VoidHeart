@@ -545,12 +545,6 @@ final class ResearchSceneView
         return paused;
     }
 
-    void holdAt(int step, int offset)
-    {
-        paused = true;
-        ticks = timeline.at(step, offset);
-    }
-
     int[] pointPosition(double x, double y, double z)
     {
         return shownView == null ? stageCenter() : onStage(shownView, new Vec3(x, y, z));
@@ -563,5 +557,14 @@ final class ResearchSceneView
     {
         paused = true;
         ticks = (step + 1 < timeline.steps() ? timeline.startOf(step + 1) : timeline.total()) - HOLD_BEFORE_END;
+    }
+
+    /**
+     * For a test to stop partway through a step, on what happens there before it ends.
+     */
+    void holdAt(int step, int offset)
+    {
+        paused = true;
+        ticks = timeline.at(step, offset);
     }
 }

@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryMotion;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -14,7 +15,7 @@ import java.util.List;
 /**
  * Everything a scene shows at one tick.
  *
- * @param rings    reaches drawn on the ground
+ * @param reaches  how far things reach, drawn on the ground
  * @param links    lines between two points, with what runs along them
  * @param outlines boxes drawn by their edges
  * @param labels   words pinned to points of the scene, drawn over the stage
@@ -24,20 +25,23 @@ import java.util.List;
  * @param forming  whether the beam is coming or going, which it draws differently
  * @param warm     ticks since the altar's void began warming, 0 when it does not show
  * @param cool     ticks left of the void's shrinking, 0 unless it is shrinking
+ * @param rings    the armillary's rings, null when the scene has none
  */
 public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<Lit> highlights, List<ShownItem> items,
-                         List<ShownRing> rings, List<ShownLink> links, List<ShownOutline> outlines, List<ShownLabel> labels, List<ShownClick> clicks, List<ShownActor> actors,
-                         float beam, boolean forming, int warm, int cool)
+                         List<ShownReach> reaches, List<ShownLink> links, List<ShownOutline> outlines, List<ShownLabel> labels, List<ShownClick> clicks, List<ShownActor> actors,
+                         float beam, boolean forming, int warm, int cool, @Nullable ShownRings rings)
 {
     private static final float APPEAR_TICKS    = 10;
     private static final float GHOST_FADE      = 12;
     private static final float FLASH_TICKS     = 24;
     private static final float BEAM_TICKS      = 45;
     private static final int   COOL_TICKS      = 60;
-    private static final float RING_TICKS      = 24;
+    private static final float REACH_TICKS     = 24;
     private static final float LINK_TICKS      = 14;
     private static final float FADE_TICKS      = 8;
     private static final float CLICK_TICKS     = 22;
+    private static final float PORTAL_OPEN_TICKS  = 45;
+    private static final float PORTAL_CLOSE_TICKS = 30;
 
     /**
      * @param appear how far along its arrival it is, 1 when it has settled. For a ghost, how visible it is
@@ -57,7 +61,18 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
     /**
      * @param radius how far it has spread by now
      */
-    public record ShownRing(Vec3 center, float radius, float alpha, int rgb)
+    public record ShownReach(Vec3 center, float radius, float alpha, int rgb)
+    {
+    }
+
+    /**
+     * @param formation how far the rings have risen, from 0 to 1
+     * @param angles    each ring's turn, in radians
+     * @param warmth    how lit the inner ring is
+     * @param falter    how badly the rings stutter, from 0 to 1
+     * @param portal    how open the portal is, from 0 to 1
+     */
+    public record ShownRings(float formation, float[] angles, float warmth, float falter, float portal)
     {
     }
 
@@ -119,7 +134,7 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
         var ghosts = new ArrayList<ShownBlock>();
         var highlights = new ArrayList<Lit>();
         var items = new ArrayList<ShownItem>();
-        var rings = new ArrayList<ShownRing>();
+        var reaches = new ArrayList<ShownReach>();
         var links = new ArrayList<ShownLink>();
         var outlines = new ArrayList<ShownOutline>();
         var labels = new ArrayList<ShownLabel>();
@@ -169,12 +184,12 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
                             flight.start().y + (flight.end().y - flight.start().y) * eased,
                             flight.start().z + (flight.end().z - flight.start().z) * eased));
                 }
-                case Scene.Ring ring ->
+                case Scene.Reach reach ->
                 {
-                    float since = ticks - ring.from().resolve(timeline);
-                    float alpha = presence(since, ring.to().resolve(timeline) - ticks);
+                    float since = ticks - reach.from().resolve(timeline);
+                    float alpha = presence(since, reach.to().resolve(timeline) - ticks);
                     if (alpha > 0)
-                        rings.add(new ShownRing(ring.center(), ring.radius() * ease(Math.min(1, since / RING_TICKS)), alpha, ring.rgb()));
+                        reaches.add(new ShownReach(reach.center(), reach.radius() * ease(Math.min(1, since / REACH_TICKS)), alpha, reach.rgb()));
                 }
                 case Scene.Link link ->
                 {
@@ -236,6 +251,71 @@ public record SceneFrame(List<ShownBlock> blocks, List<ShownBlock> ghosts, List<
             }
         }
 
-        return new SceneFrame(List.copyOf(blocks.values()), ghosts, highlights, items, rings, links, outlines, labels, clicks, actors, beam, forming, warm, cool);
+        var rings = scene.rings() == null ? null : rings(scene.rings(), timeline, ticks);
+        return new SceneFrame(List.copyOf(blocks.values()), ghosts, highlights, items, reaches, links, outlines, labels, clicks, actors, beam, forming, warm, cool, rings);
+    }
+
+    /**
+     * The rings carry their speed from tick to tick as a real armillary's do, so they are played from the start up to the tick asked for.
+     * That is a few thousand steps of arithmetic at most, cheaper than any block the scene draws.
+     */
+    static ShownRings rings(Scene.Rings script, SceneTimeline timeline, float ticks)
+    {
+        int rises = script.rises().resolve(timeline);
+        int falters = script.falters().resolve(timeline);
+        int closes = script.closes().resolve(timeline);
+        var spinAt = new int[script.spins().size()];
+        for (int index = 0; index < spinAt.length; index++)
+            spinAt[index] = script.spins().get(index).at().resolve(timeline);
+
+        float formation = 0;
+        float spin = ArmillaryMotion.STEADY_SPIN;
+        float warmth = 1;
+        var angles = new float[ArmillaryMotion.RINGS];
+        var previous = new float[ArmillaryMotion.RINGS];
+        float previousFormation = 0;
+        float previousWarmth = warmth;
+
+        int last = (int) Math.floor(ticks) + 1;
+        for (int tick = 0; tick <= last; tick++)
+        {
+            float wantedSpin = ArmillaryMotion.STEADY_SPIN;
+            float wantedWarmth = 1;
+            for (int index = 0; index < spinAt.length && spinAt[index] <= tick; index++)
+            {
+                wantedSpin = script.spins().get(index).spin();
+                wantedWarmth = script.spins().get(index).warmth();
+            }
+
+            previousFormation = formation;
+            previousWarmth = warmth;
+            System.arraycopy(angles, 0, previous, 0, angles.length);
+
+            formation = ArmillaryMotion.form(formation, tick >= rises);
+            spin = ArmillaryMotion.easeSpin(spin, ArmillaryMotion.faltering(wantedSpin, falter(tick, falters, closes)));
+            warmth = ArmillaryMotion.warm(warmth, wantedWarmth);
+            for (int ring = 0; ring < angles.length; ring++)
+                angles[ring] += ArmillaryMotion.ringSpeed(ring) * spin * formation;
+        }
+
+        float partial = ticks - (last - 1);
+        var shown = new float[angles.length];
+        for (int ring = 0; ring < angles.length; ring++)
+            shown[ring] = previous[ring] + (angles[ring] - previous[ring]) * partial;
+
+        float opened = Math.clamp((ticks - script.opens().resolve(timeline)) / PORTAL_OPEN_TICKS, 0, 1);
+        float closing = Math.clamp((ticks - closes) / PORTAL_CLOSE_TICKS, 0, 1);
+        return new ShownRings(previousFormation + (formation - previousFormation) * partial, shown, previousWarmth + (warmth - previousWarmth) * partial,
+                falter(ticks, falters, closes), Math.min(opened, 1 - closing));
+    }
+
+    /**
+     * Worsening from the moment the connection starts to fail until it closes, then gone, since the rings go back to scanning.
+     */
+    static float falter(float ticks, int falters, int closes)
+    {
+        if (ticks < falters || ticks >= closes)
+            return 0;
+        return Math.clamp((ticks - falters) / Math.max(1, closes - falters), 0, 1);
     }
 }

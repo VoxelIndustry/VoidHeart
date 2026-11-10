@@ -31,23 +31,23 @@ class SceneCuesTest
     }
 
     @Test
-    void ring_spreadsFromItsMiddleToItsRadius()
+    void reach_spreadsFromItsMiddleToItsRadius()
     {
-        var scene = scene().ring(10, new Scene.Moment(1, 0), Vec3.ZERO, 16, Scene.THEME);
+        var scene = scene().reach(10, new Scene.Moment(1, 0), Vec3.ZERO, 16, Scene.THEME);
 
-        assertThat(at(scene, 9).rings()).isEmpty();
-        assertThat(at(scene, 14).rings().getFirst().radius()).isBetween(0F, 8F);
-        assertThat(at(scene, 60).rings().getFirst().radius()).isEqualTo(16);
-        assertThat(at(scene, 60).rings().getFirst().alpha()).isEqualTo(1);
+        assertThat(at(scene, 9).reaches()).isEmpty();
+        assertThat(at(scene, 14).reaches().getFirst().radius()).isBetween(0F, 8F);
+        assertThat(at(scene, 60).reaches().getFirst().radius()).isEqualTo(16);
+        assertThat(at(scene, 60).reaches().getFirst().alpha()).isEqualTo(1);
     }
 
     @Test
-    void ring_fadesBeforeItsEndAndIsGoneAfter()
+    void reach_fadesBeforeItsEndAndIsGoneAfter()
     {
-        var scene = scene().ring(10, new Scene.Moment(1, 0), Vec3.ZERO, 16, Scene.THEME);
+        var scene = scene().reach(10, new Scene.Moment(1, 0), Vec3.ZERO, 16, Scene.THEME);
 
-        assertThat(at(scene, 98).rings().getFirst().alpha()).isLessThan(0.5F);
-        assertThat(at(scene, 100).rings()).isEmpty();
+        assertThat(at(scene, 98).reaches().getFirst().alpha()).isLessThan(0.5F);
+        assertThat(at(scene, 100).reaches()).isEmpty();
     }
 
     @Test
@@ -70,7 +70,7 @@ class SceneCuesTest
     void frame_isTheSameHoweverItsTickWasReached()
     {
         var scene = scene().link(20, Scene.Moment.NEVER, Vec3.ZERO, FAR, Scene.THEME, Scene.Flow.ARC)
-                .ring(10, Scene.Moment.NEVER, Vec3.ZERO, 6, Scene.THEME);
+                .reach(10, Scene.Moment.NEVER, Vec3.ZERO, 6, Scene.THEME);
 
         at(scene, 30);
         var played = at(scene, 77.5F);

@@ -17,10 +17,10 @@ import java.util.List;
 /**
  * What a scene draws over its blocks to say what the blocks cannot: how far something reaches, what is tied to what, what runs between them.
  * <p>
- * Render types: everything is flat color through MARKER, blended and without depth writes, so a ring keeps its hue on the pale floor where a glow would wash out,
+ * Render types: everything is flat color through MARKER, blended and without depth writes, so a reach keeps its hue on the pale floor where a glow would wash out,
  * and blocks in front still hide it. Only the halos of arcs and pulses are GLOW, where adding light is the point. Ribbons face the stage's fixed camera, one quad
  * each, so nothing overlaps itself. Widths follow the camera's span: a line an in-world width wide would be thinner than a pixel once the stage holds forty blocks.
- * A scene shows a few rings and a few dozen links at most, some hundreds of quads a frame.
+ * A scene shows a few reaches and a few dozen links at most, some hundreds of quads a frame.
  */
 final class SceneMarksRender
 {
@@ -72,7 +72,7 @@ final class SceneMarksRender
      */
     static void submit(PoseStack poseStack, SubmitNodeCollector collector, SceneFrame frame, SceneView view, List<float[]> shadows, int theme, float worldTime)
     {
-        boolean marks = !frame.rings().isEmpty() || !frame.links().isEmpty() || !frame.outlines().isEmpty() || !shadows.isEmpty();
+        boolean marks = !frame.reaches().isEmpty() || !frame.links().isEmpty() || !frame.outlines().isEmpty() || !shadows.isEmpty();
         if (!marks)
             return;
 
@@ -85,8 +85,8 @@ final class SceneMarksRender
             for (var shadow : shadows)
                 disc(pose, buffer, shadow[0], shadow[1] + SHADOW_LIFT, shadow[2], SHADOW_RADIUS, ARGB.color(SHADOW_ALPHA, 0));
 
-            for (var ring : frame.rings())
-                ring(pose, buffer, ring, unit, rgb(ring.rgb(), theme), worldTime);
+            for (var reach : frame.reaches())
+                reach(pose, buffer, reach, unit, rgb(reach.rgb(), theme), worldTime);
 
             for (var outline : frame.outlines())
                 outline(pose, buffer, outline, camera, unit, rgb(outline.rgb(), theme));
@@ -158,7 +158,7 @@ final class SceneMarksRender
     /**
      * Dashes that turn slowly, over a faint fill that says the reach is the whole disc and not its edge.
      */
-    private static void ring(PoseStack.Pose pose, VertexConsumer buffer, SceneFrame.ShownRing ring, float unit, int rgb, float worldTime)
+    private static void reach(PoseStack.Pose pose, VertexConsumer buffer, SceneFrame.ShownReach ring, float unit, int rgb, float worldTime)
     {
         float radius = ring.radius();
         if (radius < 0.05F)

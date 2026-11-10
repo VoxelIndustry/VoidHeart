@@ -11,8 +11,14 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.ArmillaryPortalRender;
 import net.voxelindustry.voidheart.client.render.ForgePreviewRender;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryLayout;
+import net.voxelindustry.voidheart.common.content.armillary.ArmillaryMotion;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeLayout;
+import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
+import net.voxelindustry.voidheart.common.world.dungeon.DungeonTheme;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
@@ -40,6 +46,9 @@ public final class ResearchScenes
 
     public static final int FORGE_TRACK_PAIRS = 2;
 
+    /** Where the armillary scene's pylon stands, its small bundle's field reaching the core with room to spare. */
+    public static final BlockPos ARMILLARY_PYLON = new BlockPos(-4, 0, 2);
+
     // Not a block of the mod: pale, so that the void's dark stone and what floats above it stand out from the ground
     static final Block FLOOR = Blocks.SMOOTH_STONE;
 
@@ -53,6 +62,7 @@ public final class ResearchScenes
         // The forge's parts are shown in the forge's scene, whichever research teaches them
         script("shatter_forge", ResearchScenes::forge, "shatter_forge", "void_monolith", "void_conduit");
         script("tria_prima", ResearchScenes::athanor, "athanor", "alembic", "crucible", "aspect_intake");
+        script("armillary", ResearchScenes::armillary, "armillary_core");
         script("void_energy", EnergyScenes::grid, "azurium_pylon", "ravenous_engine", "rubrum_construct_core", "rubrum_construct_frame");
         script("contravoid_reactor", EnergyScenes::reactor, "contravoid_reactor_core", "reactor_containment", "reactor_intake");
         script("ley_conversion", EnergyScenes::spike, "azurium_spike");
@@ -314,6 +324,80 @@ public final class ResearchScenes
         scene.step("result", 80, close, mouth);
         scene.place(0, athanor, athanorState);
         scene.flight(10, 0, Scene.Moment.NEVER, new ItemStack(VoidHeartItems.SEARING_OIL), mouth, mouth);
+
+        return scene.build();
+    }
+
+    /**
+     * Assembles an armillary from its core and base, lets its rings rise, powers it from a pylon, then searches, opens a dungeon and lets the connection fail.
+     * The chart itself is a screen of its own, so the scene only shows what the rings do while it is used.
+     */
+    private static Scene armillary()
+    {
+        var core = BlockPos.ZERO;
+        var base = ArmillaryLayout.base(core);
+        var coreState = VoidHeartBlocks.ARMILLARY_CORE.defaultBlockState();
+        var hub = new Vec3(0.5, 2.5, 0.5);
+
+        var close = new SceneView(35, 30, 5, 0.5F, 0.5F, 0.5F);
+        var whole = new SceneView(35, 38, 7.5F, 0.5F, 0.3F, 0.5F);
+        var risen = new SceneView(35, 22, 7, 0.5F, 1.6F, 0.5F);
+        var powered = new SceneView(35, 34, 10, -1.2F, 1, 1.2F);
+        var portal = new SceneView(25, 12, 5, 0.5F, 2.2F, 0.5F);
+
+        var scene = Scene.builder(id("armillary"))
+                .floor(-5, -4, 4, 4, -1, FLOOR.defaultBlockState());
+
+        scene.step("core", 50, close, above(core, 1));
+        scene.place(10, core, coreState);
+
+        scene.use("preview", 110, whole, above(core, 1));
+        base.forEach(part -> scene.ghost(20, scene.next(), part.pos(), part.block().defaultBlockState()));
+
+        scene.step("sides", 90, whole, above(base.getFirst().pos(), 1));
+        int sides = 0;
+        for (var part : base)
+        {
+            if (part.block() != VoidHeartBlocks.CUT_RAVENOUS_GOLD)
+                continue;
+            scene.place(10 + sides * 8, part.pos(), part.block().defaultBlockState());
+            scene.highlight(10 + sides++ * 8, scene.next(), part.pos());
+        }
+
+        scene.step("corners", 90, whole, above(base.get(1).pos(), 1));
+        int corners = 0;
+        for (var part : base)
+        {
+            if (part.block() != VoidHeartBlocks.VOIDSTONE_CHISELED)
+                continue;
+            scene.place(10 + corners * 8, part.pos(), part.block().defaultBlockState());
+            scene.highlight(10 + corners++ * 8, scene.next(), part.pos());
+        }
+
+        scene.step("rings", 130, risen, hub);
+        scene.place(10, core, coreState.setValue(ArmillaryCoreBlock.FORMED, true));
+        base.forEach(part -> scene.place(10, part.pos(), part.formed()));
+        scene.rings(10, core);
+
+        scene.step("power", 110, powered, above(ARMILLARY_PYLON, 1.5F));
+        scene.place(10, ARMILLARY_PYLON, VoidGridContent.AZURIUM_PYLON.defaultBlockState());
+        scene.place(30, ARMILLARY_PYLON.above(), VoidHeartBlocks.SMALL_AZURIUM_BUNDLE.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP));
+        scene.highlight(30, scene.next(), ARMILLARY_PYLON.above());
+
+        scene.use("chart", 150, risen, hub);
+        scene.spin(10, ArmillaryMotion.SEARCHING_SPIN, 1);
+
+        scene.use("open", 130, risen, hub);
+        scene.spin(0, ArmillaryMotion.REACHED_SPIN, 1);
+        for (int pearl = 0; pearl < 3; pearl++)
+            scene.flight(14 + pearl * 10, 16, scene.at(70), new ItemStack(VoidHeartItems.VOID_PEARL), new Vec3(0.5 + (pearl - 1) * 0.9, 4.2, 0.5), hub);
+        scene.portal(70, ArmillaryPortalRender.themeColor(DungeonTheme.TEMPLE));
+        scene.spin(70, ArmillaryMotion.STEADY_SPIN, 1);
+
+        scene.use("cross", 90, portal, hub);
+
+        scene.step("decay", 190, risen, hub);
+        scene.falter(10, scene.at(150));
 
         return scene.build();
     }

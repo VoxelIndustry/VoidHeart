@@ -109,8 +109,8 @@ final class LandScenes
 
         scene.step("supply", 120, supply, ground(chained.offset(-4, 0, 4)));
         int reach = LeyStoneBalance.STONE_SUPPLY_RADIUS;
-        scene.ring(10, scene.next(), ground(chained), reach, LEY);
-        scene.ring(10, scene.next(), ground(tap), reach, LEY);
+        scene.reach(10, scene.next(), ground(chained), reach, LEY);
+        scene.reach(10, scene.next(), ground(tap), reach, LEY);
         scene.measure(22, scene.next(), new Vec3(chained.getX() + 0.5, GROUND, 0.5), new Vec3(chained.getX() + 0.5, GROUND, 0.5 + reach), blocks(reach), LEY);
 
         scene.step("ward", 120, warded, above(ward, 1));
@@ -118,7 +118,7 @@ final class LandScenes
         scene.highlight(10, scene.next(), ward);
         scene.link(24, Moment.NEVER, above(chained, 1.2F), above(ward, 0.8F), LEY, Flow.PULSE);
         int warded16 = LeyStoneBalance.WARD_RADIUS;
-        scene.ring(34, scene.next(), ground(ward), warded16, LEY);
+        scene.reach(34, scene.next(), ground(ward), warded16, LEY);
         scene.measure(44, scene.next(), new Vec3(ward.getX() + 0.5, GROUND, ward.getZ() + 0.5), new Vec3(ward.getX() + 0.5 - warded16, GROUND, ward.getZ() + 0.5), blocks(warded16), LEY);
 
         scene.step("grower", 140, grown, above(grower, 1));
@@ -242,7 +242,7 @@ final class LandScenes
         scene.step("hold", 120, held, above(pylon, 1.4F));
         scene.place(10, pylon, VoidGridContent.AZURIUM_PYLON.defaultBlockState());
         scene.place(22, pylon.above(), EnergyScenes.bundle(PylonBundle.SMALL));
-        scene.ring(34, Moment.NEVER, ground(pylon), PylonBundle.SMALL.radius(), AZURIUM);
+        scene.reach(34, Moment.NEVER, ground(pylon), PylonBundle.SMALL.radius(), AZURIUM);
         scene.label(44, Moment.NEVER, above(pylon, 2.6F), Component.translatable("voidheart.scene.rate", MachineEnergyBalance.PORTAL_HOLD));
 
         return scene.build();
