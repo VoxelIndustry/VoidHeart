@@ -8,6 +8,8 @@ import java.util.Arrays;
  * Every branch pulls towards one length, researches near each other push apart, and everything leans towards the eye so that no corner of the map is left
  * empty. A research never moves further in one round than a third of its distance to the nearest branch that is not its own, and neither do that branch's
  * ends, so no research can pass over a branch: the map starts without crossings and so it ends without any.
+ * <p>
+ * Once shaped, the last rounds only part researches that still sit too close, holding back any branch they would stretch far.
  */
 final class ResearchMapSettle
 {
@@ -20,6 +22,12 @@ final class ResearchMapSettle
     private static final double STILL       = 0.01;
 
     private static final double SPRING      = 0.3;
+    /**
+     * Once the map has its shape, only a branch stretched past this many times its length still pulls, and gently. Without it, a crowded part of the map
+     * that eases apart at the end would draw the one branch holding it out to any length.
+     */
+    private static final double TAUT        = 1.8;
+    private static final double TAUT_SPRING = 0.2;
     /** Researches closer than this push each other apart, gently, which is what evens the map out. */
     private static final double SPREAD      = ResearchMapPlan.REACH * 1.5;
     private static final double SOFT        = 0.06;
@@ -147,6 +155,8 @@ final class ResearchMapSettle
                 bend();
                 names();
             }
+            else
+                taut();
             spread(shaping);
             branches(cap);
             climb();
@@ -288,6 +298,27 @@ final class ResearchMapSettle
             double dy = y[i] - y[p];
             double distance = Math.max(1e-6, Math.hypot(dx, dy));
             double pull = (distance - ResearchMapPlan.REACH) * SPRING / 2 / distance;
+            moveX[i] -= dx * pull;
+            moveY[i] -= dy * pull;
+            moveX[p] += dx * pull;
+            moveY[p] += dy * pull;
+        }
+    }
+
+    private void taut()
+    {
+        for (int i = 0; i < count; i++)
+        {
+            int p = parent[i];
+            if (p < 0)
+                continue;
+            double dx = x[i] - x[p];
+            double dy = y[i] - y[p];
+            double distance = Math.max(1e-6, Math.hypot(dx, dy));
+            double over = distance - ResearchMapPlan.REACH * TAUT;
+            if (over <= 0)
+                continue;
+            double pull = over * TAUT_SPRING / 2 / distance;
             moveX[i] -= dx * pull;
             moveY[i] -= dy * pull;
             moveX[p] += dx * pull;
