@@ -18,7 +18,11 @@ final class DistrictPainter
     private static final long PIPE_SALT_Z = 0x91BE6L;
     private static final int MIN_STAIR_HEAD = 3;
     private static final int PILASTER_SPACING = 16;
-    private static final int RING_WIDTH = 3;
+    /** Wide enough for a flight on the two rows inside the wall's row, with the rail beyond it. */
+    private static final int RING_WIDTH = 4;
+    /** How far a flight keeps from the ends of its wall, clear of the flights on the walls beside it. */
+    private static final int FLIGHT_MARGIN = 3;
+    private static final int STACK_END_LANE = 3;
     private static final int RING_CORNER_LAMP = 1;
     private static final int COLUMN_LAMP_HEIGHT = 4;
     private static final int SHELF_UPRIGHT_SPACING = 4;
@@ -751,8 +755,8 @@ final class DistrictPainter
         int top = roomTop(room);
         int crossCells = alongX ? room.cellsDeep() : room.cellsWide();
         int crossOrigin = alongX ? cellZ(room.minJ()) : cellX(room.minI());
-        int alongStart = (alongX ? interiorMinX(room) : interiorMinZ(room)) + RING_WIDTH;
-        int alongEnd = (alongX ? interiorMaxX(room) : interiorMaxZ(room)) - RING_WIDTH;
+        int alongStart = (alongX ? interiorMinX(room) : interiorMinZ(room)) + STACK_END_LANE;
+        int alongEnd = (alongX ? interiorMaxX(room) : interiorMaxZ(room)) - STACK_END_LANE;
 
         for (int crossCell = 0; crossCell < crossCells; crossCell++)
         {
@@ -797,7 +801,7 @@ final class DistrictPainter
     }
 
     /**
-     * A walkway round the walls at every upper tier, with the flight that climbs to it. A flight keeps to the inner two rows, so its wall's row stays free for doors on both floors.
+     * A walkway round the walls at every upper tier, with the flight that climbs to it. A flight keeps to the two rows inside the wall's row, so that row stays free for doors on both floors and the rail beyond the flight still guards it.
      */
     private void paintRings(Room room)
     {
@@ -846,8 +850,8 @@ final class DistrictPainter
             default -> interiorMaxX(room);
         };
         int inward = side == Compass.NORTH || side == Compass.WEST ? 1 : -1;
-        int slack = alongMax - alongMin + 1 - STAIR_RUN - RING_WIDTH * 2;
-        int start = alongMin + RING_WIDTH + (slack > 0 ? DaedalusHash.pick(room.variant() >>> RANDOM_BITS, slack + 1) : 0);
+        int slack = alongMax - alongMin + 1 - STAIR_RUN - FLIGHT_MARGIN * 2;
+        int start = alongMin + FLIGHT_MARGIN + (slack > 0 ? DaedalusHash.pick(room.variant() >>> RANDOM_BITS, slack + 1) : 0);
         int climb = alongX ? Compass.EAST : Compass.SOUTH;
         int floor = floorY(k);
 
