@@ -117,7 +117,8 @@ public class ApparatusScreen extends Screen
         stats = new Bounds(Math.min(right - PAD - TABLET_W, gridX + gridSize + TABLET_GAP), tabletY, TABLET_W, tabletH);
 
         var lights = List.of(new ResearchVoid.Light(width / 2D, height / 2D - GRID_LIFT, gridSize * 1.1, 0.9, ResearchVoid.LIT_RGB));
-        ResearchVoid.bake(minecraft, VOID, width, height, left, right, lights, minecraft.player == null ? 0 : minecraft.player.getUUID().getLeastSignificantBits());
+        long seed = minecraft.player == null ? 0 : minecraft.player.getUUID().getLeastSignificantBits();
+        ResearchVoid.upload(minecraft, VOID, ResearchVoid.paint(minecraft, width, height, left, right, lights, seed, (x, y) -> 0));
     }
 
     @Override
