@@ -318,6 +318,7 @@ final class ResearchMapSettle
             double over = distance - ResearchMapPlan.REACH * TAUT;
             if (over <= 0)
                 continue;
+            worst = Math.max(worst, over);
             double pull = over * TAUT_SPRING / 2 / distance;
             moveX[i] -= dx * pull;
             moveY[i] -= dy * pull;
