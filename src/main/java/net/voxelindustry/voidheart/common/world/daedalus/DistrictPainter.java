@@ -19,7 +19,7 @@ final class DistrictPainter
     private static final int MIN_STAIR_HEAD = 3;
     private static final int PILASTER_SPACING = 16;
     /** Wide enough for a flight on the two rows inside the wall's row, with the rail beyond it. */
-    private static final int RING_WIDTH = 4;
+    static final int RING_WIDTH = 4;
     /** How far a flight keeps from the ends of its wall, clear of the flights on the walls beside it. */
     private static final int FLIGHT_MARGIN = 3;
     private static final int STACK_END_LANE = 3;
