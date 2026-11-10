@@ -229,12 +229,25 @@ public class ArmillaryRender implements BlockEntityRenderer<ArmillaryTile, Armil
         float nx = Mth.cos(mid), ny = Mth.sin(mid);
 
         // Outer, inner, front and back faces, then the two ends which show where the bands are thicker
-        quad(pose, buffer, end[1][0], end[1][1], half, end[1][0], end[1][1], -half, start[1][0], start[1][1], -half, start[1][0], start[1][1], half, 1, vMax, tint, light, nx, ny, 0);
-        quad(pose, buffer, start[0][0], start[0][1], half, start[0][0], start[0][1], -half, end[0][0], end[0][1], -half, end[0][0], end[0][1], half, 1, vMax, tint, light, -nx, -ny, 0);
-        quad(pose, buffer, start[0][0], start[0][1], half, end[0][0], end[0][1], half, end[1][0], end[1][1], half, start[1][0], start[1][1], half, 1, vMax, tint, light, 0, 0, 1);
-        quad(pose, buffer, end[0][0], end[0][1], -half, start[0][0], start[0][1], -half, start[1][0], start[1][1], -half, end[1][0], end[1][1], -half, 1, vMax, tint, light, 0, 0, -1);
-        quad(pose, buffer, start[1][0], start[1][1], half, start[1][0], start[1][1], -half, start[0][0], start[0][1], -half, start[0][0], start[0][1], half, vMax, vMax, tint, light, ny, -nx, 0);
-        quad(pose, buffer, end[0][0], end[0][1], half, end[0][0], end[0][1], -half, end[1][0], end[1][1], -half, end[1][0], end[1][1], half, vMax, vMax, tint, light, -ny, nx, 0);
+        linkQuad(pose, buffer, end[1][0], end[1][1], half, end[1][0], end[1][1], -half, start[1][0], start[1][1], -half, start[1][0], start[1][1], half, 1, vMax, tint, light, nx, ny, 0);
+        linkQuad(pose, buffer, start[0][0], start[0][1], half, start[0][0], start[0][1], -half, end[0][0], end[0][1], -half, end[0][0], end[0][1], half, 1, vMax, tint, light, -nx, -ny, 0);
+        linkQuad(pose, buffer, start[0][0], start[0][1], half, end[0][0], end[0][1], half, end[1][0], end[1][1], half, start[1][0], start[1][1], half, 1, vMax, tint, light, 0, 0, 1);
+        linkQuad(pose, buffer, end[0][0], end[0][1], -half, start[0][0], start[0][1], -half, start[1][0], start[1][1], -half, end[1][0], end[1][1], -half, 1, vMax, tint, light, 0, 0, -1);
+        linkQuad(pose, buffer, start[1][0], start[1][1], half, start[1][0], start[1][1], -half, start[0][0], start[0][1], -half, start[0][0], start[0][1], half, vMax, vMax, tint, light, ny, -nx, 0);
+        linkQuad(pose, buffer, end[0][0], end[0][1], half, end[0][0], end[0][1], -half, end[1][0], end[1][1], -half, end[1][0], end[1][1], half, vMax, vMax, tint, light, -ny, nx, 0);
+    }
+
+    /**
+     * The link faces are listed clockwise from outside, so they go out the other way round: culling would otherwise keep only their insides.
+     */
+    private static void linkQuad(PoseStack.Pose pose, VertexConsumer buffer,
+                                 float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3,
+                                 float uMax, float vMax, int tint, int light, float nx, float ny, float nz)
+    {
+        vertex(pose, buffer, x0, y0, z0, 0, 0, tint, light, nx, ny, nz);
+        vertex(pose, buffer, x3, y3, z3, uMax, 0, tint, light, nx, ny, nz);
+        vertex(pose, buffer, x2, y2, z2, uMax, vMax, tint, light, nx, ny, nz);
+        vertex(pose, buffer, x1, y1, z1, 0, vMax, tint, light, nx, ny, nz);
     }
 
     private static void quad(PoseStack.Pose pose, VertexConsumer buffer,

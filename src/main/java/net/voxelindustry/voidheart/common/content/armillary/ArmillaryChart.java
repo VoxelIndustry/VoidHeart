@@ -96,6 +96,8 @@ public final class ArmillaryChart
     private static final float   EDGE_MARGIN         = 0.08F;
     private static final float   MIN_SPACING         = 0.09F;
     private static final int[]   DIFFICULTY_WEIGHTS  = { 35, 28, 20, 12, 5 };
+    // A new armillary only makes out the shallows, and feels one depth further down every this many finds
+    private static final int     FINDS_PER_DEPTH     = 2;
     private static final int[]   SIZE_WEIGHTS        = { 45, 35, 20 };
 
     private long age;
@@ -196,7 +198,14 @@ public final class ArmillaryChart
 
     public VoidBubble find(Rules rules, RandomSource random)
     {
-        int difficulty = DungeonAddress.MIN_DIFFICULTY + weighted(DIFFICULTY_WEIGHTS, random);
+        return find(rules, random, DungeonAddress.MIN_DIFFICULTY + weighted(reachableWeights(nextId), random));
+    }
+
+    /**
+     * A find at a chosen depth, however far down this armillary can reach yet, for tests and reviews.
+     */
+    public VoidBubble find(Rules rules, RandomSource random, int difficulty)
+    {
         var size = DungeonSize.values()[weighted(SIZE_WEIGHTS, random)];
         var themes = Arrays.stream(DungeonTheme.values()).filter(candidate -> candidate.comesIn(size)).toList();
         var theme = themes.get(random.nextInt(themes.size()));
@@ -205,6 +214,15 @@ public final class ArmillaryChart
         var bubble = new VoidBubble(nextId++, difficulty, size, theme, freeX(difficulty, seed, size, random), seed, age, age + rules.fadeTicks(), false);
         bubbles.add(bubble);
         return bubble;
+    }
+
+    /**
+     * The depth weights cut off below what this many finds so far can reach.
+     */
+    static int[] reachableWeights(int found)
+    {
+        int reach = Math.min(DIFFICULTY_WEIGHTS.length, 1 + found / FINDS_PER_DEPTH);
+        return Arrays.copyOf(DIFFICULTY_WEIGHTS, reach);
     }
 
     private float freeX(int difficulty, long seed, DungeonSize size, RandomSource random)

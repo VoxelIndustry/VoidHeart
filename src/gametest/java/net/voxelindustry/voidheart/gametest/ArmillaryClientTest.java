@@ -26,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryHubBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryLayout;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
+import net.voxelindustry.voidheart.common.content.armillary.VoidBubble;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -493,8 +494,8 @@ public class ArmillaryClientTest implements FabricClientGameTest
         {
             var chart = armillary(minecraft).getChart();
             for (int difficulty : new int[] { 1, 3, 2, 4 })
-                chart.find(ArmillaryTile.rules(), randomForDifficulty(difficulty));
-            return chart.find(ArmillaryTile.rules(), randomForDifficulty(5));
+                findAt(chart, difficulty);
+            return findAt(chart, 5);
         });
         context.waitTicks(60);
         context.getInput().setCursorPos(2, 2);
@@ -630,15 +631,11 @@ public class ArmillaryClientTest implements FabricClientGameTest
     }
 
     /**
-     * A random whose next bubble lies at that depth, to fill the chart the same way on every run.
+     * A bubble at that depth, the same one on every run.
      */
-    private static RandomSource randomForDifficulty(int difficulty)
+    private static VoidBubble findAt(ArmillaryChart chart, int difficulty)
     {
-        for (long seed = 0; ; seed++)
-        {
-            if (new ArmillaryChart().find(ArmillaryTile.rules(), RandomSource.create(seed)).difficulty() == difficulty)
-                return RandomSource.create(seed);
-        }
+        return chart.find(ArmillaryTile.rules(), RandomSource.create(difficulty), difficulty);
     }
 
     /**
@@ -787,7 +784,7 @@ public class ArmillaryClientTest implements FabricClientGameTest
         int bubble = onServer(server, minecraft ->
         {
             var chart = armillary(minecraft).getChart();
-            var found = chart.find(ArmillaryTile.rules(), randomForDifficulty(3));
+            var found = findAt(chart, 3);
             chart.target(found.id(), ArmillaryTile.rules(), RandomSource.create());
             chart.advanceSearch(1);
             return found.id();
