@@ -92,21 +92,21 @@ public class FallenBishopModel extends EntityModel<FallenBishopRenderState>
         root.addOrReplaceChild("head", CubeListBuilder.create()
                         .texOffs(0, 0).addBox(-3.5F, -7, -3.5F, 7, 7, 7)
                         .texOffs(28, 0).addBox(-5, -10, -7, 10, 1, 11)
-                        .texOffs(70, 0).addBox(-5, -9, -7, 1, 9, 11)
-                        .texOffs(70, 0).mirror().addBox(4, -9, -7, 1, 9, 11).mirror(false)
+                        .texOffs(70, 0).addBox(-5, -9, -7, 1, 9, 11, ModelBoxes.PROUD)
+                        .texOffs(70, 0).mirror().addBox(4, -9, -7, 1, 9, 11, ModelBoxes.PROUD).mirror(false)
                         .texOffs(94, 0).addBox(-5, -9, 3, 10, 9, 1)
                         .texOffs(94, 10).addBox(-4, -3, 4, 8, 8, 1)
                         .texOffs(0, 106).addBox(-4, -12, -6.5F, 8, 2, 9)
                         .texOffs(34, 106).addBox(-3, -14, -6, 6, 2, 7)
                         .texOffs(60, 106).addBox(-1.5F, -15.5F, -5, 3, 2, 5)
-                        .texOffs(76, 106).addBox(-2.5F, -14.5F, -6.6F, 5, 5, 0),
+                        .texOffs(76, 106).addBox(-2.5F, -14.5F, -6.6F, 5, 5, 0, ModelBoxes.FRONT),
                 PartPose.offset(0, -10, 0));
 
         root.addOrReplaceChild("robe", CubeListBuilder.create()
                         .texOffs(0, 14).addBox(-7, -10, -4, 14, 4, 8)
                         .texOffs(44, 20).addBox(-5.5F, -6, -3.5F, 11, 13, 7)
                         .texOffs(86, 106).addBox(-5, -6, -4.5F, 10, 7, 1)
-                        .texOffs(122, 60).addBox(-1.5F, -6, -4.6F, 3, 26, 0),
+                        .texOffs(122, 60).addBox(-1.5F, -6, -4.75F, 3, 26, 0, ModelBoxes.FRONT),
                 PartPose.ZERO);
 
         var skirt = root.addOrReplaceChild("skirt", CubeListBuilder.create().texOffs(0, 26).addBox(-6.5F, 0, -4.5F, 13, 16, 9), PartPose.offset(0, 6, 0));
@@ -114,19 +114,21 @@ public class FallenBishopModel extends EntityModel<FallenBishopRenderState>
         {
             boolean front = i < HEM_STRIPS / 2;
             float x = -4.5F + (i % (HEM_STRIPS / 2)) * 3;
-            skirt.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(80, 20).addBox(-2, 0, 0, 4, 6, 0),
-                    PartPose.offset(x, 12, front ? -4.6F : 4.6F));
+            // Neighbours overlap, so every other one hangs a hair further out
+            float out = 4.6F + (i % 2) * ModelBoxes.GAP;
+            skirt.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(80, 20).addBox(-2, 0, 0, 4, 6, 0, front ? ModelBoxes.FRONT : ModelBoxes.BACK),
+                    PartPose.offset(x, 12, front ? -out : out));
         }
 
         var rightArm = addArm(root, "right_arm", -8, false);
         addArm(root, "left_arm", 8, true);
 
-        // A voidstone staff whose crook curls around a glowing orb
+        // A voidstone staff whose crook curls around a glowing orb, its shaft a hair thinner than the forearm it runs along
         rightArm.addOrReplaceChild("crozier", CubeListBuilder.create()
-                        .texOffs(0, 70).addBox(-1, -22, -1, 2, 33, 2)
+                        .texOffs(0, 70).addBox(-1, -22, -1, 2, 33, 2, ModelBoxes.proud(-1, 0, -1))
                         .texOffs(8, 70).addBox(-1.5F, -23, -1.5F, 3, 2, 3)
                         .texOffs(20, 70).addBox(-1, -27, -1, 2, 4, 2)
-                        .texOffs(28, 70).addBox(-5, -28, -1, 5, 2, 2)
+                        .texOffs(28, 70).addBox(-5, -28, -1, 5, 2, 2, ModelBoxes.proud(0, 0, 1))
                         .texOffs(42, 70).addBox(-6, -27, -1, 2, 4, 2)
                         .texOffs(50, 70).addBox(-4, -26, -1.5F, 3, 3, 3),
                 PartPose.offset(0, 21, 0));
@@ -149,7 +151,7 @@ public class FallenBishopModel extends EntityModel<FallenBishopRenderState>
         float[][] spots = { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } };
         for (int i = 0; i < FINGERS; i++)
         {
-            arm.addOrReplaceChild("finger_" + i, CubeListBuilder.create().texOffs(116, 25).addBox(-0.5F, 0, -0.5F, 1, 3, 1),
+            arm.addOrReplaceChild("finger_" + i, CubeListBuilder.create().texOffs(116, 25).addBox(-0.5F, 0, -0.5F, 1, 3, 1, ModelBoxes.proud(-1, 0, -1)),
                     PartPose.offset(spots[i][0], 21.5F, spots[i][1]));
         }
         return arm;

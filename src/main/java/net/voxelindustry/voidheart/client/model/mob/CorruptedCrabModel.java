@@ -80,7 +80,8 @@ public class CorruptedCrabModel extends EntityModel<CrabRenderState>
         big.addOrReplaceChild("upper", CubeListBuilder.create().texOffs(18, 27).addBox(-2.5F, -3, -8, 5, 3, 8), PartPose.offset(0, 0, -6));
         big.addOrReplaceChild("lower", CubeListBuilder.create().texOffs(0, 38).addBox(-2.5F, 0, -6, 5, 2, 6), PartPose.offset(0, 0, -6));
 
-        var small = body.addOrReplaceChild("small_claw", CubeListBuilder.create().texOffs(22, 38).addBox(-1, -1, -4, 2, 2, 4), PartPose.offset(6, 18, -5));
+        // A hair narrower than its spot, whose outer side would otherwise lie on the shell's
+        var small = body.addOrReplaceChild("small_claw", CubeListBuilder.create().texOffs(22, 38).addBox(-1, -1, -4, 2, 2, 4, ModelBoxes.proud(-1, 0, 0)), PartPose.offset(6, 18, -5));
         small.addOrReplaceChild("upper", CubeListBuilder.create().texOffs(34, 38).addBox(-1.5F, -1, -4, 3, 1, 4), PartPose.offset(0, 0, -4));
         small.addOrReplaceChild("lower", CubeListBuilder.create().texOffs(34, 38).addBox(-1.5F, 0, -4, 3, 1, 4), PartPose.offset(0, 0, -4));
 
@@ -110,7 +111,8 @@ public class CorruptedCrabModel extends EntityModel<CrabRenderState>
             lower.mirror();
         }
         var leg = root.addOrReplaceChild(name, upper.addBox(side > 0 ? 0 : -5, -1, -1, 5, 2, 2), PartPose.offset(x, 18, z));
-        leg.addOrReplaceChild("lower", lower.addBox(-1, 0, -1, 2, 7, 2), PartPose.offset(side * 5, 0, 0));
+        // A hair thinner than the upper leg it hangs from, so their sides don't meet in one plane
+        leg.addOrReplaceChild("lower", lower.addBox(-1, 0, -1, 2, 7, 2, ModelBoxes.proud(0, 0, -1)), PartPose.offset(side * 5, 0, 0));
     }
 
     @Override
