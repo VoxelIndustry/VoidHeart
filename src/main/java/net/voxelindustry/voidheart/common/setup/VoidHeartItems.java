@@ -1,5 +1,9 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponentItem;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTier;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 import net.voxelindustry.voidheart.common.content.salt.SaltItem;
 import net.voxelindustry.voidheart.common.content.research.InsightItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGraftItem;
@@ -29,7 +33,9 @@ import net.voxelindustry.voidheart.common.item.PortalCoreItem;
 import net.voxelindustry.voidheart.common.item.VoidPearlItem;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class VoidHeartItems
@@ -81,6 +87,11 @@ public class VoidHeartItems
     public static Item BULWARK_ELIXIR;
     public static Item INSIGHT_ELIXIR;
     public static Item CLARITY_DRAUGHT;
+
+    public static ShieldingApparatusItem LESSER_SHIELDING_APPARATUS;
+    public static ShieldingApparatusItem GREATER_SHIELDING_APPARATUS;
+    public static ShieldingApparatusItem SUPREME_SHIELDING_APPARATUS;
+    public static final Map<ApparatusComponent, ApparatusComponentItem> APPARATUS_COMPONENTS = new EnumMap<>(ApparatusComponent.class);
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
 
@@ -134,6 +145,14 @@ public class VoidHeartItems
         BULWARK_ELIXIR = registerItem("bulwark_elixir", properties -> new LoreItem(Elixirs.bulwark(properties), "voidheart.bulwark_elixir.lore"));
         INSIGHT_ELIXIR = registerItem("insight_elixir", properties -> new LoreItem(Elixirs.insight(properties), "voidheart.insight_elixir.lore"));
         CLARITY_DRAUGHT = registerItem("clarity_draught", properties -> new LoreItem(Elixirs.clarity(properties), "voidheart.clarity_draught.lore"));
+
+        LESSER_SHIELDING_APPARATUS = registerItem("lesser_shielding_apparatus", properties -> new ShieldingApparatusItem(properties, ApparatusTier.LESSER));
+        GREATER_SHIELDING_APPARATUS = registerItem("greater_shielding_apparatus",
+                properties -> new ShieldingApparatusItem(properties.rarity(net.minecraft.world.item.Rarity.UNCOMMON), ApparatusTier.GREATER));
+        SUPREME_SHIELDING_APPARATUS = registerItem("supreme_shielding_apparatus",
+                properties -> new ShieldingApparatusItem(properties.rarity(net.minecraft.world.item.Rarity.RARE), ApparatusTier.SUPREME));
+        for (var component : ApparatusComponent.values())
+            APPARATUS_COMPONENTS.put(component, registerItem(component.itemName(), properties -> new ApparatusComponentItem(properties, component)));
     }
 
     public static void registerSpawnEggs()

@@ -32,6 +32,8 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.minecraft.server.level.ServerPlayer;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -567,8 +569,15 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     private void finishCrafting()
     {
+        // An apparatus raised to a larger tier keeps the components set in it
+        var grid = stack.get(VoidHeartDataComponents.APPARATUS_GRID);
         recipeState.consumeSlotted(ItemStack.class, stack, 0);
         stack = currentRecipe.getRecipeOutput(ItemStack.class, 0);
+        if (grid != null && stack.getItem() instanceof ShieldingApparatusItem)
+        {
+            stack = stack.copy();
+            stack.set(VoidHeartDataComponents.APPARATUS_GRID, grid);
+        }
         recipeState.complete(getLevel(), getBlockPos(), null);
         recipeState = null;
         recipeProgress = 0;

@@ -10,6 +10,7 @@
     "MixinFoodDataGrafts",
     "MixinLivingEntityBarrierDisguise",
     "MixinPlayerGrafts",
+    "MixinPlayerShieldingApparatus",
     "MixinServerPlayerGameModeColumns",
     "MixinStableLifecycle",
     "MixinThrownEnderpearlDungeon"
