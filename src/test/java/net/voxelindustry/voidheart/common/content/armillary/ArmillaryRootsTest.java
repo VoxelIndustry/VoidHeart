@@ -17,10 +17,12 @@ class ArmillaryRootsTest
     private static final float TARGET_X = 0.8F;
     private static final float TARGET_Y = 0.7F;
     private static final float RADIUS   = 0.055F;
+    private static final float MOUNT_X  = 0.06F;
+    private static final float MOUNT_Y  = 0.09F;
 
     private static List<ArmillaryRoots.Branch> grow(long seed)
     {
-        return ArmillaryRoots.grow(seed, SOURCE_X, TARGET_X, TARGET_Y, RADIUS);
+        return ArmillaryRoots.grow(seed, SOURCE_X, MOUNT_X, MOUNT_Y, TARGET_X, TARGET_Y, RADIUS);
     }
 
     private static ArmillaryRoots.Branch main(List<ArmillaryRoots.Branch> branches)
@@ -32,13 +34,15 @@ class ArmillaryRootsTest
 
     @ParameterizedTest
     @ValueSource(longs = { 0, 1, 7, 123456789, -987654321 })
-    void oneRoot_goesFromTheOverworldToTheBubble(long seed)
+    void oneRoot_goesFromTheMountToTheBubble(long seed)
     {
         var main = main(grow(seed));
         int last = main.segments();
 
-        assertThat(main.xs()[0]).isCloseTo(SOURCE_X, within(1.0E-4F));
-        assertThat(main.ys()[0]).isZero();
+        assertThat(mountDistance(main.xs()[0], main.ys()[0])).as("on the mount's rim").isCloseTo(1, within(1.0E-3F));
+        float startAngle = (float) Math.atan2(main.ys()[0], (main.xs()[0] - SOURCE_X) * ArmillaryRoots.ASPECT);
+        float targetAngle = (float) Math.atan2(TARGET_Y - RADIUS, (TARGET_X - SOURCE_X) * ArmillaryRoots.ASPECT);
+        assertThat(startAngle).as("leaving the way to the bubble").isCloseTo(targetAngle, within(1.0E-3F));
         assertThat(main.xs()[last]).isCloseTo(TARGET_X, within(1.0E-4F));
         assertThat(main.ys()[last]).isCloseTo(TARGET_Y - RADIUS, within(1.0E-4F));
     }
@@ -95,7 +99,7 @@ class ArmillaryRootsTest
     @ValueSource(longs = { 0, 1, 7, 123456789, -987654321 })
     void rootToTheStrata_endsOnItsLip_andNoneDigsIn(long seed)
     {
-        var branches = ArmillaryRoots.grow(seed, SOURCE_X, 0.2F, ArmillaryChart.STRATA_TOP, 0);
+        var branches = ArmillaryRoots.grow(seed, SOURCE_X, MOUNT_X, MOUNT_Y, 0.2F, ArmillaryChart.STRATA_TOP, 0);
         var main = main(branches);
         assertThat(main.xs()[main.segments()]).isCloseTo(0.2F, within(1.0E-4F));
         assertThat(main.ys()[main.segments()]).isCloseTo(ArmillaryChart.STRATA_TOP, within(1.0E-4F));
@@ -109,17 +113,76 @@ class ArmillaryRootsTest
 
     @ParameterizedTest
     @ValueSource(longs = { 0, 1, 7, 123456789, -987654321 })
-    void everyRoot_growsFromTheSurfaceOrFromAnotherRoot(long seed)
+    void everyRoot_growsFromTheMountOrFromAnotherRoot(long seed)
     {
         var branches = grow(seed);
         for (var branch : branches)
         {
-            if (branch.ys()[0] == 0)
+            if (Math.abs(mountDistance(branch.xs()[0], branch.ys()[0]) - 1) < 1.0E-3F)
                 continue;
 
             boolean attached = branches.stream().filter(other -> other != branch).anyMatch(other -> passesThrough(other, branch.xs()[0], branch.ys()[0]));
             assertThat(attached).as("root starting at %s, %s", branch.xs()[0], branch.ys()[0]).isTrue();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { 0, 1, 7, 123456789, -987654321 })
+    void noRoot_passesUnderTheMount(long seed)
+    {
+        for (var branch : grow(seed))
+        {
+            for (int point = 0; point < branch.xs().length; point++)
+                assertThat(mountDistance(branch.xs()[point], branch.ys()[point])).isGreaterThanOrEqualTo(1 - 1.0E-3F);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { 0, 1, 7, 123456789, -987654321 })
+    void mainRoot_keepsHeadingForTheBubble(long seed)
+    {
+        var main = main(grow(seed));
+        for (int point = 1; point < main.xs().length; point++)
+        {
+            float stepX = (main.xs()[point] - main.xs()[point - 1]) * ArmillaryRoots.ASPECT;
+            float stepY = main.ys()[point] - main.ys()[point - 1];
+            float toX = (TARGET_X - main.xs()[point - 1]) * ArmillaryRoots.ASPECT;
+            float toY = TARGET_Y - RADIUS - main.ys()[point - 1];
+            float cos = (stepX * toX + stepY * toY) / (Mth.sqrt(stepX * stepX + stepY * stepY) * Mth.sqrt(toX * toX + toY * toY) + 1.0E-6F);
+            assertThat(cos).as("step %s heads within 90 degrees of the bubble", point).isGreaterThan(0);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { 0, 1, 7, 123456789, -987654321 })
+    void deadEnds_mostlyEndCloserToTheBubbleThanTheyStart(long seed)
+    {
+        int closer = 0, total = 0;
+        for (var branch : grow(seed))
+        {
+            if (branch.main())
+                continue;
+            int last = branch.segments();
+            total++;
+            if (targetDistance(branch.xs()[last], branch.ys()[last]) < targetDistance(branch.xs()[0], branch.ys()[0]))
+                closer++;
+        }
+        assertThat(closer).isGreaterThanOrEqualTo(total * 3 / 4);
+    }
+
+    private static float targetDistance(float x, float y)
+    {
+        float dx = (x - TARGET_X) * ArmillaryRoots.ASPECT;
+        float dy = y - TARGET_Y;
+        return Mth.sqrt(dx * dx + dy * dy);
+    }
+
+    /** 1 on the mount's rim, less under it. */
+    private static float mountDistance(float x, float y)
+    {
+        float dx = (x - SOURCE_X) / MOUNT_X;
+        float dy = y / MOUNT_Y;
+        return Mth.sqrt(dx * dx + dy * dy);
     }
 
     private static boolean passesThrough(ArmillaryRoots.Branch branch, float x, float y)
