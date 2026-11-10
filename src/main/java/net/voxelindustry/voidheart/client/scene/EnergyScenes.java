@@ -240,8 +240,9 @@ final class EnergyScenes
         int placed = 0;
         for (var expected : shell)
         {
+            // Each ghost stays until its own intake is set, in the order the next step sets them
             if (expected.part() == ReactorLayout.Part.INTAKE)
-                scene.ghost(60, new Moment(intakes.step(), 10 + placed % 2 * 12), core.offset(expected.offset()), intake);
+                scene.ghost(60, new Moment(intakes.step(), 10 + ReactorLayout.intakes(axis).indexOf(expected.offset()) * 12), core.offset(expected.offset()), intake);
             else
                 scene.place(10 + placed++ * 3, core.offset(expected.offset()), containment);
         }
