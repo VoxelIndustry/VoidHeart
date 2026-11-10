@@ -18,6 +18,7 @@ import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeTabletItem;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeItem;
+import net.voxelindustry.voidheart.common.content.wraithveil.WraithVeilItem;
 import net.voxelindustry.voidheart.common.item.LoreItem;
 import net.voxelindustry.voidheart.common.content.oil.Elixirs;
 import net.voxelindustry.voidheart.common.content.oil.OilFlaskItem;
@@ -45,6 +46,7 @@ public class VoidHeartItems
     public static VoidKeyItem VOID_KEY;
     public static PermeableBarrierItem PERMEABLE_BARRIER;
     public static ShoulderEyeItem SHOULDER_EYE;
+    public static WraithVeilItem WRAITH_VEIL;
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
 
     public static Item WRIGGLING_BRAIN;
@@ -56,6 +58,7 @@ public class VoidHeartItems
 
     public static Item OBSIDIAN_SHARD;
     public static Item ENDER_SHARD;
+    public static Item WRAITH_INK;
     public static Item ARROGANT_IRON_INGOT;
     public static Item RAVENOUS_GOLD_INGOT;
     public static Item SEETHING_STEEL_INGOT;
@@ -97,10 +100,12 @@ public class VoidHeartItems
         VOID_KEY = registerItem("void_key", VoidKeyItem::new);
         PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
         SHOULDER_EYE = registerItem("shoulder_eye", ShoulderEyeItem::new);
+        WRAITH_VEIL = registerItem("wraith_veil", WraithVeilItem::new);
         KNOWLEDGE_TABLET = registerItem("knowledge_tablet", KnowledgeTabletItem::new);
 
         OBSIDIAN_SHARD = registerItem("obsidian_shard", Item::new);
         ENDER_SHARD = registerItem("ender_shard", Item::new);
+        WRAITH_INK = registerItem("wraith_ink", Item::new);
         ARROGANT_IRON_INGOT = registerItem("arrogant_iron_ingot", Item::new);
         RAVENOUS_GOLD_INGOT = registerItem("ravenous_gold_ingot", Item::new);
         SEETHING_STEEL_INGOT = registerItem("seething_steel_ingot", Item::new);

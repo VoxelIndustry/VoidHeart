@@ -17,6 +17,23 @@
         }
       ],
       "rolls": 1
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:wraith_ink",
+          "modifier": {
+            "type": "minecraft:set_count",
+            "count": {
+              "type": "minecraft:uniform",
+              "min": 1,
+              "max": 2
+            }
+          }
+        }
+      ]
     }
   ],
   "random_sequence": "voidheart:entities/stalking_wraith"

@@ -1,0 +1,48 @@
+{
+  "type": "voidheart:altar",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:phantom_membrane"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ender_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ender_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:void_pearl"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_veil"
+      }
+    ]
+  },
+  "time": 20
+}

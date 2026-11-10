@@ -38,6 +38,7 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePayload;
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
+import net.voxelindustry.voidheart.client.render.WallPassageRender;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.particle.DepthsShoals;
 import net.voxelindustry.voidheart.client.particle.MarineSnowParticle;
@@ -220,6 +221,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
 
         CurseDirector.register();
+        WallPassageRender.register();
 
         var particles = ParticleProviderRegistry.getInstance();
         particles.register(
