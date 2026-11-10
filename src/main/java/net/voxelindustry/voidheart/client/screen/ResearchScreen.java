@@ -1655,6 +1655,25 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
         return sceneView == null ? 0 : sceneView.steps();
     }
 
+    /** Opens a research's scene whatever is selected, so that a test can look at each of them without walking the map. */
+    public void showScene(Identifier research)
+    {
+        openScene(research);
+    }
+
+    /** Where a point of the scene's world is drawn. */
+    public int[] scenePoint(double x, double y, double z)
+    {
+        return sceneView.pointPosition(x, y, z);
+    }
+
+    /** What the scene names under the pointer, null for nothing. */
+    public String sceneNameAt(int[] position)
+    {
+        var name = sceneView.tooltip(position[0], position[1]);
+        return name == null ? null : name.getString();
+    }
+
     /** Holds the scene still on the end of a step, so that a test can look at it. */
     public void holdScene(int step)
     {

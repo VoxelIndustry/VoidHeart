@@ -25,6 +25,7 @@
       "net.voxelindustry.voidheart.gametest.ResearchClientTest",
       "net.voxelindustry.voidheart.gametest.ResearchScreenClientTest",
       "net.voxelindustry.voidheart.gametest.ResearchSceneClientTest",
+      "net.voxelindustry.voidheart.gametest.ResearchSceneScriptsClientTest",
       "net.voxelindustry.voidheart.gametest.KnowledgeTooltipClientTest",
       "net.voxelindustry.voidheart.gametest.KnowledgeLecternClientTest",
       "net.voxelindustry.voidheart.gametest.KnowledgeColumnClientTest",

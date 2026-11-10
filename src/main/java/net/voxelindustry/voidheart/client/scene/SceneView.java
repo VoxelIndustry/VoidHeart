@@ -47,4 +47,12 @@ public record SceneView(float yaw, float pitch, float span, float x, float y, fl
         float size = blockSize(stageWidth, stageHeight);
         return new float[] { stageWidth / 2F + at.x * size, stageHeight / 2F + at.y * size };
     }
+
+    /**
+     * How far back a point of the scene lies, in blocks. The stage's depth runs negative towards the viewer, so of two points the lower one is in front.
+     */
+    public float depth(float pointX, float pointY, float pointZ)
+    {
+        return matrix().transformPosition(new Vector3f(pointX, pointY, pointZ)).z;
+    }
 }
