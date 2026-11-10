@@ -47,6 +47,24 @@ class ArmillaryChartTest
     }
 
     @Test
+    void finds_theShallowsFirst_thenReachDeeper()
+    {
+        var chart = new ArmillaryChart();
+        var deepest = new int[10];
+        for (int find = 0; find < 10; find++)
+            deepest[find] = chart.find(RULES, random).difficulty();
+        for (int find = 0; find < 2; find++)
+            assertThat(deepest[find]).as("find %s", find).isEqualTo(1);
+        for (int find = 2; find < 4; find++)
+            assertThat(deepest[find]).as("find %s", find).isLessThanOrEqualTo(2);
+
+        var depths = new HashSet<Integer>();
+        for (int find = 0; find < 300; find++)
+            depths.add(chart.find(RULES, random).difficulty());
+        assertThat(depths).containsExactlyInAnyOrder(1, 2, 3, 4, 5);
+    }
+
+    @Test
     void findsOnlyDungeonsThatExist_includingEveryTheme()
     {
         var chart = new ArmillaryChart();

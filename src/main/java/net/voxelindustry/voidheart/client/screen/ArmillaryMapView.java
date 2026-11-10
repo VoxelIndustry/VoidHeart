@@ -65,17 +65,20 @@ final class ArmillaryMapView
 
     private static final float SOURCE_X         = 0.5F;
     private static final float MAIN_CORE_WIDTH  = 1F;
-    private static final float MAIN_TIP_WIDTH   = 0.55F;
+    private static final float MAIN_TIP_WIDTH   = 0.6F;
     private static final float MAIN_GLOW_WIDTH  = 1.9F;
     private static final int   MAIN_GLOW_ALPHA  = 44;
-    private static final float DEAD_END_WIDTH   = 0.55F;
-    private static final float DEAD_END_TIP     = 0.34F;
+    private static final float DEAD_END_WIDTH   = 0.6F;
+    // Any thinner and a piece can fall between pixels at the smallest gui scale
+    private static final float DEAD_END_TIP     = 0.5F;
     private static final int   DEAD_END_ALPHA   = 205;
     private static final int   WITHERED_RGB     = 0x5E4F66;
     private static final float WITHER_RECEDE    = 0.45F;
     private static final float MOTE_SPACING     = 24;
     private static final float MOTE_SPEED       = 22;
     private static final int   MOTE_ALPHA       = 230;
+    // Even a straight joint overlaps a little, so that no row of pixels between two pieces is missed
+    private static final float JOINT_OVERLAP    = 0.2F;
 
     private static final float[] RING_RADII      = { 14, 10.5F, 7 };
     private static final int[]   RING_NEAR       = { 0xFFEDE26A, 0xFF8F8499, 0xFFE9E4FF };
@@ -86,7 +89,7 @@ final class ArmillaryMapView
     private static final int     PORTAL_RADIUS   = 3;
     private static final int     PORTAL_COLOR    = 0xFF040208;
     private static final int     MOUNT_RADIUS    = 18;
-    private static final int     MOUNT_BACK      = 0xF2050308;
+    private static final int     MOUNT_BACK      = 0xFF050308;
     private static final int     GAUGE_REST      = 0xFF2E2340;
     private static final float   SWEEP_LENGTH    = 0.14F;
     private static final float   SWEEP_MILLIS    = 5200;
@@ -420,7 +423,9 @@ final class ArmillaryMapView
 
         rootsTarget = id;
         rootsSeed = seed;
-        var grown = ArmillaryRoots.grow(seed, SOURCE_X, x, y, radius);
+        // Roots leave from just outside the gauge's shaded lip, so none ever shows under it
+        float mount = (MOUNT_RADIUS + 1) * scale + 1;
+        var grown = ArmillaryRoots.grow(seed, SOURCE_X, mount / (holeRight - holeLeft), mount / chartHeight(), x, y, radius);
 
         var prepared = new ArrayList<Root>();
         for (var branch : grown)
@@ -745,14 +750,17 @@ final class ArmillaryMapView
         var target = target(view);
         int rgb = target == null ? strataStateRgb(view) : stateRgb(view, target);
         float grown = Math.min(1, main.branch().grown(progress));
-        forGrown(main, grown, (x1, y1, x2, y2, along) -> TravelMapScreen.line(graphics, x1, y1, x2, y2, MAIN_GLOW_WIDTH, ARGB.color(MAIN_GLOW_ALPHA, rgb)));
-        forGrown(main, grown, (x1, y1, x2, y2, along) -> TravelMapScreen.line(graphics, x1, y1, x2, y2, Mth.lerp(along, MAIN_CORE_WIDTH, MAIN_TIP_WIDTH), ARGB.opaque(rgb)));
+        forGrown(main, grown, (x1, y1, x2, y2, along, bend) -> stroke(graphics, x1, y1, x2, y2, MAIN_GLOW_WIDTH, bend, ARGB.color(MAIN_GLOW_ALPHA, rgb)));
+        forGrown(main, grown, (x1, y1, x2, y2, along, bend) -> stroke(graphics, x1, y1, x2, y2, Mth.lerp(along, MAIN_CORE_WIDTH, MAIN_TIP_WIDTH), bend, ARGB.opaque(rgb)));
         extractMotes(graphics, main, grown, rgb, now);
     }
 
     private interface Piece
     {
-        void draw(float x1, float y1, float x2, float y2, float along);
+        /**
+         * @param bend how far the piece must reach back over its start to close the corner it turns there, per unit of half width
+         */
+        void draw(float x1, float y1, float x2, float y2, float along, float bend);
     }
 
     /**
@@ -762,13 +770,35 @@ final class ArmillaryMapView
     {
         int segments = root.branch().segments();
         float tip = grown * segments;
+        float[] xs = root.xs();
+        float[] ys = root.ys();
         for (int segment = 0; segment < segments && segment < tip; segment++)
         {
             float part = Math.min(1, tip - segment);
-            float x2 = Mth.lerp(part, root.xs()[segment], root.xs()[segment + 1]);
-            float y2 = Mth.lerp(part, root.ys()[segment], root.ys()[segment + 1]);
-            piece.draw(root.xs()[segment], root.ys()[segment], x2, y2, segment / (float) segments);
+            float x2 = Mth.lerp(part, xs[segment], xs[segment + 1]);
+            float y2 = Mth.lerp(part, ys[segment], ys[segment + 1]);
+            float bend = 0;
+            if (segment > 0)
+            {
+                float turn = (float) (Math.atan2(ys[segment + 1] - ys[segment], xs[segment + 1] - xs[segment]) - Math.atan2(ys[segment] - ys[segment - 1], xs[segment] - xs[segment - 1]));
+                turn = Mth.wrapDegrees(turn * Mth.RAD_TO_DEG) * Mth.DEG_TO_RAD;
+                bend = Math.min(1, Math.abs((float) Math.tan(turn / 2)) + JOINT_OVERLAP);
+            }
+            piece.draw(xs[segment], ys[segment], x2, y2, segment / (float) segments, bend);
         }
+    }
+
+    /**
+     * A piece of a root, reaching back just far enough over the corner at its start to leave no notch, and no more, so a translucent root doesn't bead at its joints.
+     */
+    private static void stroke(GuiGraphicsExtractor graphics, float x1, float y1, float x2, float y2, float halfWidth, float bend, int color)
+    {
+        float length = (float) Math.hypot(x2 - x1, y2 - y1);
+        if (length <= 0)
+            return;
+
+        float back = halfWidth * bend / length;
+        TravelMapScreen.line(graphics, x1 - (x2 - x1) * back, y1 - (y2 - y1) * back, x2, y2, halfWidth, color);
     }
 
     /**
@@ -782,8 +812,8 @@ final class ArmillaryMapView
             return;
 
         int rgb = ARGB.srgbLerp(Math.min(1, withered * 2.5F), ARGB.opaque(ResearchScreen.REVEALED_RGB), ARGB.opaque(WITHERED_RGB));
-        forGrown(root, grown * (1 - withered * WITHER_RECEDE), (x1, y1, x2, y2, along) ->
-                TravelMapScreen.line(graphics, x1, y1, x2, y2, Mth.lerp(along, DEAD_END_WIDTH, DEAD_END_TIP), ARGB.color((int) (DEAD_END_ALPHA * (1 - withered) * (1 - along * 0.35F)), rgb)));
+        forGrown(root, grown * (1 - withered * WITHER_RECEDE), (x1, y1, x2, y2, along, bend) ->
+                stroke(graphics, x1, y1, x2, y2, Mth.lerp(along, DEAD_END_WIDTH, DEAD_END_TIP), bend, ARGB.color((int) (DEAD_END_ALPHA * (1 - withered) * (1 - along * 0.35F)), rgb)));
     }
 
     /**
@@ -894,8 +924,8 @@ final class ArmillaryMapView
         }
 
         int rgb = ARGB.srgbLerp(t, ARGB.opaque(LACK_RGB), ARGB.opaque(WITHERED_RGB));
-        forGrown(dying, 1 - t, (x1, y1, x2, y2, along) ->
-                TravelMapScreen.line(graphics, x1, y1, x2, y2, Mth.lerp(along, MAIN_CORE_WIDTH, MAIN_TIP_WIDTH), ARGB.color((int) (255 * (1 - t * t)), rgb)));
+        forGrown(dying, 1 - t, (x1, y1, x2, y2, along, bend) ->
+                stroke(graphics, x1, y1, x2, y2, Mth.lerp(along, MAIN_CORE_WIDTH, MAIN_TIP_WIDTH), bend, ARGB.color((int) (255 * (1 - t * t)), rgb)));
     }
 
     /**
