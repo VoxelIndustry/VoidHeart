@@ -138,6 +138,7 @@ final class ResearchMapSettle
         return y[index];
     }
 
+    /** Shapes the map with every force while the step shrinks, then only parts what still sits too close, until nothing does or the rounds run out. */
     void run()
     {
         for (int round = 0; round < ROUNDS + FINISH; round++)

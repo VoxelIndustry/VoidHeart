@@ -371,6 +371,7 @@ public final class ResearchMapPlan
             }
         }
 
+        /** Places one research in the middle of its wedge on its ring, then shares out what it can see of the next ring among its branches. */
         private void fan(int i, double low, double high, double radius, double[] x, double[] y)
         {
             double angle = (low + high) / 2;
