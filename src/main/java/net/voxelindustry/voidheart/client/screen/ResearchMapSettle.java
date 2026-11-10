@@ -305,6 +305,7 @@ final class ResearchMapSettle
         }
     }
 
+    /** Draws in each branch stretched past {@link #TAUT} times its length, by a share of how far past it is. */
     private void taut()
     {
         for (int i = 0; i < count; i++)
