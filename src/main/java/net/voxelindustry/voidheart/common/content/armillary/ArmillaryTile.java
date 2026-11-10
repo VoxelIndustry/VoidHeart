@@ -62,23 +62,14 @@ public class ArmillaryTile extends TileBase
     private static final int TICKS_PER_MINUTE   = 20 * 60;
     private static final int RESHAPE_PARTICLES  = 40;
 
-    public static final int RINGS = 3;
+    public static final int RINGS = ArmillaryMotion.RINGS;
 
-    private static final float[] RING_SPEEDS       = { 0.012F, -0.021F, 0.034F };
-    private static final float   SPEED_EASE        = 0.02F;
-    private static final float   FORM_STEP         = 1 / 60F;
-    private static final float   SEARCHING_SPEED   = 3;
-    private static final float   REACHED_SPEED     = 0.5F;
-    private static final float   FALTER_SPEED_DROP = 0.6F;
     /** How fast the rings still turn with nothing to draw on. */
     private static final float   UNPOWERED_SPIN    = 0.1F;
     /** How fast the rings turn on part of what they draw. */
     private static final float   WEAK_SPIN         = 0.5F;
     /** How much of its light the inner ring keeps on part of what it draws. */
     private static final float   WEAK_WARMTH       = 0.5F;
-    /** Ticks the inner ring takes to go cold once its power fails, and to light again once it comes back. */
-    private static final float   COOLING_TICKS     = 40;
-    private static final float   WARMING_TICKS     = 20;
     /** How long the siphon counts as flowing after it last delivered. */
     private static final int     SIPHON_FLOW_TICKS = 20;
 
@@ -816,9 +807,8 @@ public class ArmillaryTile extends TileBase
 
     private void tickClient()
     {
-        float wanted = formed ? 1 : 0;
         previousFormation = formation;
-        formation += Mth.clamp(wanted - formation, -FORM_STEP, FORM_STEP);
+        formation = ArmillaryMotion.form(formation, formed);
 
         float wantedSpin = spinOf(chart.getPhase(), stage) * switch (power)
         {
@@ -826,7 +816,7 @@ public class ArmillaryTile extends TileBase
             case WEAK -> WEAK_SPIN;
             default -> 1;
         };
-        spin += (wantedSpin - spin) * SPEED_EASE;
+        spin = ArmillaryMotion.easeSpin(spin, wantedSpin);
 
         float wantedWarmth = warmthOf(power);
         // An armillary loaded cold starts cold, rather than fading out as it comes into view
@@ -836,12 +826,12 @@ public class ArmillaryTile extends TileBase
             warmthKnown = true;
         }
         previousWarmth = warmth;
-        warmth += wantedWarmth < warmth ? Math.max(wantedWarmth - warmth, -1 / COOLING_TICKS) : Math.min(wantedWarmth - warmth, 1 / WARMING_TICKS);
+        warmth = ArmillaryMotion.warm(warmth, wantedWarmth);
 
         for (int ring = 0; ring < RINGS; ring++)
         {
             previousRingAngles[ring] = ringAngles[ring];
-            ringAngles[ring] += RING_SPEEDS[ring] * spin * formation;
+            ringAngles[ring] += ArmillaryMotion.ringSpeed(ring) * spin * formation;
         }
 
         display.tick(ArmillaryDisplay.isShown(formed, chart.liveBubbles(), chart.getPhase()),
@@ -855,16 +845,16 @@ public class ArmillaryTile extends TileBase
     {
         float spin = switch (phase)
         {
-            case SCANNING, CONNECTED -> 1;
-            case SEARCHING -> SEARCHING_SPEED;
-            case REACHED -> REACHED_SPEED;
+            case SCANNING, CONNECTED -> ArmillaryMotion.STEADY_SPIN;
+            case SEARCHING -> ArmillaryMotion.SEARCHING_SPIN;
+            case REACHED -> ArmillaryMotion.REACHED_SPIN;
         };
-        return spin * (1 - falterOf(stage) * FALTER_SPEED_DROP);
+        return ArmillaryMotion.faltering(spin, falterOf(stage));
     }
 
     public static float ringSpeed(int ring)
     {
-        return RING_SPEEDS[ring];
+        return ArmillaryMotion.ringSpeed(ring);
     }
 
     /**
