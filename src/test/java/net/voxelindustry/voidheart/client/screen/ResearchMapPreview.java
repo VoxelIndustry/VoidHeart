@@ -17,7 +17,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Draws the research map as the plan lays it out, to review it without starting a game. Run with {@code DUNGEON_PREVIEW=true}, images go to
@@ -37,12 +36,11 @@ class ResearchMapPreview
         var folder = new File("build/research-preview");
         folder.mkdirs();
 
-        var shipped = ResearchTrees.shipped();
-        var grown = new TreeMap<>(shipped);
-        grown.put(ResearchTrees.id("void_lens"), ResearchTrees.research(Constellation.ARTIFICES, 3, "far_sight"));
-
-        draw(shipped, new File(folder, "shipped.png"));
-        draw(grown, new File(folder, "grown.png"));
+        draw(ResearchTrees.shipped(), new File(folder, "shipped.png"));
+        draw(ResearchTrees.grown(), new File(folder, "grown.png"));
+        draw(ResearchTrees.crowded(), new File(folder, "crowded.png"));
+        draw(ResearchTrees.sprawling(40, 7), new File(folder, "sprawling.png"));
+        draw(ResearchTrees.sprawling(140, 11), new File(folder, "vast.png"));
     }
 
     /** The whole map at its one size, with what each screen size shows of it at rest outlined. */
@@ -51,7 +49,8 @@ class ResearchMapPreview
         var frame = ResearchTrees.frame();
         long start = System.nanoTime();
         var plan = ResearchMapPlan.plan(tree, frame);
-        System.out.printf("%s: %.1f ms%n", file.getName(), (System.nanoTime() - start) / 1e6);
+        System.out.printf("%s: %.1f ms, %s%n", file.getName(), (System.nanoTime() - start) / 1e6, ResearchMapMeasure.report(plan, tree));
+        ResearchMapMeasure.crossings(plan, tree).forEach(crossing -> System.out.println("  crossing " + crossing));
 
         var bounds = plan.bounds();
         int margin = 30;

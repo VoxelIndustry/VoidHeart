@@ -27,24 +27,23 @@ class ResearchMapPlanTest
 
     static Stream<Arguments> trees()
     {
-        return Stream.of(Arguments.of("shipped", ResearchTrees.shipped()), Arguments.of("grown", grown()), Arguments.of("crowded", crowded()));
+        return Stream.of(Arguments.of("shipped", ResearchTrees.shipped()), Arguments.of("grown", ResearchTrees.grown()), Arguments.of("crowded", ResearchTrees.crowded()),
+                Arguments.of("twice the size", ResearchTrees.sprawling(40, 7)), Arguments.of("twice the size, otherwise", ResearchTrees.sprawling(40, 23)),
+                Arguments.of("many times the size", ResearchTrees.sprawling(140, 11)), Arguments.of("one constellation", oneConstellation()),
+                Arguments.of("one research", oneResearch()));
     }
 
-    static TreeMap<Identifier, Research> grown()
+    static TreeMap<Identifier, Research> oneConstellation()
     {
         var tree = ResearchTrees.shipped();
-        tree.put(ResearchTrees.id("void_lens"), ResearchTrees.research(Constellation.ARTIFICES, 3, "far_sight"));
+        tree.values().removeIf(research -> research.constellation() != Constellation.ARCHIVE);
         return tree;
     }
 
-    /** A few researches more in every constellation, as the tree will have after some updates. */
-    static TreeMap<Identifier, Research> crowded()
+    static TreeMap<Identifier, Research> oneResearch()
     {
-        var tree = grown();
-        tree.put(ResearchTrees.id("ward_rite"), ResearchTrees.research(Constellation.RITES, 3, "void_flesh"));
-        tree.put(ResearchTrees.id("echo_archive"), ResearchTrees.research(Constellation.ARCHIVE, 3, "vast_archive"));
-        tree.put(ResearchTrees.id("void_compass"), ResearchTrees.research(Constellation.TRAVEL, 3, "portal_flexion"));
-        tree.put(ResearchTrees.id("quiet_eye"), ResearchTrees.research(Constellation.ARTIFICES, 3, "shoulder_eye"));
+        var tree = new TreeMap<Identifier, Research>();
+        tree.put(ResearchTrees.id("altar_rite"), ResearchTrees.research(Constellation.RITES, 1));
         return tree;
     }
 
@@ -79,6 +78,114 @@ class ResearchMapPlanTest
                     assertThat(overlaps(label, otherLabel)).as("%s name over %s name", constellation, other).isFalse();
             });
         });
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("trees")
+    void branchesNeverCross(String name, TreeMap<Identifier, Research> tree)
+    {
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        assertThat(ResearchMapMeasure.crossings(plan, tree)).isEmpty();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("trees")
+    void branchesNeverRunUnderAnotherResearch(String name, TreeMap<Identifier, Research> tree)
+    {
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        for (var link : plan.links())
+        {
+            if (!ResearchMapMeasure.isBranch(plan, link))
+                continue;
+            plan.nodes().forEach((id, node) ->
+            {
+                if (id.equals(link.child()) || id.equals(link.parent()))
+                    return;
+                for (int i = 0; i < link.xs().length; i++)
+                    assertThat(Math.hypot(link.xs()[i] - node.x(), link.ys()[i] - node.y())).as("branch to %s under %s", link.child(), id).isGreaterThanOrEqualTo(NODE / 2D);
+            });
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("trees")
+    void namesNeverCoverBranches(String name, TreeMap<Identifier, Research> tree)
+    {
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        plan.names().forEach((constellation, label) ->
+        {
+            for (var link : plan.links())
+            {
+                for (int i = 0; i < link.xs().length; i++)
+                {
+                    boolean covered = link.xs()[i] > label.x() && link.xs()[i] < label.x() + label.width() && link.ys()[i] > label.y() && link.ys()[i] < label.y() + label.height();
+                    assertThat(covered).as("%s name over the branch to %s", constellation, link.child()).isFalse();
+                }
+            }
+        });
+    }
+
+    /** No part of the map is packed tight while another is left loose: every research has its nearest neighbour about as near, and no branch is cramped or strung out. */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("trees")
+    void researchesAreSpreadEvenly(String name, TreeMap<Identifier, Research> tree)
+    {
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        if (tree.size() < 2)
+            return;
+        var neighbours = ResearchMapMeasure.neighbours(plan);
+        assertThat(neighbours.most()).as("loosest research against tightest, %s", neighbours).isLessThan(neighbours.least() * 1.5);
+        var branches = ResearchMapMeasure.branches(plan);
+        assertThat(branches.least()).as("shortest branch, %s", branches).isGreaterThan(ResearchMapPlan.REACH * 0.75);
+        assertThat(branches.mean()).as("usual branch, %s", branches).isBetween(ResearchMapPlan.REACH * 0.9, ResearchMapPlan.REACH * 1.2);
+        assertThat(branches.most()).as("longest branch, %s", branches).isLessThan(ResearchMapPlan.REACH * 2.2);
+    }
+
+    /** A branch is one curve from end to end, without a corner anywhere along it. */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("trees")
+    void everyBranchIsOneCurve(String name, TreeMap<Identifier, Research> tree)
+    {
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        for (var link : plan.links())
+            assertThat(ResearchMapMeasure.sharpestTurn(link)).as("sharpest turn along the branch to %s", link.child()).isLessThan(12);
+    }
+
+    /** What is drawn of a branch under the eye's lid follows the line out of the eye's middle, so the branch has to leave the rim along that line. */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("trees")
+    void branchesLeaveTheEyeStraightOut(String name, TreeMap<Identifier, Research> tree)
+    {
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        for (var link : plan.links())
+        {
+            if (link.parent() != null)
+                continue;
+            double leaving = Math.atan2(link.ys()[1] - link.ys()[0], link.xs()[1] - link.xs()[0]);
+            double outward = Math.atan2(link.ys()[0], link.xs()[0]);
+            assertThat(Math.abs(Math.toDegrees(Math.atan2(Math.sin(leaving - outward), Math.cos(leaving - outward))))).as("branch to %s", link.child()).isLessThan(10);
+        }
+    }
+
+    /** A research with one branch arriving and one leaving passes the line on, so the two read as a single sweep through it. */
+    @Test
+    void aLineOfResearchesIsOneSweep()
+    {
+        var tree = ResearchTrees.shipped();
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        int swept = 0;
+        for (var arriving : plan.links())
+        {
+            var leaving = plan.links().stream().filter(link -> arriving.child().equals(link.parent())).toList();
+            if (leaving.size() != 1)
+                continue;
+            int last = arriving.xs().length - 1;
+            double in = Math.atan2(arriving.ys()[last] - arriving.ys()[last - 1], arriving.xs()[last] - arriving.xs()[last - 1]);
+            double out = Math.atan2(leaving.getFirst().ys()[1] - leaving.getFirst().ys()[0], leaving.getFirst().xs()[1] - leaving.getFirst().xs()[0]);
+            if (Math.abs(Math.toDegrees(Math.atan2(Math.sin(out - in), Math.cos(out - in)))) < 8)
+                swept++;
+        }
+        assertThat(swept).as("lines carried through a research").isGreaterThanOrEqualTo(6);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -154,12 +261,35 @@ class ResearchMapPlanTest
         assertThat(second.bounds()).isEqualTo(first.bounds());
     }
 
+    /** A requirement beyond the first is drawn as well, over the tree. */
+    @Test
+    void aSecondRequirementIsDrawnToo()
+    {
+        var tree = ResearchTrees.shipped();
+        tree.put(ResearchTrees.id("concord"), ResearchTrees.requiring(tree.get(ResearchTrees.id("concord")), "cogitation", "steady_mind"));
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        assertThat(plan.links()).filteredOn(link -> link.child().equals(ResearchTrees.id("concord"))).extracting(ResearchMapPlan.Link::parent)
+                .containsExactlyInAnyOrder(ResearchTrees.id("cogitation"), ResearchTrees.id("steady_mind"));
+        assertThat(plan.parentOf(ResearchTrees.id("concord"))).isEqualTo(ResearchTrees.id("cogitation"));
+    }
+
+    /** Requirements that lead back to themselves, as a broken data pack might have, are still laid out. */
+    @Test
+    void aLoopOfRequirementsIsStillLaidOut()
+    {
+        var tree = ResearchTrees.shipped();
+        tree.put(ResearchTrees.id("archive_expansion"), ResearchTrees.requiring(tree.get(ResearchTrees.id("archive_expansion")), "concord"));
+        var plan = ResearchMapPlan.plan(tree, ResearchTrees.frame());
+        assertThat(plan.nodes()).containsOnlyKeys(tree.keySet());
+        assertThat(ResearchMapMeasure.crossings(plan, tree)).isEmpty();
+    }
+
     /** The branches beside the new research make room and the rest barely turn, measured in node widths since the map keeps its size. */
     @Test
     void oneMoreResearchMovesTheRestLittle()
     {
         var before = ResearchMapPlan.plan(ResearchTrees.shipped(), ResearchTrees.frame());
-        var after = ResearchMapPlan.plan(grown(), ResearchTrees.frame());
+        var after = ResearchMapPlan.plan(ResearchTrees.grown(), ResearchTrees.frame());
 
         double total = 0;
         double most = 0;
@@ -194,7 +324,7 @@ class ResearchMapPlanTest
     @MethodSource("sizes")
     void everyScreenCanShowEveryResearch(int width, int height)
     {
-        var plan = ResearchMapPlan.plan(crowded(), ResearchTrees.frame());
+        var plan = ResearchMapPlan.plan(ResearchTrees.crowded(), ResearchTrees.frame());
         var bounds = plan.bounds();
         int[] view = ResearchTrees.view(width, height);
         int[] across = ResearchMapPlan.eyeRange(bounds.minX(), bounds.maxX(), view[0], view[2], 10);
