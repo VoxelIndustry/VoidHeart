@@ -13,10 +13,12 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.ArmillaryPortalRender;
 import net.voxelindustry.voidheart.client.render.ForgePreviewRender;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryLayout;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryMotion;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeLayout;
+import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonTheme;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -75,6 +77,12 @@ public final class ResearchScenes
     private static final float ITEM_HEIGHT = 1.25F;
     private static final Vec3  ALTAR_TOP   = new Vec3(0.5, 1.25, 0.5);
     private static final Vec3  ABOVE_ALTAR = new Vec3(0.5, 2.3, 0.5);
+    private static final Vec3  ALTAR_VOID  = new Vec3(0.5, 3, 0.5);
+
+    // When the scene's altar starts on its offerings, and how long it gives each
+    private static final int ALTAR_CONSUME_FROM  = 45;
+    private static final int ALTAR_CONSUME_EVERY = 16;
+    private static final int ALTAR_CONSUME_TICKS = 14;
 
     private static final Map<Identifier, Scene> BUILT = new HashMap<>();
 
@@ -170,7 +178,9 @@ public final class ResearchScenes
         for (int index = 0; index < ALTAR_PILLARS.size(); index++)
         {
             var pillar = ALTAR_PILLARS.get(index);
-            scene.flight(10 + index * 8, 10, new Scene.Moment(4, 45 + index * 16), new ItemStack(offerings[index]), above(pillar, 2.2F), above(pillar, ITEM_HEIGHT));
+            // Each lies on its pillar until the altar has drawn the last of it in
+            var drawn = new Scene.Moment(4, ALTAR_CONSUME_FROM + index * ALTAR_CONSUME_EVERY + ALTAR_CONSUME_TICKS);
+            scene.flight(10 + index * 8, 10, drawn, new ItemStack(offerings[index]), above(pillar, 2.2F), above(pillar, ITEM_HEIGHT));
         }
 
         scene.use("catalyst", 70, close, ABOVE_ALTAR);
@@ -181,15 +191,21 @@ public final class ResearchScenes
         scene.place(0, altar, lit(altarState));
         ALTAR_PILLARS.forEach(pillar -> scene.place(0, pillar, lit(pillarState)));
         scene.voidCube(0, doneStep);
+        // The void gathers while the altar warms, then runs down onto what lies on it for as long as the rite lasts
+        scene.particles(0, scene.at(VoidAltarTile.WARMING_TIME), SceneFx.voidGather(ALTAR_VOID));
+        scene.particles(VoidAltarTile.WARMING_TIME, doneStep, SceneFx.voidThread(ALTAR_VOID, ALTAR_TOP));
         for (int index = 0; index < ALTAR_PILLARS.size(); index++)
         {
-            var pillar = ALTAR_PILLARS.get(index);
-            scene.flight(45 + index * 16, 14, scene.at(45 + index * 16 + 14), new ItemStack(offerings[index]), above(pillar, ITEM_HEIGHT), new Vec3(0.5, 3, 0.5));
+            int from = ALTAR_CONSUME_FROM + index * ALTAR_CONSUME_EVERY;
+            scene.particles(from, scene.at(from + ALTAR_CONSUME_TICKS),
+                    SceneFx.crumbs(new ItemStack(offerings[index]), above(ALTAR_PILLARS.get(index), ITEM_HEIGHT), ALTAR_TOP));
         }
 
         scene.step("result", 80, close, ABOVE_ALTAR);
         scene.place(0, altar, altarState);
         ALTAR_PILLARS.forEach(pillar -> scene.place(0, pillar, pillarState));
+        // Let go as the void finishes shrinking, when the game throws it
+        scene.puff(VoidAltarTile.COOLING_TIME - 1, SceneFx.voidBurst(ALTAR_VOID));
         scene.flight(30, 25, Scene.Moment.NEVER, new ItemStack(VoidHeartBlocks.SHATTER_FORGE), new Vec3(0.5, 3, 0.5), ALTAR_TOP);
 
         return scene.build();
@@ -242,12 +258,16 @@ public final class ResearchScenes
         scene.highlight(8, scene.next(), source);
 
         scene.use("craft", 180, craft, above(source, 1.2F));
-        scene.flight(10, 12, new Scene.Moment(5, 120), new ItemStack(Items.GOLD_INGOT), above(source, 2.4F), above(source, 1.2F));
+        var carried = scene.at(150);
+        scene.flight(10, 12, carried, new ItemStack(Items.GOLD_INGOT), above(source, 2.4F), above(source, 1.2F));
         scene.place(30, forge, lit(forgeState));
         scene.place(30, source, lit(VoidHeartBlocks.VOID_PILLAR.defaultBlockState()));
         expected.stream().filter(block -> block.part() == ShatterForgeLayout.Part.CONDUIT)
                 .forEach(block -> scene.place(30, block.pos(), lit(ForgePreviewRender.ghostState(block, conduits))));
         scene.beam(30, new Scene.Moment(6, 0), forge);
+        // What the beam carries leaves as gold and arrives as what the forge makes of it
+        scene.particles(60, carried, SceneFx.beamCrumbs(new ItemStack(Items.GOLD_INGOT), new ItemStack(VoidHeartItems.RAVENOUS_GOLD_INGOT),
+                new Vec3(source.getX() + 0.5, forge.getY() + ShatterForgeTile.BEAM_HEIGHT, source.getZ() + 0.5), above(forge, ShatterForgeTile.BEAM_HEIGHT)));
 
         scene.step("result", 90, end, above(forge, 1.35F));
         scene.place(0, forge, forgeState);
@@ -320,9 +340,13 @@ public final class ResearchScenes
 
         scene.step("brew", 160, brew, above(alembic, 1));
         scene.place(20, athanor, lit(athanorState));
+        // The fire in its belly and the smoke off the alembic, where the game shows them
+        scene.particles(20, resultStep, SceneFx.flame(above(athanor, 0.2F), 0.12));
+        scene.particles(30, resultStep, SceneFx.smoke(above(athanor, 2)));
 
         scene.step("result", 80, close, mouth);
         scene.place(0, athanor, athanorState);
+        scene.puff(0, SceneFx.puff(above(athanor, 2)));
         scene.flight(10, 0, Scene.Moment.NEVER, new ItemStack(VoidHeartItems.SEARING_OIL), mouth, mouth);
 
         return scene.build();
@@ -377,6 +401,8 @@ public final class ResearchScenes
         scene.step("rings", 130, risen, hub);
         scene.place(10, core, coreState.setValue(ArmillaryCoreBlock.FORMED, true));
         base.forEach(part -> scene.place(10, part.pos(), part.formed()));
+        // As wide as the game scatters it, which is past the edge of the dais
+        scene.puff(10, SceneFx.reshape(above(core, 0.8F), new Vec3(1.5, 0.35, 1.5)));
         scene.rings(10, core);
 
         scene.step("power", 110, powered, above(ARMILLARY_PYLON, 1.5F));

@@ -408,6 +408,8 @@ final class EnergyScenes
             scene.flight(at - 24, 12, scene.at(at), new ItemStack(bundleBlock(bundles[index])), above(fissure, 2.6F), above(fissure, 0.5F));
             scene.click(at - 8, above(fissure, 0.1F));
             scene.actor(at, until, fissure, Role.FISSURE, scene.at(at), center(pylon.above()), Scene.THEME, index + 2);
+            // The dark it throws out as it tears, as wide as the crack has become and lifted clear of the ground that would cut it in half
+            scene.puff(at, SceneFx.ink(above(fissure, 0.35F), (index + 2) * 0.4, 0.2));
             scene.label(at + 10, index + 1 < bundles.length ? until : scene.next(), over, rate(SeepMath.output(index + 2)));
         }
 

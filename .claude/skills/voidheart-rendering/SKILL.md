@@ -34,6 +34,7 @@ Keep sizes, colors, alphas and timings in named constants at the top of the clas
 | A block item that shows its GeckoLib block model | Special item model and `GeoItemRenderer` | `RavenousCollectorItemRender` |
 | An item that is 3D in the world but flat in screens | Item model `select` on `display_context` with only `gui` flat, as `ModelsProvider.generateFlask` does. The `FIXED` context then draws the 3D model in block entity renderers | `PlacedFlasksRender`, `AthanorRender` |
 | A vanilla item drawn with a mod model in one renderer only | Copy the stack and set `DataComponents.ITEM_MODEL` to a mod `items/` definition, so vanilla's own model stays untouched | `FlaskModels.forDisplay` |
+| Particles in a research scene | A `SceneEmitter` on the script with `scene.particles` or `scene.puff`, ready-made ones in `SceneFx`. Never the particle engine: a scene is worked out from its tick alone, so each particle's place comes from its number | `SceneFx`, `SceneParticlesRender` |
 | A block item drawn like its block entity renderer | `SpecialModelRenderer` with a record argument, one new draw state per submit since geometry is built later in the frame. Slots cache what they first drew, so it stays still | `MalignantTormenterItemRender` |
 
 Block entity renderers read the world in `extractRenderState` and only draw from that state when submitting. `RavenousRelayRender` is a short example. World-level drawing goes through `LevelRenderEvents`, registered in `VoidHeartClient`.
@@ -58,6 +59,7 @@ If nothing in the table fits, copy the closest vanilla pipeline as `VoidHeartRen
 | An entity kept out of the world draws nothing or throws "Tried to access entity ID before ID assignment" | Its render state reads an id only joining a world assigns | Call `setId` on it before `createRenderState` (`TormenterHeads`) | |
 | No cracks while a block entity is being mined | The game passes `breakProgress` as null to anything with `shouldRenderOffScreen()` true | Look it up in `ClientLevel.destructionProgress()` while extracting (`MalignantTormenterRender.crumbling`) | |
 | Pinholes showing the sky through a model split across several blocks | `cullface` on a face between two pieces of it, which a neighbour's simplified shape hides though the neighbour's model doesn't cover it | Only put `cullface` on faces of the structure's outside (`armillary_base_corner.json`) | |
+| A scene's particle near the ground shows as a sliver | Its square faces a camera looking down, so its near half dips under the floor and fails the depth test | Start it a third of a block up, as the fissure scene's ink does | |
 | Model parts drawn apart from their entity shift or twitch | Renderers share parts between entities and move them when flushing | Copy the cubes and their poses once, then compile the cubes yourself (`TormenterHeads`) | |
 
 Run `git show <commit>` when you need the full change. If a fix teaches something new, add a row here in the same change, so the next renderer benefits from it.

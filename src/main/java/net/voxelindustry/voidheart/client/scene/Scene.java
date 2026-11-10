@@ -48,7 +48,7 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
     /** In place of a color: the one of the research's constellation. */
     public static final int THEME = -1;
 
-    public sealed interface Cue permits Place, Clear, Ghost, Highlight, Flight, Reach, Link, Outline, Label, Click, Actor
+    public sealed interface Cue permits Place, Clear, Ghost, Highlight, Flight, Reach, Link, Outline, Label, Click, Actor, Particles
     {
     }
 
@@ -155,6 +155,13 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
      * A right click landing on a point, once.
      */
     public record Click(Moment at, Vec3 pos, boolean sneak) implements Cue
+    {
+    }
+
+    /**
+     * Particles let out from one moment to another. Those born before the end live their lives out, and one that starts and ends at once is a single puff.
+     */
+    public record Particles(Moment from, Moment to, SceneEmitter emitter) implements Cue
     {
     }
 
@@ -361,6 +368,18 @@ public record Scene(Identifier id, List<Step> steps, List<Cue> cues, List<Place>
         {
             cues.add(new Actor(at(offset), to, pos, role, works, target, rgb, amount));
             return this;
+        }
+
+        public Builder particles(int offset, Moment to, SceneEmitter emitter)
+        {
+            cues.add(new Particles(at(offset), to, emitter));
+            return this;
+        }
+
+        /** Everything the emitter lets out at once, and nothing after. */
+        public Builder puff(int offset, SceneEmitter emitter)
+        {
+            return particles(offset, at(offset), emitter);
         }
 
         public Builder click(int offset, Vec3 pos)
