@@ -319,7 +319,7 @@ public class ResearchScreenClientTest implements FabricClientGameTest
 
             // The map keeps its spacing on a small screen and pans instead, by dragging the bare dark and by the wheel
             int[] rest = context.computeOnClient(client -> screen(client).eyePosition());
-            hover(context, new int[] { rest[0], rest[1] + 55 });
+            hover(context, bareDark(context));
             context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
             context.waitTicks(1);
             for (int step = 0; step < 8; step++)
@@ -345,6 +345,29 @@ public class ResearchScreenClientTest implements FabricClientGameTest
             context.runOnClient(client -> client.player.closeContainer());
             context.waitFor(client -> client.gui.screen() == null);
         }
+    }
+
+    /** A point of the map with no research and no eye under or near it, wherever the map happens to put them, so that pressing there starts a drag and nothing else. */
+    private static int[] bareDark(ClientGameTestContext context)
+    {
+        return context.computeOnClient(client ->
+        {
+            var screen = screen(client);
+            var nodes = screen.shownNodes().stream().map(screen::nodePosition).toList();
+            int[] eye = screen.eyePosition();
+            for (int y = 30; y < screen.height - 90; y += 6)
+            {
+                for (int x = 60; x < screen.width / 2; x += 6)
+                {
+                    int atX = x;
+                    int atY = y;
+                    boolean offEye = Math.abs(atX - eye[0]) > 60 || Math.abs(atY - eye[1]) > 45;
+                    if (offEye && nodes.stream().allMatch(node -> Math.abs(node[0] - atX) > 20 || Math.abs(node[1] - atY) > 20))
+                        return new int[] { atX, atY };
+                }
+            }
+            throw new AssertionError("No bare dark on the map to drag it by");
+        });
     }
 
     private static void captureMaw(ClientGameTestContext context, int stage)

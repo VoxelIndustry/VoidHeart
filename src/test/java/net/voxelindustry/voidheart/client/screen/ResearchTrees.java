@@ -69,6 +69,55 @@ final class ResearchTrees
                 research.unlocks(), research.recipes());
     }
 
+    static TreeMap<Identifier, Research> grown()
+    {
+        var tree = shipped();
+        tree.put(id("void_lens"), research(Constellation.ARTIFICES, 3, "far_sight"));
+        return tree;
+    }
+
+    /** A few researches more in every constellation, as the tree will have after some updates. */
+    static TreeMap<Identifier, Research> crowded()
+    {
+        var tree = grown();
+        tree.put(id("ward_rite"), research(Constellation.RITES, 3, "void_flesh"));
+        tree.put(id("echo_archive"), research(Constellation.ARCHIVE, 3, "vast_archive"));
+        tree.put(id("void_compass"), research(Constellation.TRAVEL, 3, "portal_flexion"));
+        tree.put(id("quiet_eye"), research(Constellation.ARTIFICES, 3, "shoulder_eye"));
+        return tree;
+    }
+
+    /**
+     * The tree as other mods might leave it: many more researches hung anywhere on it, some in a constellation other than the one they hang from, and a few
+     * growing from the eye. Which goes where is fixed by the seed, so the same tree comes out every time.
+     */
+    static TreeMap<Identifier, Research> sprawling(int more, long seed)
+    {
+        var tree = shipped();
+        var constellations = Constellation.values();
+        long state = seed;
+        for (int i = 0; i < more; i++)
+        {
+            state = state * 6364136223846793005L + 1442695040888963407L;
+            var known = List.copyOf(tree.keySet());
+            int pick = (int) Math.floorMod(state >>> 33, (long) known.size() + 1);
+            state = state * 6364136223846793005L + 1442695040888963407L;
+            boolean foreign = Math.floorMod(state >>> 33, 6L) == 0;
+            int other = (int) Math.floorMod(state >>> 40, (long) constellations.length);
+            var path = String.format("addon_%03d", i);
+            if (pick == known.size())
+                tree.put(Identifier.fromNamespaceAndPath("addon", path), research(constellations[other], 1));
+            else
+            {
+                var above = known.get(pick);
+                var constellation = foreign ? constellations[other] : tree.get(above).constellation();
+                tree.put(Identifier.fromNamespaceAndPath("addon", path), new Research(3, constellation, Identifier.withDefaultNamespace("stone"), 1, 1, 1, List.of(above),
+                        0, 0, 0, 0, List.of(), List.of()));
+            }
+        }
+        return tree;
+    }
+
     static String nameOf(Constellation constellation)
     {
         return NAMES.get(constellation);
