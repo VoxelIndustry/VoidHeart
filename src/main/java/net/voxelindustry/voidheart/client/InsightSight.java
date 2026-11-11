@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -48,6 +49,12 @@ public final class InsightSight
      * @return the silhouette's alpha for this mob, 0 when it isn't to be drawn: no Insight, out of range, or in plain view
      */
     public static float silhouette(Entity entity, float partialTicks, boolean crossing)
+    {
+        float tunnel = entity instanceof LivingEntity living ? TunnelVision.silhouette(living, partialTicks) : 0;
+        return Math.max(tunnel, insight(entity, partialTicks, crossing));
+    }
+
+    private static float insight(Entity entity, float partialTicks, boolean crossing)
     {
         if (!active())
             return 0;

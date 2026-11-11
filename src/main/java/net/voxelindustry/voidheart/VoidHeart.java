@@ -36,6 +36,8 @@ import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
 import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.energy.EnergySetup;
 import net.voxelindustry.voidheart.common.curse.CursePayloads;
+import net.voxelindustry.voidheart.common.content.wraithveil.WallPassagePayloads;
+import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
@@ -175,6 +177,8 @@ public class VoidHeart implements ModInitializer
 
         Corruption.register();
         CursePayloads.register();
+        WallPassagePayloads.register();
+        WallPassages.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDaedalus::tickServer);

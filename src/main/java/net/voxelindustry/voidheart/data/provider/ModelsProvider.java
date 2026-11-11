@@ -305,6 +305,8 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.WRIGGLING_BRAIN, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SALT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.QUICKSILVER, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.WRAITH_INK, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.WRAITH_VEIL, ModelTemplates.FLAT_ITEM);
         generateFlask(generator, VoidHeartItems.SEARING_OIL, "oil");
         generateFlask(generator, VoidHeartItems.CONCUSSIVE_OIL, "oil");
         generateFlask(generator, VoidHeartItems.ARCANE_OIL, "oil");

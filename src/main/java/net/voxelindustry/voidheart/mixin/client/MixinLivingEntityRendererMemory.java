@@ -4,6 +4,7 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.LivingEntity;
 import net.voxelindustry.voidheart.client.InsightMemory;
+import net.voxelindustry.voidheart.client.TunnelVision;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,6 +20,7 @@ public class MixinLivingEntityRendererMemory
             at = @At("TAIL"))
     private void voidheart$memory(LivingEntity entity, LivingEntityRenderState state, float partialTicks, CallbackInfo callback)
     {
-        state.setData(InsightMemory.ALPHA, InsightMemory.alpha(entity));
+        // A Wraith Veil tunnel reveals what is near through the same silhouette
+        state.setData(InsightMemory.ALPHA, Math.max(InsightMemory.alpha(entity), TunnelVision.silhouette(entity, partialTicks)));
     }
 }

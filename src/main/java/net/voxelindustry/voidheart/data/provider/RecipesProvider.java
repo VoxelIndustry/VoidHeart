@@ -287,6 +287,11 @@ public class RecipesProvider extends FabricRecipeProvider
                     Items.SPIDER_EYE, VoidHeartItems.VOID_PEARL, Items.SLIME_BALL,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
 
+            // The membrane again, soaked in what lets a wraith pass through stone
+            offerAltarRecipe("wraith_veil", new ItemStack(VoidHeartItems.WRAITH_VEIL), Items.PHANTOM_MEMBRANE,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.VOID_PEARL);
+
             // A membrane is what lets some things through and not others
             offerAltarRecipe("permeable_barrier_item", VoidHeartItems.PERMEABLE_BARRIER, Items.PHANTOM_MEMBRANE,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,

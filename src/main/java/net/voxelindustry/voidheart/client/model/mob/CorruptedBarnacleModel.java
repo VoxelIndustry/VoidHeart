@@ -71,7 +71,8 @@ public class CorruptedBarnacleModel extends EntityModel<BarnacleRenderState>
         for (int i = 0; i < LEGS; i++)
         {
             float angle = i * Mth.TWO_PI / LEGS + 0.5F;
-            root.addOrReplaceChild("leg_" + i, CubeListBuilder.create().texOffs(48, 0).addBox(0, -0.5F, -0.5F, 3, 1, 1),
+            // A hair off the ground the shell rests on, so they don't share its underside
+            root.addOrReplaceChild("leg_" + i, CubeListBuilder.create().texOffs(48, 0).addBox(0, -0.5F, -0.5F, 3, 1, 1, ModelBoxes.proud(0, -1, 0)),
                     PartPose.offsetAndRotation(Mth.cos(angle) * 5.5F, 23.5F, Mth.sin(angle) * 5.5F, 0, -angle, 0));
         }
 

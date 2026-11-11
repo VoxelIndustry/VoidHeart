@@ -70,15 +70,17 @@ public class FallenModel extends EntityModel<FallenRenderState>
 
         var torso = CubeListBuilder.create()
                 .texOffs(0, 16).addBox(-4, 0, -2, 8, 12, 4)
-                .texOffs(32, 0).addBox(-4.5F, -1.5F, -3.5F, 9, 3, 7)
+                .texOffs(32, 0).addBox(-4.5F, -1.5F, -3.5F, 9, 3, 7, ModelBoxes.PROUD)
                 .texOffs(32, 10).addBox(-4.5F, 0, 2.5F, 9, 6, 1);
         if (armored)
             torso.texOffs(0, 46).addBox(-5, 0, -3, 10, 8, 6);
         root.addOrReplaceChild("torso", torso, PartPose.ZERO);
 
         var skirt = root.addOrReplaceChild("skirt", CubeListBuilder.create().texOffs(24, 17).addBox(-4.5F, 0, -2.5F, 9, 8, 5), PartPose.offset(0, 12, 0));
-        skirt.addOrReplaceChild("hem_front", CubeListBuilder.create().texOffs(0, 32).addBox(-4.5F, 0, 0, 9, 3, 0), PartPose.offset(0, 8, -2.5F));
-        skirt.addOrReplaceChild("hem_back", CubeListBuilder.create().texOffs(0, 32).addBox(-4.5F, 0, 0, 9, 3, 0), PartPose.offset(0, 8, 2.5F));
+        // A hair out from the skirt, so the feet behind the front one don't share its plane
+        float hem = 2.5F + ModelBoxes.GAP;
+        skirt.addOrReplaceChild("hem_front", CubeListBuilder.create().texOffs(0, 32).addBox(-4.5F, 0, 0, 9, 3, 0, ModelBoxes.FRONT), PartPose.offset(0, 8, -hem));
+        skirt.addOrReplaceChild("hem_back", CubeListBuilder.create().texOffs(0, 32).addBox(-4.5F, 0, 0, 9, 3, 0, ModelBoxes.BACK), PartPose.offset(0, 8, hem));
 
         var rightArm = addArm(root, "right_arm", -5, false, armored);
         addArm(root, "left_arm", 5, true, armored);
@@ -100,7 +102,7 @@ public class FallenModel extends EntityModel<FallenRenderState>
         builder.texOffs(52, 10).addBox(-1.5F, -2, -1.5F, 3, 8, 3)
                 .texOffs(52, 21).addBox(-1, 6, -1, 2, 6, 2);
         if (armored)
-            builder.texOffs(32, 46).addBox(-2.5F, -3, -3, 5, 3, 6);
+            builder.texOffs(32, 46).addBox(-2.5F, -3, -3, 5, 3, 6, ModelBoxes.proud(0, 0, 1));
         return root.addOrReplaceChild(name, builder, PartPose.offset(x, 2, 0));
     }
 
@@ -109,7 +111,8 @@ public class FallenModel extends EntityModel<FallenRenderState>
         var builder = CubeListBuilder.create();
         if (mirror)
             builder.mirror();
-        builder.texOffs(18, 32).addBox(-1, 0, -1, 2, 12, 2)
+        // The shin ends a hair inside the foot rather than on its sole
+        builder.texOffs(18, 32).addBox(-1, 0, -1, 2, 12, 2, ModelBoxes.proud(0, -1, 0))
                 .texOffs(26, 32).addBox(-1.5F, 10, -2.5F, 3, 2, 4);
         if (armored)
             builder.texOffs(52, 46).addBox(-1.5F, 4, -1.5F, 3, 6, 3);
@@ -119,7 +122,7 @@ public class FallenModel extends EntityModel<FallenRenderState>
     private static void addKnife(PartDefinition arm)
     {
         arm.addOrReplaceChild("knife", CubeListBuilder.create()
-                        .texOffs(54, 32).addBox(-0.5F, -0.5F, -2, 1, 1, 2)
+                        .texOffs(54, 32).addBox(-0.5F, -0.5F, -2, 1, 1, 2, ModelBoxes.proud(0, -1, 0))
                         .texOffs(40, 32).addBox(-0.5F, -0.5F, -8, 1, 1, 6),
                 PartPose.offset(0, 11.5F, 0));
     }
@@ -127,7 +130,7 @@ public class FallenModel extends EntityModel<FallenRenderState>
     private static void addSword(PartDefinition arm)
     {
         arm.addOrReplaceChild("sword", CubeListBuilder.create()
-                        .texOffs(76, 14).addBox(-0.5F, -1, -1, 1, 3, 1)
+                        .texOffs(76, 14).addBox(-0.5F, -1, -1, 1, 3, 1, ModelBoxes.proud(0, 0, 1))
                         .texOffs(64, 14).addBox(-2.5F, -0.5F, -2, 5, 1, 1)
                         .texOffs(64, 0).addBox(-0.5F, -1, -14, 1, 2, 12)
                         .texOffs(90, 0).addBox(-0.5F, 1, -6, 1, 1, 2)

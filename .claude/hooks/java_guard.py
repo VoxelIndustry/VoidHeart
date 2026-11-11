@@ -14,6 +14,9 @@ KNOWN_BUGS = [
      "wall clock. If this times an animation, fade or glide, use Util.getNanos() or Util.getMillis(): client game "
      "tests run on a virtual clock through Util, and a wall-clock animation falls behind there. Measuring real cost "
      "is fine."),
+    (re.compile(r"addBox\([^()]*,\s*0F?(,\s*[\d.]+F?){0,2}\)"),
+     "flat model box drawing all its faces. Entity cutout culls nothing since 26.3, so both faces of a flat box show "
+     "in one plane and fight. Pass the one face to keep, such as ModelBoxes.FRONT. MobModelGeometryTest checks this."),
 ]
 
 

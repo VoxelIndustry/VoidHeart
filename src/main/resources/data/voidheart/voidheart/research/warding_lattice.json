@@ -1,8 +1,6 @@
 {
   "tier": 2,
   "constellation": "artifices",
-  "x": -0.2,
-  "y": 0.36,
   "icon": "voidheart:lesser_shielding_apparatus",
   "insight_cost": 8,
   "knowledge_cost": 900,
