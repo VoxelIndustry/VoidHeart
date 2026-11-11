@@ -34,6 +34,7 @@ import net.voxelindustry.voidheart.common.content.research.MeatProxyTile;
 import net.voxelindustry.voidheart.common.content.research.VoidLoomTile;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeRepositoryTile;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleNestTile;
+import net.voxelindustry.voidheart.common.content.mob.DormantTreantTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
@@ -64,6 +65,7 @@ public class VoidHeartTiles
 
     public static BlockEntityType<ExperienceSkullTile> EXPERIENCE_SKULL;
     public static BlockEntityType<BarnacleNestTile> BARNACLE_NEST;
+    public static BlockEntityType<DormantTreantTile> DORMANT_TREANT;
     public static BlockEntityType<MendingAltarTile> MENDING_ALTAR;
 
     public static BlockEntityType<InventoryInserterTile> INVENTORY_INSERTER;
@@ -180,6 +182,8 @@ public class VoidHeartTiles
                 "malignant_tormenter");
         registerTile(BARNACLE_NEST = FabricBlockEntityTypeBuilder.create(BarnacleNestTile::new, VoidHeartBlocks.BARNACLE_NEST).build(),
                 "barnacle_nest");
+        registerTile(DORMANT_TREANT = FabricBlockEntityTypeBuilder.create(DormantTreantTile::new, VoidHeartBlocks.DORMANT_TREANT).build(),
+                "dormant_treant");
     }
 
     public static void registerTile(BlockEntityType<?> type, String name)

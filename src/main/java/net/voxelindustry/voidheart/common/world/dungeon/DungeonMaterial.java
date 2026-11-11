@@ -84,6 +84,8 @@ public enum DungeonMaterial
     GRATE(true),
     CHEST,
     NEST,
+    // The foot of a trunk a Treant hides in
+    TREANT,
     // Where players leave from, always within sight of where they arrive
     RETURN_RIFT,
 

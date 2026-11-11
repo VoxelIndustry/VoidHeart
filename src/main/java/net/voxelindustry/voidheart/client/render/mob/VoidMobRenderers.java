@@ -23,6 +23,7 @@ import net.voxelindustry.voidheart.client.model.mob.LegionaryModel;
 import net.voxelindustry.voidheart.client.model.mob.MalignantBoulderModel;
 import net.voxelindustry.voidheart.client.model.mob.StalkingWraithModel;
 import net.voxelindustry.voidheart.client.model.mob.StalkingWraithMouthModel;
+import net.voxelindustry.voidheart.client.model.mob.TreantModel;
 import net.voxelindustry.voidheart.client.model.mob.VoidGhoulModel;
 import net.voxelindustry.voidheart.client.model.mob.VoidSkeletonModel;
 import net.voxelindustry.voidheart.client.model.mob.WraithModel;
@@ -60,6 +61,7 @@ public final class VoidMobRenderers
         ModelLayerRegistry.registerModelLayer(LegionaryModel.LAYER, LegionaryModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(CenturionModel.LAYER, CenturionModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(KernacianDragoonModel.LAYER, KernacianDragoonModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(TreantModel.LAYER, TreantModel::createBodyLayer);
 
         EntityRenderers.register(VoidHeartEntities.VOID_SKELETON, VoidSkeletonRender::new);
         EntityRenderers.register(VoidHeartEntities.VOID_GHOUL, VoidGhoulRender::new);
@@ -88,6 +90,7 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.LEGIONARY, LegionaryRender::new);
         EntityRenderers.register(VoidHeartEntities.CENTURION, CenturionRender::new);
         EntityRenderers.register(VoidHeartEntities.KERNACIAN_DRAGOON, KernacianDragoonRender::new);
+        EntityRenderers.register(VoidHeartEntities.TREANT, TreantRender::new);
 
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) ->
         {

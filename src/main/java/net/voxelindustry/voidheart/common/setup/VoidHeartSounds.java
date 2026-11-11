@@ -33,6 +33,7 @@ public final class VoidHeartSounds
     public static final MobSounds LEGIONARY         = mob("legionary");
     public static final MobSounds CENTURION         = mob("centurion");
     public static final MobSounds KERNACIAN_DRAGOON = mob("kernacian_dragoon");
+    public static final MobSounds TREANT            = mob("treant");
     public static final MobSounds WRAITH_SCARAB     = mob("wraith_scarab");
 
     public static final SoundEvent GHOUL_LUNGE      = register("entity.void_ghoul.lunge");
@@ -76,6 +77,10 @@ public final class VoidHeartSounds
     public static final SoundEvent DRAGOON_BEAM     = register("entity.kernacian_dragoon.beam");
     public static final SoundEvent DRAGOON_KICK     = register("entity.kernacian_dragoon.kick");
     public static final SoundEvent DRAGOON_ADAPT    = register("entity.kernacian_dragoon.adapt");
+    public static final SoundEvent TREANT_EMERGE    = register("entity.treant.emerge");
+    public static final SoundEvent TREANT_TEAR      = register("entity.treant.tear");
+    public static final SoundEvent TREANT_WINDUP    = register("entity.treant.windup");
+    public static final SoundEvent TREANT_SWEEP     = register("entity.treant.sweep");
 
     public static final SoundEvent ARMILLARY_FORM         = register("block.armillary.form");
     public static final SoundEvent ARMILLARY_BREAK        = register("block.armillary.break");

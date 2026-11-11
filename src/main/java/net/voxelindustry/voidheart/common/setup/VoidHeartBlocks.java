@@ -9,6 +9,7 @@ import net.voxelindustry.voidheart.common.content.athanor.AspectIntakeBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorBlock;
 import net.voxelindustry.voidheart.common.content.athanor.CrucibleBlock;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleNestBlock;
+import net.voxelindustry.voidheart.common.content.mob.DormantTreantBlock;
 import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.core.component.DataComponents;
@@ -112,6 +113,7 @@ public class VoidHeartBlocks
 
     public static Block POCKET_WALL;
     public static Block BARNACLE_NEST;
+    public static Block DORMANT_TREANT;
     public static Block VOID_SKELETON_HEAD;
     public static Block VOIDSTONE;
     public static Block VOIDSTONE_STAIRS;
@@ -480,6 +482,13 @@ public class VoidHeartBlocks
                 .strength(10, 3)
                 .noOcclusion()
                 .sound(SoundType.SLIME_BLOCK), true);
+        // Passes for a dark oak log in every way a player can tell, short of coming near
+        DORMANT_TREANT = registerBlock("dormant_treant", DormantTreantBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BROWN)
+                .instrument(NoteBlockInstrument.BASS)
+                .strength(2)
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.WOOD), true);
         VOID_SKELETON_HEAD = registerBlock("void_skeleton_head", VoidSkeletonHeadBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.SKELETON)

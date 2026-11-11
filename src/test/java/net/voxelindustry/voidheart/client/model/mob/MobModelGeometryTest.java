@@ -58,6 +58,7 @@ class MobModelGeometryTest
             new Model("malignant_boulder", MalignantBoulderModel::createBodyLayer, "malignant_boulder"),
             new Model("stalking_wraith", StalkingWraithModel::createBodyLayer, "stalking_wraith"),
             new Model("stalking_wraith_mouth", StalkingWraithMouthModel::createMouthLayer, "stalking_wraith"),
+            new Model("treant", TreantModel::createBodyLayer, "treant"),
             new Model("void_ghoul", VoidGhoulModel::createBodyLayer, "void_ghoul"),
             new Model("void_skeleton", VoidSkeletonModel::createBodyLayer, "void_skeleton"),
             new Model("wraith", WraithModel::createBodyLayer, "wraith"),

@@ -13,6 +13,7 @@ public final class DungeonMobTable
 {
     private static final int[] BASE_MOBS = { 5, 15, 45 };
     private static final int[] BASE_NESTS = { 1, 3, 9 };
+    private static final int[] BASE_TREANTS = { 1, 2, 6 };
 
     // A scan height above zero is for a prepared structure the plan cannot see into: the floor must be looked for that far up
     public record Placement(DungeonMob mob, int x, int y, int z, Direction surface, int scanHeight)
@@ -34,6 +35,17 @@ public final class DungeonMobTable
         if (!DungeonMob.Family.PEST.livesIn(theme))
             return 0;
         return BASE_NESTS[size.ordinal()] * (1 + (difficulty - DungeonAddress.MIN_DIFFICULTY) / 2);
+    }
+
+    /**
+     * Treants hide in trunks rather than standing among the other mobs, so they come on top of the budget.
+     */
+    public static int treants(DungeonTheme theme, DungeonSize size, int difficulty)
+    {
+        if (theme != DungeonTheme.FOREST)
+            return 0;
+        int base = BASE_TREANTS[size.ordinal()];
+        return base + base * (difficulty - DungeonAddress.MIN_DIFFICULTY) / (DungeonAddress.MAX_DIFFICULTY - DungeonAddress.MIN_DIFFICULTY);
     }
 
     public static List<DungeonMob> roster(DungeonTheme theme, int difficulty)

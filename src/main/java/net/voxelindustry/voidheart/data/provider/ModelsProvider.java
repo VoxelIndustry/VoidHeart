@@ -54,7 +54,7 @@ public class ModelsProvider extends FabricModelProvider
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "knowledge_tablet", "knowledge_repository", "knowledge_column", "shoulder_eye", "permeable_barrier", "beam_focus",
             "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix", "cogitant", "meat_proxy", "void_loom",
-            "athanor", "alembic", "crucible", "mending_altar"
+            "athanor", "alembic", "crucible", "mending_altar", "dormant_treant"
     );
 
     /**
@@ -303,6 +303,7 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRIGGLING_BRAIN, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.HEARTWOOD_KNOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SALT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.QUICKSILVER, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRAITH_INK, ModelTemplates.FLAT_ITEM);

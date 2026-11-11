@@ -1241,5 +1241,85 @@
         "pitch": 0.55
       }
     ]
+  },
+  "entity.treant.ambient": {
+    "subtitle": "subtitles.voidheart.entity.treant.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.creaking.ambient",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.treant.hurt": {
+    "subtitle": "subtitles.voidheart.entity.treant.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.creaking.sway",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.treant.death": {
+    "subtitle": "subtitles.voidheart.entity.treant.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.creaking.death",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.treant.step": {
+    "subtitle": "subtitles.voidheart.entity.treant.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.creaking.step",
+        "type": "event",
+        "pitch": 0.55
+      }
+    ]
+  },
+  "entity.treant.emerge": {
+    "subtitle": "subtitles.voidheart.entity.treant.emerge",
+    "sounds": [
+      {
+        "name": "minecraft:block.creaking_heart.spawn",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.treant.tear": {
+    "subtitle": "subtitles.voidheart.entity.treant.tear",
+    "sounds": [
+      {
+        "name": "minecraft:block.wood.break",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.treant.windup": {
+    "subtitle": "subtitles.voidheart.entity.treant.windup",
+    "sounds": [
+      {
+        "name": "minecraft:entity.creaking.twitch",
+        "type": "event",
+        "pitch": 0.55
+      }
+    ]
+  },
+  "entity.treant.sweep": {
+    "subtitle": "subtitles.voidheart.entity.treant.sweep",
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.attack.sweep",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
   }
 }

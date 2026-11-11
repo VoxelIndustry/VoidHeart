@@ -59,6 +59,7 @@ public final class DungeonPlan
     private final List<DungeonTemplate.Placement> templates = new ArrayList<>();
     private final List<int[]> chests = new ArrayList<>();
     private final List<DungeonMobTable.Placement> mobs = new ArrayList<>();
+    private final List<int[]> treants;
     private final SimplexNoise warpX;
     private final SimplexNoise warpY;
     private final SimplexNoise warpZ;
@@ -97,6 +98,7 @@ public final class DungeonPlan
         spreadFillLight();
         sealShell();
         placeMobs();
+        treants = new TreantTrunks(blueprint, grid, layout.rooms.stream().filter(room -> room != layout.entry).toList(), this::isSafe, entry, mobs).grow();
     }
 
     public static DungeonPlan generate(DungeonBlueprint blueprint)
@@ -148,6 +150,14 @@ public final class DungeonPlan
     public List<int[]> chests()
     {
         return chests;
+    }
+
+    /**
+     * Where each Treant waits in the foot of its trunk.
+     */
+    public List<int[]> treants()
+    {
+        return treants;
     }
 
     public List<DungeonMobTable.Placement> mobs()
