@@ -10,6 +10,8 @@ public enum DungeonMob
     VOID_GHOUL(Family.GENERIC, 1, 10, 0, 2, 1, false),
     WRAITH(Family.GENERIC, 2, 5, 0, 2, 1, false),
     WRAITH_SCARAB(Family.GENERIC, 2, 4, 0, 1, 2, true),
+    // Rare, and a horse needs a clear square to take shape on
+    WRAITH_BEAST(Family.GENERIC, 3, 2, 1, 2, 1, false),
 
     CRAB_SMALL(Family.PEST, 1, 8, 0, 1, 3, true),
     CRAB_MEDIUM(Family.PEST, 1, 8, 0, 1, 1, true),

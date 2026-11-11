@@ -9,6 +9,7 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.voxelindustry.voidheart.common.content.mob.StalkingWraith;
+import net.voxelindustry.voidheart.common.content.mob.WraithBeast;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 
 import java.util.List;
@@ -46,6 +47,7 @@ public class MobGeometryClientTest implements FabricClientGameTest
                 new Shot("void-ghoul", VoidHeartEntities.VOID_GHOUL),
                 new Shot("wraith", VoidHeartEntities.WRAITH),
                 new Shot("wraith-scarab", VoidHeartEntities.WRAITH_SCARAB),
+                new Shot("wraith-beast", VoidHeartEntities.WRAITH_BEAST),
                 new Shot("crab-large", VoidHeartEntities.CORRUPTED_CRAB_LARGE),
                 new Shot("barnacle", VoidHeartEntities.CORRUPTED_BARNACLE),
                 new Shot("fallen-novice", VoidHeartEntities.FALLEN_NOVICE),
@@ -91,6 +93,8 @@ public class MobGeometryClientTest implements FabricClientGameTest
                     mob.setNoAi(true);
                     if (mob instanceof StalkingWraith stalker)
                         stalker.setRevealed(true);
+                    if (mob instanceof WraithBeast beast)
+                        beast.showSolid();
                     level.addFreshEntity(mob);
                     heights[index] = mob.getBbHeight();
                 });

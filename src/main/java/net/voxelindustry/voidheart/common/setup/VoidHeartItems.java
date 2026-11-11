@@ -186,6 +186,7 @@ public class VoidHeartItems
         registerSpawnEgg("arcane_eye", VoidHeartEntities.ARCANE_EYE);
         registerSpawnEgg("stalking_wraith", VoidHeartEntities.STALKING_WRAITH);
         registerSpawnEgg("wraith_scarab", VoidHeartEntities.WRAITH_SCARAB);
+        registerSpawnEgg("wraith_beast", VoidHeartEntities.WRAITH_BEAST);
         registerSpawnEgg("fallen_bishop", VoidHeartEntities.FALLEN_BISHOP);
         registerSpawnEgg("malignant_boulder", VoidHeartEntities.MALIGNANT_BOULDER);
         registerSpawnEgg("legionary", VoidHeartEntities.LEGIONARY);

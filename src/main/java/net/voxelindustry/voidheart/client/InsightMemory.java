@@ -46,7 +46,7 @@ public final class InsightMemory
      */
     public static boolean ignores(EntityType<?> type)
     {
-        return type == VoidHeartEntities.WRAITH || type == VoidHeartEntities.STALKING_WRAITH;
+        return type == VoidHeartEntities.WRAITH || type == VoidHeartEntities.STALKING_WRAITH || type == VoidHeartEntities.WRAITH_BEAST;
     }
 
     public static boolean remembers()

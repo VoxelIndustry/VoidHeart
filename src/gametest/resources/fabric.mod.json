@@ -56,6 +56,7 @@
       "net.voxelindustry.voidheart.gametest.TreantClientTest",
       "net.voxelindustry.voidheart.gametest.MobGeometryClientTest",
       "net.voxelindustry.voidheart.gametest.WraithScarabClientTest",
+      "net.voxelindustry.voidheart.gametest.WraithBeastClientTest",
       "net.voxelindustry.voidheart.gametest.VoidEyeBehaviourClientTest",
       "net.voxelindustry.voidheart.gametest.LootTablesClientTest",
       "net.voxelindustry.voidheart.gametest.DungeonTeleportClientTest",
