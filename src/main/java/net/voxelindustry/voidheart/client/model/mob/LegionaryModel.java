@@ -62,9 +62,10 @@ public class LegionaryModel extends EntityModel<LegionaryRenderState>
 
         root.addOrReplaceChild("head", CubeListBuilder.create()
                         .texOffs(0, 0).addBox(-4, -8, -4, 8, 8, 8)
-                        .texOffs(32, 0).addBox(-5, -4, -3, 1, 5, 4)
-                        .texOffs(32, 0).mirror().addBox(4, -4, -3, 1, 5, 4).mirror(false)
-                        .texOffs(42, 0).addBox(-4.5F, -2, 3, 9, 2, 2)
+                        // The cheek guards stand a hair off the body and shoulders they reach down past, and the neck guard below the helmet's rim
+                        .texOffs(32, 0).addBox(-5, -4, -3, 1, 5, 4, ModelBoxes.proud(1, 0, 2))
+                        .texOffs(32, 0).mirror().addBox(4, -4, -3, 1, 5, 4, ModelBoxes.proud(1, 0, 2)).mirror(false)
+                        .texOffs(42, 0).addBox(-4.5F, -2, 3, 9, 2, 2, ModelBoxes.proud(0, 1, 0))
                         .texOffs(42, 5).addBox(-4.5F, -6, -5, 9, 1, 1)
                         .texOffs(64, 0).addBox(-0.5F, -12, -5, 1, 5, 10),
                 PartPose.offset(0, -2, 0));
@@ -77,7 +78,7 @@ public class LegionaryModel extends EntityModel<LegionaryRenderState>
         {
             boolean front = i < SKIRT_STRIPS / 2;
             float x = -3.6F + (i % (SKIRT_STRIPS / 2)) * 2.4F;
-            body.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(60, 18).addBox(-1, 0, 0, 2, 7, 0),
+            body.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(60, 18).addBox(-1, 0, 0, 2, 7, 0, front ? ModelBoxes.FRONT : ModelBoxes.BACK),
                     PartPose.offset(x, 11, front ? -2.7F : 2.7F));
         }
 
@@ -104,7 +105,7 @@ public class LegionaryModel extends EntityModel<LegionaryRenderState>
         var builder = CubeListBuilder.create();
         if (mirror)
             builder.mirror();
-        builder.texOffs(32, 28).addBox(-3, -3, -3, 6, 5, 6)
+        builder.texOffs(32, 28).addBox(-3, -3, -3, 6, 5, 6, ModelBoxes.proud(0, 0, 1))
                 .texOffs(56, 28).addBox(-1.5F, -1, -1.5F, 3, 15, 3);
         return root.addOrReplaceChild(name, builder, PartPose.offset(x, 0, 0));
     }
@@ -114,7 +115,7 @@ public class LegionaryModel extends EntityModel<LegionaryRenderState>
         var builder = CubeListBuilder.create();
         if (mirror)
             builder.mirror();
-        builder.texOffs(0, 38).addBox(-1.5F, 0, -1.5F, 3, 13, 3)
+        builder.texOffs(0, 38).addBox(-1.5F, 0, -1.5F, 3, 13, 3, ModelBoxes.proud(0, -1, 0))
                 .texOffs(12, 38).addBox(-2, 6, -2.5F, 4, 7, 5);
         root.addOrReplaceChild(name, builder, PartPose.offset(x, 11, 0));
     }

@@ -82,8 +82,8 @@ public class StalkingWraithModel extends EntityModel<StalkingWraithRenderState>
         root.addOrReplaceChild("head", CubeListBuilder.create()
                         .texOffs(0, 0).addBox(-4, -9, -4, 8, 9, 8)
                         .texOffs(32, 0).addBox(-6, -11, -6, 12, 2, 11)
-                        .texOffs(78, 0).addBox(-6, -9, -6, 1, 10, 11)
-                        .texOffs(78, 0).mirror().addBox(5, -9, -6, 1, 10, 11).mirror(false)
+                        .texOffs(78, 0).addBox(-6, -9, -6, 1, 10, 11, ModelBoxes.PROUD)
+                        .texOffs(78, 0).mirror().addBox(5, -9, -6, 1, 10, 11, ModelBoxes.PROUD).mirror(false)
                         .texOffs(102, 0).addBox(-6, -9, 4, 12, 10, 1)
                         .texOffs(102, 12).addBox(-4, 1, 4, 8, 8, 1)
                         .texOffs(0, 18).addBox(-5, -9, -5, 10, 10, 1),
@@ -95,10 +95,14 @@ public class StalkingWraithModel extends EntityModel<StalkingWraithRenderState>
                 PartPose.ZERO);
 
         var skirt = root.addOrReplaceChild("skirt", CubeListBuilder.create().texOffs(0, 54).addBox(-7, 0, -4.5F, 14, 10, 9), PartPose.offset(0, 8, 0));
-        float[][] wispSpots = { { -4.5F, -4.5F, 0 }, { 0, -4.5F, 0 }, { 4.5F, -4.5F, 0 }, { -4.5F, 4.5F, 0 }, { 0, 4.5F, 0 }, { 4.5F, 4.5F, 0 }, { -7, 0, Mth.HALF_PI }, { 7, 0, Mth.HALF_PI } };
+        // A hair out from the skirt they hang off, each showing one face, the one that is outward before it turns
+        float front = 4.5F + ModelBoxes.GAP;
+        float side = 7 + ModelBoxes.GAP;
+        float[][] wispSpots = { { -4.5F, -front, 0 }, { 0, -front, 0 }, { 4.5F, -front, 0 }, { -4.5F, front, 0 }, { 0, front, 0 }, { 4.5F, front, 0 }, { -side, 0, Mth.HALF_PI }, { side, 0, Mth.HALF_PI } };
         for (int i = 0; i < WISPS; i++)
         {
-            skirt.addOrReplaceChild("wisp_" + i, CubeListBuilder.create().texOffs(46, 54).addBox(-2, 0, 0, 4, 7, 0),
+            boolean outwardNorth = wispSpots[i][1] < 0 || wispSpots[i][0] < 0 && wispSpots[i][1] == 0;
+            skirt.addOrReplaceChild("wisp_" + i, CubeListBuilder.create().texOffs(46, 54).addBox(-2, 0, 0, 4, 7, 0, outwardNorth ? ModelBoxes.FRONT : ModelBoxes.BACK),
                     PartPose.offsetAndRotation(wispSpots[i][0], 9, wispSpots[i][1], 0, wispSpots[i][2], 0));
         }
 
@@ -131,7 +135,7 @@ public class StalkingWraithModel extends EntityModel<StalkingWraithRenderState>
         for (int i = 0; i < MOUTH_STRIPS; i++)
         {
             int offset = i - MOUTH_REACH;
-            head.addOrReplaceChild("mouth_" + i, CubeListBuilder.create().texOffs(i % 2 == 0 ? 54 : 56, 54).addBox(-0.5F, -1.5F, 0, 1, 3, 0),
+            head.addOrReplaceChild("mouth_" + i, CubeListBuilder.create().texOffs(i % 2 == 0 ? 54 : 56, 54).addBox(-0.5F, -1.5F, 0, 1, 3, 0, ModelBoxes.FRONT),
                     PartPose.offset(offset, MOUTH_Y, Math.abs(offset) > MOUTH_ON_FACE ? MOUTH_HOOD_Z : MOUTH_FACE_Z));
         }
     }

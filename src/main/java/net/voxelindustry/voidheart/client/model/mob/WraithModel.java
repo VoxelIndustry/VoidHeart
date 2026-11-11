@@ -67,7 +67,8 @@ public class WraithModel extends EntityModel<WraithRenderState>
 
         root.addOrReplaceChild("head", CubeListBuilder.create()
                         .texOffs(0, 0).addBox(-3.5F, -8, -3.5F, 7, 8, 7)
-                        .texOffs(28, 0).addBox(-4, -8.5F, -4.5F, 8, 10, 8)
+                        // The hood reaches a hair behind the skull, whose back would otherwise lie on its own
+                        .texOffs(28, 0).addBox(-4, -8.5F, -4.5F, 8, 10, 8, ModelBoxes.proud(0, 0, 1))
                         .texOffs(40, 36).addBox(-2.5F, -10.5F, -3, 5, 2, 6)
                         .texOffs(40, 44).addBox(-3, -7, 3.5F, 6, 9, 1),
                 PartPose.ZERO);
@@ -77,10 +78,14 @@ public class WraithModel extends EntityModel<WraithRenderState>
                 PartPose.ZERO);
 
         var skirt = root.addOrReplaceChild("skirt", CubeListBuilder.create().texOffs(22, 19).addBox(-4, 0, -2.5F, 8, 9, 5), PartPose.offset(0, 10, 0));
-        float[][] wispSpots = { { -2.5F, -2.5F, 0 }, { 2.5F, -2.5F, 0 }, { -2.5F, 2.5F, 0 }, { 2.5F, 2.5F, 0 }, { -4, 0, Mth.HALF_PI }, { 4, 0, Mth.HALF_PI } };
+        // A hair out from the skirt they hang off, each showing one face, the one that is outward before it turns
+        float front = 2.5F + ModelBoxes.GAP;
+        float side = 4 + ModelBoxes.GAP;
+        float[][] wispSpots = { { -2.5F, -front, 0 }, { 2.5F, -front, 0 }, { -2.5F, front, 0 }, { 2.5F, front, 0 }, { -side, 0, Mth.HALF_PI }, { side, 0, Mth.HALF_PI } };
         for (int i = 0; i < WISPS; i++)
         {
-            skirt.addOrReplaceChild("wisp_" + i, CubeListBuilder.create().texOffs(12, 34).addBox(-1.5F, 0, 0, 3, 6, 0),
+            boolean outwardNorth = wispSpots[i][1] < 0 || wispSpots[i][0] < 0 && wispSpots[i][1] == 0;
+            skirt.addOrReplaceChild("wisp_" + i, CubeListBuilder.create().texOffs(12, 34).addBox(-1.5F, 0, 0, 3, 6, 0, outwardNorth ? ModelBoxes.FRONT : ModelBoxes.BACK),
                     PartPose.offsetAndRotation(wispSpots[i][0], 8, wispSpots[i][1], 0, wispSpots[i][2], 0));
         }
 

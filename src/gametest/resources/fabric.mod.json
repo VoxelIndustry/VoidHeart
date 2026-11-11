@@ -50,6 +50,7 @@
       "net.voxelindustry.voidheart.gametest.VoidDungeonClientTest",
       "net.voxelindustry.voidheart.gametest.VoidMobBehaviourClientTest",
       "net.voxelindustry.voidheart.gametest.VoidMobLooksClientTest",
+      "net.voxelindustry.voidheart.gametest.MobGeometryClientTest",
       "net.voxelindustry.voidheart.gametest.VoidEyeBehaviourClientTest",
       "net.voxelindustry.voidheart.gametest.LootTablesClientTest",
       "net.voxelindustry.voidheart.gametest.DungeonTeleportClientTest",

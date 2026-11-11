@@ -72,7 +72,7 @@ public class CenturionModel extends EntityModel<CenturionRenderState>
                         .texOffs(0, 0).addBox(-4.5F, -9, -4.5F, 9, 9, 9)
                         .texOffs(36, 0).addBox(-5.5F, -4, -3, 1, 5, 4)
                         .texOffs(36, 0).mirror().addBox(4.5F, -4, -3, 1, 5, 4).mirror(false)
-                        .texOffs(46, 0).addBox(-5, -2, 3.5F, 10, 2, 2)
+                        .texOffs(46, 0).addBox(-5, -2, 3.5F, 10, 2, 2, ModelBoxes.proud(0, 1, 0))
                         .texOffs(46, 5).addBox(-5, -7, -5.5F, 10, 1, 1)
                         .texOffs(72, 0).addBox(-7, -12, -0.5F, 14, 5, 1),
                 PartPose.offset(0, -7, 0));
@@ -85,11 +85,11 @@ public class CenturionModel extends EntityModel<CenturionRenderState>
         {
             boolean front = i < SKIRT_STRIPS / 2;
             float x = -4 + (i % (SKIRT_STRIPS / 2)) * 2.7F;
-            body.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(70, 20).addBox(-1, 0, 0, 2, 8, 0),
+            body.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(70, 20).addBox(-1, 0, 0, 2, 8, 0, front ? ModelBoxes.FRONT : ModelBoxes.BACK),
                     PartPose.offset(x, 9, front ? -3.2F : 3.2F));
         }
 
-        root.addOrReplaceChild("cape", CubeListBuilder.create().texOffs(0, 64).addBox(-6, 0, 0, 12, 26, 0), PartPose.offset(0, -6, 3.6F));
+        root.addOrReplaceChild("cape", CubeListBuilder.create().texOffs(0, 64).addBox(-6, 0, 0, 12, 26, 0, ModelBoxes.BACK), PartPose.offset(0, -6, 3.6F));
 
         var rightArm = addArm(root, "right_arm", -8, false);
         var leftArm = addArm(root, "left_arm", 8, true);
@@ -119,7 +119,7 @@ public class CenturionModel extends EntityModel<CenturionRenderState>
         var builder = CubeListBuilder.create();
         if (mirror)
             builder.mirror();
-        builder.texOffs(38, 32).addBox(-4, -3.5F, -3.5F, 7, 6, 7)
+        builder.texOffs(38, 32).addBox(-4, -3.5F, -3.5F, 7, 6, 7, ModelBoxes.proud(0, 0, 1))
                 .texOffs(66, 32).addBox(-2, -1, -2, 4, 17, 4);
         return root.addOrReplaceChild(name, builder, PartPose.offset(x, -5, 0));
     }
@@ -129,7 +129,8 @@ public class CenturionModel extends EntityModel<CenturionRenderState>
         var builder = CubeListBuilder.create();
         if (mirror)
             builder.mirror();
-        builder.texOffs(0, 42).addBox(-2, 0, -2, 4, 16, 4)
+        // A hair narrower and shorter than the hip plate and greave it runs into, so it shares neither's sides or sole
+        builder.texOffs(0, 42).addBox(-2, 0, -2, 4, 16, 4, ModelBoxes.proud(-1, -1, 0))
                 .texOffs(16, 42).addBox(-2.5F, 8, -3, 5, 8, 6);
         root.addOrReplaceChild(name, builder, PartPose.offset(x, 8, 0));
     }

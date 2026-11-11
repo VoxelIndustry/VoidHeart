@@ -184,8 +184,9 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
                 .texOffs(VEIN_U, VEIN_V).addBox(-0.5F, -9, -5.5F, 1, 6, 1)
                 .texOffs(VEIN_U, VEIN_V).addBox(-4.5F, -4, -5.5F, 4, 1, 1)
                 .texOffs(VEIN_U, VEIN_V).addBox(0.5F, -4, -5.5F, 4, 1, 1)
-                .texOffs(VEIN_U, VEIN_V).addBox(-4.5F, -3, -5.5F, 1, 2, 1)
-                .texOffs(VEIN_U, VEIN_V).addBox(3.5F, -3, -5.5F, 1, 2, 1), PartPose.ZERO);
+                // These two end a hair below the chest plate rather than level with it
+                .texOffs(VEIN_U, VEIN_V).addBox(-4.5F, -3, -5.5F, 1, 2, 1, ModelBoxes.proud(0, 1, 0))
+                .texOffs(VEIN_U, VEIN_V).addBox(3.5F, -3, -5.5F, 1, 2, 1, ModelBoxes.proud(0, 1, 0)), PartPose.ZERO);
         body.addOrReplaceChild("projectile_2", CubeListBuilder.create().texOffs(90, 48).addBox(-5, -8, -7.5F, 10, 7, 1), PartPose.ZERO);
         body.addOrReplaceChild("explosion_2", CubeListBuilder.create().texOffs(38, 63).addBox(-7.5F, -10.5F, -6, 15, 4, 2), PartPose.ZERO);
 
@@ -195,21 +196,21 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
         {
             var builder = CubeListBuilder.create();
             for (int i = (tier - 1) * 2; i < tier * 2; i++)
-                builder.texOffs(112, 48).addBox(fins[i][0], fins[i][1], 6, 0, 6, 4);
+                builder.texOffs(112, 48).addBox(fins[i][0], fins[i][1], 6, 0, 6, 4, ModelBoxes.LEFT);
             body.addOrReplaceChild("fire_" + tier, builder, PartPose.ZERO);
         }
 
-        // Rings of runes behind the head, which turn slowly
+        // Rings of runes behind the head, which turn slowly. Their sides wrap a hair around the ends of the top and bottom where they cross
         body.addOrReplaceChild("magic_1", CubeListBuilder.create()
                 .texOffs(0, 87).addBox(-6, -6, -0.5F, 12, 1, 1)
                 .texOffs(0, 87).addBox(-6, 5, -0.5F, 12, 1, 1)
-                .texOffs(26, 87).addBox(-6, -5, -0.5F, 1, 12, 1)
-                .texOffs(26, 87).addBox(5, -6, -0.5F, 1, 12, 1), PartPose.offset(0, -15.5F, 6));
+                .texOffs(26, 87).addBox(-6, -5, -0.5F, 1, 12, 1, ModelBoxes.PROUD)
+                .texOffs(26, 87).addBox(5, -6, -0.5F, 1, 12, 1, ModelBoxes.PROUD), PartPose.offset(0, -15.5F, 6));
         body.addOrReplaceChild("magic_3", CubeListBuilder.create()
                 .texOffs(38, 87).addBox(-8, -8, -0.5F, 16, 1, 1)
                 .texOffs(38, 87).addBox(-8, 7, -0.5F, 16, 1, 1)
-                .texOffs(72, 87).addBox(-8, -7, -0.5F, 1, 16, 1)
-                .texOffs(72, 87).addBox(7, -8, -0.5F, 1, 16, 1), PartPose.offset(0, -15.5F, 7.5F));
+                .texOffs(72, 87).addBox(-8, -7, -0.5F, 1, 16, 1, ModelBoxes.PROUD)
+                .texOffs(72, 87).addBox(7, -8, -0.5F, 1, 16, 1, ModelBoxes.PROUD), PartPose.offset(0, -15.5F, 7.5F));
     }
 
     /**
@@ -240,7 +241,7 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
         arm.addOrReplaceChild("kernacian_2", CubeListBuilder.create()
                 .texOffs(VEIN_U, VEIN_V).addBox(-0.5F, 2, -2.5F, 1, 6, 1)
                 .texOffs(VEIN_U, VEIN_V).addBox(-outward * 2.5F - 0.5F, 9, -0.5F, 1, 7, 1), PartPose.ZERO);
-        arm.addOrReplaceChild("magic_2", CubeListBuilder.create().texOffs(30, 87).addBox(-2, 10, -2.6F, 4, 6, 0), PartPose.ZERO);
+        arm.addOrReplaceChild("magic_2", CubeListBuilder.create().texOffs(30, 87).addBox(-2, 10, -2.6F, 4, 6, 0, ModelBoxes.FRONT), PartPose.ZERO);
         // The shield grows on the left arm only, the one it would raise
         if (outward > 0)
         {
@@ -254,8 +255,9 @@ public class KernacianDragoonModel extends EntityModel<KernacianDragoonRenderSta
         var builder = CubeListBuilder.create();
         if (mirror)
             builder.mirror();
-        builder.texOffs(0, 20).addBox(-2.5F, 0, -2.5F, 5, 9, 5)
-                .texOffs(20, 20).addBox(-2.5F, 9, -2.5F, 5, 9, 5)
+        // The thigh is a hair narrower than the hips it meets and reaches into the shin, which ends a hair inside the foot
+        builder.texOffs(0, 20).addBox(-2.5F, 0, -2.5F, 5, 9, 5, ModelBoxes.proud(-1, 1, 0))
+                .texOffs(20, 20).addBox(-2.5F, 9, -2.5F, 5, 9, 5, ModelBoxes.proud(0, -1, 0))
                 .texOffs(66, 20).addBox(-3, 16, -4, 6, 2, 7);
         var leg = root.addOrReplaceChild(name, builder, PartPose.offset(x, 6, 0));
         leg.addOrReplaceChild("blade_2", CubeListBuilder.create().texOffs(26, 48).addBox(-3, 1, -3.5F, 6, 6, 1), PartPose.ZERO);

@@ -67,8 +67,8 @@ public class FallenElderModel extends EntityModel<FallenElderRenderState>
         root.addOrReplaceChild("head", CubeListBuilder.create()
                         .texOffs(0, 0).addBox(-3.5F, -7, -3.5F, 7, 7, 7)
                         .texOffs(28, 0).addBox(-5, -10, -7, 10, 1, 11)
-                        .texOffs(70, 0).addBox(-5, -9, -7, 1, 9, 11)
-                        .texOffs(70, 0).mirror().addBox(4, -9, -7, 1, 9, 11).mirror(false)
+                        .texOffs(70, 0).addBox(-5, -9, -7, 1, 9, 11, ModelBoxes.PROUD)
+                        .texOffs(70, 0).mirror().addBox(4, -9, -7, 1, 9, 11, ModelBoxes.PROUD).mirror(false)
                         .texOffs(94, 0).addBox(-5, -9, 3, 10, 9, 1)
                         .texOffs(94, 10).addBox(-4, -3, 4, 8, 8, 1),
                 PartPose.offset(0, -10, 0));
@@ -82,8 +82,10 @@ public class FallenElderModel extends EntityModel<FallenElderRenderState>
         {
             boolean front = i < HEM_STRIPS / 2;
             float x = -4.5F + (i % (HEM_STRIPS / 2)) * 3;
-            robe.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(80, 20).addBox(-2, 0, 0, 4, 6, 0),
-                    PartPose.offset(x, 18, front ? -4.6F : 4.6F));
+            // Neighbours overlap, so every other one hangs a hair further out
+            float out = 4.6F + (i % 2) * ModelBoxes.GAP;
+            robe.addOrReplaceChild("strip_" + i, CubeListBuilder.create().texOffs(80, 20).addBox(-2, 0, 0, 4, 6, 0, front ? ModelBoxes.FRONT : ModelBoxes.BACK),
+                    PartPose.offset(x, 18, front ? -out : out));
         }
 
         addArm(root, "right_arm", -8, false);
@@ -99,14 +101,15 @@ public class FallenElderModel extends EntityModel<FallenElderRenderState>
         var builder = CubeListBuilder.create();
         if (mirror)
             builder.mirror();
-        builder.texOffs(88, 20).addBox(-2.5F, -2, -2.5F, 5, 12, 5)
+        // The sleeve's top sits a hair under the shoulders' so they don't share it
+        builder.texOffs(88, 20).addBox(-2.5F, -2, -2.5F, 5, 12, 5, ModelBoxes.proud(0, -1, 0))
                 .texOffs(108, 20).addBox(-1, 10, -1, 2, 10, 2)
                 .texOffs(116, 20).addBox(-1.5F, 20, -1.5F, 3, 2, 3);
         var arm = root.addOrReplaceChild(name, builder, PartPose.offset(x, -8, 0));
         float[][] spots = { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } };
         for (int i = 0; i < FINGERS; i++)
         {
-            arm.addOrReplaceChild("finger_" + i, CubeListBuilder.create().texOffs(116, 25).addBox(-0.5F, 0, -0.5F, 1, 7, 1),
+            arm.addOrReplaceChild("finger_" + i, CubeListBuilder.create().texOffs(116, 25).addBox(-0.5F, 0, -0.5F, 1, 7, 1, ModelBoxes.proud(-1, 0, -1)),
                     PartPose.offset(spots[i][0], 21.5F, spots[i][1]));
         }
     }
