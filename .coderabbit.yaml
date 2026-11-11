@@ -2,3 +2,7 @@
 reviews:
   # Approve once every comment is resolved, so the PR meets the ruleset's one approval
   request_changes_workflow: true
+  pre_merge_checks:
+    # Only code that isn't obvious is documented here, so a coverage target only adds noise
+    docstrings:
+      mode: "off"
