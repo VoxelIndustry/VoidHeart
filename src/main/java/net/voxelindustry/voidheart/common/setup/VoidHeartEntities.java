@@ -24,6 +24,7 @@ import net.voxelindustry.voidheart.common.content.mob.LargeEyeMaw;
 import net.voxelindustry.voidheart.common.content.mob.Legionary;
 import net.voxelindustry.voidheart.common.content.mob.MalignantBoulder;
 import net.voxelindustry.voidheart.common.content.mob.StalkingWraith;
+import net.voxelindustry.voidheart.common.content.mob.WraithScarab;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeleton;
@@ -54,6 +55,7 @@ public class VoidHeartEntities
     public static EntityType<ArcaneEye> ARCANE_EYE;
     public static EntityType<ArcaneBolt> ARCANE_BOLT;
     public static EntityType<StalkingWraith> STALKING_WRAITH;
+    public static EntityType<WraithScarab> WRAITH_SCARAB;
     public static EntityType<FallenBishop> FALLEN_BISHOP;
     public static EntityType<MalignantBoulder> MALIGNANT_BOULDER;
     public static EntityType<Legionary> LEGIONARY;
@@ -101,6 +103,14 @@ public class VoidHeartEntities
                 .noSave()
                 .noSummon()
                 .noLootTable());
+
+        WRAITH_SCARAB = register("wraith_scarab", EntityType.Builder.of(WraithScarab::new, MobCategory.MONSTER)
+                .sized(0.55F, 0.4F)
+                .eyeHeight(0.3F)
+                .clientTrackingRange(8)
+                .updateInterval(2)
+                .fireImmune());
+        FabricDefaultAttributeRegistry.register(WRAITH_SCARAB, WraithScarab.createAttributes());
 
         CORRUPTED_CRAB_SMALL = registerCrab("corrupted_crab_small", CorruptedCrab.Size.SMALL);
         CORRUPTED_CRAB_MEDIUM = registerCrab("corrupted_crab_medium", CorruptedCrab.Size.MEDIUM);

@@ -9,6 +9,7 @@ public enum DungeonMob
     VOID_SKELETON(Family.GENERIC, 1, 10, 0, 2, 1, false),
     VOID_GHOUL(Family.GENERIC, 1, 10, 0, 2, 1, false),
     WRAITH(Family.GENERIC, 2, 5, 0, 2, 1, false),
+    WRAITH_SCARAB(Family.GENERIC, 2, 4, 0, 1, 2, true),
 
     CRAB_SMALL(Family.PEST, 1, 8, 0, 1, 3, true),
     CRAB_MEDIUM(Family.PEST, 1, 8, 0, 1, 1, true),

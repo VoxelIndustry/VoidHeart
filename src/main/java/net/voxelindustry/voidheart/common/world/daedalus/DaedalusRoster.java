@@ -19,6 +19,7 @@ public final class DaedalusRoster
             VOID_SKELETON, 10,
             VOID_GHOUL, 10,
             WRAITH, 6,
+            WRAITH_SCARAB, 4,
             STALKING_WRAITH, 3,
             FALLEN_BISHOP, 3,
             MALIGNANT_BOULDER, 2,
@@ -47,7 +48,7 @@ public final class DaedalusRoster
             case GALLERY -> new DaedalusRoster(weights(FALLEN_ADEPT, 1), false, LEGIONARY, CENTURION);
             case CISTERN -> new DaedalusRoster(weights(CRAB_SMALL, 8, CRAB_MEDIUM, 8, CRAB_LARGE, 3, BARNACLE, 6), true, MALIGNANT_BOULDER);
             case STAIRWELL -> new DaedalusRoster(weights(ARCANE_EYE, 1), false, LEGIONARY, MALIGNANT_BOULDER);
-            case WRITHING -> new DaedalusRoster(weights(BARNACLE, 6, EYE_MAW, 3), true, WRAITH, VOID_GHOUL);
+            case WRITHING -> new DaedalusRoster(weights(BARNACLE, 6, EYE_MAW, 3), true, WRAITH, WRAITH_SCARAB, VOID_GHOUL);
         };
     }
 

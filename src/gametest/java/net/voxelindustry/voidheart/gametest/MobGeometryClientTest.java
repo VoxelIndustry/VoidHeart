@@ -45,6 +45,7 @@ public class MobGeometryClientTest implements FabricClientGameTest
                 new Shot("void-skeleton", VoidHeartEntities.VOID_SKELETON),
                 new Shot("void-ghoul", VoidHeartEntities.VOID_GHOUL),
                 new Shot("wraith", VoidHeartEntities.WRAITH),
+                new Shot("wraith-scarab", VoidHeartEntities.WRAITH_SCARAB),
                 new Shot("crab-large", VoidHeartEntities.CORRUPTED_CRAB_LARGE),
                 new Shot("barnacle", VoidHeartEntities.CORRUPTED_BARNACLE),
                 new Shot("fallen-novice", VoidHeartEntities.FALLEN_NOVICE),

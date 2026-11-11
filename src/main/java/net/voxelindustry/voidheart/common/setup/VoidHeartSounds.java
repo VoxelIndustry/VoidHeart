@@ -33,10 +33,13 @@ public final class VoidHeartSounds
     public static final MobSounds LEGIONARY         = mob("legionary");
     public static final MobSounds CENTURION         = mob("centurion");
     public static final MobSounds KERNACIAN_DRAGOON = mob("kernacian_dragoon");
+    public static final MobSounds WRAITH_SCARAB     = mob("wraith_scarab");
 
     public static final SoundEvent GHOUL_LUNGE      = register("entity.void_ghoul.lunge");
     public static final SoundEvent WRAITH_WHISPER   = register("entity.wraith.whisper");
     public static final SoundEvent WRAITH_EMERGE    = register("entity.wraith.emerge");
+    public static final SoundEvent WRAITH_SCARAB_HOP  = register("entity.wraith_scarab.hop");
+    public static final SoundEvent WRAITH_SCARAB_BITE = register("entity.wraith_scarab.bite");
     public static final SoundEvent BARNACLE_INFECT  = register("entity.corrupted_barnacle.infect");
     public static final SoundEvent BARNACLE_STIR    = register("entity.corrupted_barnacle.stir");
     public static final SoundEvent BARNACLE_BURST   = register("entity.corrupted_barnacle.burst");
