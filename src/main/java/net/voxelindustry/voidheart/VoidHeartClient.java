@@ -48,6 +48,7 @@ import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePa
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
 import net.voxelindustry.voidheart.client.render.AvengingReachRender;
+import net.voxelindustry.voidheart.client.render.KleinStarRender;
 import net.voxelindustry.voidheart.client.render.WallPassageRender;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.particle.DepthsShoals;
@@ -218,6 +219,7 @@ public class VoidHeartClient implements ClientModInitializer
             TormenterHeads.clear();
             WallPassages.clearClient();
             AvengingReachRender.clear();
+            KleinStarRender.leave();
         });
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusLeyLayer::collectSubmits);
         ClientPlayNetworking.registerGlobalReceiver(OculusLeyPayloads.Layer.TYPE, OculusLeyLayer::receive);
@@ -241,6 +243,7 @@ public class VoidHeartClient implements ClientModInitializer
         CurseDirector.register();
         WallPassageRender.register();
         AvengingReachRender.register();
+        KleinStarRender.register();
 
         var particles = ParticleProviderRegistry.getInstance();
         particles.register(

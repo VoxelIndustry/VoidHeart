@@ -19,6 +19,7 @@
       "net.voxelindustry.voidheart.gametest.OculusPerformanceClientTest",
       "net.voxelindustry.voidheart.gametest.ShoulderEyeClientTest",
       "net.voxelindustry.voidheart.gametest.AvengingReachClientTest",
+      "net.voxelindustry.voidheart.gametest.KleinStarClientTest",
       "net.voxelindustry.voidheart.gametest.WraithVeilClientTest",
       "net.voxelindustry.voidheart.gametest.CurseClientTest",
       "net.voxelindustry.voidheart.gametest.OmenClientTest",

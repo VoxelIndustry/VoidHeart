@@ -28,6 +28,7 @@ import net.voxelindustry.voidheart.common.content.mob.ScarabHops;
 import net.voxelindustry.voidheart.common.content.mob.WraithScarab;
 import net.voxelindustry.voidheart.common.content.mob.WraithBeast;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
+import net.voxelindustry.voidheart.common.content.kleinstar.KleinStar;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.content.mob.Treant;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeleton;
@@ -53,6 +54,7 @@ public class VoidHeartEntities
     public static EntityType<FallenAdept> FALLEN_ADEPT;
     public static EntityType<FallenElder> FALLEN_ELDER;
     public static EntityType<VoidOrb> VOID_ORB;
+    public static EntityType<KleinStar> KLEIN_STAR;
     public static EntityType<EyeMaw> EYE_MAW;
     public static EntityType<LargeEyeMaw> LARGE_EYE_MAW;
     public static EntityType<ArcaneEye> ARCANE_EYE;
@@ -153,6 +155,15 @@ public class VoidHeartEntities
                 .eyeHeight(2.25F)
                 .clientTrackingRange(10));
         FabricDefaultAttributeRegistry.register(FALLEN_ELDER, FallenElder.createAttributes());
+
+        KLEIN_STAR = register("klein_star", EntityType.Builder.<KleinStar>of(KleinStar::new, MobCategory.MISC)
+                .sized(0.5F, 0.5F)
+                .clientTrackingRange(8)
+                .updateInterval(1)
+                .fireImmune()
+                .noSave()
+                .noSummon()
+                .noLootTable());
 
         VOID_ORB = register("void_orb", EntityType.Builder.<VoidOrb>of(VoidOrb::new, MobCategory.MISC)
                 .sized(0.5F, 0.5F)

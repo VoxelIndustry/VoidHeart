@@ -142,6 +142,25 @@ public class VoidHeartRenderTypes
             .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
             .build();
 
+    /**
+     * A texture added to what is behind it, never writing depth and never culled: the corona, halo and cover of a Klein Star. Like {@link #GLOW} with a
+     * texture, so its layers cross and overlap in any order without flicker, and its vertex alpha fades it.
+     */
+    private static final RenderPipeline RADIANT_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_NO_LIGHTMAP_SNIPPET, RenderPipelines.EYES_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/radiant"))
+            .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
+            .withCull(false)
+            .build();
+
+    private static final Map<Identifier, RenderType> RADIANT = new HashMap<>();
+
+    public static RenderType radiant(Identifier texture)
+    {
+        return RADIANT.computeIfAbsent(texture, key -> RenderType.create(MODID + "_radiant",
+                RenderSetup.builder(RADIANT_PIPELINE).withTexture("Sampler0", key).createRenderSetup()));
+    }
+
     private static final Identifier SHIELD_RUNES_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/shield_runes.png");
 
     public static final RenderType SHIELD_RUNES = RenderType.create(MODID + "_shield_runes",

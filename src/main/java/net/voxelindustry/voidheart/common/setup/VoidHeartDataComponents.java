@@ -73,6 +73,8 @@ public class VoidHeartDataComponents
     /** Seconds of strained research a Meat Proxy can still bear. */
     public static DataComponentType<Double>          PROXY_ENDURANCE;
     public static DataComponentType<ApparatusGrid>   APPARATUS_GRID;
+    /** Contravoid a Klein Star holds. */
+    public static DataComponentType<Integer>         CONTRAVOID_CHARGE;
 
     public static void registerComponents()
     {
@@ -89,6 +91,7 @@ public class VoidHeartDataComponents
         BREW = register("brew", Brew.CODEC);
         PROXY_ENDURANCE = register("proxy_endurance", Codec.DOUBLE);
         APPARATUS_GRID = register("apparatus_grid", ApparatusGrid.CODEC);
+        CONTRAVOID_CHARGE = register("contravoid_charge", Codec.INT);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

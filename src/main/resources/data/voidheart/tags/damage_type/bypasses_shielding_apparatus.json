@@ -9,6 +9,8 @@
     "minecraft:fly_into_wall",
     "minecraft:outside_border",
     "minecraft:dry_out",
-    "minecraft:wither"
+    "minecraft:wither",
+    "voidheart:klein_star",
+    "voidheart:radiant"
   ]
 }

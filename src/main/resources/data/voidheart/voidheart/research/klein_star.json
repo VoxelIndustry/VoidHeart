@@ -1,0 +1,17 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:klein_star",
+  "insight_cost": 16,
+  "knowledge_cost": 4500,
+  "knowledge_per_second": 2.5,
+  "requires": [
+    "voidheart:contravoid_reactor"
+  ],
+  "unlocks": [
+    "voidheart:klein_star"
+  ],
+  "recipes": [
+    "voidheart:altar/klein_star"
+  ]
+}
