@@ -11,6 +11,7 @@ import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusGrid;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
 import net.voxelindustry.voidheart.common.content.essence.MultiEssenceStorage;
 import net.voxelindustry.voidheart.common.content.oil.Brew;
@@ -71,6 +72,7 @@ public class VoidHeartDataComponents
     public static DataComponentType<Brew>            BREW;
     /** Seconds of strained research a Meat Proxy can still bear. */
     public static DataComponentType<Double>          PROXY_ENDURANCE;
+    public static DataComponentType<ApparatusGrid>   APPARATUS_GRID;
 
     public static void registerComponents()
     {
@@ -86,6 +88,7 @@ public class VoidHeartDataComponents
         WEAPON_OIL = register("weapon_oil", WeaponOil.CODEC);
         BREW = register("brew", Brew.CODEC);
         PROXY_ENDURANCE = register("proxy_endurance", Codec.DOUBLE);
+        APPARATUS_GRID = register("apparatus_grid", ApparatusGrid.CODEC);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

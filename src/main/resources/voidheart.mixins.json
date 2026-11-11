@@ -13,6 +13,7 @@
     "MixinLivingEntityBarrierDisguise",
     "MixinLivingEntityWallPassage",
     "MixinPlayerGrafts",
+    "MixinPlayerShieldingApparatus",
     "MixinPlayerWallPassage",
     "MixinServerPlayerGameModeColumns",
     "MixinStableLifecycle",
