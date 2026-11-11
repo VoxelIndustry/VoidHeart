@@ -162,10 +162,12 @@ public final class AvengingReachRender
         for (var lash : LASHES)
         {
             long ticks = now - lash.start;
-            if (ticks == ReachArms.IMPACT_TICK && lash.tip != null)
+            if (ticks == ReachArms.IMPACT_TICK && lash.points.length > 0)
             {
+                // Where the claw was drawn, which falls short of a target that slipped out of reach
+                var claw = lash.points[lash.points.length - 1];
                 for (int i = 0; i < IMPACT_EMBERS; i++)
-                    level.addParticle(VoidHeart.VOID_EMBER_PARTICLE, lash.tip.x, lash.tip.y, lash.tip.z,
+                    level.addParticle(VoidHeart.VOID_EMBER_PARTICLE, claw.x, claw.y, claw.z,
                             (random.nextDouble() - 0.5) * IMPACT_SPEED * 2, random.nextDouble() * IMPACT_SPEED, (random.nextDouble() - 0.5) * IMPACT_SPEED * 2);
             }
             else if (ticks > ReachArms.IMPACT_TICK + ReachArms.HOLD_TICKS && lash.points.length > 1)

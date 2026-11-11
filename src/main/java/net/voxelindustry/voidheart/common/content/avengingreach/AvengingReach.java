@@ -109,13 +109,16 @@ public final class AvengingReach
     public static void tickServer(MinecraftServer server)
     {
         long now = server.getTickCount();
+        // Taken out before landing: a blow turned back on the bearer, as by a guardian's thorns, may queue a new strike meanwhile
+        var due = new ArrayList<Strike>();
         PENDING.removeIf(strike ->
         {
             if (strike.impactAt() > now)
                 return false;
-            land(server, strike);
+            due.add(strike);
             return true;
         });
+        due.forEach(strike -> land(server, strike));
     }
 
     private static void land(MinecraftServer server, Strike strike)

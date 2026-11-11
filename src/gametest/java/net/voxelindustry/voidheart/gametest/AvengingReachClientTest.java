@@ -163,7 +163,21 @@ public class AvengingReachClientTest implements FabricClientGameTest
      */
     private static void fourArms(ClientGameTestContext context, TestServerContext server)
     {
-        server.runOnServer(minecraft -> AvengingReach.setArms(player(minecraft), ReachArms.MAX_ARMS));
+        // The later grafts each grow their arm in turn, the fourth refused once all four have grown
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            for (int arm = 1; arm < ReachArms.MAX_ARMS; arm++)
+            {
+                var graft = new ItemStack(VoidHeartItems.AVENGING_REACH[arm]);
+                graft.finishUsingItem(player.level(), player);
+                expect(AvengingReach.armsOf(player) == arm + 1 && graft.isEmpty(), "Expected graft " + (arm + 1) + " to grow its arm");
+            }
+            var extra = new ItemStack(VoidHeartItems.AVENGING_REACH[ReachArms.MAX_ARMS - 1]);
+            extra.finishUsingItem(player.level(), player);
+            expect(AvengingReach.armsOf(player) == ReachArms.MAX_ARMS && extra.getCount() == 1, "Expected a fifth arm refused");
+            player.removeAllEffects();
+        });
         context.waitTicks(3 * 20 + 2);
         var husks = server.computeOnServer(minecraft ->
         {
