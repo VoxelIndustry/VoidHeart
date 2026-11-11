@@ -336,8 +336,9 @@ public class WraithBeast extends VoidMonster
     {
         if (!mayGoTo(spot))
             return false;
-        // Every block the line from here to there passes, and the one above, so a step past a corner can't skip it
-        if (!isCrossable(level, new AABB(position(), spot).expandTowards(0, 1, 0)))
+        // Every block its middle passes from here to there, its full height up, so a step past a corner can't skip one. Its flanks may brush a wall
+        // while out of phase, as any wraith's do
+        if (!isCrossable(level, new AABB(position(), spot).expandTowards(0, HEIGHT, 0)))
             return false;
         var feet = BlockPos.containing(spot);
         var salt = SaltWard.wardBelow(level, feet);
