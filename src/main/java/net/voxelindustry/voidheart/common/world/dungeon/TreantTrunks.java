@@ -153,15 +153,18 @@ final class TreantTrunks
         return true;
     }
 
-    /**
-     * What it can step through on its way out, ferns and grass as much as air, as the game finds no collision there either.
-     */
     private boolean isWalkable(int x, int y, int z)
     {
-        if (!isInner(x, y, z))
-            return false;
-        var cell = grid.material(x, y, z);
-        return cell.isOpen() || cell.isPassable() && cell != FLUID;
+        return isInner(x, y, z) && isClear(grid.material(x, y, z));
+    }
+
+    /**
+     * What it can step through on its way out: air, and ferns, grass and hanging roots, which have no collision in game either. A lantern or a chain does, and
+     * the Treant would not come out on that side.
+     */
+    static boolean isClear(DungeonMaterial cell)
+    {
+        return cell.isOpen() || cell == PLANT || cell == TALL_PLANT || cell == HANGING;
     }
 
     private boolean isColumnFree(int x, int y, int z, int height)

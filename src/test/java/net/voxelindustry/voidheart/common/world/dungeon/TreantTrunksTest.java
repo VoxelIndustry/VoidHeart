@@ -85,7 +85,7 @@ class TreantTrunksTest
                     for (int up = 0; up < TreantTrunks.TREANT_HEIGHT; up++)
                     {
                         var cell = grid.material(trunk[0] + side.getStepX() * step, trunk[1] + up, trunk[2] + side.getStepZ() * step);
-                        open &= cell.isOpen() || cell.isPassable() && cell != DungeonMaterial.FLUID;
+                        open &= TreantTrunks.isClear(cell);
                     }
                 }
                 out |= open;
