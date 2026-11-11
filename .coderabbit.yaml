@@ -1,0 +1,4 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  # Approve once every comment is resolved, so the PR meets the ruleset's one approval
+  request_changes_workflow: true
