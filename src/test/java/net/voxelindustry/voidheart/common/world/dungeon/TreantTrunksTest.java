@@ -106,6 +106,17 @@ class TreantTrunksTest
     }
 
     @Test
+    void clear_onlyWhatHasNoCollisionInGame()
+    {
+        for (var clear : new DungeonMaterial[] { DungeonMaterial.AIR, DungeonMaterial.UNSET, DungeonMaterial.FILL_LIGHT, DungeonMaterial.PLANT,
+                DungeonMaterial.TALL_PLANT, DungeonMaterial.HANGING })
+            assertThat(TreantTrunks.isClear(clear)).as("%s", clear).isTrue();
+        for (var blocking : new DungeonMaterial[] { DungeonMaterial.LANTERN, DungeonMaterial.CHAIN, DungeonMaterial.CANDLE, DungeonMaterial.RUNNER,
+                DungeonMaterial.FLUID, DungeonMaterial.ROOTS, DungeonMaterial.LOG, DungeonMaterial.WOOD_FENCE, DungeonMaterial.TREANT })
+            assertThat(TreantTrunks.isClear(blocking)).as("%s", blocking).isFalse();
+    }
+
+    @Test
     void forests_holdTreants()
     {
         int total = forests().mapToInt(arguments -> DungeonPlan.generate((DungeonBlueprint) arguments.get()[0]).treants().size()).sum();
