@@ -102,7 +102,7 @@ class ScarabHopsTest
             var from = floor(0, 0);
             var to = ScarabHops.plan(from, null, REACH, ground, random);
             assertThat(to).isNotNull();
-            assertThat(to.center().distanceTo(from.center())).isBetween(ScarabHops.MIN_HOP, ScarabHops.MAX_HOP + 1);
+            assertThat(to.center().distanceTo(from.center())).isBetween(ScarabHops.MIN_HOP, ScarabHops.MAX_HOP);
             assertThat(ground.solid).contains(to.cell().relative(to.surface().getOpposite()));
             assertThat(ground.solid).doesNotContain(to.cell());
         }
@@ -206,5 +206,36 @@ class ScarabHopsTest
         ground.salt.add(new BlockPos(3, 0, 0));
         assertThat(ScarabHops.clear(new Vec3(0.5, 0.2, 0.5), new Vec3(6.5, 0.2, 0.5), ground)).isFalse();
         assertThat(ScarabHops.clear(new Vec3(-6.5, 0.2, 0.5), new Vec3(0.5, 0.2, 0.5), ground)).isTrue();
+    }
+
+    @Test
+    void pathMissesNoBlockNearACorner()
+    {
+        // Rises into the block above just before reaching the next one along, between two quarter-block samples
+        assertThat(ScarabHops.blocksBetween(new Vec3(0.5, 0.5, 0.5), new Vec3(1.5, 1.55, 0.5)))
+                .containsExactly(new BlockPos(0, 0, 0), new BlockPos(0, 1, 0), new BlockPos(1, 1, 0));
+    }
+
+    @Test
+    void pathThroughAnEdgeTakesBothBlocksBesideIt()
+    {
+        assertThat(ScarabHops.blocksBetween(new Vec3(0.5, 0.5, 0.5), new Vec3(1.5, 1.5, 0.5)))
+                .containsExactlyInAnyOrder(new BlockPos(0, 0, 0), new BlockPos(1, 0, 0), new BlockPos(0, 1, 0), new BlockPos(1, 1, 0));
+    }
+
+    @Test
+    void pathWalksEveryBlockInOrder()
+    {
+        assertThat(ScarabHops.blocksBetween(new Vec3(0.2, 0.3, 0.4), new Vec3(-2.7, 0.3, 0.4)))
+                .containsExactly(new BlockPos(0, 0, 0), new BlockPos(-1, 0, 0), new BlockPos(-2, 0, 0), new BlockPos(-3, 0, 0));
+    }
+
+    @Test
+    void settledMiddleMatchesWhereTheScarabEndsUp()
+    {
+        double half = ScarabHops.HEIGHT / 2;
+        assertThat(new Spot(BlockPos.ZERO, Direction.UP).center()).isEqualTo(new Vec3(0.5, half, 0.5));
+        assertThat(new Spot(BlockPos.ZERO, Direction.DOWN).center().y).isCloseTo(1 - half - 0.01, org.assertj.core.data.Offset.offset(1e-6));
+        assertThat(new Spot(BlockPos.ZERO, Direction.EAST).center().x).isCloseTo(ScarabHops.WIDTH / 2 + 0.01, org.assertj.core.data.Offset.offset(1e-6));
     }
 }

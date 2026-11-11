@@ -42,7 +42,8 @@ public class WraithScarabClientTest implements FabricClientGameTest
     private static final int WATCH_TICKS = 160;
     private static final double STILL = 0.05;
     private static final int SALT_X = X0 + 6;
-    private static final int DROP_ROLLS = 40;
+    // Enough that a 25% drop coming up never, or in half the rolls or more, is far less likely than one in a trillion
+    private static final int DROP_ROLLS = 200;
 
     @Override
     public void runTest(ClientGameTestContext context)

@@ -16,7 +16,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.model.mob.WraithScarabModel;
 import net.voxelindustry.voidheart.client.render.state.WraithScarabRenderState;
-import net.voxelindustry.voidheart.common.content.mob.ScarabHops;
 import net.voxelindustry.voidheart.common.content.mob.WraithScarab;
 
 import org.joml.Vector3f;
@@ -45,6 +44,8 @@ public class WraithScarabRender extends CrawlerRender<WraithScarab, WraithScarab
     private static final float TRAIL_START_ALPHA = 0.3F;
     // In model units from the feet, as LivingEntityRenderer places every model
     private static final float MODEL_DROP = -1.501F;
+    // How far the model reaches past its collision box, feelers and legs included
+    private static final double MODEL_REACH = 0.5;
 
     public WraithScarabRender(EntityRendererProvider.Context context)
     {
@@ -133,7 +134,11 @@ public class WraithScarabRender extends CrawlerRender<WraithScarab, WraithScarab
     protected AABB getBoundingBoxForCulling(WraithScarab scarab, float partialTicks)
     {
         var box = super.getBoundingBoxForCulling(scarab, partialTicks);
-        return scarab.afterimages.isEmpty() ? box : box.inflate(ScarabHops.MAX_HOP);
+        // Every trail runs between spots it left and the one it stands on, so holding each of those spots holds every trail
+        var size = scarab.getBoundingBox().inflate(MODEL_REACH);
+        for (var image : scarab.afterimages)
+            box = box.minmax(size.move(image.position().subtract(scarab.position())));
+        return box;
     }
 
     @Override

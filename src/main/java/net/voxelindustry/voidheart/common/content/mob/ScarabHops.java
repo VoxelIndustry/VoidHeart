@@ -2,15 +2,18 @@ package net.voxelindustry.voidheart.common.content.mob;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Where a Wraith Scarab hops next. It phases through what lies between, so any face in range will do, but salt wards both the spots and the way between:
@@ -23,9 +26,11 @@ public final class ScarabHops
     public static final double MIN_HOP = 1;
 
     private static final int RANGE = (int) Math.ceil(MAX_HOP);
-    private static final double SAMPLE_STEP = 0.25;
-    // A face's middle sits this far in from the cell's middle, which is close enough to where the scarab's body ends up
-    private static final double FACE_INSET = 0.35;
+    // The scarab's collision box, which sets where its middle ends up against each face
+    public static final float WIDTH = 0.55F;
+    public static final float HEIGHT = 0.4F;
+    // Crossings nearer together than this along the segment are taken as one, through an edge or corner
+    private static final double EDGE_EPSILON = 1e-9;
     private static final double ALTERNATE_BONUS = 2;
     private static final double CLOSE_WEIGHT = 1.5;
     private static final double JITTER = 1;
@@ -86,9 +91,27 @@ public final class ScarabHops
      */
     public record Spot(BlockPos cell, Direction surface)
     {
+        /**
+         * @return the middle of its body once settled here, where {@link CrawlerMonster#settledPosition} puts it
+         */
         public Vec3 center()
         {
-            return Vec3.atCenterOf(cell).subtract(surface.getStepX() * FACE_INSET, surface.getStepY() * FACE_INSET, surface.getStepZ() * FACE_INSET);
+            double gap = WIDTH / 2 + 0.01;
+            double x = cell.getX() + 0.5;
+            double y = cell.getY() + HEIGHT / 2;
+            double z = cell.getZ() + 0.5;
+            switch (surface)
+            {
+                case DOWN -> y = cell.getY() + 1 - HEIGHT / 2 - 0.01;
+                case EAST -> x = cell.getX() + gap;
+                case WEST -> x = cell.getX() + 1 - gap;
+                case SOUTH -> z = cell.getZ() + gap;
+                case NORTH -> z = cell.getZ() + 1 - gap;
+                case UP ->
+                {
+                }
+            }
+            return new Vec3(x, y, z);
         }
 
         public Kind kind()
@@ -119,10 +142,6 @@ public final class ScarabHops
         var aside = new ArrayList<Scored>();
         for (var cell : BlockPos.betweenClosed(from.cell().offset(-RANGE, -RANGE, -RANGE), from.cell().offset(RANGE, RANGE, RANGE)))
         {
-            double cellDistance = Math.sqrt(cell.distSqr(from.cell()));
-            if (cellDistance > MAX_HOP)
-                continue;
-
             for (var surface : Direction.values())
             {
                 var holder = cell.relative(surface.getOpposite());
@@ -130,7 +149,8 @@ public final class ScarabHops
                     continue;
                 var spot = new Spot(cell.immutable(), surface);
                 var center = spot.center();
-                if (center.distanceTo(origin) < MIN_HOP)
+                double hop = center.distanceTo(origin);
+                if (hop < MIN_HOP || hop > MAX_HOP)
                     continue;
 
                 double score = spot.kind() != from.kind() ? ALTERNATE_BONUS : 0;
@@ -188,18 +208,70 @@ public final class ScarabHops
         return true;
     }
 
+    /**
+     * Every block the segment passes through, in order, walked one block boundary at a time so none is skipped. Where it crosses exactly at an edge or
+     * corner, the blocks meeting there are included too, so it can never slip between two diagonal ones.
+     */
     static List<BlockPos> blocksBetween(Vec3 from, Vec3 to)
     {
-        var seen = new HashSet<BlockPos>();
-        var blocks = new ArrayList<BlockPos>();
-        double length = from.distanceTo(to);
-        int steps = Math.max(1, (int) Math.ceil(length / SAMPLE_STEP));
-        for (int i = 0; i <= steps; i++)
+        int[] cell = { Mth.floor(from.x), Mth.floor(from.y), Mth.floor(from.z) };
+        int[] last = { Mth.floor(to.x), Mth.floor(to.y), Mth.floor(to.z) };
+        double[] origin = { from.x, from.y, from.z };
+        double[] delta = { to.x - from.x, to.y - from.y, to.z - from.z };
+        int[] step = new int[3];
+        // How far along the segment, from 0 to 1, the next boundary on each axis lies, and how far apart those boundaries are
+        double[] next = new double[3];
+        double[] across = new double[3];
+        for (int axis = 0; axis < 3; axis++)
         {
-            var block = BlockPos.containing(from.lerp(to, i / (double) steps));
-            if (seen.add(block))
-                blocks.add(block);
+            step[axis] = (int) Math.signum(delta[axis]);
+            if (step[axis] == 0)
+            {
+                next[axis] = Double.POSITIVE_INFINITY;
+                continue;
+            }
+            double boundary = step[axis] > 0 ? cell[axis] + 1 : cell[axis];
+            next[axis] = (boundary - origin[axis]) / delta[axis];
+            across[axis] = 1 / Math.abs(delta[axis]);
+        }
+
+        var blocks = new ArrayList<BlockPos>();
+        var seen = new HashSet<BlockPos>();
+        add(blocks, seen, cell);
+        while (!Arrays.equals(cell, last))
+        {
+            double t = Math.min(next[0], Math.min(next[1], next[2]));
+            if (t > 1)
+                break;
+            boolean[] crossing = new boolean[3];
+            for (int axis = 0; axis < 3; axis++)
+                crossing[axis] = next[axis] - t < EDGE_EPSILON;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                if (crossing[axis])
+                {
+                    var beside = cell.clone();
+                    beside[axis] += step[axis];
+                    add(blocks, seen, beside);
+                }
+            }
+            for (int axis = 0; axis < 3; axis++)
+            {
+                if (crossing[axis])
+                {
+                    cell[axis] += step[axis];
+                    next[axis] += across[axis];
+                }
+            }
+            add(blocks, seen, cell);
         }
         return blocks;
+    }
+
+    private static void add(List<BlockPos> blocks, Set<BlockPos> seen, int[] cell)
+    {
+        var block = new BlockPos(cell[0], cell[1], cell[2]);
+        if (seen.add(block))
+            blocks.add(block);
     }
 }

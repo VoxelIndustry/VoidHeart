@@ -24,6 +24,7 @@ import net.voxelindustry.voidheart.common.content.mob.LargeEyeMaw;
 import net.voxelindustry.voidheart.common.content.mob.Legionary;
 import net.voxelindustry.voidheart.common.content.mob.MalignantBoulder;
 import net.voxelindustry.voidheart.common.content.mob.StalkingWraith;
+import net.voxelindustry.voidheart.common.content.mob.ScarabHops;
 import net.voxelindustry.voidheart.common.content.mob.WraithScarab;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
@@ -105,7 +106,7 @@ public class VoidHeartEntities
                 .noLootTable());
 
         WRAITH_SCARAB = register("wraith_scarab", EntityType.Builder.of(WraithScarab::new, MobCategory.MONSTER)
-                .sized(0.55F, 0.4F)
+                .sized(ScarabHops.WIDTH, ScarabHops.HEIGHT)
                 .eyeHeight(0.3F)
                 .clientTrackingRange(8)
                 .updateInterval(2)
