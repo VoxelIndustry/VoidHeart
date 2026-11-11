@@ -95,6 +95,8 @@ public class WraithBeast extends VoidMonster
     private static final double KNOCKBACK_RESISTANCE = 0.8;
     private static final double ATTACK_KNOCKBACK = 1.2;
     private static final double HELD_WALK_SPEED = 1.1;
+    // Fine enough that a straight line through a block-thick wall always lands a sample inside it
+    private static final double ROUTE_STEP = 0.1;
     private static final int REPATH_TICKS = 10;
 
     private int phaseTicks;
@@ -335,12 +337,8 @@ public class WraithBeast extends VoidMonster
         if (!mayGoTo(spot))
             return false;
         var feet = BlockPos.containing(spot);
-        for (var pos : new BlockPos[] { feet, feet.above() })
-        {
-            var state = level.getBlockState(pos);
-            if (state.is(VoidHeartBlocks.POCKET_WALL) || state.getDestroySpeed(level, pos) < 0)
-                return false;
-        }
+        if (isUncrossable(level, feet) || isUncrossable(level, feet.above()))
+            return false;
         var salt = SaltWard.wardBelow(level, feet);
         if (salt != null && !level.noCollision(this, aabbAt(spot)))
         {
@@ -348,6 +346,34 @@ public class WraithBeast extends VoidMonster
             return false;
         }
         return true;
+    }
+
+    private static boolean isUncrossable(Level level, BlockPos pos)
+    {
+        var state = level.getBlockState(pos);
+        return state.is(VoidHeartBlocks.POCKET_WALL) || state.getDestroySpeed(level, pos) < 0;
+    }
+
+    /**
+     * @return whether going straight from where it is to the spot passes nothing it may never cross, as its gallop there would
+     */
+    private boolean hasCrossableRoute(Vec3 to)
+    {
+        var level = level();
+        var from = position();
+        double length = from.distanceTo(to);
+        var pos = new BlockPos.MutableBlockPos();
+        for (double travelled = 0; ; travelled += ROUTE_STEP)
+        {
+            var at = length < 1e-6 ? to : from.lerp(to, Math.min(travelled / length, 1));
+            for (int up = 0; up < 2; up++)
+            {
+                if (isUncrossable(level, pos.set(at.x, at.y + up, at.z)))
+                    return false;
+            }
+            if (travelled >= length)
+                return true;
+        }
     }
 
     private void crackle(ServerLevel level, @Nullable BlockPos salt)
@@ -397,7 +423,8 @@ public class WraithBeast extends VoidMonster
             if (spot == null)
                 continue;
             double distance = spot.distanceToSqr(position());
-            if (distance < bestDistance && standsAt(spot) && canStrikeFrom(spot, target))
+            // Taking shape is a short jump, so it must not carry it past a wall its gallop could not cross
+            if (distance < bestDistance && standsAt(spot) && canStrikeFrom(spot, target) && hasCrossableRoute(spot))
             {
                 best = spot;
                 bestDistance = distance;

@@ -56,6 +56,7 @@ public class WraithBeastClientTest implements FabricClientGameTest
 
             crossesWallAndStrikes(context, server);
             closeUps(context, server);
+            neverJumpsBedrock(context, server);
             arrowsPassThrough(context, server);
             heldBySalt(context, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
@@ -174,6 +175,27 @@ public class WraithBeastClientTest implements FabricClientGameTest
         expect(secondStrike - firstStrike >= WraithBeast.STRIKE_INTERVAL - 1, "Strikes should come no closer than the interval, came " + (secondStrike - firstStrike));
         expect(secondStrike - firstStrike <= WraithBeast.STRIKE_INTERVAL + 20, "Beside its prey it should strike again soon, came " + (secondStrike - firstStrike));
 
+        clearScene(server);
+        server.runCommand("fill " + WALL_X + " " + FEET + " -3 " + WALL_X + " " + (FEET + 3) + " 3 air");
+    }
+
+    /**
+     * Its prey just past a bedrock wall, near enough that open ground on the far side is within its strike: it must not take shape over there.
+     */
+    private static void neverJumpsBedrock(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("fill " + WALL_X + " " + FEET + " -3 " + WALL_X + " " + (FEET + 3) + " 3 bedrock");
+        server.runOnServer(minecraft -> spawnBeast(minecraft, WALL_X - 0.6).setTarget(spawnTarget(minecraft, WALL_X + 1.8)));
+        for (int tick = 0; tick < 80; tick++)
+        {
+            context.waitTick();
+            server.runOnServer(minecraft ->
+            {
+                var beast = beast(minecraft);
+                expect(beast.getX() < WALL_X, "The beast should never get past bedrock, " + describe(beast));
+                expect(beast.phase() == Phase.PHANTOM, "With no open ground on its side it should not take shape, " + describe(beast));
+            });
+        }
         clearScene(server);
         server.runCommand("fill " + WALL_X + " " + FEET + " -3 " + WALL_X + " " + (FEET + 3) + " 3 air");
     }
