@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
@@ -62,7 +63,8 @@ public class DormantTreantBlock extends Block implements EntityBlock
     }
 
     /**
-     * The open side closest to the player's bearing, open two blocks out as the Treant stands once out of the trunk, so it comes out at them, or toward them anyway if every side is shut.
+     * The side closest to the player's bearing with room for the Treant where it stands once out of the trunk, so it comes out at them, or toward them anyway
+     * if every side is shut.
      */
     static Direction exitSide(LevelReader level, BlockPos pos, @Nullable Player target)
     {
@@ -73,7 +75,7 @@ public class DormantTreantBlock extends Block implements EntityBlock
         for (var side : Direction.Plane.HORIZONTAL)
         {
             float turn = Math.abs(Mth.degreesDifference(bearing, side.toYRot()));
-            if (turn < bestTurn && isOpen(level, pos.relative(side)) && isOpen(level, pos.relative(side, 2)))
+            if (turn < bestTurn && level.noCollision(standingOut(pos, side)))
             {
                 best = side;
                 bestTurn = turn;
@@ -82,14 +84,16 @@ public class DormantTreantBlock extends Block implements EntityBlock
         return best == null ? toward : best;
     }
 
-    private static boolean isOpen(LevelReader level, BlockPos pos)
+    /**
+     * The whole of the Treant once it has stepped out of the trunk on that side, its width reaching a little into the columns beside its path.
+     */
+    private static AABB standingOut(BlockPos pos, Direction side)
     {
-        for (int up = 0; up < HEIGHT; up++)
-        {
-            if (!level.getBlockState(pos.above(up)).getCollisionShape(level, pos.above(up)).isEmpty())
-                return false;
-        }
-        return true;
+        var size = VoidHeartEntities.TREANT.getDimensions();
+        double x = pos.getX() + 0.5 + side.getStepX() * TreantMoves.EMERGE_DISTANCE;
+        double z = pos.getZ() + 0.5 + side.getStepZ() * TreantMoves.EMERGE_DISTANCE;
+        double half = size.width() / 2;
+        return new AABB(x - half, pos.getY(), z - half, x + half, pos.getY() + size.height(), z + half);
     }
 
     @Override

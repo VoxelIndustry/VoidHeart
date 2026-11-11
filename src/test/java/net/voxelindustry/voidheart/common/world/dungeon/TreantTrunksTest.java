@@ -80,12 +80,17 @@ class TreantTrunksTest
             for (var side : Direction.Plane.HORIZONTAL)
             {
                 boolean open = true;
+                // Its 1.2 wide frame, two blocks out, reaches a little into the columns either side of its path
                 for (int step = 1; step <= 2; step++)
                 {
-                    for (int up = 0; up < TreantTrunks.TREANT_HEIGHT; up++)
+                    for (int flank = -1; flank <= 1; flank++)
                     {
-                        var cell = grid.material(trunk[0] + side.getStepX() * step, trunk[1] + up, trunk[2] + side.getStepZ() * step);
-                        open &= TreantTrunks.isClear(cell);
+                        for (int up = 0; up < TreantTrunks.TREANT_HEIGHT; up++)
+                        {
+                            var cell = grid.material(trunk[0] + side.getStepX() * step + side.getStepZ() * flank, trunk[1] + up,
+                                    trunk[2] + side.getStepZ() * step + side.getStepX() * flank);
+                            open &= TreantTrunks.isClear(cell);
+                        }
                     }
                 }
                 out |= open;

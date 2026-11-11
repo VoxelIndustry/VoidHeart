@@ -140,14 +140,22 @@ final class TreantTrunks
         return false;
     }
 
+    /**
+     * Two blocks out, where it stands once out of the trunk, and the columns either side of that path too, as its shoulders reach a little into them.
+     */
     private boolean isWayOut(int x, int y, int z, int stepX, int stepZ)
     {
         for (int step = 1; step <= 2; step++)
         {
-            for (int up = 0; up < TREANT_HEIGHT; up++)
+            for (int flank = -1; flank <= 1; flank++)
             {
-                if (!isWalkable(x + stepX * step, y + up, z + stepZ * step))
-                    return false;
+                int cx = x + stepX * step + stepZ * flank;
+                int cz = z + stepZ * step + stepX * flank;
+                for (int up = 0; up < TREANT_HEIGHT; up++)
+                {
+                    if (!isWalkable(cx, y + up, cz))
+                        return false;
+                }
             }
         }
         return true;
