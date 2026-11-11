@@ -63,25 +63,34 @@ public class DormantTreantBlock extends Block implements EntityBlock
     }
 
     /**
-     * The side closest to the player's bearing with room for the Treant where it stands once out of the trunk, so it comes out at them, or toward them anyway
-     * if every side is shut.
+     * The side closest to the player's bearing with room for the Treant where it stands once out of the trunk, and ground under it, so it comes out at them.
+     * Without ground it takes any side with room, as a ledge is better than a wall, and toward the player anyway if every side is shut.
      */
     static Direction exitSide(LevelReader level, BlockPos pos, @Nullable Player target)
     {
         float bearing = target == null ? 0 : (float) (Mth.atan2(target.getZ() - pos.getZ() - 0.5, target.getX() - pos.getX() - 0.5) * Mth.RAD_TO_DEG) - 90;
-        var toward = Direction.fromYRot(bearing);
+        var supported = closestSide(level, pos, bearing, true);
+        if (supported != null)
+            return supported;
+        var open = closestSide(level, pos, bearing, false);
+        return open != null ? open : Direction.fromYRot(bearing);
+    }
+
+    private static @Nullable Direction closestSide(LevelReader level, BlockPos pos, float bearing, boolean needsGround)
+    {
         Direction best = null;
         float bestTurn = Float.MAX_VALUE;
         for (var side : Direction.Plane.HORIZONTAL)
         {
             float turn = Math.abs(Mth.degreesDifference(bearing, side.toYRot()));
-            if (turn < bestTurn && level.noCollision(standingOut(pos, side)))
+            var box = standingOut(pos, side);
+            if (turn < bestTurn && level.noCollision(box) && (!needsGround || !level.noCollision(box.move(0, -1, 0).setMaxY(box.minY))))
             {
                 best = side;
                 bestTurn = turn;
             }
         }
-        return best == null ? toward : best;
+        return best;
     }
 
     /**

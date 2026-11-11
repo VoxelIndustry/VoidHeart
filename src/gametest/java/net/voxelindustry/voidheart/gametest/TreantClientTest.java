@@ -59,6 +59,7 @@ public class TreantClientTest implements FabricClientGameTest
             checkSweep(context, server);
             checkBreakingWakes(context, server);
             checkExplosionAndPeaceful(context, server);
+            checkAvoidsDrop(context, server);
             checkLoot(context, server);
             checkForestDungeon(context, server, world);
 
@@ -296,6 +297,33 @@ public class TreantClientTest implements FabricClientGameTest
         server.runCommand("difficulty normal");
         waitFor(context, server, 120, "The Treant should come on out once Peaceful ends", minecraft -> !treants(minecraft).getFirst().isEmerging());
         clearScene(server);
+    }
+
+    /**
+     * With a drop between it and the player, it comes out on a side with ground rather than stepping off the edge.
+     */
+    private static void checkAvoidsDrop(ClientGameTestContext context, TestServerContext server)
+    {
+        int x = 160;
+        int z = 0;
+        server.runCommand("difficulty peaceful");
+        trunk(server, x, z);
+        server.runCommand("fill " + (x + 1) + " " + (FEET - 4) + " " + (z - 2) + " " + (x + 3) + " " + (FEET - 1) + " " + (z + 2) + " air");
+        server.runCommand("gamemode survival @a");
+        tp(server, x + 4.5, FEET, z + 0.5);
+        context.waitTicks(5);
+        server.runCommand("difficulty normal");
+        waitFor(context, server, 40, "A player across the drop should wake the Treant", minecraft -> !treants(minecraft).isEmpty());
+        server.runCommand("gamemode spectator @a");
+        waitFor(context, server, 120, "The Treant should stand free", minecraft -> !treants(minecraft).getFirst().isEmerging());
+        server.runOnServer(minecraft ->
+        {
+            var treant = treants(minecraft).getFirst();
+            expect(treant.getX() < x + 1, "The Treant should not step out over the drop, got " + treant.position());
+            expect(treant.getY() >= FEET - 0.01, "The Treant should still stand on the ground, got " + treant.position());
+        });
+        clearScene(server);
+        server.runCommand("gamemode survival @a");
     }
 
     private static void checkLoot(ClientGameTestContext context, TestServerContext server)
