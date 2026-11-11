@@ -50,6 +50,7 @@ public class VoidHeartItems
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
 
     public static Item WRIGGLING_BRAIN;
+    public static Item HEARTWOOD_KNOT;
     public static Item VOID_VEIN;
     public static Item VOID_MARROW;
     public static Item IDEA_ABOUT_THE_VOID;
@@ -112,6 +113,7 @@ public class VoidHeartItems
         COVETOUS_COPPER_INGOT = registerItem("covetous_copper_ingot", Item::new);
         LISTLESS_LEAD_INGOT = registerItem("listless_lead_ingot", Item::new);
         WRIGGLING_BRAIN = registerItem("wriggling_brain", Item::new);
+        HEARTWOOD_KNOT = registerItem("heartwood_knot", Item::new);
         VOID_VEIN = registerItem("void_vein", properties -> new VoidGraftItem(properties, VoidGrafts.VEIN, "void_vein"));
         VOID_MARROW = registerItem("void_marrow", properties -> new VoidGraftItem(properties, VoidGrafts.MARROW, "void_marrow"));
         IDEA_ABOUT_THE_VOID = registerItem("idea_about_the_void", properties -> new InsightItem(properties.rarity(net.minecraft.world.item.Rarity.UNCOMMON), 1, 2));
@@ -162,6 +164,7 @@ public class VoidHeartItems
         registerSpawnEgg("legionary", VoidHeartEntities.LEGIONARY);
         registerSpawnEgg("centurion", VoidHeartEntities.CENTURION);
         registerSpawnEgg("kernacian_dragoon", VoidHeartEntities.KERNACIAN_DRAGOON);
+        registerSpawnEgg("treant", VoidHeartEntities.TREANT);
     }
 
     private static void registerSpawnEgg(String mob, EntityType<?> type)

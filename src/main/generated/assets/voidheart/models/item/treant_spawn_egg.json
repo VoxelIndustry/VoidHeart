@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "voidheart:item/treant_spawn_egg"
+  }
+}

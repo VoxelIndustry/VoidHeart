@@ -110,6 +110,8 @@ class DungeonPlanPreview
             return 0x2FBF6F;
         if (material == CHEST)
             return 0xFF9900;
+        if (material == TREANT)
+            return 0xE02060;
         if (material == LANTERN || material == GLOW || material == CANDLE || material == CAMPFIRE)
             return 0xFFDD88;
         if (material.name().startsWith("METAL"))

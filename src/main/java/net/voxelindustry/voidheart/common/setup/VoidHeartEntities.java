@@ -26,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.mob.MalignantBoulder;
 import net.voxelindustry.voidheart.common.content.mob.StalkingWraith;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
+import net.voxelindustry.voidheart.common.content.mob.Treant;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeleton;
 import net.voxelindustry.voidheart.common.content.mob.Wraith;
 import net.voxelindustry.voidheart.common.content.mob.WraithStain;
@@ -59,6 +60,7 @@ public class VoidHeartEntities
     public static EntityType<Legionary> LEGIONARY;
     public static EntityType<Centurion> CENTURION;
     public static EntityType<KernacianDragoon> KERNACIAN_DRAGOON;
+    public static EntityType<Treant> TREANT;
 
     public static void registerEntities()
     {
@@ -139,6 +141,12 @@ public class VoidHeartEntities
                 .noSave()
                 .noSummon()
                 .noLootTable());
+
+        TREANT = register("treant", EntityType.Builder.of(Treant::new, MobCategory.MONSTER)
+                .sized(1.2F, 3)
+                .eyeHeight(2.6F)
+                .clientTrackingRange(10));
+        FabricDefaultAttributeRegistry.register(TREANT, Treant.createAttributes());
 
         registerEyes();
         registerDaedalusMobs();

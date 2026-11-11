@@ -27,6 +27,10 @@ public class BlockTagsProvider extends FabricTagsProvider.BlockTagsProvider
         var pickaxeMineable = builder(BlockTags.MINEABLE_WITH_PICKAXE)
                 .setReplace(false);
 
+        builder(BlockTags.MINEABLE_WITH_AXE)
+                .setReplace(false)
+                .add(VoidHeartBlocks.DORMANT_TREANT.builtInRegistryHolder().key());
+
         builder(BlockTags.MINEABLE_WITH_SHOVEL)
                 .setReplace(false)
                 .add(VoidHeartBlocks.ABYSSAL_SILT.builtInRegistryHolder().key());
