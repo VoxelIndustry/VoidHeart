@@ -26,6 +26,9 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import net.voxelindustry.voidheart.common.content.mob.MalignantBoulder;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import org.joml.Vector3f;
@@ -132,8 +135,28 @@ public final class ShieldingApparatus
         if (absorption.absorbed() > 0)
             sendHit(serverPlayer, source, absorption.absorbed() / Math.max(1, state.capacity()), absorption.broke());
         if (absorption.broke())
-            onBreak(serverPlayer, source, stats);
+            BROKEN.put(serverPlayer.getUUID(), new Break(source, stats));
         return damage - absorption.absorbed();
+    }
+
+    private record Break(DamageSource source, ShieldStats stats)
+    {
+    }
+
+    /** Shields broken by the hit being taken, whose cores wait until what got through has landed. */
+    private static final Map<UUID, Break> BROKEN = new HashMap<>();
+
+    /**
+     * Called once a hit on a player is fully taken, so a core answers what got through the shield: a Mending heal isn't wasted on health the hit is about to take.
+     * A wearer the hit killed gets nothing, since healing can't bring them back.
+     */
+    public static void afterHurt(Player player)
+    {
+        if (!(player instanceof ServerPlayer serverPlayer))
+            return;
+        var broken = BROKEN.remove(serverPlayer.getUUID());
+        if (broken != null && !serverPlayer.isDeadOrDying())
+            onBreak(serverPlayer, broken.source(), broken.stats());
     }
 
     private static boolean isWarded(ShieldStats stats, DamageSource source)

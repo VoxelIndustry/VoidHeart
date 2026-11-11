@@ -260,15 +260,15 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
-            player.setHealth(10);
+            // At full health, so a heal made before the hit lands would be wasted and leave the wearer hurt
+            player.setHealth(player.getMaxHealth());
             var level = minecraft.overworld();
             float points = ShieldingApparatus.state(player).points();
             player.damageCooldownTime = 0;
             player.hurtServer(level, player.damageSources().generic(), points + 3);
             var state = ShieldingApparatus.state(player);
             expect(state.points() == 0, "Expected the shield broken, " + state.points() + " left");
-            float expected = Math.min(player.getMaxHealth(), 10 - 3 + 6);
-            expect(Math.abs(player.getHealth() - expected) < 0.01F, "Expected 3 health lost then 6 healed by the Mending Core, health is " + player.getHealth());
+            expect(player.getHealth() == player.getMaxHealth(), "Expected the Mending Core to heal the 3 health the breaking hit took, health is " + player.getHealth());
             expect(state.delay() > 80, "Expected a broken shield to wait longer than a hit one, waits " + state.delay());
         });
     }
