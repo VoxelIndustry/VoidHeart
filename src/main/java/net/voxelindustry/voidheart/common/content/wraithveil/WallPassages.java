@@ -423,7 +423,7 @@ public final class WallPassages
     private static void resend(ServerPlayer player, Plan plan)
     {
         for (var pos : BlockPos.betweenClosed(plan.tubeMin(), plan.tubeMax()))
-            player.connection.send(new ClientboundBlockUpdatePacket(player.level(), pos));
+            player.connection.send(new ClientboundBlockUpdatePacket(player.level(), pos.immutable()));
     }
 
     private static void puffs(ServerLevel level, Plan plan)
