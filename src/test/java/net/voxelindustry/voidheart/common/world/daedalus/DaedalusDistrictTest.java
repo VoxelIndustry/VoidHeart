@@ -97,6 +97,48 @@ class DaedalusDistrictTest
     }
 
     /**
+     * The rail round every upper walkway of a tiered room is whole: the flights climbing to it keep inside it, and nothing else takes its place.
+     */
+    @Test
+    void walkwayRailsAreUnbrokenBesideTheirFlights()
+    {
+        int rings = 0;
+        for (var theme : DaedalusTheme.values())
+        {
+            for (var pos : districtsOf(theme, PER_THEME))
+            {
+                var plan = DistrictPlanner.generate(SEEDS[1], pos);
+                var canvas = painted(plan);
+                for (var room : plan.rooms())
+                {
+                    if (room.maxK() == room.minK() || room.shape() != RoomShape.ATRIUM && room.shape() != RoomShape.COLONNADE)
+                        continue;
+                    int minX = pos.originX() + room.minI() * DistrictPos.CELL + 1;
+                    int maxX = pos.originX() + room.maxI() * DistrictPos.CELL + DistrictPos.CELL - 2;
+                    int minZ = pos.originZ() + room.minJ() * DistrictPos.CELL + 1;
+                    int maxZ = pos.originZ() + room.maxJ() * DistrictPos.CELL + DistrictPos.CELL - 2;
+                    for (int k = room.minK() + 1; k <= room.maxK(); k++)
+                    {
+                        int y = DistrictPos.floorY(k) + 1;
+                        for (int z = minZ; z <= maxZ; z++)
+                        {
+                            for (int x = minX; x <= maxX; x++)
+                            {
+                                if (Math.min(Math.min(x - minX, maxX - x), Math.min(z - minZ, maxZ - z)) != DistrictPainter.RING_WIDTH - 1)
+                                    continue;
+                                assertTrue(DaedalusPalette.isRail(canvas.raw(x, y, z)),
+                                        "The walkway rail of " + room + " is broken at " + x + " " + y + " " + z + " by " + canvas.get(x, y, z) + " in " + theme + " " + pos);
+                            }
+                        }
+                        rings++;
+                    }
+                }
+            }
+        }
+        assertTrue(rings > 0, "No tiered room with a walkway was checked");
+    }
+
+    /**
      * Stairs are walked up, never jumped: every landing can be reached from any other without climbing a full block.
      */
     @Test

@@ -11,6 +11,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -189,6 +191,7 @@ public class DaedalusClientTest implements FabricClientGameTest
     {
         var level = VoidDaedalus.level(minecraft);
         var canvas = new DaedalusCanvas(16, 16);
+        int[] rails = new int[3];
         for (var theme : DaedalusTheme.values())
         {
             var pos = closestDistrict(theme);
@@ -202,10 +205,11 @@ public class DaedalusClientTest implements FabricClientGameTest
                     canvas.reset(minX, minZ);
                     DistrictPlans.paint(level.getSeed(), canvas);
                     var palette = DistrictPos.isInsideDistrict(minX, minZ) ? DaedalusPalette.of(DaedalusTheme.at(DistrictPos.at(minX, minZ))) : DaedalusPalette.chasm();
-                    compare(chunk, canvas, palette, minX, minZ, nests(level.getSeed(), canvas, minX, minZ));
+                    compare(level, chunk, canvas, palette, minX, minZ, nests(level.getSeed(), canvas, minX, minZ), rails);
                 }
             }
         }
+        expect(rails[0] > 0 && rails[1] > 0 && rails[2] > 0, "Too few rails were checked: " + rails[0] + " in all, " + rails[1] + " posts, " + rails[2] + " on a chunk edge");
     }
 
     /**
@@ -229,7 +233,12 @@ public class DaedalusClientTest implements FabricClientGameTest
         return nests;
     }
 
-    private static void compare(net.minecraft.world.level.chunk.ChunkAccess chunk, DaedalusCanvas canvas, DaedalusPalette palette, int minX, int minZ, java.util.Set<BlockPos> nests)
+    /**
+     * Rails are joined to their neighbours as they are written, so they must already be what a block update would reshape them into, as if broken and placed again.
+     *
+     * @param rails counts of the rails checked, of those standing as posts and of those on a chunk's edge
+     */
+    private static void compare(ServerLevel level, net.minecraft.world.level.chunk.ChunkAccess chunk, DaedalusCanvas canvas, DaedalusPalette palette, int minX, int minZ, java.util.Set<BlockPos> nests, int[] rails)
     {
         var at = new BlockPos.MutableBlockPos();
         for (int y = 0; y < DistrictPos.HEIGHT; y++)
@@ -240,6 +249,18 @@ public class DaedalusClientTest implements FabricClientGameTest
                 {
                     var wanted = palette.state(canvas.raw(x, y, z), y > 0 ? canvas.raw(x, y - 1, z) : 0, x, y, z);
                     var found = chunk.getBlockState(at.set(x, y, z));
+                    if (DaedalusPalette.isRail(canvas.raw(x, y, z)))
+                    {
+                        var reshaped = Block.updateFromNeighbourShapes(found, level, at);
+                        expect(found.getBlock() == wanted.getBlock() && found.getBlock() instanceof WallBlock, "At " + at + " the plan has a rail of " + wanted.getBlock() + " but the chunk has " + found);
+                        expect(reshaped == found, "At " + at + " the rail " + found + " should already be joined as " + reshaped);
+                        rails[0]++;
+                        if (found.getValue(WallBlock.UP))
+                            rails[1]++;
+                        if (x == minX || x == minX + 15 || z == minZ || z == minZ + 15)
+                            rails[2]++;
+                        continue;
+                    }
                     if (nests.contains(at))
                     {
                         expect(found.is(VoidHeartBlocks.BARNACLE_NEST), "At " + at + " a nest should have grown, the chunk has " + found);
@@ -375,7 +396,49 @@ public class DaedalusClientTest implements FabricClientGameTest
             if (room.shape() == RoomShape.PLAIN && !seen.add(RoomShape.PLAIN))
                 continue;
             shootRoom(context, world, server, plan, room, "daedalus-" + themeName + "-room-" + room.shape().name().toLowerCase());
+            if (room.shape() == RoomShape.ATRIUM)
+                shootRingFlight(context, world, server, plan, room, "daedalus-" + themeName + "-ring-flight");
         }
+    }
+
+    /**
+     * The flight from an atrium's second walkway up to its third, from the void beside it, so its rail on both floors shows.
+     */
+    private static void shootRingFlight(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server, DistrictPlan plan, Room room, String name)
+    {
+        if (room.maxK() - room.minK() < 2)
+            return;
+        int minX = plan.pos.originX() + room.minI() * DistrictPos.CELL + 1;
+        int maxX = plan.pos.originX() + room.maxI() * DistrictPos.CELL + DistrictPos.CELL - 2;
+        int minZ = plan.pos.originZ() + room.minJ() * DistrictPos.CELL + 1;
+        int maxZ = plan.pos.originZ() + room.maxJ() * DistrictPos.CELL + DistrictPos.CELL - 2;
+        int y = DistrictPos.floorY(room.minK() + 1) + 1;
+        BlockPos flight = server.computeOnServer(minecraft ->
+        {
+            var level = VoidDaedalus.level(minecraft);
+            for (int z = minZ; z <= maxZ; z++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    if (level.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof net.minecraft.world.level.block.StairBlock)
+                        return new BlockPos(x, y, z);
+                }
+            }
+            return null;
+        });
+        expect(flight != null, "The atrium " + room + " has no flight up from its second walkway");
+        double centreX = (minX + maxX + 1) / 2.0;
+        double centreZ = (minZ + maxZ + 1) / 2.0;
+        double dx = centreX - flight.getX();
+        double dz = centreZ - flight.getZ();
+        double length = Math.max(1, Math.sqrt(dx * dx + dz * dz));
+        double cameraX = flight.getX() + 0.5 + dx / length * 6;
+        double cameraZ = flight.getZ() + 0.5 + dz / length * 6;
+        float yaw = (float) Math.toDegrees(Math.atan2(-(flight.getX() + 0.5 - cameraX), flight.getZ() + 0.5 - cameraZ));
+        server.runCommand("effect give @a night_vision infinite 0 true");
+        shoot(context, world, server, name, cameraX, y + 3, cameraZ, yaw, 25);
+        shoot(context, world, server, name + "-top", cameraX, y + DistrictPos.CELL + 2, cameraZ, yaw, 40);
+        server.runCommand("effect clear @a night_vision");
     }
 
     private static void shootCorridor(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server, DistrictPlan plan, DistrictPlan.Landing landing, String name)

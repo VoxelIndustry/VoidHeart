@@ -36,6 +36,7 @@ public final class DaedalusPalette
 
     private final BlockState[][] options = new BlockState[DaedalusMaterial.values().length][];
     private final BlockState[] props = new BlockState[DaedalusProp.values().length * Compass.COUNT];
+    private final BlockState[] railStates = new BlockState[1 << Compass.COUNT];
 
     private DaedalusPalette()
     {
@@ -193,6 +194,32 @@ public final class DaedalusPalette
         setState(RAIL_POST, post);
         setState(RAIL_X, bare.setValue(WallBlock.EAST, WallSide.LOW).setValue(WallBlock.WEST, WallSide.LOW));
         setState(RAIL_Z, bare.setValue(WallBlock.NORTH, WallSide.LOW).setValue(WallBlock.SOUTH, WallSide.LOW));
+        for (int sides = 0; sides < railStates.length; sides++)
+        {
+            boolean north = (sides & 1 << Compass.NORTH) != 0;
+            boolean east = (sides & 1 << Compass.EAST) != 0;
+            boolean south = (sides & 1 << Compass.SOUTH) != 0;
+            boolean west = (sides & 1 << Compass.WEST) != 0;
+            boolean straight = north == south && east == west && sides != 0;
+            railStates[sides] = post.setValue(WallBlock.NORTH, north ? WallSide.LOW : WallSide.NONE)
+                                    .setValue(WallBlock.EAST, east ? WallSide.LOW : WallSide.NONE)
+                                    .setValue(WallBlock.SOUTH, south ? WallSide.LOW : WallSide.NONE)
+                                    .setValue(WallBlock.WEST, west ? WallSide.LOW : WallSide.NONE)
+                                    .setValue(WallBlock.UP, !straight);
+        }
+    }
+
+    public static boolean isRail(int material)
+    {
+        return material == RAIL_X.ordinal() || material == RAIL_Z.ordinal() || material == RAIL_POST.ordinal();
+    }
+
+    /**
+     * The rail joined to the sides in a {@link Compass} bit mask, shaped as a placed wall would be with open air above it: a post wherever it ends or turns.
+     */
+    public BlockState rail(int sides)
+    {
+        return railStates[sides];
     }
 
     private void steps(Block stairs, Block slab)
