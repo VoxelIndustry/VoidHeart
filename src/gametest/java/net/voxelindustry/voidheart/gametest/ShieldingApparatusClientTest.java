@@ -123,6 +123,28 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         int[] scrolled = context.computeOnClient(minecraft -> ((ApparatusScreen) minecraft.gui.screen()).trayView());
         expect(scrolled[2] == view[3], "Expected the wheel to scroll the tablet to its last row, at " + scrolled[2] + " of " + view[3]);
         context.takeScreenshot("apparatus-grid-screen-scrolled");
+
+        // Real clicks: taking the corner cell back, then picking a cell on the tablet and setting it in the same corner
+        for (int notch = 0; notch < view[3] + 2; notch++)
+        {
+            context.getInput().scroll(1);
+            context.waitTicks(1);
+        }
+        int cellsBefore = server.computeOnServer(minecraft -> count(player(minecraft), ApparatusComponent.CELL));
+        clickScreen(context, scale, screen -> screen.cellCenter(2, 0));
+        context.waitTicks(5);
+        boolean taken = server.computeOnServer(minecraft -> ShieldingApparatus.grid(player(minecraft).getMainHandItem()).at(2, 0) == null);
+        int cellsTaken = server.computeOnServer(minecraft -> count(player(minecraft), ApparatusComponent.CELL));
+        expect(taken && cellsTaken == cellsBefore + 1, "Expected clicking the corner piece to take it back, carried " + cellsBefore + " then " + cellsTaken);
+
+        clickScreen(context, scale, screen -> screen.trayRowCenter(ApparatusComponent.CELL));
+        context.waitTicks(2);
+        clickScreen(context, scale, screen -> screen.cellCenter(2, 0));
+        context.waitTicks(5);
+        var placed = server.computeOnServer(minecraft -> ShieldingApparatus.grid(player(minecraft).getMainHandItem()).at(2, 0));
+        int cellsSet = server.computeOnServer(minecraft -> count(player(minecraft), ApparatusComponent.CELL));
+        expect(placed != null && placed.component() == ApparatusComponent.CELL && cellsSet == cellsBefore,
+                "Expected picking a cell and clicking the corner to set it there, got " + placed + " with " + cellsSet + " carried");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(5);
     }
@@ -271,6 +293,18 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         context.waitTicks(3);
         boolean gone = server.computeOnServer(minecraft -> !player(minecraft).hasAttached(ShieldingApparatus.SHIELD));
         expect(gone, "Expected the shield dropped with the apparatus");
+    }
+
+    /**
+     * Moves the cursor to a point the open apparatus screen gives, in GUI pixels, and left clicks there.
+     */
+    private static void clickScreen(ClientGameTestContext context, double scale, java.util.function.Function<ApparatusScreen, int[]> point)
+    {
+        int[] at = context.computeOnClient(minecraft -> point.apply((ApparatusScreen) minecraft.gui.screen()));
+        expect(at != null, "Expected the point to click to be in view");
+        context.getInput().setCursorPos(at[0] * scale, at[1] * scale);
+        context.waitTicks(1);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
     }
 
     private static ShieldPayloads.Edit place(ApparatusComponent component, int x, int y, int rotation)

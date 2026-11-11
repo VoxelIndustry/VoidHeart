@@ -251,6 +251,25 @@ public class ApparatusScreen extends Screen
         return new int[] { tray.x() + tray.width() / 2, tray.y() + tray.height() / 2, scroll, maxScroll() };
     }
 
+    /**
+     * The middle of a grid cell on screen, for tests to click.
+     */
+    public int[] cellCenter(int cellX, int cellY)
+    {
+        return new int[] { gridX + cellX * CELL + CELL / 2, gridY + cellY * CELL + CELL / 2 };
+    }
+
+    /**
+     * The middle of a component's row on the carried tablet as it is scrolled, or null when the row is out of view, for tests to click.
+     */
+    public int @Nullable [] trayRowCenter(ApparatusComponent component)
+    {
+        int row = trayRows().indexOf(component) - Math.min(scroll, maxScroll());
+        if (row < 0 || row >= visibleRows())
+            return null;
+        return new int[] { tray.x() + tray.width() / 2, tray.y() + HEAD + row * ROW + ROW / 2 };
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
     {
