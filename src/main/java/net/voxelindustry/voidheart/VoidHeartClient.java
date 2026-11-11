@@ -31,6 +31,7 @@ import net.voxelindustry.voidheart.client.render.ArmillaryRender;
 import net.voxelindustry.voidheart.client.render.ArmillaryRiftRender;
 import net.voxelindustry.voidheart.client.screen.ArmillaryScreen;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
+import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.research.KnowledgePayloads;
@@ -38,6 +39,7 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierWavePayload;
 import net.voxelindustry.voidheart.common.setup.VoidHeartMenus;
 import net.voxelindustry.voidheart.client.curse.CurseDirector;
+import net.voxelindustry.voidheart.client.render.WallPassageRender;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
 import net.voxelindustry.voidheart.client.particle.DepthsShoals;
 import net.voxelindustry.voidheart.client.particle.MarineSnowParticle;
@@ -199,6 +201,7 @@ public class VoidHeartClient implements ClientModInitializer
             OculusMarkers.clear();
             OculusLeyLayer.clear();
             TormenterHeads.clear();
+            WallPassages.clearClient();
         });
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusLeyLayer::collectSubmits);
         ClientPlayNetworking.registerGlobalReceiver(OculusLeyPayloads.Layer.TYPE, OculusLeyLayer::receive);
@@ -220,6 +223,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
 
         CurseDirector.register();
+        WallPassageRender.register();
 
         var particles = ParticleProviderRegistry.getInstance();
         particles.register(

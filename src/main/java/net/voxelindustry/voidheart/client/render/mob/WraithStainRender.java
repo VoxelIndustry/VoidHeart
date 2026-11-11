@@ -1,36 +1,31 @@
 package net.voxelindustry.voidheart.client.render.mob;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.WraithInk;
 import net.voxelindustry.voidheart.client.render.state.WraithStainRenderState;
 import net.voxelindustry.voidheart.common.content.mob.WraithStain;
-
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
+import net.voxelindustry.voidheart.common.content.wraithveil.WallPassagePlan;
+import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 
 /**
- * One alpha blended quad a hair off the block face, which WraithStain's position keeps clear of z-fighting. Nothing else draws on that plane
- * and it does not overlap itself, so depth writes are harmless. Two rotating copies would cost little more but read as spinning, not spreading.
+ * Wraith ink spreading over a surface from several seeds, its front glowing as it goes, then receding to nothing. A Wraith Veil's mark also opens
+ * a hole onto its tunnel's realm while the tunnel is open. See {@link WraithInk} for how it is drawn.
  */
 public class WraithStainRender extends EntityRenderer<WraithStain, WraithStainRenderState>
 {
-    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/wraith_stain.png");
-    private static final RenderType RENDER_TYPE = RenderTypes.entityTranslucent(TEXTURE);
-
-    private static final float START_SCALE = 0.12F;
-    private static final float PULSE_RATE = 0.22F;
-    private static final float PULSE_RANGE = 0.03F;
-    private static final int FULL_ALPHA = 240;
+    // How brightly the front glows while the ink spreads, and the hole's edge smoulders while open
+    private static final float SPREAD_GLOW = 1;
+    private static final float HOLE_GLOW   = 0.7F;
+    // How far a stain may sit from a mark of the local player's tunnel to be that mark
+    private static final double OWN_MARK_REACH = 0.05;
 
     public WraithStainRender(EntityRendererProvider.Context context)
     {
@@ -48,45 +43,57 @@ public class WraithStainRender extends EntityRenderer<WraithStain, WraithStainRe
     {
         super.extractRenderState(stain, state, partialTicks);
         state.face = stain.face();
+        state.growTicks = stain.growTicks();
+        state.lingerTicks = stain.lingerTicks();
+        state.halfU = stain.halfU();
+        state.halfV = stain.halfV();
+        state.opens = stain.opens();
+        state.parts = WraithInk.holding(stain.level(), state.face, stain.position(), state.halfU, state.halfV);
+        state.window = state.opens && isOwnTunnel(stain);
+    }
+
+    /**
+     * Only the bearer's client has opened the tunnel behind a mark, so only there can its hole be looked through.
+     */
+    private static boolean isOwnTunnel(WraithStain stain)
+    {
+        var player = Minecraft.getInstance().player;
+        var plan = player == null ? null : WallPassages.passageOf(player);
+        if (plan == null)
+            return false;
+        for (var mark : new WallPassagePlan.Mark[]{plan.entry(), plan.exit()})
+            if (mark.face() == stain.face() && mark.center().distanceToSqr(stain.position()) < OWN_MARK_REACH * OWN_MARK_REACH)
+                return true;
+        return false;
     }
 
     @Override
     protected AABB getBoundingBoxForCulling(WraithStain stain, float partialTicks)
     {
-        return super.getBoundingBoxForCulling(stain, partialTicks).inflate(WraithStain.RADIUS);
+        return super.getBoundingBoxForCulling(stain, partialTicks).inflate(Math.max(stain.halfU(), stain.halfV()));
     }
 
     @Override
     public void submit(WraithStainRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
-        float age = state.ageInTicks;
-        float growth = Mth.clamp(age / WraithStain.GROW_TICKS, 0, 1);
-        float eased = 1 - (1 - growth) * (1 - growth);
-        float fade = 1 - Mth.clamp((age - WraithStain.GROW_TICKS - WraithStain.LINGER_TICKS) / WraithStain.FADE_TICKS, 0, 1);
-        float radius = WraithStain.RADIUS * (Mth.lerp(eased, START_SCALE, 1) + Mth.sin(age * PULSE_RATE) * PULSE_RANGE);
-        int color = ARGB.color((int) (FULL_ALPHA * fade), 0xFFFFFF);
-        int light = state.lightCoords;
-
-        poseStack.pushPose();
-        poseStack.rotate(state.face.getRotation());
-        collector.submitCustomGeometry(poseStack, RENDER_TYPE, (pose, buffer) ->
+        // A mark is on the surface, not in the wall: from behind, as when crossing with the Wraith Veil, it would only hide the room beyond
+        var face = state.face;
+        if ((camera.pos.x - state.x) * face.getStepX() + (camera.pos.y - state.y) * face.getStepY() + (camera.pos.z - state.z) * face.getStepZ() < 0)
         {
-            vertex(pose, buffer, -radius, -radius, 0, 0, color, light);
-            vertex(pose, buffer, -radius, radius, 0, 1, color, light);
-            vertex(pose, buffer, radius, radius, 1, 1, color, light);
-            vertex(pose, buffer, radius, -radius, 1, 0, color, light);
-        });
-        poseStack.popPose();
+            super.submit(state, poseStack, collector, camera);
+            return;
+        }
+        float age = state.ageInTicks;
+        float growth = Mth.clamp(age / state.growTicks, 0, 1);
+        float recede = Mth.clamp((age - state.growTicks - state.lingerTicks) / WraithStain.FADE_TICKS, 0, 1);
+        // Linear, as the mask already slows where the fronts must cross more ground
+        float spread = WraithInk.SPREAD_FULL * growth * (1 - recede * recede);
+        float open = state.opens ? WallPassagePlan.Plan.holeOpen(age) : 0;
+        // Spreading, the front glows; receding, the ink just dries away
+        float glow = recede > 0 ? 0 : growth < 1 ? SPREAD_GLOW : HOLE_GLOW;
+        var variant = WraithInk.variant(face, new Vec3(state.x, state.y, state.z), state.halfU, state.halfV);
+        var mode = state.window ? WraithInk.Mode.WINDOW : WraithInk.Mode.MARK;
+        WraithInk.submit(poseStack, collector, face, state.halfU, state.halfV, variant, WraithInk.color(spread, open, glow, mode), state.lightCoords, state.parts);
         super.submit(state, poseStack, collector, camera);
-    }
-
-    private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float z, float u, float v, int color, int light)
-    {
-        buffer.addVertex(pose, x, 0, z)
-                .setColor(color)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(light)
-                .setNormal(pose, 0, 1, 0);
     }
 }

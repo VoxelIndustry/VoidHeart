@@ -17,6 +17,19 @@
         }
       ],
       "rolls": 1
+    },
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:random_chance",
+        "chance": 0.5
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "voidheart:wraith_ink"
+        }
+      ]
     }
   ],
   "random_sequence": "voidheart:entities/wraith"
