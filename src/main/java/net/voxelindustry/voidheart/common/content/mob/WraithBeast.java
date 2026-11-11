@@ -95,8 +95,8 @@ public class WraithBeast extends VoidMonster
     private static final double KNOCKBACK_RESISTANCE = 0.8;
     private static final double ATTACK_KNOCKBACK = 1.2;
     private static final double HELD_WALK_SPEED = 1.1;
-    // Fine enough that a straight line through a block-thick wall always lands a sample inside it
-    private static final double ROUTE_STEP = 0.1;
+    // Shrinks a swept box so a face lying exactly on a block edge doesn't count the block beyond it
+    private static final double EDGE_SLACK = 1e-4;
     private static final int REPATH_TICKS = 10;
 
     private int phaseTicks;
@@ -336,9 +336,10 @@ public class WraithBeast extends VoidMonster
     {
         if (!mayGoTo(spot))
             return false;
-        var feet = BlockPos.containing(spot);
-        if (isUncrossable(level, feet) || isUncrossable(level, feet.above()))
+        // Every block the line from here to there passes, and the one above, so a step past a corner can't skip it
+        if (!isCrossable(level, new AABB(position(), spot).expandTowards(0, 1, 0)))
             return false;
+        var feet = BlockPos.containing(spot);
         var salt = SaltWard.wardBelow(level, feet);
         if (salt != null && !level.noCollision(this, aabbAt(spot)))
         {
@@ -355,25 +356,24 @@ public class WraithBeast extends VoidMonster
     }
 
     /**
-     * @return whether going straight from where it is to the spot passes nothing it may never cross, as its gallop there would
+     * @return whether its whole body, going straight from where it is to the spot, passes nothing it may never cross. Checks every block under the box
+     * spanning both ends, which holds the swept body and only rejects more than needed around the end of a wall
      */
     private boolean hasCrossableRoute(Vec3 to)
     {
-        var level = level();
-        var from = position();
-        double length = from.distanceTo(to);
-        var pos = new BlockPos.MutableBlockPos();
-        for (double travelled = 0; ; travelled += ROUTE_STEP)
+        return isCrossable(level(), getBoundingBox().minmax(aabbAt(to)));
+    }
+
+    private static boolean isCrossable(Level level, AABB area)
+    {
+        var box = area.deflate(EDGE_SLACK);
+        for (var pos : BlockPos.betweenClosed(Mth.floor(box.minX), Mth.floor(box.minY), Mth.floor(box.minZ),
+                Mth.floor(box.maxX), Mth.floor(box.maxY), Mth.floor(box.maxZ)))
         {
-            var at = length < 1e-6 ? to : from.lerp(to, Math.min(travelled / length, 1));
-            for (int up = 0; up < 2; up++)
-            {
-                if (isUncrossable(level, pos.set(at.x, at.y + up, at.z)))
-                    return false;
-            }
-            if (travelled >= length)
-                return true;
+            if (isUncrossable(level, pos))
+                return false;
         }
+        return true;
     }
 
     private void crackle(ServerLevel level, @Nullable BlockPos salt)
