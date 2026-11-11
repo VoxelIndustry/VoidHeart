@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
+import net.voxelindustry.voidheart.common.content.kleinstar.RadiantEffect;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -61,6 +62,15 @@ public final class VoidHeartEffects
     public static final Holder<MobEffect> RECOLLECTION = Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT,
             Identifier.fromNamespaceAndPath(MODID, "recollection"),
             new DisplayEffect(MobEffectCategory.BENEFICIAL, RECOLLECTION_COLOR));
+
+    private static final int RADIANT_COLOR = 0xFFE9A8;
+
+    /**
+     * Radiant: what a Klein Star leaves on all it reaches, and its lit blocks on all that comes near. It burns on through armor.
+     */
+    public static final Holder<MobEffect> RADIANT = Registry.registerForHolder(BuiltInRegistries.MOB_EFFECT,
+            Identifier.fromNamespaceAndPath(MODID, "radiant"),
+            new RadiantEffect(RADIANT_COLOR));
 
     private VoidHeartEffects()
     {

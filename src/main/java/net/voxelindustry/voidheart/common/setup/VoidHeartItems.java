@@ -23,6 +23,7 @@ import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeTabletItem;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeItem;
+import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarItem;
 import net.voxelindustry.voidheart.common.content.wraithveil.WraithVeilItem;
 import net.voxelindustry.voidheart.common.item.LoreItem;
 import net.voxelindustry.voidheart.common.content.oil.Elixirs;
@@ -54,6 +55,7 @@ public class VoidHeartItems
     public static PermeableBarrierItem PERMEABLE_BARRIER;
     public static ShoulderEyeItem SHOULDER_EYE;
     public static WraithVeilItem WRAITH_VEIL;
+    public static KleinStarItem KLEIN_STAR;
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
 
     public static Item WRIGGLING_BRAIN;
@@ -115,6 +117,7 @@ public class VoidHeartItems
         PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
         SHOULDER_EYE = registerItem("shoulder_eye", ShoulderEyeItem::new);
         WRAITH_VEIL = registerItem("wraith_veil", WraithVeilItem::new);
+        KLEIN_STAR = registerItem("klein_star", KleinStarItem::new);
         KNOWLEDGE_TABLET = registerItem("knowledge_tablet", KnowledgeTabletItem::new);
 
         OBSIDIAN_SHARD = registerItem("obsidian_shard", Item::new);

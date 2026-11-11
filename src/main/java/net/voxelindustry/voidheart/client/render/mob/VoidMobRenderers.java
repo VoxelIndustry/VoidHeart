@@ -7,6 +7,7 @@ import net.voxelindustry.voidheart.client.InsightMemory;
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.client.renderer.entity.NoopRenderer;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.client.model.mob.ArcaneEyeModel;
@@ -77,6 +78,8 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.FALLEN_ADEPT,
                 context -> new FallenRender<>(context, FallenModel.ADEPT, texture("fallen_adept"), texture("fallen_adept_glow")));
         EntityRenderers.register(VoidHeartEntities.FALLEN_ELDER, FallenElderRender::new);
+        // Drawn by KleinStarRender with its arcs and burst, which outlive it
+        EntityRenderers.register(VoidHeartEntities.KLEIN_STAR, NoopRenderer::new);
         EntityRenderers.register(VoidHeartEntities.VOID_ORB, context -> new GlowQuadRender<>(context, texture("void_orb"), 0.42F));
         EntityRenderers.register(VoidHeartEntities.EYE_MAW,
                 context -> new EyeMawRender<>(context, EyeMawModel.SMALL, 1, texture("eye_maw"), texture("eye_maw_glow"), 1, 0.3F));

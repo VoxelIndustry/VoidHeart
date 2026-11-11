@@ -28,6 +28,7 @@ public class VoidHeartConfig
     private static final String BEHOLDER = "beholder";
     private static final String SHOULDER_EYE = "shoulder_eye";
     private static final String AVENGING_REACH = "avenging_reach";
+    private static final String KLEIN_STAR = "klein_star";
     private static final String RESEARCH = "research";
     private static final String ARMILLARY = "armillary";
 
@@ -95,6 +96,26 @@ public class VoidHeartConfig
     @FloatSlider(min = 0, max = 3, step = 0.1F, format = "%.1f")
     @SerialEntry(value = "avenging_reach_knockback", comment = "How far a void arm of the Avenging Reach throws back what it strikes, on top of the knockback of any hit")
     public float avengingReachKnockback = 0.6F;
+
+    @AutoGen(category = KLEIN_STAR)
+    @FloatSlider(min = 0, max = 200, step = 1, format = "%.0f")
+    @SerialEntry(value = "klein_star_damage", comment = "Damage a Klein Star deals at the middle of its blast, falling to half at its edge")
+    public float kleinStarDamage = 40;
+
+    @AutoGen(category = KLEIN_STAR)
+    @FloatSlider(min = 2, max = 12, step = 0.5F, format = "%.1f")
+    @SerialEntry(value = "klein_star_radius", comment = "Blocks a Klein Star's blast reaches, and within which it lights the blocks facing it")
+    public float kleinStarRadius = 6;
+
+    @AutoGen(category = KLEIN_STAR)
+    @FloatSlider(min = 0, max = 120, step = 1, format = "%.0f")
+    @SerialEntry(value = "klein_star_cooldown_seconds", comment = "Seconds before another Klein Star can be called")
+    public float kleinStarCooldownSeconds = 10;
+
+    @AutoGen(category = KLEIN_STAR)
+    @IntSlider(min = 0, max = 4000, step = 50)
+    @SerialEntry(value = "klein_star_contravoid_cost", comment = "Contravoid each Klein Star burns, out of the 4,000 the item holds")
+    public int kleinStarContravoidCost = 500;
 
     @AutoGen(category = RESEARCH)
     @TickBox
@@ -253,6 +274,10 @@ public class VoidHeartConfig
         get().avengingReachDamage = Mth.clamp(get().avengingReachDamage, 0, 20);
         get().avengingReachCooldownSeconds = Mth.clamp(get().avengingReachCooldownSeconds, 0.5F, 30);
         get().avengingReachKnockback = Mth.clamp(get().avengingReachKnockback, 0, 3);
+        get().kleinStarDamage = Mth.clamp(get().kleinStarDamage, 0, 200);
+        get().kleinStarRadius = Mth.clamp(get().kleinStarRadius, 2, 12);
+        get().kleinStarCooldownSeconds = Mth.clamp(get().kleinStarCooldownSeconds, 0, 120);
+        get().kleinStarContravoidCost = Mth.clamp(get().kleinStarContravoidCost, 0, 4000);
     }
 
     public static VoidHeartConfig get()

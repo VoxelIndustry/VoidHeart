@@ -45,6 +45,7 @@ Check each brief against these, since they're what the user has sent back before
 | Beam should "form with an animation" and disappear "from the sources to the target forge" | The direction of motion carries the meaning: energy flows toward what uses it | `VoidBeamRender`, `faadddf` |
 | Only the focused beam takes the attuned color, and collector strands carry theirs | Color marks what something is, so apply it selectively | `VoidBeamRender`, `EssenceStrandRender` |
 | "Not right for minecraft, too detailed", then heads "more embedded" and "a huge droplet" | Smooth meshes and noisy skins read as foreign, and separate parts read as a bundle. Use plain cuboids and sink parts into one mass | `TormenterDroplet` |
+| "Should be more at the level of the other effect of the mod. With textures and depth" | Untextured additive shapes in vertex colors read as a placeholder, and wash out to a white blob by day. Build an effect in layers with pixel textures: a solid textured body that writes depth, additive textured layers around it, and dark parts in front of the light | `KleinStarRender` |
 
 These are lessons, not rules to apply everywhere. The user's request wins where they conflict. When new feedback teaches something else, add a row here.
 

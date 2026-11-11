@@ -308,6 +308,10 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.QUICKSILVER, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRAITH_INK, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRAITH_VEIL, ModelTemplates.FLAT_ITEM);
+        // A staff in the hand and in the world, from the hand-written model, and its flat picture in screens
+        generator.itemModelOutput.accept(VoidHeartItems.KLEIN_STAR, ItemModelUtils.select(new DisplayContext(),
+                ItemModelUtils.plainModel(itemModel("klein_star_staff")),
+                ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.plainModel(generator.createFlatItemModel(VoidHeartItems.KLEIN_STAR, ModelTemplates.FLAT_ITEM)))));
         generateFlask(generator, VoidHeartItems.SEARING_OIL, "oil");
         generateFlask(generator, VoidHeartItems.CONCUSSIVE_OIL, "oil");
         generateFlask(generator, VoidHeartItems.ARCANE_OIL, "oil");

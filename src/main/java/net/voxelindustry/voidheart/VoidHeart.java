@@ -37,6 +37,9 @@ import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.energy.EnergySetup;
 import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReach;
+import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBurstPayload;
+import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarPathPayload;
+import net.voxelindustry.voidheart.common.content.kleinstar.RadiantCover;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassagePayloads;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.common.curse.Curses;
@@ -183,6 +186,9 @@ public class VoidHeart implements ModInitializer
         Corruption.register();
         CursePayloads.register();
         WallPassagePayloads.register();
+        KleinStarBurstPayload.register();
+        KleinStarPathPayload.register();
+        ServerTickEvents.END_SERVER_TICK.register(RadiantCover::tickServer);
         WallPassages.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
@@ -229,6 +235,7 @@ public class VoidHeart implements ModInitializer
             OculusSightPayloads.clear();
             ShoulderEyes.clear();
             AvengingReach.clear();
+            RadiantCover.clear();
             Curses.clear();
             DungeonTeleportLock.clear();
             VoidDaedalus.clear();

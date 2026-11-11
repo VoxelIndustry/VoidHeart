@@ -313,6 +313,12 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.VOID_PEARL);
 
+            // A star to fold, rubrum to hold what it drinks and azurium to let it out
+            offerAltarRecipe("klein_star", new ItemStack(VoidHeartItems.KLEIN_STAR), Items.NETHER_STAR,
+                    VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD,
+                    VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+                    VoidHeartItems.VOID_PEARL, Blocks.GLOWSTONE);
+
             // A membrane is what lets some things through and not others
             offerAltarRecipe("permeable_barrier_item", VoidHeartItems.PERMEABLE_BARRIER, Items.PHANTOM_MEMBRANE,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,

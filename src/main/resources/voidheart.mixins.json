@@ -33,7 +33,11 @@
     "client.MixinLevelRendererOculus",
     "client.MixinMinecraftOculusControls",
     "client.MixinMultiPlayerGameModeColumns",
-    "client.MixinSkyRendererCurse"
+    "client.MixinSkyRendererCurse",
+    "client.KleinDimPostChainAccessor",
+    "client.KleinDimPostPassAccessor",
+    "client.MixinGameRendererKleinDim",
+    "client.MixinHumanoidModelKleinStaff"
   ],
   "injectors": {
     "defaultRequire": 1
