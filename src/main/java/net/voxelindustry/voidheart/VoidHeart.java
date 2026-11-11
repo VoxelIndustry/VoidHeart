@@ -39,6 +39,7 @@ import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReach;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBurstPayload;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarPathPayload;
+import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarSettings;
 import net.voxelindustry.voidheart.common.content.kleinstar.RadiantCover;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassagePayloads;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
@@ -188,6 +189,9 @@ public class VoidHeart implements ModInitializer
         WallPassagePayloads.register();
         KleinStarBurstPayload.register();
         KleinStarPathPayload.register();
+        KleinStarSettings.register();
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> KleinStarSettings.onJoin(handler.getPlayer()));
+        ServerTickEvents.END_SERVER_TICK.register(KleinStarSettings::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(RadiantCover::tickServer);
         WallPassages.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
@@ -236,6 +240,7 @@ public class VoidHeart implements ModInitializer
             ShoulderEyes.clear();
             AvengingReach.clear();
             RadiantCover.clear();
+            KleinStarSettings.clear();
             Curses.clear();
             DungeonTeleportLock.clear();
             VoidDaedalus.clear();

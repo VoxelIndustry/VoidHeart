@@ -50,7 +50,7 @@ public class KleinStarItem extends Item
     {
         tooltip.accept(Component.translatable(MODID + ".klein_star.lore").withStyle(ChatFormatting.GRAY));
         tooltip.accept(Component.translatable(MODID + ".klein_star.charge", charge(stack), KleinStarBalance.CAPACITY).withStyle(ChatFormatting.GOLD));
-        tooltip.accept(Component.translatable(MODID + ".klein_star.use", VoidHeartConfig.get().kleinStarContravoidCost).withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.accept(Component.translatable(MODID + ".klein_star.use", KleinStarSettings.shownCost()).withStyle(ChatFormatting.DARK_GRAY));
     }
 
     @Override
@@ -101,7 +101,8 @@ public class KleinStarItem extends Item
         if (player.getCooldowns().isOnCooldown(stack))
             return InteractionResult.PASS;
 
-        int cost = player.hasInfiniteMaterials() ? 0 : VoidHeartConfig.get().kleinStarContravoidCost;
+        // On a client, by what its server said a star costs, so the staff answers a click the same way on both sides
+        int cost = player.hasInfiniteMaterials() ? 0 : KleinStarSettings.cost(level);
         if (charge(stack) < cost)
         {
             if (level.isClientSide())

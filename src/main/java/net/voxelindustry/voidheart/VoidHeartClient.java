@@ -219,7 +219,7 @@ public class VoidHeartClient implements ClientModInitializer
             TormenterHeads.clear();
             WallPassages.clearClient();
             AvengingReachRender.clear();
-            KleinStarRender.clear();
+            KleinStarRender.leave();
         });
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusLeyLayer::collectSubmits);
         ClientPlayNetworking.registerGlobalReceiver(OculusLeyPayloads.Layer.TYPE, OculusLeyLayer::receive);

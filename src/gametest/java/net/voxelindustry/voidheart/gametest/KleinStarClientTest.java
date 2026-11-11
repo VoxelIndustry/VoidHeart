@@ -47,6 +47,13 @@ public class KleinStarClientTest implements FabricClientGameTest
     // Too far from the crowd for a blast among them to reach
     private static final double LONER_X   = 15.5;
     private static final float  STURDY    = 300;
+    // The settings the star is tested at, whatever this client has saved
+    private static final float  DAMAGE            = 40;
+    private static final float  RADIUS            = 6;
+    private static final float  COOLDOWN_SECONDS  = 10;
+    private static final int    COST              = 500;
+    // Weak enough for a caster standing in its own blast to live through it
+    private static final float  SURVIVABLE_DAMAGE = 6;
     // A husk the third star goes for, the wall raised in front of it once seen, and where it is moved to with the star on its way
     private static final double HIDDEN_Z  = 14.5;
     private static final int    WALL_Z    = 9;
@@ -55,6 +62,17 @@ public class KleinStarClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        // Whatever this client has saved, the star is tested at the numbers the assertions below are written for
+        var config = VoidHeartConfig.get();
+        float savedDamage = config.kleinStarDamage;
+        float savedRadius = config.kleinStarRadius;
+        float savedCooldown = config.kleinStarCooldownSeconds;
+        int savedCost = config.kleinStarContravoidCost;
+        config.kleinStarDamage = DAMAGE;
+        config.kleinStarRadius = RADIUS;
+        config.kleinStarCooldownSeconds = COOLDOWN_SECONDS;
+        config.kleinStarContravoidCost = COST;
+
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
@@ -128,7 +146,7 @@ public class KleinStarClientTest implements FabricClientGameTest
             expect(shown != null && Math.abs(shown.x - 0.46) < 0.6 && Math.abs(shown.z - CROWD_Z) < 0.6, "Expected the crowd shown as where a star would burst, shown " + shown);
             context.takeScreenshot("klein-star-preview-idle");
 
-            int cost = VoidHeartConfig.get().kleinStarContravoidCost;
+            int cost = COST;
             rightClick(context);
             waitFor(context, server, 10, "Expected a Klein Star to appear", minecraft -> stars(minecraft) == 1);
             server.runOnServer(minecraft ->
@@ -362,6 +380,31 @@ public class KleinStarClientTest implements FabricClientGameTest
             context.takeScreenshot("klein-star-past-wall");
             server.runCommand("fill -6 " + FLAT_FEET + " " + WALL_Z + " 7 " + (FLAT_FEET + 4) + " " + WALL_Z + " air");
 
+            // It spares no one: its caster, standing in the blast of a weaker star, is hurt and left Radiant like anything else
+            config.kleinStarDamage = SURVIVABLE_DAMAGE;
+            clearScene(server);
+            waitFor(context, server, 260, "Expected the cooldown to end again", minecraft -> !player(minecraft).getCooldowns().isOnCooldown(held(minecraft)));
+            server.runOnServer(minecraft ->
+            {
+                heal(minecraft);
+                player(minecraft).removeEffect(VoidHeartEffects.RADIANT);
+                sturdyHusk(minecraft, PLAYER_X, PLAYER_Z + 3, STURDY);
+            });
+            context.waitTicks(10);
+            rightClick(context);
+            waitFor(context, server, 10, "Expected a fourth Klein Star", minecraft -> stars(minecraft) == 1);
+            waitFor(context, server, KleinStarBalance.GROW_TICKS + KleinStarBalance.MAX_FLIGHT_TICKS + 10, "Expected the fourth star to burst", minecraft -> stars(minecraft) == 0);
+            server.runOnServer(minecraft ->
+            {
+                var caster = player(minecraft);
+                float lost = caster.getMaxHealth() - caster.getHealth();
+                expect(lost >= SURVIVABLE_DAMAGE / 2 - 0.01F && lost <= SURVIVABLE_DAMAGE + 2.01F, "Expected the caster hurt by its own star 3 blocks away, lost " + lost);
+                expect(caster.hasEffect(VoidHeartEffects.RADIANT), "Expected the caster left Radiant by its own star");
+                caster.removeEffect(VoidHeartEffects.RADIANT);
+                heal(minecraft);
+            });
+            config.kleinStarDamage = DAMAGE;
+
             clearScene(server);
             server.runCommand("gamemode creative @a");
             context.getInput().pressKey(InputConstants.KEY_F1);
@@ -371,6 +414,13 @@ public class KleinStarClientTest implements FabricClientGameTest
             server.runCommand("time set noon");
             context.waitTicks(10);
             context.takeScreenshot("klein-star-item-held");
+        }
+        finally
+        {
+            config.kleinStarDamage = savedDamage;
+            config.kleinStarRadius = savedRadius;
+            config.kleinStarCooldownSeconds = savedCooldown;
+            config.kleinStarContravoidCost = savedCost;
         }
     }
 

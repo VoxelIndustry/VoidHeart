@@ -32,13 +32,13 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.voxelindustry.voidheart.client.particle.KleinStarDrawParticle;
-import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStar;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBalance;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBurstPayload;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarItem;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarPath;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarPathPayload;
+import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarSettings;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarTargeting;
 import net.voxelindustry.voidheart.common.content.kleinstar.RadiantCover;
 import org.jspecify.annotations.Nullable;
@@ -392,6 +392,7 @@ public final class KleinStarRender
             else if (validPath(payload))
                 fx.take(new KleinStarPath(payload.points()), payload.flyingTicks());
         });
+        ClientPlayNetworking.registerGlobalReceiver(KleinStarSettings.Told.TYPE, (payload, context) -> KleinStarSettings.accept(payload));
         LevelRenderEvents.COLLECT_SUBMITS.register(KleinStarRender::collectSubmits);
         ClientTickEvents.END_CLIENT_TICK.register(client -> tick(client.level));
     }
@@ -402,6 +403,13 @@ public final class KleinStarRender
         BURSTS.clear();
         PENDING.clear();
         idleAim = null;
+    }
+
+    /** On leaving a server, what it said of its settings is forgotten with everything else. */
+    public static void leave()
+    {
+        clear();
+        KleinStarSettings.forget();
     }
 
     private static boolean validPath(KleinStarPathPayload payload)
@@ -620,7 +628,7 @@ public final class KleinStarRender
             if (fx.star.bearerId() == player.getId())
                 return null;
 
-        int cost = player.hasInfiniteMaterials() ? 0 : VoidHeartConfig.get().kleinStarContravoidCost;
+        int cost = player.hasInfiniteMaterials() ? 0 : KleinStarSettings.cost(level);
         for (var hand : InteractionHand.values())
         {
             var stack = player.getItemInHand(hand);
@@ -628,7 +636,7 @@ public final class KleinStarRender
                 continue;
             boolean right = (hand == InteractionHand.MAIN_HAND) == (player.getMainArm() == HumanoidArm.RIGHT);
             var tip = KleinStar.tip(level, player, right, 1);
-            return KleinStarTargeting.target(level, tip, player, KleinStarTargeting.visible(level, tip, player), VoidHeartConfig.get().kleinStarRadius).at();
+            return KleinStarTargeting.target(level, tip, player, KleinStarTargeting.visible(level, tip, player), KleinStarSettings.radius(level)).at();
         }
         return null;
     }
@@ -807,7 +815,7 @@ public final class KleinStarRender
     {
         var below = level.clip(new ClipContext(at, at.add(0, -PREVIEW_DROP, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, CollisionContext.empty()));
         double ground = (below.getType() == HitResult.Type.MISS ? at.y - 1 : below.getLocation().y) + PREVIEW_LIFT;
-        float radius = VoidHeartConfig.get().kleinStarRadius;
+        float radius = KleinStarSettings.radius(level);
         int color = ARGB.color(alpha, INNER_COLOR);
 
         for (int dash = 0; dash < PREVIEW_DASHES; dash++)

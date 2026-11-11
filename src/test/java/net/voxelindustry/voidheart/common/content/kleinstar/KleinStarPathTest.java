@@ -104,6 +104,17 @@ class KleinStarPathTest
     }
 
     @Test
+    void throughOnePointItGoesNowhere()
+    {
+        var spot = new Vec3(3, 2, 1);
+        var path = KleinStarPath.through(List.of(spot), null, OPEN);
+        assertEquals(0, path.length(), 1e-9);
+        assertEquals(0, path.at(0).distanceTo(spot), 1e-9);
+        assertEquals(0, path.at(5).distanceTo(spot), 1e-9);
+        assertThrows(IllegalArgumentException.class, () -> KleinStarPath.through(List.of(), null, OPEN));
+    }
+
+    @Test
     void aPathNeedsWholeCurves()
     {
         assertThrows(IllegalArgumentException.class, () -> new KleinStarPath(List.of(Vec3.ZERO, Vec3.ZERO, Vec3.ZERO)));

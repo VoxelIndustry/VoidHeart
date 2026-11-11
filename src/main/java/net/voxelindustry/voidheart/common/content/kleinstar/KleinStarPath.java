@@ -54,10 +54,15 @@ public final class KleinStarPath
     /**
      * A curve through every point in turn.
      *
+     * @param corners at least one point: a single one is a path that goes nowhere
      * @param heading which way the star is already going, so it does not turn on the spot, or null when it is at rest
      */
     public static KleinStarPath through(List<Vec3> corners, @Nullable Vec3 heading, KleinStarRoute.Sight sight)
     {
+        if (corners.isEmpty())
+            throw new IllegalArgumentException("A path goes through at least one point");
+        if (corners.size() == 1)
+            return new KleinStarPath(List.of(corners.getFirst(), corners.getFirst(), corners.getFirst(), corners.getFirst()));
         int last = corners.size() - 1;
         var tangents = new Vec3[corners.size()];
         for (int i = 0; i <= last; i++)

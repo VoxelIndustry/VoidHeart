@@ -274,7 +274,7 @@ public class KleinStar extends Entity
             }
             return known;
         }, sight, from, to);
-        return corners == null
+        return corners == null || corners.size() < 2
                 ? new KleinStarPath(List.of(from, from, to, to))
                 : KleinStarPath.through(corners, heading, sight);
     }
@@ -332,6 +332,12 @@ public class KleinStar extends Entity
     {
         if (anchor == null || !anchor.isAlive() || anchor.level() != level)
             return;
+        // Taken far away, by a portal or a command, it is let go: the star keeps to where it was last headed
+        if (anchor.getBoundingBox().getCenter().distanceTo(from) > KleinStarBalance.SEARCH_RANGE * 2)
+        {
+            anchor = null;
+            return;
+        }
         var wanted = KleinStarTargeting.around(level, anchor, VoidHeartConfig.get().kleinStarRadius);
         if (wanted.distanceTo(path.to()) <= RETARGET_BEYOND)
             return;
