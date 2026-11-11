@@ -1,0 +1,36 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:supreme_shielding_apparatus",
+  "insight_cost": 16,
+  "knowledge_cost": 1800,
+  "knowledge_per_second": 2,
+  "strain": 10,
+  "requires": [
+    "voidheart:warding_lattice"
+  ],
+  "unlocks": [
+    "voidheart:greater_shielding_apparatus",
+    "voidheart:supreme_shielding_apparatus",
+    "voidheart:apparatus_ember_ward",
+    "voidheart:apparatus_arrow_ward",
+    "voidheart:apparatus_blast_ward",
+    "voidheart:apparatus_arcane_ward",
+    "voidheart:apparatus_pulse_core",
+    "voidheart:apparatus_blink_core",
+    "voidheart:apparatus_stasis_core",
+    "voidheart:apparatus_mending_core"
+  ],
+  "recipes": [
+    "voidheart:altar/greater_shielding_apparatus",
+    "voidheart:altar/supreme_shielding_apparatus",
+    "voidheart:altar/apparatus_ember_ward",
+    "voidheart:altar/apparatus_arrow_ward",
+    "voidheart:altar/apparatus_blast_ward",
+    "voidheart:altar/apparatus_arcane_ward",
+    "voidheart:altar/apparatus_pulse_core",
+    "voidheart:altar/apparatus_blink_core",
+    "voidheart:altar/apparatus_stasis_core",
+    "voidheart:altar/apparatus_mending_core"
+  ]
+}

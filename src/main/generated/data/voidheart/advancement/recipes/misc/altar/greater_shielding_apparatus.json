@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_lesser_shielding_apparatus": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:lesser_shielding_apparatus"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/greater_shielding_apparatus"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_lesser_shielding_apparatus"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/greater_shielding_apparatus"
+    ]
+  }
+}

@@ -330,6 +330,10 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.TAINTED_BREAKTHROUGH, ModelTemplates.FLAT_ITEM);
         VoidHeartItems.SPAWN_EGGS.forEach(egg -> generator.generateFlatItem(egg, ModelTemplates.FLAT_ITEM));
         EnergyDatagen.itemModels(generator);
+        generator.generateFlatItem(VoidHeartItems.LESSER_SHIELDING_APPARATUS, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.GREATER_SHIELDING_APPARATUS, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.SUPREME_SHIELDING_APPARATUS, ModelTemplates.FLAT_ITEM);
+        VoidHeartItems.APPARATUS_COMPONENTS.values().forEach(component -> generator.generateFlatItem(component, ModelTemplates.FLAT_ITEM));
 
         for (var name : HAND_WRITTEN_ITEM_MODELS)
             generator.itemModelOutput.accept(BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(MODID, name)), ItemModelUtils.plainModel(itemModel(name)));

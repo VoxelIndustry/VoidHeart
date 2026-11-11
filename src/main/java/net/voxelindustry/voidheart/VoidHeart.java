@@ -10,6 +10,9 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusEdits;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.voxelindustry.voidheart.common.content.oil.OilCoating;
@@ -132,6 +135,9 @@ public class VoidHeart implements ModInitializer
         BarnacleInfection.register();
         ShoulderEyes.register();
         AvengingReach.register();
+        ShieldingApparatus.register();
+        ShieldPayloads.register();
+        ServerPlayNetworking.registerGlobalReceiver(ShieldPayloads.Edit.TYPE, ApparatusEdits::handle);
 
         VoidHeartTiles.registerTiles();
         ArmillaryChunkHold.register();
@@ -155,6 +161,7 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(ShieldingApparatus::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BarnacleInfection::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));

@@ -33,6 +33,7 @@ import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
@@ -221,6 +222,7 @@ public class RecipesProvider extends FabricRecipeProvider
                     ExperienceSkullTile.MAX_EXPERIENCE);
 
             // Altar: the catalyst sits on the altar, each ingredient on one of the eight pillars
+            shieldingApparatus();
             offerAltarRecipe("armillary_core", VoidHeartBlocks.ARMILLARY_CORE, Items.COMPASS,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
@@ -401,6 +403,70 @@ public class RecipesProvider extends FabricRecipeProvider
         private static ItemStackRecipeIngredient ingredient(ItemLike item)
         {
             return new ItemStackRecipeIngredient(new ItemStack(item), false);
+        }
+
+        /**
+         * Each larger apparatus is raised from the one before on the altar, and keeps the components set in it. Every component has a catalyst of its own.
+         */
+        private void shieldingApparatus()
+        {
+            offerAltarRecipe("lesser_shielding_apparatus", VoidHeartItems.LESSER_SHIELDING_APPARATUS, Items.SHIELD,
+                    VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            offerAltarRecipe("greater_shielding_apparatus", VoidHeartItems.GREATER_SHIELDING_APPARATUS, VoidHeartItems.LESSER_SHIELDING_APPARATUS,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.AZURIUM_SHARD);
+            offerAltarRecipe("supreme_shielding_apparatus", VoidHeartItems.SUPREME_SHIELDING_APPARATUS, VoidHeartItems.GREATER_SHIELDING_APPARATUS,
+                    Items.NETHERITE_INGOT, Items.NETHERITE_INGOT,
+                    VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+                    VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL);
+
+            component(ApparatusComponent.CELL, Items.AMETHYST_SHARD,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            component(ApparatusComponent.BANK, Items.LAPIS_BLOCK,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.ARROGANT_IRON_INGOT);
+            component(ApparatusComponent.RESERVOIR, Items.AMETHYST_BLOCK,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+            component(ApparatusComponent.RESONATOR, Items.NOTE_BLOCK,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT);
+            component(ApparatusComponent.CHOIR, Items.JUKEBOX,
+                    VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.VOID_PEARL);
+            component(ApparatusComponent.QUICKENER, Items.CLOCK,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, Items.REDSTONE, Items.REDSTONE, VoidHeartItems.ENDER_SHARD);
+            component(ApparatusComponent.HASTENER, Items.COMPARATOR,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, Items.REDSTONE, Items.REDSTONE, VoidHeartItems.VOID_PEARL);
+            component(ApparatusComponent.EMBER_WARD, Items.MAGMA_CREAM,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    Items.BLAZE_POWDER, Items.BLAZE_POWDER);
+            component(ApparatusComponent.ARROW_WARD, Items.TARGET,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT,
+                    Items.FEATHER, Items.FEATHER);
+            component(ApparatusComponent.BLAST_WARD, Items.OBSIDIAN,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    Items.GUNPOWDER, Items.GUNPOWDER);
+            component(ApparatusComponent.ARCANE_WARD, VoidHeartItems.AZURIUM_SHARD,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    Items.LAPIS_LAZULI, Items.LAPIS_LAZULI);
+            component(ApparatusComponent.PULSE_CORE, Items.FIRE_CHARGE,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+            component(ApparatusComponent.BLINK_CORE, Items.CHORUS_FRUIT,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+            component(ApparatusComponent.STASIS_CORE, Items.BLUE_ICE,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT);
+            component(ApparatusComponent.MENDING_CORE, Items.GLISTERING_MELON_SLICE,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+        }
+
+        private void component(ApparatusComponent component, ItemLike catalyst, ItemLike... ingredients)
+        {
+            offerAltarRecipe(component.itemName(), VoidHeartItems.APPARATUS_COMPONENTS.get(component), catalyst, ingredients);
         }
 
         private void offerAltarRecipe(String name, ItemLike output, ItemLike catalyst, ItemLike... ingredients)

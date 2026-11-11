@@ -1,0 +1,44 @@
+{
+  "type": "voidheart:altar",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:obsidian"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:listless_lead_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:listless_lead_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:obsidian_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:gunpowder"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:gunpowder"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:apparatus_blast_ward"
+      }
+    ]
+  },
+  "time": 20
+}

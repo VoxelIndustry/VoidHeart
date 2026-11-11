@@ -40,6 +40,7 @@
       "net.voxelindustry.voidheart.gametest.FlaskClientTest",
       "net.voxelindustry.voidheart.gametest.OilClientTest",
       "net.voxelindustry.voidheart.gametest.ElixirClientTest",
+      "net.voxelindustry.voidheart.gametest.ShieldingApparatusClientTest",
       "net.voxelindustry.voidheart.gametest.InsightClientTest",
       "net.voxelindustry.voidheart.gametest.SaltClientTest",
       "net.voxelindustry.voidheart.gametest.RefinementClientTest",

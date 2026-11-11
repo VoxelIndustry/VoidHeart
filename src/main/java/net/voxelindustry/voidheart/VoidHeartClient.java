@@ -22,6 +22,14 @@ import net.voxelindustry.voidheart.client.ClarityFog;
 import net.voxelindustry.voidheart.client.OilEmbers;
 import net.voxelindustry.voidheart.client.BrewTooltip;
 import net.voxelindustry.voidheart.client.InsightMemory;
+import net.voxelindustry.voidheart.client.apparatus.ShieldHits;
+import net.voxelindustry.voidheart.client.apparatus.ShieldHud;
+import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
+import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.voxelindustry.voidheart.client.OilTooltip;
 import net.voxelindustry.voidheart.client.render.PermeableBarrierRender;
 import net.voxelindustry.voidheart.client.render.WeaverPreviewRender;
@@ -166,6 +174,12 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(OilEmbers::tick);
         ClientTickEvents.END_CLIENT_TICK.register(ClarityFog::tick);
         ClientTickEvents.END_CLIENT_TICK.register(InsightMemory::tick);
+
+        ClientPlayNetworking.registerGlobalReceiver(ShieldPayloads.Hit.TYPE, (payload, context) -> ShieldHits.receive(payload));
+        ClientTickEvents.END_CLIENT_TICK.register(ShieldHits::tick);
+        LevelRenderEvents.COLLECT_SUBMITS.register(ShieldRuneRender::collectSubmits);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.HEALTH_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shield"), ShieldHud::extract);
+        ShieldingApparatusItem.openGrid = hand -> Minecraft.getInstance().setScreenAndShow(new ApparatusScreen());
         ClientPlayNetworking.registerGlobalReceiver(BarrierWavePayload.TYPE, BarrierWaveTracker::handle);
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(RelayLinkPreviewRender::collectSubmits);
