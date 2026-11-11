@@ -1479,7 +1479,7 @@
   "voidheart.shielding_apparatus.ward.projectile": "Projectiles cost the shield half",
   "voidheart.shielding_apparatus.ward.blast": "Explosions cost the shield half",
   "voidheart.shielding_apparatus.ward.arcane": "Magic costs the shield half",
-  "voidheart.shielding_apparatus.break.pulse": "On break: throws back and hurts what stands close",
+  "voidheart.shielding_apparatus.break.pulse": "On break: throws back and hurts monsters close by",
   "voidheart.shielding_apparatus.break.blink": "On break: steps away from the blow, unseen for a moment",
   "voidheart.shielding_apparatus.break.stasis": "On break: slows and weakens monsters around",
   "voidheart.shielding_apparatus.break.mend": "On break: heals 3 hearts",
@@ -1516,7 +1516,7 @@
   "voidheart.page.apparatus_arrow_ward": "Arrows and other projectiles cost the shield half what they would.",
   "voidheart.page.apparatus_blast_ward": "Explosions cost the shield half what they would.",
   "voidheart.page.apparatus_arcane_ward": "Magic, from void orbs and arcane bolts to a Bishop's lance, costs the shield half what it would.",
-  "voidheart.page.apparatus_pulse_core": "When the shield breaks, what stands close is hurt and thrown back. An apparatus holds a single core.",
+  "voidheart.page.apparatus_pulse_core": "When the shield breaks, the monsters standing close are hurt and thrown back. An apparatus holds a single core.",
   "voidheart.page.apparatus_blink_core": "When the shield breaks, it steps you away from the blow and hides you for a moment. An apparatus holds a single core.",
   "voidheart.page.apparatus_stasis_core": "When the shield breaks, the monsters around you are slowed and weakened for a few seconds. An apparatus holds a single core.",
   "voidheart.page.apparatus_mending_core": "When the shield breaks, it heals you a little. An apparatus holds a single core."

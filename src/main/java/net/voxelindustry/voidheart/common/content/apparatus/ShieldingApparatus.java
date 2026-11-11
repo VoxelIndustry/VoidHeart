@@ -206,7 +206,8 @@ public final class ShieldingApparatus
     private static void pulse(ServerLevel level, ServerPlayer player, Vec3 center)
     {
         var area = player.getBoundingBox().inflate(PULSE_RADIUS);
-        for (var other : level.getEntitiesOfClass(LivingEntity.class, area, other -> isFoe(player, other)))
+        // Monsters only, so villagers and animals are spared and an iron golem is never turned on its wearer
+        for (var other : level.getEntitiesOfClass(LivingEntity.class, area, other -> other instanceof Enemy && isFoe(player, other)))
         {
             var away = center(other).subtract(center);
             if (away.lengthSqr() > PULSE_RADIUS * PULSE_RADIUS)

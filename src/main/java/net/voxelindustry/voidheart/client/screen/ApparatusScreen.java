@@ -80,6 +80,8 @@ public class ApparatusScreen extends Screen
 
     private @Nullable ApparatusComponent held;
     private int rotation;
+    /** Rows of the carried tablet scrolled past, when more kinds are carried than it can show. */
+    private int scroll;
 
     public ApparatusScreen()
     {
@@ -219,15 +221,45 @@ public class ApparatusScreen extends Screen
         return new ArrayList<>(carried().keySet());
     }
 
+    private int visibleRows()
+    {
+        return Math.max(1, (tray.height() - HEAD - 2) / ROW);
+    }
+
+    private int maxScroll()
+    {
+        return Math.max(0, trayRows().size() - visibleRows());
+    }
+
     private @Nullable ApparatusComponent trayAt(double mouseX, double mouseY)
     {
-        if (!tray.contains(mouseX, mouseY))
+        if (!tray.contains(mouseX, mouseY) || mouseY < tray.y() + HEAD)
             return null;
         int row = (int) ((mouseY - tray.y() - HEAD) / ROW);
         var rows = trayRows();
-        if (mouseY < tray.y() + HEAD || row < 0 || row >= rows.size())
+        int index = row + Math.min(scroll, maxScroll());
+        if (row < 0 || row >= visibleRows() || index >= rows.size())
             return null;
-        return rows.get(row);
+        return rows.get(index);
+    }
+
+    /**
+     * The middle of the carried tablet and how far it is scrolled, for tests to aim and check.
+     */
+    public int[] trayView()
+    {
+        return new int[] { tray.x() + tray.width() / 2, tray.y() + tray.height() / 2, scroll, maxScroll() };
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
+    {
+        if (tray.contains(mouseX, mouseY) && scrollY != 0)
+        {
+            scroll = Math.clamp(scroll - (int) Math.signum(scrollY), 0, maxScroll());
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -360,13 +392,23 @@ public class ApparatusScreen extends Screen
             return;
         }
 
+        scroll = Math.min(scroll, maxScroll());
+        // Marks above and below the list say more is there to scroll to
+        if (scroll > 0)
+            graphics.text(font, "▲", tray.x() + tray.width() - PAD - font.width("▲"), tray.y() + PAD - 2, MUTED_COLOR);
+        if (scroll < maxScroll())
+            graphics.text(font, "▼", tray.x() + tray.width() - PAD - font.width("▼"), tray.y() + tray.height() - font.lineHeight - 1, MUTED_COLOR);
+
         var hovered = trayAt(mouseX, mouseY);
         int row = 0;
+        int skipped = 0;
         for (var entry : counts.entrySet())
         {
-            int y = tray.y() + HEAD + row * ROW;
-            if (y + ROW > tray.y() + tray.height())
+            if (skipped++ < scroll)
+                continue;
+            if (row >= visibleRows())
                 break;
+            int y = tray.y() + HEAD + row * ROW;
             var component = entry.getKey();
             if (component == held)
                 graphics.fill(tray.x() + 2, y, tray.x() + tray.width() - 2, y + ROW - 1, SELECTED_BACK);

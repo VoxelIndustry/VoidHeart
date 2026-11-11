@@ -5,7 +5,7 @@ package net.voxelindustry.voidheart.common.content.apparatus;
  */
 public enum BreakEffect
 {
-    /** Throws back and hurts what stands close. */
+    /** Throws back and hurts the monsters standing close. */
     PULSE,
     /** Steps the wearer away from the blow and hides them for a moment. */
     BLINK,

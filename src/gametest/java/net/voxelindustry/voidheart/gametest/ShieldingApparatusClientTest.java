@@ -99,6 +99,32 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         context.takeScreenshot("apparatus-grid-screen");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(5);
+
+        // More kinds carried than the tablet shows scroll into view under the wheel
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            for (var component : ApparatusComponent.values())
+                give(player, component, 1);
+        });
+        context.waitTicks(5);
+        context.getInput().pressKey(options -> options.keyUse);
+        context.waitTicks(10);
+        double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
+        int[] view = context.computeOnClient(minecraft -> ((ApparatusScreen) minecraft.gui.screen()).trayView());
+        expect(view[3] > 0, "Expected more kinds carried than the tablet shows");
+        context.getInput().setCursorPos(view[0] * scale, view[1] * scale);
+        context.waitTicks(2);
+        for (int notch = 0; notch < view[3] + 2; notch++)
+        {
+            context.getInput().scroll(-1);
+            context.waitTicks(1);
+        }
+        int[] scrolled = context.computeOnClient(minecraft -> ((ApparatusScreen) minecraft.gui.screen()).trayView());
+        expect(scrolled[2] == view[3], "Expected the wheel to scroll the tablet to its last row, at " + scrolled[2] + " of " + view[3]);
+        context.takeScreenshot("apparatus-grid-screen-scrolled");
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(5);
     }
 
     private static void equip(ClientGameTestContext context, TestServerContext server)
