@@ -155,6 +155,10 @@ public class Treant extends VoidMonster
 
     private void tickEmerge(ServerLevel level)
     {
+        // Peaceful holds it where it is in the bark, to come on out once the void wakes again
+        if (isDormant())
+            return;
+
         int ticks = emergeTicks();
         if (ticks == 1)
             playSound(VoidHeartSounds.TREANT_EMERGE, 1.6F, 1);
@@ -215,7 +219,7 @@ public class Treant extends VoidMonster
         var area = new AABB(position(), position()).inflate(TreantMoves.SWEEP_RANGE, getBbHeight(), TreantMoves.SWEEP_RANGE);
         for (var player : level.getEntitiesOfClass(Player.class, area, EntitySelector.NO_CREATIVE_OR_SPECTATOR))
         {
-            if (TreantMoves.inSweep(getX(), getZ(), getYRot(), player.getX(), player.getZ()) && player.hurtServer(level, damageSources().mobAttack(this), SWEEP_DAMAGE))
+            if (TreantMoves.inSweep(getX(), getZ(), getYRot(), player.getX(), player.getZ()) && hasLineOfSight(player) && player.hurtServer(level, damageSources().mobAttack(this), SWEEP_DAMAGE))
             {
                 player.knockback(SWEEP_POWER, getX() - player.getX(), getZ() - player.getZ(), damageSources().mobAttack(this), SWEEP_DAMAGE);
                 player.push(0, SWEEP_LIFT, 0);

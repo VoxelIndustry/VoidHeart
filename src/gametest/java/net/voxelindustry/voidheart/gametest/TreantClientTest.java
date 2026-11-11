@@ -58,6 +58,7 @@ public class TreantClientTest implements FabricClientGameTest
             checkEmerges(context, server);
             checkSweep(context, server);
             checkBreakingWakes(context, server);
+            checkExplosionAndPeaceful(context, server);
             checkLoot(context, server);
             checkForestDungeon(context, server, world);
 
@@ -253,6 +254,47 @@ public class TreantClientTest implements FabricClientGameTest
             var logs = minecraft.overworld().getEntitiesOfClass(ItemEntity.class, new AABB(x - 3, FEET - 1, z - 3, x + 4, FEET + 4, z + 4));
             expect(logs.isEmpty(), "The trunk's foot should drop nothing, dropped " + logs);
         });
+        clearScene(server);
+    }
+
+    /**
+     * Blowing the trunk up brings its Treant out too, and one broken in Peaceful waits half out of the bark until the void wakes again.
+     */
+    private static void checkExplosionAndPeaceful(ClientGameTestContext context, TestServerContext server)
+    {
+        int x = 80;
+        int z = 0;
+        server.runCommand("difficulty peaceful");
+        trunk(server, x, z);
+        tp(server, x + 12.5, FEET, z + 0.5);
+        server.runCommand("difficulty normal");
+        server.runCommand("summon tnt " + (x + 2.5) + " " + FEET + " " + (z + 0.5) + " {fuse:0}");
+        waitFor(context, server, 20, "An explosion at the trunk should bring its Treant out", minecraft -> !treants(minecraft).isEmpty());
+        server.runOnServer(minecraft -> expect(treants(minecraft).size() == 1, "An explosion should bring out one Treant, got " + treants(minecraft).size()));
+        clearScene(server);
+
+        x = 120;
+        int bx = x;
+        trunk(server, x, z);
+        tp(server, x + 12.5, FEET, z + 0.5);
+        server.runCommand("difficulty peaceful");
+        server.runCommand("gamemode survival @a");
+        tp(server, x + 2.5, FEET, z + 0.5);
+        context.waitTicks(5);
+        server.runOnServer(minecraft -> expect(player(minecraft).gameMode.destroyBlock(new BlockPos(bx, FEET, z)), "The player should break the trunk's foot"));
+        context.waitTicks(20);
+        int held = server.computeOnServer(minecraft ->
+        {
+            var found = treants(minecraft);
+            expect(found.size() == 1, "Breaking the bark in Peaceful should keep its Treant, got " + found.size());
+            expect(found.getFirst().isDormant() && found.getFirst().isEmerging(), "A Treant in Peaceful should lie dormant in the bark");
+            return found.getFirst().emergeTicks();
+        });
+        context.waitTicks(20);
+        server.runOnServer(minecraft -> expect(treants(minecraft).getFirst().emergeTicks() == held, "Peaceful should hold its emergence"));
+        tp(server, x + 12.5, FEET, z + 0.5);
+        server.runCommand("difficulty normal");
+        waitFor(context, server, 120, "The Treant should come on out once Peaceful ends", minecraft -> !treants(minecraft).getFirst().isEmerging());
         clearScene(server);
     }
 

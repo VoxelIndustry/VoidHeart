@@ -90,7 +90,9 @@ final class TreantTrunks
         {
             int rx = x + corner[0];
             int rz = z + corner[1];
-            if (random.nextDouble() < ROOT_CHANCE && isFree(rx, y, rz) && isGround(rx, y - 1, rz))
+            // A root beside a way out would catch the Treant's shoulder as it steps through
+            boolean besideWayOut = isWayOut(x, y, z, corner[0], 0) || isWayOut(x, y, z, 0, corner[1]);
+            if (!besideWayOut && random.nextDouble() < ROOT_CHANCE && isFree(rx, y, rz) && isGround(rx, y - 1, rz))
                 grid.set(rx, y, rz, ROOTS, Direction.UP);
         }
         trunks.add(new int[] { x, y, z });
@@ -132,11 +134,34 @@ final class TreantTrunks
     {
         for (var side : Direction.Plane.HORIZONTAL)
         {
-            if (isColumnFree(x + side.getStepX(), y, z + side.getStepZ(), TREANT_HEIGHT)
-                && isColumnFree(x + side.getStepX() * 2, y, z + side.getStepZ() * 2, TREANT_HEIGHT))
+            if (isWayOut(x, y, z, side.getStepX(), side.getStepZ()))
                 return true;
         }
         return false;
+    }
+
+    private boolean isWayOut(int x, int y, int z, int stepX, int stepZ)
+    {
+        for (int step = 1; step <= 2; step++)
+        {
+            for (int up = 0; up < TREANT_HEIGHT; up++)
+            {
+                if (!isWalkable(x + stepX * step, y + up, z + stepZ * step))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * What it can step through on its way out, ferns and grass as much as air, as the game finds no collision there either.
+     */
+    private boolean isWalkable(int x, int y, int z)
+    {
+        if (!isInner(x, y, z))
+            return false;
+        var cell = grid.material(x, y, z);
+        return cell.isOpen() || cell.isPassable() && cell != FLUID;
     }
 
     private boolean isColumnFree(int x, int y, int z, int height)

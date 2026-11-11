@@ -89,6 +89,17 @@ class TreantTrunksTest
                     }
                 }
                 out |= open;
+                if (open)
+                {
+                    // Nor any root on either side of that way out, where its shoulders pass
+                    int lateralX = side.getStepZ();
+                    int lateralZ = side.getStepX();
+                    for (int flank = -1; flank <= 1; flank += 2)
+                    {
+                        var beside = grid.material(trunk[0] + side.getStepX() + lateralX * flank, trunk[1], trunk[2] + side.getStepZ() + lateralZ * flank);
+                        assertThat(beside).as("beside the way out of %d %d %d in %s", trunk[0], trunk[1], trunk[2], blueprint).isNotEqualTo(DungeonMaterial.ROOTS);
+                    }
+                }
             }
             assertThat(out).as("%d %d %d in %s", trunk[0], trunk[1], trunk[2], blueprint).isTrue();
         }

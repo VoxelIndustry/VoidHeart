@@ -62,7 +62,7 @@ public class DormantTreantBlock extends Block implements EntityBlock
     }
 
     /**
-     * The open side closest to the player's bearing, so it comes out at them, or toward them anyway if every side is shut.
+     * The open side closest to the player's bearing, open two blocks out as the Treant stands once out of the trunk, so it comes out at them, or toward them anyway if every side is shut.
      */
     static Direction exitSide(LevelReader level, BlockPos pos, @Nullable Player target)
     {
@@ -73,7 +73,7 @@ public class DormantTreantBlock extends Block implements EntityBlock
         for (var side : Direction.Plane.HORIZONTAL)
         {
             float turn = Math.abs(Mth.degreesDifference(bearing, side.toYRot()));
-            if (turn < bestTurn && isOpen(level, pos.relative(side)))
+            if (turn < bestTurn && isOpen(level, pos.relative(side)) && isOpen(level, pos.relative(side, 2)))
             {
                 best = side;
                 bestTurn = turn;
