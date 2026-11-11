@@ -323,6 +323,8 @@ public class ModelsProvider extends FabricModelProvider
         generateFlask(generator, VoidHeartItems.CLARITY_DRAUGHT, "elixir");
         generator.generateFlatItem(VoidHeartItems.VOID_VEIN, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.VOID_MARROW, ModelTemplates.FLAT_ITEM);
+        for (var arm : VoidHeartItems.AVENGING_REACH)
+            generator.generateFlatItem(arm, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.IDEA_ABOUT_THE_VOID, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SPARK_OF_UNDERSTANDING, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.TAINTED_BREAKTHROUGH, ModelTemplates.FLAT_ITEM);

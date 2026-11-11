@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.setup;
 
 import net.voxelindustry.voidheart.common.content.salt.SaltItem;
 import net.voxelindustry.voidheart.common.content.research.InsightItem;
+import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReachItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGraftItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.minecraft.world.item.SpawnEggItem;
@@ -52,6 +53,7 @@ public class VoidHeartItems
     public static Item WRIGGLING_BRAIN;
     public static Item VOID_VEIN;
     public static Item VOID_MARROW;
+    public static Item[] AVENGING_REACH = new Item[4];
     public static Item IDEA_ABOUT_THE_VOID;
     public static Item SPARK_OF_UNDERSTANDING;
     public static Item TAINTED_BREAKTHROUGH;
@@ -114,6 +116,11 @@ public class VoidHeartItems
         WRIGGLING_BRAIN = registerItem("wriggling_brain", Item::new);
         VOID_VEIN = registerItem("void_vein", properties -> new VoidGraftItem(properties, VoidGrafts.VEIN, "void_vein"));
         VOID_MARROW = registerItem("void_marrow", properties -> new VoidGraftItem(properties, VoidGrafts.MARROW, "void_marrow"));
+        for (int arm = 0; arm < AVENGING_REACH.length; arm++)
+        {
+            int number = arm + 1;
+            AVENGING_REACH[arm] = registerItem("avenging_reach_" + number, properties -> new AvengingReachItem(properties, number));
+        }
         IDEA_ABOUT_THE_VOID = registerItem("idea_about_the_void", properties -> new InsightItem(properties.rarity(net.minecraft.world.item.Rarity.UNCOMMON), 1, 2));
         SPARK_OF_UNDERSTANDING = registerItem("spark_of_understanding", properties -> new InsightItem(properties.rarity(net.minecraft.world.item.Rarity.RARE), 4, 6));
         TAINTED_BREAKTHROUGH = registerItem("tainted_breakthrough", properties -> new InsightItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC), 10, 15));

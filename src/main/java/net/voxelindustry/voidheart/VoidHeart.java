@@ -33,6 +33,7 @@ import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
 import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.energy.EnergySetup;
 import net.voxelindustry.voidheart.common.curse.CursePayloads;
+import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReach;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassagePayloads;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.common.curse.Curses;
@@ -130,6 +131,7 @@ public class VoidHeart implements ModInitializer
         VoidHeartItems.registerSpawnEggs();
         BarnacleInfection.register();
         ShoulderEyes.register();
+        AvengingReach.register();
 
         VoidHeartTiles.registerTiles();
         ArmillaryChunkHold.register();
@@ -157,6 +159,8 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
+        ServerLivingEntityEvents.AFTER_DAMAGE.register(AvengingReach::onDamage);
+        ServerTickEvents.END_SERVER_TICK.register(AvengingReach::tickServer);
         ServerLivingEntityEvents.AFTER_DEATH.register(TormenterSoulHarvest::onDeath);
         ServerLivingEntityEvents.AFTER_DEATH.register(SufferingHarvest::onDeath);
         // A killing blow lands too, though the damage event skips it
@@ -167,6 +171,7 @@ public class VoidHeart implements ModInitializer
         });
         ServerLivingEntityEvents.AFTER_DEATH.register(OilCoating::onHitLanded);
         ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
+        ServerPlayerEvents.LEAVE.register(AvengingReach::onLeave);
 
         Corruption.register();
         CursePayloads.register();
@@ -216,6 +221,7 @@ public class VoidHeart implements ModInitializer
             OculusLeyPayloads.clear();
             OculusSightPayloads.clear();
             ShoulderEyes.clear();
+            AvengingReach.clear();
             Curses.clear();
             DungeonTeleportLock.clear();
             VoidDaedalus.clear();

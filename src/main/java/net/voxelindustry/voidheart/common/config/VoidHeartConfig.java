@@ -27,6 +27,7 @@ public class VoidHeartConfig
     private static final String OCULUS_TABLE = "oculus_table";
     private static final String BEHOLDER = "beholder";
     private static final String SHOULDER_EYE = "shoulder_eye";
+    private static final String AVENGING_REACH = "avenging_reach";
     private static final String RESEARCH = "research";
     private static final String ARMILLARY = "armillary";
 
@@ -79,6 +80,21 @@ public class VoidHeartConfig
     @IntSlider(min = 5, max = 600, step = 5)
     @SerialEntry(value = "shoulder_eye_regen_seconds", comment = "Seconds a slain Shoulder Eye takes to grow back before returning to its owner")
     public int shoulderEyeRegenSeconds = 60;
+
+    @AutoGen(category = AVENGING_REACH)
+    @FloatSlider(min = 0, max = 20, step = 0.5F, format = "%.1f")
+    @SerialEntry(value = "avenging_reach_damage", comment = "Damage dealt by each void arm of the Avenging Reach, an iron sword's by default")
+    public float avengingReachDamage = 6;
+
+    @AutoGen(category = AVENGING_REACH)
+    @FloatSlider(min = 0.5F, max = 30, step = 0.5F, format = "%.1f")
+    @SerialEntry(value = "avenging_reach_cooldown_seconds", comment = "Seconds each void arm of the Avenging Reach takes to recharge after striking")
+    public float avengingReachCooldownSeconds = 3;
+
+    @AutoGen(category = AVENGING_REACH)
+    @FloatSlider(min = 0, max = 3, step = 0.1F, format = "%.1f")
+    @SerialEntry(value = "avenging_reach_knockback", comment = "How far a void arm of the Avenging Reach throws back what it strikes, on top of the knockback of any hit")
+    public float avengingReachKnockback = 0.6F;
 
     @AutoGen(category = RESEARCH)
     @TickBox
@@ -234,6 +250,9 @@ public class VoidHeartConfig
         get().shoulderEyeBeamDamage = Mth.clamp(get().shoulderEyeBeamDamage, 0, 20);
         get().shoulderEyeRange = Mth.clamp(get().shoulderEyeRange, 4, 32);
         get().shoulderEyeRegenSeconds = Mth.clamp(get().shoulderEyeRegenSeconds, 5, 600);
+        get().avengingReachDamage = Mth.clamp(get().avengingReachDamage, 0, 20);
+        get().avengingReachCooldownSeconds = Mth.clamp(get().avengingReachCooldownSeconds, 0.5F, 30);
+        get().avengingReachKnockback = Mth.clamp(get().avengingReachKnockback, 0, 3);
     }
 
     public static VoidHeartConfig get()

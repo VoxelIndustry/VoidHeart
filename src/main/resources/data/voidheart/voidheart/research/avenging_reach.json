@@ -1,0 +1,23 @@
+{
+  "tier": 2,
+  "constellation": "rites",
+  "icon": "voidheart:avenging_reach_1",
+  "insight_cost": 7,
+  "knowledge_cost": 300,
+  "knowledge_per_second": 0.75,
+  "requires": [
+    "voidheart:void_flesh"
+  ],
+  "unlocks": [
+    "voidheart:avenging_reach_1",
+    "voidheart:avenging_reach_2",
+    "voidheart:avenging_reach_3",
+    "voidheart:avenging_reach_4"
+  ],
+  "recipes": [
+    "voidheart:altar/avenging_reach_1",
+    "voidheart:altar/avenging_reach_2",
+    "voidheart:altar/avenging_reach_3",
+    "voidheart:altar/avenging_reach_4"
+  ]
+}

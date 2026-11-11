@@ -252,6 +252,27 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT,
                     VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL);
+            // The Avenging Reach, an arm grown at a time around a blade, each dearer than the last
+            offerAltarRecipe("avenging_reach_1", VoidHeartItems.AVENGING_REACH[0], Items.IRON_SWORD,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    Items.BONE, Items.BONE,
+                    Items.ROTTEN_FLESH, Items.ROTTEN_FLESH);
+            offerAltarRecipe("avenging_reach_2", VoidHeartItems.AVENGING_REACH[1], Items.IRON_SWORD,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT,
+                    VoidHeartItems.WRIGGLING_BRAIN, VoidHeartItems.WRIGGLING_BRAIN);
+            offerAltarRecipe("avenging_reach_3", VoidHeartItems.AVENGING_REACH[2], Items.IRON_SWORD,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL);
+            offerAltarRecipe("avenging_reach_4", VoidHeartItems.AVENGING_REACH[3], Items.IRON_SWORD,
+                    VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.RUBRUM_SHARD,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL);
             offerAltarRecipe("beam_focus", VoidHeartBlocks.BEAM_FOCUS, VoidHeartBlocks.VOID_CONDUIT,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
