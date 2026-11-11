@@ -1,6 +1,11 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.assertj.core.api.Assertions.within;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,4 +74,63 @@ class TreantMovesTest
     {
         assertThat(TreantMoves.EMERGE_TICKS).isGreaterThanOrEqualTo(60);
     }
+
+    @Test
+    void sweep_includesTheReachBoundaryButNotTheNextRepresentableDistance()
+    {
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 0, TreantMoves.SWEEP_RANGE)).isTrue();
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 0, Math.nextUp(TreantMoves.SWEEP_RANGE))).isFalse();
+        // Each component is in range, but the diagonal distance is not.
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 4, 4)).isFalse();
+    }
+
+    @Test
+    void sweep_pointBlankExceptionEndsExactlyAtItsBoundary()
+    {
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 0, 0)).as("coincident positions").isTrue();
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 0, -Math.nextDown(TreantMoves.SWEEP_POINT_BLANK))).isTrue();
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 0, -TreantMoves.SWEEP_POINT_BLANK)).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = { -1, 1 })
+    void sweep_checksBothAngularEdges(double side)
+    {
+        double edge = Math.acos(TreantMoves.SWEEP_ARC_DOT);
+        double inside = side * (edge - 0.000001);
+        double outside = side * (edge + 0.000001);
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 3 * Math.sin(inside), 3 * Math.cos(inside))).isTrue();
+        assertThat(TreantMoves.inSweep(0, 0, SOUTH, 3 * Math.sin(outside), 3 * Math.cos(outside))).isFalse();
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "0, 0, 1", "90, -1, 0", "180, 0, -1", "270, 1, 0",
+            "-90, 1, 0", "450, -1, 0", "720, 0, 1" })
+    void sweep_respectsCardinalHeadingsAndFullTurnsAtANegativeOrigin(float yaw, int dx, int dz)
+    {
+        assertThat(TreantMoves.inSweep(-20, -30, yaw, -20 + 4 * dx, -30 + 4 * dz)).isTrue();
+        assertThat(TreantMoves.inSweep(-20, -30, yaw, -20 - 4 * dx, -30 - 4 * dz)).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(floats = { -100, -0.5F, 11.5F, 12 })
+    void emerge_clampsTicksBeforeMovement(float ticks)
+    {
+        assertThat(TreantMoves.emergeProgress(ticks)).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(floats = { 70, 70.5F, 1000 })
+    void emerge_clampsTicksAfterCompletion(float ticks)
+    {
+        assertThat(TreantMoves.emergeProgress(ticks)).isEqualTo(1);
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "26.5, 0.15625", "41, 0.5", "55.5, 0.84375" })
+    void emerge_easesFractionalTicksRatherThanMovingLinearly(float ticks, float expected)
+    {
+        assertThat(TreantMoves.emergeProgress(ticks)).isCloseTo(expected, within(0.000001F));
+    }
+
 }
