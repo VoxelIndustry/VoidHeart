@@ -15,8 +15,11 @@ import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusEdits;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldState;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+
+import java.util.function.Function;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.expect;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.player;
@@ -30,6 +33,7 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
     private static final int   GROUND_Y = -60;
     private static final float CAPACITY = 4 + 3.5F + 1 + 1;
     private static final String SLOT    = "chest/shielding_apparatus";
+    private static final int   FILL_TICKS_MAX = 600;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -163,7 +167,8 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         float points = server.computeOnServer(minecraft -> ShieldingApparatus.state(player(minecraft)).points());
         expect(points == 0, "Expected a newly worn apparatus to start empty, got " + points);
 
-        for (int tick = 0; tick < 600; tick++)
+        // The Lesser wait of 100 ticks plus about 190 to refill, checked every 5 ticks for up to 600
+        for (int waited = 0; waited < FILL_TICKS_MAX; waited += 5)
         {
             if (server.computeOnServer(minecraft -> ShieldingApparatus.state(player(minecraft)).isFull()))
                 break;
@@ -279,7 +284,7 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         {
             var player = player(minecraft);
             player.setHealth(player.getMaxHealth());
-            player.setAttached(ShieldingApparatus.SHIELD, new net.voxelindustry.voidheart.common.content.apparatus.ShieldState(CAPACITY, CAPACITY, 0));
+            player.setAttached(ShieldingApparatus.SHIELD, new ShieldState(CAPACITY, CAPACITY, 0));
             player.damageCooldownTime = 0;
             player.hurtServer(minecraft.overworld(), player.damageSources().fall(), 3);
             expect(ShieldingApparatus.state(player).points() == CAPACITY, "Expected a fall to leave the shield alone");
@@ -298,7 +303,7 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
     /**
      * Moves the cursor to a point the open apparatus screen gives, in GUI pixels, and left clicks there.
      */
-    private static void clickScreen(ClientGameTestContext context, double scale, java.util.function.Function<ApparatusScreen, int[]> point)
+    private static void clickScreen(ClientGameTestContext context, double scale, Function<ApparatusScreen, int[]> point)
     {
         int[] at = context.computeOnClient(minecraft -> point.apply((ApparatusScreen) minecraft.gui.screen()));
         expect(at != null, "Expected the point to click to be in view");
