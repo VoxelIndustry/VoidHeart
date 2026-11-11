@@ -46,6 +46,10 @@ repositories {
         name = 'ModMenu'
         url = 'https://maven.terraformersmc.com/'
     }
+    maven {
+        name = 'Nucleoid'
+        url = 'https://maven.nucleoid.xyz/releases'
+    }
     exclusiveContent {
         forRepository {
             maven {
@@ -70,6 +74,7 @@ dependencies {
     implementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
     implementation "maven.modrinth:geckolib:${project.geckolib_version}"
 
+    implementation "eu.pb4:trinkets:${project.trinkets_version}"
     implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
     implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     compileOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"

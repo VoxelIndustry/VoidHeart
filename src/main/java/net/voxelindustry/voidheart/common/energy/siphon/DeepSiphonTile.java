@@ -330,6 +330,7 @@ public class DeepSiphonTile extends TileBase
             case VOID_SKELETON -> VoidHeartEntities.VOID_SKELETON;
             case VOID_GHOUL -> VoidHeartEntities.VOID_GHOUL;
             case WRAITH -> VoidHeartEntities.WRAITH;
+            case WRAITH_SCARAB -> VoidHeartEntities.WRAITH_SCARAB;
             case STALKING_WRAITH -> VoidHeartEntities.STALKING_WRAITH;
             case FALLEN_BISHOP -> VoidHeartEntities.FALLEN_BISHOP;
             case MALIGNANT_BOULDER -> VoidHeartEntities.MALIGNANT_BOULDER;

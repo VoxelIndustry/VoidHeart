@@ -349,6 +349,67 @@
       }
     ]
   },
+  "entity.wraith_scarab.ambient": {
+    "subtitle": "subtitles.voidheart.entity.wraith_scarab.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.ambient",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.wraith_scarab.hurt": {
+    "subtitle": "subtitles.voidheart.entity.wraith_scarab.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.hurt",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.wraith_scarab.death": {
+    "subtitle": "subtitles.voidheart.entity.wraith_scarab.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.death",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.wraith_scarab.step": {
+    "subtitle": "subtitles.voidheart.entity.wraith_scarab.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.step",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.wraith_scarab.hop": {
+    "subtitle": "subtitles.voidheart.entity.wraith_scarab.hop",
+    "sounds": [
+      {
+        "name": "minecraft:entity.enderman.teleport",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.8
+      }
+    ]
+  },
+  "entity.wraith_scarab.bite": {
+    "subtitle": "subtitles.voidheart.entity.wraith_scarab.bite",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.bite",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
   "entity.corrupted_barnacle.infect": {
     "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.infect",
     "sounds": [

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_azurium_shard": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:azurium_shard"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/apparatus_arcane_ward"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_azurium_shard"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/apparatus_arcane_ward"
+    ]
+  }
+}

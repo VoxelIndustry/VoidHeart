@@ -32,7 +32,7 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
                 .addTag(VoidHeartTags.MOBS_DAEDALUS);
 
         tag(VoidHeartTags.MOBS_VOID_DUNGEON,
-                VOID_SKELETON, VOID_GHOUL, WRAITH,
+                VOID_SKELETON, VOID_GHOUL, WRAITH, WRAITH_SCARAB,
                 CORRUPTED_CRAB_SMALL, CORRUPTED_CRAB_MEDIUM, CORRUPTED_CRAB_LARGE, CORRUPTED_BARNACLE,
                 FALLEN_NOVICE, FALLEN_ADEPT, FALLEN_ELDER,
                 EYE_MAW, LARGE_EYE_MAW, ARCANE_EYE, TREANT);
@@ -40,7 +40,7 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
                 STALKING_WRAITH, FALLEN_BISHOP, MALIGNANT_BOULDER, LEGIONARY, CENTURION, KERNACIAN_DRAGOON);
 
         tag(VoidHeartTags.MOBS_FALLEN, FALLEN_NOVICE, FALLEN_ADEPT, FALLEN_ELDER, FALLEN_BISHOP);
-        tag(VoidHeartTags.MOBS_WRAITHS, WRAITH, STALKING_WRAITH);
+        tag(VoidHeartTags.MOBS_WRAITHS, WRAITH, STALKING_WRAITH, WRAITH_SCARAB);
         tag(VoidHeartTags.MOBS_CRABS, CORRUPTED_CRAB_SMALL, CORRUPTED_CRAB_MEDIUM, CORRUPTED_CRAB_LARGE);
         tag(VoidHeartTags.MOBS_PESTS, CORRUPTED_BARNACLE)
                 .addTag(VoidHeartTags.MOBS_CRABS);

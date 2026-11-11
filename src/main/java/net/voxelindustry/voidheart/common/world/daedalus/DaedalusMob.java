@@ -9,6 +9,8 @@ public enum DaedalusMob
     VOID_SKELETON(0, 2, 1),
     VOID_GHOUL(0, 2, 1),
     WRAITH(0, 2, 1),
+    // Always a pair
+    WRAITH_SCARAB(0, 1, 2),
     STALKING_WRAITH(0, 3, 1),
     FALLEN_BISHOP(0, 3, 1),
     MALIGNANT_BOULDER(1, 3, 1),

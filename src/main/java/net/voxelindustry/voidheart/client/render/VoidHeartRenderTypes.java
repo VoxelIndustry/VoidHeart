@@ -131,4 +131,19 @@ public class VoidHeartRenderTypes
 
     public static final RenderType SILHOUETTE = RenderType.create(MODID + "_silhouette",
             RenderSetup.builder(SILHOUETTE_PIPELINE).withTexture("Sampler0", SILHOUETTE_TEXTURE).createRenderSetup());
+
+    /**
+     * Vanilla eyes added rather than blended: vanilla's translucent eyes darken what is behind a tile's faint ground, where runes should only ever brighten.
+     * Back faces stay culled, so a convex hull of these never overlaps itself.
+     */
+    private static final RenderPipeline SHIELD_RUNES_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_NO_LIGHTMAP_SNIPPET, RenderPipelines.EYES_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/shield_runes"))
+            .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
+            .build();
+
+    private static final Identifier SHIELD_RUNES_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/shield_runes.png");
+
+    public static final RenderType SHIELD_RUNES = RenderType.create(MODID + "_shield_runes",
+            RenderSetup.builder(SHIELD_RUNES_PIPELINE).withTexture("Sampler0", SHIELD_RUNES_TEXTURE).createRenderSetup());
 }

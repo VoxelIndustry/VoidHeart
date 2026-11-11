@@ -1,0 +1,5 @@
+{
+  "icon": "voidheart:container/slots/shielding_apparatus",
+  "order": -256,
+  "validator_predicates": ["trinkets:default"]
+}

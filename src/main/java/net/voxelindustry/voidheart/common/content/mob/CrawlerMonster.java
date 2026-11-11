@@ -105,13 +105,22 @@ public abstract class CrawlerMonster extends VoidMonster
      */
     public void settleOn(BlockPos cell, Direction surface)
     {
-        double gap = getBbWidth() / 2 + 0.01;
+        setPos(settledPosition(cell, surface, getBbWidth(), getBbHeight()));
+        setSurface(surface);
+    }
+
+    /**
+     * Where {@link #settleOn} puts a mob of this size, as the bottom center of its collision box.
+     */
+    public static Vec3 settledPosition(BlockPos cell, Direction surface, double width, double height)
+    {
+        double gap = width / 2 + 0.01;
         double x = cell.getX() + 0.5;
         double y = cell.getY();
         double z = cell.getZ() + 0.5;
         switch (surface)
         {
-            case DOWN -> y = cell.getY() + 1 - getBbHeight() - 0.01;
+            case DOWN -> y = cell.getY() + 1 - height - 0.01;
             case EAST -> x = cell.getX() + gap;
             case WEST -> x = cell.getX() + 1 - gap;
             case SOUTH -> z = cell.getZ() + gap;
@@ -120,8 +129,7 @@ public abstract class CrawlerMonster extends VoidMonster
             {
             }
         }
-        setPos(x, y, z);
-        setSurface(surface);
+        return new Vec3(x, y, z);
     }
 
     public void letGo()

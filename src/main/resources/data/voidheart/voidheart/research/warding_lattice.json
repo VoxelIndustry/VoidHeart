@@ -1,0 +1,31 @@
+{
+  "tier": 2,
+  "constellation": "artifices",
+  "icon": "voidheart:lesser_shielding_apparatus",
+  "insight_cost": 8,
+  "knowledge_cost": 900,
+  "knowledge_per_second": 1.5,
+  "requires": [
+    "voidheart:void_flesh"
+  ],
+  "unlocks": [
+    "voidheart:lesser_shielding_apparatus",
+    "voidheart:apparatus_cell",
+    "voidheart:apparatus_bank",
+    "voidheart:apparatus_reservoir",
+    "voidheart:apparatus_resonator",
+    "voidheart:apparatus_choir",
+    "voidheart:apparatus_quickener",
+    "voidheart:apparatus_hastener"
+  ],
+  "recipes": [
+    "voidheart:altar/lesser_shielding_apparatus",
+    "voidheart:altar/apparatus_cell",
+    "voidheart:altar/apparatus_bank",
+    "voidheart:altar/apparatus_reservoir",
+    "voidheart:altar/apparatus_resonator",
+    "voidheart:altar/apparatus_choir",
+    "voidheart:altar/apparatus_quickener",
+    "voidheart:altar/apparatus_hastener"
+  ]
+}
