@@ -104,6 +104,7 @@ final class DungeonMobSpawner
             case VOID_SKELETON -> VoidHeartEntities.VOID_SKELETON;
             case VOID_GHOUL -> VoidHeartEntities.VOID_GHOUL;
             case WRAITH -> VoidHeartEntities.WRAITH;
+            case WRAITH_SCARAB -> VoidHeartEntities.WRAITH_SCARAB;
             case CRAB_SMALL -> VoidHeartEntities.CORRUPTED_CRAB_SMALL;
             case CRAB_MEDIUM -> VoidHeartEntities.CORRUPTED_CRAB_MEDIUM;
             case CRAB_LARGE -> VoidHeartEntities.CORRUPTED_CRAB_LARGE;

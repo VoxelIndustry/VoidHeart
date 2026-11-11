@@ -42,7 +42,7 @@ public abstract class CrawlerRender<T extends CrawlerMonster, S extends CrawlerR
     }
 
     // From the bottom center of the collision box to the middle of its face on the side of the surface
-    private static Vector3f feetOffset(Direction surface, float width, float height, Vector3f out)
+    protected static Vector3f feetOffset(Direction surface, float width, float height, Vector3f out)
     {
         float extent = surface.getAxis() == Direction.Axis.Y ? height / 2 : width / 2;
         return out.set(-surface.getStepX() * extent, height / 2 - surface.getStepY() * extent, -surface.getStepZ() * extent);
