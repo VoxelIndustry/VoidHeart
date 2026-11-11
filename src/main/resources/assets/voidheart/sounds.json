@@ -409,7 +409,98 @@
         "pitch": 0.8
       }
     ]
+  },  "entity.wraith_beast.ambient": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton_horse.ambient",
+        "type": "event",
+        "pitch": 0.55
+      }
+    ]
   },
+  "entity.wraith_beast.hurt": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton_horse.hurt",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.wraith_beast.death": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton_horse.death",
+        "type": "event",
+        "pitch": 0.55
+      }
+    ]
+  },
+  "entity.wraith_beast.step": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.horse.step",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.wraith_beast.manifest": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.manifest",
+    "sounds": [
+      {
+        "name": "minecraft:particle.soul_escape",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.wraith_beast.rear": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.rear",
+    "sounds": [
+      {
+        "name": "minecraft:entity.horse.angry",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.wraith_beast.strike": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.strike",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.attack",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.wraith_beast.fade": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.fade",
+    "sounds": [
+      {
+        "name": "minecraft:entity.illusioner.mirror_move",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.wraith_beast.dodge": {
+    "subtitle": "subtitles.voidheart.entity.wraith_beast.dodge",
+    "sounds": [
+      {
+        "name": "minecraft:entity.illusioner.mirror_move",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.4
+      }
+    ]
+  },
+
   "entity.corrupted_barnacle.infect": {
     "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.infect",
     "sounds": [

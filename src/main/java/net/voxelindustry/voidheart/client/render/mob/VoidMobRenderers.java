@@ -28,6 +28,7 @@ import net.voxelindustry.voidheart.client.model.mob.VoidGhoulModel;
 import net.voxelindustry.voidheart.client.model.mob.VoidSkeletonModel;
 import net.voxelindustry.voidheart.client.model.mob.WraithModel;
 import net.voxelindustry.voidheart.client.model.mob.WraithScarabModel;
+import net.voxelindustry.voidheart.client.model.mob.WraithBeastModel;
 import net.voxelindustry.voidheart.common.content.mob.CorruptedCrab;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 
@@ -45,6 +46,7 @@ public final class VoidMobRenderers
         ModelLayerRegistry.registerModelLayer(VoidGhoulModel.LAYER, VoidGhoulModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(WraithModel.LAYER, WraithModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(WraithScarabModel.LAYER, WraithScarabModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(WraithBeastModel.LAYER, WraithBeastModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(CorruptedCrabModel.LAYER, CorruptedCrabModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(CorruptedBarnacleModel.LAYER, CorruptedBarnacleModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(BarnacleGrowthModel.LAYER, BarnacleGrowthModel::createBodyLayer);
@@ -68,6 +70,7 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.WRAITH, WraithRender::new);
         EntityRenderers.register(VoidHeartEntities.WRAITH_STAIN, WraithStainRender::new);
         EntityRenderers.register(VoidHeartEntities.WRAITH_SCARAB, WraithScarabRender::new);
+        EntityRenderers.register(VoidHeartEntities.WRAITH_BEAST, WraithBeastRender::new);
         EntityRenderers.register(VoidHeartEntities.CORRUPTED_CRAB_SMALL, crab(CorruptedCrab.Size.SMALL));
         EntityRenderers.register(VoidHeartEntities.CORRUPTED_CRAB_MEDIUM, crab(CorruptedCrab.Size.MEDIUM));
         EntityRenderers.register(VoidHeartEntities.CORRUPTED_CRAB_LARGE, crab(CorruptedCrab.Size.LARGE));

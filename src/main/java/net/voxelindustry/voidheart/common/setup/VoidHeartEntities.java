@@ -26,6 +26,7 @@ import net.voxelindustry.voidheart.common.content.mob.MalignantBoulder;
 import net.voxelindustry.voidheart.common.content.mob.StalkingWraith;
 import net.voxelindustry.voidheart.common.content.mob.ScarabHops;
 import net.voxelindustry.voidheart.common.content.mob.WraithScarab;
+import net.voxelindustry.voidheart.common.content.mob.WraithBeast;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.content.mob.Treant;
@@ -58,6 +59,7 @@ public class VoidHeartEntities
     public static EntityType<ArcaneBolt> ARCANE_BOLT;
     public static EntityType<StalkingWraith> STALKING_WRAITH;
     public static EntityType<WraithScarab> WRAITH_SCARAB;
+    public static EntityType<WraithBeast> WRAITH_BEAST;
     public static EntityType<FallenBishop> FALLEN_BISHOP;
     public static EntityType<MalignantBoulder> MALIGNANT_BOULDER;
     public static EntityType<Legionary> LEGIONARY;
@@ -114,6 +116,14 @@ public class VoidHeartEntities
                 .updateInterval(2)
                 .fireImmune());
         FabricDefaultAttributeRegistry.register(WRAITH_SCARAB, WraithScarab.createAttributes());
+
+        WRAITH_BEAST = register("wraith_beast", EntityType.Builder.of(WraithBeast::new, MobCategory.MONSTER)
+                .sized(WraithBeast.WIDTH, WraithBeast.HEIGHT)
+                .eyeHeight(WraithBeast.EYE_HEIGHT)
+                .clientTrackingRange(10)
+                .updateInterval(2)
+                .fireImmune());
+        FabricDefaultAttributeRegistry.register(WRAITH_BEAST, WraithBeast.createAttributes());
 
         CORRUPTED_CRAB_SMALL = registerCrab("corrupted_crab_small", CorruptedCrab.Size.SMALL);
         CORRUPTED_CRAB_MEDIUM = registerCrab("corrupted_crab_medium", CorruptedCrab.Size.MEDIUM);

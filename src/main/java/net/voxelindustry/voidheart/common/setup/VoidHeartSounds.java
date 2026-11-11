@@ -35,12 +35,18 @@ public final class VoidHeartSounds
     public static final MobSounds KERNACIAN_DRAGOON = mob("kernacian_dragoon");
     public static final MobSounds TREANT            = mob("treant");
     public static final MobSounds WRAITH_SCARAB     = mob("wraith_scarab");
+    public static final MobSounds WRAITH_BEAST      = mob("wraith_beast");
 
     public static final SoundEvent GHOUL_LUNGE      = register("entity.void_ghoul.lunge");
     public static final SoundEvent WRAITH_WHISPER   = register("entity.wraith.whisper");
     public static final SoundEvent WRAITH_EMERGE    = register("entity.wraith.emerge");
     public static final SoundEvent WRAITH_SCARAB_HOP  = register("entity.wraith_scarab.hop");
     public static final SoundEvent WRAITH_SCARAB_BITE = register("entity.wraith_scarab.bite");
+    public static final SoundEvent WRAITH_BEAST_MANIFEST = register("entity.wraith_beast.manifest");
+    public static final SoundEvent WRAITH_BEAST_REAR     = register("entity.wraith_beast.rear");
+    public static final SoundEvent WRAITH_BEAST_STRIKE   = register("entity.wraith_beast.strike");
+    public static final SoundEvent WRAITH_BEAST_FADE     = register("entity.wraith_beast.fade");
+    public static final SoundEvent WRAITH_BEAST_DODGE    = register("entity.wraith_beast.dodge");
     public static final SoundEvent BARNACLE_INFECT  = register("entity.corrupted_barnacle.infect");
     public static final SoundEvent BARNACLE_STIR    = register("entity.corrupted_barnacle.stir");
     public static final SoundEvent BARNACLE_BURST   = register("entity.corrupted_barnacle.burst");
