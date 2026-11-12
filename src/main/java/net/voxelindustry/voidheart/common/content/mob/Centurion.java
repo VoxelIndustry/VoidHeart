@@ -146,7 +146,7 @@ public class Centurion extends Automaton
             var box = key.getBoundingBox();
             var nearest = new Vec3(Mth.clamp(getX(), box.minX, box.maxX), 0, Mth.clamp(getZ(), box.minZ, box.maxZ)).subtract(getX(), 0, getZ());
             var toward = new Vec3(key.getX() - getX(), 0, key.getZ() - getZ());
-            if (nearest.length() <= SWEEP_RANGE && toward.normalize().dot(flat) >= SWEEP_ARC_DOT)
+            if (box.intersects(area) && nearest.length() <= SWEEP_RANGE && toward.normalize().dot(flat) >= SWEEP_ARC_DOT)
                 key.hurtServer(level, damageSources().mobAttack(this), SWEEP_DAMAGE);
         }
     }
