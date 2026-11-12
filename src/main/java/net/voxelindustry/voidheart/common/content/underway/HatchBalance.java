@@ -16,6 +16,17 @@ public final class HatchBalance
     /** The least ticks between two hits that count, so one swing or a crowd striking together never empties the shield at once. */
     public static final int HIT_INTERVAL_TICKS = 10;
 
+    public static final int WAVE_FIRST_TICKS = 10 * 20;
+    public static final int WAVE_INTERVAL_TICKS = 25 * 20;
+    /** Mobs in the first wave, a Legionary pair counting as two. */
+    public static final int WAVE_SIZE = 3;
+    /** A wave brings one more mob for every this many waves before it. */
+    public static final int WAVE_GROWTH_EVERY = 2;
+    /** Ticks between two looks at the wave's mobs, to turn back to the key those that strayed. */
+    public static final int STEER_INTERVAL_TICKS = 10;
+    /** Ticks a mob sent at the key fights back at a player who hurt it before it turns to the key again. */
+    public static final int DISTRACTION_TICKS = 5 * 20;
+
     private HatchBalance()
     {
     }

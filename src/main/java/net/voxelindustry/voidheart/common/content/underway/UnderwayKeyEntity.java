@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.underway;
 
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -12,6 +13,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.BossEvent;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
@@ -20,16 +22,25 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusMob;
+import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.underway.HatchOpening;
 import org.jspecify.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SplittableRandom;
+import java.util.UUID;
 
 /**
  * An Underway key at work in a district's hatch. It is a living thing only so that mobs can go for it: it never moves, and the hatch charges through it while a player stays near.
  * The hatch raises a shield over it, see {@link KeyDefence}. While the shield holds, the key is as wide as the shield, so mobs strike the panes from outside; with it down they must walk in to the key itself.
+ * While it charges it draws waves of the district's mobs, see {@link HatchWaves}, and keeps turning those sent at it back to itself.
  * Only mobs can harm it. Broken, it is gone with the charge. Once the charge is full the leaves draw back under it and it is gone with them.
  */
 public class UnderwayKeyEntity extends Mob
@@ -64,6 +75,9 @@ public class UnderwayKeyEntity extends Mob
     private KeyDefence defence = new KeyDefence();
     private int openingTicks;
     private int lastHitTick = -HatchBalance.HIT_INTERVAL_TICKS;
+    private int wavesSent;
+    // The wave mobs sent at the key, kept so they can be turned back to it
+    private final List<UUID> breakers = new ArrayList<>();
 
     /** Kept by the client for show: degrees the key has turned, how far the posts have risen, how lit each pane is and how long it still flares. */
     public float turn;
@@ -105,10 +119,61 @@ public class UnderwayKeyEntity extends Mob
         return entityData.get(DATA_CHARGE);
     }
 
-    /** Sets the charge, for commands and tests that skip the wait. */
-    public void setCharge(int charge)
+    private void setCharge(int charge)
     {
         entityData.set(DATA_CHARGE, Math.clamp(charge, 0, HatchBalance.CHARGE_TICKS));
+    }
+
+    /** Sets the charge and passes over the waves due before it, for commands and tests that skip the wait. */
+    public void skipTo(int charge)
+    {
+        setCharge(charge);
+        wavesSent = HatchWaves.due(charge());
+    }
+
+    public int wavesSent()
+    {
+        return wavesSent;
+    }
+
+    /** Brings the next wave now, whatever the charge. */
+    public void callWave()
+    {
+        var level = (ServerLevel) level();
+        int wave = wavesSent++;
+        if (level.getDifficulty() == Difficulty.PEACEFUL)
+            return;
+        var district = DistrictPos.at(getBlockX(), getBlockZ());
+        var arrivals = new ArrayList<>(HatchWaveSpawner.spawn(level, this, HatchWaves.compose(district, wave, new SplittableRandom(level.getRandom().nextLong()))));
+        // A mob that found no free spot is left out: if that left nothing to go for the key, a ghoul is sent for it
+        if (arrivals.stream().noneMatch(arrival -> HatchWaves.goesForKey(arrival.kind())))
+            arrivals.addAll(HatchWaveSpawner.spawn(level, this, List.of(DaedalusMob.VOID_GHOUL)));
+        for (var arrival : arrivals)
+        {
+            if (HatchWaves.goesForKey(arrival.kind()))
+            {
+                breakers.add(arrival.mob().getUUID());
+                arrival.mob().setTarget(this);
+            }
+        }
+        if (!arrivals.isEmpty())
+            level.playSound(null, getX(), getY(), getZ(), SoundEvents.RAID_HORN.value(), getSoundSource(), 8, 0.7F);
+    }
+
+    /** Turns back to the key the mobs sent at it, unless a player has just hurt them: a defender can draw one off for a while by striking it. */
+    private void steer(ServerLevel level)
+    {
+        for (var iterator = breakers.iterator(); iterator.hasNext(); )
+        {
+            if (!(level.getEntity(iterator.next()) instanceof Mob mob) || !mob.isAlive())
+            {
+                iterator.remove();
+                continue;
+            }
+            boolean distracted = mob.getLastHurtByMob() instanceof Player && mob.tickCount - mob.getLastHurtByMobTimestamp() < HatchBalance.DISTRACTION_TICKS;
+            if (mob.getTarget() != this && !distracted)
+                mob.setTarget(this);
+        }
     }
 
     public boolean isOpening()
@@ -202,6 +267,10 @@ public class UnderwayKeyEntity extends Mob
         if (level.getNearestPlayer(this, HatchBalance.PLAYER_RANGE) == null)
             return;
         setCharge(charge() + 1);
+        if (wavesSent < HatchWaves.due(charge()))
+            callWave();
+        if (tickCount % HatchBalance.STEER_INTERVAL_TICKS == 0)
+            steer(level);
         if (charge() >= HatchBalance.CHARGE_TICKS)
         {
             entityData.set(DATA_OPENING, true);
@@ -305,6 +374,8 @@ public class UnderwayKeyEntity extends Mob
         output.putInt("Panes", defence.panes());
         output.putInt("KeyHits", defence.keyHits());
         output.putInt("Lull", defence.lull());
+        output.putInt("Waves", wavesSent);
+        output.store("Breakers", UUIDUtil.CODEC.listOf(), breakers);
     }
 
     @Override
@@ -316,6 +387,9 @@ public class UnderwayKeyEntity extends Mob
         openingTicks = input.getIntOr("OpeningTicks", 0);
         defence = new KeyDefence(input.getIntOr("Panes", KeyDefence.ALL_PANES), Math.max(1, input.getIntOr("KeyHits", HatchBalance.KEY_HITS)), input.getIntOr("Lull", 0));
         syncDefence();
+        wavesSent = input.getIntOr("Waves", HatchWaves.due(charge()));
+        breakers.clear();
+        breakers.addAll(input.read("Breakers", UUIDUtil.CODEC.listOf()).orElse(List.of()));
     }
 
     @Override

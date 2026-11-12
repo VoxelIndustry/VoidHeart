@@ -10,9 +10,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.StairBlock;
 import net.voxelindustry.voidheart.common.content.underway.HatchBalance;
+import net.voxelindustry.voidheart.common.content.underway.HatchWaves;
 import net.voxelindustry.voidheart.common.content.underway.KeyDefence;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -30,13 +33,14 @@ import java.util.List;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
- * Opening a district's hatch with an Underway key: the key is set with a real click and spent, the hatch charges through it behind a shield that mobs wear down, and once full its leaves draw back and the shaft's stairs come up to the floor.
+ * Opening a district's hatch with an Underway key: the key is set with a real click and spent, the hatch charges through it behind a shield that waves of the district's mobs wear down, and once full its leaves draw back and the shaft's stairs come up to the floor.
  */
 public class UnderwayHatchClientTest implements FabricClientGameTest
 {
     private static final int CHUNK_TIMEOUT_TICKS = 1200;
     private static final int FLOOR = UnderwayLevels.HATCH_FLOOR;
     private static final int KEYS = 3;
+    private static final String STRUCK_TAG = "struck_by_test";
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -96,6 +100,7 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
 
             if (!hudWasHidden)
                 context.getInput().pressKey(InputConstants.KEY_F1);
+            waves(context, server, fort);
             aim(context, server, centreX - 2.2, FLOOR + 1, centreZ - 1.6, centreX, FLOOR + 1.6, centreZ);
             context.takeScreenshot(TestScreenshotOptions.of("underway-key-lock-close").withSize(1280, 720));
             aim(context, server, fort.hatchX() - 3.5, FLOOR + 2, fort.hatchZ() - 3.5, centreX, FLOOR + 1.5, centreZ);
@@ -226,6 +231,88 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
             expect(keys(minecraft).isEmpty(), "The key outlived its last hit");
             expect(!isAir(minecraft, fort, 3, FLOOR), "The hatch opened though its key broke");
         });
+    }
+
+    /**
+     * The waves a charging hatch draws: the first comes on its own once the charge reaches it, its mobs arrive around the hatch room and some go for the key,
+     * they reach the shield and darken a pane, one struck by a player turns on them for a while, and the next wave is larger.
+     */
+    private static void waves(ClientGameTestContext context, TestServerContext server, UnderwayFort fort)
+    {
+        double centreX = fort.hatchX() + DistrictPos.CELL / 2.0;
+        double centreZ = fort.hatchZ() + DistrictPos.CELL / 2.0;
+        server.runCommand("difficulty normal");
+        server.runCommand("gamemode creative @a");
+        aim(context, server, fort.hatchX() - 5.5, FLOOR + 1, fort.hatchZ() - 5.5, centreX, FLOOR + 1.5, centreZ);
+        server.runOnServer(minecraft -> expect(keys(minecraft).getFirst().wavesSent() == 0, "A wave came before its time"));
+        int beforeFirst = (HatchBalance.WAVE_FIRST_TICKS - 1) * 100 / HatchBalance.CHARGE_TICKS;
+        server.runCommand("execute as @a run voidheart underway charge " + beforeFirst);
+        waitFor(context, server, HatchBalance.CHARGE_TICKS / 100 + 40, "The first wave never came", minecraft -> keys(minecraft).getFirst().wavesSent() == 1);
+        context.waitTicks(HatchBalance.STEER_INTERVAL_TICKS + 2);
+        server.runOnServer(minecraft ->
+        {
+            var key = keys(minecraft).getFirst();
+            var wave = waveMobs(minecraft);
+            // A mob that finds no free spot is left out, so one short of the wave's size still passes
+            expect(wave.size() >= HatchWaves.size(0) - 1 && wave.size() <= HatchWaves.size(0) + 1, "The first wave brought " + wave.size() + " mobs");
+            for (var mob : wave)
+            {
+                expect(mob.distanceTo(key) < 30, mob.getType() + " arrived " + mob.distanceTo(key) + " blocks from the key");
+                expect(mob.getY() >= FLOOR + 1, mob.getType() + " arrived under the floor at " + mob.position());
+            }
+            expect(wave.stream().anyMatch(mob -> mob.getTarget() == key), "No mob of the wave goes for the key: " + wave.stream().map(mob -> mob.getType() + " -> " + mob.getTarget()).toList());
+        });
+        context.takeScreenshot(TestScreenshotOptions.of("underway-wave-arrives").withSize(1280, 720));
+        waitFor(context, server, 900, () -> "No mob of the wave reached the shield: " + server.computeOnServer(minecraft -> waveMobs(minecraft).stream().map(mob -> mob.getType().toShortString() + " at " + mob.blockPosition() + " -> " + mob.getTarget()).toList()),
+                minecraft -> keys(minecraft).isEmpty() || keys(minecraft).getFirst().panes() != KeyDefence.ALL_PANES);
+        server.runOnServer(minecraft -> expect(!keys(minecraft).isEmpty(), "The first wave alone broke the key"));
+        context.takeScreenshot(TestScreenshotOptions.of("underway-wave-strikes").withSize(1280, 720));
+
+        server.runOnServer(minecraft ->
+        {
+            var key = keys(minecraft).getFirst();
+            var player = player(minecraft);
+            var breakers = waveMobs(minecraft).stream().filter(mob -> mob.getTarget() == key).toList();
+            expect(!breakers.isEmpty(), "No mob is at the key any more");
+            player.setGameMode(GameType.SURVIVAL);
+            // Some mobs shrug a blow off, as one just hurt or a wraith out of reach: the first that takes it is the one watched
+            var breaker = breakers.stream().filter(mob -> mob.hurtServer((ServerLevel) key.level(), key.level().damageSources().playerAttack(player), 1)).findFirst()
+                    .orElseThrow(() -> new AssertionError("No mob at the key took a player's blow: " + breakers.stream().map(mob -> mob.getType().toShortString()).toList()));
+            expect(breaker.getTarget() == player, breaker.getType().toShortString() + " struck by a player keeps at the key: " + breaker.getTarget());
+            player.setGameMode(GameType.CREATIVE);
+            breaker.addTag(STRUCK_TAG);
+        });
+        context.waitTicks(HatchBalance.STEER_INTERVAL_TICKS * 2);
+        server.runOnServer(minecraft ->
+        {
+            var struck = waveMobs(minecraft).stream().filter(mob -> mob.entityTags().contains(STRUCK_TAG)).findFirst().orElseThrow();
+            expect(struck.getTarget() != keys(minecraft).getFirst(), "A mob drawn off by a player was turned back to the key at once");
+        });
+        waitFor(context, server, HatchBalance.DISTRACTION_TICKS + 60, "A mob drawn off by a player never turned back to the key",
+                minecraft -> waveMobs(minecraft).stream().anyMatch(mob -> mob.entityTags().contains(STRUCK_TAG) && mob.getTarget() == keys(minecraft).getFirst()));
+
+        server.runCommand("kill @e[tag=voidheart_hatch_wave]");
+        server.runOnServer(minecraft -> expect(waveMobs(minecraft).isEmpty(), "The first wave's mobs were not cleared before the next is called"));
+        int before = server.computeOnServer(minecraft -> keys(minecraft).getFirst().wavesSent());
+        server.runCommand("execute as @a run voidheart underway wave");
+        server.runOnServer(minecraft -> expect(keys(minecraft).getFirst().wavesSent() == before + 1, "Calling a wave did not count it"));
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            expect(!waveMobs(minecraft).isEmpty(), "The called wave brought nothing");
+        });
+        server.runCommand("kill @e[tag=voidheart_hatch_wave]");
+        server.runOnServer(minecraft -> expect(waveMobs(minecraft).isEmpty(), "Wave mobs were left behind"));
+        server.runCommand("execute as @a at @s run kill @e[type=item,distance=..64]");
+        server.runCommand("difficulty peaceful");
+        server.runCommand("gamemode survival @a");
+        context.waitTicks(5);
+    }
+
+    private static List<Mob> waveMobs(MinecraftServer minecraft)
+    {
+        var player = player(minecraft);
+        return player.level().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(48), mob -> mob.isAlive() && mob.entityTags().contains("voidheart_hatch_wave"));
     }
 
     private static void strike(TestServerContext server, double dx, double dz)

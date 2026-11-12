@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 
@@ -138,6 +139,15 @@ public class Centurion extends Automaton
             var flatToward = new Vec3(toward.x, 0, toward.z);
             if (flatToward.length() <= SWEEP_RANGE && flatToward.normalize().dot(flat) >= SWEEP_ARC_DOT)
                 player.hurtServer(level, damageSources().mobAttack(this), SWEEP_DAMAGE);
+        }
+        if (getTarget() instanceof UnderwayKeyEntity key)
+        {
+            // A shielded key is as wide as its shield, so the sweep's reach is measured to the nearest point of its box
+            var box = key.getBoundingBox();
+            var nearest = new Vec3(Mth.clamp(getX(), box.minX, box.maxX), 0, Mth.clamp(getZ(), box.minZ, box.maxZ)).subtract(getX(), 0, getZ());
+            var toward = new Vec3(key.getX() - getX(), 0, key.getZ() - getZ());
+            if (box.intersects(area) && nearest.length() <= SWEEP_RANGE && toward.normalize().dot(flat) >= SWEEP_ARC_DOT)
+                key.hurtServer(level, damageSources().mobAttack(this), SWEEP_DAMAGE);
         }
     }
 
