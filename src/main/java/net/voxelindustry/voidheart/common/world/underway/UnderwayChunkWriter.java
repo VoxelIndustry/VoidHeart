@@ -27,6 +27,8 @@ public final class UnderwayChunkWriter
 
     private static final Direction[] FACING = { Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST };
     private static final int PERCENT = 100;
+    private static final int RIB_MASK = 7;
+    private static final int RIB_AT = 4;
     private static final int WALL_CRACKED = 5;
     private static final int WALL_CRACKED_COLLAPSED = 25;
     private static final int WALL_FORMED = 70;
@@ -96,7 +98,7 @@ public final class UnderwayChunkWriter
                     yield props[prop.ordinal() * FACING.length + canvas.propFacing(x, y, z)];
                 yield tie(canvas, x, y, z);
             }
-            case SHELL -> concrete(x, y, z, collapsed ? WALL_CRACKED_COLLAPSED : WALL_CRACKED, WALL_FORMED, WALL_STAINED);
+            case SHELL -> rib(canvas, x, y, z) ? materials[UnderwayMaterial.STEEL.ordinal()] : concrete(x, y, z, collapsed ? WALL_CRACKED_COLLAPSED : WALL_CRACKED, WALL_FORMED, WALL_STAINED);
             case FLOOR -> concrete(x, y, z, collapsed ? FLOOR_CRACKED_COLLAPSED : FLOOR_CRACKED, 0, FLOOR_STAINED);
             case TRUNK_RAIL_X, TRUNK_RAIL_Z, FEEDER_RAIL_X, FEEDER_RAIL_Z -> materials[material.ordinal()].setValue(UnderwayTrackBlock.WATERLOGGED, canvas.get(x, y + 1, z) == UnderwayMaterial.WATER);
             case DOOR ->
@@ -122,6 +124,18 @@ public final class UnderwayChunkWriter
         if (canvas.get(x - 1, y, z) == UnderwayMaterial.TRUNK_RAIL_Z && canvas.get(x + 1, y, z) == UnderwayMaterial.TRUNK_RAIL_Z)
             return VoidHeartBlocks.UNDERWAY_TRACK_TIE.defaultBlockState();
         return null;
+    }
+
+    /** @return whether an iron rib crosses the stone here: one stands in the middle of every lattice cell, up the walls and across the ceilings */
+    private static boolean rib(UnderwayCanvas canvas, int x, int y, int z)
+    {
+        boolean acrossX = (x & RIB_MASK) == RIB_AT;
+        boolean acrossZ = (z & RIB_MASK) == RIB_AT;
+        if (!acrossX && !acrossZ)
+            return false;
+        if (canvas.get(x, y - 1, z).isOpen())
+            return true;
+        return acrossX && (canvas.get(x, y, z - 1).isOpen() || canvas.get(x, y, z + 1).isOpen()) || acrossZ && (canvas.get(x - 1, y, z).isOpen() || canvas.get(x + 1, y, z).isOpen());
     }
 
     private static BlockState concrete(int x, int y, int z, int cracked, int formed, int stained)
@@ -151,7 +165,7 @@ public final class UnderwayChunkWriter
         var trunk = VoidHeartBlocks.UNDERWAY_TRUNK_RAIL.defaultBlockState();
         var feeder = VoidHeartBlocks.UNDERWAY_FEEDER_RAIL.defaultBlockState();
         states[UnderwayMaterial.ROCK.ordinal()] = VoidHeartBlocks.POCKET_WALL.defaultBlockState();
-        states[UnderwayMaterial.PLATFORM.ordinal()] = VoidHeartBlocks.UNDERWAY_STAINED_CONCRETE.defaultBlockState();
+        states[UnderwayMaterial.PLATFORM.ordinal()] = VoidHeartBlocks.UNDERWAY_FORMED_CONCRETE.defaultBlockState();
         states[UnderwayMaterial.BALLAST.ordinal()] = VoidHeartBlocks.UNDERWAY_BALLAST.defaultBlockState();
         states[UnderwayMaterial.STEEL.ordinal()] = armour;
         states[UnderwayMaterial.COLUMN.ordinal()] = armour;

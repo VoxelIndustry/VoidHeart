@@ -33,8 +33,8 @@ public class UnderwayPropsClientTest implements FabricClientGameTest
             "underway_hazard_armour", "underway_blast_gate", "underway_firing_slit[axis=z]", "underway_grating", "underway_steel_stairs[facing=north]", "underway_trunk_rail[axis=z]",
             "underway_track_tie[axis=z]", "underway_feeder_rail[axis=z]", "underway_ballast", "underway_rubble", "underway_door[half=lower,facing=south]" };
     private static final int DEFAULT_FOV = 70;
-    private static final EnumSet<UnderwayProp> TABLETOP = EnumSet.of(UnderwayProp.MESS_KIT, UnderwayProp.RADIO, UnderwayProp.FIELD_TELEPHONE, UnderwayProp.TYPEWRITER,
-            UnderwayProp.PAPERS, UnderwayProp.DESK_LAMP, UnderwayProp.BOTTLES, UnderwayProp.CARD_GAME, UnderwayProp.LAB_GLASS);
+    private static final EnumSet<UnderwayProp> TABLETOP = EnumSet.of(UnderwayProp.MESS_KIT, UnderwayProp.RESONATOR, UnderwayProp.VOICE_HORN, UnderwayProp.TYPEWRITER,
+            UnderwayProp.PAPERS, UnderwayProp.DESK_LAMP, UnderwayProp.BOTTLES, UnderwayProp.CARD_GAME, UnderwayProp.LAB_GLASS, UnderwayProp.VOID_JAR);
 
     @Override
     public void runTest(ClientGameTestContext context)

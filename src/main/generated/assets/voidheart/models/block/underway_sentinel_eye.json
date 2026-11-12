@@ -4,64 +4,64 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel_plate"
+          "texture": "#copper"
         },
         "east": {
-          "texture": "#steel_plate"
+          "texture": "#copper"
         },
         "north": {
-          "texture": "#steel_plate"
+          "texture": "#copper"
         },
         "south": {
-          "texture": "#steel_plate"
+          "texture": "#copper"
         },
         "up": {
-          "texture": "#steel_plate"
+          "texture": "#copper"
         },
         "west": {
-          "texture": "#steel_plate"
+          "texture": "#copper"
         }
       },
       "from": [
-        4,
-        4,
+        3,
+        3,
         11
       ],
       "to": [
-        12,
-        12,
+        13,
+        13,
         16
       ]
     },
     {
       "faces": {
         "down": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         }
       },
       "from": [
-        5,
-        5,
+        4,
+        4,
         10
       ],
       "to": [
-        11,
-        11,
+        12,
+        12,
         11
       ]
     },
@@ -87,54 +87,21 @@
         }
       },
       "from": [
-        6,
-        6,
+        5,
+        5,
         9
       ],
       "to": [
-        10,
-        10,
+        11,
+        11,
         10
-      ]
-    },
-    {
-      "faces": {
-        "down": {
-          "texture": "#lens_off"
-        },
-        "east": {
-          "texture": "#lens_off"
-        },
-        "north": {
-          "texture": "#lens_off"
-        },
-        "south": {
-          "texture": "#lens_off"
-        },
-        "up": {
-          "texture": "#lens_off"
-        },
-        "west": {
-          "texture": "#lens_off"
-        }
-      },
-      "from": [
-        7,
-        7,
-        8
-      ],
-      "to": [
-        9,
-        9,
-        9
       ]
     }
   ],
   "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
     "glass_dark": "voidheart:block/underway/glass_dark",
-    "lens_off": "voidheart:block/underway/lens_off",
-    "particle": "voidheart:block/underway/steel_plate",
-    "steel_dark": "voidheart:block/underway/steel_dark",
-    "steel_plate": "voidheart:block/underway/steel_plate"
+    "particle": "voidheart:block/underway/copper"
   }
 }

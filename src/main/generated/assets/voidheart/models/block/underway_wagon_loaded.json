@@ -164,22 +164,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -196,22 +196,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -228,22 +228,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -260,22 +260,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -292,22 +292,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -389,7 +389,7 @@
   "textures": {
     "canvas": "voidheart:block/underway/canvas",
     "crate": "voidheart:block/underway/crate",
-    "paint_olive": "voidheart:block/underway/paint_olive",
+    "lead": "voidheart:block/underway/lead",
     "particle": "voidheart:block/underway/steel_dark",
     "rust": "voidheart:block/underway/rust",
     "steel_dark": "voidheart:block/underway/steel_dark"

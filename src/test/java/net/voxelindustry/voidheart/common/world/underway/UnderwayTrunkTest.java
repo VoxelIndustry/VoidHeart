@@ -57,7 +57,7 @@ class UnderwayTrunkTest
                 int cables = 0;
                 for (int along = 0; along < StationPlanner.HALL_START; along++)
                 {
-                    if (canvas.propAt(line.x(along, TrunkPainter.LOW), CABLES_Y, line.z(along, TrunkPainter.LOW)) == UnderwayProp.CABLE_TRAY)
+                    if (canvas.propAt(line.x(along, TrunkPainter.LOW), CABLES_Y, line.z(along, TrunkPainter.LOW)) == UnderwayProp.CONDUIT_RUN)
                         cables++;
                 }
                 assertThat(cables).as("cable trays on the way into the station under %s", pos).isGreaterThan(StationPlanner.HALL_START * 3 / 4);

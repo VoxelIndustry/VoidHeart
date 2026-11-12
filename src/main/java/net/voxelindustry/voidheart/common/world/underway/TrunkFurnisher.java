@@ -37,9 +37,9 @@ final class TrunkFurnisher
     private static final int WALKWAY_LOW = TrunkPainter.RAILS[1] + 1;
     private static final int WALKWAY_HIGH = TrunkPainter.RAILS[2] - 1;
     private static final int CHASM_END = DistrictPos.PITCH - 1;
-    private static final UnderwayProp[] FITTINGS = { UnderwayProp.EMERGENCY_WALL_LAMP, UnderwayProp.ARROW_SIGN, UnderwayProp.PIPES, UnderwayProp.WALL_TELEPHONE,
-            UnderwayProp.SECTOR_SIGN, UnderwayProp.FUSE_BOX, UnderwayProp.PIPES, UnderwayProp.EMERGENCY_WALL_LAMP };
-    private static final UnderwayProp[] CLUTTER = { UnderwayProp.CABLE_REEL, UnderwayProp.DRUM, UnderwayProp.CRATE, UnderwayProp.JERRYCANS, UnderwayProp.TROLLEY, UnderwayProp.SANDBAGS,
+    private static final UnderwayProp[] FITTINGS = { UnderwayProp.EMERGENCY_WALL_LAMP, UnderwayProp.ARROW_SIGN, UnderwayProp.PIPES, UnderwayProp.SPEAKING_TUBE,
+            UnderwayProp.SECTOR_SIGN, UnderwayProp.RELAY_BOX, UnderwayProp.PIPES, UnderwayProp.EMERGENCY_WALL_LAMP };
+    private static final UnderwayProp[] CLUTTER = { UnderwayProp.CABLE_REEL, UnderwayProp.DRUM, UnderwayProp.CRATE, UnderwayProp.CARBOYS, UnderwayProp.TROLLEY, UnderwayProp.PAVISE,
             UnderwayProp.LITTER, UnderwayProp.BROKEN_CRATE };
     private static final long SALT = 0x554E4445525446L;
 
@@ -80,7 +80,7 @@ final class TrunkFurnisher
         {
             long roll = DaedalusHash.mix(hash + along);
             if (DaedalusHash.pick(roll, PERCENT) >= CABLE_GAP_PERCENT)
-                prop(brush, UnderwayProp.CABLE_TRAY, along, CABLES, TrunkPainter.LOW, 0, 1);
+                prop(brush, UnderwayProp.CONDUIT_RUN, along, CABLES, TrunkPainter.LOW, 0, 1);
 
             if (along % FITTING_EVERY == FITTING_AT && DaedalusHash.pick(DaedalusHash.mix(roll), PERCENT) >= FITTING_SKIP_PERCENT)
             {
@@ -129,8 +129,8 @@ final class TrunkFurnisher
             prop(brush, UnderwayProp.BUFFER_STOP, buffers, TRACK, across, outward, 0);
 
         int warning = frame + outward * WARNING_BEFORE_GATE;
-        prop(brush, UnderwayProp.HAZARD_PLATE, warning, TRACK, TrunkPainter.LOW, 0, 1);
-        prop(brush, UnderwayProp.HAZARD_PLATE, warning, TRACK, TrunkPainter.HIGH, 0, -1);
+        prop(brush, UnderwayProp.WARD_PLATE, warning, TRACK, TrunkPainter.LOW, 0, 1);
+        prop(brush, UnderwayProp.WARD_PLATE, warning, TRACK, TrunkPainter.HIGH, 0, -1);
         prop(brush, UnderwayProp.KLAXON, warning, LAMPS, TrunkPainter.HIGH, 0, -1);
         prop(brush, UnderwayProp.SENTINEL_EYE, warning, LAMPS, TrunkPainter.LOW, 0, 1);
 

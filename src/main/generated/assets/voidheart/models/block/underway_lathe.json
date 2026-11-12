@@ -100,22 +100,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -132,22 +132,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -164,22 +164,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -227,9 +227,9 @@
     }
   ],
   "textures": {
-    "paint_olive": "voidheart:block/underway/paint_olive",
+    "brass": "voidheart:block/underway/brass",
+    "lead": "voidheart:block/underway/lead",
     "particle": "voidheart:block/underway/steel_plate",
-    "steel": "voidheart:block/underway/steel",
     "steel_dark": "voidheart:block/underway/steel_dark",
     "steel_plate": "voidheart:block/underway/steel_plate"
   }

@@ -4,22 +4,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "east": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "north": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "south": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "up": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "west": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         }
       },
       "from": [
@@ -36,22 +36,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -68,22 +68,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#paint_red"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -99,8 +99,8 @@
     }
   ],
   "textures": {
-    "paint_red": "voidheart:block/underway/paint_red",
-    "particle": "voidheart:block/underway/steel_dark",
-    "steel_dark": "voidheart:block/underway/steel_dark"
+    "brass": "voidheart:block/underway/brass",
+    "copper_dark": "voidheart:block/underway/copper_dark",
+    "particle": "voidheart:block/underway/copper_dark"
   }
 }

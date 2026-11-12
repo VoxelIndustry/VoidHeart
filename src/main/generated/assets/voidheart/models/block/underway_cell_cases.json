@@ -1,0 +1,203 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#lead"
+        },
+        "east": {
+          "texture": "#lead"
+        },
+        "north": {
+          "texture": "#lead"
+        },
+        "south": {
+          "texture": "#lead"
+        },
+        "up": {
+          "texture": "#lead"
+        },
+        "west": {
+          "texture": "#lead"
+        }
+      },
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        8,
+        5,
+        7
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lead"
+        },
+        "east": {
+          "texture": "#lead"
+        },
+        "north": {
+          "texture": "#lead"
+        },
+        "south": {
+          "texture": "#lead"
+        },
+        "up": {
+          "texture": "#lead"
+        },
+        "west": {
+          "texture": "#lead"
+        }
+      },
+      "from": [
+        1,
+        0,
+        9
+      ],
+      "to": [
+        8,
+        5,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lead"
+        },
+        "east": {
+          "texture": "#lead"
+        },
+        "north": {
+          "texture": "#lead"
+        },
+        "south": {
+          "texture": "#lead"
+        },
+        "up": {
+          "texture": "#lead"
+        },
+        "west": {
+          "texture": "#lead"
+        }
+      },
+      "from": [
+        9,
+        0,
+        4
+      ],
+      "to": [
+        16,
+        5,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        2,
+        5,
+        5
+      ],
+      "to": [
+        9,
+        10,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        4,
+        2,
+        1
+      ],
+      "to": [
+        5,
+        3,
+        2
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        12,
+        2,
+        3
+      ],
+      "to": [
+        13,
+        3,
+        4
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
+    "lead": "voidheart:block/underway/lead",
+    "particle": "voidheart:block/underway/lead"
+  }
+}

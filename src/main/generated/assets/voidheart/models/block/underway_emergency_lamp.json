@@ -4,22 +4,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "east": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "north": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "south": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "up": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         },
         "west": {
-          "texture": "#steel_dark"
+          "texture": "#copper_dark"
         }
       },
       "from": [
@@ -36,22 +36,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -68,22 +68,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -100,22 +100,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -132,22 +132,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -195,9 +195,9 @@
     }
   ],
   "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper_dark": "voidheart:block/underway/copper_dark",
     "lens_red": "voidheart:block/underway/lens_red",
-    "particle": "voidheart:block/underway/steel_dark",
-    "steel": "voidheart:block/underway/steel",
-    "steel_dark": "voidheart:block/underway/steel_dark"
+    "particle": "voidheart:block/underway/copper_dark"
   }
 }

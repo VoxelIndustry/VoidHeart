@@ -228,22 +228,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         }
       },
       "from": [
@@ -260,22 +260,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#copper"
         }
       },
       "from": [
@@ -324,8 +324,8 @@
   ],
   "textures": {
     "canvas": "voidheart:block/underway/canvas",
+    "copper": "voidheart:block/underway/copper",
     "crate": "voidheart:block/underway/crate",
-    "paint_olive": "voidheart:block/underway/paint_olive",
     "particle": "voidheart:block/underway/steel",
     "steel": "voidheart:block/underway/steel"
   }

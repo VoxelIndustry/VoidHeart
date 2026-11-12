@@ -4,22 +4,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -36,22 +36,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_grey"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -132,8 +132,8 @@
   ],
   "textures": {
     "grille": "voidheart:block/underway/grille",
-    "paint_grey": "voidheart:block/underway/paint_grey",
-    "particle": "voidheart:block/underway/paint_grey",
+    "lead": "voidheart:block/underway/lead",
+    "particle": "voidheart:block/underway/lead",
     "steel_dark": "voidheart:block/underway/steel_dark"
   }
 }

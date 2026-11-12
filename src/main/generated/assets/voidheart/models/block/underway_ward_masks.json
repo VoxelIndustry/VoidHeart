@@ -1,0 +1,236 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        1,
+        12,
+        15
+      ],
+      "to": [
+        15,
+        13,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        2,
+        6,
+        13
+      ],
+      "to": [
+        6,
+        11,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lens_off"
+        },
+        "east": {
+          "texture": "#lens_off"
+        },
+        "north": {
+          "texture": "#lens_off"
+        },
+        "south": {
+          "texture": "#lens_off"
+        },
+        "up": {
+          "texture": "#lens_off"
+        },
+        "west": {
+          "texture": "#lens_off"
+        }
+      },
+      "from": [
+        3,
+        8,
+        12
+      ],
+      "to": [
+        5,
+        9,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        3,
+        4,
+        13
+      ],
+      "to": [
+        5,
+        6,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        10,
+        6,
+        13
+      ],
+      "to": [
+        14,
+        11,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lens_off"
+        },
+        "east": {
+          "texture": "#lens_off"
+        },
+        "north": {
+          "texture": "#lens_off"
+        },
+        "south": {
+          "texture": "#lens_off"
+        },
+        "up": {
+          "texture": "#lens_off"
+        },
+        "west": {
+          "texture": "#lens_off"
+        }
+      },
+      "from": [
+        11,
+        8,
+        12
+      ],
+      "to": [
+        13,
+        9,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        11,
+        4,
+        13
+      ],
+      "to": [
+        13,
+        6,
+        15
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
+    "lens_off": "voidheart:block/underway/lens_off",
+    "particle": "voidheart:block/underway/steel_dark",
+    "steel_dark": "voidheart:block/underway/steel_dark"
+  }
+}

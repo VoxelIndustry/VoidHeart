@@ -4,22 +4,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel_dark"
+          "texture": "#copper"
         },
         "east": {
-          "texture": "#steel_dark"
+          "texture": "#copper"
         },
         "north": {
-          "texture": "#steel_dark"
+          "texture": "#copper"
         },
         "south": {
-          "texture": "#steel_dark"
+          "texture": "#copper"
         },
         "up": {
-          "texture": "#steel_dark"
+          "texture": "#copper"
         },
         "west": {
-          "texture": "#steel_dark"
+          "texture": "#copper"
         }
       },
       "from": [
@@ -36,22 +36,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -99,9 +99,9 @@
     }
   ],
   "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
     "lens_off": "voidheart:block/underway/lens_off",
-    "particle": "voidheart:block/underway/steel_dark",
-    "steel": "voidheart:block/underway/steel",
-    "steel_dark": "voidheart:block/underway/steel_dark"
+    "particle": "voidheart:block/underway/copper"
   }
 }

@@ -1,0 +1,146 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        2,
+        0,
+        5
+      ],
+      "to": [
+        14,
+        7,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#dials",
+          "uv": [
+            1,
+            1,
+            11,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        3,
+        1,
+        4
+      ],
+      "to": [
+        13,
+        6,
+        5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        5,
+        7,
+        7
+      ],
+      "to": [
+        11,
+        8,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#ley"
+        },
+        "east": {
+          "texture": "#ley"
+        },
+        "north": {
+          "texture": "#ley"
+        },
+        "south": {
+          "texture": "#ley"
+        },
+        "up": {
+          "texture": "#ley"
+        },
+        "west": {
+          "texture": "#ley"
+        }
+      },
+      "from": [
+        7,
+        8,
+        8
+      ],
+      "to": [
+        9,
+        13,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
+    "dials": "voidheart:block/underway/dials",
+    "ley": "voidheart:block/underway/ley",
+    "particle": "voidheart:block/underway/copper"
+  }
+}

@@ -24,9 +24,9 @@ final class TrainPainter
     private static final int TEAR_START = 3;
     private static final int PERCENT = 100;
     private static final int LOOTED_PERCENT = 30;
-    private static final UnderwayProp[] MUNITIONS = { UnderwayProp.SHELL_RACK, UnderwayProp.AMMO_BOXES, UnderwayProp.SHELLS, UnderwayProp.CRATE };
-    private static final UnderwayProp[] SUPPLIES = { UnderwayProp.CRATE_STACK, UnderwayProp.SACKS, UnderwayProp.DRUM, UnderwayProp.CRATE, UnderwayProp.JERRYCANS };
-    private static final UnderwayProp[] SHELLS = { UnderwayProp.SHELLS, UnderwayProp.AMMO_BOXES };
+    private static final UnderwayProp[] MUNITIONS = { UnderwayProp.CELL_RACK, UnderwayProp.CELL_CASES, UnderwayProp.CANISTERS, UnderwayProp.CRATE };
+    private static final UnderwayProp[] SUPPLIES = { UnderwayProp.CRATE_STACK, UnderwayProp.SACKS, UnderwayProp.DRUM, UnderwayProp.CRATE, UnderwayProp.CARBOYS };
+    private static final UnderwayProp[] CELLS = { UnderwayProp.CANISTERS, UnderwayProp.CELL_CASES };
     private static final UnderwayProp[] BENCHES = { UnderwayProp.BENCH, UnderwayProp.BENCH, UnderwayProp.BENCH, UnderwayProp.KIT_BAG };
 
     private TrainPainter()
@@ -109,8 +109,8 @@ final class TrainPainter
         prop(brush, UnderwayProp.LEVER_FRAME, front + back, FLOOR + 1, low, back, 0);
         prop(brush, UnderwayProp.STOOL, front + back * 2, FLOOR + 1, train.aisle(), back, 0);
         prop(brush, UnderwayProp.SWITCHGEAR, front + back * 3, FLOOR + 1, high, 0, -1);
-        prop(brush, UnderwayProp.BATTERY_RACK, front + back * 7, FLOOR + 1, low, 0, 1);
-        prop(brush, UnderwayProp.BATTERY_RACK, front + back * 8, FLOOR + 1, low, 0, 1);
+        prop(brush, UnderwayProp.CELL_BANK, front + back * 7, FLOOR + 1, low, 0, 1);
+        prop(brush, UnderwayProp.BOILER, front + back * 8, FLOOR + 1, low, 0, 1);
         prop(brush, UnderwayProp.AIR_TANK, front + back * 8, FLOOR + 1, high, 0, -1);
         prop(brush, UnderwayProp.SEARCHLIGHT, front + back, ROOF + 1, train.aisle(), -back, 0);
     }
@@ -123,7 +123,7 @@ final class TrainPainter
             case TROOP -> BENCHES;
             case MUNITIONS -> MUNITIONS;
             case SUPPLY -> SUPPLIES;
-            default -> SHELLS;
+            default -> CELLS;
         };
         int low = train.across() + 1;
         int high = train.across() + WIDTH - 2;

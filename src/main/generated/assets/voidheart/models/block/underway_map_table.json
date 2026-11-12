@@ -228,22 +228,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "east": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "north": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "south": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "up": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         },
         "west": {
-          "texture": "#paint_olive"
+          "texture": "#lead"
         }
       },
       "from": [
@@ -292,8 +292,8 @@
   ],
   "textures": {
     "brass": "voidheart:block/underway/brass",
+    "lead": "voidheart:block/underway/lead",
     "map": "voidheart:block/underway/map",
-    "paint_olive": "voidheart:block/underway/paint_olive",
     "paint_red": "voidheart:block/underway/paint_red",
     "particle": "voidheart:block/underway/wood",
     "steel": "voidheart:block/underway/steel",

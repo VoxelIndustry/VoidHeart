@@ -41,8 +41,8 @@ final class FortFurnisher
     private static final EnumSet<UnderwayRoomKind> WITH_WAGONS = EnumSet.of(UnderwayRoomKind.GALLERY, UnderwayRoomKind.ACCESS_GALLERY, UnderwayRoomKind.MAGAZINE_GALLERY,
             UnderwayRoomKind.DEPOT, UnderwayRoomKind.FREIGHT_HALL);
     private static final EnumSet<UnderwayProp> TABLES = EnumSet.of(TABLE, DESK);
-    private static final EnumSet<UnderwayProp> HUNG_LOW = EnumSet.of(WASH_BASIN, SHOWER, HAZARD_PLATE, TRIPWIRE_EMITTER);
-    private static final EnumSet<UnderwayProp> HUNG_HIGH = EnumSet.of(CABLE_TRAY, FAN, KLAXON, PIPES, SENTINEL_EYE, EMERGENCY_WALL_LAMP);
+    private static final EnumSet<UnderwayProp> HUNG_LOW = EnumSet.of(WASH_BASIN, SHOWER, WARD_PLATE, TRIPWIRE_EMITTER);
+    private static final EnumSet<UnderwayProp> HUNG_HIGH = EnumSet.of(CONDUIT_RUN, FAN, KLAXON, PIPES, SENTINEL_EYE, EMERGENCY_WALL_LAMP);
 
     private final FortBuilder builder;
     private final List<UnderwayRoom> rooms;
@@ -181,12 +181,12 @@ final class FortFurnisher
             case CHAIR -> CHAIR_FALLEN;
             case CRATE -> builder.roll(2) == 0 ? BROKEN_CRATE : CRATE_OPEN;
             case SHELVING -> SHELVING_EMPTY;
-            case RIFLE_RACK -> RIFLE_RACK_EMPTY;
+            case LANCE_RACK -> LANCE_RACK_EMPTY;
             default -> prop;
         };
         if (after == prop)
             return prop;
-        int percent = prop == RIFLE_RACK ? wornPercent * 2 : wornPercent;
+        int percent = prop == LANCE_RACK ? wornPercent * 2 : wornPercent;
         return builder.roll(PERCENT) < percent ? after : prop;
     }
 
@@ -418,18 +418,18 @@ final class FortFurnisher
 
         static
         {
-            room(UnderwayRoomKind.HATCH_LOBBY).stand(3, SANDBAGS, AMMO_BOXES).hang(3, SECTOR_SIGN, KLAXON, ARROW_SIGN).overhead(4, TURRET_CUPOLA);
-            room(UnderwayRoomKind.VESTIBULE).stand(3, SANDBAGS).hang(3, SENTINEL_EYE, WALL_TELEPHONE, SECTOR_SIGN).overhead(4, TURRET_CUPOLA);
-            room(UnderwayRoomKind.ENTRY_GALLERY).hang(5, CABLE_TRAY, EMERGENCY_WALL_LAMP, SENTINEL_EYE, CABLE_TRAY, PIPES);
-            room(UnderwayRoomKind.GUARD_ROOM).stand(2, RIFLE_RACK, DESK, CHAIR, AMMO_BOXES, LOCKER, STOOL).hang(3, WALL_TELEPHONE, GAS_MASKS, NOTICE_BOARD).tabletop(FIELD_TELEPHONE, DESK_LAMP, PAPERS).loose(BOOTS, LITTER);
-            room(UnderwayRoomKind.ARMOURY).stand(1, RIFLE_RACK, RIFLE_RACK, AMMO_BOXES, RIFLE_RACK, CRATE, SHELLS).hang(3, GAS_MASKS, HELMETS, TOOL_BOARD).loose(AMMO_BOXES, LITTER);
+            room(UnderwayRoomKind.HATCH_LOBBY).stand(3, PAVISE, WARD_STELE, CELL_CASES).hang(3, SECTOR_SIGN, KLAXON, ARROW_SIGN).overhead(4, TURRET_CUPOLA);
+            room(UnderwayRoomKind.VESTIBULE).stand(3, PAVISE, WARD_STELE).hang(3, SENTINEL_EYE, SPEAKING_TUBE, SECTOR_SIGN).overhead(4, TURRET_CUPOLA);
+            room(UnderwayRoomKind.ENTRY_GALLERY).hang(5, CONDUIT_RUN, EMERGENCY_WALL_LAMP, SENTINEL_EYE, CONDUIT_RUN, PIPES);
+            room(UnderwayRoomKind.GUARD_ROOM).stand(2, LANCE_RACK, DESK, CHAIR, CELL_CASES, LOCKER, STOOL).hang(3, SPEAKING_TUBE, WARD_MASKS, NOTICE_BOARD).tabletop(VOICE_HORN, DESK_LAMP, PAPERS).loose(BOOTS, LITTER);
+            room(UnderwayRoomKind.ARMOURY).stand(1, LANCE_RACK, LANCE_RACK, CELL_CASES, LANCE_RACK, CRATE, CANISTERS).hang(3, WARD_MASKS, HELMETS, TOOL_BOARD).loose(CELL_CASES, LITTER);
             room(UnderwayRoomKind.QUARTERS).stand(1, BUNK, LOCKER, DESK, FOOTLOCKER, BUNK, STOVE).hang(3, HOOKS, WALL_SHELF, POSTER).tabletop(DESK_LAMP, PAPERS, BOTTLES).loose(BOOTS, KIT_BAG);
-            room(UnderwayRoomKind.DECONTAMINATION).stand(3, LOCKER, DRUM, BUCKET).hang(2, SHOWER, SHOWER, GAS_MASKS, WASH_BASIN, HAZARD_PLATE).overhead(4, DUCT_VENT);
+            room(UnderwayRoomKind.DECONTAMINATION).stand(3, LOCKER, DRUM, BUCKET).hang(2, SHOWER, SHOWER, WARD_MASKS, WASH_BASIN, WARD_PLATE).overhead(4, DUCT_VENT);
 
-            room(UnderwayRoomKind.GALLERY).stand(12, CRATE, PLATFORM_BENCH, TRASH_BIN, DRUM, TROLLEY, SANDBAGS).hang(6, CABLE_TRAY, PIPES, ARROW_SIGN, CABLE_TRAY, SECTOR_SIGN, FUSE_BOX, SENTINEL_EYE);
-            room(UnderwayRoomKind.RUNG).hang(5, CABLE_TRAY, ARROW_SIGN, PIPES);
-            room(UnderwayRoomKind.CROSS_GALLERY).hang(6, CABLE_TRAY, ARROW_SIGN, PIPES, EMERGENCY_WALL_LAMP);
-            room(UnderwayRoomKind.ACCESS_GALLERY).hang(8, CABLE_TRAY, EMERGENCY_WALL_LAMP, ARROW_SIGN, PIPES, SENTINEL_EYE);
+            room(UnderwayRoomKind.GALLERY).stand(12, CRATE, PLATFORM_BENCH, TRASH_BIN, DRUM, TROLLEY, PAVISE).hang(6, CONDUIT_RUN, PIPES, ARROW_SIGN, CONDUIT_RUN, SECTOR_SIGN, RELAY_BOX, SENTINEL_EYE);
+            room(UnderwayRoomKind.RUNG).hang(5, CONDUIT_RUN, ARROW_SIGN, PIPES);
+            room(UnderwayRoomKind.CROSS_GALLERY).hang(6, CONDUIT_RUN, ARROW_SIGN, PIPES, EMERGENCY_WALL_LAMP);
+            room(UnderwayRoomKind.ACCESS_GALLERY).hang(8, CONDUIT_RUN, EMERGENCY_WALL_LAMP, ARROW_SIGN, PIPES, SENTINEL_EYE);
 
             room(UnderwayRoomKind.BARRACKS).stand(1, BUNK, BUNK, LOCKER, BUNK, BUNK, FOOTLOCKER).hang(4, HELMETS, HOOKS, WALL_SHELF, POSTER).middle(TABLE, STOVE, TABLE).beside(STOOL, CHAIR)
                     .tabletop(CARD_GAME, MESS_KIT, BOTTLES).loose(BOOTS, KIT_BAG, LITTER);
@@ -441,21 +441,21 @@ final class FortFurnisher
                     .overhead(5, DUCT_VENT).loose(SACKS, LITTER);
             room(UnderwayRoomKind.INFIRMARY).stand(1, STRETCHER, MEDICAL_TROLLEY, STRETCHER, LOCKER, STRETCHER, FILING_CABINET).hang(3, MEDICINE_CABINET, WASH_BASIN, NOTICE_BOARD).middle(STRETCHER)
                     .beside(MEDICAL_TROLLEY, STOOL).loose(BUCKET, LITTER);
-            room(UnderwayRoomKind.POWER_PLANT).stand(2, SWITCHGEAR, BATTERY_RACK, SWITCHGEAR, AIR_TANK, DRUM, JERRYCANS).hang(3, FUSE_BOX, PIPES, VALVE, CABLE_TRAY, HAZARD_PLATE)
-                    .middle(ENGINE, ALTERNATOR).overhead(6, HOIST, DUCT).loose(DRUMS, BUCKET, LITTER);
-            room(UnderwayRoomKind.FILTERS).stand(2, FILTER_DRUM, FILTER_DRUM, TANK, SWITCHGEAR).hang(3, FAN, PIPES, VALVE, HAZARD_PLATE).middle(FILTER_DRUM).overhead(4, DUCT, DUCT_VENT);
-            room(UnderwayRoomKind.CISTERN).stand(1, TANK, TANK, PUMP, TANK).hang(3, PIPES, VALVE, PIPES).middle(TANK).overhead(6, DUCT).loose(BUCKET);
-            room(UnderwayRoomKind.COMMAND_POST).stand(1, DESK, FILING_CABINET, CONSOLE, DESK, LOCKER, CHAIR).hang(3, WALL_MAP, WALL_TELEPHONE, NOTICE_BOARD, LINE_MAP).middle(MAP_TABLE).beside(CHAIR)
-                    .tabletop(TYPEWRITER, FIELD_TELEPHONE, PAPERS, DESK_LAMP, RADIO).loose(LITTER, CHAIR_FALLEN);
-            room(UnderwayRoomKind.EXCHANGE).stand(1, SWITCHBOARD, SWITCHBOARD, DESK, BATTERY_RACK, FILING_CABINET, STOOL).hang(3, WALL_TELEPHONE, FUSE_BOX, CABLE_TRAY, NOTICE_BOARD)
-                    .tabletop(RADIO, FIELD_TELEPHONE, PAPERS).loose(LITTER);
-            room(UnderwayRoomKind.STORES).stand(1, SHELVING, SHELVING, CRATE_STACK, TIN_RACK, CRATE, SACKS, DRUM).hang(5, NOTICE_BOARD, HAZARD_PLATE).middle(CRATE_STACK, TARP_PILE, CRATE, CABLE_REEL)
+            room(UnderwayRoomKind.POWER_PLANT).stand(2, SWITCHGEAR, CELL_BANK, SWITCHGEAR, AIR_TANK, DRUM, CARBOYS).hang(3, RELAY_BOX, PIPES, PRESSURE_GAUGE, VALVE, CONDUIT_RUN, VOID_CONDUIT, WARD_PLATE)
+                    .middle(BOILER, DYNAMO).overhead(6, HOIST, DUCT).loose(DRUMS, BUCKET, LITTER);
+            room(UnderwayRoomKind.FILTERS).stand(2, FILTER_DRUM, FILTER_DRUM, TANK, SWITCHGEAR).hang(3, FAN, PIPES, VALVE, VOID_CONDUIT, WARD_PLATE).middle(FILTER_DRUM).overhead(4, DUCT, DUCT_VENT);
+            room(UnderwayRoomKind.CISTERN).stand(1, TANK, TANK, PUMP, TANK).hang(3, PIPES, VALVE, PRESSURE_GAUGE).middle(TANK).overhead(6, DUCT).loose(BUCKET);
+            room(UnderwayRoomKind.COMMAND_POST).stand(1, DESK, FILING_CABINET, CONSOLE, DESK, LOCKER, CHAIR).hang(3, WALL_MAP, SPEAKING_TUBE, NOTICE_BOARD, LINE_MAP).middle(MAP_TABLE).beside(CHAIR)
+                    .tabletop(TYPEWRITER, VOICE_HORN, PAPERS, DESK_LAMP, RESONATOR).loose(LITTER, CHAIR_FALLEN);
+            room(UnderwayRoomKind.EXCHANGE).stand(1, SWITCHBOARD, SWITCHBOARD, DESK, CELL_BANK, FILING_CABINET, STOOL).hang(3, SPEAKING_TUBE, RELAY_BOX, CONDUIT_RUN, NOTICE_BOARD)
+                    .tabletop(RESONATOR, VOICE_HORN, PAPERS).loose(LITTER);
+            room(UnderwayRoomKind.STORES).stand(1, SHELVING, SHELVING, CRATE_STACK, TIN_RACK, CRATE, SACKS, DRUM).hang(5, NOTICE_BOARD, WARD_PLATE).middle(CRATE_STACK, TARP_PILE, CRATE, CABLE_REEL)
                     .loose(BROKEN_CRATE, LITTER, CRATE_OPEN);
-            room(UnderwayRoomKind.WORKSHOP).stand(1, WORKBENCH, LATHE, SHELVING, WORKBENCH, DRUM, CABLE_REEL, LOCKER).hang(3, TOOL_BOARD, FUSE_BOX, PIPES, POSTER).middle(WORKBENCH, LATHE).overhead(6, HOIST)
-                    .loose(JERRYCANS, BUCKET, LITTER);
+            room(UnderwayRoomKind.WORKSHOP).stand(1, WORKBENCH, LATHE, SHELVING, WORKBENCH, DRUM, CABLE_REEL, LOCKER).hang(3, TOOL_BOARD, RELAY_BOX, PIPES, POSTER).middle(WORKBENCH, LATHE).overhead(6, HOIST)
+                    .loose(CARBOYS, BUCKET, LITTER);
             room(UnderwayRoomKind.WASHROOM).stand(2, LATRINE, LATRINE, BUCKET, LATRINE).hang(2, WASH_BASIN, WASH_BASIN, SHOWER, SHOWER, PIPES).loose(BUCKET);
-            room(UnderwayRoomKind.LABORATORY).stand(1, COUNTER, COUNTER, FILING_CABINET, SHELVING, TANK, LOCKER).hang(3, MEDICINE_CABINET, PIPES, WALL_SHELF, FUSE_BOX).middle(TABLE).beside(STOOL)
-                    .tabletop(LAB_GLASS, LAB_GLASS, BOTTLES, PAPERS, DESK_LAMP).overhead(5, DUCT_VENT).loose(LITTER);
+            room(UnderwayRoomKind.LABORATORY).stand(1, COUNTER, COUNTER, FILING_CABINET, SHELVING, TANK, LOCKER).hang(3, MEDICINE_CABINET, VOID_CONDUIT, PIPES, WALL_SHELF, RELAY_BOX).middle(TABLE).beside(STOOL)
+                    .tabletop(LAB_GLASS, VOID_JAR, LAB_GLASS, BOTTLES, PAPERS, DESK_LAMP).overhead(5, DUCT_VENT).loose(LITTER);
             room(UnderwayRoomKind.BRIG).stand(3, COT, BUCKET, COT, STOOL).hang(6, NOTICE_BOARD, HOOKS);
             room(UnderwayRoomKind.ARCHIVE).stand(1, ARCHIVE_SHELF, ARCHIVE_SHELF, ARCHIVE_SHELF, FILING_CABINET, ARCHIVE_SHELF, DESK).hang(6, NOTICE_BOARD, WALL_MAP).middle(ARCHIVE_SHELF)
                     .tabletop(PAPERS, DESK_LAMP).loose(LITTER, CRATE);
@@ -463,16 +463,16 @@ final class FortFurnisher
 
             room(UnderwayRoomKind.PLATFORM).stand(5, PLATFORM_BENCH, PLATFORM_BENCH, TRASH_BIN, LUGGAGE, PLATFORM_BENCH, TROLLEY, CRATE).hang(7, STATION_SIGN, LINE_MAP, ARROW_SIGN, NOTICE_BOARD, KLAXON)
                     .middle(TURRET_WELL, LUGGAGE, TROLLEY, CRATE_STACK).overhead(26, STATION_CLOCK).loose(LITTER, LUGGAGE);
-            room(UnderwayRoomKind.LOBBY).hang(3, ARROW_SIGN, SECTOR_SIGN, CABLE_TRAY);
-            room(UnderwayRoomKind.MAGAZINE_GALLERY).hang(5, HAZARD_PLATE, CABLE_TRAY, SECTOR_SIGN, HAZARD_PLATE);
-            room(UnderwayRoomKind.MAGAZINE).stand(1, SHELL_RACK, SHELL_RACK, AMMO_BOXES, SHELLS, CRATE_STACK, CRATE).hang(4, HAZARD_PLATE).loose(AMMO_BOXES, BROKEN_CRATE);
-            room(UnderwayRoomKind.DEPOT).stand(2, WORKBENCH, DRUM, JERRYCANS, CABLE_REEL, SHELVING, CRATE_STACK, LOCKER).hang(4, TOOL_BOARD, FUSE_BOX, PIPES).overhead(6, HOIST).loose(DRUMS, LITTER, BUCKET);
-            room(UnderwayRoomKind.PUMP_ROOM).stand(2, PUMP, TANK, PUMP, SWITCHGEAR).hang(3, PIPES, VALVE, PIPES).loose(BUCKET);
-            room(UnderwayRoomKind.FREIGHT_HALL).stand(2, CRATE_STACK, CRATE, DRUMS, TARP_PILE, SHELVING, SACKS).hang(6, HAZARD_PLATE, SECTOR_SIGN).middle(CRATE_STACK, TARP_PILE, CRATE).overhead(7, HOIST)
+            room(UnderwayRoomKind.LOBBY).hang(3, ARROW_SIGN, SECTOR_SIGN, CONDUIT_RUN);
+            room(UnderwayRoomKind.MAGAZINE_GALLERY).hang(5, WARD_PLATE, CONDUIT_RUN, SECTOR_SIGN, WARD_PLATE);
+            room(UnderwayRoomKind.MAGAZINE).stand(1, CELL_RACK, CELL_RACK, CELL_CASES, CANISTERS, CRATE_STACK, CRATE).hang(4, WARD_PLATE).loose(CELL_CASES, BROKEN_CRATE);
+            room(UnderwayRoomKind.DEPOT).stand(2, WORKBENCH, DRUM, CARBOYS, CABLE_REEL, SHELVING, CRATE_STACK, LOCKER).hang(4, TOOL_BOARD, RELAY_BOX, PIPES).overhead(6, HOIST).loose(DRUMS, LITTER, BUCKET);
+            room(UnderwayRoomKind.PUMP_ROOM).stand(2, PUMP, TANK, PUMP, SWITCHGEAR).hang(3, PIPES, VALVE, PRESSURE_GAUGE).loose(BUCKET);
+            room(UnderwayRoomKind.FREIGHT_HALL).stand(2, CRATE_STACK, CRATE, DRUMS, TARP_PILE, SHELVING, SACKS).hang(6, WARD_PLATE, SECTOR_SIGN).middle(CRATE_STACK, TARP_PILE, CRATE).overhead(7, HOIST)
                     .loose(BROKEN_CRATE, LITTER);
-            room(UnderwayRoomKind.SIGNAL_CABIN).stand(1, LEVER_FRAME, LEVER_FRAME, CONSOLE, DESK, STOOL).hang(3, LINE_MAP, WALL_TELEPHONE, NOTICE_BOARD).tabletop(FIELD_TELEPHONE, PAPERS).loose(LITTER);
-            room(UnderwayRoomKind.CONTROL_ROOM).stand(1, CONSOLE, CONSOLE, SWITCHGEAR, LEVER_FRAME, DESK, FILING_CABINET).hang(3, LINE_MAP, WALL_MAP, WALL_TELEPHONE, KLAXON).middle(MAP_TABLE).beside(CHAIR)
-                    .tabletop(FIELD_TELEPHONE, PAPERS, DESK_LAMP).overhead(6, PERISCOPE).loose(LITTER, CHAIR_FALLEN);
+            room(UnderwayRoomKind.SIGNAL_CABIN).stand(1, LEVER_FRAME, LEVER_FRAME, CONSOLE, DESK, STOOL).hang(3, LINE_MAP, SPEAKING_TUBE, NOTICE_BOARD).tabletop(VOICE_HORN, PAPERS).loose(LITTER);
+            room(UnderwayRoomKind.CONTROL_ROOM).stand(1, CONSOLE, CONSOLE, SWITCHGEAR, LEVER_FRAME, DESK, FILING_CABINET).hang(3, LINE_MAP, WALL_MAP, SPEAKING_TUBE, KLAXON).middle(MAP_TABLE).beside(CHAIR)
+                    .tabletop(VOICE_HORN, PAPERS, DESK_LAMP).overhead(6, PERISCOPE).loose(LITTER, CHAIR_FALLEN);
         }
     }
 }

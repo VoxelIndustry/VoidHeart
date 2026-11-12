@@ -36,22 +36,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "east": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "north": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "south": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "up": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         },
         "west": {
-          "texture": "#steel_dark"
+          "texture": "#brass"
         }
       },
       "from": [
@@ -259,6 +259,7 @@
     }
   ],
   "textures": {
+    "brass": "voidheart:block/underway/brass",
     "enamel": "voidheart:block/underway/enamel",
     "particle": "voidheart:block/underway/steel",
     "steel": "voidheart:block/underway/steel",

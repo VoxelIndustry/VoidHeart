@@ -164,22 +164,22 @@
     {
       "faces": {
         "down": {
-          "texture": "#glass_dark"
+          "texture": "#void_glass"
         },
         "east": {
-          "texture": "#glass_dark"
+          "texture": "#void_glass"
         },
         "north": {
-          "texture": "#glass_dark"
+          "texture": "#void_glass"
         },
         "south": {
-          "texture": "#glass_dark"
+          "texture": "#void_glass"
         },
         "up": {
-          "texture": "#glass_dark"
+          "texture": "#void_glass"
         },
         "west": {
-          "texture": "#glass_dark"
+          "texture": "#void_glass"
         }
       },
       "from": [
@@ -296,6 +296,7 @@
     "glass_dark": "voidheart:block/underway/glass_dark",
     "glass_green": "voidheart:block/underway/glass_green",
     "particle": "voidheart:block/underway/glass_green",
+    "void_glass": "voidheart:block/underway/void_glass",
     "wood": "voidheart:block/underway/wood"
   }
 }

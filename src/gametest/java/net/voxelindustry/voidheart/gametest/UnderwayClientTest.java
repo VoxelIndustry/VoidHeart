@@ -307,14 +307,14 @@ public class UnderwayClientTest implements FabricClientGameTest
                         else if (material == UnderwayMaterial.SHELL || material == UnderwayMaterial.FLOOR)
                         {
                             boolean concrete = state.is(VoidHeartBlocks.UNDERWAY_CONCRETE) || state.is(VoidHeartBlocks.UNDERWAY_FORMED_CONCRETE)
-                                    || state.is(VoidHeartBlocks.UNDERWAY_STAINED_CONCRETE) || state.is(VoidHeartBlocks.UNDERWAY_CRACKED_CONCRETE);
-                            expect(concrete, "Planned concrete at " + pos + ", found " + state);
+                                    || state.is(VoidHeartBlocks.UNDERWAY_STAINED_CONCRETE) || state.is(VoidHeartBlocks.UNDERWAY_CRACKED_CONCRETE) || material == UnderwayMaterial.SHELL && state.is(VoidHeartBlocks.UNDERWAY_ARMOUR);
+                            expect(concrete, "Planned stonework or an iron rib at " + pos + ", found " + state);
                             expect(state.getDestroySpeed(level, pos) < 0, "The shell at " + pos + " can be broken");
                         }
                         else if (material == UnderwayMaterial.ROCK)
                             expect(state.is(VoidHeartBlocks.POCKET_WALL), "Planned rock at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.PLATFORM)
-                            expect(state.is(VoidHeartBlocks.UNDERWAY_STAINED_CONCRETE), "Planned a platform at " + pos + ", found " + state);
+                            expect(state.is(VoidHeartBlocks.UNDERWAY_FORMED_CONCRETE), "Planned a platform at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.BALLAST)
                             expect(state.is(VoidHeartBlocks.UNDERWAY_BALLAST), "Planned ballast at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.COLUMN || material == UnderwayMaterial.STEEL)
