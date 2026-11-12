@@ -11,10 +11,35 @@ import java.util.List;
  * @param hatchAcross where the hatch's shaft starts across the frame
  * @param footAlong   a block at the foot of the hatch's stairs, on the entry level
  * @param footAcross  the same block, across the frame
+ * @param units       its security that still works, each named for good by its place in this list
  */
 public record UnderwayFort(DistrictPos pos, UnderwayNode node, UnderwayFrame frame, UnderwayRuin ruin, int hatchAlong, int hatchAcross, int footAlong, int footAcross,
-                           List<UnderwayRoom> rooms, List<UnderwayOpening> openings, List<UnderwayShaft> shafts, List<UnderwayStroke> strokes, List<UnderwayPropSpot> props)
+                           List<UnderwayRoom> rooms, List<UnderwayOpening> openings, List<UnderwayShaft> shafts, List<UnderwayStroke> strokes, List<UnderwayPropSpot> props,
+                           List<UnderwayUnit> units)
 {
+    /** @return where the breaker cabinet of a section hangs, or null when it has none */
+    public UnderwayPropSpot cabinet(UnderwaySection section)
+    {
+        for (var spot : props)
+        {
+            if (spot.prop() == UnderwayProp.BREAKER_CABINET && UnderwaySection.at(spot.y()) == section)
+                return spot;
+        }
+        return null;
+    }
+
+    /** @return how many units guard a section */
+    public int unitCount(UnderwaySection section)
+    {
+        int count = 0;
+        for (var unit : units)
+        {
+            if (unit.section() == section)
+                count++;
+        }
+        return count;
+    }
+
     /** @return the lowest x of the 8 x 8 hatch in the floor of the district above */
     public int hatchX()
     {

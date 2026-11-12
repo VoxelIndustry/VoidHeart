@@ -155,15 +155,20 @@ public enum UnderwayProp
     TRIPWIRE_EMITTER(WALL, METAL, 2, "6 2 13 10 6 16 copper|7 3 12 9 5 13 lens_red|7 6 14 9 16 16 brass"),
     KLAXON(WALL, METAL, "6 6 14 10 10 16 copper_dark|6 6 9 10 10 14 brass|4 4 7 12 12 9 brass"),
     PERISCOPE(CEILING, METAL, "6 4 6 10 16 10 brass|5 1 5 11 4 11 copper|7 2 4 9 3 5 glass_dark|3 2 7 5 3 9 rubber|11 2 7 13 3 9 rubber"),
+    BREAKER_CABINET(WALL, METAL, "2 1 12 14 15 16 copper|3 9 11 13 14 12 brass n=dials@1,1|5 3 11 11 8 12 copper_dark|12 2 11 13 4 12 lens_off"),
+    BREAKER_CABINET_LIVE(WALL, METAL, 6, "2 1 12 14 15 16 copper|3 9 11 13 14 12 brass n=dials@1,1|5 3 11 11 8 12 copper_dark|6 4 10 10 7 11 lens_red|12 2 11 13 4 12 lens_warm"),
     SEARCHLIGHT(FLOOR, METAL, "4 0 4 12 2 12 copper|7 2 7 9 6 9 brass|4 6 3 12 14 12 copper|5 7 2 11 13 3 lens_off"),
 
     // Lights
     EMERGENCY_LAMP(CEILING, GLASS, 7, Parts.CAGED_LAMP + "|6 11 6 10 14 10 lens_red"),
+    EMERGENCY_LAMP_ALARM(CEILING, GLASS, 7, Parts.CAGED_LAMP + "|6 11 6 10 14 10 lens_strobe"),
+    EMERGENCY_LAMP_DARK(CEILING, GLASS, Parts.CAGED_LAMP + "|6 11 6 10 14 10 lens_off"),
     CEILING_LAMP(CEILING, GLASS, "7 12 7 9 16 9 brass|3 9 3 13 12 13 copper|6 7 6 10 9 10 lens_off"),
     CEILING_LAMP_LIT(CEILING, GLASS, 14, "7 12 7 9 16 9 brass|3 9 3 13 12 13 copper|6 7 6 10 9 10 lens_warm"),
     WALL_LAMP(WALL, GLASS, Parts.WALL_LAMP + "|6 7 12 10 11 14 lens_off"),
     WALL_LAMP_LIT(WALL, GLASS, 12, Parts.WALL_LAMP + "|6 7 12 10 11 14 lens_warm"),
     EMERGENCY_WALL_LAMP(WALL, GLASS, 7, Parts.WALL_LAMP + "|6 7 12 10 11 14 lens_red"),
+    EMERGENCY_WALL_LAMP_ALARM(WALL, GLASS, 7, Parts.WALL_LAMP + "|6 7 12 10 11 14 lens_strobe"),
 
     // What time left
     LITTER(FLOOR, CLOTH, "2 0 3 7 1 9 paper|9 0 8 14 1 13 paper|10 0 2 13 2 5 steel"),

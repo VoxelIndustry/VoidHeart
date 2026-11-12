@@ -257,6 +257,54 @@ speckle(img, { 70, 16, 26 }, 0.15, 216)
 for y = 0, S - 1 do for x = 2, S - 1, 8 do put(img, x, y, { 206, 96, 90 }) end end
 save(img, "rubrum")
 
+-- The lamp of an alarm: two frames, lit and dark, which the game plays in turn (see lens_strobe.png.mcmeta).
+do
+  local strobe = Image(S, 2 * S, ColorMode.RGB)
+  for frame = 0, 1 do
+    local c = frame == 0 and { 200, 50, 42 } or { 64, 28, 26 }
+    local core = frame == 0 and { 255, 136, 108 } or { 90, 40, 36 }
+    for y = 0, S - 1 do for x = 0, S - 1 do
+      local dx, dy = (x % 8) - 3.5, (y % 8) - 3.5
+      local colour = dx * dx + dy * dy < 5 and core or shade(c, (hash(x, y, 104 + frame) - 0.5) * 6)
+      strobe:drawPixel(x, y + frame * S, pc.rgba(colour[1], colour[2], colour[3], 255))
+    end end
+  end
+  strobe:saveAs(out .. "/lens_strobe.png")
+end
+
+-- The copper of the civilisation's machines, as centuries left it: riveted plate with verdigris gathered in patches, and a darker cut for what sits in recesses.
+local COPPER = { 150, 98, 68 }
+local PATINA = { 88, 146, 122 }
+local function copper(c, verdigris, seed, name, plated)
+  local image = base(c, 5, seed)
+  for y = 0, S - 1 do for x = 0, S - 1 do
+    if hash(x // 2, y // 2, seed + 1) < verdigris then put(image, x, y, shade(PATINA, (hash(x, y, seed + 2) - 0.5) * 18)) end
+  end end
+  if plated then
+    frame(image, shade(c, 18), shade(c, -24))
+    for _, p in ipairs({ { 2, 2 }, { 13, 2 }, { 2, 13 }, { 13, 13 } }) do
+      put(image, p[1], p[2], { 196, 162, 92 })
+      put(image, p[1], p[2] + 1, shade(c, -30))
+    end
+  end
+  save(image, name)
+end
+copper(COPPER, 0.16, 180, "copper", true)
+copper({ 104, 66, 50 }, 0.1, 184, "copper_dark", false)
+
+-- The eyes of the machines, lit: amber glass with a slit down the middle. A face three wide shows one eye from the corner; the iris fills a face six wide, and its slit is drawn apart so that it can wander.
+local AMBER = { 255, 184, 64 }
+img = base(AMBER, 6, 190)
+for y = 0, S - 1 do for x = 0, S - 1 do if x % 3 == 1 then put(img, x, y, { 34, 16, 6 }) end end end
+save(img, "eye_small")
+img = base(AMBER, 8, 192)
+for i = 0, 5 do
+  put(img, i, 0, { 176, 104, 24 }) put(img, i, 5, { 176, 104, 24 }) put(img, 0, i, { 176, 104, 24 }) put(img, 5, i, { 176, 104, 24 })
+end
+save(img, "eye_iris")
+img = base({ 30, 14, 6 }, 2, 194)
+save(img, "eye_slit")
+
 img = base({ 196, 186, 150 }, 4, 104)
 for y = 2, 13, 2 do for x = 2, 13 do if hash(x, y, 105) < 0.8 and x < 3 + hash(0, y, 106) * 11 then put(img, x, y, { 142, 132, 104 }) end end end
 save(img, "paper")
@@ -396,6 +444,18 @@ for _, p in ipairs({ { 3, 3 }, { 11, 3 }, { 3, 11 }, { 11, 11 } }) do
   put(img, p[1] + 1, p[2] + 1, shade(GATE, -24)) put(img, p[1], p[2] + 2, shade(GATE, -24)) put(img, p[1] + 1, p[2] + 2, shade(GATE, -24))
 end
 save(img, "blast_gate")
+
+-- A roller shutter: steel slats, each lit along its top and shaded along its foot, with no frame so a doorway of them reads as one curtain.
+local SLAT = { 82, 88, 96 }
+img = base(SLAT, 3, 170)
+for y = 0, S - 1 do
+  for x = 0, S - 1 do
+    if y % 4 == 0 then put(img, x, y, shade(SLAT, 20 + (hash(x, y, 171) - 0.5) * 6)) end
+    if y % 4 == 3 then put(img, x, y, shade(SLAT, -30)) end
+  end
+end
+speckle(img, shade(RUST, -36), 0.012, 172)
+save(img, "shutter")
 
 -- The hatch in a district's floor: heavy tread plate, and the same with the lip where its two leaves meet along the top edge.
 local HATCH = { 56, 56, 64 }

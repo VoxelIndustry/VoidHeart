@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.voxelindustry.voidheart.common.content.flask.PlacedFlasksBlock;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.voxelindustry.voidheart.common.content.underway.UnderwaySecurity;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -225,6 +226,8 @@ public class VoidHeart implements ModInitializer
         ServerPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelRequest.TYPE, AnchorTravel::handle);
         ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) -> OldAnchors.get(level).ifPresent(anchors -> anchors.onChunkLoad(chunk)));
         ServerTickEvents.END_SERVER_TICK.register(AnchorWaypoints::tickServer);
+        ServerTickEvents.END_LEVEL_TICK.register(UnderwaySecurity::tickLevel);
+        ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) -> UnderwaySecurity.chunkLoaded(level, chunk.getPos()));
 
         ServerLifecycleEvents.SERVER_STOPPED.register(server ->
         {

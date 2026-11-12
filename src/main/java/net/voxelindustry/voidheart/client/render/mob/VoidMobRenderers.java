@@ -99,6 +99,7 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.KERNACIAN_DRAGOON, KernacianDragoonRender::new);
         EntityRenderers.register(VoidHeartEntities.TREANT, TreantRender::new);
         EntityRenderers.register(VoidHeartEntities.UNDERWAY_KEY, UnderwayKeyRender::new);
+        UnderwaySecurityRenderers.register();
 
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) ->
         {

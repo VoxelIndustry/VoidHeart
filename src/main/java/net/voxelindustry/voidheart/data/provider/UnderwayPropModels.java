@@ -45,6 +45,7 @@ final class UnderwayPropModels
         cube(generator, VoidHeartBlocks.UNDERWAY_CRACKED_CONCRETE, "concrete_cracked");
         banded(generator, VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR, "armour_hazard_upright", "steel_plate");
         cube(generator, VoidHeartBlocks.UNDERWAY_BLAST_GATE, "blast_gate");
+        cube(generator, VoidHeartBlocks.UNDERWAY_SHUTTER, "shutter");
         cube(generator, VoidHeartBlocks.UNDERWAY_GRATING, "grating");
         cube(generator, VoidHeartBlocks.UNDERWAY_BALLAST, "ballast");
         cube(generator, VoidHeartBlocks.UNDERWAY_RUBBLE, "rubble");
@@ -133,8 +134,8 @@ final class UnderwayPropModels
             elements.add(element);
         }
         var textures = new JsonObject();
-        textures.addProperty("particle", TEXTURES + "steel_plate");
-        textures.addProperty("plate", TEXTURES + "steel_plate");
+        textures.addProperty("particle", TEXTURES + "copper");
+        textures.addProperty("plate", TEXTURES + "copper");
         var model = new JsonObject();
         model.addProperty("parent", "minecraft:block/block");
         model.add("textures", textures);

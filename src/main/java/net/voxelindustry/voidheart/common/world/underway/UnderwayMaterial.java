@@ -35,7 +35,9 @@ public enum UnderwayMaterial
     /** Armour painted with warning stripes, around what moves. Its band runs upright, or along x or z for the other two. */
     HAZARD,
     HAZARD_X,
-    HAZARD_Z;
+    HAZARD_Z,
+    /** A steel shutter over a doorway, which only rises on power. */
+    SHUTTER;
 
     private static final UnderwayMaterial[] VALUES = values();
 
@@ -57,7 +59,7 @@ public enum UnderwayMaterial
     /** @return whether a player walks through it */
     public boolean isOpen()
     {
-        return this == AIR || this == DOOR || this == WATER || isRail();
+        return this == AIR || this == DOOR || this == SHUTTER || this == WATER || isRail();
     }
 
     public boolean isRail()

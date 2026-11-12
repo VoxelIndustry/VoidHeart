@@ -15,6 +15,8 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.underway.HatchBalance;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
+import net.voxelindustry.voidheart.common.content.underway.UnderwaySecurity;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumBalance;
 import net.voxelindustry.voidheart.common.util.TeleportUtil;
 import net.voxelindustry.voidheart.common.world.daedalus.Compass;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
@@ -62,6 +64,12 @@ final class UnderwayCommands
                         .then(argument("percent", IntegerArgumentType.integer(0, 100))
                                 .executes(UnderwayCommands::charge)))
                 .then(literal("wave").executes(UnderwayCommands::wave))
+                .then(literal("section")
+                        .executes(context -> section(context, "status"))
+                        .then(literal("live").executes(context -> section(context, "live")))
+                        .then(literal("dark").executes(context -> section(context, "dark")))
+                        .then(literal("alarm").executes(context -> section(context, "alarm")))
+                        .then(literal("reset").executes(context -> section(context, "reset"))))
                 .then(literal("where").executes(UnderwayCommands::where)));
     }
 
@@ -154,6 +162,42 @@ final class UnderwayCommands
         }
         keys.getFirst().callWave();
         context.getSource().sendSuccess(() -> Component.literal("Wave " + keys.getFirst().wavesSent() + " called"), false);
+        return 1;
+    }
+
+    /** Reads the section the player stands in, or skips the cell and the eyes: sets it live on a full cell, takes the cell out, sounds its alarm, or forgets what happened to it. */
+    private static int section(CommandContext<CommandSourceStack> context, String action) throws CommandSyntaxException
+    {
+        var player = context.getSource().getPlayerOrException();
+        var level = context.getSource().getLevel();
+        var security = UnderwaySecurity.of(level);
+        var key = UnderwaySecurity.Key.at(player.blockPosition());
+        if (security == null || key == null)
+        {
+            context.getSource().sendFailure(Component.literal("Not inside a fort of the Underway"));
+            return 0;
+        }
+        switch (action)
+        {
+            case "live" ->
+            {
+                if (security.hasCell(key))
+                    security.removeCell(level, key);
+                security.insertCell(level, key, RubrumBalance.CELL_CAPACITY);
+            }
+            case "dark" -> security.removeCell(level, key);
+            case "alarm" -> security.raiseAlarm(level, key);
+            case "reset" -> security.reset(level, key);
+            default ->
+            {
+            }
+        }
+        int units = UnderwayPlans.fort(level.getSeed(), key.district()).unitCount(key.section());
+        var text = key.section().name().toLowerCase(Locale.ROOT) + " section under district " + key.x() + ", " + key.z() + ": "
+                + (security.isLive(level, key) ? "live" : "dormant") + (security.hasCell(key) ? ", cell at " + security.charge(key) * 100 / RubrumBalance.CELL_CAPACITY + "%" : ", no cell")
+                + (security.isAlarmed(key) ? ", alarm sounding" : "") + ", " + security.destroyedCount(key) + " of " + units + " units destroyed"
+                + (security.isSecured(level, key) ? ", secured" : "");
+        context.getSource().sendSuccess(() -> Component.literal(text), false);
         return 1;
     }
 

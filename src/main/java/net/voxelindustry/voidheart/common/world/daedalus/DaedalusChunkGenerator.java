@@ -18,6 +18,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+import net.voxelindustry.voidheart.common.content.underway.security.UnderwayUnitSpawner;
 import net.voxelindustry.voidheart.common.world.EmptyChunkGenerator;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
 import org.jspecify.annotations.Nullable;
@@ -89,6 +90,7 @@ public final class DaedalusChunkGenerator extends EmptyChunkGenerator
     public void spawnOriginalMobs(WorldGenRegion region)
     {
         DaedalusMobSpawner.spawn(region);
+        UnderwayUnitSpawner.spawn(region);
     }
 
     @Override
