@@ -10,6 +10,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.underway.HatchBalance;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
@@ -23,6 +24,8 @@ import net.voxelindustry.voidheart.common.world.underway.UnderwayNode;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
 
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 import static net.minecraft.commands.Commands.argument;
@@ -120,16 +123,24 @@ final class UnderwayCommands
     private static int charge(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
-        var keys = player.level().getEntitiesOfClass(UnderwayKeyEntity.class, player.getBoundingBox().inflate(KEY_REACH));
+        var keys = keysByDistance(player);
         if (keys.isEmpty())
         {
             context.getSource().sendFailure(Component.literal("No key at work within " + KEY_REACH + " blocks"));
             return 0;
         }
         int percent = IntegerArgumentType.getInteger(context, "percent");
-        keys.forEach(key -> key.setCharge(HatchBalance.CHARGE_TICKS * percent / 100));
+        keys.getFirst().setCharge(HatchBalance.CHARGE_TICKS * percent / 100);
         context.getSource().sendSuccess(() -> Component.literal("Hatch charged to " + percent + "%"), false);
         return 1;
+    }
+
+    /** @return the keys at work around the player, the nearest first */
+    private static List<UnderwayKeyEntity> keysByDistance(ServerPlayer player)
+    {
+        var keys = player.level().getEntitiesOfClass(UnderwayKeyEntity.class, player.getBoundingBox().inflate(KEY_REACH));
+        keys.sort(Comparator.comparingDouble(player::distanceToSqr));
+        return keys;
     }
 
     private static int where(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
