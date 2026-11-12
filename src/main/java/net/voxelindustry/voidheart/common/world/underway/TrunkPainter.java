@@ -20,8 +20,8 @@ final class TrunkPainter
     private static final int LAMP_EVERY = 16;
     private static final int LAMP_AT = 8;
     private static final int CHASM_END = DistrictPos.PITCH - 1;
-    private static final int GATE_START = 143;
-    private static final int GATE_END = 144;
+    static final int GATE_START = 143;
+    static final int GATE_END = 144;
     private static final int RUBBLE_START = 138;
     private static final int RUBBLE_END = 150;
     private static final int RUBBLE_SLOPE = 2;

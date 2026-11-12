@@ -71,6 +71,10 @@ public final class UnderwayPlans
             TrainPainter.paint(seed, pos, true, canvas);
         if (column)
             TrainPainter.paint(seed, pos, false, canvas);
+        if (row)
+            TrunkFurnisher.paint(seed, pos, true, canvas);
+        if (column)
+            TrunkFurnisher.paint(seed, pos, false, canvas);
         if ((row || column) && UnderwayNetwork.regionRuin(seed, pos) == UnderwayRuin.FLOODED)
             TrunkPainter.flood(new UnderwayBrush(canvas, UnderwayFrame.ofLine(pos, true)));
     }

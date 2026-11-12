@@ -17,8 +17,8 @@ import static net.voxelindustry.voidheart.common.world.underway.UnderwayLevels.T
  */
 final class StationPlanner
 {
-    private static final int HALL_START = 24;
-    private static final int HALL_END = 103;
+    static final int HALL_START = 24;
+    static final int HALL_END = 103;
     private static final int LOW_PLATFORM = 53;
     private static final int HIGH_PLATFORM = 70;
     private static final int PLATFORM_WIDTH = 5;

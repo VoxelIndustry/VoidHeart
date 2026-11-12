@@ -9,9 +9,16 @@ import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptio
 import net.minecraft.client.CameraType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.mob.VoidMonster;
+import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusFence;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.world.daedalus.Compass;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusBiomeSource;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -19,15 +26,18 @@ import net.voxelindustry.voidheart.common.world.underway.UnderwayCanvas;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayFort;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayFrame;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayLink;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayMaterial;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayNetwork;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayNode;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayRoom;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayRoomKind;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayRuin;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayTrain;
 
 import java.util.EnumSet;
+import java.util.List;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
@@ -40,7 +50,10 @@ public class UnderwayClientTest implements FabricClientGameTest
     private static final int CHECKED_RADIUS = 20;
     private static final int MIN_PROPS_CHECKED = 10;
     private static final int MIN_TRAIN_PROPS = 4;
+    private static final int MIN_TRUNK_PROPS = 20;
     private static final int TRAIN_SEARCH = 16;
+    private static final int OPEN_SEARCH = 24;
+    private static final int SINK = -40;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -57,6 +70,7 @@ public class UnderwayClientTest implements FabricClientGameTest
 
             var station = enter(context, world, UnderwayNode.STATION);
             checkWorldMatchesPlan(server, station, station.footAlong(), station.footAcross(), UnderwayLevels.ENTRY_FLOOR, UnderwayLevels.ENTRY_FLOOR + UnderwayLevels.ENTRY_HEIGHT + 1, MIN_PROPS_CHECKED);
+            checkVoidMobsStayAbove(server, station);
             server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
             look(context, world, station, "station-entry", first(station, UnderwayRoomKind.HATCH_LOBBY));
             look(context, world, station, "station-guard-room", first(station, UnderwayRoomKind.GUARD_ROOM));
@@ -77,6 +91,7 @@ public class UnderwayClientTest implements FabricClientGameTest
             look(context, world, station, "station-platform-dark", first(station, UnderwayRoomKind.PLATFORM));
 
             train(context, world);
+            trunk(context, world);
 
             var hub = enter(context, world, UnderwayNode.HUB);
             checkWorldMatchesPlan(server, hub, hub.footAlong(), hub.footAcross(), UnderwayLevels.ENTRY_FLOOR, UnderwayLevels.ENTRY_FLOOR + UnderwayLevels.ENTRY_HEIGHT + 1, MIN_PROPS_CHECKED);
@@ -135,6 +150,45 @@ public class UnderwayClientTest implements FabricClientGameTest
                 cargo.along() + UnderwayTrain.CAR_LENGTH - 2, train.aisle(), UnderwayLevels.PLATFORM_FLOOR - 1);
         server.runCommand("effect clear @a");
         shot(context, world, line, "train-dark", first - 7, platform, UnderwayLevels.PLATFORM_FLOOR, last, train.aisle(), UnderwayLevels.PLATFORM_FLOOR);
+    }
+
+    /** Finds the nearest dry tunnel shut by a blast gate, checks it against its plan and looks at it from the walkway, lit and in its own dark. */
+    private static void trunk(ClientGameTestContext context, TestSingleplayerContext world)
+    {
+        var server = world.getServer();
+        long seed = server.computeOnServer(minecraft -> VoidDaedalus.level(minecraft).getSeed());
+        DistrictPos found = null;
+        boolean foundAlongX = true;
+        for (int radius = 0; radius <= TRAIN_SEARCH && found == null; radius++)
+        {
+            for (int z = -radius; z <= radius && found == null; z++)
+            {
+                for (int x = -radius; x <= radius && found == null; x++)
+                {
+                    var pos = new DistrictPos(x, z);
+                    if (Math.max(Math.abs(x), Math.abs(z)) != radius || UnderwayNetwork.regionRuin(seed, pos) != UnderwayRuin.DRY)
+                        continue;
+                    for (boolean alongX : new boolean[] { true, false })
+                    {
+                        if (found == null && UnderwayNetwork.linkFrom(seed, pos, alongX ? Compass.EAST : Compass.SOUTH) == UnderwayLink.GATED)
+                        {
+                            found = pos;
+                            foundAlongX = alongX;
+                        }
+                    }
+                }
+            }
+        }
+        expect(found != null, "No dry tunnel within " + TRAIN_SEARCH + " districts ends at a blast gate");
+        var line = UnderwayFrame.ofLine(found, foundAlongX);
+        int gate = DistrictPos.SIZE + 15;
+
+        server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
+        shot(context, world, line, "trunk-gate", gate - 22, 63, UnderwayLevels.BALLAST, gate, 63, UnderwayLevels.BALLAST + 1);
+        checkWorldAround(server, UnderwayPlans.fort(seed, found), line.x(gate - 8, 63), line.z(gate - 8, 63), UnderwayLevels.BALLAST, UnderwayLevels.TRUNK_TOP, MIN_TRUNK_PROPS);
+        shot(context, world, line, "trunk-tunnel", DistrictPos.SIZE - 20, 64, UnderwayLevels.BALLAST, DistrictPos.SIZE + 6, 63, UnderwayLevels.BALLAST + 1);
+        server.runCommand("effect clear @a");
+        shot(context, world, line, "trunk-gate-dark", gate - 22, 63, UnderwayLevels.BALLAST, gate, 63, UnderwayLevels.BALLAST + 1);
     }
 
     private static UnderwayFort enter(ClientGameTestContext context, TestSingleplayerContext world, UnderwayNode kind)
@@ -220,6 +274,10 @@ public class UnderwayClientTest implements FabricClientGameTest
                             expect(state.is(VoidHeartBlocks.UNDERWAY_STEEL_STAIRS), "Planned stairs at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.DOOR)
                             expect(state.is(VoidHeartBlocks.UNDERWAY_DOOR), "Planned a door at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.GATE)
+                            expect(state.is(VoidHeartBlocks.UNDERWAY_BLAST_GATE) && state.getDestroySpeed(level, pos) < 0, "Planned an unbreakable blast gate at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.HAZARD)
+                            expect(state.is(VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR), "Planned striped armour at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.GRATING)
                             expect(state.is(VoidHeartBlocks.UNDERWAY_GRATING), "Planned grating at " + pos + ", found " + state);
                     }
@@ -229,6 +287,52 @@ public class UnderwayClientTest implements FabricClientGameTest
             if (fromY == UnderwayLevels.BALLAST && minProps == 0)
                 expect(!rails.isEmpty(), "No track was found along the platform of the " + fort.node());
             expect(level.getBlockState(new BlockPos(footX, 0, footZ)).is(VoidHeartBlocks.POCKET_WALL), "The districts' floor above the Underway is gone");
+        });
+    }
+
+    /**
+     * Puts each kind of wraith in the district over a fort and tries what would take it down: crossing to a spot in the Underway, and sinking with nothing solid to it. None may end under the districts' floor, and none may take as a target someone who is.
+     */
+    private static void checkVoidMobsStayAbove(TestServerContext server, UnderwayFort fort)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = VoidDaedalus.level(minecraft);
+            int footX = fort.frame().x(fort.footAlong(), fort.footAcross());
+            int footZ = fort.frame().z(fort.footAlong(), fort.footAcross());
+            BlockPos open = null;
+            for (int z = footZ - OPEN_SEARCH; z <= footZ + OPEN_SEARCH && open == null; z++)
+            {
+                for (int x = footX - OPEN_SEARCH; x <= footX + OPEN_SEARCH && open == null; x++)
+                {
+                    if (DistrictPos.isInsideDistrict(x, z) && DistrictPos.at(x, z).equals(fort.pos()) && level.getBlockState(new BlockPos(x, 2, z)).isAir() && level.getBlockState(new BlockPos(x, 3, z)).isAir())
+                        open = new BlockPos(x, 2, z);
+                }
+            }
+            expect(open != null, "No open spot was found in the district over the " + fort.node());
+            var spot = Vec3.atBottomCenterOf(open);
+            var below = new Vec3(footX + 0.5, UnderwayLevels.ENTRY_FLOOR + 1, footZ + 0.5);
+
+            var above = VoidHeartEntities.WRAITH_SCARAB.create(level, EntitySpawnReason.COMMAND);
+            above.snapTo(spot.x, spot.y, spot.z, 0, 0);
+            var under = VoidHeartEntities.WRAITH_SCARAB.create(level, EntitySpawnReason.COMMAND);
+            under.snapTo(below.x, below.y, below.z, 0, 0);
+
+            for (var type : List.of(VoidHeartEntities.WRAITH, VoidHeartEntities.STALKING_WRAITH, VoidHeartEntities.WRAITH_BEAST, VoidHeartEntities.WRAITH_SCARAB))
+            {
+                VoidMonster mob = type.create(level, EntitySpawnReason.COMMAND);
+                mob.snapTo(spot.x, spot.y, spot.z, 0, 0);
+                level.addFreshEntity(mob);
+                expect(mob.mayGoTo(spot.add(1, 0, 0)), type + " may not even move within its district");
+                expect(!mob.mayGoTo(below), type + " may cross to " + below + " in the Underway");
+                expect(mob.canAttack(above), type + " cannot attack what stands beside it in the district");
+                expect(!mob.canAttack(under), type + " takes a target that is down in the Underway");
+                mob.noPhysics = true;
+                mob.setNoGravity(true);
+                mob.move(MoverType.SELF, new Vec3(0, SINK, 0));
+                expect(mob.getY() >= DaedalusFence.FLOOR, type + " sank through the districts' floor to " + mob.getY());
+                mob.discard();
+            }
         });
     }
 

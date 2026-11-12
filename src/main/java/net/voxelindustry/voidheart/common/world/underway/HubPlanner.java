@@ -15,8 +15,8 @@ import static net.voxelindustry.voidheart.common.world.underway.UnderwayLevels.R
  */
 final class HubPlanner
 {
-    private static final int ATRIUM_START = 40;
-    private static final int ATRIUM_END = 87;
+    static final int ATRIUM_START = 40;
+    static final int ATRIUM_END = 87;
     private static final int ATRIUM_TOP = LIVING_FLOOR + LIVING_HEIGHT;
     private static final int[] QUADRANTS = { ATRIUM_START, TrunkPainter.HIGH + 1 };
     private static final int QUADRANT_SIZE = TrunkPainter.LOW - ATRIUM_START;
