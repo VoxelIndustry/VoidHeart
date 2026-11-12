@@ -12,16 +12,20 @@ import net.minecraft.core.Direction;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusBiomeSource;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayCanvas;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayFort;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayFrame;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayMaterial;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayNetwork;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayNode;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayRoom;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayRoomKind;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayTrain;
 
 import java.util.EnumSet;
 
@@ -35,6 +39,8 @@ public class UnderwayClientTest implements FabricClientGameTest
     private static final int CHUNK_TIMEOUT_TICKS = 1200;
     private static final int CHECKED_RADIUS = 20;
     private static final int MIN_PROPS_CHECKED = 10;
+    private static final int MIN_TRAIN_PROPS = 4;
+    private static final int TRAIN_SEARCH = 16;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -70,6 +76,8 @@ public class UnderwayClientTest implements FabricClientGameTest
             look(context, world, station, "station-gallery-dark", first(station, UnderwayRoomKind.GALLERY));
             look(context, world, station, "station-platform-dark", first(station, UnderwayRoomKind.PLATFORM));
 
+            train(context, world);
+
             var hub = enter(context, world, UnderwayNode.HUB);
             checkWorldMatchesPlan(server, hub, hub.footAlong(), hub.footAcross(), UnderwayLevels.ENTRY_FLOOR, UnderwayLevels.ENTRY_FLOOR + UnderwayLevels.ENTRY_HEIGHT + 1, MIN_PROPS_CHECKED);
             server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
@@ -87,6 +95,48 @@ public class UnderwayClientTest implements FabricClientGameTest
         }
     }
 
+    /** Finds the nearest station where a train was left at the platforms, and looks at it from the platform, from the tracks and from inside. */
+    private static void train(ClientGameTestContext context, TestSingleplayerContext world)
+    {
+        var server = world.getServer();
+        long seed = server.computeOnServer(minecraft -> VoidDaedalus.level(minecraft).getSeed());
+        DistrictPos found = null;
+        for (int radius = 0; radius <= TRAIN_SEARCH && found == null; radius++)
+        {
+            for (int z = -radius; z <= radius && found == null; z++)
+            {
+                for (int x = -radius; x <= radius && found == null; x++)
+                {
+                    var pos = new DistrictPos(x, z);
+                    if (Math.max(Math.abs(x), Math.abs(z)) == radius && UnderwayNetwork.nodeAt(seed, pos) == UnderwayNode.STATION
+                            && UnderwayTrain.at(seed, pos, UnderwayNetwork.isLineRow(seed, z)).stream().anyMatch(train -> train.cars().getFirst().along() < DistrictPos.SIZE))
+                        found = pos;
+                }
+            }
+        }
+        expect(found != null, "No station within " + TRAIN_SEARCH + " districts has a train at its platforms");
+        var pos = found;
+        boolean alongX = UnderwayNetwork.isLineRow(seed, pos.z());
+        var train = UnderwayTrain.at(seed, pos, alongX).getFirst();
+        var line = UnderwayFrame.ofLine(pos, alongX);
+        var cars = train.cars();
+        int first = cars.getFirst().along();
+        int last = cars.getLast().along() + UnderwayTrain.CAR_LENGTH - 1;
+        int platform = train.inner() > 0 ? train.across() - 3 : train.across() + UnderwayTrain.WIDTH + 2;
+        int walkway = train.innerWall() + train.inner() * 4;
+        var cargo = cars.get(1);
+        server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
+
+        shot(context, world, line, "train-from-platform", first - 7, platform, UnderwayLevels.PLATFORM_FLOOR, last, train.aisle(), UnderwayLevels.PLATFORM_FLOOR);
+        checkWorldAround(server, UnderwayPlans.fort(seed, pos), line.x((first + last) / 2, train.aisle()), line.z((first + last) / 2, train.aisle()),
+                UnderwayLevels.BALLAST, UnderwayLevels.PLATFORM_FLOOR + 5, MIN_TRAIN_PROPS);
+        shot(context, world, line, "train-from-tracks", first - 8, walkway, UnderwayLevels.BALLAST, first + 12, train.aisle(), UnderwayLevels.PLATFORM_FLOOR);
+        shot(context, world, line, "train-inside-" + cargo.kind().name().toLowerCase(), cargo.along() + 1, train.aisle(), UnderwayLevels.PLATFORM_FLOOR,
+                cargo.along() + UnderwayTrain.CAR_LENGTH - 2, train.aisle(), UnderwayLevels.PLATFORM_FLOOR - 1);
+        server.runCommand("effect clear @a");
+        shot(context, world, line, "train-dark", first - 7, platform, UnderwayLevels.PLATFORM_FLOOR, last, train.aisle(), UnderwayLevels.PLATFORM_FLOOR);
+    }
+
     private static UnderwayFort enter(ClientGameTestContext context, TestSingleplayerContext world, UnderwayNode kind)
     {
         var server = world.getServer();
@@ -100,12 +150,19 @@ public class UnderwayClientTest implements FabricClientGameTest
             var fort = UnderwayPlans.fort(VoidDaedalus.level(minecraft).getSeed(), DistrictPos.at(player.getBlockX(), player.getBlockZ()));
             expect(fort.node() == kind, "Asked for a " + kind + ", arrived over a " + fort.node());
             expect(player.getBlockY() == UnderwayLevels.ENTRY_FLOOR + 1, "The player stands at " + player.getBlockY() + ", not on the entry level");
+            expect(player.level().getBiome(player.blockPosition()).is(DaedalusBiomeSource.UNDERWAY), "The Underway does not have its own biome at " + player.blockPosition());
+            expect(!player.level().getBiome(player.blockPosition().atY(8)).is(DaedalusBiomeSource.UNDERWAY), "The district above took the Underway's biome");
             return fort;
         });
     }
 
     /** Compares the blocks around a place of a fort, between two heights, with the plan drawn for the same place. */
     private static void checkWorldMatchesPlan(TestServerContext server, UnderwayFort fort, int along, int across, int fromY, int toY, int minProps)
+    {
+        checkWorldAround(server, fort, fort.frame().x(along, across), fort.frame().z(along, across), fromY, toY, minProps);
+    }
+
+    private static void checkWorldAround(TestServerContext server, UnderwayFort fort, int footX, int footZ, int fromY, int toY, int minProps)
     {
         server.runOnServer(minecraft ->
         {
@@ -114,8 +171,6 @@ public class UnderwayClientTest implements FabricClientGameTest
             canvas.reset(fort.pos().originX(), fort.pos().originZ());
             UnderwayPlans.paint(level.getSeed(), canvas);
 
-            int footX = fort.frame().x(along, across);
-            int footZ = fort.frame().z(along, across);
             var rails = EnumSet.noneOf(UnderwayMaterial.class);
             int props = 0;
             for (int y = fromY; y <= toY; y++)
@@ -170,8 +225,8 @@ public class UnderwayClientTest implements FabricClientGameTest
                     }
                 }
             }
-            expect(props >= minProps, "Only " + props + " props stand around " + along + " " + across + " of the " + fort.node());
-            if (fromY == UnderwayLevels.BALLAST)
+            expect(props >= minProps, "Only " + props + " props stand around " + footX + " " + footZ + " of the " + fort.node());
+            if (fromY == UnderwayLevels.BALLAST && minProps == 0)
                 expect(!rails.isEmpty(), "No track was found along the platform of the " + fort.node());
             expect(level.getBlockState(new BlockPos(footX, 0, footZ)).is(VoidHeartBlocks.POCKET_WALL), "The districts' floor above the Underway is gone");
         });
@@ -194,7 +249,11 @@ public class UnderwayClientTest implements FabricClientGameTest
 
     private static void shot(ClientGameTestContext context, TestSingleplayerContext world, UnderwayFort fort, String name, int along, int across, int floorY, int toAlong, int toAcross, int toFloorY)
     {
-        var frame = fort.frame();
+        shot(context, world, fort.frame(), name, along, across, floorY, toAlong, toAcross, toFloorY);
+    }
+
+    private static void shot(ClientGameTestContext context, TestSingleplayerContext world, UnderwayFrame frame, String name, int along, int across, int floorY, int toAlong, int toAcross, int toFloorY)
+    {
         world.getServer().runCommand("execute in voidheart:daedalus run tp @a "
                 + aimedPose(frame.x(along, across) + 0.5, floorY + 1.2, frame.z(along, across) + 0.5, frame.x(toAlong, toAcross) + 0.5, toFloorY + 2, frame.z(toAlong, toAcross) + 0.5));
         context.waitTicks(10);

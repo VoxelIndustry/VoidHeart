@@ -67,6 +67,10 @@ public final class UnderwayPlans
         GalleryPainter.paint(seed, pos, true, canvas);
         GalleryPainter.paint(seed, pos, false, canvas);
         FortPainter.paint(fort(seed, pos), canvas);
+        if (row)
+            TrainPainter.paint(seed, pos, true, canvas);
+        if (column)
+            TrainPainter.paint(seed, pos, false, canvas);
         if ((row || column) && UnderwayNetwork.regionRuin(seed, pos) == UnderwayRuin.FLOODED)
             TrunkPainter.flood(new UnderwayBrush(canvas, UnderwayFrame.ofLine(pos, true)));
     }
