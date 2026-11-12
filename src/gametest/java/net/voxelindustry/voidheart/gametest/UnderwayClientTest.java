@@ -335,7 +335,7 @@ public class UnderwayClientTest implements FabricClientGameTest
                             expect(state.is(VoidHeartBlocks.UNDERWAY_DOOR), "Planned a door at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.GATE)
                             expect(state.is(VoidHeartBlocks.UNDERWAY_BLAST_GATE) && state.getDestroySpeed(level, pos) < 0, "Planned an unbreakable blast gate at " + pos + ", found " + state);
-                        else if (material == UnderwayMaterial.HAZARD)
+                        else if (material.isHazard())
                             expect(state.is(VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR), "Planned striped armour at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.GRATING)
                             expect(state.is(VoidHeartBlocks.UNDERWAY_GRATING), "Planned grating at " + pos + ", found " + state);

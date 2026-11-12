@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.world.underway;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
@@ -170,7 +171,10 @@ public final class UnderwayChunkWriter
         states[UnderwayMaterial.BALLAST.ordinal()] = VoidHeartBlocks.UNDERWAY_BALLAST.defaultBlockState();
         states[UnderwayMaterial.STEEL.ordinal()] = armour;
         states[UnderwayMaterial.COLUMN.ordinal()] = armour;
-        states[UnderwayMaterial.HAZARD.ordinal()] = VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR.defaultBlockState();
+        var hazard = VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR.defaultBlockState();
+        states[UnderwayMaterial.HAZARD.ordinal()] = hazard;
+        states[UnderwayMaterial.HAZARD_X.ordinal()] = hazard.setValue(RotatedPillarBlock.AXIS, Direction.Axis.X);
+        states[UnderwayMaterial.HAZARD_Z.ordinal()] = hazard.setValue(RotatedPillarBlock.AXIS, Direction.Axis.Z);
         states[UnderwayMaterial.GATE.ordinal()] = VoidHeartBlocks.UNDERWAY_BLAST_GATE.defaultBlockState();
         states[UnderwayMaterial.GRATING.ordinal()] = VoidHeartBlocks.UNDERWAY_GRATING.defaultBlockState();
         for (int direction = 0; direction < FACING.length; direction++)

@@ -849,7 +849,7 @@ public class VoidHeartBlocks
         UNDERWAY_ARMOUR = registerBlock("underway_armour", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_FORMED_CONCRETE = registerBlock("underway_formed_concrete", Block::new, underwayShell(MapColor.STONE, SoundType.STONE), true);
         UNDERWAY_CRACKED_CONCRETE = registerBlock("underway_cracked_concrete", Block::new, underwayShell(MapColor.STONE, SoundType.STONE), true);
-        UNDERWAY_HAZARD_ARMOUR = registerBlock("underway_hazard_armour", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
+        UNDERWAY_HAZARD_ARMOUR = registerBlock("underway_hazard_armour", RotatedPillarBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_BLAST_GATE = registerBlock("underway_blast_gate", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_HATCH = registerBlock("underway_hatch", UnderwayHatchBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_EMBRASURE = registerBlock("underway_firing_slit", UnderwayEmbrasureBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK).noOcclusion(), true);

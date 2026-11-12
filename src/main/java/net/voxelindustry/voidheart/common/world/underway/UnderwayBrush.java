@@ -54,6 +54,12 @@ record UnderwayBrush(UnderwayCanvas canvas, UnderwayFrame frame)
         return UnderwayMaterial.stairs(frame.compass(climbAlong, climbAcross));
     }
 
+    /** Striped armour whose band lies flat, along the frame or across it. */
+    UnderwayMaterial hazard(boolean runsAlong)
+    {
+        return runsAlong == frame.alongX() ? UnderwayMaterial.HAZARD_X : UnderwayMaterial.HAZARD_Z;
+    }
+
     UnderwayMaterial trunkRail()
     {
         return frame.alongX() ? UnderwayMaterial.TRUNK_RAIL_X : UnderwayMaterial.TRUNK_RAIL_Z;

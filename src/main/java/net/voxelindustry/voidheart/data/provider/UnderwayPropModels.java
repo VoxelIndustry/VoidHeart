@@ -43,7 +43,7 @@ final class UnderwayPropModels
         cube(generator, VoidHeartBlocks.UNDERWAY_ARMOUR, "steel_plate");
         cube(generator, VoidHeartBlocks.UNDERWAY_FORMED_CONCRETE, "concrete_formed");
         cube(generator, VoidHeartBlocks.UNDERWAY_CRACKED_CONCRETE, "concrete_cracked");
-        cube(generator, VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR, "armour_hazard");
+        banded(generator, VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR, "armour_hazard_upright", "steel_plate");
         cube(generator, VoidHeartBlocks.UNDERWAY_BLAST_GATE, "blast_gate");
         cube(generator, VoidHeartBlocks.UNDERWAY_GRATING, "grating");
         cube(generator, VoidHeartBlocks.UNDERWAY_BALLAST, "ballast");
@@ -92,6 +92,16 @@ final class UnderwayPropModels
         var model = ModelTemplates.CUBE_ALL.create(block, TextureMapping.cube(new Material(Identifier.parse(TEXTURES + texture))), generator.modelOutput);
         generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(block, plainVariant(model)));
         generator.registerSimpleItemModel(block, model);
+    }
+
+    /** A block whose band runs along its axis on the four faces around it, with plain ends. */
+    private static void banded(BlockModelGenerators generator, Block block, String side, String end)
+    {
+        var textures = TextureMapping.column(new Material(Identifier.parse(TEXTURES + side)), new Material(Identifier.parse(TEXTURES + end)));
+        var upright = ModelTemplates.CUBE_COLUMN.create(block, textures, generator.modelOutput);
+        var lying = ModelTemplates.CUBE_COLUMN_HORIZONTAL.create(block, textures, generator.modelOutput);
+        generator.blockStateOutput.accept(BlockModelGenerators.createRotatedPillarWithHorizontalVariant(block, plainVariant(upright), plainVariant(lying)));
+        generator.registerSimpleItemModel(block, upright);
     }
 
     /** A track lying flat, drawn along z and turned for x. */

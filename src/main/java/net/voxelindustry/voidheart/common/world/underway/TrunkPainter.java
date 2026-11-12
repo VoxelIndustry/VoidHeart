@@ -83,7 +83,10 @@ final class TrunkPainter
 
     private static void gate(UnderwayBrush brush)
     {
+        // The frame's band goes round the gate: upright in the jambs, across the tunnel in the sill and the lintel
         brush.fill(GATE_START - 1, BALLAST, LOW - 1, GATE_END + 1, TRUNK_TOP + 1, HIGH + 1, UnderwayMaterial.HAZARD);
+        brush.fill(GATE_START - 1, BALLAST, LOW, GATE_END + 1, BALLAST, HIGH, brush.hazard(false));
+        brush.fill(GATE_START - 1, TRUNK_TOP + 1, LOW, GATE_END + 1, TRUNK_TOP + 1, HIGH, brush.hazard(false));
         brush.fill(GATE_START - 1, BALLAST + 1, LOW, GATE_END + 1, TRUNK_TOP, HIGH, UnderwayMaterial.AIR);
         brush.fill(GATE_START, BALLAST + 1, LOW, GATE_END, TRUNK_TOP, HIGH, UnderwayMaterial.GATE);
     }
