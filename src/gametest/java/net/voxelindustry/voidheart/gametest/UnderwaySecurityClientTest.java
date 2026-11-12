@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.underway.SecurityBalance;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwaySecurity;
 import net.voxelindustry.voidheart.common.content.underway.security.EmbrasureGun;
 import net.voxelindustry.voidheart.common.content.underway.security.Automaton;
@@ -151,6 +152,22 @@ public class UnderwaySecurityClientTest implements FabricClientGameTest
                 expect(!automaton.hurtServer(level, blow, 20) && automaton.getHealth() == automaton.getMaxHealth(), "A sleeping Automaton was harmed");
             }
             expect(!security.isAlarmed(key), "A blow from a player in creative was reported");
+        });
+
+        // A lamp left showing a state its section no longer has, as after a reset its chunk was not there for, turns back when its chunk loads
+        var lamp = lamp(fort, canvas);
+        server.runOnServer(minecraft ->
+        {
+            var level = VoidDaedalus.level(minecraft);
+            var facing = level.getBlockState(lamp).getValue(UnderwayPropBlock.FACING);
+            level.setBlock(lamp, VoidHeartBlocks.underwayProp(UnderwayProp.WALL_LAMP_LIT).defaultBlockState().setValue(UnderwayPropBlock.FACING, facing), 3);
+            UnderwaySecurity.chunkLoaded(level, net.minecraft.world.level.ChunkPos.containing(lamp));
+        });
+        context.waitTicks(3);
+        server.runOnServer(minecraft ->
+        {
+            var state = VoidDaedalus.level(minecraft).getBlockState(lamp);
+            expect(state.is(VoidHeartBlocks.underwayProp(UnderwayProp.EMERGENCY_WALL_LAMP)), "A stale lamp of a section with nothing saved did not turn back as its chunk loaded: " + state);
         });
 
         var stand = before(canvas, cabinet, 2);

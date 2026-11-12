@@ -149,7 +149,7 @@ public class UnderwaySecurity extends SavedData
     {
         var security = of(level);
         // Blocks are set a tick later, once the chunk is fully part of the level
-        if (security != null && !security.sections.isEmpty())
+        if (security != null)
             security.loaded.add(chunk);
     }
 
@@ -325,8 +325,8 @@ public class UnderwaySecurity extends SavedData
     /** Forgets everything that happened to a section, for review. Its wrecks stay wrecks in the world. */
     public void reset(ServerLevel level, Key key)
     {
-        // A blank state stays behind, which is not saved but still turns the section's lamps and cabinet back as its chunks load
-        sections.put(key, new SectionState());
+        // What is loaded turns back now, and the rest as its chunks load
+        sections.remove(key);
         spotted.remove(key);
         setDirty();
         refresh(level, key, null);
@@ -334,14 +334,20 @@ public class UnderwaySecurity extends SavedData
 
     private void tick(ServerLevel level)
     {
+        // A chunk that loads is brought to what is saved for its sections, even when nothing is: a section whose state was
+        // forgotten or lost while the chunk was away must not keep showing it
         for (var chunk = loaded.poll(); chunk != null; chunk = loaded.poll())
         {
-            for (var entry : sections.entrySet())
+            DistrictPos last = null;
+            for (int corner = 0; corner < 4; corner++)
             {
-                var origin = entry.getKey().district();
-                if (chunk.getMaxBlockX() >= origin.originX() && chunk.getMinBlockX() < origin.originX() + DistrictPos.SIZE
-                        && chunk.getMaxBlockZ() >= origin.originZ() && chunk.getMinBlockZ() < origin.originZ() + DistrictPos.SIZE)
-                    refresh(level, entry.getKey(), chunk);
+                int x = (corner & 1) == 0 ? chunk.getMinBlockX() : chunk.getMaxBlockX();
+                int z = (corner & 2) == 0 ? chunk.getMinBlockZ() : chunk.getMaxBlockZ();
+                if (!DistrictPos.isInsideDistrict(x, z) || DistrictPos.at(x, z).equals(last))
+                    continue;
+                last = DistrictPos.at(x, z);
+                for (var section : UnderwaySection.values())
+                    refresh(level, new Key(last.x(), last.z(), section), chunk);
             }
         }
         long time = level.getGameTime();
@@ -400,7 +406,9 @@ public class UnderwaySecurity extends SavedData
             return;
         var state = peek(key);
         boolean live = state.isLive();
-        boolean secured = state.isSecured(fort.unitCount(key.section()));
+        // A level that was built with nothing to guard it keeps its red lamps: dark means something was cleared
+        int units = fort.unitCount(key.section());
+        boolean secured = units > 0 && state.isSecured(units);
         var ceiling = state.isAlarmed() ? UnderwayProp.EMERGENCY_LAMP_ALARM : live ? UnderwayProp.CEILING_LAMP_LIT : secured ? UnderwayProp.EMERGENCY_LAMP_DARK : UnderwayProp.EMERGENCY_LAMP;
         var wall = state.isAlarmed() ? UnderwayProp.EMERGENCY_WALL_LAMP_ALARM : live ? UnderwayProp.WALL_LAMP_LIT : secured ? UnderwayProp.WALL_LAMP : UnderwayProp.EMERGENCY_WALL_LAMP;
         var frame = fort.frame();
