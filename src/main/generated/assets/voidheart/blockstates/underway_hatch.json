@@ -1,0 +1,25 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "voidheart:block/underway_hatch"
+    },
+    "facing=east": {
+      "model": "voidheart:block/underway_hatch_edge",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_hatch_edge"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_hatch_edge",
+      "y": 180
+    },
+    "facing=up": {
+      "model": "voidheart:block/underway_hatch"
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_hatch_edge",
+      "y": 270
+    }
+  }
+}

@@ -318,6 +318,27 @@ for _, p in ipairs({ { 3, 3 }, { 11, 3 }, { 3, 11 }, { 11, 11 } }) do
 end
 save(img, "blast_gate")
 
+-- The hatch in a district's floor: heavy tread plate, and the same with the lip where its two leaves meet along the top edge.
+local HATCH = { 58, 62, 68 }
+local function tread(seed)
+  local image = base(HATCH, 3, seed)
+  for y = 0, S - 1 do
+    for x = 0, S - 1 do
+      if (x + y) % 8 == 1 and (x - y) % 4 == 1 then put(image, x, y, shade(HATCH, 16)) put(image, x + 1, y + 1, shade(HATCH, -14)) end
+    end
+  end
+  return image
+end
+img = tread(170)
+save(img, "hatch_plate")
+img = tread(170)
+rect(img, 0, 0, S - 1, 0, { 18, 19, 22 })
+rect(img, 0, 1, S - 1, 1, shade(HATCH, -16))
+rect(img, 0, 2, S - 1, 3, shade(HATCH, 10))
+rect(img, 0, 4, S - 1, 4, shade(HATCH, -20))
+for x = 2, S - 1, 4 do put(img, x, 2, shade(HATCH, 34)) put(img, x, 3, shade(HATCH, -10)) end
+save(img, "hatch_edge")
+
 img = Image(S, S, ColorMode.RGB)
 for y = 0, S - 1 do
   for x = 0, S - 1 do

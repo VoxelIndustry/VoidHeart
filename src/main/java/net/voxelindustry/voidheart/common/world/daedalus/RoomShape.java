@@ -10,7 +10,9 @@ public enum RoomShape
     ATRIUM,
     CHAMBER,
     VAULT,
-    PIT;
+    PIT,
+    /** The bare room on the lowest tier whose floor holds the hatch of the Underway. */
+    HATCH;
 
     /** Rooms taller than one tier can only be reached where they have a floor to arrive on. */
     boolean hasDoorsAt(int tier, Room room)

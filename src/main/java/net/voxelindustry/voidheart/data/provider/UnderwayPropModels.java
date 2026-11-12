@@ -14,6 +14,7 @@ import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
@@ -59,6 +60,16 @@ final class UnderwayPropModels
         generator.blockStateOutput.accept(BlockModelGenerators.createStairs(stairs, plainVariant(ModelTemplates.STAIRS_INNER.create(stairs, treads, generator.modelOutput)),
                 plainVariant(straight), plainVariant(ModelTemplates.STAIRS_OUTER.create(stairs, treads, generator.modelOutput))));
         generator.registerSimpleItemModel(stairs, straight);
+
+        var hatch = VoidHeartBlocks.UNDERWAY_HATCH;
+        var plating = new Material(Identifier.parse(TEXTURES + "hatch_plate"));
+        var edging = new Material(Identifier.parse(TEXTURES + "hatch_edge"));
+        var plate = plainVariant(ModelTemplates.CUBE_ALL.create(hatch, TextureMapping.cube(plating), generator.modelOutput));
+        var edge = plainVariant(ModelTemplates.CUBE_BOTTOM_TOP.createWithSuffix(hatch, "_edge", new TextureMapping().put(TextureSlot.SIDE, plating).put(TextureSlot.TOP, edging).put(TextureSlot.BOTTOM, edging), generator.modelOutput));
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(hatch).with(PropertyDispatch.initial(UnderwayHatchBlock.FACING)
+                .select(Direction.UP, plate).select(Direction.DOWN, plate).select(Direction.NORTH, edge).select(Direction.EAST, edge.with(BlockModelGenerators.Y_ROT_90))
+                .select(Direction.SOUTH, edge.with(BlockModelGenerators.Y_ROT_180)).select(Direction.WEST, edge.with(BlockModelGenerators.Y_ROT_270))));
+        generator.registerSimpleItemModel(hatch, ModelLocationUtils.getModelLocation(hatch));
 
         var embrasure = VoidHeartBlocks.UNDERWAY_EMBRASURE;
         var slit = ModelLocationUtils.getModelLocation(embrasure);

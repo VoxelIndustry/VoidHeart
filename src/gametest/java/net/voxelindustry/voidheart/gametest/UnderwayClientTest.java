@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.gametest;
 
+import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -92,6 +93,7 @@ public class UnderwayClientTest implements FabricClientGameTest
 
             train(context, world);
             trunk(context, world);
+            hatch(context, world);
 
             var hub = enter(context, world, UnderwayNode.HUB);
             checkWorldMatchesPlan(server, hub, hub.footAlong(), hub.footAcross(), UnderwayLevels.ENTRY_FLOOR, UnderwayLevels.ENTRY_FLOOR + UnderwayLevels.ENTRY_HEIGHT + 1, MIN_PROPS_CHECKED);
@@ -191,6 +193,61 @@ public class UnderwayClientTest implements FabricClientGameTest
         shot(context, world, line, "trunk-gate-dark", gate - 22, 63, UnderwayLevels.BALLAST, gate, 63, UnderwayLevels.BALLAST + 1);
     }
 
+    /** Stands on the hatch of a station in the district over it, checks it plate by plate down to the shaft, and looks at it from a corner of its room. */
+    private static void hatch(ClientGameTestContext context, TestSingleplayerContext world)
+    {
+        var server = world.getServer();
+        server.runCommand("execute as @a run voidheart underway hatch station");
+        context.waitTicks(20);
+        world.getConnection().waitForChunksRender(false, CHUNK_TIMEOUT_TICKS);
+        var fort = server.computeOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            var level = player.level();
+            var found = UnderwayPlans.fort(VoidDaedalus.level(minecraft).getSeed(), DistrictPos.at(player.getBlockX(), player.getBlockZ()));
+            int floor = DistrictPos.floorY(0);
+            expect(found.node() == UnderwayNode.STATION, "Asked for a station's hatch, arrived over a " + found.node());
+            expect(player.getBlockY() == floor + 1, "The player stands at " + player.getBlockY() + ", not on the hatch");
+            int last = DistrictPos.CELL - 1;
+            int open = 0;
+            for (int dz = 0; dz <= last; dz++)
+            {
+                for (int dx = 0; dx <= last; dx++)
+                {
+                    var pos = new BlockPos(found.hatchX() + dx, floor, found.hatchZ() + dz);
+                    var state = level.getBlockState(pos);
+                    boolean rim = dx == 0 || dz == 0 || dx == last || dz == last;
+                    expect(state.is(rim ? VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR : VoidHeartBlocks.UNDERWAY_HATCH), "Found " + state + " in the hatch at " + pos);
+                    expect(state.getDestroySpeed(level, pos) < 0, "The hatch can be broken at " + pos);
+                    var under = level.getBlockState(pos.below());
+                    expect(under.is(VoidHeartBlocks.UNDERWAY_HATCH) && under.getDestroySpeed(level, pos.below()) < 0, "Found " + under + " under the hatch at " + pos.below());
+                    expect(level.getBlockState(pos.above()).isAir() && level.getBlockState(pos.above(2)).isAir(), "Something stands on the hatch at " + pos.above());
+                    if (level.getBlockState(pos.below(2)).isAir())
+                        open++;
+                }
+            }
+            expect(open > DistrictPos.CELL, "The shaft does not come up under the hatch, only " + open + " blocks of air");
+            var seam = level.getBlockState(new BlockPos(found.hatchX() + last / 2, floor, found.hatchZ() + last / 2));
+            expect(seam.getValue(UnderwayHatchBlock.FACING) == Direction.EAST, "The two leaves do not meet along the middle: " + seam);
+            return found;
+        });
+
+        double centreX = fort.hatchX() + DistrictPos.CELL / 2.0;
+        double centreZ = fort.hatchZ() + DistrictPos.CELL / 2.0;
+        int floor = DistrictPos.floorY(0);
+        server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(fort.hatchX() - 5.5, floor + 2.6, fort.hatchZ() - 5.5, centreX, floor + 1, centreZ));
+        context.waitTicks(10);
+        world.getConnection().waitForChunksRender(false, CHUNK_TIMEOUT_TICKS);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-hatch-room").withSize(1280, 720));
+        server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
+        context.waitTicks(10);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-hatch-room-lit").withSize(1280, 720));
+        server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(centreX + 0.5, floor + 3.4, centreZ + 6.5, centreX, floor + 1, centreZ));
+        context.waitTicks(10);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-hatch-top").withSize(1280, 720));
+        server.runCommand("effect clear @a");
+    }
+
     private static UnderwayFort enter(ClientGameTestContext context, TestSingleplayerContext world, UnderwayNode kind)
     {
         var server = world.getServer();
@@ -286,7 +343,8 @@ public class UnderwayClientTest implements FabricClientGameTest
             expect(props >= minProps, "Only " + props + " props stand around " + footX + " " + footZ + " of the " + fort.node());
             if (fromY == UnderwayLevels.BALLAST && minProps == 0)
                 expect(!rails.isEmpty(), "No track was found along the platform of the " + fort.node());
-            expect(level.getBlockState(new BlockPos(footX, 0, footZ)).is(VoidHeartBlocks.POCKET_WALL), "The districts' floor above the Underway is gone");
+            var lid = level.getBlockState(new BlockPos(footX, 0, footZ));
+            expect(lid.is(VoidHeartBlocks.POCKET_WALL) || lid.is(VoidHeartBlocks.UNDERWAY_HATCH), "The districts' floor above the Underway is gone: " + lid);
         });
     }
 

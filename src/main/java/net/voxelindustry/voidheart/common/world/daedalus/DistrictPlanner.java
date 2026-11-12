@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.world.daedalus;
 
+import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +16,8 @@ import static net.voxelindustry.voidheart.common.world.daedalus.DistrictPlan.*;
 final class DistrictPlanner
 {
     private static final long PLAN_SALT = 0x706C616EL;
+    private static final long HATCH_SALT = 0x6861746368L;
+    private static final int HATCH_ROOM = 3;
     private static final int TIER_SCALE = DistrictPos.TIERS / 8;
     private static final int STEP_COST = 4;
     private static final int MIN_CATWALK_SPAN = 2;
@@ -92,6 +96,7 @@ final class DistrictPlanner
     {
         var planner = new DistrictPlanner(worldSeed, pos);
         planner.placeLandings();
+        planner.placeHatch();
         planner.placeVoids();
         planner.placeTheme();
         planner.placeCatwalks();
@@ -213,6 +218,17 @@ final class DistrictPlanner
         claim(cell, CORRIDOR);
         open(cell, direction);
         landings.add(new Landing(i, k, j, direction));
+    }
+
+    /**
+     * The room around the hatch of the fort below, on the lowest tier. It comes before everything but the landings, which only take cells of the faces, so its place is always free.
+     */
+    private void placeHatch()
+    {
+        var fort = UnderwayPlans.fort(worldSeed, pos);
+        int reach = HATCH_ROOM / 2;
+        if (!placeRoom(RoomShape.HATCH, fort.hatchI() - reach, 0, fort.hatchJ() - reach, HATCH_ROOM, 1, HATCH_ROOM, (int) DaedalusHash.mix(worldSeed, pos.x(), pos.z(), HATCH_SALT)))
+            throw new IllegalStateException("No room for the hatch of " + pos);
     }
 
     private int between(int min, int max)

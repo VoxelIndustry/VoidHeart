@@ -291,7 +291,7 @@ final class FortBuilder
                 throw new IllegalStateException("No place for a hatch over " + pos);
             hatchI = coreI - HATCH_REACH + roll(HATCH_REACH * 2 + 1);
             hatchJ = coreJ - HATCH_REACH + roll(HATCH_REACH * 2 + 1);
-        } while (isOffGrid(hatchI, hatchJ) || Math.max(Math.abs(hatchI - coreI), Math.abs(hatchJ - coreJ)) < 2
+        } while (isOffGrid(hatchI, hatchJ) || isOffGrid(hatchI - 1, hatchJ - 1) || isOffGrid(hatchI + 1, hatchJ + 1) || Math.max(Math.abs(hatchI - coreI), Math.abs(hatchJ - coreJ)) < 2
                 || Math.abs(hatchI - vestibule / GRID) + Math.abs(hatchJ - vestibule % GRID) < MIN_WALK);
         taken[cell(hatchI, hatchJ)] = true;
 

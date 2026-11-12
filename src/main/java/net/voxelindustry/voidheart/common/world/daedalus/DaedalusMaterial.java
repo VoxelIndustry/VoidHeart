@@ -53,6 +53,8 @@ public enum DaedalusMaterial
     PIPE_Z,
     /** A barrel left in a room, holding what its makers kept. */
     CACHE,
+    /** The armoured hatch of the Underway, lying in a floor. */
+    HATCH,
     PROP;
 
     private static final DaedalusMaterial[] VALUES = values();

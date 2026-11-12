@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.world.daedalus;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStreamReader;
@@ -91,6 +92,62 @@ class DaedalusDistrictTest
                                         x + room.maxI() * DistrictPos.CELL + 7, DistrictPos.floorY(room.maxK()) + 7, z + room.maxJ() * DistrictPos.CELL + 7),
                                 "Room " + room + " is out of reach in " + where);
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * The hatch of the fort below lies bare in the middle of a room of the lowest tier, and can be walked to from a bridge.
+     */
+    @Test
+    void everyDistrictHasItsHatchInTheFloorOfAReachableRoom()
+    {
+        for (long seed : SEEDS)
+        {
+            for (var theme : DaedalusTheme.values())
+            {
+                for (var pos : districtsOf(theme, PER_THEME))
+                {
+                    var plan = DistrictPlanner.generate(seed, pos);
+                    var fort = UnderwayPlans.fort(seed, pos);
+                    String where = theme + " " + pos + " seed " + seed;
+                    var room = plan.room(fort.hatchI(), 0, fort.hatchJ());
+                    assertNotNull(room, "No room over the hatch in " + where);
+                    assertEquals(RoomShape.HATCH, room.shape(), where);
+                    assertEquals(fort.hatchI() - 1, room.minI(), where);
+                    assertEquals(fort.hatchI() + 1, room.maxI(), where);
+                    assertEquals(fort.hatchJ() - 1, room.minJ(), where);
+                    assertEquals(fort.hatchJ() + 1, room.maxJ(), where);
+                    assertEquals(1, java.util.Arrays.stream(plan.rooms()).filter(other -> other.shape() == RoomShape.HATCH).count(), where);
+
+                    var canvas = painted(plan);
+                    var walker = new DaedalusWalker(canvas);
+                    int[] start = landingPosition(plan, plan.landings().getFirst());
+                    walker.walkFrom(start[0], start[1], start[2]);
+                    int floor = DistrictPos.floorY(0);
+                    for (int z = fort.hatchZ(); z < fort.hatchZ() + DistrictPos.CELL; z++)
+                    {
+                        for (int x = fort.hatchX(); x < fort.hatchX() + DistrictPos.CELL; x++)
+                        {
+                            assertEquals(DaedalusMaterial.HATCH, canvas.get(x, floor, z), "The hatch is not whole at " + x + " " + z + " in " + where);
+                            assertEquals(DaedalusMaterial.AIR, canvas.get(x, floor + 1, z), "Something stands on the hatch at " + x + " " + z + " in " + where);
+                            assertTrue(walker.hasReached(x, floor + 1, z), "The hatch is out of reach at " + x + " " + z + " in " + where);
+                        }
+                    }
+                    int hatches = 0;
+                    for (int z = plan.pos.originZ(); z < plan.pos.originZ() + DistrictPos.SIZE; z++)
+                    {
+                        for (int x = plan.pos.originX(); x < plan.pos.originX() + DistrictPos.SIZE; x++)
+                        {
+                            for (int y = 0; y < DistrictPos.HEIGHT; y++)
+                            {
+                                if (canvas.get(x, y, z) == DaedalusMaterial.HATCH)
+                                    hatches++;
+                            }
+                        }
+                    }
+                    assertEquals(DistrictPos.CELL * DistrictPos.CELL, hatches, "Hatch plates elsewhere in " + where);
                 }
             }
         }

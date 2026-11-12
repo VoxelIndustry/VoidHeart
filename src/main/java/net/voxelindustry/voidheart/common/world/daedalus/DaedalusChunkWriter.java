@@ -34,7 +34,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 /**
  * Writes a chunk straight into its sections at the terrain step, like noise generation does. Nothing generated needs its neighbours, so a chunk costs no feature step, shape update or light beyond its few lamps.
  * The few altars and pillars get their block entities here too, as a feature would have given them, and barnacle nests are grown here since the spawn step may not set blocks.
- * The Underway takes the sections under the districts' floor, written by its own writer first.
+ * The Underway takes the sections under the districts' floor, written by its own writer first. Its hatch lies in a district's floor and goes through the layer under it, down to its shaft.
  * Rails are joined to what stands beside them here, as placing them would, reading across the chunk's edge from a strip painted only when a rail reaches it.
  */
 final class DaedalusChunkWriter
@@ -42,6 +42,7 @@ final class DaedalusChunkWriter
     private static final int SECTION = 16;
     private static final byte AIR = (byte) DaedalusMaterial.AIR.ordinal();
     private static final byte BOUND = (byte) DaedalusMaterial.BOUND.ordinal();
+    private static final int HATCH = DaedalusMaterial.HATCH.ordinal();
     private static final int  CACHE = DaedalusMaterial.CACHE.ordinal();
     private static final ResourceKey<LootTable> CACHE_LOOT = ResourceKey.create(Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath(MODID, "chests/daedalus_cache"));
     private static final ThreadLocal<DaedalusCanvas> CANVAS = ThreadLocal.withInitial(() -> new DaedalusCanvas(SECTION, SECTION));
@@ -87,6 +88,8 @@ final class DaedalusChunkWriter
                         {
                             int below = index - SECTION * SECTION;
                             int material = cells[index++] & 0xFF;
+                            if (baseY + y == 0 && (cells[index - 1 + SECTION * SECTION] & 0xFF) == HATCH)
+                                material = HATCH;
                             if (material == AIR)
                                 continue;
                             var state = DaedalusPalette.isRail(material)

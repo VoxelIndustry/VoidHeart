@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.world.daedalus;
 
+import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
+
 import static net.voxelindustry.voidheart.common.world.daedalus.DaedalusMaterial.*;
 import static net.voxelindustry.voidheart.common.world.daedalus.DistrictPos.CELL;
 import static net.voxelindustry.voidheart.common.world.daedalus.DistrictPos.floorY;
@@ -11,6 +13,7 @@ import static net.voxelindustry.voidheart.common.world.daedalus.DistrictPos.floo
 final class DistrictPainter
 {
     private static final int LAST = CELL - 1;
+    private static final int HATCH_CLEARANCE = 3;
     private static final int LANE_CENTRE = 3;
     private static final int FULL_ROOM_TOP = 6;
     private static final int STAIR_RUN = CELL;
@@ -118,9 +121,21 @@ final class DistrictPainter
             if (canvas.overlaps(cellX(opening.minI()), cellZ(opening.minJ()), cellX(opening.maxI()) + LAST, cellZ(opening.maxJ()) + LAST))
                 furnisher.hangInVoid(opening);
         }
+        paintHatch();
         paintFacade();
         for (var landing : plan.landings())
             paintLandingFrame(landing);
+    }
+
+    /** The hatch of the fort below fills its cell of the lowest floor, with nothing standing on it. */
+    private void paintHatch()
+    {
+        var fort = UnderwayPlans.fort(plan.worldSeed, plan.pos);
+        int x = fort.hatchX();
+        int z = fort.hatchZ();
+        int y = floorY(0);
+        canvas.fill(x, y, z, x + LAST, y, z + LAST, DaedalusMaterial.HATCH);
+        canvas.fill(x, y + 1, z, x + LAST, y + HATCH_CLEARANCE, z + LAST, AIR);
     }
 
     private void paintCell(int i, int k, int j)

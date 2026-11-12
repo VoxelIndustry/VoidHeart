@@ -100,6 +100,7 @@ import java.util.Map;
 import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
@@ -295,6 +296,7 @@ public class VoidHeartBlocks
     public static Block UNDERWAY_CRACKED_CONCRETE;
     public static Block UNDERWAY_HAZARD_ARMOUR;
     public static Block UNDERWAY_BLAST_GATE;
+    public static Block UNDERWAY_HATCH;
     public static Block UNDERWAY_EMBRASURE;
     public static Block UNDERWAY_GRATING;
     public static Block UNDERWAY_STEEL_STAIRS;
@@ -849,6 +851,7 @@ public class VoidHeartBlocks
         UNDERWAY_CRACKED_CONCRETE = registerBlock("underway_cracked_concrete", Block::new, underwayShell(MapColor.STONE, SoundType.STONE), true);
         UNDERWAY_HAZARD_ARMOUR = registerBlock("underway_hazard_armour", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_BLAST_GATE = registerBlock("underway_blast_gate", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
+        UNDERWAY_HATCH = registerBlock("underway_hatch", UnderwayHatchBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_EMBRASURE = registerBlock("underway_firing_slit", UnderwayEmbrasureBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK).noOcclusion(), true);
 
         var steel = BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.0F, 6.0F).sound(SoundType.METAL);

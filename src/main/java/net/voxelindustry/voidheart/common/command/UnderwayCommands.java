@@ -42,11 +42,27 @@ final class UnderwayCommands
                         .then(argument("kind", StringArgumentType.word())
                                 .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayNode.values()).map(node -> node.name().toLowerCase(Locale.ROOT)), suggestions))
                                 .executes(context -> enter(context, UnderwayNode.valueOf(StringArgumentType.getString(context, "kind").toUpperCase(Locale.ROOT))))))
+                .then(literal("hatch")
+                        .executes(context -> hatch(context, null))
+                        .then(argument("kind", StringArgumentType.word())
+                                .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayNode.values()).map(node -> node.name().toLowerCase(Locale.ROOT)), suggestions))
+                                .executes(context -> hatch(context, UnderwayNode.valueOf(StringArgumentType.getString(context, "kind").toUpperCase(Locale.ROOT))))))
                 .then(literal("where").executes(UnderwayCommands::where)));
     }
 
     /** Sends the player to the foot of the hatch stairs of the nearest fort of that kind, or of the one under their feet. */
     private static int enter(CommandContext<CommandSourceStack> context, UnderwayNode kind) throws CommandSyntaxException
+    {
+        return send(context, kind, false);
+    }
+
+    /** Sends the player onto the hatch of the nearest fort of that kind, in the district over it. */
+    private static int hatch(CommandContext<CommandSourceStack> context, UnderwayNode kind) throws CommandSyntaxException
+    {
+        return send(context, kind, true);
+    }
+
+    private static int send(CommandContext<CommandSourceStack> context, UnderwayNode kind, boolean above) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
         var level = VoidDaedalus.level(context.getSource().getServer());
@@ -63,7 +79,8 @@ final class UnderwayCommands
                         continue;
                     var fort = UnderwayPlans.fort(seed, pos);
                     var foot = new Vec3(fort.frame().x(fort.footAlong(), fort.footAcross()) + 0.5, UnderwayLevels.ENTRY_FLOOR + 1, fort.frame().z(fort.footAlong(), fort.footAcross()) + 0.5);
-                    TeleportUtil.teleport(player, level, foot, player.getYRot(), 0);
+                    var hatch = new Vec3(fort.hatchX() + DistrictPos.CELL / 2.0, DistrictPos.floorY(0) + 1, fort.hatchZ() + DistrictPos.CELL / 2.0);
+                    TeleportUtil.teleport(player, level, above ? hatch : foot, player.getYRot(), 0);
                     context.getSource().sendSuccess(() -> describe(seed, pos), false);
                     return 1;
                 }

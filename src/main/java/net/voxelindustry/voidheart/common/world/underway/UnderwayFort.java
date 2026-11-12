@@ -21,6 +21,18 @@ public record UnderwayFort(DistrictPos pos, UnderwayNode node, UnderwayFrame fra
         return Math.min(frame.x(hatchAlong, hatchAcross), frame.x(hatchAlong + StairShaft.SIZE - 1, hatchAcross + StairShaft.SIZE - 1));
     }
 
+    /** @return the hatch's cell on the lattice of the district above, counted along x. A cell lies between it and the district's faces. */
+    public int hatchI()
+    {
+        return (hatchX() - pos.originX()) / DistrictPos.CELL;
+    }
+
+    /** @return the hatch's cell on the lattice of the district above, counted along z */
+    public int hatchJ()
+    {
+        return (hatchZ() - pos.originZ()) / DistrictPos.CELL;
+    }
+
     /** @return the lowest z of the 8 x 8 hatch in the floor of the district above */
     public int hatchZ()
     {
