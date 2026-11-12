@@ -27,6 +27,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.world.daedalus.DaedalusMob;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.underway.HatchOpening;
 import org.jspecify.annotations.Nullable;
@@ -143,7 +144,10 @@ public class UnderwayKeyEntity extends Mob
         if (level.getDifficulty() == Difficulty.PEACEFUL)
             return;
         var district = DistrictPos.at(getBlockX(), getBlockZ());
-        var arrivals = HatchWaveSpawner.spawn(level, this, HatchWaves.compose(district, wave, new SplittableRandom(level.getRandom().nextLong())));
+        var arrivals = new ArrayList<>(HatchWaveSpawner.spawn(level, this, HatchWaves.compose(district, wave, new SplittableRandom(level.getRandom().nextLong()))));
+        // A mob that found no free spot is left out: if that left nothing to go for the key, a ghoul is sent for it
+        if (arrivals.stream().noneMatch(arrival -> HatchWaves.goesForKey(arrival.kind())))
+            arrivals.addAll(HatchWaveSpawner.spawn(level, this, List.of(DaedalusMob.VOID_GHOUL)));
         for (var arrival : arrivals)
         {
             if (HatchWaves.goesForKey(arrival.kind()))

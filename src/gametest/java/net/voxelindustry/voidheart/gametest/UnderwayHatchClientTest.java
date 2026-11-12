@@ -272,10 +272,13 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
         {
             var key = keys(minecraft).getFirst();
             var player = player(minecraft);
-            var breaker = waveMobs(minecraft).stream().filter(mob -> mob.getTarget() == key).findFirst().orElseThrow(() -> new AssertionError("No mob is at the key any more"));
+            var breakers = waveMobs(minecraft).stream().filter(mob -> mob.getTarget() == key).toList();
+            expect(!breakers.isEmpty(), "No mob is at the key any more");
             player.setGameMode(GameType.SURVIVAL);
-            breaker.hurtServer((ServerLevel) key.level(), key.level().damageSources().playerAttack(player), 1);
-            expect(breaker.getTarget() == player, "A mob struck by a player keeps at the key: " + breaker.getTarget());
+            // Some mobs shrug a blow off, as one just hurt or a wraith out of reach: the first that takes it is the one watched
+            var breaker = breakers.stream().filter(mob -> mob.hurtServer((ServerLevel) key.level(), key.level().damageSources().playerAttack(player), 1)).findFirst()
+                    .orElseThrow(() -> new AssertionError("No mob at the key took a player's blow: " + breakers.stream().map(mob -> mob.getType().toShortString()).toList()));
+            expect(breaker.getTarget() == player, breaker.getType().toShortString() + " struck by a player keeps at the key: " + breaker.getTarget());
             player.setGameMode(GameType.CREATIVE);
             breaker.addTag(STRUCK_TAG);
         });
@@ -289,6 +292,7 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
                 minecraft -> waveMobs(minecraft).stream().anyMatch(mob -> mob.entityTags().contains(STRUCK_TAG) && mob.getTarget() == keys(minecraft).getFirst()));
 
         server.runCommand("kill @e[tag=voidheart_hatch_wave]");
+        server.runOnServer(minecraft -> expect(waveMobs(minecraft).isEmpty(), "The first wave's mobs were not cleared before the next is called"));
         int before = server.computeOnServer(minecraft -> keys(minecraft).getFirst().wavesSent());
         server.runCommand("execute as @a run voidheart underway wave");
         server.runOnServer(minecraft -> expect(keys(minecraft).getFirst().wavesSent() == before + 1, "Calling a wave did not count it"));
@@ -298,7 +302,8 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
             expect(!waveMobs(minecraft).isEmpty(), "The called wave brought nothing");
         });
         server.runCommand("kill @e[tag=voidheart_hatch_wave]");
-        server.runCommand("kill @e[type=item,distance=..64]");
+        server.runOnServer(minecraft -> expect(waveMobs(minecraft).isEmpty(), "Wave mobs were left behind"));
+        server.runCommand("execute as @a at @s run kill @e[type=item,distance=..64]");
         server.runCommand("difficulty peaceful");
         server.runCommand("gamemode survival @a");
         context.waitTicks(5);
