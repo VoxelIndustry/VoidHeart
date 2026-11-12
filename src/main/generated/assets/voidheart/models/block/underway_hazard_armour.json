@@ -1,6 +1,7 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_column",
   "textures": {
-    "all": "voidheart:block/underway/armour_hazard"
+    "end": "voidheart:block/underway/steel_plate",
+    "side": "voidheart:block/underway/armour_hazard_upright"
   }
 }

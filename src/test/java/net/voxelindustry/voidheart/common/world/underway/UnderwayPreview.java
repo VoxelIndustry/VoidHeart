@@ -264,7 +264,7 @@ class UnderwayPreview
             case PLATFORM -> 0xC8BE9E;
             case BALLAST -> 0x6A5E50;
             case STEEL, COLUMN -> 0x3C6C98;
-            case HAZARD -> 0xC8A030;
+            case HAZARD, HAZARD_X, HAZARD_Z -> 0xC8A030;
             case GRATING -> 0x78A0C0;
             case STAIRS_NORTH, STAIRS_EAST, STAIRS_SOUTH, STAIRS_WEST -> 0x30C070;
             case TRUNK_RAIL_X, TRUNK_RAIL_Z -> 0xF4F4FF;

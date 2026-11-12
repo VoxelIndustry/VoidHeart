@@ -77,7 +77,7 @@ final class TrainPainter
             int along = end == 0 ? a0 : a1;
             if (locomotive && car.frontLow() == (end == 0))
             {
-                brush.fill(along, FLOOR + 1, c0, along, FLOOR + 1, c1, UnderwayMaterial.HAZARD);
+                brush.fill(along, FLOOR + 1, c0, along, FLOOR + 1, c1, brush.hazard(false));
                 brush.fill(along, EYE, c0 + 1, along, EYE, c1 - 1, UnderwayMaterial.EMBRASURE);
             }
             else

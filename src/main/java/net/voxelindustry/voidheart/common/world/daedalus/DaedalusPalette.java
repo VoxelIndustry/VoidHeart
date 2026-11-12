@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Half;
@@ -105,7 +106,7 @@ public final class DaedalusPalette
     }
 
     /**
-     * The hatch fills a cell of the lattice, so its parts follow from the place alone: a striped coaming round two leaves that meet along the middle. Under the floor it is plain plate.
+     * The hatch fills a cell of the lattice, so its parts follow from the place alone: a striped coaming, its band going round two leaves that meet along the middle. Under the floor it is plain plate.
      */
     private static BlockState hatch(int x, int y, int z)
     {
@@ -115,8 +116,14 @@ public final class DaedalusPalette
         var plate = UNDERWAY_HATCH.defaultBlockState();
         if (y < DistrictPos.floorY(0))
             return plate;
-        if (u == 0 || v == 0 || u == last || v == last)
-            return UNDERWAY_HAZARD_ARMOUR.defaultBlockState();
+        boolean alongZ = u == 0 || u == last;
+        boolean alongX = v == 0 || v == last;
+        if (alongX || alongZ)
+        {
+            // The coaming's band follows each side, and its corners are plain caps
+            var coaming = UNDERWAY_HAZARD_ARMOUR.defaultBlockState();
+            return alongX && alongZ ? coaming : coaming.setValue(RotatedPillarBlock.AXIS, alongX ? Direction.Axis.X : Direction.Axis.Z);
+        }
         if (u == last / 2)
             return plate.setValue(UnderwayHatchBlock.FACING, Direction.EAST);
         return u == last / 2 + 1 ? plate.setValue(UnderwayHatchBlock.FACING, Direction.WEST) : plate;

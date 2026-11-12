@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -9,7 +10,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.underway.HatchBalance;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
 import net.voxelindustry.voidheart.common.util.TeleportUtil;
 import net.voxelindustry.voidheart.common.world.daedalus.Compass;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
@@ -20,6 +24,8 @@ import net.voxelindustry.voidheart.common.world.underway.UnderwayNode;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
 
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 import static net.minecraft.commands.Commands.argument;
@@ -31,6 +37,7 @@ import static net.minecraft.commands.Commands.literal;
 final class UnderwayCommands
 {
     private static final int SEARCH_RADIUS = 8;
+    private static final int KEY_REACH = 48;
     private static final DynamicCommandExceptionType UNKNOWN_KIND = new DynamicCommandExceptionType(name -> Component.literal("No kind of fort is called " + name));
 
     private UnderwayCommands()
@@ -50,6 +57,9 @@ final class UnderwayCommands
                         .then(argument("kind", StringArgumentType.word())
                                 .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayNode.values()).map(node -> node.name().toLowerCase(Locale.ROOT)), suggestions))
                                 .executes(context -> hatch(context, kind(context)))))
+                .then(literal("charge")
+                        .then(argument("percent", IntegerArgumentType.integer(0, 100))
+                                .executes(UnderwayCommands::charge)))
                 .then(literal("where").executes(UnderwayCommands::where)));
     }
 
@@ -107,6 +117,30 @@ final class UnderwayCommands
         }
         context.getSource().sendFailure(Component.literal("No such fort within " + SEARCH_RADIUS + " districts"));
         return 0;
+    }
+
+    /** Sets how far the hatch has charged through the key nearest the player, to skip the wait. */
+    private static int charge(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var player = context.getSource().getPlayerOrException();
+        var keys = keysByDistance(player);
+        if (keys.isEmpty())
+        {
+            context.getSource().sendFailure(Component.literal("No key at work within " + KEY_REACH + " blocks"));
+            return 0;
+        }
+        int percent = IntegerArgumentType.getInteger(context, "percent");
+        keys.getFirst().setCharge(HatchBalance.CHARGE_TICKS * percent / 100);
+        context.getSource().sendSuccess(() -> Component.literal("Hatch charged to " + percent + "%"), false);
+        return 1;
+    }
+
+    /** @return the keys at work around the player, the nearest first */
+    private static List<UnderwayKeyEntity> keysByDistance(ServerPlayer player)
+    {
+        var keys = player.level().getEntitiesOfClass(UnderwayKeyEntity.class, player.getBoundingBox().inflate(KEY_REACH));
+        keys.sort(Comparator.comparingDouble(player::distanceToSqr));
+        return keys;
     }
 
     private static int where(CommandContext<CommandSourceStack> context) throws CommandSyntaxException

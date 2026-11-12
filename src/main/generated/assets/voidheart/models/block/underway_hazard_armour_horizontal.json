@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column_horizontal",
+  "textures": {
+    "end": "voidheart:block/underway/steel_plate",
+    "side": "voidheart:block/underway/armour_hazard_upright"
+  }
+}

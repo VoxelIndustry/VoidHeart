@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client.render.mob;
 import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.voxelindustry.voidheart.client.render.UnderwayKeyRender;
 import net.voxelindustry.voidheart.client.InsightMemory;
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -97,6 +98,7 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.CENTURION, CenturionRender::new);
         EntityRenderers.register(VoidHeartEntities.KERNACIAN_DRAGOON, KernacianDragoonRender::new);
         EntityRenderers.register(VoidHeartEntities.TREANT, TreantRender::new);
+        EntityRenderers.register(VoidHeartEntities.UNDERWAY_KEY, UnderwayKeyRender::new);
 
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) ->
         {

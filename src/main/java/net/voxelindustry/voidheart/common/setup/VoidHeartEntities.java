@@ -28,6 +28,7 @@ import net.voxelindustry.voidheart.common.content.mob.ScarabHops;
 import net.voxelindustry.voidheart.common.content.mob.WraithScarab;
 import net.voxelindustry.voidheart.common.content.mob.WraithBeast;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStar;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.content.mob.Treant;
@@ -68,6 +69,7 @@ public class VoidHeartEntities
     public static EntityType<Centurion> CENTURION;
     public static EntityType<KernacianDragoon> KERNACIAN_DRAGOON;
     public static EntityType<Treant> TREANT;
+    public static EntityType<UnderwayKeyEntity> UNDERWAY_KEY;
 
     public static void registerEntities()
     {
@@ -179,6 +181,14 @@ public class VoidHeartEntities
                 .eyeHeight(2.6F)
                 .clientTrackingRange(10));
         FabricDefaultAttributeRegistry.register(TREANT, Treant.createAttributes());
+
+        UNDERWAY_KEY = register("underway_key", EntityType.Builder.of(UnderwayKeyEntity::new, MobCategory.MISC)
+                .sized(UnderwayKeyEntity.WIDTH, UnderwayKeyEntity.HEIGHT)
+                .clientTrackingRange(10)
+                .updateInterval(2)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(UNDERWAY_KEY, UnderwayKeyEntity.createAttributes());
 
         registerEyes();
         registerDaedalusMobs();

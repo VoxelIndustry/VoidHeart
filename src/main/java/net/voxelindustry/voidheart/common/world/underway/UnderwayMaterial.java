@@ -32,14 +32,21 @@ public enum UnderwayMaterial
     RUBBLE,
     WATER,
     VOID,
-    /** Armour painted with warning stripes, around what moves. */
-    HAZARD;
+    /** Armour painted with warning stripes, around what moves. Its band runs upright, or along x or z for the other two. */
+    HAZARD,
+    HAZARD_X,
+    HAZARD_Z;
 
     private static final UnderwayMaterial[] VALUES = values();
 
     public static UnderwayMaterial of(int ordinal)
     {
         return VALUES[ordinal];
+    }
+
+    public boolean isHazard()
+    {
+        return this == HAZARD || this == HAZARD_X || this == HAZARD_Z;
     }
 
     public static UnderwayMaterial stairs(int climbDirection)
