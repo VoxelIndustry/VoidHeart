@@ -155,6 +155,7 @@
   "voidheart.underway_key.open": "This hatch already stands open",
   "voidheart.underway_key.busy": "A key is already turning in this hatch",
   "voidheart.underway_key.charging": "The hatch draws its charge",
+  "voidheart.underway_key.broken": "The key is broken. The hatch falls still",
   "voidheart.armillary.screen.scanning": "Crawling through the void...",
   "voidheart.armillary.screen.found": "Something has surfaced. Choose where to reach.",
   "voidheart.armillary.screen.searching": "The roots are reaching.",

@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.underway;
 
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -12,10 +13,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -25,27 +29,50 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * An Underway key at work in a district's hatch. It is a living thing only so that mobs can go for it: it never moves, and the hatch charges through it while a player stays near.
- * Once the charge is full the leaves draw back under it and it is gone with them.
+ * The hatch raises a shield over it, see {@link KeyDefence}. While the shield holds, the key is as wide as the shield, so mobs strike the panes from outside; with it down they must walk in to the key itself.
+ * Only mobs can harm it. Broken, it is gone with the charge. Once the charge is full the leaves draw back under it and it is gone with them.
  */
 public class UnderwayKeyEntity extends Mob
 {
     public static final float WIDTH = 0.6F;
     public static final float HEIGHT = 1.2F;
+    /** The shield stands on the hatch's coaming and stays under the room's ceiling. */
+    public static final float SHIELD_WIDTH = 7;
+    public static final float SHIELD_HEIGHT = 2.4F;
+    /** Ticks a pane flares for when it takes a hit, on the client. */
+    public static final int FLARE_TICKS = 8;
 
+    private static final EntityDimensions SHIELDED = EntityDimensions.fixed(SHIELD_WIDTH, SHIELD_HEIGHT);
+    private static final double MESSAGE_RANGE = 48;
     // Degrees a tick the key turns, at no charge and at full charge
     private static final float TURN_SLOW = 2;
     private static final float TURN_FAST = 14;
+    private static final float POST_RISE = 1 / 12F;
+    private static final float PANE_LIGHT = 1 / 10F;
+    private static final float PANE_FADE = 1 / 4F;
+    private static final int FLARE_PANE_BITS = 3;
 
     private static final EntityDataAccessor<Integer> DATA_CHARGE = SynchedEntityData.defineId(UnderwayKeyEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_OPENING = SynchedEntityData.defineId(UnderwayKeyEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_PANES = SynchedEntityData.defineId(UnderwayKeyEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_KEY_HITS = SynchedEntityData.defineId(UnderwayKeyEntity.class, EntityDataSerializers.INT);
+    // The pane last hit in the low bits and a count of hits above, so two hits on one pane still read as a change
+    private static final EntityDataAccessor<Integer> DATA_FLARE = SynchedEntityData.defineId(UnderwayKeyEntity.class, EntityDataSerializers.INT);
 
     private final ServerBossEvent bossEvent = new ServerBossEvent(getUUID(), Component.translatable("voidheart.underway_key.charging"), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.NOTCHED_12);
 
+    private KeyDefence defence = new KeyDefence();
     private int openingTicks;
+    private int lastHitTick = -HatchBalance.HIT_INTERVAL_TICKS;
 
-    /** Degrees the key has turned in its lock, kept by the client for show. */
+    /** Kept by the client for show: degrees the key has turned, how far the posts have risen, how lit each pane is and how long it still flares. */
     public float turn;
     public float turnO;
+    public float rise;
+    public float riseO;
+    public final float[] paneLight = new float[KeyDefence.PANES];
+    public final float[] paneLightO = new float[KeyDefence.PANES];
+    public final int[] paneFlare = new int[KeyDefence.PANES];
 
     public UnderwayKeyEntity(EntityType<? extends UnderwayKeyEntity> type, Level level)
     {
@@ -53,6 +80,8 @@ public class UnderwayKeyEntity extends Mob
         setNoGravity(true);
         setNoAi(true);
         setPersistenceRequired();
+        noPhysics = true;
+        refreshDimensions();
     }
 
     public static AttributeSupplier.Builder createAttributes()
@@ -66,6 +95,9 @@ public class UnderwayKeyEntity extends Mob
         super.defineSynchedData(entityData);
         entityData.define(DATA_CHARGE, 0);
         entityData.define(DATA_OPENING, false);
+        entityData.define(DATA_PANES, KeyDefence.ALL_PANES);
+        entityData.define(DATA_KEY_HITS, HatchBalance.KEY_HITS);
+        entityData.define(DATA_FLARE, 0);
     }
 
     public int charge()
@@ -84,6 +116,39 @@ public class UnderwayKeyEntity extends Mob
         return entityData.get(DATA_OPENING);
     }
 
+    /** @return a bit for each pane of the shield still lit */
+    public int panes()
+    {
+        return entityData.get(DATA_PANES);
+    }
+
+    public boolean isShielded()
+    {
+        return panes() != 0;
+    }
+
+    /** @return the hits the bare key can still take */
+    public int keyHits()
+    {
+        return entityData.get(DATA_KEY_HITS);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> accessor)
+    {
+        super.onSyncedDataUpdated(accessor);
+        if (DATA_PANES.equals(accessor) || DATA_OPENING.equals(accessor))
+            refreshDimensions();
+        else if (DATA_FLARE.equals(accessor) && level().isClientSide())
+            paneFlare[entityData.get(DATA_FLARE) & (1 << FLARE_PANE_BITS) - 1] = FLARE_TICKS;
+    }
+
+    @Override
+    protected EntityDimensions getDefaultDimensions(Pose pose)
+    {
+        return isShielded() && !isOpening() ? SHIELDED : super.getDefaultDimensions(pose);
+    }
+
     @Override
     public void tick()
     {
@@ -91,9 +156,23 @@ public class UnderwayKeyEntity extends Mob
         if (level() instanceof ServerLevel level)
             serverTick(level);
         else
+            clientTick();
+    }
+
+    private void clientTick()
+    {
+        turnO = turn;
+        turn += Mth.lerp(charge() / (float) HatchBalance.CHARGE_TICKS, TURN_SLOW, TURN_FAST);
+        riseO = rise;
+        boolean up = isShielded() && !isOpening();
+        rise = Mth.clamp(rise + (up ? POST_RISE : -POST_RISE), 0, 1);
+        for (int pane = 0; pane < KeyDefence.PANES; pane++)
         {
-            turnO = turn;
-            turn += Mth.lerp(charge() / (float) HatchBalance.CHARGE_TICKS, TURN_SLOW, TURN_FAST);
+            boolean lit = up && rise == 1 && (panes() & 1 << pane) != 0;
+            paneLightO[pane] = paneLight[pane];
+            paneLight[pane] = Mth.clamp(paneLight[pane] + (lit ? PANE_LIGHT : -PANE_FADE), 0, 1);
+            if (paneFlare[pane] > 0)
+                paneFlare[pane]--;
         }
     }
 
@@ -108,17 +187,25 @@ public class UnderwayKeyEntity extends Mob
         var spot = hatch.keySpot();
         setPos(spot);
         bossEvent.setProgress(charge() / (float) HatchBalance.CHARGE_TICKS);
+        bossEvent.setColor(isShielded() ? BossEvent.BossBarColor.YELLOW : BossEvent.BossBarColor.RED);
 
         if (isOpening())
-            open(level, hatch, spot);
-        else if (level.getNearestPlayer(this, HatchBalance.PLAYER_RANGE) != null)
         {
-            setCharge(charge() + 1);
-            if (charge() >= HatchBalance.CHARGE_TICKS)
-            {
-                entityData.set(DATA_OPENING, true);
-                level.playSound(null, spot.x, spot.y, spot.z, SoundEvents.BEACON_POWER_SELECT, getSoundSource(), 1.5F, 0.6F);
-            }
+            open(level, hatch, spot);
+            return;
+        }
+        if (defence.tick())
+        {
+            syncDefence();
+            level.playSound(null, spot.x, spot.y, spot.z, SoundEvents.BEACON_ACTIVATE, getSoundSource(), 1, 1.5F);
+        }
+        if (level.getNearestPlayer(this, HatchBalance.PLAYER_RANGE) == null)
+            return;
+        setCharge(charge() + 1);
+        if (charge() >= HatchBalance.CHARGE_TICKS)
+        {
+            entityData.set(DATA_OPENING, true);
+            level.playSound(null, spot.x, spot.y, spot.z, SoundEvents.BEACON_POWER_SELECT, getSoundSource(), 1.5F, 0.6F);
         }
     }
 
@@ -135,6 +222,63 @@ public class UnderwayKeyEntity extends Mob
             hatch.layStairs(level);
             discard();
         }
+    }
+
+    private void syncDefence()
+    {
+        entityData.set(DATA_PANES, defence.panes());
+        entityData.set(DATA_KEY_HITS, defence.keyHits());
+    }
+
+    /**
+     * Only the blows of hostile mobs count, one hit each whatever their strength, and never two within {@link HatchBalance#HIT_INTERVAL_TICKS}.
+     */
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage)
+    {
+        if (isOpening() || !(source.getEntity() instanceof Enemy) || tickCount - lastHitTick < HatchBalance.HIT_INTERVAL_TICKS)
+            return false;
+        lastHitTick = tickCount;
+        var from = source.getEntity().position();
+        double dx = from.x - getX();
+        double dz = from.z - getZ();
+        int pane = defence.paneFor(dx, dz);
+        var outcome = defence.hit(dx, dz);
+        syncDefence();
+        if (pane >= 0)
+            entityData.set(DATA_FLARE, pane | (entityData.get(DATA_FLARE) >> FLARE_PANE_BITS) + 1 << FLARE_PANE_BITS);
+
+        double reach = pane >= 0 ? SHIELD_WIDTH / 2 : WIDTH / 2;
+        double length = Math.max(Math.hypot(dx, dz), 0.01);
+        double x = getX() + dx / length * reach;
+        double z = getZ() + dz / length * reach;
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, x, getY() + 1, z, 12, 0.3, 0.4, 0.3, 0.2);
+        switch (outcome)
+        {
+            case ABSORBED -> level.playSound(null, x, getY(), z, SoundEvents.AMETHYST_BLOCK_RESONATE, getSoundSource(), 1.5F, 0.6F);
+            case SHIELD_BROKEN ->
+            {
+                level.playSound(null, getX(), getY(), getZ(), SoundEvents.GLASS_BREAK, getSoundSource(), 1.5F, 0.6F);
+                level.playSound(null, getX(), getY(), getZ(), SoundEvents.BEACON_DEACTIVATE, getSoundSource(), 1.5F, 1.2F);
+            }
+            case KEY_HIT -> level.playSound(null, getX(), getY(), getZ(), SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, getSoundSource(), 1.2F, 1.3F);
+            case KEY_DESTROYED -> shatter(level);
+        }
+        return true;
+    }
+
+    private void shatter(ServerLevel level)
+    {
+        level.playSound(null, getX(), getY(), getZ(), SoundEvents.ANVIL_LAND, getSoundSource(), 1.2F, 0.5F);
+        level.playSound(null, getX(), getY(), getZ(), SoundEvents.BEACON_DEACTIVATE, getSoundSource(), 1.5F, 0.6F);
+        level.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 0.8, getZ(), 1, 0, 0, 0, 0);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.8, getZ(), 40, 0.3, 0.4, 0.3, 0.6);
+        for (var player : level.players())
+        {
+            if (player.distanceToSqr(this) < MESSAGE_RANGE * MESSAGE_RANGE)
+                player.sendOverlayMessage(Component.translatable("voidheart.underway_key.broken"));
+        }
+        discard();
     }
 
     @Override
@@ -158,6 +302,9 @@ public class UnderwayKeyEntity extends Mob
         output.putInt("Charge", charge());
         output.putBoolean("Opening", isOpening());
         output.putInt("OpeningTicks", openingTicks);
+        output.putInt("Panes", defence.panes());
+        output.putInt("KeyHits", defence.keyHits());
+        output.putInt("Lull", defence.lull());
     }
 
     @Override
@@ -167,12 +314,8 @@ public class UnderwayKeyEntity extends Mob
         setCharge(input.getIntOr("Charge", 0));
         entityData.set(DATA_OPENING, input.getBooleanOr("Opening", false));
         openingTicks = input.getIntOr("OpeningTicks", 0);
-    }
-
-    @Override
-    public boolean hurtServer(ServerLevel level, DamageSource source, float damage)
-    {
-        return false;
+        defence = new KeyDefence(input.getIntOr("Panes", KeyDefence.ALL_PANES), Math.max(1, input.getIntOr("KeyHits", HatchBalance.KEY_HITS)), input.getIntOr("Lull", 0));
+        syncDefence();
     }
 
     @Override
