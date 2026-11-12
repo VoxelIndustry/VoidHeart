@@ -8,11 +8,15 @@ import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptio
 import net.minecraft.client.CameraType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.StairBlock;
 import net.voxelindustry.voidheart.common.content.underway.HatchBalance;
+import net.voxelindustry.voidheart.common.content.underway.KeyDefence;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -26,7 +30,7 @@ import java.util.List;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
- * Opening a district's hatch with an Underway key: the key is set with a real click and spent, the hatch charges through it, and once full its leaves draw back and the shaft's stairs come up to the floor.
+ * Opening a district's hatch with an Underway key: the key is set with a real click and spent, the hatch charges through it behind a shield that mobs wear down, and once full its leaves draw back and the shaft's stairs come up to the floor.
  */
 public class UnderwayHatchClientTest implements FabricClientGameTest
 {
@@ -71,8 +75,22 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
             });
             waitFor(context, server, 100, "The hatch does not charge with a player beside it", minecraft -> keys(minecraft).getFirst().charge() > 20);
 
+            if (!hudWasHidden)
+                context.getInput().pressKey(InputConstants.KEY_F1);
+            shield(context, server, fort);
+            if (!hudWasHidden)
+                context.getInput().pressKey(InputConstants.KEY_F1);
+            String broken = overlay(context);
+            expect(broken.contains("key is broken"), "No word that the key broke, the overlay says: " + broken);
+
             clickLeaf(context, server, fort);
-            server.runOnServer(minecraft -> expect(keys(minecraft).size() == 1 && heldKeys(minecraft) == KEYS - 1, "A hatch already charging took a second key"));
+            server.runOnServer(minecraft ->
+            {
+                expect(keys(minecraft).size() == 1 && heldKeys(minecraft) == KEYS - 2, "A hatch whose key broke should take a new one");
+                expect(keys(minecraft).getFirst().charge() < 20, "The charge outlived the key that broke: " + keys(minecraft).getFirst().charge());
+            });
+            clickLeaf(context, server, fort);
+            server.runOnServer(minecraft -> expect(keys(minecraft).size() == 1 && heldKeys(minecraft) == KEYS - 2, "A hatch already charging took a second key"));
             String busy = overlay(context);
             expect(busy.contains("already turning"), "No word that the hatch is busy, the overlay says: " + busy);
 
@@ -109,7 +127,7 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
             aim(context, server, fort.hatchX() + 0.5, FLOOR + 1, fort.hatchZ() + 0.5, fort.hatchX() + 0.5, FLOOR, fort.hatchZ() + 0.5);
             rightClick(context);
             context.waitTicks(5);
-            server.runOnServer(minecraft -> expect(keys(minecraft).isEmpty() && heldKeys(minecraft) == KEYS - 1, "An open hatch took a key"));
+            server.runOnServer(minecraft -> expect(keys(minecraft).isEmpty() && heldKeys(minecraft) == KEYS - 2, "An open hatch took a key"));
             String open = overlay(context);
             expect(open.contains("already stands open"), "No word that the hatch is open, the overlay says: " + open);
 
@@ -125,6 +143,104 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
     {
         server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(feetX, feetY, feetZ, x, y, z));
         context.waitTicks(5);
+    }
+
+    /**
+     * The shield over a key at work: only the blows of mobs count, each darkens the pane it came through, the key widens to the shield while it holds,
+     * a lull brings the shield back whole, and a bare key breaks after its own few hits, leaving the hatch shut.
+     */
+    private static void shield(ClientGameTestContext context, TestServerContext server, UnderwayFort fort)
+    {
+        double centreX = fort.hatchX() + DistrictPos.CELL / 2.0;
+        double centreZ = fort.hatchZ() + DistrictPos.CELL / 2.0;
+        context.waitTicks(20);
+        server.runOnServer(minecraft ->
+        {
+            var key = keys(minecraft).getFirst();
+            var level = (ServerLevel) key.level();
+            expect(key.panes() == KeyDefence.ALL_PANES && key.keyHits() == HatchBalance.KEY_HITS, "A fresh key stands behind " + Integer.toBinaryString(key.panes()) + " panes with " + key.keyHits() + " hits");
+            expect(key.getBbWidth() == UnderwayKeyEntity.SHIELD_WIDTH, "A shielded key is " + key.getBbWidth() + " wide, not as wide as its shield");
+            expect(!key.hurtServer(level, level.damageSources().playerAttack(player(minecraft)), 100), "A blow from a player harmed the key");
+            expect(!key.hurtServer(level, level.damageSources().fall(), 100), "A fall harmed the key");
+            expect(key.panes() == KeyDefence.ALL_PANES, "Something other than a mob darkened a pane");
+        });
+        aim(context, server, fort.hatchX() - 3.5, FLOOR + 2, fort.hatchZ() - 3.5, centreX, FLOOR + 1.5, centreZ);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-shield-up").withSize(1280, 720));
+        aim(context, server, centreX - 1.5, FLOOR + 1, centreZ + 1.2, centreX + 1, FLOOR + 2.2, centreZ - 1);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-shield-from-inside").withSize(1280, 720));
+        server.runCommand("tick freeze");
+        for (int step = 0; step < 6; step++)
+        {
+            aim(context, server, fort.hatchX() - 2.5 + step * 0.08, FLOOR + 1.2, centreZ - 1 + step * 0.06, centreX, FLOOR + 1.2, centreZ);
+            context.takeScreenshot("underway-shield-sweep-" + step);
+        }
+        server.runCommand("tick unfreeze");
+
+        aim(context, server, fort.hatchX() - 3.5, FLOOR + 2, fort.hatchZ() - 3.5, centreX, FLOOR + 1.5, centreZ);
+        strike(server, 0, -4);
+        server.runOnServer(minecraft ->
+        {
+            var key = keys(minecraft).getFirst();
+            expect(key.panes() == (KeyDefence.ALL_PANES & ~1), "A blow from the north left panes " + Integer.toBinaryString(key.panes()));
+            strike(minecraft, 0, -4);
+            expect(Integer.bitCount(key.panes()) == KeyDefence.PANES - 1, "Two blows at once both counted");
+        });
+        context.waitTicks(2);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-shield-flare").withSize(1280, 720));
+        context.waitTicks(HatchBalance.HIT_INTERVAL_TICKS);
+        strike(server, -4, 0);
+        context.waitTicks(HatchBalance.HIT_INTERVAL_TICKS);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-shield-two-dark").withSize(1280, 720));
+        for (int hit = 2; hit < KeyDefence.PANES; hit++)
+        {
+            strike(server, 4, 1);
+            context.waitTicks(HatchBalance.HIT_INTERVAL_TICKS);
+        }
+        server.runOnServer(minecraft ->
+        {
+            var key = keys(minecraft).getFirst();
+            expect(!key.isShielded() && key.keyHits() == HatchBalance.KEY_HITS, "A hit per pane should leave the key bare and whole: panes " + Integer.toBinaryString(key.panes()) + ", hits " + key.keyHits());
+            expect(key.getBbWidth() == UnderwayKeyEntity.WIDTH, "A bare key is still " + key.getBbWidth() + " wide");
+        });
+        context.waitTicks(20);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-shield-down").withSize(1280, 720));
+        strike(server, 4, 1);
+        server.runOnServer(minecraft -> expect(keys(minecraft).getFirst().keyHits() == HatchBalance.KEY_HITS - 1, "A blow on the bare key did not count"));
+
+        waitFor(context, server, HatchBalance.SHIELD_LULL_TICKS + 40, "The shield never came back after a lull", minecraft -> keys(minecraft).getFirst().isShielded());
+        server.runOnServer(minecraft ->
+        {
+            var key = keys(minecraft).getFirst();
+            expect(key.panes() == KeyDefence.ALL_PANES && key.keyHits() == HatchBalance.KEY_HITS - 1, "The shield should come back whole and the key stay marked: panes " + Integer.toBinaryString(key.panes()) + ", hits " + key.keyHits());
+        });
+        context.waitTicks(30);
+        context.takeScreenshot(TestScreenshotOptions.of("underway-shield-reformed").withSize(1280, 720));
+
+        for (int hit = 0; hit < KeyDefence.PANES + HatchBalance.KEY_HITS - 1; hit++)
+        {
+            strike(server, -1, 4);
+            context.waitTicks(HatchBalance.HIT_INTERVAL_TICKS);
+        }
+        server.runOnServer(minecraft ->
+        {
+            expect(keys(minecraft).isEmpty(), "The key outlived its last hit");
+            expect(!isAir(minecraft, fort, 3, FLOOR), "The hatch opened though its key broke");
+        });
+    }
+
+    private static void strike(TestServerContext server, double dx, double dz)
+    {
+        server.runOnServer(minecraft -> strike(minecraft, dx, dz));
+    }
+
+    /** Lands the blow of a mob standing that far east and south of the key at work. */
+    private static void strike(MinecraftServer minecraft, double dx, double dz)
+    {
+        var key = keys(minecraft).getFirst();
+        var level = (ServerLevel) key.level();
+        var mob = VoidHeartEntities.VOID_SKELETON.create(level, EntitySpawnReason.COMMAND);
+        mob.snapTo(key.getX() + dx, key.getY(), key.getZ() + dz, 0, 0);
+        key.hurtServer(level, level.damageSources().mobAttack(mob), 4);
     }
 
     /** Stands on a corner of the leaves and clicks the plate underfoot with whatever is held. */
