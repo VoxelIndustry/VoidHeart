@@ -7,13 +7,13 @@ final class StairShaft
 {
     static final int SIZE = 8;
 
-    private static final int LAST = SIZE - 1;
-    private static final int LANES = 2;
-    private static final int RISE = 4;
-    private static final int SIDES = 4;
+    static final int LAST = SIZE - 1;
+    static final int LANES = 2;
+    static final int RISE = 4;
+    static final int SIDES = 4;
     private static final int HEADROOM = 4;
-    private static final int[] CLIMB_U = { 1, 0, -1, 0 };
-    private static final int[] CLIMB_V = { 0, 1, 0, -1 };
+    static final int[] CLIMB_U = { 1, 0, -1, 0 };
+    static final int[] CLIMB_V = { 0, 1, 0, -1 };
 
     private StairShaft()
     {
@@ -63,7 +63,7 @@ final class StairShaft
         }
     }
 
-    private static int u(int side, int run, int lane)
+    static int u(int side, int run, int lane)
     {
         return switch (side)
         {
@@ -74,7 +74,7 @@ final class StairShaft
         };
     }
 
-    private static int v(int side, int run, int lane)
+    static int v(int side, int run, int lane)
     {
         return switch (side)
         {

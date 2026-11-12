@@ -70,6 +70,7 @@
       "net.voxelindustry.voidheart.gametest.DaedalusPropsClientTest",
       "net.voxelindustry.voidheart.gametest.UnderwayPropsClientTest",
       "net.voxelindustry.voidheart.gametest.UnderwayClientTest",
+      "net.voxelindustry.voidheart.gametest.UnderwayHatchClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusDecorClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusMobsClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusSpawningClientTest",
