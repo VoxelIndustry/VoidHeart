@@ -270,6 +270,7 @@ class UnderwayPreview
             case TRUNK_RAIL_X, TRUNK_RAIL_Z -> 0xF4F4FF;
             case FEEDER_RAIL_X, FEEDER_RAIL_Z -> 0xD8A040;
             case DOOR -> 0xF07020;
+            case SHUTTER -> 0xF0D020;
             case GATE -> 0xFF2020;
             case EMBRASURE -> 0xFF50C0;
             case LAMP -> 0xFFF080;

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_emergency_wall_lamp_alarm",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_emergency_wall_lamp_alarm"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_emergency_wall_lamp_alarm",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_emergency_wall_lamp_alarm",
+      "y": 270
+    }
+  }
+}

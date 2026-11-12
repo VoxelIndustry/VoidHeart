@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.world.underway;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +21,8 @@ final class FortFurnisher
     private static final int SIZE = DistrictPos.SIZE;
     private static final int LEVELS = 3;
     private static final int DOOR_CLEARANCE = 2;
+    /** How far over the floor a breaker cabinet hangs: at a hand's height. */
+    private static final int CABINET_HEIGHT = 2;
     private static final int ISLAND_MIN_WIDTH = 7;
     private static final int ISLAND_EVERY = 4;
     private static final int ISLAND_MARGIN = 3;
@@ -40,6 +43,12 @@ final class FortFurnisher
     private static final EnumSet<UnderwayRoomKind> NARROW_PASSAGES = EnumSet.of(UnderwayRoomKind.ENTRY_GALLERY, UnderwayRoomKind.RUNG, UnderwayRoomKind.CROSS_GALLERY, UnderwayRoomKind.ACCESS_GALLERY);
     private static final EnumSet<UnderwayRoomKind> WITH_WAGONS = EnumSet.of(UnderwayRoomKind.GALLERY, UnderwayRoomKind.ACCESS_GALLERY, UnderwayRoomKind.MAGAZINE_GALLERY,
             UnderwayRoomKind.DEPOT, UnderwayRoomKind.FREIGHT_HALL);
+    private static final EnumSet<UnderwayRoomKind> WITH_CARTS = EnumSet.of(UnderwayRoomKind.GALLERY, UnderwayRoomKind.MAGAZINE_GALLERY, UnderwayRoomKind.FREIGHT_HALL);
+    private static final UnderwayUnitKind[] NOBODY = {};
+    /** How many ducts in a hundred still hold a sapper. */
+    private static final int SAPPER_PERCENT = 60;
+    /** How much clear track a ram cart needs on each side of where it is parked. */
+    private static final int CART_RUN = 3;
     private static final EnumSet<UnderwayProp> TABLES = EnumSet.of(TABLE, DESK);
     private static final EnumSet<UnderwayProp> HUNG_LOW = EnumSet.of(WASH_BASIN, SHOWER, WARD_PLATE, TRIPWIRE_EMITTER);
     private static final EnumSet<UnderwayProp> HUNG_HIGH = EnumSet.of(CONDUIT_RUN, FAN, KLAXON, PIPES, SENTINEL_EYE, EMERGENCY_WALL_LAMP);
@@ -49,8 +58,11 @@ final class FortFurnisher
     private final boolean[][] open = new boolean[LEVELS][SIZE * SIZE];
     private final boolean[][] kept = new boolean[LEVELS][SIZE * SIZE];
     private final byte[][] rails = new byte[LEVELS][SIZE * SIZE];
+    private final boolean[][] feeder = new boolean[LEVELS][SIZE * SIZE];
     private final Set<Long> taken = new HashSet<>();
     private final List<UnderwayPropSpot> spots = new ArrayList<>();
+    private final List<UnderwayUnit> units = new ArrayList<>();
+    private final List<UnderwayShaft> shafts;
     private final int skipPercent;
     private final int wornPercent;
 
@@ -58,6 +70,7 @@ final class FortFurnisher
     {
         this.builder = builder;
         this.rooms = rooms;
+        this.shafts = shafts;
         skipPercent = switch (builder.ruin)
         {
             case SEALED -> 5;
@@ -101,6 +114,15 @@ final class FortFurnisher
         {
             if (stroke.material() == UnderwayMaterial.DOOR || stroke.material() == UnderwayMaterial.EMBRASURE)
                 mark(kept[level(stroke.y0() - 1)], stroke.a0() - DOOR_CLEARANCE, stroke.c0() - DOOR_CLEARANCE, stroke.a1() + DOOR_CLEARANCE, stroke.c1() + DOOR_CLEARANCE);
+            // Nothing hangs where a lamp already does
+            if (stroke.material() == UnderwayMaterial.LAMP || stroke.material() == UnderwayMaterial.EMERGENCY_LAMP)
+            {
+                for (int along = stroke.a0(); along <= stroke.a1(); along++)
+                {
+                    for (int across = stroke.c0(); across <= stroke.c1(); across++)
+                        taken.add(key(along, stroke.y0(), across));
+                }
+            }
             if (!stroke.material().isRail())
                 continue;
             boolean alongX = stroke.material() == UnderwayMaterial.TRUNK_RAIL_X || stroke.material() == UnderwayMaterial.FEEDER_RAIL_X;
@@ -108,13 +130,197 @@ final class FortFurnisher
             for (int across = Math.max(0, stroke.c0()); across <= Math.min(SIZE - 1, stroke.c1()); across++)
             {
                 for (int along = Math.max(0, stroke.a0()); along <= Math.min(SIZE - 1, stroke.a1()); along++)
+                {
                     rails[level(stroke.y0() - 1)][cell(along, across)] = direction;
+                    feeder[level(stroke.y0() - 1)][cell(along, across)] = stroke.material() == UnderwayMaterial.FEEDER_RAIL_X || stroke.material() == UnderwayMaterial.FEEDER_RAIL_Z;
+                }
             }
         }
     }
 
+    /** @return the fort's security that still works, once it is furnished */
+    List<UnderwayUnit> units()
+    {
+        return units;
+    }
+
+    /** Hangs each level's breaker cabinet on the free stretch of wall nearest to where a visitor arrives on it, so the choice to power the level comes before walking in. */
+    private void cabinets()
+    {
+        for (int level = 0; level < LEVELS; level++)
+        {
+            int floor = UnderwaySection.of(level).floorY();
+            int[] arrival = arrival(level, floor);
+            if (arrival == null)
+                continue;
+            int[] nearest = null;
+            int reach = Integer.MAX_VALUE;
+            for (var room : rooms)
+            {
+                // Not behind a shutter either: the shutter only rises on the power this cabinet gives
+                if (room.floorY() != floor || room.height() < CABINET_HEIGHT || room.kind().isCutOff() || room.kind() == UnderwayRoomKind.CAVED_IN || NARROW_PASSAGES.contains(room.kind())
+                        || FortBuilder.SHUTTERED.contains(room.kind()))
+                    continue;
+                for (int[] side : SIDES)
+                {
+                    boolean runsAlong = side[0] == 0;
+                    for (int run = (runsAlong ? room.a0() : room.c0()) + 1; run < (runsAlong ? room.a1() : room.c1()); run++)
+                    {
+                        int along = runsAlong ? run : (side[0] < 0 ? room.a0() : room.a1());
+                        int across = runsAlong ? (side[1] < 0 ? room.c0() : room.c1()) : run;
+                        int distance = Math.abs(along - arrival[0]) + Math.abs(across - arrival[1]);
+                        if (distance < reach && !isOpen(level, along + side[0], across + side[1]) && isFree(level, along, across))
+                        {
+                            reach = distance;
+                            nearest = new int[] { along, across, -side[0], -side[1] };
+                        }
+                    }
+                }
+            }
+            if (nearest == null)
+                continue;
+            place(BREAKER_CABINET, nearest[0], floor + CABINET_HEIGHT, nearest[1], nearest[2], nearest[3]);
+            // Nothing stands under it, so a hand always reaches it
+            taken.add(key(nearest[0], floor + 1, nearest[1]));
+        }
+    }
+
+    /** @return where a visitor first sets foot on a level: the foot of the hatch's stairs, or the landing of the first shaft that reaches it */
+    private int[] arrival(int level, int floor)
+    {
+        if (level == 0)
+            return new int[] { builder.hatch().landingAlong(), builder.hatch().landingAcross() };
+        for (var shaft : shafts)
+        {
+            if (shaft != builder.hatch() && shaft.bottomFloor() <= floor && shaft.topFloor() >= floor)
+                return new int[] { shaft.landingAlong(), shaft.landingAcross() };
+        }
+        for (var room : rooms)
+        {
+            if (room.floorY() == floor)
+                return new int[] { room.centreAlong(), room.centreAcross() };
+        }
+        return null;
+    }
+
+    /** The machines posted in a kind of room. Only a guard room's stand on the emergency circuit. */
+    private static UnderwayUnitKind[] posted(UnderwayRoomKind kind)
+    {
+        return switch (kind)
+        {
+            case GUARD_ROOM, BARRACKS -> new UnderwayUnitKind[] { UnderwayUnitKind.AUTOMATON, UnderwayUnitKind.AUTOMATON };
+            case PLATFORM -> new UnderwayUnitKind[] { UnderwayUnitKind.AUTOMATON, UnderwayUnitKind.AUTOMATON, UnderwayUnitKind.MANTLET };
+            case DEPOT -> new UnderwayUnitKind[] { UnderwayUnitKind.AUTOMATON, UnderwayUnitKind.AUTOMATON, UnderwayUnitKind.FITTER };
+            case WORKSHOP -> new UnderwayUnitKind[] { UnderwayUnitKind.AUTOMATON, UnderwayUnitKind.FITTER };
+            case FREIGHT_HALL -> new UnderwayUnitKind[] { UnderwayUnitKind.AUTOMATON };
+            case POWER_PLANT -> new UnderwayUnitKind[] { UnderwayUnitKind.FITTER };
+            case VESTIBULE, LOBBY -> new UnderwayUnitKind[] { UnderwayUnitKind.MANTLET };
+            default -> NOBODY;
+        };
+    }
+
+    /** Lists what still guards the fort: what is left in its housings, the sappers folded in its ducts, the machines standing where they were posted and the carts on its narrow track. */
+    private void guards()
+    {
+        for (var spot : spots)
+        {
+            switch (spot.prop())
+            {
+                case SENTINEL_EYE -> mounted(UnderwayUnitKind.SENTINEL_EYE, spot, true);
+                case TRIPWIRE_EMITTER -> mounted(UnderwayUnitKind.TRIPWIRE, spot, true);
+                case TURRET_CUPOLA -> mounted(UnderwayUnitKind.TURRET_CUPOLA, spot, false);
+                case TURRET_WELL -> mounted(UnderwayUnitKind.TURRET_WELL, spot, false);
+                case SEARCHLIGHT -> mounted(UnderwayUnitKind.SEARCHLIGHT, spot, false);
+                case DUCT_VENT ->
+                {
+                    // It hangs folded under the grille, in the block below it
+                    if (builder.roll(PERCENT) < (builder.ruin == UnderwayRuin.SEALED ? PERCENT : SAPPER_PERCENT) && taken.add(key(spot.along(), spot.y() - 1, spot.across())))
+                        units.add(new UnderwayUnit(UnderwayUnitKind.SAPPER, spot.along(), spot.y() - 1, spot.across(), spot.faceAlong(), spot.faceAcross(), false));
+                }
+                default ->
+                {
+                }
+            }
+        }
+        for (var room : rooms)
+        {
+            var posted = posted(room.kind());
+            int level = level(room.floorY());
+            boolean longAlong = room.a1() - room.a0() >= room.c1() - room.c0();
+            if (posted.length > 0)
+            {
+                var free = new ArrayList<int[]>();
+                for (int along = room.a0(); along <= room.a1(); along++)
+                {
+                    for (int across = room.c0(); across <= room.c1(); across++)
+                    {
+                        if (isOpen(level, along, across) && isFree(level, along, across) && !taken.contains(key(along, room.floorY() + 1, across)) && !taken.contains(key(along, room.floorY() + 2, across)))
+                            free.add(new int[] { along, across, Math.abs(along - room.centreAlong()) + Math.abs(across - room.centreAcross()) });
+                    }
+                }
+                free.sort(Comparator.<int[]>comparingInt(cell -> cell[2]).thenComparingInt(cell -> cell[0]).thenComparingInt(cell -> cell[1]));
+                for (int guard = 0; guard < Math.min(posted.length, free.size()); guard++)
+                {
+                    int[] cell = free.get(guard);
+                    taken.add(key(cell[0], room.floorY() + 1, cell[1]));
+                    taken.add(key(cell[0], room.floorY() + 2, cell[1]));
+                    units.add(new UnderwayUnit(posted[guard], cell[0], room.floorY() + 1, cell[1], longAlong ? 1 : 0, longAlong ? 0 : 1, room.kind() == UnderwayRoomKind.GUARD_ROOM));
+                }
+            }
+            if (WITH_CARTS.contains(room.kind()))
+                cart(room, level);
+        }
+    }
+
+    private void mounted(UnderwayUnitKind kind, UnderwayPropSpot spot, boolean emergency)
+    {
+        units.add(new UnderwayUnit(kind, spot.along(), spot.y(), spot.across(), spot.faceAlong(), spot.faceAcross(), emergency));
+    }
+
+    /** Parks a ram cart on the room's narrow track, where the track runs on clear both ways, as near the room's middle as it can. */
+    private void cart(UnderwayRoom room, int level)
+    {
+        int[] best = null;
+        for (int along = Math.max(CART_RUN, room.a0()); along <= Math.min(SIZE - 1 - CART_RUN, room.a1()); along++)
+        {
+            for (int across = Math.max(CART_RUN, room.c0()); across <= Math.min(SIZE - 1 - CART_RUN, room.c1()); across++)
+            {
+                byte rail = rails[level][cell(along, across)];
+                if (rail == 0 || !feeder[level][cell(along, across)])
+                    continue;
+                boolean clear = true;
+                for (int step = -CART_RUN; step <= CART_RUN && clear; step++)
+                {
+                    int a = rail == RAIL_ALONG ? along + step : along;
+                    int c = rail == RAIL_ALONG ? across : across + step;
+                    clear = rails[level][cell(a, c)] == rail && feeder[level][cell(a, c)] && !kept[level][cell(a, c)] && !taken.contains(key(a, room.floorY() + 1, c));
+                }
+                int reach = Math.abs(along - room.centreAlong()) + Math.abs(across - room.centreAcross());
+                if (clear && (best == null || reach < best[2]))
+                    best = new int[] { along, across, reach, rail };
+            }
+        }
+        if (best == null)
+            return;
+        taken.add(key(best[0], room.floorY() + 1, best[1]));
+        units.add(new UnderwayUnit(UnderwayUnitKind.RAM_CART, best[0], room.floorY() + 1, best[1], best[3] == RAIL_ALONG ? 1 : 0, best[3] == RAIL_ALONG ? 0 : 1, false));
+    }
+
+    private static long key(int along, int y, int across)
+    {
+        return ((long) along << 40) | ((long) (y & 0xFFFF) << 20) | across;
+    }
+
     List<UnderwayPropSpot> furnish()
     {
+        // What the fort hangs on its own walls comes first, wherever there still is a wall behind it
+        for (var fixture : builder.fixtures())
+        {
+            int level = level(fixture.y() - 1);
+            if (isOpen(level, fixture.along(), fixture.across()) && !isOpen(level, fixture.along() - fixture.faceAlong(), fixture.across() - fixture.faceAcross()))
+                place(fixture.prop(), fixture.along(), fixture.y(), fixture.across(), fixture.faceAlong(), fixture.faceAcross());
+        }
+        cabinets();
         for (var room : rooms)
         {
             var recipe = Recipe.of(room.kind());
@@ -128,6 +334,7 @@ final class FortFurnisher
             wagons(room);
             scatter(room, recipe);
         }
+        guards();
         return spots;
     }
 
@@ -165,7 +372,7 @@ final class FortFurnisher
 
     private boolean place(UnderwayProp prop, int along, int y, int across, int faceAlong, int faceAcross)
     {
-        if (!taken.add(((long) along << 40) | ((long) (y & 0xFFFF) << 20) | across))
+        if (!taken.add(key(along, y, across)))
             return false;
         spots.add(new UnderwayPropSpot(prop, along, y, across, faceAlong, faceAcross));
         return true;
@@ -426,7 +633,8 @@ final class FortFurnisher
             room(UnderwayRoomKind.QUARTERS).stand(1, BUNK, LOCKER, DESK, FOOTLOCKER, BUNK, STOVE).hang(3, HOOKS, WALL_SHELF, POSTER).tabletop(DESK_LAMP, PAPERS, BOTTLES).loose(BOOTS, KIT_BAG);
             room(UnderwayRoomKind.DECONTAMINATION).stand(3, LOCKER, DRUM, BUCKET).hang(2, SHOWER, SHOWER, WARD_MASKS, WASH_BASIN, WARD_PLATE).overhead(4, DUCT_VENT);
 
-            room(UnderwayRoomKind.GALLERY).stand(12, CRATE, PLATFORM_BENCH, TRASH_BIN, DRUM, TROLLEY, PAVISE).hang(6, CONDUIT_RUN, PIPES, ARROW_SIGN, CONDUIT_RUN, SECTOR_SIGN, RELAY_BOX, SENTINEL_EYE);
+            room(UnderwayRoomKind.GALLERY).stand(12, CRATE, PLATFORM_BENCH, TRASH_BIN, DRUM, TROLLEY, PAVISE).hang(6, CONDUIT_RUN, PIPES, ARROW_SIGN, CONDUIT_RUN, SECTOR_SIGN, RELAY_BOX, SENTINEL_EYE)
+                    .overhead(14, DUCT_VENT, TURRET_CUPOLA);
             room(UnderwayRoomKind.RUNG).hang(5, CONDUIT_RUN, ARROW_SIGN, PIPES);
             room(UnderwayRoomKind.CROSS_GALLERY).hang(6, CONDUIT_RUN, ARROW_SIGN, PIPES, EMERGENCY_WALL_LAMP);
             room(UnderwayRoomKind.ACCESS_GALLERY).hang(8, CONDUIT_RUN, EMERGENCY_WALL_LAMP, ARROW_SIGN, PIPES, SENTINEL_EYE);
@@ -461,14 +669,14 @@ final class FortFurnisher
                     .tabletop(PAPERS, DESK_LAMP).loose(LITTER, CRATE);
             room(UnderwayRoomKind.MORGUE).stand(1, MORGUE_DRAWERS, MORGUE_DRAWERS, MORGUE_DRAWERS, STRETCHER, FILING_CABINET).hang(4, WASH_BASIN, MEDICINE_CABINET).middle(STRETCHER).loose(BUCKET);
 
-            room(UnderwayRoomKind.PLATFORM).stand(5, PLATFORM_BENCH, PLATFORM_BENCH, TRASH_BIN, LUGGAGE, PLATFORM_BENCH, TROLLEY, CRATE).hang(7, STATION_SIGN, LINE_MAP, ARROW_SIGN, NOTICE_BOARD, KLAXON)
+            room(UnderwayRoomKind.PLATFORM).stand(5, PLATFORM_BENCH, SEARCHLIGHT, PLATFORM_BENCH, TRASH_BIN, LUGGAGE, PLATFORM_BENCH, TROLLEY, CRATE).hang(7, STATION_SIGN, LINE_MAP, ARROW_SIGN, NOTICE_BOARD, KLAXON)
                     .middle(TURRET_WELL, LUGGAGE, TROLLEY, CRATE_STACK).overhead(26, STATION_CLOCK).loose(LITTER, LUGGAGE);
-            room(UnderwayRoomKind.LOBBY).hang(3, ARROW_SIGN, SECTOR_SIGN, CONDUIT_RUN);
+            room(UnderwayRoomKind.LOBBY).hang(3, ARROW_SIGN, SECTOR_SIGN, CONDUIT_RUN).overhead(6, TURRET_CUPOLA);
             room(UnderwayRoomKind.MAGAZINE_GALLERY).hang(5, WARD_PLATE, CONDUIT_RUN, SECTOR_SIGN, WARD_PLATE);
             room(UnderwayRoomKind.MAGAZINE).stand(1, CELL_RACK, CELL_RACK, CELL_CASES, CANISTERS, CRATE_STACK, CRATE).hang(4, WARD_PLATE).loose(CELL_CASES, BROKEN_CRATE);
             room(UnderwayRoomKind.DEPOT).stand(2, WORKBENCH, DRUM, CARBOYS, CABLE_REEL, SHELVING, CRATE_STACK, LOCKER).hang(4, TOOL_BOARD, RELAY_BOX, PIPES).overhead(6, HOIST).loose(DRUMS, LITTER, BUCKET);
             room(UnderwayRoomKind.PUMP_ROOM).stand(2, PUMP, TANK, PUMP, SWITCHGEAR).hang(3, PIPES, VALVE, PRESSURE_GAUGE).loose(BUCKET);
-            room(UnderwayRoomKind.FREIGHT_HALL).stand(2, CRATE_STACK, CRATE, DRUMS, TARP_PILE, SHELVING, SACKS).hang(6, WARD_PLATE, SECTOR_SIGN).middle(CRATE_STACK, TARP_PILE, CRATE).overhead(7, HOIST)
+            room(UnderwayRoomKind.FREIGHT_HALL).stand(2, CRATE_STACK, CRATE, DRUMS, SEARCHLIGHT, TARP_PILE, SHELVING, SACKS, CRATE).hang(6, WARD_PLATE, SECTOR_SIGN).middle(CRATE_STACK, TARP_PILE, CRATE).overhead(7, HOIST)
                     .loose(BROKEN_CRATE, LITTER);
             room(UnderwayRoomKind.SIGNAL_CABIN).stand(1, LEVER_FRAME, LEVER_FRAME, CONSOLE, DESK, STOOL).hang(3, LINE_MAP, SPEAKING_TUBE, NOTICE_BOARD).tabletop(VOICE_HORN, PAPERS).loose(LITTER);
             room(UnderwayRoomKind.CONTROL_ROOM).stand(1, CONSOLE, CONSOLE, SWITCHGEAR, LEVER_FRAME, DESK, FILING_CABINET).hang(3, LINE_MAP, WALL_MAP, SPEAKING_TUBE, KLAXON).middle(MAP_TABLE).beside(CHAIR)

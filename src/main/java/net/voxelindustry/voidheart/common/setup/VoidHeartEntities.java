@@ -29,6 +29,17 @@ import net.voxelindustry.voidheart.common.content.mob.WraithScarab;
 import net.voxelindustry.voidheart.common.content.mob.WraithBeast;
 import net.voxelindustry.voidheart.common.content.mob.VoidGhoul;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
+import net.voxelindustry.voidheart.common.content.underway.security.EmbrasureGun;
+import net.voxelindustry.voidheart.common.content.underway.security.Automaton;
+import net.voxelindustry.voidheart.common.content.underway.security.Fitter;
+import net.voxelindustry.voidheart.common.content.underway.security.Mantlet;
+import net.voxelindustry.voidheart.common.content.underway.security.RamCart;
+import net.voxelindustry.voidheart.common.content.underway.security.Sapper;
+import net.voxelindustry.voidheart.common.content.underway.security.Searchlight;
+import net.voxelindustry.voidheart.common.content.underway.security.Tripwire;
+import net.voxelindustry.voidheart.common.content.underway.security.TurretWell;
+import net.voxelindustry.voidheart.common.content.underway.security.SentinelEye;
+import net.voxelindustry.voidheart.common.content.underway.security.TurretCupola;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStar;
 import net.voxelindustry.voidheart.common.content.mob.VoidOrb;
 import net.voxelindustry.voidheart.common.content.mob.Treant;
@@ -70,6 +81,17 @@ public class VoidHeartEntities
     public static EntityType<KernacianDragoon> KERNACIAN_DRAGOON;
     public static EntityType<Treant> TREANT;
     public static EntityType<UnderwayKeyEntity> UNDERWAY_KEY;
+    public static EntityType<SentinelEye> SENTINEL_EYE;
+    public static EntityType<TurretCupola> TURRET_CUPOLA;
+    public static EntityType<EmbrasureGun> EMBRASURE_GUN;
+    public static EntityType<Automaton> AUTOMATON;
+    public static EntityType<Tripwire> TRIPWIRE;
+    public static EntityType<TurretWell> TURRET_WELL;
+    public static EntityType<Searchlight> SEARCHLIGHT;
+    public static EntityType<Mantlet> MANTLET;
+    public static EntityType<RamCart> RAM_CART;
+    public static EntityType<Sapper> SAPPER;
+    public static EntityType<Fitter> FITTER;
 
     public static void registerEntities()
     {
@@ -189,9 +211,101 @@ public class VoidHeartEntities
                 .fireImmune()
                 .noLootTable());
         FabricDefaultAttributeRegistry.register(UNDERWAY_KEY, UnderwayKeyEntity.createAttributes());
+        registerUnderwaySecurity();
 
         registerEyes();
         registerDaedalusMobs();
+    }
+
+    private static void registerUnderwaySecurity()
+    {
+        SENTINEL_EYE = register("sentinel_eye", EntityType.Builder.of(SentinelEye::new, MobCategory.MISC)
+                .sized(SentinelEye.WIDTH, SentinelEye.HEIGHT)
+                .eyeHeight(SentinelEye.HEIGHT / 2)
+                .clientTrackingRange(8)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(SENTINEL_EYE, SentinelEye.createAttributes());
+
+        TURRET_CUPOLA = register("turret_cupola", EntityType.Builder.of(TurretCupola::new, MobCategory.MISC)
+                .sized(TurretCupola.WIDTH, TurretCupola.HEIGHT)
+                .eyeHeight(TurretCupola.HEIGHT / 2)
+                .clientTrackingRange(8)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(TURRET_CUPOLA, TurretCupola.createAttributes());
+
+        EMBRASURE_GUN = register("embrasure_gun", EntityType.Builder.of(EmbrasureGun::new, MobCategory.MISC)
+                .sized(EmbrasureGun.WIDTH, EmbrasureGun.HEIGHT)
+                .eyeHeight(EmbrasureGun.HEIGHT / 2)
+                .clientTrackingRange(8)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(EMBRASURE_GUN, EmbrasureGun.createAttributes());
+
+        AUTOMATON = register("automaton", EntityType.Builder.of(Automaton::new, MobCategory.MONSTER)
+                .sized(Automaton.WIDTH, Automaton.HEIGHT)
+                .eyeHeight(1.7F)
+                .clientTrackingRange(10)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(AUTOMATON, Automaton.createAttributes());
+
+        TRIPWIRE = register("tripwire", EntityType.Builder.of(Tripwire::new, MobCategory.MISC)
+                .sized(Tripwire.SIZE, Tripwire.SIZE)
+                .eyeHeight(Tripwire.SIZE / 2)
+                .clientTrackingRange(6)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(TRIPWIRE, Tripwire.createAttributes());
+
+        TURRET_WELL = register("turret_well", EntityType.Builder.of(TurretWell::new, MobCategory.MISC)
+                .sized(TurretWell.WIDTH, TurretWell.HEIGHT)
+                .eyeHeight(TurretWell.HEIGHT * 0.8F)
+                .clientTrackingRange(8)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(TURRET_WELL, TurretWell.createAttributes());
+
+        SEARCHLIGHT = register("searchlight", EntityType.Builder.of(Searchlight::new, MobCategory.MISC)
+                .sized(Searchlight.WIDTH, Searchlight.HEIGHT)
+                .eyeHeight(0.625F)
+                .clientTrackingRange(8)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(SEARCHLIGHT, Searchlight.createAttributes());
+
+        MANTLET = register("mantlet", EntityType.Builder.of(Mantlet::new, MobCategory.MONSTER)
+                .sized(Mantlet.WIDTH, Mantlet.HEIGHT)
+                .eyeHeight(1.75F)
+                .clientTrackingRange(10)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(MANTLET, Mantlet.createAttributes());
+
+        RAM_CART = register("ram_cart", EntityType.Builder.of(RamCart::new, MobCategory.MONSTER)
+                .sized(RamCart.WIDTH, RamCart.HEIGHT)
+                .eyeHeight(0.9F)
+                .clientTrackingRange(10)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(RAM_CART, RamCart.createAttributes());
+
+        SAPPER = register("sapper", EntityType.Builder.of(Sapper::new, MobCategory.MONSTER)
+                .sized(Sapper.WIDTH, Sapper.HEIGHT)
+                .eyeHeight(0.3F)
+                .clientTrackingRange(8)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(SAPPER, Sapper.createAttributes());
+
+        FITTER = register("fitter", EntityType.Builder.of(Fitter::new, MobCategory.MONSTER)
+                .sized(Fitter.WIDTH, Fitter.HEIGHT)
+                .eyeHeight(0.5F)
+                .clientTrackingRange(8)
+                .fireImmune()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(FITTER, Fitter.createAttributes());
     }
 
     private static void registerDaedalusMobs()

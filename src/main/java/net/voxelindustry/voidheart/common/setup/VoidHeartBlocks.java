@@ -99,7 +99,10 @@ import java.util.List;
 import java.util.Map;
 import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayCabinetBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayDoorBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayShutterBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
@@ -298,6 +301,7 @@ public class VoidHeartBlocks
     public static Block UNDERWAY_BLAST_GATE;
     public static Block UNDERWAY_HATCH;
     public static Block UNDERWAY_EMBRASURE;
+    public static Block UNDERWAY_SHUTTER;
     public static Block UNDERWAY_GRATING;
     public static Block UNDERWAY_STEEL_STAIRS;
     public static Block UNDERWAY_TRUNK_RAIL;
@@ -853,6 +857,7 @@ public class VoidHeartBlocks
         UNDERWAY_BLAST_GATE = registerBlock("underway_blast_gate", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_HATCH = registerBlock("underway_hatch", UnderwayHatchBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_EMBRASURE = registerBlock("underway_firing_slit", UnderwayEmbrasureBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK).noOcclusion(), true);
+        UNDERWAY_SHUTTER = registerBlock("underway_shutter", UnderwayShutterBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
 
         var steel = BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.0F, 6.0F).sound(SoundType.METAL);
         UNDERWAY_GRATING = registerBlock("underway_grating", Block::new, BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.0F, 6.0F)
@@ -866,8 +871,9 @@ public class VoidHeartBlocks
                 .noCollision().noOcclusion().pushReaction(PushReaction.POPPED), true);
         UNDERWAY_BALLAST = registerBlock("underway_ballast", Block::new, BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(0.8F).sound(SoundType.GRAVEL), true);
         UNDERWAY_RUBBLE = registerBlock("underway_rubble", Block::new, BlockBehaviour.Properties.of().mapColor(MapColor.STONE).requiresCorrectToolForDrops().strength(2.0F, 6.0F).sound(SoundType.STONE), true);
-        UNDERWAY_DOOR = registerBlock("underway_door", properties -> new DoorBlock(BlockSetType.COPPER, properties), BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
-                .requiresCorrectToolForDrops().strength(5.0F, 6.0F).noOcclusion().pushReaction(PushReaction.POPPED), true);
+        // Armour like the shell around it: a door that could be mined out would make a lockdown mean nothing
+        UNDERWAY_DOOR = registerBlock("underway_door", properties -> new UnderwayDoorBlock(BlockSetType.COPPER, properties), BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+                .strength(-1.0F, 3600000.0F).noOcclusion().pushReaction(PushReaction.IMMOVEABLE), true);
         for (var prop : UnderwayProp.values())
         {
             var sound = switch (prop.sound())
@@ -886,7 +892,11 @@ public class VoidHeartBlocks
                     .noOcclusion()
                     .lightLevel(state -> prop.light())
                     .pushReaction(PushReaction.POPPED);
-            UNDERWAY_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new UnderwayPropBlock(blockProperties, prop), properties, true));
+            // A cabinet belongs to its section, so it cannot be carried off
+            if (prop == UnderwayProp.BREAKER_CABINET || prop == UnderwayProp.BREAKER_CABINET_LIVE)
+                UNDERWAY_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new UnderwayCabinetBlock(blockProperties, prop), properties.strength(-1.0F, 3600000.0F), true));
+            else
+                UNDERWAY_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new UnderwayPropBlock(blockProperties, prop), properties, true));
         }
     }
 

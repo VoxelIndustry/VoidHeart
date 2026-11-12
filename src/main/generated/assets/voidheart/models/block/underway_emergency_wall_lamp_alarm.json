@@ -1,0 +1,107 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        5,
+        6,
+        14
+      ],
+      "to": [
+        11,
+        12,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        5,
+        9,
+        11
+      ],
+      "to": [
+        11,
+        10,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lens_strobe"
+        },
+        "east": {
+          "texture": "#lens_strobe"
+        },
+        "north": {
+          "texture": "#lens_strobe"
+        },
+        "south": {
+          "texture": "#lens_strobe"
+        },
+        "up": {
+          "texture": "#lens_strobe"
+        },
+        "west": {
+          "texture": "#lens_strobe"
+        }
+      },
+      "from": [
+        6,
+        7,
+        12
+      ],
+      "to": [
+        10,
+        11,
+        14
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
+    "lens_strobe": "voidheart:block/underway/lens_strobe",
+    "particle": "voidheart:block/underway/copper"
+  }
+}

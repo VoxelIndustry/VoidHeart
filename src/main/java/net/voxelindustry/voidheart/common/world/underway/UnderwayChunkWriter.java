@@ -6,6 +6,7 @@ import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
@@ -105,9 +106,13 @@ public final class UnderwayChunkWriter
             case TRUNK_RAIL_X, TRUNK_RAIL_Z, FEEDER_RAIL_X, FEEDER_RAIL_Z -> materials[material.ordinal()].setValue(UnderwayTrackBlock.WATERLOGGED, canvas.get(x, y + 1, z) == UnderwayMaterial.WATER);
             case DOOR ->
             {
-                boolean alongX = canvas.get(x - 1, y, z).isOpen() || canvas.get(x + 1, y, z).isOpen();
+                // A door beside it is the other leaf of the same doorway, not the way through
+                boolean alongX = isWayThrough(canvas.get(x - 1, y, z)) || isWayThrough(canvas.get(x + 1, y, z));
                 boolean upper = canvas.get(x, y - 1, z) == UnderwayMaterial.DOOR;
-                yield materials[material.ordinal()].setValue(DoorBlock.FACING, alongX ? Direction.EAST : Direction.SOUTH).setValue(DoorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER);
+                // The two leaves of a double door hang from its jambs and meet in the middle
+                boolean hingeRight = canvas.get(alongX ? x : x + 1, y, alongX ? z - 1 : z) == UnderwayMaterial.DOOR;
+                yield materials[material.ordinal()].setValue(DoorBlock.FACING, alongX ? Direction.EAST : Direction.SOUTH).setValue(DoorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER)
+                        .setValue(DoorBlock.HINGE, hingeRight ? DoorHingeSide.RIGHT : DoorHingeSide.LEFT);
             }
             case EMBRASURE ->
             {
@@ -116,6 +121,11 @@ public final class UnderwayChunkWriter
             }
             default -> materials[material.ordinal()];
         };
+    }
+
+    private static boolean isWayThrough(UnderwayMaterial material)
+    {
+        return material.isOpen() && material != UnderwayMaterial.DOOR;
     }
 
     /** @return ties in the gap between the two rails of a trunk track, or null */
@@ -185,6 +195,7 @@ public final class UnderwayChunkWriter
         states[UnderwayMaterial.FEEDER_RAIL_Z.ordinal()] = feeder;
         states[UnderwayMaterial.DOOR.ordinal()] = VoidHeartBlocks.UNDERWAY_DOOR.defaultBlockState();
         states[UnderwayMaterial.EMBRASURE.ordinal()] = VoidHeartBlocks.UNDERWAY_EMBRASURE.defaultBlockState();
+        states[UnderwayMaterial.SHUTTER.ordinal()] = VoidHeartBlocks.UNDERWAY_SHUTTER.defaultBlockState();
         states[UnderwayMaterial.LAMP.ordinal()] = propStates[UnderwayProp.CEILING_LAMP_LIT.ordinal() * FACING.length];
         states[UnderwayMaterial.EMERGENCY_LAMP.ordinal()] = propStates[UnderwayProp.EMERGENCY_LAMP.ordinal() * FACING.length];
         states[UnderwayMaterial.RUBBLE.ordinal()] = VoidHeartBlocks.UNDERWAY_RUBBLE.defaultBlockState();

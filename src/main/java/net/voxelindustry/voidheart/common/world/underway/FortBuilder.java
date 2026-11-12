@@ -6,6 +6,7 @@ import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import static net.voxelindustry.voidheart.common.world.underway.UnderwayLevels.BALLAST;
@@ -35,6 +36,7 @@ final class FortBuilder
     private static final int HATCH_TRIES = 64;
     private static final int MIN_WALK = 3;
     private static final int PIT_DEPTH = 2;
+    private static final int TRIPWIRE_PAST_DOOR = 2;
     private static final int MAX_SIDE_ROOMS = 4;
     private static final int SIDE_ROOM_PERCENT = 50;
     private static final int TALL_BAY = 7;
@@ -44,6 +46,9 @@ final class FortBuilder
     private static final int BREACH_SPILL = 4;
     private static final int LAMP_EVERY = 16;
     private static final int UNREACHED = Integer.MAX_VALUE;
+    /** Rooms worth locking, whose doorway is a shutter that only rises on power. */
+    static final EnumSet<UnderwayRoomKind> SHUTTERED =EnumSet.of(UnderwayRoomKind.ARMOURY, UnderwayRoomKind.STORES, UnderwayRoomKind.COMMAND_POST, UnderwayRoomKind.ARCHIVE,
+            UnderwayRoomKind.LABORATORY);
     private static final UnderwayRoomKind[] SIDE_ROOMS = { UnderwayRoomKind.ARMOURY, UnderwayRoomKind.QUARTERS, UnderwayRoomKind.DECONTAMINATION, UnderwayRoomKind.STORES };
 
     final long seed;
@@ -58,6 +63,8 @@ final class FortBuilder
     private final List<UnderwayOpening> openings = new ArrayList<>();
     private final List<UnderwayShaft> shafts = new ArrayList<>();
     private final List<UnderwayStroke> strokes = new ArrayList<>();
+    private final List<UnderwayUnit> units = new ArrayList<>();
+    private final List<UnderwayPropSpot> fixtures = new ArrayList<>();
     private long hash;
     private int nextBay;
     private int bayCount;
@@ -91,9 +98,48 @@ final class FortBuilder
 
     UnderwayFort build(UnderwayNode node)
     {
-        var props = new FortFurnisher(this, node, rooms, openings, shafts, strokes).furnish();
+        var furnisher = new FortFurnisher(this, node, rooms, openings, shafts, strokes);
+        var props = furnisher.furnish();
+        units.addAll(furnisher.units());
+        // A bulkhead, a lamp or rubble drawn over a room afterwards takes the place of what the furnisher put there
+        units.removeIf(unit ->
+        {
+            var stands = after(unit.along(), unit.y(), unit.across());
+            return (unit.kind() == UnderwayUnitKind.RAM_CART ? !stands.isRail() : stands != UnderwayMaterial.AIR)
+                    || unit.kind().isTall() && after(unit.along(), unit.y() + 1, unit.across()) != UnderwayMaterial.AIR;
+        });
+        // The void burnt out what guarded the fort it broke into, and water shorted what stood on a drowned rail level
+        if (ruin == UnderwayRuin.BREACHED)
+            units.clear();
+        else if (ruin == UnderwayRuin.FLOODED)
+            units.removeIf(unit -> unit.section() == UnderwaySection.RAIL);
         return new UnderwayFort(pos, node, frame, ruin, hatch.a0(), hatch.c0(), hatch.landingAlong(), hatch.landingAcross(),
-                List.copyOf(rooms), List.copyOf(openings), List.copyOf(shafts), List.copyOf(strokes), List.copyOf(props));
+                List.copyOf(rooms), List.copyOf(openings), List.copyOf(shafts), List.copyOf(strokes), List.copyOf(props), List.copyOf(units));
+    }
+
+    /** @return what a block of a room's air is once every stroke is drawn */
+    private UnderwayMaterial after(int along, int y, int across)
+    {
+        var material = UnderwayMaterial.AIR;
+        for (var stroke : strokes)
+        {
+            if (along >= stroke.a0() && along <= stroke.a1() && y >= stroke.y0() && y <= stroke.y1() && across >= stroke.c0() && across <= stroke.c1()
+                    && (stroke.over() == null || stroke.over() == material))
+                material = stroke.material();
+        }
+        return material;
+    }
+
+    /** @return what the fort itself hangs on its walls, before anything else is furnished */
+    List<UnderwayPropSpot> fixtures()
+    {
+        return fixtures;
+    }
+
+    /** @return the shaft under the hatch, once the entry level is laid out */
+    UnderwayShaft hatch()
+    {
+        return hatch;
     }
 
     UnderwayRoom room(UnderwayRoomKind kind, int a0, int c0, int a1, int c1, int floorY, int height)
@@ -229,6 +275,8 @@ final class FortBuilder
                 opening(wall, door, wall, door + 1, LIVING_FLOOR, DOOR_HEIGHT);
             else
                 opening(door, wall, door + 1, wall, LIVING_FLOOR, DOOR_HEIGHT);
+            if (SHUTTERED.contains(kind))
+                turned(transposed, null, UnderwayMaterial.SHUTTER, door, LIVING_FLOOR + 1, wall, door + 1, LIVING_FLOOR + DOOR_HEIGHT, wall);
             if (kind == UnderwayRoomKind.BREACH)
             {
                 turned(transposed, null, UnderwayMaterial.VOID, run + 1, LIVING_FLOOR + 1, far + outward, end - 1, LIVING_FLOOR + height - 1, far + outward * 2);
@@ -324,9 +372,9 @@ final class FortBuilder
         int last = path.size() - 1;
         for (int step = 0; step < last; step++)
             link(path.get(step), path.get(step + 1));
-        lock(path.get(0), path.get(1));
+        lock(path.get(0), path.get(1), path.get(1));
         if (last > 1)
-            lock(path.get(last - 1), path.get(last));
+            lock(path.get(last - 1), path.get(last), path.get(last - 1));
 
         for (int step = 1; step < last; step++)
         {
@@ -420,14 +468,23 @@ final class FortBuilder
         room(UnderwayRoomKind.ENTRY_GALLERY, a + PASSAGE_LOW, c + PASSAGE_LOW, a + PASSAGE_HIGH + (along ? CELL : 0), c + PASSAGE_HIGH + (along ? 0 : CELL), ENTRY_FLOOR, ENTRY_HEIGHT);
     }
 
-    /** A steel bulkhead with one armoured door, where the gallery passes from a cell to the next. */
-    private void lock(int from, int to)
+    /**
+     * A steel bulkhead with one armoured door, where the gallery passes from a cell to the next. A tripwire crosses the gallery two steps past it.
+     *
+     * @param inside the cell of the two that lies deeper in the gallery
+     */
+    private void lock(int from, int to, int inside)
     {
         int a = Math.min(from / GRID, to / GRID) * CELL;
         int c = Math.min(from % GRID, to % GRID) * CELL;
         boolean along = from / GRID != to / GRID;
         turned(!along, null, UnderwayMaterial.STEEL, (along ? a : c) + CELL_END, ENTRY_FLOOR + 1, (along ? c : a) + PASSAGE_LOW, (along ? a : c) + CELL_END, ENTRY_FLOOR + ENTRY_HEIGHT, (along ? c : a) + PASSAGE_HIGH);
         turned(!along, null, UnderwayMaterial.DOOR, (along ? a : c) + CELL_END, ENTRY_FLOOR + 1, (along ? c : a) + PASSAGE_MIDDLE, (along ? a : c) + CELL_END, ENTRY_FLOOR + 2, (along ? c : a) + PASSAGE_MIDDLE);
+        int wire = (along ? a : c) + CELL_END + (inside == Math.max(from, to) ? TRIPWIRE_PAST_DOOR : -TRIPWIRE_PAST_DOOR);
+        if (along)
+            fixtures.add(new UnderwayPropSpot(UnderwayProp.TRIPWIRE_EMITTER, wire, ENTRY_FLOOR + 1, c + PASSAGE_LOW, 0, 1));
+        else
+            fixtures.add(new UnderwayPropSpot(UnderwayProp.TRIPWIRE_EMITTER, a + PASSAGE_LOW, ENTRY_FLOOR + 1, wire, 1, 0));
     }
 
     /** Where the gallery bends, a guard room straight ahead watches whoever comes through a slit, with its own door beside it. */
@@ -452,6 +509,11 @@ final class FortBuilder
             room(UnderwayRoomKind.GUARD_ROOM, side + 1, near, side + CELL_END - 1, far, ENTRY_FLOOR, ENTRY_HEIGHT);
         turned(!along, null, UnderwayMaterial.DOOR, wall, ENTRY_FLOOR + 1, side + PASSAGE_LOW, wall, ENTRY_FLOOR + 2, side + PASSAGE_LOW);
         turned(!along, null, UnderwayMaterial.EMBRASURE, wall, ENTRY_FLOOR + 2, side + PASSAGE_HIGH, wall, ENTRY_FLOOR + 2, side + PASSAGE_HIGH);
+        // The gun stands inside the room, right behind its slit, and looks back down the gallery
+        if (along)
+            units.add(new UnderwayUnit(UnderwayUnitKind.EMBRASURE_GUN, wall + step, ENTRY_FLOOR + 2, side + PASSAGE_HIGH, -step, 0, true));
+        else
+            units.add(new UnderwayUnit(UnderwayUnitKind.EMBRASURE_GUN, side + PASSAGE_HIGH, ENTRY_FLOOR + 2, wall + step, 0, -step, true));
     }
 
     private void pit(int cell, int in)
@@ -463,6 +525,11 @@ final class FortBuilder
             inAir(UnderwayMaterial.GRATING, a + PASSAGE_LOW, ENTRY_FLOOR, c + PASSAGE_MIDDLE, a + PASSAGE_HIGH, ENTRY_FLOOR, c + PASSAGE_MIDDLE);
         else
             inAir(UnderwayMaterial.GRATING, a + PASSAGE_MIDDLE, ENTRY_FLOOR, c + PASSAGE_LOW, a + PASSAGE_MIDDLE, ENTRY_FLOOR, c + PASSAGE_HIGH);
+        // A beam crosses the middle of the grating, and drops it under whoever breaks it
+        if (Math.abs(in) == GRID)
+            fixtures.add(new UnderwayPropSpot(UnderwayProp.TRIPWIRE_EMITTER, a + PASSAGE_MIDDLE, ENTRY_FLOOR + 1, c + PASSAGE_LOW, 0, 1));
+        else
+            fixtures.add(new UnderwayPropSpot(UnderwayProp.TRIPWIRE_EMITTER, a + PASSAGE_LOW, ENTRY_FLOOR + 1, c + PASSAGE_MIDDLE, 1, 0));
     }
 
     private void sideRoom(UnderwayRoomKind kind, int from, int to)
@@ -474,9 +541,19 @@ final class FortBuilder
         int lowA = low / GRID * CELL;
         int lowC = low % GRID * CELL;
         boolean leavesLow = from == low;
-        if (from / GRID != to / GRID)
-            opening(lowA + (leavesLow ? PASSAGE_HIGH + 1 : CELL_END), lowC + PASSAGE_LOW, lowA + (leavesLow ? CELL : CELL + PASSAGE_LOW - 1), lowC + PASSAGE_MIDDLE, ENTRY_FLOOR, DOOR_HEIGHT);
+        boolean along = from / GRID != to / GRID;
+        int first = (along ? lowA : lowC) + (leavesLow ? PASSAGE_HIGH + 1 : CELL_END);
+        int last = (along ? lowA : lowC) + (leavesLow ? CELL : CELL + PASSAGE_LOW - 1);
+        int side = (along ? lowC : lowA) + PASSAGE_LOW;
+        if (along)
+            opening(first, side, last, side + 1, ENTRY_FLOOR, DOOR_HEIGHT);
         else
-            opening(lowA + PASSAGE_LOW, lowC + (leavesLow ? PASSAGE_HIGH + 1 : CELL_END), lowA + PASSAGE_MIDDLE, lowC + (leavesLow ? CELL : CELL + PASSAGE_LOW - 1), ENTRY_FLOOR, DOOR_HEIGHT);
+            opening(side, first, side + 1, last, ENTRY_FLOOR, DOOR_HEIGHT);
+        // The shutter closes the doorway flush with the gallery's wall
+        if (SHUTTERED.contains(kind))
+        {
+            int flush = leavesLow ? first : last;
+            turned(!along, null, UnderwayMaterial.SHUTTER, flush, ENTRY_FLOOR + 1, side, flush, ENTRY_FLOOR + DOOR_HEIGHT, side + 1);
+        }
     }
 }

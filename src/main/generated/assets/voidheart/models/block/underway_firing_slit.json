@@ -131,7 +131,7 @@
     }
   ],
   "textures": {
-    "particle": "voidheart:block/underway/steel_plate",
-    "plate": "voidheart:block/underway/steel_plate"
+    "particle": "voidheart:block/underway/copper",
+    "plate": "voidheart:block/underway/copper"
   }
 }

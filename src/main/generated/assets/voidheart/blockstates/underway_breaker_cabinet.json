@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_breaker_cabinet",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_breaker_cabinet"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_breaker_cabinet",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_breaker_cabinet",
+      "y": 270
+    }
+  }
+}
