@@ -65,10 +65,15 @@ public final class UnderwayCanvas
         return isOutside(x, y, z) ? UnderwayMaterial.ROCK : UnderwayMaterial.of(cells[index(x, y, z)]);
     }
 
+    /** Anything solid written over a prop takes its place for good: the prop does not come back if the place is later opened again. */
     public void set(int x, int y, int z, UnderwayMaterial material)
     {
-        if (!isOutside(x, y, z))
-            cells[index(x, y, z)] = (byte) material.ordinal();
+        if (isOutside(x, y, z))
+            return;
+        int index = index(x, y, z);
+        cells[index] = (byte) material.ordinal();
+        if (material != UnderwayMaterial.AIR)
+            props[index] = 0;
     }
 
     /** Stands a prop in the air, or on a rail it then replaces. Anywhere else it is left out. */
@@ -123,7 +128,11 @@ public final class UnderwayCanvas
                 for (int at = index(fromX, y, z), end = at + toX - fromX; at <= end; at++)
                 {
                     if (from == null || cells[at] == from.ordinal())
+                    {
                         cells[at] = value;
+                        if (to != UnderwayMaterial.AIR)
+                            props[at] = 0;
+                    }
                 }
             }
         }

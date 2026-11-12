@@ -504,4 +504,5 @@ for y = 1, 14 do for x = 4, 11 do
 end end
 rect(img, 6, 3, 9, 6, { 28, 36, 44 }) put(img, 6, 3, { 90, 110, 124 })
 put(img, 10, 9, { 150, 124, 70 }) put(img, 10, 10, { 116, 94, 52 })
-img:saveAs(out .. "/underway_door_item.png")
+-- The door's item, named as its model asks for it: it goes in textures/item, the two halves above in textures/block.
+img:saveAs(out .. "/underway_door.png")

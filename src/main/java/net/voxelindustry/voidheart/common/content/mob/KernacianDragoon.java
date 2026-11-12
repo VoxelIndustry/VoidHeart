@@ -699,7 +699,7 @@ public class KernacianDragoon extends Automaton
         public boolean canUse()
         {
             var target = getTarget();
-            if (target == null || !target.isAlive() || beamCooldown > 0)
+            if (target == null || !target.isAlive() || !canAttack(target) || beamCooldown > 0)
                 return false;
             double distance = distanceTo(target);
             return distance >= BEAM_MIN_RANGE && distance <= BEAM_RANGE && getSensing().hasLineOfSight(target);
@@ -795,7 +795,7 @@ public class KernacianDragoon extends Automaton
         public boolean canUse()
         {
             var target = getTarget();
-            return target != null && target.isAlive() && kickCooldown == 0 && beamTicks() == 0 && inKickReach(target);
+            return target != null && target.isAlive() && canAttack(target) && kickCooldown == 0 && beamTicks() == 0 && inKickReach(target);
         }
 
         @Override

@@ -38,7 +38,11 @@ final class UnderwayWalker
                 for (int y = at[1] + 1; y >= at[1] - MAX_DROP; y--)
                 {
                     if (!canStand(x, y, z))
+                    {
+                        if (y <= at[1] && !isClear(x, y + 1, z))
+                            break;
                         continue;
+                    }
                     if (reached.add(key(x, y, z)))
                         open.add(new int[] { x, y, z });
                     break;
@@ -58,6 +62,12 @@ final class UnderwayWalker
         if (canvas.propAt(x, y, z) != null || canvas.propAt(x, y + 1, z) != null)
             return false;
         return feet.isOpen() && canvas.get(x, y + 1, z).isOpen() && (feet == UnderwayMaterial.WATER || !canvas.get(x, y - 1, z).isOpen());
+    }
+
+    /** @return whether a body passes through this place on its way down to a lower landing */
+    private boolean isClear(int x, int y, int z)
+    {
+        return canvas.get(x, y, z).isOpen() && canvas.propAt(x, y, z) == null;
     }
 
     private static long key(int x, int y, int z)

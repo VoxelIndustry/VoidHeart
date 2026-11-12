@@ -4,7 +4,9 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
@@ -29,6 +31,7 @@ import static net.minecraft.commands.Commands.literal;
 final class UnderwayCommands
 {
     private static final int SEARCH_RADIUS = 8;
+    private static final DynamicCommandExceptionType UNKNOWN_KIND = new DynamicCommandExceptionType(name -> Component.literal("No kind of fort is called " + name));
 
     private UnderwayCommands()
     {
@@ -41,13 +44,24 @@ final class UnderwayCommands
                         .executes(context -> enter(context, null))
                         .then(argument("kind", StringArgumentType.word())
                                 .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayNode.values()).map(node -> node.name().toLowerCase(Locale.ROOT)), suggestions))
-                                .executes(context -> enter(context, UnderwayNode.valueOf(StringArgumentType.getString(context, "kind").toUpperCase(Locale.ROOT))))))
+                                .executes(context -> enter(context, kind(context)))))
                 .then(literal("hatch")
                         .executes(context -> hatch(context, null))
                         .then(argument("kind", StringArgumentType.word())
                                 .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayNode.values()).map(node -> node.name().toLowerCase(Locale.ROOT)), suggestions))
-                                .executes(context -> hatch(context, UnderwayNode.valueOf(StringArgumentType.getString(context, "kind").toUpperCase(Locale.ROOT))))))
+                                .executes(context -> hatch(context, kind(context)))))
                 .then(literal("where").executes(UnderwayCommands::where)));
+    }
+
+    private static UnderwayNode kind(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        String name = StringArgumentType.getString(context, "kind");
+        for (var node : UnderwayNode.values())
+        {
+            if (node.name().equalsIgnoreCase(name))
+                return node;
+        }
+        throw UNKNOWN_KIND.create(name);
     }
 
     /** Sends the player to the foot of the hatch stairs of the nearest fort of that kind, or of the one under their feet. */
@@ -80,6 +94,11 @@ final class UnderwayCommands
                     var fort = UnderwayPlans.fort(seed, pos);
                     var foot = new Vec3(fort.frame().x(fort.footAlong(), fort.footAcross()) + 0.5, UnderwayLevels.ENTRY_FLOOR + 1, fort.frame().z(fort.footAlong(), fort.footAcross()) + 0.5);
                     var hatch = new Vec3(fort.hatchX() + DistrictPos.CELL / 2.0, DistrictPos.floorY(0) + 1, fort.hatchZ() + DistrictPos.CELL / 2.0);
+                    if (!above && level.getBlockState(BlockPos.containing(foot).below()).isAir())
+                    {
+                        context.getSource().sendFailure(Component.literal("District " + pos.x() + ", " + pos.z() + " was generated before the Underway and has nothing under it"));
+                        return 0;
+                    }
                     TeleportUtil.teleport(player, level, above ? hatch : foot, player.getYRot(), 0);
                     context.getSource().sendSuccess(() -> describe(seed, pos), false);
                     return 1;

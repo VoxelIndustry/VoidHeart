@@ -796,13 +796,15 @@ final class DistrictPlanner
     }
 
     /**
-     * Rooms and passages are optional, landings are not. Whatever cannot be joined goes, unless it holds a landing, in which case what stands around it goes instead.
+     * Rooms and passages are optional, landings and the hatch room are not. Whatever cannot be joined goes, unless it holds one of those, in which case what stands around it goes instead.
      */
     private void resolveUnroutable(int root)
     {
         boolean holdsLanding = false;
         for (var landing : landings)
             holdsLanding |= find(index(landing.i(), landing.k(), landing.j())) == root;
+        for (var room : rooms)
+            holdsLanding |= room != null && room.shape() == RoomShape.HATCH && find(index(room.minI(), room.minK(), room.minJ())) == root;
         if (!holdsLanding)
         {
             clearStructure(root);
@@ -811,7 +813,7 @@ final class DistrictPlanner
 
         for (int cell = 0; cell < CELL_COUNT; cell++)
         {
-            if (kinds[cell] == ROOM && find(cell) != root)
+            if (kinds[cell] == ROOM && find(cell) != root && rooms.get(roomIds[cell] - 1).shape() != RoomShape.HATCH)
             {
                 clearRoomOf(cell);
                 rebuildStructures();
@@ -829,7 +831,7 @@ final class DistrictPlanner
                 return;
             }
         }
-        throw new IllegalStateException("District " + pos + " cannot connect a bridge landing");
+        throw new IllegalStateException("District " + pos + " cannot connect a bridge landing or its hatch room");
     }
 
     private void clearStructure(int root)

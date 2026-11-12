@@ -41,7 +41,8 @@ public final class UnderwayChunkWriter
     private static final long SALT = 0x554E44455243L;
     private static final ThreadLocal<UnderwayCanvas> CANVAS = ThreadLocal.withInitial(() -> new UnderwayCanvas(SECTION, SECTION));
     private static BlockState[] props;
-    private static BlockState[] materials;
+    /** Written last and volatile, so whoever sees it also sees the props. */
+    private static volatile BlockState[] materials;
 
     private UnderwayChunkWriter()
     {

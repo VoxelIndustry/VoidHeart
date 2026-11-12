@@ -31,6 +31,8 @@ import net.voxelindustry.voidheart.common.world.underway.UnderwayLink;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayMaterial;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayNetwork;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayNode;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
+import net.minecraft.world.level.material.Fluids;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayRoom;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayRoomKind;
@@ -337,6 +339,20 @@ public class UnderwayClientTest implements FabricClientGameTest
                             expect(state.is(VoidHeartBlocks.UNDERWAY_HAZARD_ARMOUR), "Planned striped armour at " + pos + ", found " + state);
                         else if (material == UnderwayMaterial.GRATING)
                             expect(state.is(VoidHeartBlocks.UNDERWAY_GRATING), "Planned grating at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.EMBRASURE)
+                            expect(state.is(VoidHeartBlocks.UNDERWAY_EMBRASURE), "Planned a firing slit at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.RUBBLE)
+                            expect(state.is(VoidHeartBlocks.UNDERWAY_RUBBLE), "Planned rubble at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.LAMP)
+                            expect(state.is(VoidHeartBlocks.underwayProp(UnderwayProp.CEILING_LAMP_LIT)), "Planned a lamp at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.EMERGENCY_LAMP)
+                            expect(state.is(VoidHeartBlocks.underwayProp(UnderwayProp.EMERGENCY_LAMP)), "Planned an emergency lamp at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.WATER)
+                            expect(state.getFluidState().is(Fluids.WATER), "Planned water at " + pos + ", found " + state);
+                        else if (material == UnderwayMaterial.VOID)
+                            expect(state.is(VoidHeartBlocks.VOIDSTONE_WRITHING), "Planned void matter at " + pos + ", found " + state);
+                        else
+                            expect(false, "Nothing checks " + material + ", planned at " + pos);
                     }
                 }
             }
