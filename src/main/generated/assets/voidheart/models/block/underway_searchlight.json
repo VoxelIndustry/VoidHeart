@@ -1,0 +1,139 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        4,
+        0,
+        4
+      ],
+      "to": [
+        12,
+        2,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        7,
+        2,
+        7
+      ],
+      "to": [
+        9,
+        6,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        4,
+        6,
+        3
+      ],
+      "to": [
+        12,
+        14,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lens_off"
+        },
+        "east": {
+          "texture": "#lens_off"
+        },
+        "north": {
+          "texture": "#lens_off"
+        },
+        "south": {
+          "texture": "#lens_off"
+        },
+        "up": {
+          "texture": "#lens_off"
+        },
+        "west": {
+          "texture": "#lens_off"
+        }
+      },
+      "from": [
+        5,
+        7,
+        2
+      ],
+      "to": [
+        11,
+        13,
+        3
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
+    "lens_off": "voidheart:block/underway/lens_off",
+    "particle": "voidheart:block/underway/copper"
+  }
+}

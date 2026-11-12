@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.data.provider;
 
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
+import java.util.List;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootSubProvider;
 import net.minecraft.core.HolderLookup;
@@ -47,6 +49,12 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
         this.add(VoidHeartBlocks.VOID_DOOR, this::createDoorTable);
         for (var prop : DaedalusProp.values())
             this.dropSelf(VoidHeartBlocks.daedalusProp(prop));
+        for (var prop : UnderwayProp.values())
+            this.dropSelf(VoidHeartBlocks.underwayProp(prop));
+        for (var block : List.of(VoidHeartBlocks.UNDERWAY_GRATING, VoidHeartBlocks.UNDERWAY_STEEL_STAIRS, VoidHeartBlocks.UNDERWAY_TRUNK_RAIL, VoidHeartBlocks.UNDERWAY_TRACK_TIE,
+                VoidHeartBlocks.UNDERWAY_FEEDER_RAIL, VoidHeartBlocks.UNDERWAY_BALLAST, VoidHeartBlocks.UNDERWAY_RUBBLE))
+            this.dropSelf(block);
+        this.add(VoidHeartBlocks.UNDERWAY_DOOR, this::createDoorTable);
 
         dropMetalFamily(VoidHeartBlocks.SEETHING_STEEL_BLOCK, VoidHeartBlocks.CUT_SEETHING_STEEL,
                 VoidHeartBlocks.CUT_SEETHING_STEEL_STAIRS, VoidHeartBlocks.CUT_SEETHING_STEEL_SLAB, VoidHeartBlocks.CUT_SEETHING_STEEL_WALL);

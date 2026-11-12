@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Each district has the biome of its theme, which brings its fog and water. Chasms have their own.
+ * Each district has the biome of its theme, which brings its fog and water. Chasms have their own, and so does the Underway beneath them all.
  */
 public final class DaedalusBiomeSource extends BiomeSource implements BiomeResolver
 {
@@ -31,6 +31,7 @@ public final class DaedalusBiomeSource extends BiomeSource implements BiomeResol
     private static final ResourceKey<Biome> CISTERN = key("daedalus_cistern");
     private static final ResourceKey<Biome> STAIRWELL = key("daedalus_stairwell");
     private static final ResourceKey<Biome> WRITHING = key("daedalus_writhing");
+    public static final ResourceKey<Biome> UNDERWAY = key("underway");
 
     public static final MapCodec<DaedalusBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                     RegistryOps.retrieveElement(CHASM),
@@ -39,10 +40,12 @@ public final class DaedalusBiomeSource extends BiomeSource implements BiomeResol
                     RegistryOps.retrieveElement(GALLERY),
                     RegistryOps.retrieveElement(CISTERN),
                     RegistryOps.retrieveElement(STAIRWELL),
-                    RegistryOps.retrieveElement(WRITHING))
+                    RegistryOps.retrieveElement(WRITHING),
+                    RegistryOps.retrieveElement(UNDERWAY))
             .apply(instance, instance.stable(DaedalusBiomeSource::new)));
 
     private final Holder<Biome> chasm;
+    private final Holder<Biome> underway;
     private final Map<DaedalusTheme, Holder<Biome>> byTheme = new EnumMap<>(DaedalusTheme.class);
 
     private DaedalusBiomeSource(Holder<Biome> chasm,
@@ -51,9 +54,11 @@ public final class DaedalusBiomeSource extends BiomeSource implements BiomeResol
                                 Holder<Biome> gallery,
                                 Holder<Biome> cistern,
                                 Holder<Biome> stairwell,
-                                Holder<Biome> writhing)
+                                Holder<Biome> writhing,
+                                Holder<Biome> underway)
     {
         this.chasm = chasm;
+        this.underway = underway;
         byTheme.put(DaedalusTheme.ARCHIVE, archive);
         byTheme.put(DaedalusTheme.WARREN, warren);
         byTheme.put(DaedalusTheme.GALLERY, gallery);
@@ -76,7 +81,7 @@ public final class DaedalusBiomeSource extends BiomeSource implements BiomeResol
     @Override
     protected Stream<Holder<Biome>> collectPossibleBiomes()
     {
-        return Stream.concat(Stream.of(chasm), byTheme.values().stream());
+        return Stream.concat(Stream.of(chasm, underway), byTheme.values().stream());
     }
 
     @Override
@@ -88,6 +93,8 @@ public final class DaedalusBiomeSource extends BiomeSource implements BiomeResol
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ)
     {
+        if (quartY < 0)
+            return underway;
         int x = QuartPos.toBlock(quartX);
         int z = QuartPos.toBlock(quartZ);
         if (!DistrictPos.isInsideDistrict(x, z))

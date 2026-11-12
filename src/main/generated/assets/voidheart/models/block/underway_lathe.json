@@ -1,0 +1,236 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_plate"
+        },
+        "east": {
+          "texture": "#steel_plate"
+        },
+        "north": {
+          "texture": "#steel_plate"
+        },
+        "south": {
+          "texture": "#steel_plate"
+        },
+        "up": {
+          "texture": "#steel_plate"
+        },
+        "west": {
+          "texture": "#steel_plate"
+        }
+      },
+      "from": [
+        0,
+        6,
+        5
+      ],
+      "to": [
+        16,
+        8,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        1,
+        0,
+        5
+      ],
+      "to": [
+        4,
+        6,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        12,
+        0,
+        5
+      ],
+      "to": [
+        15,
+        6,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lead"
+        },
+        "east": {
+          "texture": "#lead"
+        },
+        "north": {
+          "texture": "#lead"
+        },
+        "south": {
+          "texture": "#lead"
+        },
+        "up": {
+          "texture": "#lead"
+        },
+        "west": {
+          "texture": "#lead"
+        }
+      },
+      "from": [
+        0,
+        8,
+        4
+      ],
+      "to": [
+        5,
+        14,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        5,
+        9,
+        6
+      ],
+      "to": [
+        7,
+        13,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lead"
+        },
+        "east": {
+          "texture": "#lead"
+        },
+        "north": {
+          "texture": "#lead"
+        },
+        "south": {
+          "texture": "#lead"
+        },
+        "up": {
+          "texture": "#lead"
+        },
+        "west": {
+          "texture": "#lead"
+        }
+      },
+      "from": [
+        12,
+        8,
+        6
+      ],
+      "to": [
+        15,
+        12,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        8,
+        8,
+        4
+      ],
+      "to": [
+        11,
+        10,
+        12
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "lead": "voidheart:block/underway/lead",
+    "particle": "voidheart:block/underway/steel_plate",
+    "steel_dark": "voidheart:block/underway/steel_dark",
+    "steel_plate": "voidheart:block/underway/steel_plate"
+  }
+}

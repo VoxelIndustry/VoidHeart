@@ -1,0 +1,242 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#wood_dark"
+        },
+        "east": {
+          "texture": "#wood_dark"
+        },
+        "north": {
+          "texture": "#hazard",
+          "uv": [
+            0,
+            6,
+            16,
+            10
+          ]
+        },
+        "south": {
+          "texture": "#wood_dark"
+        },
+        "up": {
+          "texture": "#wood_dark"
+        },
+        "west": {
+          "texture": "#wood_dark"
+        }
+      },
+      "from": [
+        0,
+        6,
+        6
+      ],
+      "to": [
+        16,
+        10,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rust"
+        },
+        "east": {
+          "texture": "#rust"
+        },
+        "north": {
+          "texture": "#rust"
+        },
+        "south": {
+          "texture": "#rust"
+        },
+        "up": {
+          "texture": "#rust"
+        },
+        "west": {
+          "texture": "#rust"
+        }
+      },
+      "from": [
+        2,
+        0,
+        7
+      ],
+      "to": [
+        4,
+        6,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rust"
+        },
+        "east": {
+          "texture": "#rust"
+        },
+        "north": {
+          "texture": "#rust"
+        },
+        "south": {
+          "texture": "#rust"
+        },
+        "up": {
+          "texture": "#rust"
+        },
+        "west": {
+          "texture": "#rust"
+        }
+      },
+      "from": [
+        12,
+        0,
+        7
+      ],
+      "to": [
+        14,
+        6,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rust"
+        },
+        "east": {
+          "texture": "#rust"
+        },
+        "north": {
+          "texture": "#rust"
+        },
+        "south": {
+          "texture": "#rust"
+        },
+        "up": {
+          "texture": "#rust"
+        },
+        "west": {
+          "texture": "#rust"
+        }
+      },
+      "from": [
+        2,
+        0,
+        10
+      ],
+      "to": [
+        4,
+        3,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rust"
+        },
+        "east": {
+          "texture": "#rust"
+        },
+        "north": {
+          "texture": "#rust"
+        },
+        "south": {
+          "texture": "#rust"
+        },
+        "up": {
+          "texture": "#rust"
+        },
+        "west": {
+          "texture": "#rust"
+        }
+      },
+      "from": [
+        12,
+        0,
+        10
+      ],
+      "to": [
+        14,
+        3,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_plate"
+        },
+        "east": {
+          "texture": "#steel_plate"
+        },
+        "north": {
+          "texture": "#steel_plate"
+        },
+        "south": {
+          "texture": "#steel_plate"
+        },
+        "up": {
+          "texture": "#steel_plate"
+        },
+        "west": {
+          "texture": "#steel_plate"
+        }
+      },
+      "from": [
+        3,
+        7,
+        4
+      ],
+      "to": [
+        6,
+        9,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_plate"
+        },
+        "east": {
+          "texture": "#steel_plate"
+        },
+        "north": {
+          "texture": "#steel_plate"
+        },
+        "south": {
+          "texture": "#steel_plate"
+        },
+        "up": {
+          "texture": "#steel_plate"
+        },
+        "west": {
+          "texture": "#steel_plate"
+        }
+      },
+      "from": [
+        10,
+        7,
+        4
+      ],
+      "to": [
+        13,
+        9,
+        6
+      ]
+    }
+  ],
+  "textures": {
+    "hazard": "voidheart:block/underway/hazard",
+    "particle": "voidheart:block/underway/wood_dark",
+    "rust": "voidheart:block/underway/rust",
+    "steel_plate": "voidheart:block/underway/steel_plate",
+    "wood_dark": "voidheart:block/underway/wood_dark"
+  }
+}

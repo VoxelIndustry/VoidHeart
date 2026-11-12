@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.properties.WallSide;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.block.VoidLampBlock;
 import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.EnumMap;
@@ -83,6 +84,8 @@ public final class DaedalusPalette
     {
         if (material >= DaedalusCanvas.PROP_BASE)
             return props[material - DaedalusCanvas.PROP_BASE];
+        if (material == HATCH.ordinal())
+            return hatch(x, y, z);
         var variants = options[material];
         if (variants.length == 1)
             return variants[0];
@@ -99,6 +102,24 @@ public final class DaedalusPalette
         if (material == DaedalusMaterial.PANEL.ordinal() && below == DaedalusMaterial.AIR.ordinal())
             return options[material][0];
         return state(material, x, y, z);
+    }
+
+    /**
+     * The hatch fills a cell of the lattice, so its parts follow from the place alone: a striped coaming round two leaves that meet along the middle. Under the floor it is plain plate.
+     */
+    private static BlockState hatch(int x, int y, int z)
+    {
+        int u = Math.floorMod(x, DistrictPos.PITCH) % DistrictPos.CELL;
+        int v = Math.floorMod(z, DistrictPos.PITCH) % DistrictPos.CELL;
+        int last = DistrictPos.CELL - 1;
+        var plate = UNDERWAY_HATCH.defaultBlockState();
+        if (y < DistrictPos.floorY(0))
+            return plate;
+        if (u == 0 || v == 0 || u == last || v == last)
+            return UNDERWAY_HAZARD_ARMOUR.defaultBlockState();
+        if (u == last / 2)
+            return plate.setValue(UnderwayHatchBlock.FACING, Direction.EAST);
+        return u == last / 2 + 1 ? plate.setValue(UnderwayHatchBlock.FACING, Direction.WEST) : plate;
     }
 
     public boolean covers(DaedalusMaterial material)
@@ -139,6 +160,7 @@ public final class DaedalusPalette
         set(PROP, Blocks.AIR);
         set(FILL, VOIDSTONE);
         set(BOUND, POCKET_WALL);
+        set(HATCH, UNDERWAY_HATCH);
         set(WATER, Blocks.WATER);
         set(CHAIN, Blocks.IRON_CHAIN);
         set(COLUMN, VOIDSTONE_PILLAR);

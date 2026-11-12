@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_litter",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_litter"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_litter",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_litter",
+      "y": 270
+    }
+  }
+}

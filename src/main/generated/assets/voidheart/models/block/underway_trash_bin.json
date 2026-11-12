@@ -1,0 +1,107 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#lead"
+        },
+        "east": {
+          "texture": "#lead"
+        },
+        "north": {
+          "texture": "#lead"
+        },
+        "south": {
+          "texture": "#lead"
+        },
+        "up": {
+          "texture": "#lead"
+        },
+        "west": {
+          "texture": "#lead"
+        }
+      },
+      "from": [
+        4,
+        0,
+        4
+      ],
+      "to": [
+        12,
+        11,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        3,
+        11,
+        3
+      ],
+      "to": [
+        13,
+        12,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paper"
+        },
+        "east": {
+          "texture": "#paper"
+        },
+        "north": {
+          "texture": "#paper"
+        },
+        "south": {
+          "texture": "#paper"
+        },
+        "up": {
+          "texture": "#paper"
+        },
+        "west": {
+          "texture": "#paper"
+        }
+      },
+      "from": [
+        6,
+        12,
+        6
+      ],
+      "to": [
+        9,
+        13,
+        9
+      ]
+    }
+  ],
+  "textures": {
+    "lead": "voidheart:block/underway/lead",
+    "paper": "voidheart:block/underway/paper",
+    "particle": "voidheart:block/underway/lead",
+    "steel_dark": "voidheart:block/underway/steel_dark"
+  }
+}

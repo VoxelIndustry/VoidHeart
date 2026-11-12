@@ -1,0 +1,205 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        0,
+        10,
+        13
+      ],
+      "to": [
+        16,
+        12,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper_dark"
+        },
+        "east": {
+          "texture": "#copper_dark"
+        },
+        "north": {
+          "texture": "#copper_dark"
+        },
+        "south": {
+          "texture": "#copper_dark"
+        },
+        "up": {
+          "texture": "#copper_dark"
+        },
+        "west": {
+          "texture": "#copper_dark"
+        }
+      },
+      "from": [
+        0,
+        5,
+        13
+      ],
+      "to": [
+        16,
+        7,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        3,
+        4,
+        15
+      ],
+      "to": [
+        5,
+        13,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        11,
+        4,
+        15
+      ],
+      "to": [
+        13,
+        13,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        7,
+        12,
+        13
+      ],
+      "to": [
+        9,
+        14,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_red"
+        },
+        "east": {
+          "texture": "#paint_red"
+        },
+        "north": {
+          "texture": "#paint_red"
+        },
+        "south": {
+          "texture": "#paint_red"
+        },
+        "up": {
+          "texture": "#paint_red"
+        },
+        "west": {
+          "texture": "#paint_red"
+        }
+      },
+      "from": [
+        5,
+        14,
+        12
+      ],
+      "to": [
+        11,
+        15,
+        16
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
+    "copper_dark": "voidheart:block/underway/copper_dark",
+    "paint_red": "voidheart:block/underway/paint_red",
+    "particle": "voidheart:block/underway/copper",
+    "steel_dark": "voidheart:block/underway/steel_dark"
+  }
+}

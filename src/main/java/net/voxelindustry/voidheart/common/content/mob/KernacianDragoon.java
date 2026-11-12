@@ -681,7 +681,7 @@ public class KernacianDragoon extends Automaton
     {
         for (var player : level.getEntitiesOfClass(Player.class, new AABB(from, to).inflate(1), EntitySelector.NO_CREATIVE_OR_SPECTATOR))
         {
-            if (player.getBoundingBox().inflate(BEAM_HIT_RADIUS).clip(from, to).isEmpty())
+            if (!canAttack(player) || player.getBoundingBox().inflate(BEAM_HIT_RADIUS).clip(from, to).isEmpty())
                 continue;
             if (player.hurtServer(level, damageSources().source(DAMAGE, this), Elixirs.againstVoidFire(player, againstFireProtection(player, BEAM_DAMAGE))))
                 player.igniteForSeconds(BURN_SECONDS);
@@ -699,7 +699,7 @@ public class KernacianDragoon extends Automaton
         public boolean canUse()
         {
             var target = getTarget();
-            if (target == null || !target.isAlive() || beamCooldown > 0)
+            if (target == null || !target.isAlive() || !canAttack(target) || beamCooldown > 0)
                 return false;
             double distance = distanceTo(target);
             return distance >= BEAM_MIN_RANGE && distance <= BEAM_RANGE && getSensing().hasLineOfSight(target);
@@ -795,7 +795,7 @@ public class KernacianDragoon extends Automaton
         public boolean canUse()
         {
             var target = getTarget();
-            return target != null && target.isAlive() && kickCooldown == 0 && beamTicks() == 0 && inKickReach(target);
+            return target != null && target.isAlive() && canAttack(target) && kickCooldown == 0 && beamTicks() == 0 && inKickReach(target);
         }
 
         @Override
@@ -847,7 +847,7 @@ public class KernacianDragoon extends Automaton
         if (target != null && ticks < KICK_WINDUP_TICKS)
             getLookControl().setLookAt(target, 30, 30);
 
-        if (ticks == KICK_WINDUP_TICKS && target != null && inKickReach(target))
+        if (ticks == KICK_WINDUP_TICKS && target != null && canAttack(target) && inKickReach(target))
         {
             var level = (ServerLevel) level();
             playSound(VoidHeartSounds.DRAGOON_KICK, 2, 1);

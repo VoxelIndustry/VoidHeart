@@ -1,0 +1,107 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        }
+      },
+      "from": [
+        3,
+        3,
+        11
+      ],
+      "to": [
+        13,
+        13,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        4,
+        4,
+        10
+      ],
+      "to": [
+        12,
+        12,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_dark"
+        },
+        "east": {
+          "texture": "#glass_dark"
+        },
+        "north": {
+          "texture": "#glass_dark"
+        },
+        "south": {
+          "texture": "#glass_dark"
+        },
+        "up": {
+          "texture": "#glass_dark"
+        },
+        "west": {
+          "texture": "#glass_dark"
+        }
+      },
+      "from": [
+        5,
+        5,
+        9
+      ],
+      "to": [
+        11,
+        11,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "copper": "voidheart:block/underway/copper",
+    "glass_dark": "voidheart:block/underway/glass_dark",
+    "particle": "voidheart:block/underway/copper"
+  }
+}

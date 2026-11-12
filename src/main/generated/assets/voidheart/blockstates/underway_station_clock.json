@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_station_clock",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_station_clock"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_station_clock",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_station_clock",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,204 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#voidstone"
+        },
+        "east": {
+          "texture": "#voidstone"
+        },
+        "north": {
+          "texture": "#voidstone"
+        },
+        "south": {
+          "texture": "#voidstone"
+        },
+        "up": {
+          "texture": "#voidstone"
+        },
+        "west": {
+          "texture": "#voidstone"
+        }
+      },
+      "from": [
+        3,
+        0,
+        3
+      ],
+      "to": [
+        13,
+        2,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#voidstone"
+        },
+        "east": {
+          "texture": "#voidstone"
+        },
+        "north": {
+          "texture": "#voidstone"
+        },
+        "south": {
+          "texture": "#voidstone"
+        },
+        "up": {
+          "texture": "#voidstone"
+        },
+        "west": {
+          "texture": "#voidstone"
+        }
+      },
+      "from": [
+        4,
+        2,
+        4
+      ],
+      "to": [
+        12,
+        6,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glyph"
+        },
+        "east": {
+          "texture": "#glyph"
+        },
+        "north": {
+          "texture": "#glyph"
+        },
+        "south": {
+          "texture": "#glyph"
+        },
+        "up": {
+          "texture": "#glyph"
+        },
+        "west": {
+          "texture": "#glyph"
+        }
+      },
+      "from": [
+        4,
+        6,
+        4
+      ],
+      "to": [
+        12,
+        10,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#voidstone"
+        },
+        "east": {
+          "texture": "#voidstone"
+        },
+        "north": {
+          "texture": "#voidstone"
+        },
+        "south": {
+          "texture": "#voidstone"
+        },
+        "up": {
+          "texture": "#voidstone"
+        },
+        "west": {
+          "texture": "#voidstone"
+        }
+      },
+      "from": [
+        4,
+        10,
+        4
+      ],
+      "to": [
+        12,
+        13,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        3,
+        13,
+        3
+      ],
+      "to": [
+        13,
+        15,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#ley"
+        },
+        "east": {
+          "texture": "#ley"
+        },
+        "north": {
+          "texture": "#ley"
+        },
+        "south": {
+          "texture": "#ley"
+        },
+        "up": {
+          "texture": "#ley"
+        },
+        "west": {
+          "texture": "#ley"
+        }
+      },
+      "from": [
+        6,
+        15,
+        6
+      ],
+      "to": [
+        10,
+        16,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "glyph": "voidheart:block/underway/glyph",
+    "ley": "voidheart:block/underway/ley",
+    "particle": "voidheart:block/underway/voidstone",
+    "voidstone": "voidheart:block/underway/voidstone"
+  }
+}

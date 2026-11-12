@@ -1,0 +1,41 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#sign"
+        },
+        "east": {
+          "texture": "#sign"
+        },
+        "north": {
+          "texture": "#sign"
+        },
+        "south": {
+          "texture": "#sign"
+        },
+        "up": {
+          "texture": "#sign"
+        },
+        "west": {
+          "texture": "#sign"
+        }
+      },
+      "from": [
+        3,
+        3,
+        15
+      ],
+      "to": [
+        13,
+        13,
+        16
+      ]
+    }
+  ],
+  "textures": {
+    "particle": "voidheart:block/underway/sign",
+    "sign": "voidheart:block/underway/sign"
+  }
+}

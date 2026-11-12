@@ -271,6 +271,26 @@ class DaedalusMobPlanTest
     }
 
     @Test
+    void theFenceKeepsMobsOutOfTheUnderway()
+    {
+        // Sinking through the floor stops on it, wherever the mob stands
+        assertEquals(-1, DaedalusFence.clipY(2, -5), 1e-9);
+        assertEquals(0, DaedalusFence.clipY(DaedalusFence.FLOOR, -0.4), 1e-9);
+        assertEquals(-0.3, DaedalusFence.clipY(10, -0.3), 1e-9);
+        // Rising is free, and one already under the floor sinks no further
+        assertEquals(3, DaedalusFence.clipY(2, 3), 1e-9);
+        assertEquals(0, DaedalusFence.clipY(-20, -1), 1e-9);
+        assertEquals(2, DaedalusFence.clipY(-20, 2), 1e-9);
+
+        // No crossing ends under the floor, from a district or from a bridge over the chasm
+        assertTrue(DaedalusFence.allows(10, 10, 20, 2, 20));
+        assertFalse(DaedalusFence.allows(10, 10, 20, -14, 20));
+        assertFalse(DaedalusFence.allows(DistrictPos.SIZE + 4, 10, DistrictPos.SIZE + 4, -30, 10));
+        assertTrue(DaedalusFence.isUnderFloor(-1));
+        assertFalse(DaedalusFence.isUnderFloor(2));
+    }
+
+    @Test
     void compassYawsMatchMinecraft()
     {
         assertEquals(180, Compass.yaw(Compass.NORTH));

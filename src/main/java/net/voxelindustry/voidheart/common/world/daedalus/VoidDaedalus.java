@@ -134,11 +134,11 @@ public final class VoidDaedalus
     }
 
     /**
-     * Shown as a subtitle under an empty title, since the title's size runs a long name off the screen.
+     * Shown as a subtitle under an empty title, since the title's size runs a long name off the screen. The Underway beneath a district is not part of it, so nothing is announced there.
      */
     private static void announceDistrict(ServerPlayer player, long worldSeed)
     {
-        if (!DistrictPos.isInsideDistrict(player.getBlockX(), player.getBlockZ()))
+        if (player.getBlockY() < 0 || !DistrictPos.isInsideDistrict(player.getBlockX(), player.getBlockZ()))
             return;
 
         var pos = DistrictPos.at(player.getBlockX(), player.getBlockZ());

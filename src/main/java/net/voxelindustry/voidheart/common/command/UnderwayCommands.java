@@ -1,0 +1,141 @@
+package net.voxelindustry.voidheart.common.command;
+
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.util.TeleportUtil;
+import net.voxelindustry.voidheart.common.world.daedalus.Compass;
+import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayNetwork;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayNode;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
+
+import java.util.Arrays;
+import java.util.Locale;
+
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
+
+/**
+ * A way into the Underway for review, until its hatches can be opened.
+ */
+final class UnderwayCommands
+{
+    private static final int SEARCH_RADIUS = 8;
+    private static final DynamicCommandExceptionType UNKNOWN_KIND = new DynamicCommandExceptionType(name -> Component.literal("No kind of fort is called " + name));
+
+    private UnderwayCommands()
+    {
+    }
+
+    static void register(LiteralArgumentBuilder<CommandSourceStack> builder)
+    {
+        builder.then(literal("underway")
+                .then(literal("enter")
+                        .executes(context -> enter(context, null))
+                        .then(argument("kind", StringArgumentType.word())
+                                .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayNode.values()).map(node -> node.name().toLowerCase(Locale.ROOT)), suggestions))
+                                .executes(context -> enter(context, kind(context)))))
+                .then(literal("hatch")
+                        .executes(context -> hatch(context, null))
+                        .then(argument("kind", StringArgumentType.word())
+                                .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayNode.values()).map(node -> node.name().toLowerCase(Locale.ROOT)), suggestions))
+                                .executes(context -> hatch(context, kind(context)))))
+                .then(literal("where").executes(UnderwayCommands::where)));
+    }
+
+    private static UnderwayNode kind(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        String name = StringArgumentType.getString(context, "kind");
+        for (var node : UnderwayNode.values())
+        {
+            if (node.name().equalsIgnoreCase(name))
+                return node;
+        }
+        throw UNKNOWN_KIND.create(name);
+    }
+
+    /** Sends the player to the foot of the hatch stairs of the nearest fort of that kind, or of the one under their feet. */
+    private static int enter(CommandContext<CommandSourceStack> context, UnderwayNode kind) throws CommandSyntaxException
+    {
+        return send(context, kind, false);
+    }
+
+    /** Sends the player onto the hatch of the nearest fort of that kind, in the district over it. */
+    private static int hatch(CommandContext<CommandSourceStack> context, UnderwayNode kind) throws CommandSyntaxException
+    {
+        return send(context, kind, true);
+    }
+
+    private static int send(CommandContext<CommandSourceStack> context, UnderwayNode kind, boolean above) throws CommandSyntaxException
+    {
+        var player = context.getSource().getPlayerOrException();
+        var level = VoidDaedalus.level(context.getSource().getServer());
+        long seed = level.getSeed();
+        var from = player.level().dimension() == VoidDaedalus.WORLD_KEY ? DistrictPos.at(player.getBlockX(), player.getBlockZ()) : new DistrictPos(0, 0);
+        for (int radius = 0; radius <= SEARCH_RADIUS; radius++)
+        {
+            for (int z = -radius; z <= radius; z++)
+            {
+                for (int x = -radius; x <= radius; x++)
+                {
+                    var pos = new DistrictPos(from.x() + x, from.z() + z);
+                    if (Math.max(Math.abs(x), Math.abs(z)) != radius || kind != null && UnderwayNetwork.nodeAt(seed, pos) != kind)
+                        continue;
+                    var fort = UnderwayPlans.fort(seed, pos);
+                    var foot = new Vec3(fort.frame().x(fort.footAlong(), fort.footAcross()) + 0.5, UnderwayLevels.ENTRY_FLOOR + 1, fort.frame().z(fort.footAlong(), fort.footAcross()) + 0.5);
+                    var hatch = new Vec3(fort.hatchX() + DistrictPos.CELL / 2.0, DistrictPos.floorY(0) + 1, fort.hatchZ() + DistrictPos.CELL / 2.0);
+                    if (!above && level.getBlockState(BlockPos.containing(foot).below()).isAir())
+                    {
+                        context.getSource().sendFailure(Component.literal("District " + pos.x() + ", " + pos.z() + " was generated before the Underway and has nothing under it"));
+                        return 0;
+                    }
+                    TeleportUtil.teleport(player, level, above ? hatch : foot, player.getYRot(), 0);
+                    context.getSource().sendSuccess(() -> describe(seed, pos), false);
+                    return 1;
+                }
+            }
+        }
+        context.getSource().sendFailure(Component.literal("No such fort within " + SEARCH_RADIUS + " districts"));
+        return 0;
+    }
+
+    private static int where(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var player = context.getSource().getPlayerOrException();
+        if (player.level().dimension() != VoidDaedalus.WORLD_KEY)
+        {
+            context.getSource().sendFailure(Component.literal("Not inside the Daedalus"));
+            return 0;
+        }
+        long seed = VoidDaedalus.level(context.getSource().getServer()).getSeed();
+        var pos = DistrictPos.at(player.getBlockX(), player.getBlockZ());
+        context.getSource().sendSuccess(() -> describe(seed, pos), false);
+        return 1;
+    }
+
+    private static Component describe(long seed, DistrictPos pos)
+    {
+        var text = new StringBuilder(UnderwayNetwork.ruinAt(seed, pos).name().toLowerCase(Locale.ROOT)).append(' ')
+                .append(UnderwayNetwork.nodeAt(seed, pos).name().toLowerCase(Locale.ROOT)).append(" under district ").append(pos.x()).append(", ").append(pos.z());
+        var station = UnderwayNetwork.stationOf(seed, pos);
+        if (!station.equals(pos))
+            text.append(", its gallery leads to ").append(station.x()).append(", ").append(station.z());
+        for (int direction = 0; direction < Compass.COUNT; direction++)
+        {
+            var link = UnderwayNetwork.linkFrom(seed, pos, direction);
+            if (link.canBeWalked() || link == net.voxelindustry.voidheart.common.world.underway.UnderwayLink.GATED)
+                text.append(", ").append(new String[] { "north", "east", "south", "west" }[direction]).append(' ').append(link.name().toLowerCase(Locale.ROOT));
+        }
+        return Component.literal(text.toString());
+    }
+}

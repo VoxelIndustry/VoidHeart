@@ -1,0 +1,105 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#crate"
+        },
+        "east": {
+          "texture": "#crate"
+        },
+        "north": {
+          "texture": "#crate"
+        },
+        "south": {
+          "texture": "#crate"
+        },
+        "up": {
+          "texture": "#crate"
+        },
+        "west": {
+          "texture": "#crate"
+        }
+      },
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        10,
+        9,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#crate"
+        },
+        "east": {
+          "texture": "#crate"
+        },
+        "north": {
+          "texture": "#crate"
+        },
+        "south": {
+          "texture": "#crate"
+        },
+        "up": {
+          "texture": "#crate"
+        },
+        "west": {
+          "texture": "#crate"
+        }
+      },
+      "from": [
+        10,
+        0,
+        6
+      ],
+      "to": [
+        16,
+        7,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#crate"
+        },
+        "east": {
+          "texture": "#crate"
+        },
+        "north": {
+          "texture": "#crate"
+        },
+        "south": {
+          "texture": "#crate"
+        },
+        "up": {
+          "texture": "#crate"
+        },
+        "west": {
+          "texture": "#crate"
+        }
+      },
+      "from": [
+        1,
+        9,
+        1
+      ],
+      "to": [
+        9,
+        15,
+        9
+      ]
+    }
+  ],
+  "textures": {
+    "crate": "voidheart:block/underway/crate",
+    "particle": "voidheart:block/underway/crate"
+  }
+}

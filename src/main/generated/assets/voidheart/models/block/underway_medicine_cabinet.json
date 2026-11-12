@@ -1,0 +1,140 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#enamel"
+        },
+        "east": {
+          "texture": "#enamel"
+        },
+        "north": {
+          "texture": "#enamel"
+        },
+        "south": {
+          "texture": "#enamel"
+        },
+        "up": {
+          "texture": "#enamel"
+        },
+        "west": {
+          "texture": "#enamel"
+        }
+      },
+      "from": [
+        3,
+        3,
+        12
+      ],
+      "to": [
+        13,
+        14,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_dark"
+        },
+        "east": {
+          "texture": "#glass_dark"
+        },
+        "north": {
+          "texture": "#glass_dark"
+        },
+        "south": {
+          "texture": "#glass_dark"
+        },
+        "up": {
+          "texture": "#glass_dark"
+        },
+        "west": {
+          "texture": "#glass_dark"
+        }
+      },
+      "from": [
+        4,
+        8,
+        11
+      ],
+      "to": [
+        12,
+        13,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_red"
+        },
+        "east": {
+          "texture": "#paint_red"
+        },
+        "north": {
+          "texture": "#paint_red"
+        },
+        "south": {
+          "texture": "#paint_red"
+        },
+        "up": {
+          "texture": "#paint_red"
+        },
+        "west": {
+          "texture": "#paint_red"
+        }
+      },
+      "from": [
+        7,
+        4,
+        11
+      ],
+      "to": [
+        9,
+        6,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        11,
+        6,
+        11
+      ],
+      "to": [
+        12,
+        7,
+        12
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "enamel": "voidheart:block/underway/enamel",
+    "glass_dark": "voidheart:block/underway/glass_dark",
+    "paint_red": "voidheart:block/underway/paint_red",
+    "particle": "voidheart:block/underway/enamel"
+  }
+}

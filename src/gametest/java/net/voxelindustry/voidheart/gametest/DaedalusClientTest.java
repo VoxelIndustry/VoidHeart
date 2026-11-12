@@ -29,6 +29,7 @@ import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPlan;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPlans;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
 import net.voxelindustry.voidheart.common.world.daedalus.Room;
 import net.voxelindustry.voidheart.common.world.daedalus.RoomShape;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -149,7 +150,8 @@ public class DaedalusClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var level = VoidDaedalus.level(minecraft);
-            expect(level.getMinY() == 0 && level.getHeight() == DistrictPos.HEIGHT, "The Daedalus should be " + DistrictPos.HEIGHT + " high, it is " + level.getHeight());
+            int height = DistrictPos.HEIGHT + UnderwayLevels.HEIGHT;
+            expect(level.getMinY() == UnderwayLevels.MIN_Y && level.getHeight() == height, "The Daedalus should be " + height + " high over its Underway, it is " + level.getHeight() + " from " + level.getMinY());
 
             var floor = new BlockPos(5, 0, 5);
             var ceiling = new BlockPos(5, DistrictPos.TOP_Y, 5);
@@ -247,7 +249,8 @@ public class DaedalusClientTest implements FabricClientGameTest
             {
                 for (int x = minX; x < minX + 16; x++)
                 {
-                    var wanted = palette.state(canvas.raw(x, y, z), y > 0 ? canvas.raw(x, y - 1, z) : 0, x, y, z);
+                    boolean underHatch = y == 0 && canvas.get(x, 1, z) == DaedalusMaterial.HATCH;
+                    var wanted = palette.state(underHatch ? DaedalusMaterial.HATCH.ordinal() : canvas.raw(x, y, z), y > 0 ? canvas.raw(x, y - 1, z) : 0, x, y, z);
                     var found = chunk.getBlockState(at.set(x, y, z));
                     if (DaedalusPalette.isRail(canvas.raw(x, y, z)))
                     {

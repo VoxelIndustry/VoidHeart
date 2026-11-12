@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_dynamo",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_dynamo"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_dynamo",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_dynamo",
+      "y": 270
+    }
+  }
+}

@@ -119,6 +119,7 @@ public class ModelsProvider extends FabricModelProvider
         registerDaedalusDecor();
         registerRepairAndDoor();
         EnergyDatagen.blockModels(generator);
+        UnderwayPropModels.generate(generator);
     }
 
     /**

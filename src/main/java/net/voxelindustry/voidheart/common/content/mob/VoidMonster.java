@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.mob;
 
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -149,17 +150,24 @@ public abstract class VoidMonster extends Monster
         if (isInDaedalus())
         {
             var box = getBoundingBox();
-            delta = new Vec3(DaedalusFence.clipX(getX(), getZ(), box.minX, box.maxX, delta.x), delta.y, DaedalusFence.clipZ(getX(), getZ(), box.minZ, box.maxZ, delta.z));
+            delta = new Vec3(DaedalusFence.clipX(getX(), getZ(), box.minX, box.maxX, delta.x), DaedalusFence.clipY(box.minY, delta.y), DaedalusFence.clipZ(getX(), getZ(), box.minZ, box.maxZ, delta.z));
         }
         super.move(type, delta);
     }
 
     /**
-     * @return whether it may be put at this spot by its own doing, as by crossing a wall, which only the Daedalus' district edges forbid
+     * @return whether it may be put at this spot by its own doing, as by crossing a wall, which only the Daedalus' district edges and floor forbid
      */
     public boolean mayGoTo(Vec3 spot)
     {
-        return !isInDaedalus() || DaedalusFence.allows(getX(), getZ(), spot.x, spot.z);
+        return !isInDaedalus() || DaedalusFence.allows(getX(), getZ(), spot.x, spot.y, spot.z);
+    }
+
+    /** Whoever goes down into the Underway is out of the void's reach: nothing of the Daedalus follows, hunts or strikes at them from above. */
+    @Override
+    public boolean canAttack(LivingEntity target)
+    {
+        return super.canAttack(target) && !(isInDaedalus() && DaedalusFence.isUnderFloor(target.getY()));
     }
 
     protected boolean isInDaedalus()

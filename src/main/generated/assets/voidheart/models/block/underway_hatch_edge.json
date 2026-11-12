@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "voidheart:block/underway/hatch_edge",
+    "side": "voidheart:block/underway/hatch_plate",
+    "top": "voidheart:block/underway/hatch_edge"
+  }
+}

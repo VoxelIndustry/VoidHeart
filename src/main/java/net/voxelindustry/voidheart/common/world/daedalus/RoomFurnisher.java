@@ -141,6 +141,12 @@ final class RoomFurnisher
                 detailWalls(room, floorY(room.minK()) + LAST);
             }
             case COLONNADE, ATRIUM -> detailFloor(room, room.minK(), true);
+            case HATCH ->
+            {
+                detailFloor(room, room.minK(), false);
+                detailWalls(room, roomTopAir(room));
+                detailCeiling(room);
+            }
             case STACKS -> detailFloor(room, room.minK(), false);
             case CHAMBER -> mottleFloor(room);
             default ->

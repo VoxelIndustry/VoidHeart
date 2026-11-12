@@ -1,0 +1,74 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#wood_dark"
+        },
+        "east": {
+          "texture": "#wood_dark"
+        },
+        "north": {
+          "texture": "#wood_dark"
+        },
+        "south": {
+          "texture": "#wood_dark"
+        },
+        "up": {
+          "texture": "#wood_dark"
+        },
+        "west": {
+          "texture": "#wood_dark"
+        }
+      },
+      "from": [
+        0,
+        2,
+        15
+      ],
+      "to": [
+        16,
+        15,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#map"
+        },
+        "east": {
+          "texture": "#map"
+        },
+        "north": {
+          "texture": "#map"
+        },
+        "south": {
+          "texture": "#map"
+        },
+        "up": {
+          "texture": "#map"
+        },
+        "west": {
+          "texture": "#map"
+        }
+      },
+      "from": [
+        1,
+        3,
+        14
+      ],
+      "to": [
+        15,
+        14,
+        15
+      ]
+    }
+  ],
+  "textures": {
+    "map": "voidheart:block/underway/map",
+    "particle": "voidheart:block/underway/wood_dark",
+    "wood_dark": "voidheart:block/underway/wood_dark"
+  }
+}

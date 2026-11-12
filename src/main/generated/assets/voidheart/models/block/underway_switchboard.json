@@ -1,0 +1,210 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#wood_dark"
+        },
+        "east": {
+          "texture": "#wood_dark"
+        },
+        "north": {
+          "texture": "#wood_dark"
+        },
+        "south": {
+          "texture": "#wood_dark"
+        },
+        "up": {
+          "texture": "#wood_dark"
+        },
+        "west": {
+          "texture": "#wood_dark"
+        }
+      },
+      "from": [
+        0,
+        0,
+        6
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#switches",
+          "uv": [
+            1,
+            1,
+            15,
+            11
+          ]
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        1,
+        5,
+        5
+      ],
+      "to": [
+        15,
+        15,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#wood_dark"
+        },
+        "east": {
+          "texture": "#wood_dark"
+        },
+        "north": {
+          "texture": "#wood_dark"
+        },
+        "south": {
+          "texture": "#wood_dark"
+        },
+        "up": {
+          "texture": "#wood_dark"
+        },
+        "west": {
+          "texture": "#wood_dark"
+        }
+      },
+      "from": [
+        0,
+        4,
+        1
+      ],
+      "to": [
+        16,
+        5,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#wood_dark"
+        },
+        "east": {
+          "texture": "#wood_dark"
+        },
+        "north": {
+          "texture": "#wood_dark"
+        },
+        "south": {
+          "texture": "#wood_dark"
+        },
+        "up": {
+          "texture": "#wood_dark"
+        },
+        "west": {
+          "texture": "#wood_dark"
+        }
+      },
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        15,
+        4,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rubber"
+        },
+        "east": {
+          "texture": "#rubber"
+        },
+        "north": {
+          "texture": "#rubber"
+        },
+        "south": {
+          "texture": "#rubber"
+        },
+        "up": {
+          "texture": "#rubber"
+        },
+        "west": {
+          "texture": "#rubber"
+        }
+      },
+      "from": [
+        4,
+        5,
+        3
+      ],
+      "to": [
+        5,
+        8,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rubber"
+        },
+        "east": {
+          "texture": "#rubber"
+        },
+        "north": {
+          "texture": "#rubber"
+        },
+        "south": {
+          "texture": "#rubber"
+        },
+        "up": {
+          "texture": "#rubber"
+        },
+        "west": {
+          "texture": "#rubber"
+        }
+      },
+      "from": [
+        9,
+        5,
+        3
+      ],
+      "to": [
+        10,
+        9,
+        4
+      ]
+    }
+  ],
+  "textures": {
+    "particle": "voidheart:block/underway/wood_dark",
+    "rubber": "voidheart:block/underway/rubber",
+    "steel_dark": "voidheart:block/underway/steel_dark",
+    "switches": "voidheart:block/underway/switches",
+    "wood_dark": "voidheart:block/underway/wood_dark"
+  }
+}

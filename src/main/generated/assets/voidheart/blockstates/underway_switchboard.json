@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_switchboard",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_switchboard"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_switchboard",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_switchboard",
+      "y": 270
+    }
+  }
+}

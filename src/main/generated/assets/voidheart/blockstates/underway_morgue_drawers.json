@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_morgue_drawers",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_morgue_drawers"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_morgue_drawers",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_morgue_drawers",
+      "y": 270
+    }
+  }
+}

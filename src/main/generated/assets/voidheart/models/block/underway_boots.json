@@ -1,0 +1,137 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        3,
+        0,
+        4
+      ],
+      "to": [
+        6,
+        2,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        3,
+        2,
+        7
+      ],
+      "to": [
+        6,
+        7,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        9,
+        0,
+        5
+      ],
+      "to": [
+        12,
+        2,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        9,
+        2,
+        8
+      ],
+      "to": [
+        12,
+        6,
+        11
+      ]
+    }
+  ],
+  "textures": {
+    "leather": "voidheart:block/underway/leather",
+    "particle": "voidheart:block/underway/leather"
+  }
+}

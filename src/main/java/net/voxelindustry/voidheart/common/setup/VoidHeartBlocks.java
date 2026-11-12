@@ -43,6 +43,8 @@ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.voxelindustry.voidheart.common.block.CustomStairsBlock;
@@ -97,6 +99,11 @@ import java.util.List;
 import java.util.Map;
 import net.voxelindustry.voidheart.common.content.daedalus.DaedalusPropBlock;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
@@ -281,6 +288,24 @@ public class VoidHeartBlocks
     public static Block BARNACLE_CRUST;
 
     private static final Map<DaedalusProp, Block> DAEDALUS_PROPS = new EnumMap<>(DaedalusProp.class);
+    private static final Map<UnderwayProp, Block> UNDERWAY_PROPS = new EnumMap<>(UnderwayProp.class);
+    public static Block UNDERWAY_CONCRETE;
+    public static Block UNDERWAY_STAINED_CONCRETE;
+    public static Block UNDERWAY_ARMOUR;
+    public static Block UNDERWAY_FORMED_CONCRETE;
+    public static Block UNDERWAY_CRACKED_CONCRETE;
+    public static Block UNDERWAY_HAZARD_ARMOUR;
+    public static Block UNDERWAY_BLAST_GATE;
+    public static Block UNDERWAY_HATCH;
+    public static Block UNDERWAY_EMBRASURE;
+    public static Block UNDERWAY_GRATING;
+    public static Block UNDERWAY_STEEL_STAIRS;
+    public static Block UNDERWAY_TRUNK_RAIL;
+    public static Block UNDERWAY_TRACK_TIE;
+    public static Block UNDERWAY_FEEDER_RAIL;
+    public static Block UNDERWAY_BALLAST;
+    public static Block UNDERWAY_RUBBLE;
+    public static Block UNDERWAY_DOOR;
 
     public static final List<Block> MINEABLE_BLOCKS = new ArrayList<>();
 
@@ -642,6 +667,7 @@ public class VoidHeartBlocks
 
         registerDepthsBlocks();
         registerDaedalusProps();
+        registerUnderwayProps();
         registerAthanorBlocks();
 
         SMALL_AZURIUM_BUNDLE = registerSmallBundle("azurium", MapColor.COLOR_BLUE, 1, 6);
@@ -795,6 +821,72 @@ public class VoidHeartBlocks
                     .lightLevel(state -> light)
                     .pushReaction(PushReaction.POPPED);
             DAEDALUS_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new DaedalusPropBlock(blockProperties, prop, shape), properties, true));
+        }
+    }
+
+    /** The Underway's shell cannot be broken, so that its gates and doors really bar the way. */
+    private static BlockBehaviour.Properties underwayShell(MapColor color, SoundType sound)
+    {
+        return BlockBehaviour.Properties.of()
+                .mapColor(color)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(-1.0F, 3600000.0F)
+                .noLootTable()
+                .sound(sound)
+                .isValidSpawn((state, world, pos, type) -> false);
+    }
+
+    public static Block underwayProp(UnderwayProp prop)
+    {
+        return UNDERWAY_PROPS.get(prop);
+    }
+
+    private static void registerUnderwayProps()
+    {
+        UNDERWAY_CONCRETE = registerBlock("underway_concrete", Block::new, underwayShell(MapColor.STONE, SoundType.STONE), true);
+        UNDERWAY_STAINED_CONCRETE = registerBlock("underway_stained_concrete", Block::new, underwayShell(MapColor.COLOR_GRAY, SoundType.STONE), true);
+        UNDERWAY_ARMOUR = registerBlock("underway_armour", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
+        UNDERWAY_FORMED_CONCRETE = registerBlock("underway_formed_concrete", Block::new, underwayShell(MapColor.STONE, SoundType.STONE), true);
+        UNDERWAY_CRACKED_CONCRETE = registerBlock("underway_cracked_concrete", Block::new, underwayShell(MapColor.STONE, SoundType.STONE), true);
+        UNDERWAY_HAZARD_ARMOUR = registerBlock("underway_hazard_armour", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
+        UNDERWAY_BLAST_GATE = registerBlock("underway_blast_gate", Block::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
+        UNDERWAY_HATCH = registerBlock("underway_hatch", UnderwayHatchBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
+        UNDERWAY_EMBRASURE = registerBlock("underway_firing_slit", UnderwayEmbrasureBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK).noOcclusion(), true);
+
+        var steel = BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.0F, 6.0F).sound(SoundType.METAL);
+        UNDERWAY_GRATING = registerBlock("underway_grating", Block::new, BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.0F, 6.0F)
+                .sound(SoundType.METAL).noOcclusion().isValidSpawn((state, world, pos, type) -> false), true);
+        UNDERWAY_STEEL_STAIRS = registerBlock("underway_steel_stairs", properties -> new CustomStairsBlock(UNDERWAY_ARMOUR.defaultBlockState(), properties), steel, true);
+        var track = BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(0.7F).sound(SoundType.METAL).noCollision().noOcclusion().pushReaction(PushReaction.POPPED);
+        UNDERWAY_TRUNK_RAIL = registerBlock("underway_trunk_rail", UnderwayTrackBlock::new, track, true);
+        UNDERWAY_TRACK_TIE = registerBlock("underway_track_tie", UnderwayTrackBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).strength(0.7F).sound(SoundType.WOOD)
+                .noCollision().noOcclusion().pushReaction(PushReaction.POPPED), true);
+        UNDERWAY_FEEDER_RAIL = registerBlock("underway_feeder_rail", UnderwayTrackBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(0.7F).sound(SoundType.METAL)
+                .noCollision().noOcclusion().pushReaction(PushReaction.POPPED), true);
+        UNDERWAY_BALLAST = registerBlock("underway_ballast", Block::new, BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(0.8F).sound(SoundType.GRAVEL), true);
+        UNDERWAY_RUBBLE = registerBlock("underway_rubble", Block::new, BlockBehaviour.Properties.of().mapColor(MapColor.STONE).requiresCorrectToolForDrops().strength(2.0F, 6.0F).sound(SoundType.STONE), true);
+        UNDERWAY_DOOR = registerBlock("underway_door", properties -> new DoorBlock(BlockSetType.COPPER, properties), BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+                .requiresCorrectToolForDrops().strength(5.0F, 6.0F).noOcclusion().pushReaction(PushReaction.POPPED), true);
+        for (var prop : UnderwayProp.values())
+        {
+            var sound = switch (prop.sound())
+            {
+                case METAL -> SoundType.METAL;
+                case WOOD -> SoundType.WOOD;
+                case CLOTH -> SoundType.WOOL;
+                case STONE -> SoundType.STONE;
+                case GLASS -> SoundType.GLASS;
+            };
+            var properties = BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY)
+                    .requiresCorrectToolForDrops()
+                    .strength(1.5F, 6.0F)
+                    .sound(sound)
+                    .noOcclusion()
+                    .lightLevel(state -> prop.light())
+                    .pushReaction(PushReaction.POPPED);
+            UNDERWAY_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new UnderwayPropBlock(blockProperties, prop), properties, true));
         }
     }
 

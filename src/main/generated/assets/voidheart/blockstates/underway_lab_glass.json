@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_lab_glass",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_lab_glass"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_lab_glass",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_lab_glass",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,332 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        0,
+        0,
+        3
+      ],
+      "to": [
+        1,
+        14,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        15,
+        0,
+        3
+      ],
+      "to": [
+        16,
+        14,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rubrum"
+        },
+        "east": {
+          "texture": "#rubrum"
+        },
+        "north": {
+          "texture": "#rubrum"
+        },
+        "south": {
+          "texture": "#rubrum"
+        },
+        "up": {
+          "texture": "#rubrum"
+        },
+        "west": {
+          "texture": "#rubrum"
+        }
+      },
+      "from": [
+        1,
+        2,
+        4
+      ],
+      "to": [
+        11,
+        5,
+        7
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        11,
+        2,
+        4
+      ],
+      "to": [
+        15,
+        5,
+        7
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rubrum"
+        },
+        "east": {
+          "texture": "#rubrum"
+        },
+        "north": {
+          "texture": "#rubrum"
+        },
+        "south": {
+          "texture": "#rubrum"
+        },
+        "up": {
+          "texture": "#rubrum"
+        },
+        "west": {
+          "texture": "#rubrum"
+        }
+      },
+      "from": [
+        1,
+        2,
+        9
+      ],
+      "to": [
+        11,
+        5,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        11,
+        2,
+        9
+      ],
+      "to": [
+        15,
+        5,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rubrum"
+        },
+        "east": {
+          "texture": "#rubrum"
+        },
+        "north": {
+          "texture": "#rubrum"
+        },
+        "south": {
+          "texture": "#rubrum"
+        },
+        "up": {
+          "texture": "#rubrum"
+        },
+        "west": {
+          "texture": "#rubrum"
+        }
+      },
+      "from": [
+        1,
+        8,
+        4
+      ],
+      "to": [
+        11,
+        11,
+        7
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        11,
+        8,
+        4
+      ],
+      "to": [
+        15,
+        11,
+        7
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_dark"
+        },
+        "east": {
+          "texture": "#glass_dark"
+        },
+        "north": {
+          "texture": "#glass_dark"
+        },
+        "south": {
+          "texture": "#glass_dark"
+        },
+        "up": {
+          "texture": "#glass_dark"
+        },
+        "west": {
+          "texture": "#glass_dark"
+        }
+      },
+      "from": [
+        1,
+        8,
+        9
+      ],
+      "to": [
+        11,
+        11,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        11,
+        8,
+        9
+      ],
+      "to": [
+        15,
+        11,
+        12
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "glass_dark": "voidheart:block/underway/glass_dark",
+    "particle": "voidheart:block/underway/steel_dark",
+    "rubrum": "voidheart:block/underway/rubrum",
+    "steel_dark": "voidheart:block/underway/steel_dark"
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel"
+        },
+        "east": {
+          "texture": "#steel"
+        },
+        "north": {
+          "texture": "#steel"
+        },
+        "south": {
+          "texture": "#steel"
+        },
+        "up": {
+          "texture": "#steel"
+        },
+        "west": {
+          "texture": "#steel"
+        }
+      },
+      "from": [
+        7,
+        0,
+        15
+      ],
+      "to": [
+        9,
+        16,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel"
+        },
+        "east": {
+          "texture": "#steel"
+        },
+        "north": {
+          "texture": "#steel"
+        },
+        "south": {
+          "texture": "#steel"
+        },
+        "up": {
+          "texture": "#steel"
+        },
+        "west": {
+          "texture": "#steel"
+        }
+      },
+      "from": [
+        7,
+        14,
+        10
+      ],
+      "to": [
+        9,
+        15,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel"
+        },
+        "east": {
+          "texture": "#steel"
+        },
+        "north": {
+          "texture": "#steel"
+        },
+        "south": {
+          "texture": "#steel"
+        },
+        "up": {
+          "texture": "#steel"
+        },
+        "west": {
+          "texture": "#steel"
+        }
+      },
+      "from": [
+        7,
+        13,
+        10
+      ],
+      "to": [
+        9,
+        14,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        5,
+        12,
+        8
+      ],
+      "to": [
+        11,
+        13,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_red"
+        },
+        "east": {
+          "texture": "#paint_red"
+        },
+        "north": {
+          "texture": "#paint_red"
+        },
+        "south": {
+          "texture": "#paint_red"
+        },
+        "up": {
+          "texture": "#paint_red"
+        },
+        "west": {
+          "texture": "#paint_red"
+        }
+      },
+      "from": [
+        9,
+        7,
+        15
+      ],
+      "to": [
+        11,
+        9,
+        16
+      ]
+    }
+  ],
+  "textures": {
+    "paint_red": "voidheart:block/underway/paint_red",
+    "particle": "voidheart:block/underway/steel",
+    "steel": "voidheart:block/underway/steel",
+    "steel_dark": "voidheart:block/underway/steel_dark"
+  }
+}
