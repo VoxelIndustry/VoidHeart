@@ -5,6 +5,8 @@ import net.minecraft.world.phys.Vec3;
 
 public class SentinelEyeRenderState extends EntityRenderState
 {
+    public static final int CONE_LINES = 20;
+
     /** Whether it shows anything: a searchlight is dark without power. */
     public boolean lit;
     /** The lens, from the watcher's position. */
@@ -18,4 +20,6 @@ public class SentinelEyeRenderState extends EntityRenderState
     /** How far its cone is drawn, and how much it widens for each block of that. */
     public float coneLength;
     public float coneSpread;
+    /** How far each line of its cone's side gets before a block stops it, as a share of the cone's length. */
+    public final float[] coneReach = new float[CONE_LINES];
 }
