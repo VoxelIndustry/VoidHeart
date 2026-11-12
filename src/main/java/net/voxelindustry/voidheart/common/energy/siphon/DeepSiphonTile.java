@@ -323,7 +323,7 @@ public class DeepSiphonTile extends TileBase
         level.playSound(null, mob.getX(), mob.getY(), mob.getZ(), SoundEvents.WARDEN_EMERGE, SoundSource.HOSTILE, 0.35F, 1.4F + level.getRandom().nextFloat() * 0.2F);
     }
 
-    static EntityType<? extends Mob> typeOf(DaedalusMob mob)
+    public static EntityType<? extends Mob> typeOf(DaedalusMob mob)
     {
         return switch (mob)
         {

@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 
@@ -139,6 +140,8 @@ public class Centurion extends Automaton
             if (flatToward.length() <= SWEEP_RANGE && flatToward.normalize().dot(flat) >= SWEEP_ARC_DOT)
                 player.hurtServer(level, damageSources().mobAttack(this), SWEEP_DAMAGE);
         }
+        if (getTarget() instanceof UnderwayKeyEntity key && key.getBoundingBox().intersects(area))
+            key.hurtServer(level, damageSources().mobAttack(this), SWEEP_DAMAGE);
     }
 
     private final class FightGoal extends Goal

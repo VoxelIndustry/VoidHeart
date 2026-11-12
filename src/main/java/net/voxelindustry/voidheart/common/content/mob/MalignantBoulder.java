@@ -33,6 +33,7 @@ import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.oil.OilCoating;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds.MobSounds;
 import org.joml.Vector3f;
@@ -212,6 +213,8 @@ public class MalignantBoulder extends VoidMonster
             if (new Vec3(toward.x, 0, toward.z).normalize().dot(flat) >= SLAM_FRONT)
                 player.hurtServer(level, damageSources().source(DAMAGE, this), SLAM_DAMAGE);
         }
+        if (getTarget() instanceof UnderwayKeyEntity key && withinReach(key, SLAM_HIT_REACH))
+            key.hurtServer(level, damageSources().source(DAMAGE, this), SLAM_DAMAGE);
 
         playSound(VoidHeartSounds.BOULDER_SLAM, 2, 1);
         var ahead = position().add(flat.scale(getBbWidth() / 2 + 0.8));

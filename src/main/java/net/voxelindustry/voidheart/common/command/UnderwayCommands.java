@@ -60,6 +60,7 @@ final class UnderwayCommands
                 .then(literal("charge")
                         .then(argument("percent", IntegerArgumentType.integer(0, 100))
                                 .executes(UnderwayCommands::charge)))
+                .then(literal("wave").executes(UnderwayCommands::wave))
                 .then(literal("where").executes(UnderwayCommands::where)));
     }
 
@@ -130,8 +131,23 @@ final class UnderwayCommands
             return 0;
         }
         int percent = IntegerArgumentType.getInteger(context, "percent");
-        keys.getFirst().setCharge(HatchBalance.CHARGE_TICKS * percent / 100);
+        keys.getFirst().skipTo(HatchBalance.CHARGE_TICKS * percent / 100);
         context.getSource().sendSuccess(() -> Component.literal("Hatch charged to " + percent + "%"), false);
+        return 1;
+    }
+
+    /** Brings the next wave on the key nearest the player now. */
+    private static int wave(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var player = context.getSource().getPlayerOrException();
+        var keys = keysByDistance(player);
+        if (keys.isEmpty())
+        {
+            context.getSource().sendFailure(Component.literal("No key at work within " + KEY_REACH + " blocks"));
+            return 0;
+        }
+        keys.getFirst().callWave();
+        context.getSource().sendSuccess(() -> Component.literal("Wave " + keys.getFirst().wavesSent() + " called"), false);
         return 1;
     }
 
