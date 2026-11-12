@@ -235,20 +235,25 @@ public class RelayLinkPreviewRender
         outline(pose, buffer, bounds(target).inflate(OUTLINE_INFLATE), camera, ARGB.color(BLOCKED_ALPHA, BLOCKED_COLOR));
     }
 
-    private static void outline(PoseStack.Pose pose, VertexConsumer buffer, AABB box, Vec3 camera, int color)
+    static void outline(PoseStack.Pose pose, VertexConsumer buffer, AABB box, Vec3 camera, int color)
+    {
+        outline(pose, buffer, box, camera, color, OUTLINE_HALF_WIDTH);
+    }
+
+    static void outline(PoseStack.Pose pose, VertexConsumer buffer, AABB box, Vec3 camera, int color, float halfWidth)
     {
         double[] xs = {box.minX, box.maxX}, ys = {box.minY, box.maxY}, zs = {box.minZ, box.maxZ};
         for (var y : ys)
         {
             for (var z : zs)
-                ribbon(pose, buffer, new Vec3(xs[0], y, z), new Vec3(xs[1], y, z), camera, OUTLINE_HALF_WIDTH, color);
+                ribbon(pose, buffer, new Vec3(xs[0], y, z), new Vec3(xs[1], y, z), camera, halfWidth, color);
         }
         for (var x : xs)
         {
             for (var z : zs)
-                ribbon(pose, buffer, new Vec3(x, ys[0], z), new Vec3(x, ys[1], z), camera, OUTLINE_HALF_WIDTH, color);
+                ribbon(pose, buffer, new Vec3(x, ys[0], z), new Vec3(x, ys[1], z), camera, halfWidth, color);
             for (var y : ys)
-                ribbon(pose, buffer, new Vec3(x, y, zs[0]), new Vec3(x, y, zs[1]), camera, OUTLINE_HALF_WIDTH, color);
+                ribbon(pose, buffer, new Vec3(x, y, zs[0]), new Vec3(x, y, zs[1]), camera, halfWidth, color);
         }
     }
 

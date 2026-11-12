@@ -79,6 +79,7 @@ public final class RubrumContent
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), true);
         RUBRUM_CELL = VoidHeartItems.registerItem("rubrum_cell", properties -> new RubrumCellItem(properties.stacksTo(1)));
+        VoidHeartItems.addCreativeVariant(RUBRUM_CELL, RubrumCellItem::full);
 
         VoidHeartTiles.registerTile(RUBRUM_CONSTRUCT = FabricBlockEntityTypeBuilder.create(RubrumConstructTile::new, RUBRUM_CONSTRUCT_CORE).build(),
                 "rubrum_construct");

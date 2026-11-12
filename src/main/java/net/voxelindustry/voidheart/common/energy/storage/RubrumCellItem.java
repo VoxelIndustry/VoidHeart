@@ -44,6 +44,14 @@ public class RubrumCellItem extends Item
         return charge(stack) / (float) RubrumBalance.CELL_CAPACITY;
     }
 
+    /** @return a cell charged to capacity */
+    public static ItemStack full()
+    {
+        var stack = new ItemStack(RubrumContent.RUBRUM_CELL);
+        setCharge(stack, RubrumBalance.CELL_CAPACITY);
+        return stack;
+    }
+
     @Override
     public boolean isBarVisible(ItemStack stack)
     {

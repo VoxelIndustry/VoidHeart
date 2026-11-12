@@ -17,6 +17,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item.Properties;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
@@ -38,9 +39,11 @@ import net.voxelindustry.voidheart.common.item.VoidPearlItem;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class VoidHeartItems
 {
@@ -104,6 +107,13 @@ public class VoidHeartItems
     public static final Map<ApparatusComponent, ApparatusComponentItem> APPARATUS_COMPONENTS = new EnumMap<>(ApparatusComponent.class);
 
     public static final List<Item> CREATIVE_TAB_ITEMS = new ArrayList<>();
+    /** Stacks shown in the creative tab right after their item, such as a filled cell after the empty one. */
+    public static final Map<Item, List<Supplier<ItemStack>>> CREATIVE_TAB_VARIANTS = new HashMap<>();
+
+    public static void addCreativeVariant(Item item, Supplier<ItemStack> stack)
+    {
+        CREATIVE_TAB_VARIANTS.computeIfAbsent(item, key -> new ArrayList<>()).add(stack);
+    }
 
     public static void registerItems()
     {
