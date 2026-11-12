@@ -213,7 +213,8 @@ public class MalignantBoulder extends VoidMonster
             if (new Vec3(toward.x, 0, toward.z).normalize().dot(flat) >= SLAM_FRONT)
                 player.hurtServer(level, damageSources().source(DAMAGE, this), SLAM_DAMAGE);
         }
-        if (getTarget() instanceof UnderwayKeyEntity key && withinReach(key, SLAM_HIT_REACH))
+        if (getTarget() instanceof UnderwayKeyEntity key && withinReach(key, SLAM_HIT_REACH)
+                && new Vec3(key.getX() - getX(), 0, key.getZ() - getZ()).normalize().dot(flat) >= SLAM_FRONT)
             key.hurtServer(level, damageSources().source(DAMAGE, this), SLAM_DAMAGE);
 
         playSound(VoidHeartSounds.BOULDER_SLAM, 2, 1);

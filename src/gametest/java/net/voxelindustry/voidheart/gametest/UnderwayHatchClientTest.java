@@ -253,7 +253,8 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
         {
             var key = keys(minecraft).getFirst();
             var wave = waveMobs(minecraft);
-            expect(!wave.isEmpty() && wave.size() <= HatchWaves.size(0) + 1, "The first wave brought " + wave.size() + " mobs");
+            // A mob that finds no free spot is left out, so one short of the wave's size still passes
+            expect(wave.size() >= HatchWaves.size(0) - 1 && wave.size() <= HatchWaves.size(0) + 1, "The first wave brought " + wave.size() + " mobs");
             for (var mob : wave)
             {
                 expect(mob.distanceTo(key) < 30, mob.getType() + " arrived " + mob.distanceTo(key) + " blocks from the key");

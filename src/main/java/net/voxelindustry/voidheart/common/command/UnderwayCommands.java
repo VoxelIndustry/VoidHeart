@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.underway.HatchBalance;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyEntity;
@@ -144,6 +145,11 @@ final class UnderwayCommands
         if (keys.isEmpty())
         {
             context.getSource().sendFailure(Component.literal("No key at work within " + KEY_REACH + " blocks"));
+            return 0;
+        }
+        if (player.level().getDifficulty() == Difficulty.PEACEFUL)
+        {
+            context.getSource().sendFailure(Component.literal("No wave comes in peaceful"));
             return 0;
         }
         keys.getFirst().callWave();
