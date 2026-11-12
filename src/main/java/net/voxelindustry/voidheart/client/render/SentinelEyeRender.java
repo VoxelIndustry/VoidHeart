@@ -34,17 +34,17 @@ public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, 
      * How a watcher looks.
      *
      * @param watchColor the colour of its cone while it only watches
-     * @param shown      how much of its reach the cone shows before it has faded out
      * @param iris       whether an iris with a wandering slit lies on its glass, rather than a lit lamp
      * @param plateHalf  half the side of what lies on its glass
      */
-    private record Look(int watchColor, int coneAlpha, int coneNoticeAlpha, int haloAlpha, float haloRadius, float shown, boolean iris, float plateHalf)
+    private record Look(int watchColor, int coneAlpha, int coneNoticeAlpha, int haloAlpha, float haloRadius, boolean iris, float plateHalf)
     {
     }
 
     private static final float PIXEL = 1 / 16F;
-    private static final Look EYE = new Look(0xE03426, 36, 72, 56, 0.16F, 0.75F, true, 3 * PIXEL);
-    private static final Look SEARCHLIGHT = new Look(0xFFE2A8, 30, 60, 110, 0.34F, 0.85F, false, 3 * PIXEL);
+    // A little brighter than they were when the cone stopped short, since it now thins out over its whole reach
+    private static final Look EYE = new Look(0xE03426, 44, 84, 56, 0.16F, true, 3 * PIXEL);
+    private static final Look SEARCHLIGHT = new Look(0xFFE2A8, 36, 68, 110, 0.34F, false, 3 * PIXEL);
 
     private static final RenderType IRIS_TYPE = RenderTypes.entityCutout(Identifier.fromNamespaceAndPath(MODID, "textures/block/underway/eye_iris.png"));
     private static final RenderType SLIT_TYPE = RenderTypes.entityCutout(Identifier.fromNamespaceAndPath(MODID, "textures/block/underway/eye_slit.png"));
@@ -88,7 +88,8 @@ public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, 
         state.facingYaw = (float) Mth.atan2(facing.x, facing.z);
         state.notice = Mth.clamp(eye.notice() / (float) eye.noticeTicks(), 0, 1);
         state.noticed = eye.hasNoticed();
-        state.coneLength = (float) eye.range() * look.shown;
+        // The cone reaches exactly as far as the watcher sees, so nobody is made out from outside it
+        state.coneLength = (float) eye.range();
         state.coneSpread = (float) Math.tan(Math.toRadians(eye.cone()));
     }
 

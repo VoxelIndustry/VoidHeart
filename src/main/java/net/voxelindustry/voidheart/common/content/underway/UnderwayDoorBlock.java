@@ -9,7 +9,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.redstone.Orientation;
+import org.jspecify.annotations.Nullable;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.phys.BlockHitResult;
@@ -41,5 +44,19 @@ public class UnderwayDoorBlock extends DoorBlock
             }
         }
         return super.useWithoutItem(state, level, pos, player, hit);
+    }
+
+    /** A lever or a button swings no leaf during a lockdown either. */
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighbour, @Nullable Orientation orientation, boolean movedByPiston)
+    {
+        if (level instanceof ServerLevel server)
+        {
+            var security = UnderwaySecurity.of(server);
+            var key = UnderwaySecurity.Key.at(pos);
+            if (security != null && key != null && security.isLockedDown(server, key))
+                return;
+        }
+        super.neighborChanged(state, level, pos, neighbour, orientation, movedByPiston);
     }
 }

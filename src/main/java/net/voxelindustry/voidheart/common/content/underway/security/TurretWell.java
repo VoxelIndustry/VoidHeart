@@ -156,7 +156,8 @@ public class TurretWell extends MountedUnit
             return;
         }
         var seen = phase == Phase.COOLING ? null : findSeen(level);
-        var target = seen != null && canReach(seen) ? seen : null;
+        // Someone right beside it must not shield someone further off
+        var target = seen == null || canReach(seen) ? seen : UnderwayShots.nearestSeen(level, this, muzzle(), SecurityBalance.WELL_RANGE, this::canReach);
         if (seen != null)
             link().raiseAlarm(level);
         switch (phase)

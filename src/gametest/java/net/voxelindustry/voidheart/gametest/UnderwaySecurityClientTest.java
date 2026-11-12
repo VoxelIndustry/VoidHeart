@@ -440,7 +440,9 @@ public class UnderwaySecurityClientTest implements FabricClientGameTest
             var level = VoidDaedalus.level(minecraft);
             var standing = level.getEntitiesOfClass(Automaton.class, new AABB(wreck.block()).inflate(1.5), Entity::isAlive);
             expect(!standing.isEmpty(), "No Automaton near its post at " + wreck.block());
-            standing.getFirst().hurtServer(level, level.damageSources().genericKill(), KILL);
+            // The one posted there, not the other Automaton of the room, which may stand a block away
+            standing.stream().min(java.util.Comparator.comparingDouble(automaton -> automaton.distanceToSqr(wreck.x() + 0.5, wreckUnit.y(), wreck.z() + 0.5))).orElseThrow()
+                    .hurtServer(level, level.damageSources().genericKill(), KILL);
         });
         waitFor(context, server, 60, "The Automaton's wreck was not recorded", minecraft -> UnderwaySecurity.of(VoidDaedalus.level(minecraft)).isDestroyed(key, pair[1]));
         waitFor(context, server, 400, "The fitter never set to work on the wreck beside it", minecraft ->

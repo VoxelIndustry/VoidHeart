@@ -104,7 +104,15 @@ public class UnderwayMachinesClientTest implements FabricClientGameTest
             var mantlet = mantlet(minecraft);
             expect(mantlet.hurtServer(level, level.damageSources().playerAttack(player(minecraft)), 4) && mantlet.getHealth() < mantlet.getMaxHealth(), "A blow through the open slit glanced off");
         });
+        server.runOnServer(GameTestKit::heal);
         waitFor(context, server, 80, "The Mantlet never fired its burst", minecraft -> mantlet(minecraft).shotsFired() >= SecurityBalance.MANTLET_BURST_SHOTS);
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            // Bolts follow each other faster than a hit's grace lasts, and each must still count
+            float lost = player(minecraft).getMaxHealth() - player(minecraft).getHealth();
+            expect(lost > SecurityBalance.MANTLET_SHOT_DAMAGE * (SecurityBalance.MANTLET_BURST_SHOTS - 0.5F), "A burst of " + SecurityBalance.MANTLET_BURST_SHOTS + " bolts on a player standing still took " + lost + " health");
+        });
         waitFor(context, server, 80, "The slit stayed open after the burst", minecraft -> !mantlet(minecraft).isSlitOpen());
 
         // Behind it before it has brought its shield around

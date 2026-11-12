@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
@@ -287,7 +288,8 @@ public class UnderwaySecurity extends SavedData
     public @Nullable Player spotted(ServerLevel level, Key key)
     {
         var seen = spotted.get(key);
-        if (seen == null)
+        // Nothing hunts in peaceful, whoever was caught
+        if (seen == null || level.getDifficulty() == Difficulty.PEACEFUL)
             return null;
         if (level.getGameTime() > seen.until())
         {
@@ -323,7 +325,8 @@ public class UnderwaySecurity extends SavedData
     /** Forgets everything that happened to a section, for review. Its wrecks stay wrecks in the world. */
     public void reset(ServerLevel level, Key key)
     {
-        sections.remove(key);
+        // A blank state stays behind, which is not saved but still turns the section's lamps and cabinet back as its chunks load
+        sections.put(key, new SectionState());
         spotted.remove(key);
         setDirty();
         refresh(level, key, null);

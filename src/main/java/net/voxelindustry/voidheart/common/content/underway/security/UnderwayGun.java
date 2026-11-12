@@ -120,9 +120,8 @@ public abstract class UnderwayGun extends MountedUnit
 
     private @Nullable Player findTarget(ServerLevel level)
     {
-        var muzzle = muzzle();
-        var seen = UnderwayShots.nearestSeen(level, this, muzzle, SecurityBalance.GUN_RANGE);
-        return seen != null && bears(seen.getBoundingBox().getCenter()) ? seen : null;
+        // The nearest it can be brought to bear on, not the nearest of all: someone out of its arc must not hide someone in it
+        return UnderwayShots.nearestSeen(level, this, muzzle(), SecurityBalance.GUN_RANGE, player -> bears(player.getBoundingBox().getCenter()));
     }
 
     private void aimAt(Player target)

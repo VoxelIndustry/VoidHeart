@@ -17,6 +17,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 import org.jspecify.annotations.Nullable;
 
+import java.util.function.Predicate;
+
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /** What the Underway's guns share: who they can see, and a bullet that flies straight along a line shown beforehand. */
@@ -50,6 +52,12 @@ public final class UnderwayShots
     /** @return the nearest player a unit can see from a point, who is neither in creative nor a spectator nor unseen */
     public static @Nullable Player nearestSeen(ServerLevel level, LivingEntity watcher, Vec3 from, double range)
     {
+        return nearestSeen(level, watcher, from, range, player -> true);
+    }
+
+    /** @return the nearest player a unit can see from a point among those it can do something about */
+    public static @Nullable Player nearestSeen(ServerLevel level, LivingEntity watcher, Vec3 from, double range, Predicate<Player> eligible)
+    {
         if (level.getDifficulty() == Difficulty.PEACEFUL)
             return null;
         Player nearest = null;
@@ -57,7 +65,7 @@ public final class UnderwayShots
         for (var player : level.getEntitiesOfClass(Player.class, new AABB(from, from).inflate(range), EntitySelector.NO_CREATIVE_OR_SPECTATOR))
         {
             double distance = player.getBoundingBox().getCenter().distanceToSqr(from);
-            if (distance <= best && player.isAlive() && !player.isInvisible() && isClear(level, watcher, from, player))
+            if (distance <= best && player.isAlive() && !player.isInvisible() && eligible.test(player) && isClear(level, watcher, from, player))
             {
                 best = distance;
                 nearest = player;

@@ -24,6 +24,8 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A repair crawler of the Underway. It harms nobody. While its section's alarm sounds, it goes to the nearest wreck of the section, works on it for a few seconds, and the wreck stands again where it was posted. It cannot rebuild another fitter, nor a sapper that burst, nor a tripwire.
@@ -41,6 +43,8 @@ public class Fitter extends SecurityMob
     private static final EntityDataAccessor<Vector3fc> DATA_WORK_AT = SynchedEntityData.defineId(Fitter.class, EntityDataSerializers.VECTOR3);
     private static final int LOOK_EVERY = 20;
     private static final int GIVE_UP_TICKS = 30 * 20;
+    /** How long it leaves alone a wreck it could not get to. */
+    private static final int SKIP_TICKS = 60 * 20;
 
     /** Kept by the client for show: how far its arm is raised to its work. */
     public float reach;
@@ -124,6 +128,8 @@ public class Fitter extends SecurityMob
     /** Goes to the nearest wreck of its section and works on it until it stands again, for as long as the alarm sounds. */
     private final class RepairGoal extends Goal
     {
+        // The wrecks it gave up on, each with the tick of its own life it may try again from
+        private final Map<Integer, Integer> unreached = new HashMap<>();
         private int wreck = -1;
         private Vec3 at = Vec3.ZERO;
         private int look;
@@ -150,7 +156,8 @@ public class Fitter extends SecurityMob
             double nearest = Double.MAX_VALUE;
             for (int index : security.wrecks(key))
             {
-                if (index < 0 || index >= fort.units().size())
+                // A wreck it could not get to is left alone for a while, so that one behind a wall does not keep it from the others
+                if (index < 0 || index >= fort.units().size() || unreached.getOrDefault(index, 0) > tickCount)
                     continue;
                 var unit = fort.units().get(index);
                 if (!canRebuild(unit.kind()))
@@ -220,6 +227,8 @@ public class Fitter extends SecurityMob
         @Override
         public void stop()
         {
+            if (wreck >= 0 && spent > GIVE_UP_TICKS)
+                unreached.put(wreck, tickCount + SKIP_TICKS);
             entityData.set(DATA_WORKING, false);
             getNavigation().stop();
             look = LOOK_EVERY;

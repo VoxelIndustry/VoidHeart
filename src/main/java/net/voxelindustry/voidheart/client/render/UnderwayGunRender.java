@@ -52,8 +52,9 @@ public class UnderwayGunRender<T extends UnderwayGun> extends EntityRenderer<T, 
     private static final float PIVOT_HEIGHT = 0.48F;
     private static final float RECEIVER_HALF = 1.5F * PIXEL;
     private static final float EMBRASURE_BARREL = 0.85F;
-    private static final float MAX_SWING = (float) Math.toRadians(24);
-    private static final float MAX_TILT = (float) Math.toRadians(5);
+    // As far as the gun itself can be brought to bear, so the barrels always lie along the line they fire on
+    private static final float MAX_SWING = (float) Math.toRadians(SecurityBalance.EMBRASURE_ARC);
+    private static final float MAX_TILT = Mth.PI / 4;
     // A cupola with nobody in sight turns slowly, looking down into its room
     private static final float SCAN_RATE = 0.04F;
     private static final float SCAN_ELEVATION = -0.35F;

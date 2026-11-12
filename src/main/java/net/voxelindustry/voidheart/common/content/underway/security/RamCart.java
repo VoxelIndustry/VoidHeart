@@ -189,9 +189,10 @@ public class RamCart extends SecurityMob
             if (!struck.add(player.getUUID()))
                 continue;
             var source = damageSources().mobAttack(this);
-            // Thrown aside, clear of the track
+            // Thrown across the track to the side they stand on, or to one side from its very middle, so they land clear of it
+            double side = (player.getX() - getX()) * heading.z - (player.getZ() - getZ()) * heading.x >= 0 ? 1 : -1;
             if (player.hurtServer(level, source, SecurityBalance.CART_RAM_DAMAGE))
-                player.knockback(THROW, getX() - player.getX() - heading.x, getZ() - player.getZ() - heading.z, source, SecurityBalance.CART_RAM_DAMAGE);
+                player.knockback(THROW, -heading.z * side, heading.x * side, source, SecurityBalance.CART_RAM_DAMAGE);
         }
         left -= moved;
         if (moved < speed * 0.5)
