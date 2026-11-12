@@ -1,0 +1,106 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#canvas"
+        },
+        "east": {
+          "texture": "#canvas"
+        },
+        "north": {
+          "texture": "#canvas"
+        },
+        "south": {
+          "texture": "#canvas"
+        },
+        "up": {
+          "texture": "#canvas"
+        },
+        "west": {
+          "texture": "#canvas"
+        }
+      },
+      "from": [
+        2,
+        0,
+        5
+      ],
+      "to": [
+        14,
+        5,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#canvas"
+        },
+        "east": {
+          "texture": "#canvas"
+        },
+        "north": {
+          "texture": "#canvas"
+        },
+        "south": {
+          "texture": "#canvas"
+        },
+        "up": {
+          "texture": "#canvas"
+        },
+        "west": {
+          "texture": "#canvas"
+        }
+      },
+      "from": [
+        3,
+        5,
+        6
+      ],
+      "to": [
+        13,
+        6,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        1,
+        1,
+        6
+      ],
+      "to": [
+        2,
+        4,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "canvas": "voidheart:block/underway/canvas",
+    "leather": "voidheart:block/underway/leather",
+    "particle": "voidheart:block/underway/canvas"
+  }
+}

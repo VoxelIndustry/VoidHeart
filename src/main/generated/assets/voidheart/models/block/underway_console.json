@@ -1,0 +1,184 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        0,
+        0,
+        5
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        0,
+        10,
+        2
+      ],
+      "to": [
+        16,
+        11,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        0,
+        11,
+        12
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#dials",
+          "uv": [
+            1,
+            2,
+            15,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        1,
+        11,
+        11
+      ],
+      "to": [
+        15,
+        15,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#switches",
+          "uv": [
+            1,
+            1,
+            15,
+            8
+          ]
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        1,
+        11,
+        3
+      ],
+      "to": [
+        15,
+        12,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "dials": "voidheart:block/underway/dials",
+    "paint_grey": "voidheart:block/underway/paint_grey",
+    "particle": "voidheart:block/underway/paint_grey",
+    "steel_dark": "voidheart:block/underway/steel_dark",
+    "switches": "voidheart:block/underway/switches"
+  }
+}

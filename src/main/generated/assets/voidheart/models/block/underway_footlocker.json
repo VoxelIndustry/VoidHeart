@@ -1,0 +1,171 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_olive"
+        },
+        "east": {
+          "texture": "#paint_olive"
+        },
+        "north": {
+          "texture": "#paint_olive"
+        },
+        "south": {
+          "texture": "#paint_olive"
+        },
+        "up": {
+          "texture": "#paint_olive"
+        },
+        "west": {
+          "texture": "#paint_olive"
+        }
+      },
+      "from": [
+        1,
+        0,
+        3
+      ],
+      "to": [
+        15,
+        7,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_olive"
+        },
+        "east": {
+          "texture": "#paint_olive"
+        },
+        "north": {
+          "texture": "#paint_olive"
+        },
+        "south": {
+          "texture": "#paint_olive"
+        },
+        "up": {
+          "texture": "#paint_olive"
+        },
+        "west": {
+          "texture": "#paint_olive"
+        }
+      },
+      "from": [
+        1,
+        7,
+        3
+      ],
+      "to": [
+        15,
+        9,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        7,
+        5,
+        2
+      ],
+      "to": [
+        9,
+        8,
+        3
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        0,
+        4,
+        6
+      ],
+      "to": [
+        1,
+        5,
+        10
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        15,
+        4,
+        6
+      ],
+      "to": [
+        16,
+        5,
+        10
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "leather": "voidheart:block/underway/leather",
+    "paint_olive": "voidheart:block/underway/paint_olive",
+    "particle": "voidheart:block/underway/paint_olive"
+  }
+}

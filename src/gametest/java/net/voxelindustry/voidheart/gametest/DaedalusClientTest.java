@@ -29,6 +29,7 @@ import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPlan;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPlans;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
 import net.voxelindustry.voidheart.common.world.daedalus.Room;
 import net.voxelindustry.voidheart.common.world.daedalus.RoomShape;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
@@ -149,7 +150,8 @@ public class DaedalusClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var level = VoidDaedalus.level(minecraft);
-            expect(level.getMinY() == 0 && level.getHeight() == DistrictPos.HEIGHT, "The Daedalus should be " + DistrictPos.HEIGHT + " high, it is " + level.getHeight());
+            int height = DistrictPos.HEIGHT + UnderwayLevels.HEIGHT;
+            expect(level.getMinY() == UnderwayLevels.MIN_Y && level.getHeight() == height, "The Daedalus should be " + height + " high over its Underway, it is " + level.getHeight() + " from " + level.getMinY());
 
             var floor = new BlockPos(5, 0, 5);
             var ceiling = new BlockPos(5, DistrictPos.TOP_Y, 5);

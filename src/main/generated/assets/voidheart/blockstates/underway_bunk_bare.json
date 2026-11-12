@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_bunk_bare",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_bunk_bare"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_bunk_bare",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_bunk_bare",
+      "y": 270
+    }
+  }
+}

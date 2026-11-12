@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_air_tank",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_air_tank"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_air_tank",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_air_tank",
+      "y": 270
+    }
+  }
+}

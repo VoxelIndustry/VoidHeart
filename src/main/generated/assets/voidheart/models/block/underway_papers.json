@@ -1,0 +1,106 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#paper"
+        },
+        "east": {
+          "texture": "#paper"
+        },
+        "north": {
+          "texture": "#paper"
+        },
+        "south": {
+          "texture": "#paper"
+        },
+        "up": {
+          "texture": "#paper"
+        },
+        "west": {
+          "texture": "#paper"
+        }
+      },
+      "from": [
+        2,
+        0,
+        3
+      ],
+      "to": [
+        9,
+        1,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paper"
+        },
+        "east": {
+          "texture": "#paper"
+        },
+        "north": {
+          "texture": "#paper"
+        },
+        "south": {
+          "texture": "#paper"
+        },
+        "up": {
+          "texture": "#paper"
+        },
+        "west": {
+          "texture": "#paper"
+        }
+      },
+      "from": [
+        9,
+        0,
+        6
+      ],
+      "to": [
+        15,
+        1,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        4,
+        1,
+        4
+      ],
+      "to": [
+        8,
+        2,
+        9
+      ]
+    }
+  ],
+  "textures": {
+    "leather": "voidheart:block/underway/leather",
+    "paper": "voidheart:block/underway/paper",
+    "particle": "voidheart:block/underway/paper"
+  }
+}

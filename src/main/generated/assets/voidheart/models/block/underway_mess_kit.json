@@ -1,0 +1,139 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#enamel"
+        },
+        "east": {
+          "texture": "#enamel"
+        },
+        "north": {
+          "texture": "#enamel"
+        },
+        "south": {
+          "texture": "#enamel"
+        },
+        "up": {
+          "texture": "#enamel"
+        },
+        "west": {
+          "texture": "#enamel"
+        }
+      },
+      "from": [
+        2,
+        0,
+        3
+      ],
+      "to": [
+        8,
+        1,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#enamel"
+        },
+        "east": {
+          "texture": "#enamel"
+        },
+        "north": {
+          "texture": "#enamel"
+        },
+        "south": {
+          "texture": "#enamel"
+        },
+        "up": {
+          "texture": "#enamel"
+        },
+        "west": {
+          "texture": "#enamel"
+        }
+      },
+      "from": [
+        10,
+        0,
+        4
+      ],
+      "to": [
+        13,
+        3,
+        7
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_olive"
+        },
+        "east": {
+          "texture": "#paint_olive"
+        },
+        "north": {
+          "texture": "#paint_olive"
+        },
+        "south": {
+          "texture": "#paint_olive"
+        },
+        "up": {
+          "texture": "#paint_olive"
+        },
+        "west": {
+          "texture": "#paint_olive"
+        }
+      },
+      "from": [
+        9,
+        0,
+        10
+      ],
+      "to": [
+        13,
+        5,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel"
+        },
+        "east": {
+          "texture": "#steel"
+        },
+        "north": {
+          "texture": "#steel"
+        },
+        "south": {
+          "texture": "#steel"
+        },
+        "up": {
+          "texture": "#steel"
+        },
+        "west": {
+          "texture": "#steel"
+        }
+      },
+      "from": [
+        4,
+        0,
+        11
+      ],
+      "to": [
+        7,
+        2,
+        14
+      ]
+    }
+  ],
+  "textures": {
+    "enamel": "voidheart:block/underway/enamel",
+    "paint_olive": "voidheart:block/underway/paint_olive",
+    "particle": "voidheart:block/underway/enamel",
+    "steel": "voidheart:block/underway/steel"
+  }
+}

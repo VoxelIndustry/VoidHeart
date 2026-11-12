@@ -22,6 +22,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleNestBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayChunkWriter;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 /**
  * Writes a chunk straight into its sections at the terrain step, like noise generation does. Nothing generated needs its neighbours, so a chunk costs no feature step, shape update or light beyond its few lamps.
  * The few altars and pillars get their block entities here too, as a feature would have given them, and barnacle nests are grown here since the spawn step may not set blocks.
+ * The Underway takes the sections under the districts' floor, written by its own writer first.
  * Rails are joined to what stands beside them here, as placing them would, reading across the chunk's edge from a strip painted only when a rail reaches it.
  */
 final class DaedalusChunkWriter
@@ -67,9 +69,12 @@ final class DaedalusChunkWriter
                       : DaedalusPalette.chasm();
         var neighbours = new Neighbours(worldSeed, canvas);
         byte[] cells = canvas.cells();
+        UnderwayChunkWriter.write(chunk, worldSeed);
+        var sections = chunk.getSections();
         int index = 0;
-        for (var section : chunk.getSections())
+        for (int sectionIndex = UnderwayChunkWriter.SECTIONS; sectionIndex < sections.length; sectionIndex++)
         {
+            var section = sections[sectionIndex];
             int baseY = index / (SECTION * SECTION);
             section.acquire();
             try

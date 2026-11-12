@@ -1,0 +1,332 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        1,
+        0,
+        15
+      ],
+      "to": [
+        15,
+        16,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        1,
+        0,
+        5
+      ],
+      "to": [
+        2,
+        16,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        14,
+        0,
+        5
+      ],
+      "to": [
+        15,
+        16,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        2,
+        15,
+        5
+      ],
+      "to": [
+        14,
+        16,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        2,
+        0,
+        5
+      ],
+      "to": [
+        14,
+        1,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        2,
+        10,
+        5
+      ],
+      "to": [
+        14,
+        11,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        14,
+        1,
+        0
+      ],
+      "to": [
+        15,
+        15,
+        5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#cloth_dark"
+        },
+        "east": {
+          "texture": "#cloth_dark"
+        },
+        "north": {
+          "texture": "#cloth_dark"
+        },
+        "south": {
+          "texture": "#cloth_dark"
+        },
+        "up": {
+          "texture": "#cloth_dark"
+        },
+        "west": {
+          "texture": "#cloth_dark"
+        }
+      },
+      "from": [
+        3,
+        2,
+        9
+      ],
+      "to": [
+        7,
+        10,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#leather"
+        },
+        "east": {
+          "texture": "#leather"
+        },
+        "north": {
+          "texture": "#leather"
+        },
+        "south": {
+          "texture": "#leather"
+        },
+        "up": {
+          "texture": "#leather"
+        },
+        "west": {
+          "texture": "#leather"
+        }
+      },
+      "from": [
+        9,
+        1,
+        8
+      ],
+      "to": [
+        12,
+        4,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_olive"
+        },
+        "east": {
+          "texture": "#paint_olive"
+        },
+        "north": {
+          "texture": "#paint_olive"
+        },
+        "south": {
+          "texture": "#paint_olive"
+        },
+        "up": {
+          "texture": "#paint_olive"
+        },
+        "west": {
+          "texture": "#paint_olive"
+        }
+      },
+      "from": [
+        4,
+        11,
+        7
+      ],
+      "to": [
+        9,
+        14,
+        12
+      ]
+    }
+  ],
+  "textures": {
+    "cloth_dark": "voidheart:block/underway/cloth_dark",
+    "leather": "voidheart:block/underway/leather",
+    "paint_grey": "voidheart:block/underway/paint_grey",
+    "paint_olive": "voidheart:block/underway/paint_olive",
+    "particle": "voidheart:block/underway/paint_grey"
+  }
+}

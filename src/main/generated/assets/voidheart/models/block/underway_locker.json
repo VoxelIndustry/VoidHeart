@@ -1,0 +1,139 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        1,
+        0,
+        5
+      ],
+      "to": [
+        15,
+        16,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_grey"
+        },
+        "east": {
+          "texture": "#paint_grey"
+        },
+        "north": {
+          "texture": "#paint_grey"
+        },
+        "south": {
+          "texture": "#paint_grey"
+        },
+        "up": {
+          "texture": "#paint_grey"
+        },
+        "west": {
+          "texture": "#paint_grey"
+        }
+      },
+      "from": [
+        2,
+        1,
+        4
+      ],
+      "to": [
+        14,
+        15,
+        5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#grille"
+        },
+        "east": {
+          "texture": "#grille"
+        },
+        "north": {
+          "texture": "#grille"
+        },
+        "south": {
+          "texture": "#grille"
+        },
+        "up": {
+          "texture": "#grille"
+        },
+        "west": {
+          "texture": "#grille"
+        }
+      },
+      "from": [
+        4,
+        11,
+        3
+      ],
+      "to": [
+        12,
+        14,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        12,
+        6,
+        3
+      ],
+      "to": [
+        13,
+        9,
+        4
+      ]
+    }
+  ],
+  "textures": {
+    "grille": "voidheart:block/underway/grille",
+    "paint_grey": "voidheart:block/underway/paint_grey",
+    "particle": "voidheart:block/underway/paint_grey",
+    "steel_dark": "voidheart:block/underway/steel_dark"
+  }
+}

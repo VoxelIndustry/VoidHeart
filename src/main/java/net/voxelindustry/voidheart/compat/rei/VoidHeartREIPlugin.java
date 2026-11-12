@@ -20,6 +20,7 @@ import net.voxelindustry.voidheart.common.content.oil.SinVessel;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -79,6 +80,8 @@ public class VoidHeartREIPlugin implements REIClientPlugin
     {
         registry.group(Identifier.fromNamespaceAndPath(MODID, "daedalus_props"), Component.translatable("voidheart.rei.group.daedalus_props"),
                 Arrays.stream(DaedalusProp.values()).map(prop -> EntryStacks.of(VoidHeartBlocks.daedalusProp(prop))).toList());
+        registry.group(Identifier.fromNamespaceAndPath(MODID, "underway_props"), Component.translatable("voidheart.rei.group.underway_props"),
+                Arrays.stream(UnderwayProp.values()).map(prop -> EntryStacks.of(VoidHeartBlocks.underwayProp(prop))).toList());
     }
 
     @Override

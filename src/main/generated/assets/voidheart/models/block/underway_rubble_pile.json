@@ -1,0 +1,171 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#concrete"
+        },
+        "east": {
+          "texture": "#concrete"
+        },
+        "north": {
+          "texture": "#concrete"
+        },
+        "south": {
+          "texture": "#concrete"
+        },
+        "up": {
+          "texture": "#concrete"
+        },
+        "west": {
+          "texture": "#concrete"
+        }
+      },
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        9,
+        4,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#concrete"
+        },
+        "east": {
+          "texture": "#concrete"
+        },
+        "north": {
+          "texture": "#concrete"
+        },
+        "south": {
+          "texture": "#concrete"
+        },
+        "up": {
+          "texture": "#concrete"
+        },
+        "west": {
+          "texture": "#concrete"
+        }
+      },
+      "from": [
+        8,
+        0,
+        9
+      ],
+      "to": [
+        15,
+        3,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#concrete"
+        },
+        "east": {
+          "texture": "#concrete"
+        },
+        "north": {
+          "texture": "#concrete"
+        },
+        "south": {
+          "texture": "#concrete"
+        },
+        "up": {
+          "texture": "#concrete"
+        },
+        "west": {
+          "texture": "#concrete"
+        }
+      },
+      "from": [
+        4,
+        4,
+        4
+      ],
+      "to": [
+        8,
+        6,
+        8
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#concrete_stained"
+        },
+        "east": {
+          "texture": "#concrete_stained"
+        },
+        "north": {
+          "texture": "#concrete_stained"
+        },
+        "south": {
+          "texture": "#concrete_stained"
+        },
+        "up": {
+          "texture": "#concrete_stained"
+        },
+        "west": {
+          "texture": "#concrete_stained"
+        }
+      },
+      "from": [
+        2,
+        0,
+        10
+      ],
+      "to": [
+        7,
+        2,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rust"
+        },
+        "east": {
+          "texture": "#rust"
+        },
+        "north": {
+          "texture": "#rust"
+        },
+        "south": {
+          "texture": "#rust"
+        },
+        "up": {
+          "texture": "#rust"
+        },
+        "west": {
+          "texture": "#rust"
+        }
+      },
+      "from": [
+        11,
+        3,
+        10
+      ],
+      "to": [
+        12,
+        9,
+        11
+      ]
+    }
+  ],
+  "textures": {
+    "concrete": "voidheart:block/underway/concrete",
+    "concrete_stained": "voidheart:block/underway/concrete_stained",
+    "particle": "voidheart:block/underway/concrete",
+    "rust": "voidheart:block/underway/rust"
+  }
+}

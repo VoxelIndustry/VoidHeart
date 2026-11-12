@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_cell_bars",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_cell_bars"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_cell_bars",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_cell_bars",
+      "y": 270
+    }
+  }
+}

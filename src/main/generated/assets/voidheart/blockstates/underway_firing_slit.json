@@ -1,0 +1,11 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "voidheart:block/underway_firing_slit",
+      "y": 90
+    },
+    "axis=z": {
+      "model": "voidheart:block/underway_firing_slit"
+    }
+  }
+}

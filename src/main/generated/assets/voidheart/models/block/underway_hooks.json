@@ -1,0 +1,237 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#wood"
+        },
+        "east": {
+          "texture": "#wood"
+        },
+        "north": {
+          "texture": "#wood"
+        },
+        "south": {
+          "texture": "#wood"
+        },
+        "up": {
+          "texture": "#wood"
+        },
+        "west": {
+          "texture": "#wood"
+        }
+      },
+      "from": [
+        1,
+        11,
+        15
+      ],
+      "to": [
+        15,
+        13,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        3,
+        10,
+        14
+      ],
+      "to": [
+        4,
+        11,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        8,
+        10,
+        14
+      ],
+      "to": [
+        9,
+        11,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        12,
+        10,
+        14
+      ],
+      "to": [
+        13,
+        11,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#cloth_dark"
+        },
+        "east": {
+          "texture": "#cloth_dark"
+        },
+        "north": {
+          "texture": "#cloth_dark"
+        },
+        "south": {
+          "texture": "#cloth_dark"
+        },
+        "up": {
+          "texture": "#cloth_dark"
+        },
+        "west": {
+          "texture": "#cloth_dark"
+        }
+      },
+      "from": [
+        2,
+        2,
+        14
+      ],
+      "to": [
+        6,
+        10,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#canvas"
+        },
+        "east": {
+          "texture": "#canvas"
+        },
+        "north": {
+          "texture": "#canvas"
+        },
+        "south": {
+          "texture": "#canvas"
+        },
+        "up": {
+          "texture": "#canvas"
+        },
+        "west": {
+          "texture": "#canvas"
+        }
+      },
+      "from": [
+        7,
+        4,
+        14
+      ],
+      "to": [
+        10,
+        10,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#paint_olive"
+        },
+        "east": {
+          "texture": "#paint_olive"
+        },
+        "north": {
+          "texture": "#paint_olive"
+        },
+        "south": {
+          "texture": "#paint_olive"
+        },
+        "up": {
+          "texture": "#paint_olive"
+        },
+        "west": {
+          "texture": "#paint_olive"
+        }
+      },
+      "from": [
+        10,
+        6,
+        13
+      ],
+      "to": [
+        14,
+        10,
+        14
+      ]
+    }
+  ],
+  "textures": {
+    "canvas": "voidheart:block/underway/canvas",
+    "cloth_dark": "voidheart:block/underway/cloth_dark",
+    "paint_olive": "voidheart:block/underway/paint_olive",
+    "particle": "voidheart:block/underway/wood",
+    "steel_dark": "voidheart:block/underway/steel_dark",
+    "wood": "voidheart:block/underway/wood"
+  }
+}

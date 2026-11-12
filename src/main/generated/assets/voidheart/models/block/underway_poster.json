@@ -1,0 +1,41 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#paper"
+        },
+        "east": {
+          "texture": "#paper"
+        },
+        "north": {
+          "texture": "#paper"
+        },
+        "south": {
+          "texture": "#paper"
+        },
+        "up": {
+          "texture": "#paper"
+        },
+        "west": {
+          "texture": "#paper"
+        }
+      },
+      "from": [
+        2,
+        2,
+        15
+      ],
+      "to": [
+        14,
+        15,
+        16
+      ]
+    }
+  ],
+  "textures": {
+    "paper": "voidheart:block/underway/paper",
+    "particle": "voidheart:block/underway/paper"
+  }
+}

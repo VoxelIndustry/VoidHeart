@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_turret_cupola",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_turret_cupola"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_turret_cupola",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_turret_cupola",
+      "y": 270
+    }
+  }
+}

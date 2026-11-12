@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_helmets",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_helmets"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_helmets",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_helmets",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_green"
+        },
+        "east": {
+          "texture": "#glass_green"
+        },
+        "north": {
+          "texture": "#glass_green"
+        },
+        "south": {
+          "texture": "#glass_green"
+        },
+        "up": {
+          "texture": "#glass_green"
+        },
+        "west": {
+          "texture": "#glass_green"
+        }
+      },
+      "from": [
+        2,
+        0,
+        3
+      ],
+      "to": [
+        5,
+        5,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_green"
+        },
+        "east": {
+          "texture": "#glass_green"
+        },
+        "north": {
+          "texture": "#glass_green"
+        },
+        "south": {
+          "texture": "#glass_green"
+        },
+        "up": {
+          "texture": "#glass_green"
+        },
+        "west": {
+          "texture": "#glass_green"
+        }
+      },
+      "from": [
+        3,
+        5,
+        4
+      ],
+      "to": [
+        4,
+        8,
+        5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_green"
+        },
+        "east": {
+          "texture": "#glass_green"
+        },
+        "north": {
+          "texture": "#glass_green"
+        },
+        "south": {
+          "texture": "#glass_green"
+        },
+        "up": {
+          "texture": "#glass_green"
+        },
+        "west": {
+          "texture": "#glass_green"
+        }
+      },
+      "from": [
+        8,
+        0,
+        9
+      ],
+      "to": [
+        14,
+        3,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_green"
+        },
+        "east": {
+          "texture": "#glass_green"
+        },
+        "north": {
+          "texture": "#glass_green"
+        },
+        "south": {
+          "texture": "#glass_green"
+        },
+        "up": {
+          "texture": "#glass_green"
+        },
+        "west": {
+          "texture": "#glass_green"
+        }
+      },
+      "from": [
+        14,
+        1,
+        10
+      ],
+      "to": [
+        16,
+        2,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#enamel"
+        },
+        "east": {
+          "texture": "#enamel"
+        },
+        "north": {
+          "texture": "#enamel"
+        },
+        "south": {
+          "texture": "#enamel"
+        },
+        "up": {
+          "texture": "#enamel"
+        },
+        "west": {
+          "texture": "#enamel"
+        }
+      },
+      "from": [
+        9,
+        0,
+        3
+      ],
+      "to": [
+        12,
+        3,
+        6
+      ]
+    }
+  ],
+  "textures": {
+    "enamel": "voidheart:block/underway/enamel",
+    "glass_green": "voidheart:block/underway/glass_green",
+    "particle": "voidheart:block/underway/glass_green"
+  }
+}

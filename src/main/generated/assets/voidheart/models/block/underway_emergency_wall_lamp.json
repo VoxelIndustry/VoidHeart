@@ -1,0 +1,107 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel_dark"
+        },
+        "east": {
+          "texture": "#steel_dark"
+        },
+        "north": {
+          "texture": "#steel_dark"
+        },
+        "south": {
+          "texture": "#steel_dark"
+        },
+        "up": {
+          "texture": "#steel_dark"
+        },
+        "west": {
+          "texture": "#steel_dark"
+        }
+      },
+      "from": [
+        5,
+        6,
+        14
+      ],
+      "to": [
+        11,
+        12,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#steel"
+        },
+        "east": {
+          "texture": "#steel"
+        },
+        "north": {
+          "texture": "#steel"
+        },
+        "south": {
+          "texture": "#steel"
+        },
+        "up": {
+          "texture": "#steel"
+        },
+        "west": {
+          "texture": "#steel"
+        }
+      },
+      "from": [
+        5,
+        9,
+        11
+      ],
+      "to": [
+        11,
+        10,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#lens_red"
+        },
+        "east": {
+          "texture": "#lens_red"
+        },
+        "north": {
+          "texture": "#lens_red"
+        },
+        "south": {
+          "texture": "#lens_red"
+        },
+        "up": {
+          "texture": "#lens_red"
+        },
+        "west": {
+          "texture": "#lens_red"
+        }
+      },
+      "from": [
+        6,
+        7,
+        12
+      ],
+      "to": [
+        10,
+        11,
+        14
+      ]
+    }
+  ],
+  "textures": {
+    "lens_red": "voidheart:block/underway/lens_red",
+    "particle": "voidheart:block/underway/steel_dark",
+    "steel": "voidheart:block/underway/steel",
+    "steel_dark": "voidheart:block/underway/steel_dark"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_duct_vent",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_duct_vent"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_duct_vent",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_duct_vent",
+      "y": 270
+    }
+  }
+}

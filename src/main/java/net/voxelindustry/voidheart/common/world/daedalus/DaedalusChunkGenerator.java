@@ -19,6 +19,7 @@ import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.voxelindustry.voidheart.common.world.EmptyChunkGenerator;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Set;
@@ -35,7 +36,14 @@ public final class DaedalusChunkGenerator extends EmptyChunkGenerator
 
     private DaedalusChunkGenerator(DaedalusBiomeSource biomeSource)
     {
-        super(biomeSource, DistrictPos.HEIGHT);
+        super(biomeSource, DistrictPos.HEIGHT + UnderwayLevels.HEIGHT);
+    }
+
+    /** The Underway lies under the districts' floor at 0. */
+    @Override
+    public int getMinY()
+    {
+        return UnderwayLevels.MIN_Y;
     }
 
     @Override

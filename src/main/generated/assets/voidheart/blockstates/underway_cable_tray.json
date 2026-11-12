@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_cable_tray",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_cable_tray"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_cable_tray",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_cable_tray",
+      "y": 270
+    }
+  }
+}
