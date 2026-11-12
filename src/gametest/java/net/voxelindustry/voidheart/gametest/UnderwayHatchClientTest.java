@@ -288,11 +288,12 @@ public class UnderwayHatchClientTest implements FabricClientGameTest
                 minecraft -> waveMobs(minecraft).stream().anyMatch(mob -> mob.entityTags().contains(STRUCK_TAG) && mob.getTarget() == keys(minecraft).getFirst()));
 
         server.runCommand("kill @e[tag=voidheart_hatch_wave]");
+        int before = server.computeOnServer(minecraft -> keys(minecraft).getFirst().wavesSent());
         server.runCommand("execute as @a run voidheart underway wave");
+        server.runOnServer(minecraft -> expect(keys(minecraft).getFirst().wavesSent() == before + 1, "Calling a wave did not count it"));
         context.waitTicks(5);
         server.runOnServer(minecraft ->
         {
-            expect(keys(minecraft).getFirst().wavesSent() == 2, "Calling a wave did not count it");
             expect(!waveMobs(minecraft).isEmpty(), "The called wave brought nothing");
         });
         server.runCommand("kill @e[tag=voidheart_hatch_wave]");

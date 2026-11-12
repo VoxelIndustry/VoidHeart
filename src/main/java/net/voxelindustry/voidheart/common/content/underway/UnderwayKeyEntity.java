@@ -383,7 +383,7 @@ public class UnderwayKeyEntity extends Mob
         openingTicks = input.getIntOr("OpeningTicks", 0);
         defence = new KeyDefence(input.getIntOr("Panes", KeyDefence.ALL_PANES), Math.max(1, input.getIntOr("KeyHits", HatchBalance.KEY_HITS)), input.getIntOr("Lull", 0));
         syncDefence();
-        wavesSent = input.getIntOr("Waves", 0);
+        wavesSent = input.getIntOr("Waves", HatchWaves.due(charge()));
         breakers.clear();
         breakers.addAll(input.read("Breakers", UUIDUtil.CODEC.listOf()).orElse(List.of()));
     }
