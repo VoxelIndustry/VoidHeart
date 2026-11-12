@@ -57,6 +57,8 @@ class UnderwaySecurityPlanTest
                         assertThat(cabinet.y()).isEqualTo(section.floorY() + 2);
                         assertThat(canvas.get(behindX, cabinet.y(), behindZ).isOpen()).as("wall behind the %s cabinet under %s", section, pos).isFalse();
                         assertThat(canvas.propAt(cx, cabinet.y() - 1, cz)).as("under the %s cabinet under %s", section, pos).isNull();
+                        assertThat(fort.rooms()).as("the %s cabinet under %s must not hang behind a shutter that only it can raise", section, pos).noneMatch(room -> FortBuilder.SHUTTERED.contains(room.kind())
+                                && room.floorY() == section.floorY() && cabinet.along() >= room.a0() && cabinet.along() <= room.a1() && cabinet.across() >= room.c0() && cabinet.across() <= room.c1());
                     }
                 }
             }

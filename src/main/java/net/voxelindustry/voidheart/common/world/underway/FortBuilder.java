@@ -47,7 +47,7 @@ final class FortBuilder
     private static final int LAMP_EVERY = 16;
     private static final int UNREACHED = Integer.MAX_VALUE;
     /** Rooms worth locking, whose doorway is a shutter that only rises on power. */
-    private static final EnumSet<UnderwayRoomKind> SHUTTERED = EnumSet.of(UnderwayRoomKind.ARMOURY, UnderwayRoomKind.STORES, UnderwayRoomKind.COMMAND_POST, UnderwayRoomKind.ARCHIVE,
+    static final EnumSet<UnderwayRoomKind> SHUTTERED =EnumSet.of(UnderwayRoomKind.ARMOURY, UnderwayRoomKind.STORES, UnderwayRoomKind.COMMAND_POST, UnderwayRoomKind.ARCHIVE,
             UnderwayRoomKind.LABORATORY);
     private static final UnderwayRoomKind[] SIDE_ROOMS = { UnderwayRoomKind.ARMOURY, UnderwayRoomKind.QUARTERS, UnderwayRoomKind.DECONTAMINATION, UnderwayRoomKind.STORES };
 

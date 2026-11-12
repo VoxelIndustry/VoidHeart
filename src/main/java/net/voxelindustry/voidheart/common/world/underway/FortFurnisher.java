@@ -157,7 +157,9 @@ final class FortFurnisher
             int reach = Integer.MAX_VALUE;
             for (var room : rooms)
             {
-                if (room.floorY() != floor || room.height() < CABINET_HEIGHT || room.kind().isCutOff() || room.kind() == UnderwayRoomKind.CAVED_IN || NARROW_PASSAGES.contains(room.kind()))
+                // Not behind a shutter either: the shutter only rises on the power this cabinet gives
+                if (room.floorY() != floor || room.height() < CABINET_HEIGHT || room.kind().isCutOff() || room.kind() == UnderwayRoomKind.CAVED_IN || NARROW_PASSAGES.contains(room.kind())
+                        || FortBuilder.SHUTTERED.contains(room.kind()))
                     continue;
                 for (int[] side : SIDES)
                 {
