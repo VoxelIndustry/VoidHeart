@@ -86,4 +86,6 @@ Aseprite sees a stacked animation as one tall frame, so edit each frame's band a
 
 **Paired states** usually use suffixes like `_active` and `_inactive`, or `_on`. Check whether the new texture needs a pair.
 
+**Entity skins are never flat fills,** which the user called plastic on the worn Shielding Apparatus. Like `entity/automaton.png` and `entity/centurion.png`, shift about two pixels in five a shade up or down along a ramp, light the top row of each upright face and darken its bottom one, and add seams, rivets or patina. Paint by face from the box unwrap so these land on the right sides.
+
 **Aseprite sources:** only `block/conduit/conduit.aseprite` and `sprites/ravenous_gold.aseprite` exist, so PNGs are normally the source of truth. If you change a PNG made from one of these, tell the user that the source no longer matches, or update it too.

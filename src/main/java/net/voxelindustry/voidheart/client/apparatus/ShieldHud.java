@@ -8,27 +8,45 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Keeps the shield out of the way in first person: a hairline over the hearts that shows only while the shield is not full or just changed,
- * and a few runes flaring at the edge of the crosshair on the side a hit came from.
+ * Keeps the shield out of the way in first person. Its points are rune shields laid see-through over the armor row, two points each as armor counts them,
+ * with empty sockets for what is still to refill; past ten shields a second, paler layer goes over the first. A few runes also flare at the edge of the
+ * crosshair on the side a hit came from.
+ * <p>
+ * Per frame: up to twenty 9x9 sprites for the row and three per live hit around the crosshair.
  */
 public final class ShieldHud
 {
     private static final Identifier RUNES = Identifier.fromNamespaceAndPath(MODID, "textures/entity/shield_runes.png");
 
-    private static final int   BAR_WIDTH      = 81;
-    /** Above the hearts, in the pixel row between them and the armor. */
-    private static final int   BAR_FROM_BOTTOM = 40;
-    private static final int   BAR_BACK       = 0x50040208;
-    private static final int   BAR_FILL       = 0xFF000000 | ShieldRuneRender.COLOR;
-    private static final int   BAR_REFILLING  = 0xFF2F6B4C;
-    private static final int   BAR_EMPTY      = 0xFFEF8A98;
-    private static final long  LINGER_MILLIS  = 2500;
-    private static final long  FADE_MILLIS    = 600;
+    private static final Identifier SHIELD_FULL  = Identifier.fromNamespaceAndPath(MODID, "hud/shield_rune_full");
+    private static final Identifier SHIELD_HALF  = Identifier.fromNamespaceAndPath(MODID, "hud/shield_rune_half");
+    private static final Identifier SHIELD_EMPTY = Identifier.fromNamespaceAndPath(MODID, "hud/shield_rune_empty");
+
+    private static final int   ICONS          = 10;
+    private static final int   ICON_SIZE      = 9;
+    private static final int   ICON_STEP      = 8;
+    private static final float POINTS_PER_ICON = 2;
+    /** The armor row's place, as vanilla works it out above the health rows. */
+    private static final int   BASE_FROM_BOTTOM = 39;
+    private static final int   ROW_ABOVE      = 10;
+
+    private static final float FULL_ALPHA     = 0.78F;
+    private static final float EMPTY_ALPHA    = 0.4F;
+    private static final int   LAYER_RGB      = 0xC9F7DD;
+    private static final int   BROKEN_RGB     = ShieldRuneRender.BROKEN_COLOR;
+    private static final int   FLASH_RGB      = 0xFFFFFF;
+    private static final long  FLASH_MILLIS   = 260;
+    /** The shield refilling next pulses while it fills. */
+    private static final float PULSE_SPEED    = 0.012F;
+    private static final float PULSE_LOW      = 0.3F;
+    private static final float REFILL_ALPHA   = 0.7F;
 
     private static final int   RUNE_SIZE      = 7;
     private static final int   RUNE_RADIUS    = 24;
@@ -41,7 +59,7 @@ public final class ShieldHud
     private static final int   CELL           = 16;
 
     private static float lastPoints = -1;
-    private static long  changedAt;
+    private static long  hitAt;
 
     private ShieldHud()
     {
@@ -54,12 +72,24 @@ public final class ShieldHud
         if (player == null || player.isSpectator())
             return;
 
-        extractBar(graphics, minecraft);
+        extractShields(graphics, minecraft);
         if (minecraft.options.getCameraType().isFirstPerson())
             extractRunes(graphics, minecraft, delta.getGameTimeDeltaPartialTick(false));
     }
 
-    private static void extractBar(GuiGraphicsExtractor graphics, Minecraft minecraft)
+    /**
+     * The top of the armor row: one row above the health rows, which close up as more of them are needed.
+     */
+    private static int armorRowY(GuiGraphicsExtractor graphics, Player player)
+    {
+        float maxHealth = Math.max((float) player.getAttributeValue(Attributes.MAX_HEALTH), Mth.ceil(player.getHealth()));
+        int absorption = Mth.ceil(player.getAbsorptionAmount());
+        int healthRows = Mth.ceil((maxHealth + absorption) / 2.0F / 10.0F);
+        int rowHeight = Math.max(10 - (healthRows - 2), 3);
+        return graphics.guiHeight() - BASE_FROM_BOTTOM - (healthRows - 1) * rowHeight - ROW_ABOVE;
+    }
+
+    private static void extractShields(GuiGraphicsExtractor graphics, Minecraft minecraft)
     {
         var state = ShieldingApparatus.state(minecraft.player);
         if (state.capacity() <= 0 || minecraft.gameMode == null || !minecraft.gameMode.canHurtPlayer())
@@ -69,31 +99,47 @@ public final class ShieldHud
         }
 
         long now = Util.getMillis();
-        if (Math.abs(state.points() - lastPoints) > 0.01F)
-        {
-            lastPoints = state.points();
-            changedAt = now;
-        }
-
-        float shown = 1;
-        if (state.isFull())
-        {
-            long since = now - changedAt - LINGER_MILLIS;
-            shown = since <= 0 ? 1 : 1 - Math.min(1, since / (float) FADE_MILLIS);
-        }
-        if (shown <= 0)
-            return;
+        if (lastPoints >= 0 && state.points() < lastPoints - 0.01F)
+            hitAt = now;
+        lastPoints = state.points();
+        boolean flashing = now - hitAt < FLASH_MILLIS;
 
         int left = graphics.guiWidth() / 2 - 91;
-        int y = graphics.guiHeight() - BAR_FROM_BOTTOM;
-        int filled = Math.round(BAR_WIDTH * state.points() / state.capacity());
-        int fill = state.points() <= 0 ? BAR_EMPTY : state.delay() > 0 || state.isFull() ? BAR_FILL : BAR_REFILLING;
+        int y = armorRowY(graphics, minecraft.player);
+        int sockets = Math.min(ICONS, Mth.ceil(state.capacity() / POINTS_PER_ICON));
+        int socketRgb = state.points() <= 0 ? BROKEN_RGB : ShieldRuneRender.COLOR;
+        for (int icon = 0; icon < sockets; icon++)
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SHIELD_EMPTY, left + icon * ICON_STEP, y, ICON_SIZE, ICON_SIZE, ARGB.color(EMPTY_ALPHA, socketRgb));
 
-        graphics.fill(left, y, left + BAR_WIDTH, y + 1, ARGB.multiplyAlpha(BAR_BACK, shown));
-        if (filled > 0)
-            graphics.fill(left, y, left + filled, y + 1, ARGB.multiplyAlpha(fill, shown));
-        else
-            graphics.fill(left, y, left + 2, y + 1, ARGB.multiplyAlpha(BAR_EMPTY, shown));
+        // Points in halves, as armor counts them, so a shield half filled shows a half rune
+        int halves = Mth.floor(state.points());
+        int perLayer = ICONS * (int) POINTS_PER_ICON;
+        for (int layer = 0; layer * perLayer < halves; layer++)
+        {
+            int rgb = flashing ? FLASH_RGB : layerRgb(layer);
+            for (int icon = 0; icon < ICONS; icon++)
+            {
+                int filled = halves - layer * perLayer - icon * 2;
+                if (filled <= 0)
+                    break;
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, filled >= 2 ? SHIELD_FULL : SHIELD_HALF, left + icon * ICON_STEP, y, ICON_SIZE, ICON_SIZE,
+                        ARGB.color(FULL_ALPHA, rgb));
+            }
+        }
+
+        // The half point refilling next glows in and out over its socket until it is whole
+        if (!state.isFull() && state.delay() <= 0 && halves < Mth.floor(state.capacity()))
+        {
+            int icon = halves % perLayer / 2;
+            float pulse = Mth.lerp(0.5F + 0.5F * Mth.sin(now * PULSE_SPEED), PULSE_LOW, 1);
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, halves % 2 == 0 ? SHIELD_HALF : SHIELD_FULL, left + icon * ICON_STEP, y, ICON_SIZE, ICON_SIZE,
+                    ARGB.color(FULL_ALPHA * REFILL_ALPHA * pulse, layerRgb(halves / perLayer)));
+        }
+    }
+
+    private static int layerRgb(int layer)
+    {
+        return layer == 0 ? ShieldRuneRender.COLOR : LAYER_RGB;
     }
 
     private static void extractRunes(GuiGraphicsExtractor graphics, Minecraft minecraft, float partial)
