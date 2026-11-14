@@ -7,6 +7,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusHolder;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusMenu;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryMenu;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.BarrierConfigurePayload;
@@ -22,6 +24,7 @@ public class VoidHeartMenus
     public static ExtendedMenuType<PermeableBarrierMenu, BlockPos> PERMEABLE_BARRIER;
     public static ExtendedMenuType<KnowledgeRepositoryMenu, BlockPos> KNOWLEDGE_REPOSITORY;
     public static ExtendedMenuType<ArmillaryMenu, BlockPos> ARMILLARY;
+    public static ExtendedMenuType<ApparatusMenu, ApparatusHolder> APPARATUS;
 
     public static void registerMenus()
     {
@@ -35,6 +38,9 @@ public class VoidHeartMenus
         ARMILLARY = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "armillary"),
                 new ExtendedMenuType<>(ArmillaryMenu::new, BlockPos.STREAM_CODEC));
         ArmillaryPayloads.register();
+
+        APPARATUS = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "shielding_apparatus"),
+                new ExtendedMenuType<>(ApparatusMenu::new, ApparatusHolder.STREAM_CODEC));
 
         PayloadTypeRegistry.clientboundPlay().register(BarrierWavePayload.TYPE, BarrierWavePayload.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(BarrierConfigurePayload.TYPE, BarrierConfigurePayload.STREAM_CODEC);

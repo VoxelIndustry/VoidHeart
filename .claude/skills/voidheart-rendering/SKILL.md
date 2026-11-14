@@ -65,6 +65,8 @@ If nothing in the table fits, copy the closest vanilla pipeline as `VoidHeartRen
 | A mob's flat plates or touching boxes z-fight, or show their blank back face as if inside out | Vanilla's entity cutout culls nothing since 26.3, so both faces of a flat box share a plane, and so do two boxes ending on one plane | Give a flat box one face (`ModelBoxes.FRONT`), and grow or shrink one of two meeting boxes by `ModelBoxes.GAP`. `MobModelGeometryTest` checks every mob model | |
 | Hand-built geometry looks inside-out, its far inner faces showing through | Faces listed clockwise seen from outside, so a culling render type such as `entitySolid` drops the near ones. Right normals don't help | List each face's corners counter-clockwise seen from outside, as `ArmillaryRender.box` does (`ArmillaryRender.linkQuad`) | |
 | Model parts drawn apart from their entity shift or twitch | Renderers share parts between entities and move them when flushing | Copy the cubes and their poses once, then compile the cubes yourself (`TormenterHeads`) | |
+| Something worn on the body pokes through the face when the head turns | Body geometry above y 0 runs inside the head, which turns apart from the body | Stop parts hung on `body` at its top face, y 0 (`ApparatusWornRender`) | |
+| A worn model or mob reads as plastic | Flat colour fills on its skin, lit evenly by the entity shader | Speckle every face a shade up or down, light its top edge and darken its bottom one, as `automaton.png` does (see `aseprite-texture`) | |
 
 Run `git show <commit>` when you need the full change. If a fix teaches something new, add a row here in the same change, so the next renderer benefits from it.
 

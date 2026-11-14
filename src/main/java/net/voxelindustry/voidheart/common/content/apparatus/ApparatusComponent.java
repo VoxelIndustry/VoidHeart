@@ -31,6 +31,12 @@ public enum ApparatusComponent implements StringRepresentable
     STASIS_CORE(Shapes.CORE, 0, 0, 0, null, BreakEffect.STASIS),
     MENDING_CORE(Shapes.CORE, 0, 0, 0, null, BreakEffect.MEND);
 
+    private static final int CAPACITY_RGB = 0x36C5B0;
+    private static final int REGEN_RGB    = 0x9B7BF0;
+    private static final int QUICKEN_RGB  = 0xF4D670;
+    private static final int WARD_RGB     = 0xD6C9F5;
+    private static final int CORE_RGB     = 0xF2A65A;
+
     public static final Codec<ApparatusComponent> CODEC = StringRepresentable.fromEnum(ApparatusComponent::values);
 
     private final ComponentShape        shape;
@@ -78,6 +84,22 @@ public enum ApparatusComponent implements StringRepresentable
     public @Nullable BreakEffect breakEffect()
     {
         return breakEffect;
+    }
+
+    /**
+     * The colour of what the piece gives, shared by its pieces in the grid and its line in a tooltip.
+     */
+    public int rgb()
+    {
+        if (breakEffect != null)
+            return CORE_RGB;
+        if (ward != null)
+            return WARD_RGB;
+        if (quickening > 0)
+            return QUICKEN_RGB;
+        if (regen > 0)
+            return REGEN_RGB;
+        return CAPACITY_RGB;
     }
 
     public String itemName()

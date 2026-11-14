@@ -1,33 +1,30 @@
 package net.voxelindustry.voidheart.client.screen;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen.Bounds;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponentItem;
-import net.voxelindustry.voidheart.common.content.apparatus.ApparatusEdits;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusGrid;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusMenu;
 import net.voxelindustry.voidheart.common.content.apparatus.ComponentShape;
-import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
-import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldStats;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.KNOWN_COLOR;
@@ -37,295 +34,357 @@ import static net.voxelindustry.voidheart.client.screen.ResearchScreen.RULE_COLO
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.TEXT_COLOR;
 
 /**
- * The grid of the apparatus in hand, set in the same slab as the knowledge repository. Components carried wait on a tablet to the left: one is picked there,
- * turned with R or a right click and set by clicking the grid, and clicking a piece in the grid takes it back. What the apparatus gives is on the tablet to the right.
+ * The grid of an apparatus over the player's inventory, cut in a small slab of the knowledge repository's voidstone. The grid sits in a torn hole lit from
+ * below, what the apparatus gives is on a tablet beside it, and one whisper between them and the inventory says what a click does.
+ * <p>
+ * A component is carried onto the grid like onto any slot: clicked there, or dragged there from the slot it was picked up from. Its shape follows the cursor,
+ * turned with R, a right click or the wheel. A piece clicked in the grid comes back onto the cursor, to be dropped in a slot or dragged to another cell, and
+ * comes straight back into the inventory with shift held. Each edit runs on the client at once and on the server through a menu button.
+ * <p>
+ * Per frame: one blit for the baked slab, 36 slot plates, up to 25 cells and pieces, and a few lines of text. The slab is baked once per resize.
  */
-public class ApparatusScreen extends Screen
+public class ApparatusScreen extends AbstractContainerScreen<ApparatusMenu>
 {
-    private static final int RIM_MIN    = 20;
-    private static final int RIM_MAX    = 40;
-    private static final int PAD        = 8;
-    private static final int LINE       = 11;
-    private static final int CELL       = 22;
-    private static final int TABLET_W   = 132;
-    private static final int TABLET_GAP = 18;
-    private static final int ROW        = 20;
-    private static final int HEAD       = 16;
-    private static final int GRID_LIFT  = 6;
+    private static final int PANEL_W   = 248;
+    private static final int PANEL_H   = 228;
+    private static final int PAD       = 10;
+    private static final int TITLE_Y   = 8;
+    private static final int WELL_X    = PAD;
+    private static final int WELL_Y    = 20;
+    private static final int WELL      = 108;
+    private static final int WELL_RIM  = 4;
+    private static final int CELL      = 20;
+    private static final int TABLET_X  = WELL_X + WELL + 8;
+    private static final int TABLET_W  = PANEL_W - TABLET_X - PAD;
+    private static final int WHISPER_Y = WELL_Y + WELL + 4;
+    private static final int LINE      = 11;
+    private static final int TEAR      = 3;
 
-    private static final int PLATE_COLOR      = 0xFF0B0810;
-    private static final int CELL_LINE        = 0xFF2A2038;
-    private static final float PIECE_TINT     = 0.3F;
-    private static final float GHOST_TINT     = 0.45F;
-    private static final int FITS_COLOR       = 0xFF7CE8D6;
-    private static final int SELECTED_BACK    = 0xFF16463F;
-    private static final int HOVER_BACK       = 0xFF1A1424;
-    private static final int WHISPER_BACK     = 0xA0050308;
+    private static final int   PLATE_COLOR   = 0xFF0B0810;
+    private static final int   CELL_BACK     = 0xB00B0810;
+    private static final int   CELL_LINE     = 0xFF2A2038;
+    private static final int   SLOT_BACK     = 0xF40B0810;
+    private static final int   OUTLINE_COLOR = 0xFF040208;
+    private static final float PIECE_TINT    = 0.3F;
+    private static final float GHOST_TINT    = 0.45F;
+    private static final int   GHOST_ALPHA   = 0xC0;
+    private static final int   FITS_COLOR    = 0xFF7CE8D6;
+    private static final int   WARD_COLOR    = 0xFFE8C46A;
+    private static final int   CORE_COLOR    = 0xFFC9B2F2;
 
-    private static final int CAPACITY_RGB   = 0x36C5B0;
-    private static final int REGEN_RGB      = 0x8E6BE8;
-    private static final int QUICKEN_RGB    = 0xF4D670;
-    private static final int WARD_RGB       = 0xD6C9F5;
-    private static final int CORE_RGB       = 0xF2A65A;
+    private static final Identifier PANEL = Identifier.fromNamespaceAndPath(MODID, "dynamic/apparatus_panel");
 
-    private static final Identifier VOID = Identifier.fromNamespaceAndPath(MODID, "dynamic/apparatus_void");
-
-    private int left;
-    private int right;
-    private int gridX;
-    private int gridY;
-    private int size;
-    private Bounds tray;
-    private Bounds stats;
-
-    private @Nullable ApparatusComponent held;
     private int rotation;
-    /** Rows of the carried tablet scrolled past, when more kinds are carried than it can show. */
-    private int scroll;
+    private @Nullable ApparatusComponent rotationFor;
+    /** The cell a piece was taken from by the press still held, so letting go over another cell sets it there. */
+    private int @Nullable [] pressedCell;
+    /** Whether the press still held picked a stack up from a slot, so letting go over the grid sets one there. */
+    private boolean pressedOnSlot;
 
-    public ApparatusScreen()
+    public ApparatusScreen(ApparatusMenu menu, Inventory inventory, Component title)
     {
-        super(Component.translatable("voidheart.apparatus_screen.title"));
-    }
-
-    private ItemStack apparatus()
-    {
-        var hand = minecraft.player == null ? null : ApparatusEdits.handOf(minecraft.player);
-        return hand == null ? ItemStack.EMPTY : minecraft.player.getItemInHand(hand);
-    }
-
-    private ApparatusGrid grid()
-    {
-        return ShieldingApparatus.grid(apparatus());
+        super(menu, inventory, title, PANEL_W, PANEL_H);
     }
 
     @Override
     protected void init()
     {
         super.init();
-        var stack = apparatus();
-        size = stack.getItem() instanceof ShieldingApparatusItem item ? item.tier().size() : 3;
-
-        int rim = Math.clamp((int) (width * 0.045F), RIM_MIN, RIM_MAX);
-        left = rim;
-        right = width - rim;
-        int gridSize = size * CELL;
-        gridX = (width - gridSize) / 2;
-        gridY = (height - gridSize) / 2 - GRID_LIFT;
-
-        int tabletH = Math.max(gridSize + 2 * PAD, HEAD + 4 * ROW);
-        int tabletY = (height - tabletH) / 2 - GRID_LIFT;
-        tray = new Bounds(Math.max(left + PAD, gridX - TABLET_GAP - TABLET_W), tabletY, TABLET_W, tabletH);
-        stats = new Bounds(Math.min(right - PAD - TABLET_W, gridX + gridSize + TABLET_GAP), tabletY, TABLET_W, tabletH);
-
-        var lights = List.of(new ResearchVoid.Light(width / 2D, height / 2D - GRID_LIFT, gridSize * 1.1, 0.9, ResearchVoid.LIT_RGB));
-        long seed = minecraft.player == null ? 0 : minecraft.player.getUUID().getLeastSignificantBits();
-        ResearchVoid.upload(minecraft, VOID, ResearchVoid.paint(minecraft, width, height, left, right, lights, seed, (x, y) -> 0));
-    }
-
-    @Override
-    public void tick()
-    {
-        if (apparatus().isEmpty())
-            onClose();
-        else if (held != null && count(held) == 0)
-            held = null;
-    }
-
-    @Override
-    public boolean isPauseScreen()
-    {
-        return false;
+        bakePanel();
     }
 
     @Override
     public void removed()
     {
-        minecraft.getTextureManager().release(VOID);
+        minecraft.getTextureManager().release(PANEL);
         super.removed();
     }
 
-    private Map<ApparatusComponent, Integer> carried()
+    private int size()
     {
-        var counts = new EnumMap<ApparatusComponent, Integer>(ApparatusComponent.class);
-        var inventory = minecraft.player.getInventory();
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++)
+        return menu.size();
+    }
+
+    private int gridX()
+    {
+        return leftPos + WELL_X + WELL_RIM + (WELL - 2 * WELL_RIM - size() * CELL) / 2;
+    }
+
+    private int gridY()
+    {
+        return topPos + WELL_Y + WELL_RIM + (WELL - 2 * WELL_RIM - size() * CELL) / 2;
+    }
+
+    private Bounds tablet()
+    {
+        return new Bounds(leftPos + TABLET_X, topPos + WELL_Y, TABLET_W, WELL);
+    }
+
+    // The slab, baked once: voidstone with a lip around its edge, and a torn hole for the grid, lit from within like the research map
+
+    private void bakePanel()
+    {
+        var stone = ResearchVoid.readStone(minecraft);
+        var image = new NativeImage(PANEL_W, PANEL_H, false);
+        long seed = minecraft.player == null ? 0 : minecraft.player.getUUID().getLeastSignificantBits();
+        var lights = List.of(new ResearchVoid.Light(WELL_X + WELL / 2D, WELL_Y + WELL / 2D, WELL * 0.7, 0.9, ResearchVoid.LIT_RGB));
+        for (int y = 0; y < PANEL_H; y++)
+            for (int x = 0; x < PANEL_W; x++)
+            {
+                int hole = holeDepth(x, y, seed);
+                int rim = Math.min(Math.min(x, y), Math.min(PANEL_W - 1 - x, PANEL_H - 1 - y));
+                int color;
+                if (hole >= 0)
+                    color = ResearchVoid.voidAt(x, y, hole, 0, lights, seed);
+                else if (rim == 0)
+                    color = OUTLINE_COLOR;
+                else
+                    color = ResearchVoid.stoneAt(stone, x, y, Math.min(-hole, rim), seed);
+                image.setPixel(x, y, color);
+            }
+        if (stone != null)
+            stone.close();
+        ResearchVoid.upload(minecraft, PANEL, image);
+    }
+
+    /**
+     * How far inside the torn hole a pixel of the slab is, or minus how far outside it.
+     */
+    private static int holeDepth(int x, int y, long seed)
+    {
+        int left = WELL_X + tear(y, seed);
+        int right = WELL_X + WELL - tear(y, seed + 91);
+        int top = WELL_Y + tear(x, seed + 17);
+        int bottom = WELL_Y + WELL - tear(x, seed + 29);
+        int inX = Math.min(x - left, right - 1 - x);
+        int inY = Math.min(y - top, bottom - 1 - y);
+        if (inX >= 0 && inY >= 0)
+            return Math.min(inX, inY);
+        return -Math.max(Math.max(-inX, 0), Math.max(-inY, 0));
+    }
+
+    private static int tear(int along, long seed)
+    {
+        return Math.round(ResearchVoid.smooth(along * 0.13F, 3.1F, seed) * TEAR);
+    }
+
+    // Input
+
+    private static @Nullable ApparatusComponent component(ItemStack stack)
+    {
+        return stack.getItem() instanceof ApparatusComponentItem item ? item.component() : null;
+    }
+
+    private @Nullable ApparatusComponent held()
+    {
+        var held = component(menu.getCarried());
+        if (held != rotationFor)
         {
-            var stack = inventory.getItem(slot);
-            if (stack.getItem() instanceof ApparatusComponentItem item)
-                counts.merge(item.component(), stack.getCount(), Integer::sum);
+            rotationFor = held;
+            rotation = 0;
         }
-        return counts;
-    }
-
-    private int count(ApparatusComponent component)
-    {
-        return carried().getOrDefault(component, 0);
-    }
-
-    private static int rgb(ApparatusComponent component)
-    {
-        if (component.breakEffect() != null)
-            return CORE_RGB;
-        if (component.ward() != null)
-            return WARD_RGB;
-        if (component.quickening() > 0)
-            return QUICKEN_RGB;
-        if (component.regen() > 0)
-            return REGEN_RGB;
-        return CAPACITY_RGB;
-    }
-
-    private static ItemStack stackOf(ApparatusComponent component)
-    {
-        return new ItemStack(VoidHeartItems.APPARATUS_COMPONENTS.get(component));
+        return held;
     }
 
     private int cellAtX(double mouseX)
     {
-        return (int) Math.floor((mouseX - gridX) / CELL);
+        return (int) Math.floor((mouseX - gridX()) / CELL);
     }
 
     private int cellAtY(double mouseY)
     {
-        return (int) Math.floor((mouseY - gridY) / CELL);
+        return (int) Math.floor((mouseY - gridY()) / CELL);
     }
 
     private boolean overGrid(double mouseX, double mouseY)
     {
-        int x = cellAtX(mouseX);
-        int y = cellAtY(mouseY);
-        return mouseX >= gridX && mouseY >= gridY && x < size && y < size;
+        return mouseX >= gridX() && mouseY >= gridY() && cellAtX(mouseX) < size() && cellAtY(mouseY) < size();
+    }
+
+    private ComponentShape shape(ApparatusComponent held)
+    {
+        return held.shape().rotated(rotation);
     }
 
     /**
      * Where the held piece's top left corner goes for the cell under the cursor, which it covers near its middle.
      */
-    private int originX(double mouseX)
+    private int originX(ApparatusComponent held, double mouseX)
     {
-        return cellAtX(mouseX) - (shape().width() - 1) / 2;
+        return cellAtX(mouseX) - (shape(held).width() - 1) / 2;
     }
 
-    private int originY(double mouseY)
+    private int originY(ApparatusComponent held, double mouseY)
     {
-        return cellAtY(mouseY) - (shape().height() - 1) / 2;
-    }
-
-    private ComponentShape shape()
-    {
-        return held == null ? ComponentShape.of("#") : held.shape().rotated(rotation);
-    }
-
-    private List<ApparatusComponent> trayRows()
-    {
-        return new ArrayList<>(carried().keySet());
-    }
-
-    private int visibleRows()
-    {
-        return Math.max(1, (tray.height() - HEAD - 2) / ROW);
-    }
-
-    private int maxScroll()
-    {
-        return Math.max(0, trayRows().size() - visibleRows());
-    }
-
-    private @Nullable ApparatusComponent trayAt(double mouseX, double mouseY)
-    {
-        if (!tray.contains(mouseX, mouseY) || mouseY < tray.y() + HEAD)
-            return null;
-        int row = (int) ((mouseY - tray.y() - HEAD) / ROW);
-        var rows = trayRows();
-        int index = row + Math.min(scroll, maxScroll());
-        if (row < 0 || row >= visibleRows() || index >= rows.size())
-            return null;
-        return rows.get(index);
+        return cellAtY(mouseY) - (shape(held).height() - 1) / 2;
     }
 
     /**
-     * The middle of the carried tablet and how far it is scrolled, for tests to aim and check.
+     * Runs a grid edit at once on the client and asks the server for the same.
      */
-    public int[] trayView()
+    private void press(int button)
     {
-        return new int[] { tray.x() + tray.width() / 2, tray.y() + tray.height() / 2, scroll, maxScroll() };
+        if (menu.clickMenuButton(minecraft.player, button))
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, button);
     }
 
-    /**
-     * The middle of a grid cell on screen, for tests to click.
-     */
-    public int[] cellCenter(int cellX, int cellY)
+    private void turn(int quarters)
     {
-        return new int[] { gridX + cellX * CELL + CELL / 2, gridY + cellY * CELL + CELL / 2 };
+        if (held() != null)
+            rotation = (rotation + quarters) & 3;
     }
 
-    /**
-     * The middle of a component's row on the carried tablet as it is scrolled, or null when the row is out of view, for tests to click.
-     */
-    public int @Nullable [] trayRowCenter(ApparatusComponent component)
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
-        int row = trayRows().indexOf(component) - Math.min(scroll, maxScroll());
-        if (row < 0 || row >= visibleRows())
-            return null;
-        return new int[] { tray.x() + tray.width() / 2, tray.y() + HEAD + row * ROW + ROW / 2 };
+        pressedCell = null;
+        pressedOnSlot = false;
+        if (!overGrid(event.x(), event.y()))
+        {
+            var slot = hoveredSlot;
+            pressedOnSlot = event.button() == InputConstants.MOUSE_BUTTON_LEFT && slot != null && slot.hasItem() && menu.getCarried().isEmpty();
+            return super.mouseClicked(event, doubleClick);
+        }
+
+        if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT)
+        {
+            turn(1);
+            return true;
+        }
+        if (event.button() != InputConstants.MOUSE_BUTTON_LEFT)
+            return true;
+
+        var held = held();
+        int cellX = cellAtX(event.x());
+        int cellY = cellAtY(event.y());
+        if (held != null)
+            press(ApparatusMenu.placeButton(originX(held, event.x()), originY(held, event.y()), rotation));
+        else if (menu.getCarried().isEmpty() && menu.grid().at(cellX, cellY) != null)
+        {
+            press(ApparatusMenu.takeButton(cellX, cellY, event.hasShiftDown()));
+            if (!event.hasShiftDown())
+                pressedCell = new int[] { cellX, cellY };
+        }
+        // No slot lies under the grid, so this only resets vanilla's drag, letting go over a slot then drop what was taken there
+        super.mouseClicked(event, doubleClick);
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event)
+    {
+        var fromCell = pressedCell;
+        boolean fromSlot = pressedOnSlot;
+        pressedCell = null;
+        pressedOnSlot = false;
+
+        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && overGrid(event.x(), event.y()))
+        {
+            var held = held();
+            boolean moved = fromCell != null && (fromCell[0] != cellAtX(event.x()) || fromCell[1] != cellAtY(event.y()));
+            if (held != null && (moved || fromSlot))
+                press(ApparatusMenu.placeButton(originX(held, event.x()), originY(held, event.y()), rotation));
+        }
+        return super.mouseReleased(event);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
     {
-        if (tray.contains(mouseX, mouseY) && scrollY != 0)
+        if (overGrid(mouseX, mouseY) && held() != null && scrollY != 0)
         {
-            scroll = Math.clamp(scroll - (int) Math.signum(scrollY), 0, maxScroll());
+            turn(scrollY < 0 ? 1 : -1);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
+    public boolean keyPressed(KeyEvent event)
+    {
+        if (event.key() == InputConstants.KEY_R && held() != null)
+        {
+            turn(1);
+            return true;
+        }
+        return super.keyPressed(event);
+    }
+
+    // Drawing
+
+    @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick)
     {
-        graphics.blit(RenderPipelines.GUI_TEXTURED, VOID, 0, 0, 0, 0, width, height, width, height);
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, PANEL, leftPos, topPos, 0, 0, PANEL_W, PANEL_H, PANEL_W, PANEL_H);
+        for (var slot : menu.slots)
+        {
+            int x = leftPos + slot.x - 1;
+            int y = topPos + slot.y - 1;
+            graphics.fill(x, y, x + 18, y + 18, SLOT_BACK);
+            graphics.outline(x, y, 18, 18, CELL_LINE);
+        }
+        ResearchScreen.tablet(graphics, tablet());
+
+        int gridX = gridX();
+        int gridY = gridY();
+        for (int y = 0; y < size(); y++)
+            for (int x = 0; x < size(); x++)
+            {
+                int cellX = gridX + x * CELL;
+                int cellY = gridY + y * CELL;
+                graphics.fill(cellX + 1, cellY + 1, cellX + CELL - 1, cellY + CELL - 1, CELL_BACK);
+                graphics.outline(cellX + 1, cellY + 1, CELL - 2, CELL - 2, CELL_LINE);
+            }
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick)
+    protected void extractLabels(GuiGraphicsExtractor graphics, int xm, int ym)
     {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        if (minecraft.player == null)
-            return;
+        graphics.text(font, font.plainSubstrByWidth(title.getString(), PANEL_W - 2 * PAD), PAD, TITLE_Y, KNOWN_COLOR, false);
+    }
 
-        var grid = grid();
-        extractGrid(graphics, grid, mouseX, mouseY);
-        extractTray(graphics, mouseX, mouseY);
-        extractStats(graphics);
+    @Override
+    public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick)
+    {
+        super.extractContents(graphics, mouseX, mouseY, partialTick);
+        var grid = menu.grid();
+        extractPieces(graphics, grid, mouseX, mouseY);
+        extractStats(graphics, grid);
         extractWhisper(graphics, grid, mouseX, mouseY);
         extractHovered(graphics, grid, mouseX, mouseY);
     }
 
-    private void extractGrid(GuiGraphicsExtractor graphics, ApparatusGrid grid, int mouseX, int mouseY)
+    /**
+     * The held component follows the cursor as its shape over the grid, so its stack is not drawn on top of it there.
+     */
+    @Override
+    public void extractCarriedItem(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
     {
-        int gridSize = size * CELL;
-        ResearchScreen.tablet(graphics, new Bounds(gridX - 4, gridY - 4, gridSize + 8, gridSize + 8));
-        for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                int cellX = gridX + x * CELL;
-                int cellY = gridY + y * CELL;
-                graphics.fill(cellX + 1, cellY + 1, cellX + CELL - 1, cellY + CELL - 1, PLATE_COLOR);
-                graphics.outline(cellX + 1, cellY + 1, CELL - 2, CELL - 2, CELL_LINE);
-            }
+        if (held() == null || !overGrid(mouseX, mouseY))
+            super.extractCarriedItem(graphics, mouseX, mouseY);
+    }
 
-        var valid = grid.valid(size);
+    private void extractPieces(GuiGraphicsExtractor graphics, ApparatusGrid grid, int mouseX, int mouseY)
+    {
+        var valid = grid.valid(size());
         for (var placement : grid.placements())
-            extractPiece(graphics, placement.shape(), placement.x(), placement.y(), rgb(placement.component()), PIECE_TINT, valid.contains(placement) ? 0xFF000000 | rgb(placement.component()) : LACK_COLOR,
-                    stackOf(placement.component()));
-
-        if (held != null && overGrid(mouseX, mouseY))
         {
-            boolean fits = grid.canPlace(size, held, originX(mouseX), originY(mouseY), rotation);
-            extractPiece(graphics, shape(), originX(mouseX), originY(mouseY), rgb(held), GHOST_TINT, fits ? FITS_COLOR : LACK_COLOR, stackOf(held));
+            int rgb = placement.component().rgb();
+            extractPiece(graphics, placement.shape(), placement.x(), placement.y(), ARGB.srgbLerp(PIECE_TINT, PLATE_COLOR, 0xFF000000 | rgb),
+                    valid.contains(placement) ? 0xFF000000 | rgb : LACK_COLOR, stackOf(placement.component()));
         }
-        else if (held == null && overGrid(mouseX, mouseY))
+
+        if (!overGrid(mouseX, mouseY))
+            return;
+        var held = held();
+        if (held != null)
+        {
+            boolean fits = grid.canPlace(size(), held, originX(held, mouseX), originY(held, mouseY), rotation);
+            int fill = ARGB.color(GHOST_ALPHA, ARGB.srgbLerp(GHOST_TINT, PLATE_COLOR, 0xFF000000 | held.rgb()));
+            extractPiece(graphics, shape(held), originX(held, mouseX), originY(held, mouseY), fill, fits ? FITS_COLOR : LACK_COLOR, stackOf(held));
+        }
+        else if (menu.getCarried().isEmpty())
         {
             var placement = grid.at(cellAtX(mouseX), cellAtY(mouseY));
             if (placement != null)
@@ -336,9 +395,10 @@ public class ApparatusScreen extends Screen
     /**
      * Fills the cells of a piece as one slab, ruling only its outer edges, with its item on the cell nearest its middle.
      */
-    private void extractPiece(GuiGraphicsExtractor graphics, ComponentShape shape, int originX, int originY, int rgb, float tint, int edge, ItemStack icon)
+    private void extractPiece(GuiGraphicsExtractor graphics, ComponentShape shape, int originX, int originY, int fill, int edge, ItemStack icon)
     {
-        int fill = ARGB.srgbLerp(tint, PLATE_COLOR, 0xFF000000 | rgb);
+        int gridX = gridX();
+        int gridY = gridY();
         for (var cell : shape.cells())
         {
             int x = gridX + (originX + cell.x()) * CELL;
@@ -348,17 +408,19 @@ public class ApparatusScreen extends Screen
                 graphics.fill(x + CELL - 1, y + 1, x + CELL + 1, y + CELL - 1, fill);
             if (has(shape, cell.x(), cell.y() + 1))
                 graphics.fill(x + 1, y + CELL - 1, x + CELL - 1, y + CELL + 1, fill);
+            if (has(shape, cell.x() + 1, cell.y()) && has(shape, cell.x(), cell.y() + 1) && has(shape, cell.x() + 1, cell.y() + 1))
+                graphics.fill(x + CELL - 1, y + CELL - 1, x + CELL + 1, y + CELL + 1, fill);
         }
         extractOutline(graphics, shape, originX, originY, edge);
 
         var middle = middle(shape);
-        int iconX = gridX + (originX + middle.x()) * CELL + (CELL - 16) / 2;
-        int iconY = gridY + (originY + middle.y()) * CELL + (CELL - 16) / 2;
-        graphics.item(icon, iconX, iconY);
+        graphics.item(icon, gridX + (originX + middle.x()) * CELL + (CELL - 16) / 2, gridY + (originY + middle.y()) * CELL + (CELL - 16) / 2);
     }
 
     private void extractOutline(GuiGraphicsExtractor graphics, ComponentShape shape, int originX, int originY, int color)
     {
+        int gridX = gridX();
+        int gridY = gridY();
         for (var cell : shape.cells())
         {
             int x = gridX + (originX + cell.x()) * CELL;
@@ -374,12 +436,12 @@ public class ApparatusScreen extends Screen
         }
     }
 
-    private static boolean has(ComponentShape shape, int x, int y)
+    static boolean has(ComponentShape shape, int x, int y)
     {
         return shape.cells().stream().anyMatch(cell -> cell.x() == x && cell.y() == y);
     }
 
-    private static ComponentShape.Cell middle(ComponentShape shape)
+    static ComponentShape.Cell middle(ComponentShape shape)
     {
         float centerX = (float) shape.cells().stream().mapToInt(ComponentShape.Cell::x).average().orElse(0);
         float centerY = (float) shape.cells().stream().mapToInt(ComponentShape.Cell::y).average().orElse(0);
@@ -397,92 +459,54 @@ public class ApparatusScreen extends Screen
         return best;
     }
 
-    private void extractTray(GuiGraphicsExtractor graphics, int mouseX, int mouseY)
+    private static ItemStack stackOf(ApparatusComponent component)
     {
-        ResearchScreen.tablet(graphics, tray);
-        graphics.text(font, Component.translatable("voidheart.apparatus_screen.carried"), tray.x() + PAD, tray.y() + PAD - 2, KNOWN_COLOR);
-
-        var counts = carried();
-        if (counts.isEmpty())
-        {
-            var lines = font.split(Component.translatable("voidheart.apparatus_screen.none_carried"), tray.width() - 2 * PAD);
-            for (int i = 0; i < lines.size(); i++)
-                graphics.text(font, lines.get(i), tray.x() + PAD, tray.y() + HEAD + 4 + i * LINE, MUTED_COLOR);
-            return;
-        }
-
-        scroll = Math.min(scroll, maxScroll());
-        // Marks above and below the list say more is there to scroll to
-        if (scroll > 0)
-            graphics.text(font, "▲", tray.x() + tray.width() - PAD - font.width("▲"), tray.y() + PAD - 2, MUTED_COLOR);
-        if (scroll < maxScroll())
-            graphics.text(font, "▼", tray.x() + tray.width() - PAD - font.width("▼"), tray.y() + tray.height() - font.lineHeight - 1, MUTED_COLOR);
-
-        var hovered = trayAt(mouseX, mouseY);
-        int row = 0;
-        int skipped = 0;
-        for (var entry : counts.entrySet())
-        {
-            if (skipped++ < scroll)
-                continue;
-            if (row >= visibleRows())
-                break;
-            int y = tray.y() + HEAD + row * ROW;
-            var component = entry.getKey();
-            if (component == held)
-                graphics.fill(tray.x() + 2, y, tray.x() + tray.width() - 2, y + ROW - 1, SELECTED_BACK);
-            else if (component == hovered)
-                graphics.fill(tray.x() + 2, y, tray.x() + tray.width() - 2, y + ROW - 1, HOVER_BACK);
-            graphics.fill(tray.x() + 2, y + 2, tray.x() + 4, y + ROW - 3, 0xFF000000 | rgb(component));
-
-            graphics.item(stackOf(component), tray.x() + PAD, y + 1);
-            var name = font.plainSubstrByWidth(stackOf(component).getHoverName().getString(), tray.width() - 2 * PAD - 18 - 16);
-            graphics.text(font, name, tray.x() + PAD + 19, y + (ROW - font.lineHeight) / 2 + 1, component == held ? TEXT_COLOR : MUTED_COLOR);
-            var count = "×" + entry.getValue();
-            graphics.text(font, count, tray.x() + tray.width() - PAD - font.width(count), y + (ROW - font.lineHeight) / 2 + 1, MUTED_COLOR);
-            row++;
-        }
+        return new ItemStack(VoidHeartItems.APPARATUS_COMPONENTS.get(component));
     }
 
-    private void extractStats(GuiGraphicsExtractor graphics)
+    /**
+     * What the apparatus gives as short rows, a name on the left and its value on the right; the full wording waits in the pieces' tooltips.
+     */
+    private void extractStats(GuiGraphicsExtractor graphics, ApparatusGrid grid)
     {
-        ResearchScreen.tablet(graphics, stats);
-        var stack = apparatus();
-        if (!(stack.getItem() instanceof ShieldingApparatusItem item))
+        var tablet = tablet();
+        if (!(menu.apparatus().getItem() instanceof ShieldingApparatusItem item))
             return;
+        ShieldStats stats = grid.stats(item.tier());
 
-        int x = stats.x() + PAD;
-        int y = stats.y() + PAD - 2;
-        for (var part : font.split(stack.getHoverName(), stats.width() - 2 * PAD))
-        {
-            graphics.text(font, part, x, y, KNOWN_COLOR);
-            y += LINE;
-        }
-        y += HEAD - LINE;
+        int y = tablet.y() + 7;
+        y = row(graphics, tablet, y, "capacity", ShieldingApparatusItem.number(stats.capacity() / 2) + " ♥", 0xFF000000 | ApparatusComponent.CELL.rgb());
+        y = row(graphics, tablet, y, "regen", ShieldingApparatusItem.number(stats.regenPerTick() * 20 / 2) + " ♥/s", 0xFF000000 | ApparatusComponent.RESONATOR.rgb());
+        y = row(graphics, tablet, y, "delay", ShieldingApparatusItem.number(stats.delayTicks() / 20F) + "s", 0xFF000000 | ApparatusComponent.QUICKENER.rgb());
+        y += 3;
+        graphics.fill(tablet.x() + 6, y - 2, tablet.x() + tablet.width() - 6, y - 1, RULE_COLOR);
+        y += 2;
+        for (var ward : stats.wards())
+            y = row(graphics, tablet, y, "ward", Component.translatable("voidheart.apparatus_screen.ward." + ward.name().toLowerCase(Locale.ROOT)).getString(), WARD_COLOR);
+        if (stats.breakEffect().isPresent())
+            row(graphics, tablet, y, "core",
+                    Component.translatable("voidheart.apparatus_screen.core." + stats.breakEffect().get().name().toLowerCase(Locale.ROOT)).getString(), CORE_COLOR);
+        else if (stats.wards().isEmpty())
+            graphics.text(font, Component.translatable("voidheart.apparatus_screen.no_extras"), tablet.x() + 7, y, MUTED_COLOR, false);
+    }
 
-        var lines = new ArrayList<Component>();
-        ShieldingApparatusItem.appendStats(grid().stats(item.tier()), lines::add);
-        for (var line : lines)
-        {
-            for (var part : font.split(line, stats.width() - 2 * PAD))
-            {
-                if (y + LINE > stats.y() + stats.height())
-                    return;
-                var color = line.getStyle().getColor();
-                graphics.text(font, part, x, y, color == null ? TEXT_COLOR : 0xFF000000 | color.getValue());
-                y += LINE;
-            }
-            y += 2;
-        }
+    private int row(GuiGraphicsExtractor graphics, Bounds tablet, int y, String name, String value, int color)
+    {
+        if (y + LINE > tablet.y() + tablet.height())
+            return y;
+        graphics.text(font, Component.translatable("voidheart.apparatus_screen.stat." + name), tablet.x() + 7, y, MUTED_COLOR, false);
+        graphics.text(font, value, tablet.x() + tablet.width() - 7 - font.width(value), y, color, false);
+        return y + LINE;
     }
 
     private void extractWhisper(GuiGraphicsExtractor graphics, ApparatusGrid grid, int mouseX, int mouseY)
     {
+        var held = held();
         Component text;
         int color = MUTED_COLOR;
         if (held != null && overGrid(mouseX, mouseY))
         {
-            var refusal = grid.refusal(size, held, originX(mouseX), originY(mouseY), rotation);
+            var refusal = grid.refusal(size(), held, originX(held, mouseX), originY(held, mouseY), rotation);
             if (refusal != null)
             {
                 text = Component.translatable("voidheart.apparatus_screen.refusal." + refusal.name().toLowerCase(Locale.ROOT));
@@ -493,82 +517,40 @@ public class ApparatusScreen extends Screen
         }
         else if (held != null)
             text = Component.translatable("voidheart.apparatus_screen.whisper.turn");
-        else if (!grid.isEmpty())
+        else if (!grid.isEmpty() && overGrid(mouseX, mouseY))
             text = Component.translatable("voidheart.apparatus_screen.whisper.take");
         else
             text = Component.translatable("voidheart.apparatus_screen.whisper.pick");
 
-        int textWidth = font.width(text);
-        int x = (width - textWidth) / 2;
-        int y = height - PAD - LINE - 2;
-        graphics.fill(x - 6, y - 3, x + textWidth + 6, y + font.lineHeight + 2, WHISPER_BACK);
-        graphics.text(font, text, x, y, color);
+        var line = font.plainSubstrByWidth(text.getString(), PANEL_W - 2 * PAD);
+        graphics.text(font, line, leftPos + (PANEL_W - font.width(line)) / 2, topPos + WHISPER_Y, color, false);
     }
 
     private void extractHovered(GuiGraphicsExtractor graphics, ApparatusGrid grid, int mouseX, int mouseY)
     {
-        if (held != null)
+        if (!menu.getCarried().isEmpty() || !overGrid(mouseX, mouseY))
             return;
-        var component = trayAt(mouseX, mouseY);
-        if (component == null && overGrid(mouseX, mouseY))
-        {
-            var placement = grid.at(cellAtX(mouseX), cellAtY(mouseY));
-            component = placement == null ? null : placement.component();
-        }
-        if (component != null)
-            graphics.setTooltipForNextFrame(font, stackOf(component), mouseX, mouseY);
+        var placement = grid.at(cellAtX(mouseX), cellAtY(mouseY));
+        if (placement != null)
+            graphics.setTooltipForNextFrame(font, stackOf(placement.component()), mouseX, mouseY);
     }
 
-    @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
+    /**
+     * The middle of a grid cell on screen, for tests to aim at.
+     */
+    public int[] cellCenter(int cellX, int cellY)
     {
-        if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT)
-        {
-            if (held != null)
-                rotation = (rotation + 1) & 3;
-            return true;
-        }
-        if (event.button() != InputConstants.MOUSE_BUTTON_LEFT)
-            return super.mouseClicked(event, doubleClick);
-
-        var picked = trayAt(event.x(), event.y());
-        if (picked != null)
-        {
-            held = picked == held ? null : picked;
-            return true;
-        }
-
-        if (overGrid(event.x(), event.y()))
-        {
-            if (held != null)
-            {
-                int x = originX(event.x());
-                int y = originY(event.y());
-                if (grid().canPlace(size, held, x, y, rotation))
-                    ClientPlayNetworking.send(new ShieldPayloads.Edit(false, held, x, y, rotation));
-            }
-            else if (grid().at(cellAtX(event.x()), cellAtY(event.y())) != null)
-                ClientPlayNetworking.send(new ShieldPayloads.Edit(true, ApparatusComponent.CELL, cellAtX(event.x()), cellAtY(event.y()), 0));
-            return true;
-        }
-
-        held = null;
-        return super.mouseClicked(event, doubleClick);
+        return new int[] { gridX() + cellX * CELL + CELL / 2, gridY() + cellY * CELL + CELL / 2 };
     }
 
-    @Override
-    public boolean keyPressed(KeyEvent event)
+    /**
+     * The middle of the slot holding an inventory index on screen, for tests to aim at.
+     */
+    public int[] slotCenter(int inventoryIndex)
     {
-        if (event.key() == InputConstants.KEY_R && held != null)
-        {
-            rotation = (rotation + 1) & 3;
-            return true;
-        }
-        if (event.key() == InputConstants.KEY_ESCAPE && held != null)
-        {
-            held = null;
-            return true;
-        }
-        return super.keyPressed(event);
+        for (var slot : menu.slots)
+            if (slot.getContainerSlot() == inventoryIndex)
+                return new int[] { leftPos + slot.x + 8, topPos + slot.y + 8 };
+        throw new IllegalArgumentException("No slot for inventory index " + inventoryIndex);
     }
 }
