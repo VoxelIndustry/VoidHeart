@@ -11,7 +11,6 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.voxelindustry.voidheart.common.content.apparatus.ApparatusEdits;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -143,7 +142,6 @@ public class VoidHeart implements ModInitializer
         AvengingReach.register();
         ShieldingApparatus.register();
         ShieldPayloads.register();
-        ServerPlayNetworking.registerGlobalReceiver(ShieldPayloads.Edit.TYPE, ApparatusEdits::handle);
 
         VoidHeartTiles.registerTiles();
         ArmillaryChunkHold.register();

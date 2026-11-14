@@ -5,19 +5,29 @@ import eu.pb4.trinkets.api.TrinketsApi;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
+import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptions;
 import net.minecraft.client.CameraType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHits;
 import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
-import net.voxelindustry.voidheart.common.content.apparatus.ApparatusEdits;
-import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusGrid;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusHolder;
+import net.voxelindustry.voidheart.common.content.apparatus.ApparatusMenu;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldState;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Function;
 
@@ -25,15 +35,22 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.expect;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.player;
 
 /**
- * Components are set in a Lesser apparatus from the inventory and refused where they overlap. Worn in its Trinkets slot, its shield fills after the wait,
- * takes a blow before health with runes lit where it landed, breaks into its Mending Core's heal and lets falls through. The grid screen and the HUD are captured.
+ * Components are set in a Lesser apparatus with real clicks and drags in its grid beside the inventory, refused where they overlap, taken back onto the
+ * cursor or into the inventory, and shift clicked into the first spot they fit, while the apparatus' own slot stays locked. Its grid opens from the hand,
+ * from a right click in the inventory and from a right click on the slot it is worn in, and its tooltip lists what is set. Worn, it shows on the torso and
+ * its shield fills after the wait, shown as rune shields over the armor row; it takes a blow before health with runes lit where it landed, breaks into
+ * its Mending Core's heal and lets falls through.
  */
 public class ShieldingApparatusClientTest implements FabricClientGameTest
 {
-    private static final int   GROUND_Y = -60;
-    private static final float CAPACITY = 4 + 3.5F + 1 + 1;
-    private static final String SLOT    = "chest/shielding_apparatus";
-    private static final int   FILL_TICKS_MAX = 600;
+    private static final int    GROUND_Y       = -60;
+    private static final float  CAPACITY       = 4 + 3.5F + 1 + 1;
+    private static final String SLOT           = "chest/shielding_apparatus";
+    private static final int    FILL_TICKS_MAX = 600;
+    private static final int    CORE_SLOT      = 9;
+    private static final int    BANK_SLOT      = 10;
+    private static final int    CELL_SLOT      = 11;
+    private static final int    SPARE_SLOT     = 12;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -51,9 +68,12 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
             context.waitTicks(10);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            setComponents(server);
-            openScreen(context, server);
+            setComponents(context, server);
+            openFromInventory(context, server);
             equip(context, server);
+            editWorn(context, server);
+            fill(context, server);
+            showWorn(context, server);
             blockAHit(context, server);
             breakTheShield(server);
             letAFallThrough(server);
@@ -61,94 +81,130 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         }
     }
 
-    private static void setComponents(TestServerContext server)
+    private static void setComponents(ClientGameTestContext context, TestServerContext server)
     {
         server.runOnServer(minecraft ->
         {
-            var player = player(minecraft);
-            player.getInventory().setItem(0, new ItemStack(VoidHeartItems.LESSER_SHIELDING_APPARATUS));
-            player.getInventory().setSelectedSlot(0);
-            give(player, ApparatusComponent.MENDING_CORE, 1);
-            give(player, ApparatusComponent.BANK, 1);
-            give(player, ApparatusComponent.CELL, 3);
-
-            expect(ApparatusEdits.apply(player, place(ApparatusComponent.MENDING_CORE, 0, 0, 0)), "Expected the core to fit the top rows");
-            expect(ApparatusEdits.apply(player, place(ApparatusComponent.BANK, 0, 2, 0)), "Expected the bank to fit the bottom row");
-            expect(!ApparatusEdits.apply(player, place(ApparatusComponent.CELL, 1, 1, 0)), "Expected a cell on the core to be refused");
-            expect(ApparatusEdits.apply(player, place(ApparatusComponent.CELL, 2, 0, 0)), "Expected a cell in the free corner");
-            expect(ApparatusEdits.apply(player, place(ApparatusComponent.CELL, 0, 1, 0)), "Expected a cell beside the core");
-            expect(!ApparatusEdits.apply(player, place(ApparatusComponent.CELL, 3, 0, 0)), "Expected a cell outside the grid to be refused");
-
-            var grid = ShieldingApparatus.grid(player.getMainHandItem());
-            expect(grid.placements().size() == 4, "Expected four pieces set, got " + grid.placements());
-            expect(count(player, ApparatusComponent.CELL) == 1, "Expected one cell left carried");
-            expect(count(player, ApparatusComponent.MENDING_CORE) == 0, "Expected the core taken from the inventory");
-
-            expect(ApparatusEdits.apply(player, new ShieldPayloads.Edit(true, ApparatusComponent.CELL, 2, 0, 0)), "Expected the corner cell taken back");
-            expect(count(player, ApparatusComponent.CELL) == 2, "Expected the cell given back");
-            expect(ApparatusEdits.apply(player, place(ApparatusComponent.CELL, 2, 0, 0)), "Expected the cell set again");
-
-            var stats = ShieldingApparatus.stats(player.getMainHandItem());
-            expect(stats != null && stats.capacity() == CAPACITY, "Expected a capacity of " + CAPACITY + ", got " + (stats == null ? null : stats.capacity()));
+            var inventory = player(minecraft).getInventory();
+            inventory.setItem(0, new ItemStack(VoidHeartItems.LESSER_SHIELDING_APPARATUS));
+            inventory.setSelectedSlot(0);
+            inventory.setItem(CORE_SLOT, component(ApparatusComponent.MENDING_CORE, 1));
+            inventory.setItem(BANK_SLOT, component(ApparatusComponent.BANK, 1));
+            inventory.setItem(CELL_SLOT, component(ApparatusComponent.CELL, 3));
         });
-    }
-
-    private static void openScreen(ClientGameTestContext context, TestServerContext server)
-    {
         context.waitTicks(5);
         context.getInput().pressKey(options -> options.keyUse);
         context.waitTicks(10);
-        GameTestKit.expectClient(context, "Expected using the apparatus to open its grid", minecraft -> minecraft.gui.screen() instanceof ApparatusScreen);
+        expectGrid(context, new ApparatusHolder.Carried(0), "using the apparatus in hand");
+        double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
         context.getInput().setCursorPos(10, 10);
-        context.takeScreenshot("apparatus-grid-screen");
+        context.waitTicks(2);
+        context.takeScreenshot("apparatus-grid-empty");
+
+        // Picked up from its slot, then set with a click; the core covers its middle cell, so the click lands one right of its corner
+        click(context, scale, screen -> screen.slotCenter(CORE_SLOT));
+        click(context, scale, screen -> screen.cellCenter(1, 0));
+        context.waitTicks(5);
+        expectAt(server, 0, 0, ApparatusComponent.MENDING_CORE, "a core picked up and clicked onto the grid");
+        expect(carriedEmpty(context), "Expected the core gone from the cursor once set");
+
+        // Dragged from its slot and let go over the grid
+        aim(context, scale, screen -> screen.slotCenter(BANK_SLOT));
+        context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
+        aim(context, scale, screen -> screen.cellCenter(1, 2));
+        context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(5);
+        expectAt(server, 0, 2, ApparatusComponent.BANK, "a bank dragged from its slot onto the bottom row");
+
+        click(context, scale, screen -> screen.slotCenter(CELL_SLOT));
+        aim(context, scale, screen -> screen.cellCenter(2, 0));
+        context.takeScreenshot("apparatus-grid-ghost");
+        aim(context, scale, screen -> screen.cellCenter(1, 1));
+        context.takeScreenshot("apparatus-grid-refused");
+        click(context, scale, screen -> screen.cellCenter(1, 1));
+        context.waitTicks(5);
+        expect(grid(server).at(1, 1).component() == ApparatusComponent.MENDING_CORE, "Expected a cell on the core to be refused");
+        expect(carriedCount(context) == 3, "Expected the refused cell still on the cursor, carrying " + carriedCount(context));
+
+        click(context, scale, screen -> screen.cellCenter(2, 0));
+        click(context, scale, screen -> screen.cellCenter(0, 1));
+        context.waitTicks(5);
+        expectAt(server, 2, 0, ApparatusComponent.CELL, "a cell clicked into the free corner");
+        expectAt(server, 0, 1, ApparatusComponent.CELL, "a cell clicked beside the core");
+        click(context, scale, screen -> screen.slotCenter(CELL_SLOT));
+        context.waitTicks(5);
+        expect(count(server, ApparatusComponent.CELL) == 1, "Expected the last cell put back in its slot");
+
+        // A piece clicked comes onto the cursor and is dropped in an empty slot
+        click(context, scale, screen -> screen.cellCenter(2, 0));
+        context.waitTicks(5);
+        expect(grid(server).at(2, 0) == null && carriedCount(context) == 1, "Expected the corner cell taken onto the cursor");
+        click(context, scale, screen -> screen.slotCenter(SPARE_SLOT));
+        context.waitTicks(5);
+        expect(count(server, ApparatusComponent.CELL) == 2 && carriedEmpty(context), "Expected the taken cell dropped in the spare slot");
+
+        // A piece dragged from one cell to another moves there
+        aim(context, scale, screen -> screen.cellCenter(0, 1));
+        context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
+        aim(context, scale, screen -> screen.cellCenter(2, 0));
+        context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(5);
+        expectAt(server, 2, 0, ApparatusComponent.CELL, "a cell dragged to the corner");
+        expect(grid(server).at(0, 1) == null && carriedEmpty(context), "Expected the dragged cell gone from where it was");
+
+        // Shift clicking a component in the inventory sets it in the first spot it fits, and shift clicking a piece puts it away. The test input sends
+        // mouse clicks without modifier keys, so these go through the same container calls a shift click makes
+        quickMove(context, CELL_SLOT);
+        expectAt(server, 0, 1, ApparatusComponent.CELL, "a cell shift clicked from the inventory into the first free cell");
+        shiftTake(context, 2, 0);
+        expect(grid(server).at(2, 0) == null && count(server, ApparatusComponent.CELL) == 2, "Expected a shift clicked piece put back in the inventory");
+        quickMove(context, SPARE_SLOT);
+        expectAt(server, 2, 0, ApparatusComponent.CELL, "the cell shift clicked back into the corner");
+
+        // The apparatus' own slot can't be picked up nor swapped away with a number key
+        click(context, scale, screen -> screen.slotCenter(0));
+        context.waitTicks(3);
+        aim(context, scale, screen -> screen.slotCenter(BANK_SLOT));
+        context.getInput().pressKey(InputConstants.KEY_1);
+        context.waitTicks(5);
+        boolean locked = server.computeOnServer(minecraft -> player(minecraft).getInventory().getItem(0).is(VoidHeartItems.LESSER_SHIELDING_APPARATUS));
+        expect(locked && carriedEmpty(context), "Expected the apparatus kept in its slot while its grid is open");
+
+        expect(grid(server).placements().size() == 4, "Expected four pieces set, got " + grid(server).placements());
+        var stats = server.computeOnServer(minecraft -> ShieldingApparatus.stats(player(minecraft).getInventory().getItem(0)));
+        expect(stats != null && stats.capacity() == CAPACITY, "Expected a capacity of " + CAPACITY + ", got " + (stats == null ? null : stats.capacity()));
+
+        aim(context, scale, screen -> screen.cellCenter(1, 0));
+        context.takeScreenshot("apparatus-grid-set");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(5);
+    }
 
-        // More kinds carried than the tablet shows scroll into view under the wheel
-        server.runOnServer(minecraft ->
-        {
-            var player = player(minecraft);
-            for (var component : ApparatusComponent.values())
-                give(player, component, 1);
-        });
-        context.waitTicks(5);
-        context.getInput().pressKey(options -> options.keyUse);
-        context.waitTicks(10);
+    private static void openFromInventory(ClientGameTestContext context, TestServerContext server)
+    {
+        context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
+        context.waitTicks(3);
         double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
-        int[] view = context.computeOnClient(minecraft -> ((ApparatusScreen) minecraft.gui.screen()).trayView());
-        expect(view[3] > 0, "Expected more kinds carried than the tablet shows");
-        context.getInput().setCursorPos(view[0] * scale, view[1] * scale);
-        context.waitTicks(2);
-        for (int notch = 0; notch < view[3] + 2; notch++)
-        {
-            context.getInput().scroll(-1);
-            context.waitTicks(1);
-        }
-        int[] scrolled = context.computeOnClient(minecraft -> ((ApparatusScreen) minecraft.gui.screen()).trayView());
-        expect(scrolled[2] == view[3], "Expected the wheel to scroll the tablet to its last row, at " + scrolled[2] + " of " + view[3]);
-        context.takeScreenshot("apparatus-grid-screen-scrolled");
+        int x = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScaledWidth() / 2 - 88 + 16);
+        int y = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScaledHeight() / 2 - 83 + 150);
+        context.getInput().setCursorPos(x * scale, y * scale);
+        context.waitTicks(3);
+        context.takeScreenshot("apparatus-tooltip");
 
-        // Real clicks: taking the corner cell back, then picking a cell on the tablet and setting it in the same corner
-        for (int notch = 0; notch < view[3] + 2; notch++)
-        {
-            context.getInput().scroll(1);
-            context.waitTicks(1);
-        }
-        int cellsBefore = server.computeOnServer(minecraft -> count(player(minecraft), ApparatusComponent.CELL));
-        clickScreen(context, scale, screen -> screen.cellCenter(2, 0));
-        context.waitTicks(5);
-        boolean taken = server.computeOnServer(minecraft -> ShieldingApparatus.grid(player(minecraft).getMainHandItem()).at(2, 0) == null);
-        int cellsTaken = server.computeOnServer(minecraft -> count(player(minecraft), ApparatusComponent.CELL));
-        expect(taken && cellsTaken == cellsBefore + 1, "Expected clicking the corner piece to take it back, carried " + cellsBefore + " then " + cellsTaken);
+        var lines = context.computeOnClient(minecraft -> minecraft.player.getInventory().getItem(0)
+                .getTooltipLines(Item.TooltipContext.of(minecraft.level), minecraft.player, TooltipFlag.NORMAL).stream().map(line -> line.getString()).toList());
+        expect(lines.stream().anyMatch(line -> line.contains("Mending Core")) && lines.stream().anyMatch(line -> line.contains("2× Ward Cell")),
+                "Expected the tooltip to list the components set, got " + lines);
+        boolean image = context.computeOnClient(minecraft -> minecraft.player.getInventory().getItem(0).getTooltipImage().isPresent());
+        expect(image, "Expected the tooltip to draw the grid");
 
-        clickScreen(context, scale, screen -> screen.trayRowCenter(ApparatusComponent.CELL));
-        context.waitTicks(2);
-        clickScreen(context, scale, screen -> screen.cellCenter(2, 0));
-        context.waitTicks(5);
-        var placed = server.computeOnServer(minecraft -> ShieldingApparatus.grid(player(minecraft).getMainHandItem()).at(2, 0));
-        int cellsSet = server.computeOnServer(minecraft -> count(player(minecraft), ApparatusComponent.CELL));
-        expect(placed != null && placed.component() == ApparatusComponent.CELL && cellsSet == cellsBefore,
-                "Expected picking a cell and clicking the corner to set it there, got " + placed + " with " + cellsSet + " carried");
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(10);
+        expectGrid(context, new ApparatusHolder.Carried(0), "a right click on the apparatus in the inventory");
+        boolean kept = server.computeOnServer(minecraft -> player(minecraft).getInventory().getItem(0).is(VoidHeartItems.LESSER_SHIELDING_APPARATUS));
+        expect(kept && carriedEmpty(context), "Expected the right click to leave the apparatus in its slot");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(5);
     }
@@ -158,7 +214,7 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
-            var apparatus = player.getMainHandItem().copy();
+            var apparatus = player.getInventory().getItem(0).copy();
             player.getInventory().setItem(0, ItemStack.EMPTY);
             var access = TrinketsApi.getAttachment(player).getInventory(SLOT).getOrCreateSlotAccess(0);
             expect(access.set(apparatus), "Expected the apparatus to go into its slot");
@@ -166,11 +222,50 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         context.waitTicks(2);
         float points = server.computeOnServer(minecraft -> ShieldingApparatus.state(player(minecraft)).points());
         expect(points == 0, "Expected a newly worn apparatus to start empty, got " + points);
+    }
 
+    /**
+     * Right clicks the slot the apparatus is worn in, through the inventory menu as the inventory screen would, and edits the worn grid.
+     */
+    private static void editWorn(ClientGameTestContext context, TestServerContext server)
+    {
+        int slot = context.computeOnClient(minecraft ->
+        {
+            var worn = TrinketsApi.getAttachment(minecraft.player).getInventory(SLOT).getItem(0);
+            var slots = minecraft.player.inventoryMenu.slots;
+            for (int index = 0; index < slots.size(); index++)
+                if (slots.get(index).getItem() == worn)
+                    return index;
+            return -1;
+        });
+        expect(slot >= 0, "Expected the worn apparatus to have a slot in the inventory menu");
+        context.runOnClient(minecraft -> minecraft.gameMode.handleContainerInput(minecraft.player.inventoryMenu.containerId, slot, 1, ContainerInput.PICKUP, minecraft.player));
+        context.waitTicks(10);
+        var reference = server.computeOnServer(minecraft -> TrinketsApi.getAttachment(player(minecraft)).getInventory(SLOT).getOrCreateSlotAccess(0).reference());
+        expectGrid(context, new ApparatusHolder.Worn(reference), "a right click on the slot it is worn in");
+
+        double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
+        click(context, scale, screen -> screen.cellCenter(2, 0));
+        context.waitTicks(5);
+        expect(wornGrid(server).at(2, 0) == null && carriedCount(context) == 1, "Expected a cell taken out of the worn apparatus onto the cursor");
+        boolean seen = context.computeOnClient(minecraft -> ((ApparatusScreen) minecraft.gui.screen()).getMenu().grid().at(2, 0) == null);
+        expect(seen, "Expected the client to see the worn grid change");
+        click(context, scale, screen -> screen.cellCenter(2, 0));
+        context.waitTicks(5);
+        expect(wornGrid(server).at(2, 0) != null && carriedEmpty(context), "Expected the cell set back into the worn apparatus");
+        context.takeScreenshot("apparatus-grid-worn");
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(5);
+        expect(!server.computeOnServer(minecraft -> ShieldingApparatus.equipped(player(minecraft)).isEmpty()), "Expected the apparatus still worn after editing it");
+    }
+
+    private static void fill(ClientGameTestContext context, TestServerContext server)
+    {
         // The Lesser wait of 100 ticks plus about 190 to refill, checked every 5 ticks for up to 600
         for (int waited = 0; waited < FILL_TICKS_MAX; waited += 5)
         {
-            if (server.computeOnServer(minecraft -> ShieldingApparatus.state(player(minecraft)).isFull()))
+            var state = server.computeOnServer(minecraft -> ShieldingApparatus.state(player(minecraft)));
+            if (state.capacity() > 0 && state.isFull())
                 break;
             context.waitTicks(5);
         }
@@ -179,6 +274,67 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         context.waitTicks(5);
         float clientCapacity = context.computeOnClient(minecraft -> ShieldingApparatus.state(minecraft.player).capacity());
         expect(clientCapacity == CAPACITY, "Expected the shield synced to its wearer, got " + clientCapacity);
+    }
+
+    /**
+     * The rune shields over the armor row, full and partly spent, and the apparatus on the torso from the front, the back and the side, bare and over a
+     * chestplate. The chestplate comes off again, since the hits that follow count on no armor.
+     */
+    private static void showWorn(ClientGameTestContext context, TestServerContext server)
+    {
+        // The chestplate's advancement would sit in chat right over the armor row
+        server.runCommand("gamerule show_advancement_messages false");
+        server.runOnServer(minecraft -> player(minecraft).setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE)));
+        context.waitTicks(3);
+        context.runOnClient(minecraft -> minecraft.gui.hud.getChat().clearMessages(false));
+        context.waitTicks(2);
+        context.takeScreenshot("apparatus-hud-full-over-armor");
+        server.runOnServer(minecraft -> player(minecraft).setAttached(ShieldingApparatus.SHIELD, new ShieldState(5, CAPACITY, 200)));
+        context.waitTicks(2);
+        context.takeScreenshot("apparatus-hud-spent-flash");
+        // Past the white flash a drop gives
+        context.waitTicks(8);
+        context.takeScreenshot("apparatus-hud-spent-over-armor");
+        // A shield over twenty points, refilling, set on the client alone: the server sizes it from the apparatus, and syncs only a change, so it is held full
+        server.runOnServer(minecraft -> player(minecraft).setAttached(ShieldingApparatus.SHIELD, new ShieldState(CAPACITY, CAPACITY, 0)));
+        context.waitTicks(5);
+        context.runOnClient(minecraft -> minecraft.player.setAttached(ShieldingApparatus.SHIELD, new ShieldState(31, 38, 0)));
+        context.waitTicks(3);
+        context.takeScreenshot("apparatus-hud-second-layer");
+        context.runOnClient(minecraft -> minecraft.player.setAttached(ShieldingApparatus.SHIELD, new ShieldState(CAPACITY, CAPACITY, 0)));
+
+        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        context.waitTicks(3);
+        wornShot(context, "apparatus-worn-front-armor");
+        server.runOnServer(minecraft -> player(minecraft).setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY));
+        context.waitTicks(3);
+        wornShot(context, "apparatus-worn-front");
+        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        context.waitTicks(3);
+        wornShot(context, "apparatus-worn-back");
+        server.runCommand("execute as @a run tp @s 0.5 " + GROUND_Y + " 0.5 90 0");
+        context.waitTicks(3);
+        wornShot(context, "apparatus-worn-side");
+        server.runCommand("execute as @a run tp @s 0.5 " + GROUND_Y + " 0.5 0 0");
+
+        // Turned back to face the camera, the head leads and the body follows a moment later, so the straps are seen with the head turned from them
+        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        context.waitTicks(1);
+        wornShot(context, "apparatus-worn-head-turned");
+        context.waitTicks(30);
+
+        // The other tiers' trims, worn in turn with the same grid, then the Lesser one back
+        var lesser = server.computeOnServer(minecraft -> ShieldingApparatus.equipped(player(minecraft)).copy());
+        for (var tier : new Item[] { VoidHeartItems.GREATER_SHIELDING_APPARATUS, VoidHeartItems.SUPREME_SHIELDING_APPARATUS })
+        {
+            server.runOnServer(minecraft -> TrinketsApi.getAttachment(player(minecraft)).getInventory(SLOT).getOrCreateSlotAccess(0).set(lesser.transmuteCopy(tier)));
+            context.waitTicks(3);
+            wornShot(context, "apparatus-worn-front-" + tier.getDescriptionId().replace("item.voidheart.", ""));
+        }
+        server.runOnServer(minecraft -> TrinketsApi.getAttachment(player(minecraft)).getInventory(SLOT).getOrCreateSlotAccess(0).set(lesser.copy()));
+        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+        server.runOnServer(minecraft -> player(minecraft).setAttached(ShieldingApparatus.SHIELD, new ShieldState(CAPACITY, CAPACITY, 0)));
+        context.waitTicks(5);
     }
 
     /**
@@ -300,35 +456,111 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         expect(gone, "Expected the shield dropped with the apparatus");
     }
 
+    private static void expectGrid(ClientGameTestContext context, ApparatusHolder holder, String how)
+    {
+        @Nullable ApparatusHolder open = context.computeOnClient(minecraft ->
+                minecraft.gui.screen() instanceof ApparatusScreen screen ? screen.getMenu().getHolder() : null);
+        expect(holder.equals(open), "Expected " + how + " to open the grid of " + holder + ", got " + open);
+    }
+
+    private static void expectAt(TestServerContext server, int x, int y, ApparatusComponent component, String what)
+    {
+        var placement = grid(server).at(x, y);
+        expect(placement != null && placement.component() == component && placement.x() == x && placement.y() == y,
+                "Expected " + what + " at " + x + "," + y + ", got " + placement);
+    }
+
+    private static ApparatusGrid grid(TestServerContext server)
+    {
+        return server.computeOnServer(minecraft -> ShieldingApparatus.grid(player(minecraft).getInventory().getItem(0)));
+    }
+
+    private static ApparatusGrid wornGrid(TestServerContext server)
+    {
+        return server.computeOnServer(minecraft -> ShieldingApparatus.grid(ShieldingApparatus.equipped(player(minecraft))));
+    }
+
+    private static boolean carriedEmpty(ClientGameTestContext context)
+    {
+        return carriedCount(context) == 0;
+    }
+
+    private static int carriedCount(ClientGameTestContext context)
+    {
+        return context.computeOnClient(minecraft -> minecraft.player.containerMenu.getCarried().getCount());
+    }
+
     /**
-     * Moves the cursor to a point the open apparatus screen gives, in GUI pixels, and left clicks there.
+     * Moves the cursor to a point the open apparatus screen gives, in GUI pixels.
      */
-    private static void clickScreen(ClientGameTestContext context, double scale, Function<ApparatusScreen, int[]> point)
+    private static void aim(ClientGameTestContext context, double scale, Function<ApparatusScreen, int[]> point)
     {
         int[] at = context.computeOnClient(minecraft -> point.apply((ApparatusScreen) minecraft.gui.screen()));
-        expect(at != null, "Expected the point to click to be in view");
         context.getInput().setCursorPos(at[0] * scale, at[1] * scale);
-        context.waitTicks(1);
+        context.waitTicks(2);
+    }
+
+    private static void click(ClientGameTestContext context, double scale, Function<ApparatusScreen, int[]> point)
+    {
+        aim(context, scale, point);
         context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
     }
 
-    private static ShieldPayloads.Edit place(ApparatusComponent component, int x, int y, int rotation)
+    /**
+     * Shift clicks the slot holding an inventory index in the open apparatus screen.
+     */
+    private static void quickMove(ClientGameTestContext context, int inventoryIndex)
     {
-        return new ShieldPayloads.Edit(false, component, x, y, rotation);
+        context.runOnClient(minecraft ->
+        {
+            var menu = ((ApparatusScreen) minecraft.gui.screen()).getMenu();
+            for (var slot : menu.slots)
+                if (slot.getContainerSlot() == inventoryIndex)
+                    minecraft.gameMode.handleContainerInput(menu.containerId, slot.index, 0, ContainerInput.QUICK_MOVE, minecraft.player);
+        });
+        context.waitTicks(5);
     }
 
-    private static void give(ServerPlayer player, ApparatusComponent component, int count)
+    /**
+     * Shift clicks a piece in the open apparatus screen, as the screen does: at once on the client, then through the server.
+     */
+    private static void shiftTake(ClientGameTestContext context, int cellX, int cellY)
     {
-        player.getInventory().add(new ItemStack(VoidHeartItems.APPARATUS_COMPONENTS.get(component), count));
+        context.runOnClient(minecraft ->
+        {
+            var menu = ((ApparatusScreen) minecraft.gui.screen()).getMenu();
+            int button = ApparatusMenu.takeButton(cellX, cellY, true);
+            if (menu.clickMenuButton(minecraft.player, button))
+                minecraft.gameMode.handleInventoryButtonClick(menu.containerId, button);
+        });
+        context.waitTicks(5);
     }
 
-    private static int count(ServerPlayer player, ApparatusComponent component)
+    /**
+     * At twice the usual size, so the torso is large enough to judge the worn model's texture.
+     */
+    private static void wornShot(ClientGameTestContext context, String name)
     {
-        var item = VoidHeartItems.APPARATUS_COMPONENTS.get(component);
-        int count = 0;
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++)
-            if (player.getInventory().getItem(slot).is(item))
-                count += player.getInventory().getItem(slot).getCount();
-        return count;
+        context.takeScreenshot(TestScreenshotOptions.of(name).withSize(1708, 960));
+    }
+
+    private static ItemStack component(ApparatusComponent component, int count)
+    {
+        return new ItemStack(VoidHeartItems.APPARATUS_COMPONENTS.get(component), count);
+    }
+
+    private static int count(TestServerContext server, ApparatusComponent component)
+    {
+        return server.computeOnServer(minecraft ->
+        {
+            ServerPlayer player = player(minecraft);
+            var item = VoidHeartItems.APPARATUS_COMPONENTS.get(component);
+            int count = 0;
+            for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++)
+                if (player.getInventory().getItem(slot).is(item))
+                    count += player.getInventory().getItem(slot).getCount();
+            return count;
+        });
     }
 }

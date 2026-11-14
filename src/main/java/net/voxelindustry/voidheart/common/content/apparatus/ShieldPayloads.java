@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.apparatus;
 
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -38,27 +39,23 @@ public final class ShieldPayloads
     }
 
     /**
-     * A change made to the grid of the apparatus in hand from its screen.
-     *
-     * @param remove    true to take back the piece covering the cell, false to set a component from the inventory with its top left corner there
-     * @param component what to set, ignored when removing
+     * Asks to open the grid of an apparatus right clicked in a screen.
      */
-    public record Edit(boolean remove, ApparatusComponent component, int x, int y, int rotation) implements CustomPacketPayload
+    public record Open(ApparatusHolder holder) implements CustomPacketPayload
     {
-        public static final Type<Edit> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "apparatus_edit"));
+        public static final Type<Open> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "apparatus_open"));
 
-        public static final StreamCodec<RegistryFriendlyByteBuf, Edit> STREAM_CODEC = StreamCodec.composite(
-                ByteBufCodecs.BOOL, Edit::remove,
-                ByteBufCodecs.idMapper(index -> ApparatusComponent.values()[index], ApparatusComponent::ordinal), Edit::component,
-                ByteBufCodecs.VAR_INT, Edit::x,
-                ByteBufCodecs.VAR_INT, Edit::y,
-                ByteBufCodecs.VAR_INT, Edit::rotation,
-                Edit::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, Open> STREAM_CODEC = ApparatusHolder.STREAM_CODEC.map(Open::new, Open::holder);
 
         @Override
         public Type<? extends CustomPacketPayload> type()
         {
             return TYPE;
+        }
+
+        public static void handle(Open open, ServerPlayNetworking.Context context)
+        {
+            ShieldingApparatusItem.openGrid(context.player(), open.holder());
         }
     }
 
@@ -69,6 +66,7 @@ public final class ShieldPayloads
     public static void register()
     {
         PayloadTypeRegistry.clientboundPlay().register(Hit.TYPE, Hit.STREAM_CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(Edit.TYPE, Edit.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(Open.TYPE, Open.STREAM_CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(Open.TYPE, Open::handle);
     }
 }
