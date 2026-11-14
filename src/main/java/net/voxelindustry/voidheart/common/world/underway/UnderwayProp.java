@@ -173,7 +173,42 @@ public enum UnderwayProp
     // What time left
     LITTER(FLOOR, CLOTH, "2 0 3 7 1 9 paper|9 0 8 14 1 13 paper|10 0 2 13 2 5 steel"),
     RUBBLE_PILE(FLOOR, STONE, "1 0 2 9 4 9 concrete|8 0 9 15 3 15 concrete|4 4 4 8 6 8 concrete|2 0 10 7 2 15 concrete_stained|11 3 10 12 9 11 rust"),
-    WARD_STELE(FLOOR, STONE, 3, "3 0 3 13 2 13 voidstone|4 2 4 12 6 12 voidstone|4 6 4 12 10 12 glyph|4 10 4 12 13 12 voidstone|3 13 3 13 15 13 brass|6 15 6 10 16 10 ley");
+    WARD_STELE(FLOOR, STONE, 3, "3 0 3 13 2 13 voidstone|4 2 4 12 6 12 voidstone|4 6 4 12 10 12 glyph|4 10 4 12 13 12 voidstone|3 13 3 13 15 13 brass|6 15 6 10 16 10 ley"),
+
+    // What a cult of the void made of a bay: its pews, altar and idols, offerings, and what it hung and painted on the walls
+    PEW(FLOOR, WOOD, "0 7 2 16 9 11 wood|0 9 11 16 15 13 wood|0 15 10 16 16 13 wood_dark|1 0 3 3 7 12 wood_dark|13 0 3 15 7 12 wood_dark|3 3 10 13 4 11 wood_dark"),
+    PEW_BROKEN(FLOOR, WOOD, "0 7 2 8 9 11 wood|8 0 3 16 2 11 wood|0 9 11 7 15 13 wood|1 0 3 3 7 12 wood_dark|10 2 4 15 4 7 wood_dark|6 9 4 8 10 9 wood_dark"),
+    KNEELER(FLOOR, CLOTH, "1 0 5 15 2 11 wood_dark|2 2 6 14 4 10 rug"),
+    AISLE_RUNNER(FLOOR, CLOTH, "2 0 0 14 1 16 rug"),
+    TEMPLE_ALTAR(FLOOR, STONE, "0 0 1 16 2 15 altar|1 2 2 15 13 14 altar|0 13 1 16 16 15 altar|3 5 1 13 13 2 banner"),
+    OFFERING_BOWL(FLOOR, METAL, "6 0 6 10 1 10 brass|4 1 4 12 3 12 brass|3 3 3 13 4 4 brass|3 3 12 13 4 13 brass|3 3 4 4 4 12 brass|12 3 4 13 4 12 brass|4 3 4 12 4 12 bone"
+            + "|5 4 5 7 6 7 bone|9 4 6 11 7 8 bone|6 4 9 8 5 11 bone|10 4 10 11 6 11 bone"),
+    VOTIVE_CANDLES(FLOOR, CLOTH, Parts.CANDLES),
+    VOTIVE_CANDLES_LIT(FLOOR, CLOTH, 10, Parts.CANDLES),
+    CENSER(CEILING, METAL, "7 8 7 9 16 9 steel_dark|5 6 5 11 8 11 brass|4 2 4 12 6 12 brass|6 1 6 10 2 10 copper_dark|7 0 7 9 1 9 copper_dark"),
+    TEETH_IDOL(FLOOR, STONE, "3 0 3 13 2 13 altar|4 2 4 12 14 12 flesh|7 4 3 9 11 4 glass_dark|6 5 3 7 6 4 bone|6 7 3 7 8 4 bone|6 9 3 7 10 4 bone|9 6 3 10 7 4 bone|9 8 3 10 9 4 bone"
+            + "|9 10 3 10 11 4 bone|7 12 3 9 13 4 idol_eye|5 14 5 11 15 11 flesh|5 15 5 6 16 6 bone|10 15 5 11 16 6 bone|5 15 10 6 16 11 bone|10 15 10 11 16 11 bone"),
+    BROOD_IDOL(FLOOR, STONE, "4 0 5 12 2 11 altar|6 2 6 10 10 10 copper|7 10 7 9 12 9 bone|5 7 6 6 8 8 bone|10 7 6 11 8 8 bone"
+            + "|5 11 8 6 13 9 egg|10 11 8 11 13 9 egg|6 13 8 7 14 9 egg|9 13 8 10 14 9 egg|7 14 8 9 15 9 egg"
+            + "|2 6 9 4 8 11 brood|1 8 9 3 10 11 brood|3 8 9 5 10 11 brood|2 10 9 4 12 11 brood|4 10 9 6 12 11 brood"
+            + "|12 6 9 14 8 11 brood|13 8 9 15 10 11 brood|11 8 9 13 10 11 brood|12 10 9 14 12 11 brood|10 10 9 12 12 11 brood"),
+    BONE_OFFERING(FLOOR, STONE, "1 0 2 15 1 14 copper_dark|2 1 3 13 3 6 bone|4 1 7 14 2 12 bone|3 3 4 9 4 5 bone|5 2 8 11 7 13 bone|6 4 7 7 5 8 glass_dark|9 4 7 10 5 8 glass_dark"),
+    SPAWN_JARS(FLOOR, GLASS, "2 0 3 7 8 8 spawn_glass|3 8 4 6 9 7 brass|9 0 2 13 6 6 spawn_glass|10 6 3 12 7 5 brass|7 0 9 12 10 14 spawn_glass|8 10 10 11 11 13 brass"),
+    LECTERN(FLOOR, WOOD, "4 0 4 12 1 12 wood_dark|7 1 7 9 11 9 wood_dark|3 11 4 13 12 12 wood|3 12 7 13 13 12 wood|3 13 10 13 14 12 wood|4 12 4 12 13 7 paper|12 5 5 13 11 6 steel_dark"),
+    BRAZIER(FLOOR, METAL, Parts.BRAZIER + "|3 11 3 13 12 13 ash"),
+    BRAZIER_LIT(FLOOR, METAL, 13, Parts.BRAZIER + "|3 11 3 13 12 13 embers"),
+    TESSERAE(FLOOR, STONE, "2 0 3 4 1 5 tesserae|6 0 2 7 1 3 tesserae|9 0 4 11 1 5 tesserae|4 0 8 6 1 9 tesserae|11 0 9 12 1 11 tesserae|7 0 12 9 1 13 tesserae|13 0 13 14 1 14 tesserae"
+            + "|3 0 12 4 1 14 tesserae|8 0 7 9 1 8 tesserae|12 0 4 13 1 6 tesserae"),
+    TEETH_STRING(WALL, CLOTH, "3 13 15 4 14 16 steel_dark|12 13 15 13 14 16 steel_dark|3 12 15 13 13 16 cloth_dark|4 10 15 5 12 16 bone|6 9 15 7 12 16 bone|8 10 15 9 12 16 bone|10 9 15 11 12 16 bone"
+            + "|12 10 15 13 12 16 bone|2 8 15 3 9 16 steel_dark|13 8 15 14 9 16 steel_dark|2 7 15 14 8 16 cloth_dark|3 5 15 4 7 16 bone|6 4 15 7 7 16 bone|9 5 15 10 7 16 bone|12 4 15 13 7 16 bone"),
+    CULT_BANNER(WALL, CLOTH, Parts.BANNER_ROD + "|2 0 15 14 14 16 banner"),
+    CULT_BANNER_TAIL(WALL, CLOTH, "2 7 15 14 16 16 banner_tail|2 6 15 14 7 16 gilt|2 3 15 5 6 16 banner_tail|6 1 15 10 6 16 banner_tail|11 3 15 14 6 16 banner_tail"),
+    CULT_BANNER_TORN(WALL, CLOTH, Parts.BANNER_ROD + "|2 6 15 7 14 16 banner|7 9 15 10 14 16 banner|10 3 15 14 14 16 banner|3 2 15 6 6 16 banner"),
+    DEFACED_SIGN(WALL, METAL, "0 2 15 16 14 16 sign_defaced"),
+    // A sign of the cult daubed on a wall, stroke by stroke: an almond mouth ringed by eggs
+    WALL_SCRAWL(WALL, STONE, "7 2 15 9 3 16 paint_dark|6 3 15 7 5 16 paint_dark|9 3 15 10 5 16 paint_dark|5 5 15 6 9 16 paint_dark|10 5 15 11 9 16 paint_dark|6 9 15 7 11 16 paint_dark"
+            + "|9 9 15 10 11 16 paint_dark|7 11 15 9 12 16 paint_dark|7 5 15 9 9 16 paint_dark|2 6 15 3 7 16 paint_dark|13 6 15 14 7 16 paint_dark|3 10 15 4 11 16 paint_dark"
+            + "|12 10 15 13 11 16 paint_dark|3 2 15 4 3 16 paint_dark|12 2 15 13 3 16 paint_dark|7 13 15 9 14 16 paint_dark|5 3 15 6 5 16 paint_dark|9 1 15 10 3 16 paint_dark");
 
     public enum Mount
     {
@@ -202,6 +237,11 @@ public enum UnderwayProp
                 + "|3 4 1 13 5 15 lead|2 5 1 3 11 15 lead|13 5 1 14 11 15 lead|3 5 1 13 11 2 lead|3 5 14 13 11 15 lead";
         static final String CAGED_LAMP = "5 14 5 11 16 11 copper_dark|5 10 5 6 14 6 brass|10 10 5 11 14 6 brass|5 10 10 6 14 11 brass|10 10 10 11 14 11 brass";
         static final String WALL_LAMP = "5 6 14 11 12 16 copper|5 9 11 11 10 12 brass";
+        /** Candles of several heights standing in their own drips, with no plate under them. */
+        static final String CANDLES = "3 0 3 5 7 5 wax|4 7 4 5 8 5 ash|8 0 2 10 4 4 wax|9 4 3 10 5 4 ash|6 0 8 8 10 10 wax|7 10 9 8 11 10 ash|11 0 9 13 6 11 wax|12 6 10 13 7 11 ash"
+                + "|2 0 11 4 3 13 wax|3 3 12 4 4 13 ash";
+        static final String BRAZIER = "2 0 2 4 8 4 copper_dark|12 0 2 14 8 4 copper_dark|7 0 12 9 8 14 copper_dark|2 8 2 14 11 14 copper";
+        static final String BANNER_ROD = "1 14 14 15 15 16 brass|0 14 15 1 15 16 brass|15 14 15 16 15 16 brass";
     }
 
     private static final UnderwayProp[] VALUES = values();

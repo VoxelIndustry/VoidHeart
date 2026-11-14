@@ -1,0 +1,493 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#altar"
+        },
+        "east": {
+          "texture": "#altar"
+        },
+        "north": {
+          "texture": "#altar"
+        },
+        "south": {
+          "texture": "#altar"
+        },
+        "up": {
+          "texture": "#altar"
+        },
+        "west": {
+          "texture": "#altar"
+        }
+      },
+      "from": [
+        3,
+        0,
+        3
+      ],
+      "to": [
+        13,
+        2,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh"
+        },
+        "east": {
+          "texture": "#flesh"
+        },
+        "north": {
+          "texture": "#flesh"
+        },
+        "south": {
+          "texture": "#flesh"
+        },
+        "up": {
+          "texture": "#flesh"
+        },
+        "west": {
+          "texture": "#flesh"
+        }
+      },
+      "from": [
+        4,
+        2,
+        4
+      ],
+      "to": [
+        12,
+        14,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass_dark"
+        },
+        "east": {
+          "texture": "#glass_dark"
+        },
+        "north": {
+          "texture": "#glass_dark"
+        },
+        "south": {
+          "texture": "#glass_dark"
+        },
+        "up": {
+          "texture": "#glass_dark"
+        },
+        "west": {
+          "texture": "#glass_dark"
+        }
+      },
+      "from": [
+        7,
+        4,
+        3
+      ],
+      "to": [
+        9,
+        11,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        6,
+        5,
+        3
+      ],
+      "to": [
+        7,
+        6,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        6,
+        7,
+        3
+      ],
+      "to": [
+        7,
+        8,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        6,
+        9,
+        3
+      ],
+      "to": [
+        7,
+        10,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        9,
+        6,
+        3
+      ],
+      "to": [
+        10,
+        7,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        9,
+        8,
+        3
+      ],
+      "to": [
+        10,
+        9,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        9,
+        10,
+        3
+      ],
+      "to": [
+        10,
+        11,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#idol_eye"
+        },
+        "east": {
+          "texture": "#idol_eye"
+        },
+        "north": {
+          "texture": "#idol_eye"
+        },
+        "south": {
+          "texture": "#idol_eye"
+        },
+        "up": {
+          "texture": "#idol_eye"
+        },
+        "west": {
+          "texture": "#idol_eye"
+        }
+      },
+      "from": [
+        7,
+        12,
+        3
+      ],
+      "to": [
+        9,
+        13,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh"
+        },
+        "east": {
+          "texture": "#flesh"
+        },
+        "north": {
+          "texture": "#flesh"
+        },
+        "south": {
+          "texture": "#flesh"
+        },
+        "up": {
+          "texture": "#flesh"
+        },
+        "west": {
+          "texture": "#flesh"
+        }
+      },
+      "from": [
+        5,
+        14,
+        5
+      ],
+      "to": [
+        11,
+        15,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        5,
+        15,
+        5
+      ],
+      "to": [
+        6,
+        16,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        10,
+        15,
+        5
+      ],
+      "to": [
+        11,
+        16,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        5,
+        15,
+        10
+      ],
+      "to": [
+        6,
+        16,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        }
+      },
+      "from": [
+        10,
+        15,
+        10
+      ],
+      "to": [
+        11,
+        16,
+        11
+      ]
+    }
+  ],
+  "textures": {
+    "altar": "voidheart:block/underway/altar",
+    "bone": "voidheart:block/underway/bone",
+    "flesh": "voidheart:block/underway/flesh",
+    "glass_dark": "voidheart:block/underway/glass_dark",
+    "idol_eye": "voidheart:block/underway/idol_eye",
+    "particle": "voidheart:block/underway/altar"
+  }
+}

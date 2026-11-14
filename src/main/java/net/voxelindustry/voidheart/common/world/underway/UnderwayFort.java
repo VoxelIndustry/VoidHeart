@@ -12,10 +12,11 @@ import java.util.List;
  * @param footAlong   a block at the foot of the hatch's stairs, on the entry level
  * @param footAcross  the same block, across the frame
  * @param units       its security that still works, each named for good by its place in this list
+ * @param temple      the bay its cult took, or null when it has none
  */
 public record UnderwayFort(DistrictPos pos, UnderwayNode node, UnderwayFrame frame, UnderwayRuin ruin, int hatchAlong, int hatchAcross, int footAlong, int footAcross,
                            List<UnderwayRoom> rooms, List<UnderwayOpening> openings, List<UnderwayShaft> shafts, List<UnderwayStroke> strokes, List<UnderwayPropSpot> props,
-                           List<UnderwayUnit> units)
+                           List<UnderwayUnit> units, UnderwayTemple temple)
 {
     /** @return where the breaker cabinet of a section hangs, or null when it has none */
     public UnderwayPropSpot cabinet(UnderwaySection section)

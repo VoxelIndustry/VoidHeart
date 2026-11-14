@@ -98,6 +98,30 @@ public final class UnderwayCanvas
         return prop == 0 || cells[index(x, y, z)] != UnderwayMaterial.AIR.ordinal() ? null : UnderwayProp.of((prop - 1) / 4);
     }
 
+    /** Sets a tile of a mosaic into the wall, showing one piece of its picture. */
+    public void setMosaic(int x, int y, int z, int tile, boolean chipped)
+    {
+        if (isOutside(x, y, z))
+            return;
+        int index = index(x, y, z);
+        cells[index] = (byte) UnderwayMaterial.MOSAIC.ordinal();
+        props[index] = (short) (1 + tile * 2 + (chipped ? 1 : 0));
+    }
+
+    /** @return the piece of the picture a tile of mosaic there shows, or -1 where there is none */
+    public int mosaicTile(int x, int y, int z)
+    {
+        if (isOutside(x, y, z) || cells[index(x, y, z)] != UnderwayMaterial.MOSAIC.ordinal())
+            return -1;
+        return (props[index(x, y, z)] - 1) / 2;
+    }
+
+    /** @return whether the tile of mosaic there lost some of its tesserae */
+    public boolean isMosaicChipped(int x, int y, int z)
+    {
+        return mosaicTile(x, y, z) >= 0 && (props[index(x, y, z)] - 1) % 2 == 1;
+    }
+
     /** @return the compass direction the prop there faces */
     public int propFacing(int x, int y, int z)
     {

@@ -1,0 +1,138 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        1,
+        14,
+        14
+      ],
+      "to": [
+        15,
+        15,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        0,
+        14,
+        15
+      ],
+      "to": [
+        1,
+        15,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        15,
+        14,
+        15
+      ],
+      "to": [
+        16,
+        15,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#banner"
+        },
+        "east": {
+          "texture": "#banner"
+        },
+        "north": {
+          "texture": "#banner"
+        },
+        "south": {
+          "texture": "#banner"
+        },
+        "up": {
+          "texture": "#banner"
+        },
+        "west": {
+          "texture": "#banner"
+        }
+      },
+      "from": [
+        2,
+        0,
+        15
+      ],
+      "to": [
+        14,
+        14,
+        16
+      ]
+    }
+  ],
+  "textures": {
+    "banner": "voidheart:block/underway/banner",
+    "brass": "voidheart:block/underway/brass",
+    "particle": "voidheart:block/underway/brass"
+  }
+}

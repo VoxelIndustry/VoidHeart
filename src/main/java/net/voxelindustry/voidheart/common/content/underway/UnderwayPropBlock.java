@@ -2,8 +2,10 @@ package net.voxelindustry.voidheart.common.content.underway;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -23,14 +25,22 @@ public class UnderwayPropBlock extends Block
 
     private final Map<Direction, VoxelShape> shapes;
     private final boolean onWall;
+    private final UnderwayProp prop;
 
     public UnderwayPropBlock(Properties properties, UnderwayProp prop)
     {
         super(properties);
+        this.prop = prop;
         int[] bounds = prop.bounds();
         shapes = Shapes.rotateHorizontal(Block.box(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5]));
         onWall = prop.mount() == UnderwayProp.Mount.WALL;
         registerDefaultState(getStateDefinition().any().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random)
+    {
+        TempleFlames.burn(prop, state.getValue(FACING), level, pos, random);
     }
 
     @Override

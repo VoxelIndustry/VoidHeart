@@ -103,6 +103,7 @@ import net.voxelindustry.voidheart.common.content.underway.UnderwayCabinetBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayDoorBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayShutterBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayMosaicBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
@@ -302,6 +303,8 @@ public class VoidHeartBlocks
     public static Block UNDERWAY_HATCH;
     public static Block UNDERWAY_EMBRASURE;
     public static Block UNDERWAY_SHUTTER;
+    public static Block UNDERWAY_MOSAIC;
+    public static Block UNDERWAY_MOSAIC_BED;
     public static Block UNDERWAY_GRATING;
     public static Block UNDERWAY_STEEL_STAIRS;
     public static Block UNDERWAY_TRUNK_RAIL;
@@ -858,6 +861,9 @@ public class VoidHeartBlocks
         UNDERWAY_HATCH = registerBlock("underway_hatch", UnderwayHatchBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
         UNDERWAY_EMBRASURE = registerBlock("underway_firing_slit", UnderwayEmbrasureBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK).noOcclusion(), true);
         UNDERWAY_SHUTTER = registerBlock("underway_shutter", UnderwayShutterBlock::new, underwayShell(MapColor.METAL, SoundType.NETHERITE_BLOCK), true);
+        // Set into the shell, and as unbreakable: the wall behind a temple is still the fort's
+        UNDERWAY_MOSAIC = registerBlock("underway_mosaic", UnderwayMosaicBlock::new, underwayShell(MapColor.COLOR_PURPLE, SoundType.DEEPSLATE_TILES), true);
+        UNDERWAY_MOSAIC_BED = registerBlock("underway_mosaic_bed", Block::new, underwayShell(MapColor.TERRACOTTA_BROWN, SoundType.STONE), true);
 
         var steel = BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.0F, 6.0F).sound(SoundType.METAL);
         UNDERWAY_GRATING = registerBlock("underway_grating", Block::new, BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.0F, 6.0F)

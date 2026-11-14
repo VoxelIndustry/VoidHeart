@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayMosaicBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayPropBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -45,6 +46,8 @@ public final class UnderwayChunkWriter
     private static final int MARGIN = 1;
     private static final ThreadLocal<UnderwayCanvas> CANVAS = ThreadLocal.withInitial(() -> new UnderwayCanvas(SECTION + 2 * MARGIN, SECTION + 2 * MARGIN));
     private static BlockState[] props;
+    /** Each tile of a temple's mosaic, whole then chipped. */
+    private static BlockState[] mosaic;
     /** Written last and volatile, so whoever sees it also sees the props. */
     private static volatile BlockState[] materials;
 
@@ -118,6 +121,7 @@ public final class UnderwayChunkWriter
                 yield materials[material.ordinal()].setValue(DoorBlock.FACING, alongX ? Direction.EAST : Direction.SOUTH).setValue(DoorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER)
                         .setValue(DoorBlock.HINGE, hingeRight ? DoorHingeSide.RIGHT : DoorHingeSide.LEFT);
             }
+            case MOSAIC -> mosaic[canvas.mosaicTile(x, y, z) * 2 + (canvas.isMosaicChipped(x, y, z) ? 1 : 0)];
             case EMBRASURE ->
             {
                 boolean alongX = canvas.get(x - 1, y, z).isOpen() || canvas.get(x + 1, y, z).isOpen();
@@ -180,6 +184,14 @@ public final class UnderwayChunkWriter
                 propStates[prop.ordinal() * FACING.length + facing] = VoidHeartBlocks.underwayProp(prop).defaultBlockState().setValue(UnderwayPropBlock.FACING, FACING[facing]);
         }
         props = propStates;
+        var tiles = new BlockState[UnderwayMosaicBlock.TILES * 2];
+        for (int tile = 0; tile < UnderwayMosaicBlock.TILES; tile++)
+        {
+            var whole = VoidHeartBlocks.UNDERWAY_MOSAIC.defaultBlockState().setValue(UnderwayMosaicBlock.TILE, tile);
+            tiles[tile * 2] = whole;
+            tiles[tile * 2 + 1] = whole.setValue(UnderwayMosaicBlock.CHIPPED, true);
+        }
+        mosaic = tiles;
 
         var states = new BlockState[UnderwayMaterial.values().length];
         var armour = VoidHeartBlocks.UNDERWAY_ARMOUR.defaultBlockState();
@@ -211,6 +223,7 @@ public final class UnderwayChunkWriter
         states[UnderwayMaterial.RUBBLE.ordinal()] = VoidHeartBlocks.UNDERWAY_RUBBLE.defaultBlockState();
         states[UnderwayMaterial.WATER.ordinal()] = Blocks.WATER.defaultBlockState();
         states[UnderwayMaterial.VOID.ordinal()] = VoidHeartBlocks.VOIDSTONE_WRITHING.defaultBlockState();
+        states[UnderwayMaterial.MOSAIC_BED.ordinal()] = VoidHeartBlocks.UNDERWAY_MOSAIC_BED.defaultBlockState();
         materials = states;
     }
 }

@@ -1,0 +1,202 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#spawn_glass"
+        },
+        "east": {
+          "texture": "#spawn_glass"
+        },
+        "north": {
+          "texture": "#spawn_glass"
+        },
+        "south": {
+          "texture": "#spawn_glass"
+        },
+        "up": {
+          "texture": "#spawn_glass"
+        },
+        "west": {
+          "texture": "#spawn_glass"
+        }
+      },
+      "from": [
+        2,
+        0,
+        3
+      ],
+      "to": [
+        7,
+        8,
+        8
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        3,
+        8,
+        4
+      ],
+      "to": [
+        6,
+        9,
+        7
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#spawn_glass"
+        },
+        "east": {
+          "texture": "#spawn_glass"
+        },
+        "north": {
+          "texture": "#spawn_glass"
+        },
+        "south": {
+          "texture": "#spawn_glass"
+        },
+        "up": {
+          "texture": "#spawn_glass"
+        },
+        "west": {
+          "texture": "#spawn_glass"
+        }
+      },
+      "from": [
+        9,
+        0,
+        2
+      ],
+      "to": [
+        13,
+        6,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        10,
+        6,
+        3
+      ],
+      "to": [
+        12,
+        7,
+        5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#spawn_glass"
+        },
+        "east": {
+          "texture": "#spawn_glass"
+        },
+        "north": {
+          "texture": "#spawn_glass"
+        },
+        "south": {
+          "texture": "#spawn_glass"
+        },
+        "up": {
+          "texture": "#spawn_glass"
+        },
+        "west": {
+          "texture": "#spawn_glass"
+        }
+      },
+      "from": [
+        7,
+        0,
+        9
+      ],
+      "to": [
+        12,
+        10,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        }
+      },
+      "from": [
+        8,
+        10,
+        10
+      ],
+      "to": [
+        11,
+        11,
+        13
+      ]
+    }
+  ],
+  "textures": {
+    "brass": "voidheart:block/underway/brass",
+    "particle": "voidheart:block/underway/spawn_glass",
+    "spawn_glass": "voidheart:block/underway/spawn_glass"
+  }
+}

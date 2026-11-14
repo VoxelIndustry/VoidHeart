@@ -1,0 +1,138 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#altar"
+        },
+        "east": {
+          "texture": "#altar"
+        },
+        "north": {
+          "texture": "#altar"
+        },
+        "south": {
+          "texture": "#altar"
+        },
+        "up": {
+          "texture": "#altar"
+        },
+        "west": {
+          "texture": "#altar"
+        }
+      },
+      "from": [
+        0,
+        0,
+        1
+      ],
+      "to": [
+        16,
+        2,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#altar"
+        },
+        "east": {
+          "texture": "#altar"
+        },
+        "north": {
+          "texture": "#altar"
+        },
+        "south": {
+          "texture": "#altar"
+        },
+        "up": {
+          "texture": "#altar"
+        },
+        "west": {
+          "texture": "#altar"
+        }
+      },
+      "from": [
+        1,
+        2,
+        2
+      ],
+      "to": [
+        15,
+        13,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#altar"
+        },
+        "east": {
+          "texture": "#altar"
+        },
+        "north": {
+          "texture": "#altar"
+        },
+        "south": {
+          "texture": "#altar"
+        },
+        "up": {
+          "texture": "#altar"
+        },
+        "west": {
+          "texture": "#altar"
+        }
+      },
+      "from": [
+        0,
+        13,
+        1
+      ],
+      "to": [
+        16,
+        16,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#banner"
+        },
+        "east": {
+          "texture": "#banner"
+        },
+        "north": {
+          "texture": "#banner"
+        },
+        "south": {
+          "texture": "#banner"
+        },
+        "up": {
+          "texture": "#banner"
+        },
+        "west": {
+          "texture": "#banner"
+        }
+      },
+      "from": [
+        3,
+        5,
+        1
+      ],
+      "to": [
+        13,
+        13,
+        2
+      ]
+    }
+  ],
+  "textures": {
+    "altar": "voidheart:block/underway/altar",
+    "banner": "voidheart:block/underway/banner",
+    "particle": "voidheart:block/underway/altar"
+  }
+}

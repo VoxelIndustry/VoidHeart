@@ -39,6 +39,12 @@ final class FortFurnisher
     private static final byte RAIL_ALONG = 1;
     private static final byte RAIL_ACROSS = 2;
     private static final int[][] SIDES = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } };
+    /** The first row of a temple's pews from its doorway, then every other row up to the steps. */
+    private static final int TEMPLE_PEWS_FROM = 2;
+    private static final int TEMPLE_CENSER_EVERY = 3;
+    private static final int[] TEMPLE_BANNERS = { 2, 6 };
+    /** How high over a temple's floor its banners hang from their rods. */
+    private static final int TEMPLE_BANNER_HEIGHT = 6;
 
     private static final EnumSet<UnderwayRoomKind> PASSAGES = EnumSet.of(UnderwayRoomKind.ENTRY_GALLERY, UnderwayRoomKind.RUNG, UnderwayRoomKind.CROSS_GALLERY,
             UnderwayRoomKind.ACCESS_GALLERY, UnderwayRoomKind.GALLERY, UnderwayRoomKind.MAGAZINE_GALLERY, UnderwayRoomKind.LOBBY);
@@ -167,7 +173,7 @@ final class FortFurnisher
             {
                 // Not behind a shutter either: the shutter only rises on the power this cabinet gives
                 if (room.floorY() != floor || room.height() < CABINET_HEIGHT || room.kind().isCutOff() || room.kind() == UnderwayRoomKind.CAVED_IN || NARROW_PASSAGES.contains(room.kind())
-                        || FortBuilder.SHUTTERED.contains(room.kind()))
+                        || FortBuilder.SHUTTERED.contains(room.kind()) || room.kind() == UnderwayRoomKind.TEMPLE)
                     continue;
                 for (int[] side : SIDES)
                 {
@@ -342,8 +348,124 @@ final class FortFurnisher
             wagons(room);
             scatter(room, recipe);
         }
+        if (builder.temple() != null)
+            temple(builder.temple());
         guards();
         return spots;
+    }
+
+    /**
+     * Lays out the bay a cult took: pews either side of a runner down the aisle, the altar on the dais between kneelers and candles, an idol of each power it worshipped, braziers, and banners and what it painted on the walls. Candles and braziers only still burn in a sealed fort.
+     */
+    private void temple(UnderwayTemple temple)
+    {
+        int floor = temple.room().floorY() + 1;
+        int dais = floor + 1;
+        int last = UnderwayTemple.WIDTH - 1;
+        int middle = UnderwayTemple.AISLE;
+        int steps = FortBuilder.DAIS_FROM - 1;
+        int back = UnderwayTemple.DEPTH - 1;
+        boolean lit = builder.ruin == UnderwayRuin.SEALED;
+
+        for (int d = 0; d < steps; d++)
+            templeProp(temple, AISLE_RUNNER, middle, floor, d, 1, true);
+        for (int d = TEMPLE_PEWS_FROM; d < steps; d += 2)
+        {
+            for (int w = 1; w < last; w++)
+            {
+                if (Math.abs(w - middle) > 1 && builder.roll(PERCENT) >= skipPercent / 2)
+                    templeProp(temple, builder.roll(PERCENT) < wornPercent ? PEW_BROKEN : PEW, w, floor, d, 1, false);
+            }
+        }
+
+        templeProp(temple, TEMPLE_ALTAR, middle, dais, steps + 2, -1, true);
+        templeProp(temple, OFFERING_BOWL, middle, dais + 1, steps + 2, -1, true);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            templeProp(temple, KNEELER, middle + side, dais, steps + 1, 1, false);
+            templeProp(temple, lit ? VOTIVE_CANDLES_LIT : VOTIVE_CANDLES, middle + side, dais, steps + 2, -1, false);
+            templeProp(temple, lit ? VOTIVE_CANDLES_LIT : VOTIVE_CANDLES, middle + side * 4, dais, back, -1, false);
+            templeProp(temple, side < 0 ? TEETH_IDOL : BROOD_IDOL, middle + side * 5, dais, steps + 2, -1, true);
+            templeProp(temple, lit ? BRAZIER_LIT : BRAZIER, middle + side * 7, dais, steps + 2, -1, false);
+            templeProp(temple, BONE_OFFERING, middle + side * 2, dais, back, -1, false);
+            templeProp(temple, SPAWN_JARS, middle + side * 6, dais, back, -1, false);
+        }
+        templeProp(temple, LECTERN, middle + 3, dais, steps + 1, 1, false);
+        for (int d = TEMPLE_PEWS_FROM; d < steps; d += TEMPLE_CENSER_EVERY)
+            templeProp(temple, CENSER, middle, temple.room().floorY() + temple.room().height(), d, 1, true);
+
+        // What fell from the mosaic lies under it
+        if (!lit)
+        {
+            for (int w = UnderwayTemple.FIRST_COLUMN; w < UnderwayTemple.FIRST_COLUMN + UnderwayTemple.COLUMNS; w++)
+            {
+                for (int row = 0; row < UnderwayTemple.ROWS; row++)
+                {
+                    if (temple.wear(w, row) == UnderwayTemple.Wear.FALLEN)
+                    {
+                        templeProp(temple, TESSERAE, w, dais, back, -1, true);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // On the side walls, banners high and strings of teeth low, between the pews; on the wall of the doorway, the bunker's signs painted over
+        for (int w : new int[] { 0, last })
+        {
+            int face = w == 0 ? 1 : -1;
+            for (int d : TEMPLE_BANNERS)
+            {
+                boolean torn = builder.roll(PERCENT) < wornPercent;
+                // A whole banner hangs in one piece, or is missing in one piece: its tail never hangs alone
+                boolean hung = templeWall(temple, torn ? CULT_BANNER_TORN : CULT_BANNER, w, floor + TEMPLE_BANNER_HEIGHT, d, face, 0, false);
+                if (hung && !torn)
+                    templeWall(temple, CULT_BANNER_TAIL, w, floor + TEMPLE_BANNER_HEIGHT - 1, d, face, 0, true);
+            }
+            templeWall(temple, TEETH_STRING, w, floor + 2, TEMPLE_PEWS_FROM + 2, face, 0, false);
+            templeWall(temple, WALL_SCRAWL, w, dais + 2, steps + 2, face, 0, false);
+        }
+        for (int side = -1; side <= 1; side += 2)
+        {
+            templeWall(temple, DEFACED_SIGN, middle + side * 5, floor + 2, 0, 0, 1, false);
+            templeWall(temple, WALL_SCRAWL, middle + side * 3, floor + 3, 0, 0, 1, false);
+        }
+    }
+
+    /**
+     * Stands a prop in a temple.
+     *
+     * @param faceIn 1 to face the mosaic, -1 to face the doorway
+     * @param always whether time spared it in any fort
+     */
+    private void templeProp(UnderwayTemple temple, UnderwayProp prop, int w, int y, int d, int faceIn, boolean always)
+    {
+        int level = level(temple.room().floorY());
+        int along = temple.along(w, d);
+        int across = temple.across(w, d);
+        if (!isOpen(level, along, across) || !always && builder.roll(PERCENT) < skipPercent / 2)
+            return;
+        place(prop, along, y, across, temple.inAlong() * faceIn, temple.inAcross() * faceIn);
+    }
+
+    /**
+     * Hangs a prop on a temple's wall.
+     *
+     * @param faceW  1 or -1 to face along the doorway's wall, from a side wall
+     * @param faceIn 1 to face the mosaic, from the doorway's wall
+     * @param always whether time spared it in any fort
+     * @return whether it hangs there
+     */
+    private boolean templeWall(UnderwayTemple temple, UnderwayProp prop, int w, int y, int d, int faceW, int faceIn, boolean always)
+    {
+        int level = level(temple.room().floorY());
+        int along = temple.along(w, d);
+        int across = temple.across(w, d);
+        int faceAlong = temple.inAlong() == 0 ? faceW : temple.inAlong() * faceIn;
+        int faceAcross = temple.inAlong() == 0 ? temple.inAcross() * faceIn : faceW;
+        if (!isOpen(level, along, across) || !isWall(level, along - faceAlong, across - faceAcross) || !always && builder.roll(PERCENT) < skipPercent / 2)
+            return false;
+        return place(prop, along, y, across, faceAlong, faceAcross);
     }
 
     private static int level(int floorY)

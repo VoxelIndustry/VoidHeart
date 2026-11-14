@@ -1,0 +1,41 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#sign_defaced"
+        },
+        "east": {
+          "texture": "#sign_defaced"
+        },
+        "north": {
+          "texture": "#sign_defaced"
+        },
+        "south": {
+          "texture": "#sign_defaced"
+        },
+        "up": {
+          "texture": "#sign_defaced"
+        },
+        "west": {
+          "texture": "#sign_defaced"
+        }
+      },
+      "from": [
+        0,
+        2,
+        15
+      ],
+      "to": [
+        16,
+        14,
+        16
+      ]
+    }
+  ],
+  "textures": {
+    "particle": "voidheart:block/underway/sign_defaced",
+    "sign_defaced": "voidheart:block/underway/sign_defaced"
+  }
+}

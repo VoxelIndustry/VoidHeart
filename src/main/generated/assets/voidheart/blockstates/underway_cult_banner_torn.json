@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_cult_banner_torn",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_cult_banner_torn"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_cult_banner_torn",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_cult_banner_torn",
+      "y": 270
+    }
+  }
+}

@@ -37,7 +37,11 @@ public enum UnderwayMaterial
     HAZARD_X,
     HAZARD_Z,
     /** A steel shutter over a doorway, which only rises on power. */
-    SHUTTER;
+    SHUTTER,
+    /** A tile of a temple's mosaic, whose picture the canvas keeps beside it. */
+    MOSAIC,
+    /** Where a tile of a mosaic fell, down to the bed it was set in. */
+    MOSAIC_BED;
 
     private static final UnderwayMaterial[] VALUES = values();
 

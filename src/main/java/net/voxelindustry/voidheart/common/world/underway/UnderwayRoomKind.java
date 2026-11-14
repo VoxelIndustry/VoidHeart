@@ -33,6 +33,8 @@ public enum UnderwayRoomKind
     BRIG(9),
     ARCHIVE(9),
     MORGUE(7),
+    /** A bay that a cult of the void took for its own, at most one to a fort. See {@link UnderwayTemple}. */
+    TEMPLE(UnderwayTemple.WIDTH),
     /** A bay whose vault came down, left full of rubble. */
     CAVED_IN,
     /** A bay the void tore open. */
