@@ -91,6 +91,7 @@ import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.dungeon.DungeonTeleportLock;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 public class VoidHeart implements ModInitializer
@@ -152,7 +153,15 @@ public class VoidHeart implements ModInitializer
         ITEMGROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(MODID, "item_group"), FabricCreativeModeTab.builder()
                 .icon(() -> new ItemStack(VoidHeartItems.VOID_HEART))
                 .title(Component.translatable("itemGroup.voidheart.item_group"))
-                .displayItems((parameters, output) -> VoidHeartItems.CREATIVE_TAB_ITEMS.forEach(output::accept))
+                .displayItems((parameters, output) ->
+                {
+                    for (var item : VoidHeartItems.CREATIVE_TAB_ITEMS)
+                    {
+                        output.accept(item);
+                        for (var variant : VoidHeartItems.CREATIVE_TAB_VARIANTS.getOrDefault(item, List.of()))
+                            output.accept(variant.get());
+                    }
+                })
                 .build());
 
         PORTAL_LINK_CRITERION = Registry.register(BuiltInRegistries.TRIGGER_TYPES, PortalLinkCriterion.ID, new PortalLinkCriterion());

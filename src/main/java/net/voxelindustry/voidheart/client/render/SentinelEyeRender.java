@@ -14,7 +14,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.state.SentinelEyeRenderState;
 import net.voxelindustry.voidheart.common.content.underway.security.SentinelEye;
@@ -26,7 +28,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  * <p>
  * A sentinel eye shows an amber iris behind its glass, whose slit wanders with its gaze, and a faint red cone. A searchlight shows its lamp lit and a long pale beam, and nothing at all while its section has no power.
  * <p>
- * What lies on the glass is full bright cutout quads, a pixel to a sixteenth like the housing, each a hair in front of the last so no two share a plane. The cone and the halo are additive glow: nothing writes depth, so the cone's far side and near side add up the same from every angle instead of hiding each other, and walls still cut it off. About fifteen quads each, rebuilt each frame.
+ * What lies on the glass is full bright cutout quads, a pixel to a sixteenth like the housing, each a hair in front of the last so no two share a plane. The cone and the halo are additive glow: nothing writes depth, so the cone's far side and near side add up the same from every angle instead of hiding each other. Each line of the cone's side stops at the first block in its way, as the watcher's sight does, so the cone never reaches into a room past a wall. About thirty quads each, rebuilt each frame.
  */
 public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, SentinelEyeRenderState>
 {
@@ -59,7 +61,8 @@ public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, 
     private static final float SLIT_REACH = PIXEL;
     private static final float SLIT_FORWARD = 0.003F;
     private static final float HALO_FORWARD = 0.02F;
-    private static final int CONE_SEGMENTS = 12;
+    private static final int CONE_SEGMENTS = SentinelEyeRenderState.CONE_LINES;
+    private static final int DISC_SEGMENTS = 12;
     private static final float ALARM_FLASH_RATE = 0.9F;
 
     private final Look look;
@@ -91,6 +94,43 @@ public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, 
         // The cone reaches exactly as far as the watcher sees, so nobody is made out from outside it
         state.coneLength = (float) eye.range();
         state.coneSpread = (float) Math.tan(Math.toRadians(eye.cone()));
+        if (state.lit)
+            clipCone(eye, state);
+    }
+
+    /** Casts each line of the cone's side from the lens, as far as the first block in its way. */
+    private static void clipCone(SentinelEye eye, SentinelEyeRenderState state)
+    {
+        var gaze = state.gaze;
+        var lens = eye.lens();
+        var side = side(gaze);
+        var up = side.cross(gaze);
+        float radius = state.coneLength * state.coneSpread;
+        var middle = lens.add(gaze.scale(state.coneLength));
+        for (int segment = 0; segment < CONE_SEGMENTS; segment++)
+        {
+            float angle = segment * Mth.TWO_PI / CONE_SEGMENTS;
+            var rim = middle.add(side.scale(Mth.cos(angle) * radius)).add(up.scale(Mth.sin(angle) * radius));
+            var hit = eye.level().clip(new ClipContext(lens, rim, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, eye));
+            state.coneReach[segment] = hit.getType() == HitResult.Type.MISS ? 1 : (float) (hit.getLocation().distanceTo(lens) / rim.distanceTo(lens));
+        }
+    }
+
+    /** @return a direction square to the gaze */
+    /** @return where a line of the extracted cone's side stops, from the lens */
+    public static Vec3 coneEnd(SentinelEyeRenderState state, int segment)
+    {
+        var side = side(state.gaze);
+        var up = side.cross(state.gaze);
+        float reach = state.coneReach[segment];
+        float angle = segment * Mth.TWO_PI / CONE_SEGMENTS;
+        float radius = state.coneLength * state.coneSpread * reach;
+        return state.gaze.scale(state.coneLength * reach).add(side.scale(Mth.cos(angle) * radius)).add(up.scale(Mth.sin(angle) * radius));
+    }
+
+    private static Vec3 side(Vec3 gaze)
+    {
+        return Math.abs(gaze.y) > 0.99 ? new Vec3(1, 0, 0) : gaze.cross(new Vec3(0, 1, 0)).normalize();
     }
 
     /** The cone reaches far past the watcher's own small box. */
@@ -115,10 +155,12 @@ public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, 
         var gaze = state.gaze;
         float length = state.coneLength;
         float radius = length * state.coneSpread;
+        // The state is filled again for the next frame, perhaps before this one's geometry is built
+        float[] reach = state.coneReach.clone();
 
         poseStack.pushPose();
         poseStack.translate(state.lens.x, state.lens.y, state.lens.z);
-        collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> cone(pose, buffer, gaze, length, radius, coneColor));
+        collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> cone(pose, buffer, gaze, length, radius, reach, coneColor));
 
         // What lies on the glass looks the way the housing faces, and only an eye's slit follows the gaze
         poseStack.pushPose();
@@ -164,40 +206,45 @@ public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, 
                 .setNormal(pose, 0, 0, 1);
     }
 
-    /** The side of a cone from the lens along the gaze, full colour at the lens and gone at its far rim. */
-    private static void cone(PoseStack.Pose pose, VertexConsumer buffer, Vec3 gaze, float length, float radius, int color)
+    /**
+     * The side of a cone from the lens along the gaze, full colour at the lens and gone at its far rim.
+     *
+     * @param reach how far each line of the side gets before a block stops it, as a share of its whole length
+     */
+    private static void cone(PoseStack.Pose pose, VertexConsumer buffer, Vec3 gaze, float length, float radius, float[] reach, int color)
     {
         // Two directions square to the gaze and to each other
-        var side = Math.abs(gaze.y) > 0.99 ? new Vec3(1, 0, 0) : gaze.cross(new Vec3(0, 1, 0)).normalize();
+        var side = side(gaze);
         var up = side.cross(gaze);
-        int clear = ARGB.color(0, color);
         for (int segment = 0; segment < CONE_SEGMENTS; segment++)
         {
-            float a0 = segment * Mth.TWO_PI / CONE_SEGMENTS;
-            float a1 = (segment + 1) * Mth.TWO_PI / CONE_SEGMENTS;
+            int next = (segment + 1) % CONE_SEGMENTS;
             buffer.addVertex(pose, 0, 0, 0).setColor(color);
             buffer.addVertex(pose, 0, 0, 0).setColor(color);
-            rim(pose, buffer, gaze, side, up, length, radius, a1, clear);
-            rim(pose, buffer, gaze, side, up, length, radius, a0, clear);
+            rim(pose, buffer, gaze, side, up, length, radius, next, reach[next], color);
+            rim(pose, buffer, gaze, side, up, length, radius, segment, reach[segment], color);
         }
     }
 
-    private static void rim(PoseStack.Pose pose, VertexConsumer buffer, Vec3 gaze, Vec3 side, Vec3 up, float length, float radius, float angle, int color)
+    /** Where a line of the side stops, as faded as the whole cone is that far from the lens. */
+    private static void rim(PoseStack.Pose pose, VertexConsumer buffer, Vec3 gaze, Vec3 side, Vec3 up, float length, float radius, int segment, float reach, int color)
     {
-        float c = Mth.cos(angle) * radius;
-        float s = Mth.sin(angle) * radius;
-        buffer.addVertex(pose, (float) (gaze.x * length + side.x * c + up.x * s), (float) (gaze.y * length + side.y * c + up.y * s), (float) (gaze.z * length + side.z * c + up.z * s))
-                .setColor(color);
+        float angle = segment * Mth.TWO_PI / CONE_SEGMENTS;
+        float along = length * reach;
+        float c = Mth.cos(angle) * radius * reach;
+        float s = Mth.sin(angle) * radius * reach;
+        buffer.addVertex(pose, (float) (gaze.x * along + side.x * c + up.x * s), (float) (gaze.y * along + side.y * c + up.y * s), (float) (gaze.z * along + side.z * c + up.z * s))
+                .setColor(ARGB.color(Math.round(ARGB.alpha(color) * (1 - reach)), color));
     }
 
     /** A soft disc facing the camera: the light the watcher gives off. */
     private static void disc(PoseStack.Pose pose, VertexConsumer buffer, float radius, int color)
     {
         int clear = ARGB.color(0, color);
-        for (int segment = 0; segment < CONE_SEGMENTS; segment++)
+        for (int segment = 0; segment < DISC_SEGMENTS; segment++)
         {
-            float a0 = segment * Mth.TWO_PI / CONE_SEGMENTS;
-            float a1 = (segment + 1) * Mth.TWO_PI / CONE_SEGMENTS;
+            float a0 = segment * Mth.TWO_PI / DISC_SEGMENTS;
+            float a1 = (segment + 1) * Mth.TWO_PI / DISC_SEGMENTS;
             buffer.addVertex(pose, 0, 0, 0).setColor(color);
             buffer.addVertex(pose, 0, 0, 0).setColor(color);
             buffer.addVertex(pose, Mth.cos(a1) * radius, Mth.sin(a1) * radius, 0).setColor(clear);

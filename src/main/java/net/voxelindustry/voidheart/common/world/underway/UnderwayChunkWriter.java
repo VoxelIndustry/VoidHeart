@@ -41,7 +41,9 @@ public final class UnderwayChunkWriter
     /** Stains spread over patches of this many blocks rather than falling block by block. */
     private static final int STAIN = 3;
     private static final long SALT = 0x554E44455243L;
-    private static final ThreadLocal<UnderwayCanvas> CANVAS = ThreadLocal.withInitial(() -> new UnderwayCanvas(SECTION, SECTION));
+    /** The canvas reaches a block past the chunk on every side, so what a block takes from its neighbours is the same at the chunk's edge. */
+    private static final int MARGIN = 1;
+    private static final ThreadLocal<UnderwayCanvas> CANVAS = ThreadLocal.withInitial(() -> new UnderwayCanvas(SECTION + 2 * MARGIN, SECTION + 2 * MARGIN));
     private static BlockState[] props;
     /** Written last and volatile, so whoever sees it also sees the props. */
     private static volatile BlockState[] materials;
@@ -57,7 +59,7 @@ public final class UnderwayChunkWriter
         int minX = chunk.getPos().getMinBlockX();
         int minZ = chunk.getPos().getMinBlockZ();
         var canvas = CANVAS.get();
-        canvas.reset(minX, minZ);
+        canvas.reset(minX - MARGIN, minZ - MARGIN);
         UnderwayPlans.paint(seed, canvas);
         boolean collapsed = UnderwayNetwork.regionRuin(seed, DistrictPos.at(minX, minZ)) == UnderwayRuin.COLLAPSED;
 
@@ -104,6 +106,8 @@ public final class UnderwayChunkWriter
             case SHELL -> rib(canvas, x, y, z) ? materials[UnderwayMaterial.STEEL.ordinal()] : concrete(x, y, z, collapsed ? WALL_CRACKED_COLLAPSED : WALL_CRACKED, WALL_FORMED, WALL_STAINED);
             case FLOOR -> concrete(x, y, z, collapsed ? FLOOR_CRACKED_COLLAPSED : FLOOR_CRACKED, 0, FLOOR_STAINED);
             case TRUNK_RAIL_X, TRUNK_RAIL_Z, FEEDER_RAIL_X, FEEDER_RAIL_Z -> materials[material.ordinal()].setValue(UnderwayTrackBlock.WATERLOGGED, canvas.get(x, y + 1, z) == UnderwayMaterial.WATER);
+            // Stairs that the flood reaches hold its water rather than a pocket of air
+            case STAIRS_NORTH, STAIRS_EAST, STAIRS_SOUTH, STAIRS_WEST -> materials[material.ordinal()].setValue(StairBlock.WATERLOGGED, isFlooded(canvas, x, y, z));
             case DOOR ->
             {
                 // A door beside it is the other leaf of the same doorway, not the way through
@@ -121,6 +125,12 @@ public final class UnderwayChunkWriter
             }
             default -> materials[material.ordinal()];
         };
+    }
+
+    private static boolean isFlooded(UnderwayCanvas canvas, int x, int y, int z)
+    {
+        return canvas.get(x, y + 1, z) == UnderwayMaterial.WATER || canvas.get(x - 1, y, z) == UnderwayMaterial.WATER || canvas.get(x + 1, y, z) == UnderwayMaterial.WATER
+                || canvas.get(x, y, z - 1) == UnderwayMaterial.WATER || canvas.get(x, y, z + 1) == UnderwayMaterial.WATER;
     }
 
     private static boolean isWayThrough(UnderwayMaterial material)

@@ -73,6 +73,7 @@
       "net.voxelindustry.voidheart.gametest.UnderwayHatchClientTest",
       "net.voxelindustry.voidheart.gametest.UnderwaySecurityClientTest",
       "net.voxelindustry.voidheart.gametest.UnderwayMachinesClientTest",
+      "net.voxelindustry.voidheart.gametest.UnderwayDetailsClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusDecorClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusMobsClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusSpawningClientTest",

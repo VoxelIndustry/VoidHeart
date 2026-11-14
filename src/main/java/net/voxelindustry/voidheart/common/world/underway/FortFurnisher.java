@@ -27,6 +27,8 @@ final class FortFurnisher
     private static final int ISLAND_EVERY = 4;
     private static final int ISLAND_MARGIN = 3;
     private static final int TALL_ROOM = 8;
+    /** How high over its floor anything on a level hangs. */
+    private static final int HUNG_TOP = 3;
     private static final int TABLETOP_PERCENT = 60;
     private static final int LOADED_WAGON_PERCENT = 40;
     private static final int WAGON_EVERY_RAILS = 30;
@@ -85,7 +87,13 @@ final class FortFurnisher
             if (room.kind() == UnderwayRoomKind.CAVED_IN)
                 continue;
             int level = level(room.floorY());
-            mark(open[level], room.a0(), room.c0(), room.a1(), room.c1());
+            // A tall hall is open on every level it rises through, not only its own
+            for (int other = 0; other < LEVELS; other++)
+            {
+                int floor = UnderwaySection.of(other).floorY();
+                if (other == level || room.floorY() < floor + HUNG_TOP && room.floorY() + room.height() > floor)
+                    mark(open[other], room.a0(), room.c0(), room.a1(), room.c1());
+            }
             if (NARROW_PASSAGES.contains(room.kind()) || room.kind() == UnderwayRoomKind.PIT)
                 mark(kept[level], room.a0(), room.c0(), room.a1(), room.c1());
         }
@@ -169,7 +177,7 @@ final class FortFurnisher
                         int along = runsAlong ? run : (side[0] < 0 ? room.a0() : room.a1());
                         int across = runsAlong ? (side[1] < 0 ? room.c0() : room.c1()) : run;
                         int distance = Math.abs(along - arrival[0]) + Math.abs(across - arrival[1]);
-                        if (distance < reach && !isOpen(level, along + side[0], across + side[1]) && isFree(level, along, across))
+                        if (distance < reach && isWall(level, along + side[0], across + side[1]) && isFree(level, along, across))
                         {
                             reach = distance;
                             nearest = new int[] { along, across, -side[0], -side[1] };
@@ -317,7 +325,7 @@ final class FortFurnisher
         for (var fixture : builder.fixtures())
         {
             int level = level(fixture.y() - 1);
-            if (isOpen(level, fixture.along(), fixture.across()) && !isOpen(level, fixture.along() - fixture.faceAlong(), fixture.across() - fixture.faceAcross()))
+            if (isOpen(level, fixture.along(), fixture.across()) && isWall(level, fixture.along() - fixture.faceAlong(), fixture.across() - fixture.faceAcross()))
                 place(fixture.prop(), fixture.along(), fixture.y(), fixture.across(), fixture.faceAlong(), fixture.faceAcross());
         }
         cabinets();
@@ -362,6 +370,12 @@ final class FortFurnisher
     private boolean isOpen(int level, int along, int across)
     {
         return along >= 0 && along < SIZE && across >= 0 && across < SIZE && open[level][cell(along, across)];
+    }
+
+    /** @return whether there is a wall there to hang something on. Past the frame is not known, since the galleries and links that meet the fort run on through it. */
+    private boolean isWall(int level, int along, int across)
+    {
+        return along >= 0 && along < SIZE && across >= 0 && across < SIZE && !open[level][cell(along, across)];
     }
 
     /** @return whether something may stand on the floor there: off the rails and out of the way of doors and passages */
@@ -417,7 +431,7 @@ final class FortFurnisher
             {
                 int along = runsAlong ? run : (outAlong < 0 ? room.a0() : room.a1());
                 int across = runsAlong ? (outAcross < 0 ? room.c0() : room.c1()) : run;
-                if (isOpen(level, along + outAlong, across + outAcross))
+                if (!isWall(level, along + outAlong, across + outAcross))
                     continue;
                 boolean free = isFree(level, along, across);
 
