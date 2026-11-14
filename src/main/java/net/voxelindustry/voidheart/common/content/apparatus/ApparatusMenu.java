@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.apparatus;
 
 import lombok.Getter;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Inventory;
@@ -106,12 +107,20 @@ public class ApparatusMenu extends AbstractContainerMenu
         int rotation = id >> 2 & 3;
         int x = id >> 4 & 15;
         int y = id >> 8 & 15;
-        return switch (action)
+        boolean accepted = switch (action)
         {
             case PLACE -> place(player, x, y, rotation);
             case TAKE_TO_CURSOR, TAKE_TO_INVENTORY -> take(player, x, y, action == TAKE_TO_INVENTORY);
             default -> false;
         };
+        // The client already made the edit it asked for. Refused here, nothing changed to sync, so it would keep it: send it back everything it should show,
+        // the inventory menu too, since that holds the offhand and the Trinkets slots an apparatus may be in
+        if (!accepted && player instanceof ServerPlayer serverPlayer)
+        {
+            sendAllDataToRemote();
+            serverPlayer.inventoryMenu.sendAllDataToRemote();
+        }
+        return accepted;
     }
 
     /**

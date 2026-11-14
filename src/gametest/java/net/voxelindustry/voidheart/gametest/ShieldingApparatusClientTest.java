@@ -9,6 +9,8 @@ import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptio
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
@@ -23,7 +25,6 @@ import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusGrid;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusHolder;
-import net.voxelindustry.voidheart.common.content.apparatus.ApparatusMenu;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldState;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -154,14 +155,24 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
         expectAt(server, 2, 0, ApparatusComponent.CELL, "a cell dragged to the corner");
         expect(grid(server).at(0, 1) == null && carriedEmpty(context), "Expected the dragged cell gone from where it was");
 
-        // Shift clicking a component in the inventory sets it in the first spot it fits, and shift clicking a piece puts it away. The test input sends
-        // mouse clicks without modifier keys, so these go through the same container calls a shift click makes
-        quickMove(context, CELL_SLOT);
+        // Shift clicking a component in the inventory sets it in the first spot it fits, and shift clicking a piece puts it away
+        shiftClick(context, scale, screen -> screen.slotCenter(CELL_SLOT));
         expectAt(server, 0, 1, ApparatusComponent.CELL, "a cell shift clicked from the inventory into the first free cell");
-        shiftTake(context, 2, 0);
+        shiftClick(context, scale, screen -> screen.cellCenter(2, 0));
         expect(grid(server).at(2, 0) == null && count(server, ApparatusComponent.CELL) == 2, "Expected a shift clicked piece put back in the inventory");
-        quickMove(context, SPARE_SLOT);
+        shiftClick(context, scale, screen -> screen.slotCenter(SPARE_SLOT));
         expectAt(server, 2, 0, ApparatusComponent.CELL, "the cell shift clicked back into the corner");
+
+        // An edit the server refuses is undone on the client, which made it at once: here only the client thinks a cell is on the cursor
+        shiftClick(context, scale, screen -> screen.cellCenter(2, 0));
+        context.runOnClient(minecraft -> minecraft.player.containerMenu.setCarried(component(ApparatusComponent.CELL, 1)));
+        click(context, scale, screen -> screen.cellCenter(2, 0));
+        context.waitTicks(5);
+        boolean undone = context.computeOnClient(minecraft ->
+                ((ApparatusScreen) minecraft.gui.screen()).getMenu().grid().at(2, 0) == null && minecraft.player.containerMenu.getCarried().isEmpty());
+        expect(undone && grid(server).at(2, 0) == null, "Expected the client to undo a placement the server refused");
+        shiftClick(context, scale, screen -> screen.slotCenter(SPARE_SLOT));
+        expectAt(server, 2, 0, ApparatusComponent.CELL, "the cell shift clicked back into the corner again");
 
         // The apparatus' own slot can't be picked up nor swapped away with a number key
         click(context, scale, screen -> screen.slotCenter(0));
@@ -508,31 +519,19 @@ public class ShieldingApparatusClientTest implements FabricClientGameTest
     }
 
     /**
-     * Shift clicks the slot holding an inventory index in the open apparatus screen.
+     * Shift clicks a point of the open apparatus screen. The test input sends mouse buttons without modifier keys, so the press and release go to the
+     * screen itself with shift in their modifiers, and from there through the same handling as a player's click.
      */
-    private static void quickMove(ClientGameTestContext context, int inventoryIndex)
+    private static void shiftClick(ClientGameTestContext context, double scale, Function<ApparatusScreen, int[]> point)
     {
+        aim(context, scale, point);
         context.runOnClient(minecraft ->
         {
-            var menu = ((ApparatusScreen) minecraft.gui.screen()).getMenu();
-            for (var slot : menu.slots)
-                if (slot.getContainerSlot() == inventoryIndex)
-                    minecraft.gameMode.handleContainerInput(menu.containerId, slot.index, 0, ContainerInput.QUICK_MOVE, minecraft.player);
-        });
-        context.waitTicks(5);
-    }
-
-    /**
-     * Shift clicks a piece in the open apparatus screen, as the screen does: at once on the client, then through the server.
-     */
-    private static void shiftTake(ClientGameTestContext context, int cellX, int cellY)
-    {
-        context.runOnClient(minecraft ->
-        {
-            var menu = ((ApparatusScreen) minecraft.gui.screen()).getMenu();
-            int button = ApparatusMenu.takeButton(cellX, cellY, true);
-            if (menu.clickMenuButton(minecraft.player, button))
-                minecraft.gameMode.handleInventoryButtonClick(menu.containerId, button);
+            var screen = (ApparatusScreen) minecraft.gui.screen();
+            int[] at = point.apply(screen);
+            var event = new MouseButtonEvent(at[0], at[1], new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, InputConstants.MOD_SHIFT));
+            screen.mouseClicked(event, false);
+            screen.mouseReleased(event);
         });
         context.waitTicks(5);
     }
