@@ -41,36 +41,43 @@ public class UnderwayTempleClientTest implements FabricClientGameTest
             var server = world.getServer();
             world.getConnection().waitForChunksRender();
             server.runCommand("gamemode spectator @a");
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            // All tests share one client, so what this scene changes is put back however it ends
+            var cameraBefore = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
             boolean hudWasHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
             if (!hudWasHidden)
                 context.getInput().pressKey(InputConstants.KEY_F1);
-
-            var dry = visit(context, world, "dry");
-            expect(dry != null, "No dry temple was found near the start");
-            check(server, dry);
-            server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
-            shots(context, world, dry, "dry");
-            server.runCommand("effect clear @a");
-            shot(context, world, dry, "temple-dry-dark", UnderwayTemple.AISLE, 0, UnderwayTemple.AISLE, UnderwayTemple.DEPTH, 5);
-
-            var sealed = visit(context, world, "sealed");
-            if (sealed == null)
-                System.out.println("[UnderwayTempleClientTest] No sealed temple within reach of this world's seed, so its flames were not seen");
-            else
+            try
             {
-                check(server, sealed);
-                shot(context, world, sealed, "temple-sealed-dark", UnderwayTemple.AISLE, 1, UnderwayTemple.AISLE, UnderwayTemple.DEPTH, 4);
-                shot(context, world, sealed, "temple-sealed-dais-dark", 2, 6, 12, 9, 2);
-                var altar = blockAt(sealed, UnderwayTemple.AISLE, sealed.temple().room().floorY() + 2, 9);
-                int light = server.computeOnServer(minecraft -> VoidDaedalus.level(minecraft).getBrightness(LightLayer.BLOCK, altar));
-                expect(light >= MIN_ALTAR_LIGHT, "The flames of the sealed temple light its altar to " + light);
+                var dry = visit(context, world, "dry");
+                expect(dry != null, "No dry temple was found near the start");
+                check(server, dry);
                 server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
-                shots(context, world, sealed, "sealed");
+                shots(context, world, dry, "dry");
                 server.runCommand("effect clear @a");
+                shot(context, world, dry, "temple-dry-dark", UnderwayTemple.AISLE, 0, UnderwayTemple.AISLE, UnderwayTemple.DEPTH, 5);
+
+                var sealed = visit(context, world, "sealed");
+                if (sealed == null)
+                    System.out.println("[UnderwayTempleClientTest] No sealed temple within reach of this world's seed, so its flames were not seen");
+                else
+                {
+                    check(server, sealed);
+                    shot(context, world, sealed, "temple-sealed-dark", UnderwayTemple.AISLE, 1, UnderwayTemple.AISLE, UnderwayTemple.DEPTH, 4);
+                    shot(context, world, sealed, "temple-sealed-dais-dark", 2, 6, 12, 9, 2);
+                    var altar = blockAt(sealed, UnderwayTemple.AISLE, sealed.temple().room().floorY() + 2, 9);
+                    int light = server.computeOnServer(minecraft -> VoidDaedalus.level(minecraft).getBrightness(LightLayer.BLOCK, altar));
+                    expect(light >= MIN_ALTAR_LIGHT, "The flames of the sealed temple light its altar to " + light);
+                    server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
+                    shots(context, world, sealed, "sealed");
+                    server.runCommand("effect clear @a");
+                }
+            } finally
+            {
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(cameraBefore));
+                if (!hudWasHidden)
+                    context.getInput().pressKey(InputConstants.KEY_F1);
             }
-            if (!hudWasHidden)
-                context.getInput().pressKey(InputConstants.KEY_F1);
         }
     }
 

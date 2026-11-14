@@ -80,6 +80,12 @@ class UnderwayTempleTest
             assertThat(props).as("altar of the temple under %s", found.pos()).anyMatch(spot -> spot.prop() == UnderwayProp.TEMPLE_ALTAR
                     && spot.along() == temple.along(UnderwayTemple.AISLE, FortBuilder.DAIS_FROM + 1) && spot.across() == temple.across(UnderwayTemple.AISLE, FortBuilder.DAIS_FROM + 1));
             assertThat(props).anyMatch(spot -> spot.prop() == UnderwayProp.TEETH_IDOL).anyMatch(spot -> spot.prop() == UnderwayProp.BROOD_IDOL);
+            for (var tail : props)
+            {
+                if (tail.prop() == UnderwayProp.CULT_BANNER_TAIL)
+                    assertThat(props).as("banner over the tail at %d %d %d under %s", tail.along(), tail.y(), tail.across(), found.pos())
+                            .anyMatch(top -> top.prop() == UnderwayProp.CULT_BANNER && top.along() == tail.along() && top.across() == tail.across() && top.y() == tail.y() + 1);
+            }
             boolean sealed = found.fort().ruin() == UnderwayRuin.SEALED;
             assertThat(props).as("flames of the %s temple under %s", found.fort().ruin(), found.pos())
                     .noneMatch(spot -> !sealed && (spot.prop() == UnderwayProp.BRAZIER_LIT || spot.prop() == UnderwayProp.VOTIVE_CANDLES_LIT))

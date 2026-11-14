@@ -46,6 +46,7 @@ final class UnderwayCommands
     private static final int TEMPLE_SEARCH_RADIUS = 24;
     private static final int KEY_REACH = 48;
     private static final DynamicCommandExceptionType UNKNOWN_KIND = new DynamicCommandExceptionType(name -> Component.literal("No kind of fort is called " + name));
+    private static final DynamicCommandExceptionType UNKNOWN_RUIN = new DynamicCommandExceptionType(name -> Component.literal("No state of ruin is called " + name));
 
     private UnderwayCommands()
     {
@@ -78,12 +79,23 @@ final class UnderwayCommands
                         .executes(context -> temple(context, null))
                         .then(argument("ruin", StringArgumentType.word())
                                 .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayRuin.values()).map(ruin -> ruin.name().toLowerCase(Locale.ROOT)), suggestions))
-                                .executes(context -> temple(context, StringArgumentType.getString(context, "ruin")))))
+                                .executes(context -> temple(context, ruin(context)))))
                 .then(literal("where").executes(UnderwayCommands::where)));
     }
 
+    private static UnderwayRuin ruin(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        String name = StringArgumentType.getString(context, "ruin");
+        for (var ruin : UnderwayRuin.values())
+        {
+            if (ruin.name().equalsIgnoreCase(name))
+                return ruin;
+        }
+        throw UNKNOWN_RUIN.create(name);
+    }
+
     /** Sends the player into the doorway of the nearest temple, facing its mosaic, in a fort left in that state when one is named. */
-    private static int temple(CommandContext<CommandSourceStack> context, String ruin) throws CommandSyntaxException
+    private static int temple(CommandContext<CommandSourceStack> context, UnderwayRuin ruin) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
         var level = VoidDaedalus.level(context.getSource().getServer());
@@ -100,7 +112,7 @@ final class UnderwayCommands
                         continue;
                     var fort = UnderwayPlans.fort(seed, pos);
                     var temple = fort.temple();
-                    if (temple == null || ruin != null && !fort.ruin().name().equalsIgnoreCase(ruin))
+                    if (temple == null || ruin != null && fort.ruin() != ruin)
                         continue;
                     var frame = fort.frame();
                     int along = temple.along(UnderwayTemple.AISLE, 0);

@@ -417,17 +417,18 @@ final class FortFurnisher
             for (int d : TEMPLE_BANNERS)
             {
                 boolean torn = builder.roll(PERCENT) < wornPercent;
-                templeWall(temple, torn ? CULT_BANNER_TORN : CULT_BANNER, w, floor + TEMPLE_BANNER_HEIGHT, d, face, 0);
-                if (!torn)
-                    templeWall(temple, CULT_BANNER_TAIL, w, floor + TEMPLE_BANNER_HEIGHT - 1, d, face, 0);
+                // A whole banner hangs in one piece, or is missing in one piece: its tail never hangs alone
+                boolean hung = templeWall(temple, torn ? CULT_BANNER_TORN : CULT_BANNER, w, floor + TEMPLE_BANNER_HEIGHT, d, face, 0, false);
+                if (hung && !torn)
+                    templeWall(temple, CULT_BANNER_TAIL, w, floor + TEMPLE_BANNER_HEIGHT - 1, d, face, 0, true);
             }
-            templeWall(temple, TEETH_STRING, w, floor + 2, TEMPLE_PEWS_FROM + 2, face, 0);
-            templeWall(temple, WALL_SCRAWL, w, dais + 2, steps + 2, face, 0);
+            templeWall(temple, TEETH_STRING, w, floor + 2, TEMPLE_PEWS_FROM + 2, face, 0, false);
+            templeWall(temple, WALL_SCRAWL, w, dais + 2, steps + 2, face, 0, false);
         }
         for (int side = -1; side <= 1; side += 2)
         {
-            templeWall(temple, DEFACED_SIGN, middle + side * 5, floor + 2, 0, 0, 1);
-            templeWall(temple, WALL_SCRAWL, middle + side * 3, floor + 3, 0, 0, 1);
+            templeWall(temple, DEFACED_SIGN, middle + side * 5, floor + 2, 0, 0, 1, false);
+            templeWall(temple, WALL_SCRAWL, middle + side * 3, floor + 3, 0, 0, 1, false);
         }
     }
 
@@ -452,16 +453,19 @@ final class FortFurnisher
      *
      * @param faceW  1 or -1 to face along the doorway's wall, from a side wall
      * @param faceIn 1 to face the mosaic, from the doorway's wall
+     * @param always whether time spared it in any fort
+     * @return whether it hangs there
      */
-    private void templeWall(UnderwayTemple temple, UnderwayProp prop, int w, int y, int d, int faceW, int faceIn)
+    private boolean templeWall(UnderwayTemple temple, UnderwayProp prop, int w, int y, int d, int faceW, int faceIn, boolean always)
     {
         int level = level(temple.room().floorY());
         int along = temple.along(w, d);
         int across = temple.across(w, d);
         int faceAlong = temple.inAlong() == 0 ? faceW : temple.inAlong() * faceIn;
         int faceAcross = temple.inAlong() == 0 ? temple.inAcross() * faceIn : faceW;
-        if (isOpen(level, along, across) && isWall(level, along - faceAlong, across - faceAcross) && builder.roll(PERCENT) >= skipPercent / 2)
-            place(prop, along, y, across, faceAlong, faceAcross);
+        if (!isOpen(level, along, across) || !isWall(level, along - faceAlong, across - faceAcross) || !always && builder.roll(PERCENT) < skipPercent / 2)
+            return false;
+        return place(prop, along, y, across, faceAlong, faceAcross);
     }
 
     private static int level(int floorY)
