@@ -45,6 +45,16 @@ final class FortBuilder
     private static final int BREACH_AMONG = 8;
     private static final int BREACH_SPILL = 4;
     private static final int LAMP_EVERY = 16;
+    /** How many forts in a hundred hold a temple. */
+    private static final int TEMPLE_PERCENT = 33;
+    private static final long TEMPLE_SALT = 0x54454D504C45L;
+    /** Where the dais starts, a step up from the aisle, across the back of a temple. */
+    static final int DAIS_FROM = 8;
+    /** Patches of a temple's mosaic that fell in any fort, and how many more where the region shook. */
+    private static final int FALLEN_PATCHES = 1;
+    private static final int SHAKEN_PATCHES = 2;
+    private static final int FALLEN_PERCENT = 75;
+    private static final int CHIPPED_PERCENT = 10;
     private static final int UNREACHED = Integer.MAX_VALUE;
     /** Rooms worth locking, whose doorway is a shutter that only rises on power. */
     static final EnumSet<UnderwayRoomKind> SHUTTERED =EnumSet.of(UnderwayRoomKind.ARMOURY, UnderwayRoomKind.STORES, UnderwayRoomKind.COMMAND_POST, UnderwayRoomKind.ARCHIVE,
@@ -69,6 +79,9 @@ final class FortBuilder
     private int nextBay;
     private int bayCount;
     private UnderwayShaft hatch;
+    private UnderwayTemple temple;
+    /** Whether the programme's temple was laid out already, or lost to a cave-in or the void. */
+    private boolean templeLaid;
 
     FortBuilder(long seed, DistrictPos pos, boolean alongX, long salt, UnderwayRoomKind[] program)
     {
@@ -79,14 +92,26 @@ final class FortBuilder
         ruin = UnderwayNetwork.ruinAt(seed, pos);
         rubble = UnderwayNetwork.regionRuin(seed, pos) == UnderwayRuin.COLLAPSED;
         breachedBay = ruin == UnderwayRuin.BREACHED ? roll(BREACH_AMONG) : -1;
-        this.program = program.clone();
+        var shuffled = program.clone();
         for (int last = program.length - 1; last > 0; last--)
         {
             int swap = roll(last + 1);
-            var kind = this.program[last];
-            this.program[last] = this.program[swap];
-            this.program[swap] = kind;
+            var kind = shuffled[last];
+            shuffled[last] = shuffled[swap];
+            shuffled[swap] = kind;
         }
+        // Chosen apart from the fort's other rolls, so forts without a temple are laid out as they always were
+        long templeHash = DaedalusHash.mix(seed, pos.x(), pos.z(), TEMPLE_SALT);
+        if (DaedalusHash.pick(templeHash, PERCENT) < TEMPLE_PERCENT)
+        {
+            int at = DaedalusHash.pick(DaedalusHash.mix(templeHash), shuffled.length + 1);
+            var withTemple = new UnderwayRoomKind[shuffled.length + 1];
+            System.arraycopy(shuffled, 0, withTemple, 0, at);
+            withTemple[at] = UnderwayRoomKind.TEMPLE;
+            System.arraycopy(shuffled, at, withTemple, at + 1, shuffled.length - at);
+            shuffled = withTemple;
+        }
+        this.program = shuffled;
     }
 
     /** @return the next of this fort's own random numbers, below {@code count} */
@@ -114,7 +139,7 @@ final class FortBuilder
         else if (ruin == UnderwayRuin.FLOODED)
             units.removeIf(unit -> unit.section() == UnderwaySection.RAIL);
         return new UnderwayFort(pos, node, frame, ruin, hatch.a0(), hatch.c0(), hatch.landingAlong(), hatch.landingAcross(),
-                List.copyOf(rooms), List.copyOf(openings), List.copyOf(shafts), List.copyOf(strokes), List.copyOf(props), List.copyOf(units));
+                List.copyOf(rooms), List.copyOf(openings), List.copyOf(shafts), List.copyOf(strokes), List.copyOf(props), List.copyOf(units), temple);
     }
 
     /** @return what a block of a room's air is once every stroke is drawn */
@@ -134,6 +159,12 @@ final class FortBuilder
     List<UnderwayPropSpot> fixtures()
     {
         return fixtures;
+    }
+
+    /** @return the bay its cult took, once it is laid out, or null */
+    UnderwayTemple temple()
+    {
+        return temple;
     }
 
     /** @return the shaft under the hatch, once the entry level is laid out */
@@ -245,6 +276,9 @@ final class FortBuilder
         while (true)
         {
             var kind = program[nextBay % program.length];
+            // A programme read round again would raise a second temple
+            if (kind == UnderwayRoomKind.TEMPLE && templeLaid)
+                kind = UnderwayRoomKind.SHELTER;
             if (run + kind.bayWidth() - 1 > to)
                 kind = UnderwayRoomKind.STORES;
             else
@@ -253,23 +287,31 @@ final class FortBuilder
             if (end > to)
                 return;
 
-            int height = kind == UnderwayRoomKind.POWER_PLANT ? TALL_BAY : LIVING_HEIGHT;
+            boolean templeBay = kind == UnderwayRoomKind.TEMPLE;
+            int height = kind == UnderwayRoomKind.POWER_PLANT ? TALL_BAY : templeBay ? UnderwayTemple.HEIGHT : LIVING_HEIGHT;
             if (bayCount == breachedBay)
                 kind = UnderwayRoomKind.BREACH;
             else if (rubble && roll(PERCENT) < CAVED_IN_PERCENT)
                 kind = UnderwayRoomKind.CAVED_IN;
+            templeLaid |= templeBay;
             int near = wall + outward;
-            int far = wall + outward * BAY_DEPTH;
+            int far = wall + outward * (templeBay ? UnderwayTemple.DEPTH : BAY_DEPTH);
             int door = (run + end) / 2;
-            if (transposed)
-                room(kind, near, run, far, end, LIVING_FLOOR, height);
-            else
-                room(kind, run, near, end, far, LIVING_FLOOR, height);
+            var bay = transposed ? room(kind, near, run, far, end, LIVING_FLOOR, height) : room(kind, run, near, end, far, LIVING_FLOOR, height);
 
             if (kind == UnderwayRoomKind.CAVED_IN)
             {
                 turned(transposed, null, UnderwayMaterial.RUBBLE, run, LIVING_FLOOR + 1, near, end, LIVING_FLOOR + height, far);
                 turned(transposed, UnderwayMaterial.AIR, UnderwayMaterial.RUBBLE, door - 2, LIVING_FLOOR + 1, wall - outward, door + 2, LIVING_FLOOR + 1, wall - outward * 2);
+            }
+            else if (kind == UnderwayRoomKind.TEMPLE)
+            {
+                // A doorway three wide, in line with the aisle
+                if (transposed)
+                    opening(wall, door - 1, wall, door + 1, LIVING_FLOOR, DOOR_HEIGHT);
+                else
+                    opening(door - 1, wall, door + 1, wall, LIVING_FLOOR, DOOR_HEIGHT);
+                this.temple = temple(bay, transposed ? outward : 0, transposed ? 0 : outward);
             }
             else if (transposed)
                 opening(wall, door, wall, door + 1, LIVING_FLOOR, DOOR_HEIGHT);
@@ -286,6 +328,50 @@ final class FortBuilder
             run = end + 2;
             bayCount++;
         }
+    }
+
+    /** Raises a temple's dais across the back of its bay, a step up from the aisle, and decides what fell from its mosaic. */
+    private UnderwayTemple temple(UnderwayRoom bay, int inAlong, int inAcross)
+    {
+        var temple = new UnderwayTemple(bay, inAlong, inAcross, mosaicWear());
+        int last = UnderwayTemple.WIDTH - 1;
+        int back = UnderwayTemple.DEPTH - 1;
+        inAir(UnderwayMaterial.FLOOR, temple.along(0, DAIS_FROM), LIVING_FLOOR + 1, temple.across(0, DAIS_FROM), temple.along(last, back), LIVING_FLOOR + 1, temple.across(last, back));
+        inAir(UnderwayMaterial.stairs(frame.compass(inAlong, inAcross)), temple.along(0, DAIS_FROM - 1), LIVING_FLOOR + 1, temple.across(0, DAIS_FROM - 1),
+                temple.along(last, DAIS_FROM - 1), LIVING_FLOOR + 1, temple.across(last, DAIS_FROM - 1));
+        return temple;
+    }
+
+    /** @return what time did to each tile of a mosaic: a few patches fell, more where the region shook, with chipped tiles around them and here and there. A sealed fort kept it whole. */
+    private List<UnderwayTemple.Wear> mosaicWear()
+    {
+        var wear = new UnderwayTemple.Wear[UnderwayTemple.COLUMNS * UnderwayTemple.ROWS];
+        Arrays.fill(wear, UnderwayTemple.Wear.WHOLE);
+        if (ruin == UnderwayRuin.SEALED)
+            return List.of(wear);
+        int patches = FALLEN_PATCHES + (rubble || ruin == UnderwayRuin.BREACHED ? SHAKEN_PATCHES : 0) + roll(2);
+        for (int patch = 0; patch < patches; patch++)
+        {
+            int column = roll(UnderwayTemple.COLUMNS);
+            int row = roll(UnderwayTemple.ROWS);
+            int reach = 1 + roll(2);
+            for (int at = 0; at < wear.length; at++)
+            {
+                int dc = at % UnderwayTemple.COLUMNS - column;
+                int dr = at / UnderwayTemple.COLUMNS - row;
+                int distance = dc * dc + dr * dr;
+                if (distance < reach && roll(PERCENT) < FALLEN_PERCENT)
+                    wear[at] = UnderwayTemple.Wear.FALLEN;
+                else if (distance <= (reach + 1) * (reach + 1) && wear[at] == UnderwayTemple.Wear.WHOLE)
+                    wear[at] = UnderwayTemple.Wear.CHIPPED;
+            }
+        }
+        for (int at = 0; at < wear.length; at++)
+        {
+            if (wear[at] == UnderwayTemple.Wear.WHOLE && roll(PERCENT) < CHIPPED_PERCENT)
+                wear[at] = UnderwayTemple.Wear.CHIPPED;
+        }
+        return List.of(wear);
     }
 
     private void turned(boolean transposed, UnderwayMaterial over, UnderwayMaterial material, int run0, int y0, int deep0, int run1, int y1, int deep1)

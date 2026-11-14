@@ -278,6 +278,8 @@ class UnderwayPreview
             case RUBBLE -> 0x8A5A28;
             case WATER -> 0x3060C0;
             case VOID -> 0x8020C0;
+            case MOSAIC -> 0xB04A6A;
+            case MOSAIC_BED -> 0x7A6A5A;
         };
     }
 

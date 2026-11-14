@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_tesserae",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_tesserae"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_tesserae",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_tesserae",
+      "y": 270
+    }
+  }
+}

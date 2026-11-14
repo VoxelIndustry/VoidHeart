@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_brood_idol",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_brood_idol"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_brood_idol",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_brood_idol",
+      "y": 270
+    }
+  }
+}

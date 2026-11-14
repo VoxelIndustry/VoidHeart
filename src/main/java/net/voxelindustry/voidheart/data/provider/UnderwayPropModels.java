@@ -15,6 +15,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayEmbrasureBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayHatchBlock;
+import net.voxelindustry.voidheart.common.content.underway.UnderwayMosaicBlock;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayTrackBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
@@ -31,6 +32,8 @@ final class UnderwayPropModels
 {
     private static final Map<Character, String> SIDES = Map.of('n', "north", 's', "south", 'e', "east", 'w', "west", 'u', "up", 'd', "down");
     private static final String TEXTURES = MODID + ":block/underway/";
+    /** The tile of the mosaic its item shows: the eye down the gullet. */
+    private static final int MOSAIC_ICON = 15 + 7;
 
     private UnderwayPropModels()
     {
@@ -53,6 +56,7 @@ final class UnderwayPropModels
         track(generator, VoidHeartBlocks.UNDERWAY_TRACK_TIE, "track_tie");
         track(generator, VoidHeartBlocks.UNDERWAY_FEEDER_RAIL, "feeder_rail");
         generator.createDoor(VoidHeartBlocks.UNDERWAY_DOOR);
+        mosaic(generator);
 
         var stairs = VoidHeartBlocks.UNDERWAY_STEEL_STAIRS;
         var tread = new Material(Identifier.parse(TEXTURES + "tread"));
@@ -86,6 +90,29 @@ final class UnderwayPropModels
             generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(block, plainVariant(model)).with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
             generator.registerSimpleItemModel(block, model);
         }
+    }
+
+    /** Every tile of a temple's mosaic, whole and chipped, each a cube showing its own piece of the picture, and the bed left where tiles fell. Its item shows the tile at the picture's heart. */
+    private static void mosaic(BlockModelGenerators generator)
+    {
+        var mosaic = VoidHeartBlocks.UNDERWAY_MOSAIC;
+        var dispatch = PropertyDispatch.initial(UnderwayMosaicBlock.TILE, UnderwayMosaicBlock.CHIPPED);
+        Identifier icon = null;
+        for (int tile = 0; tile < UnderwayMosaicBlock.TILES; tile++)
+        {
+            for (boolean chipped : new boolean[] { false, true })
+            {
+                var name = "_" + tile + (chipped ? "_chipped" : "");
+                var texture = new Material(Identifier.parse(TEXTURES + "mosaic/tile" + name));
+                var model = ModelTemplates.CUBE_ALL.createWithSuffix(mosaic, name, TextureMapping.cube(texture), generator.modelOutput);
+                dispatch.select(tile, chipped, plainVariant(model));
+                if (tile == MOSAIC_ICON && !chipped)
+                    icon = model;
+            }
+        }
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(mosaic).with(dispatch));
+        generator.registerSimpleItemModel(mosaic, icon);
+        cube(generator, VoidHeartBlocks.UNDERWAY_MOSAIC_BED, "mosaic_bed");
     }
 
     private static void cube(BlockModelGenerators generator, Block block, String texture)

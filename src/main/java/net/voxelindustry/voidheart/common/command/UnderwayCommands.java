@@ -25,6 +25,8 @@ import net.voxelindustry.voidheart.common.world.underway.UnderwayLevels;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayNetwork;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayNode;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayPlans;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayRuin;
+import net.voxelindustry.voidheart.common.world.underway.UnderwayTemple;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -40,6 +42,8 @@ import static net.minecraft.commands.Commands.literal;
 final class UnderwayCommands
 {
     private static final int SEARCH_RADIUS = 8;
+    /** Sealed forts are rare, so a temple in one may lie further off. */
+    private static final int TEMPLE_SEARCH_RADIUS = 24;
     private static final int KEY_REACH = 48;
     private static final DynamicCommandExceptionType UNKNOWN_KIND = new DynamicCommandExceptionType(name -> Component.literal("No kind of fort is called " + name));
 
@@ -70,7 +74,53 @@ final class UnderwayCommands
                         .then(literal("dark").executes(context -> section(context, "dark")))
                         .then(literal("alarm").executes(context -> section(context, "alarm")))
                         .then(literal("reset").executes(context -> section(context, "reset"))))
+                .then(literal("temple")
+                        .executes(context -> temple(context, null))
+                        .then(argument("ruin", StringArgumentType.word())
+                                .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(UnderwayRuin.values()).map(ruin -> ruin.name().toLowerCase(Locale.ROOT)), suggestions))
+                                .executes(context -> temple(context, StringArgumentType.getString(context, "ruin")))))
                 .then(literal("where").executes(UnderwayCommands::where)));
+    }
+
+    /** Sends the player into the doorway of the nearest temple, facing its mosaic, in a fort left in that state when one is named. */
+    private static int temple(CommandContext<CommandSourceStack> context, String ruin) throws CommandSyntaxException
+    {
+        var player = context.getSource().getPlayerOrException();
+        var level = VoidDaedalus.level(context.getSource().getServer());
+        long seed = level.getSeed();
+        var from = player.level().dimension() == VoidDaedalus.WORLD_KEY ? DistrictPos.at(player.getBlockX(), player.getBlockZ()) : new DistrictPos(0, 0);
+        for (int radius = 0; radius <= TEMPLE_SEARCH_RADIUS; radius++)
+        {
+            for (int z = -radius; z <= radius; z++)
+            {
+                for (int x = -radius; x <= radius; x++)
+                {
+                    var pos = new DistrictPos(from.x() + x, from.z() + z);
+                    if (Math.max(Math.abs(x), Math.abs(z)) != radius)
+                        continue;
+                    var fort = UnderwayPlans.fort(seed, pos);
+                    var temple = fort.temple();
+                    if (temple == null || ruin != null && !fort.ruin().name().equalsIgnoreCase(ruin))
+                        continue;
+                    var frame = fort.frame();
+                    int along = temple.along(UnderwayTemple.AISLE, 0);
+                    int across = temple.across(UnderwayTemple.AISLE, 0);
+                    var door = new Vec3(frame.x(along, across) + 0.5, temple.room().floorY() + 1, frame.z(along, across) + 0.5);
+                    float yaw = switch (frame.compass(temple.inAlong(), temple.inAcross()))
+                    {
+                        case Compass.NORTH -> 180;
+                        case Compass.EAST -> -90;
+                        case Compass.WEST -> 90;
+                        default -> 0;
+                    };
+                    TeleportUtil.teleport(player, level, door, yaw, 0);
+                    context.getSource().sendSuccess(() -> Component.literal("Temple of the ").append(describe(seed, pos)), false);
+                    return 1;
+                }
+            }
+        }
+        context.getSource().sendFailure(Component.literal("No such temple within " + TEMPLE_SEARCH_RADIUS + " districts"));
+        return 0;
     }
 
     private static UnderwayNode kind(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
