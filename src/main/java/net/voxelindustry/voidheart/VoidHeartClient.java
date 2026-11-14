@@ -218,6 +218,7 @@ public class VoidHeartClient implements ClientModInitializer
             OculusControls.clear();
             OculusMarkers.clear();
             OculusLeyLayer.clear();
+            CabinetHighlightRender.clear();
             TormenterHeads.clear();
             WallPassages.clearClient();
             AvengingReachRender.clear();

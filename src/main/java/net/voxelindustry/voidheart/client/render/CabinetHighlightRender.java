@@ -43,6 +43,13 @@ public final class CabinetHighlightRender
     {
     }
 
+    /** Lets go of the world it last scanned, on leaving it. */
+    public static void clear()
+    {
+        scannedLevel = null;
+        found.clear();
+    }
+
     public static void collectSubmits(LevelRenderContext context)
     {
         var minecraft = Minecraft.getInstance();

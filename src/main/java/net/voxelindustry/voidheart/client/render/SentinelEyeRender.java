@@ -117,6 +117,17 @@ public class SentinelEyeRender<T extends SentinelEye> extends EntityRenderer<T, 
     }
 
     /** @return a direction square to the gaze */
+    /** @return where a line of the extracted cone's side stops, from the lens */
+    public static Vec3 coneEnd(SentinelEyeRenderState state, int segment)
+    {
+        var side = side(state.gaze);
+        var up = side.cross(state.gaze);
+        float reach = state.coneReach[segment];
+        float angle = segment * Mth.TWO_PI / CONE_SEGMENTS;
+        float radius = state.coneLength * state.coneSpread * reach;
+        return state.gaze.scale(state.coneLength * reach).add(side.scale(Mth.cos(angle) * radius)).add(up.scale(Mth.sin(angle) * radius));
+    }
+
     private static Vec3 side(Vec3 gaze)
     {
         return Math.abs(gaze.y) > 0.99 ? new Vec3(1, 0, 0) : gaze.cross(new Vec3(0, 1, 0)).normalize();

@@ -11,6 +11,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.phys.AABB;
+import net.voxelindustry.voidheart.client.render.SentinelEyeRender;
+import net.voxelindustry.voidheart.client.render.state.SentinelEyeRenderState;
+import net.voxelindustry.voidheart.common.content.underway.security.SentinelEye;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayCanvas;
@@ -29,6 +33,10 @@ public class UnderwayDetailsClientTest implements FabricClientGameTest
     private static final int WALL_X = 5;
     private static final int SEARCH = 12;
     private static final int CHUNK_TIMEOUT_TICKS = 1200;
+    /** The wall in front of the eye runs this far to each side of its middle. */
+    private static final int WALL_HALF_SPAN = 10;
+    private static final double WALL_TOLERANCE = 0.02;
+    private static final int SWEEP_STEPS = 8;
     /** How far around the stairs it finds the test looks for others the flood reaches. */
     private static final int AROUND = 24;
 
@@ -42,21 +50,52 @@ public class UnderwayDetailsClientTest implements FabricClientGameTest
             server.runCommand("gamemode spectator @a");
             freezeTime(server, "midnight");
             server.runCommand("effect give @a minecraft:night_vision infinite 0 true");
+            // All tests share one client, so the camera goes back to what it was
+            var cameraWas = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
             boolean hudWasHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
             if (!hudWasHidden)
                 context.getInput().pressKey(InputConstants.KEY_F1);
-
-            cone(context, server);
-            cabinetHighlight(context, server);
-            floodedStairs(context, server);
-
-            server.runCommand("effect clear @a");
-            server.runCommand("gamemode creative @a");
-            server.runCommand("gamerule advance_time true");
-            if (!hudWasHidden)
-                context.getInput().pressKey(InputConstants.KEY_F1);
+            try
+            {
+                cone(context, server);
+                cabinetHighlight(context, server);
+                floodedStairs(context, server);
+            } finally
+            {
+                server.runCommand("effect clear @a");
+                server.runCommand("gamemode creative @a");
+                server.runCommand("gamerule advance_time true");
+                if (!hudWasHidden)
+                    context.getInput().pressKey(InputConstants.KEY_F1);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(cameraWas));
+            }
         }
+    }
+
+    /** Every line of the eye's cone stops at the wall or short of it, and some reach the wall rather than stopping at the lens. */
+    private static void expectConeStopsAtWall(ClientGameTestContext context)
+    {
+        context.runOnClient(minecraft ->
+        {
+            var eyes = minecraft.level.getEntitiesOfClass(SentinelEye.class, new AABB(-2, SCENE_Y - 2, -2, 3, SCENE_Y + 2, 3));
+            expect(eyes.size() == 1, "Expected one eye in the scene, found " + eyes.size());
+            var eye = eyes.getFirst();
+            @SuppressWarnings("unchecked")
+            var renderer = (SentinelEyeRender<SentinelEye>) minecraft.getEntityRenderDispatcher().getRenderer(eye);
+            var state = renderer.createRenderState();
+            renderer.extractRenderState(eye, state, 0);
+            int atWall = 0;
+            for (int segment = 0; segment < SentinelEyeRenderState.CONE_LINES; segment++)
+            {
+                var end = eye.position().add(state.lens).add(SentinelEyeRender.coneEnd(state, segment));
+                expect(end.x <= WALL_X + WALL_TOLERANCE || Math.abs(end.z) >= WALL_HALF_SPAN,
+                        "Line " + segment + " of the cone reaches past the wall, to " + end);
+                if (Math.abs(end.x - WALL_X) <= WALL_TOLERANCE && end.distanceTo(eye.position()) > 1)
+                    atWall++;
+            }
+            expect(atWall > 0, "No line of the cone reaches the wall in front of the eye");
+        });
     }
 
     /** An eye looking east at a wall: its cone shows on its own side and nothing of it shows on the far side. */
@@ -72,9 +111,18 @@ public class UnderwayDetailsClientTest implements FabricClientGameTest
         server.runCommand("tick freeze");
         context.waitTicks(5);
 
+        expectConeStopsAtWall(context);
+
         aimCamera(server, 2.5, y - 1, -6.5, 3.5, y, 0.5);
         context.waitTicks(20);
         context.takeScreenshot(TestScreenshotOptions.of("underway-cone-before-wall").withSize(1280, 720));
+        // Small steps close to the cone, so bands or gaps that come and go with the view show between frames
+        for (int step = 0; step < SWEEP_STEPS; step++)
+        {
+            aimCamera(server, 2.5 + step * 0.05, y - 1, -3.5 + step * 0.08, 3.5, y, 0.5);
+            context.waitTicks(3);
+            context.takeScreenshot("underway-cone-sweep-" + step);
+        }
         aimCamera(server, WALL_X + 9.5, y - 1, 0.5, WALL_X, y, 0.5);
         context.waitTicks(5);
         context.takeScreenshot(TestScreenshotOptions.of("underway-cone-past-wall").withSize(1280, 720));
