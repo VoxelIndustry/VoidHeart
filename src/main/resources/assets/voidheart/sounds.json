@@ -1412,5 +1412,260 @@
         "pitch": 0.5
       }
     ]
+  },
+  "entity.lesser_shoggoth.ambient": {
+    "subtitle": "subtitles.voidheart.entity.lesser_shoggoth.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.squish",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:block.sculk.spread",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.lesser_shoggoth.hurt": {
+    "subtitle": "subtitles.voidheart.entity.lesser_shoggoth.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.hurt",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.lesser_shoggoth.death": {
+    "subtitle": "subtitles.voidheart.entity.lesser_shoggoth.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.death",
+        "type": "event",
+        "pitch": 0.4
+      }
+    ]
+  },
+  "entity.lesser_shoggoth.step": {
+    "subtitle": "subtitles.voidheart.entity.lesser_shoggoth.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.squish_small",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.lesser_shoggoth.lash": {
+    "subtitle": "subtitles.voidheart.entity.lesser_shoggoth.lash",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.attack",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.lesser_shoggoth.split": {
+    "subtitle": "subtitles.voidheart.entity.lesser_shoggoth.split",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.jump",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:block.honey_block.break",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.ambient": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.ambient",
+        "type": "event",
+        "pitch": 0.4
+      },
+      {
+        "name": "minecraft:entity.warden.heartbeat",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.hurt": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.hurt",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.slime.hurt",
+        "type": "event",
+        "pitch": 0.4
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.death": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.death",
+        "type": "event",
+        "pitch": 0.4
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.step": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.step",
+    "sounds": [
+      {
+        "name": "minecraft:block.sculk.step",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.sweep": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.sweep",
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.attack.sweep",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.ravager.attack",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.grab": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.grab",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker_fangs.attack",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.spit": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.spit",
+    "sounds": [
+      {
+        "name": "minecraft:entity.llama.spit",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.bite": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.bite",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.attack",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.evoker_fangs.attack",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.vile_flesh_mass.feed": {
+    "subtitle": "subtitles.voidheart.entity.vile_flesh_mass.feed",
+    "sounds": [
+      {
+        "name": "minecraft:entity.generic.eat",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.slime.squish",
+        "type": "event",
+        "pitch": 0.4
+      }
+    ]
+  },
+  "entity.flesh_tentacle.warn": {
+    "subtitle": "subtitles.voidheart.entity.flesh_tentacle.warn",
+    "sounds": [
+      {
+        "name": "minecraft:block.sculk.spread",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.flesh_tentacle.erupt": {
+    "subtitle": "subtitles.voidheart.entity.flesh_tentacle.erupt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker_fangs.attack",
+        "type": "event",
+        "pitch": 0.6
+      },
+      {
+        "name": "minecraft:block.mud.break",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.flesh_tentacle.wrap": {
+    "subtitle": "subtitles.voidheart.entity.flesh_tentacle.wrap",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.squish",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.flesh_tentacle.hurt": {
+    "subtitle": "subtitles.voidheart.entity.flesh_tentacle.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.hurt_small",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "entity.flesh_tentacle.sever": {
+    "subtitle": "subtitles.voidheart.entity.flesh_tentacle.sever",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.death_small",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.bile_glob.splash": {
+    "subtitle": "subtitles.voidheart.entity.bile_glob.splash",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.squish",
+        "type": "event",
+        "pitch": 1.2
+      },
+      {
+        "name": "minecraft:block.lava.extinguish",
+        "type": "event",
+        "pitch": 1.5
+      }
+    ]
   }
 }

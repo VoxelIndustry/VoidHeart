@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "voidheart:block/vile_flesh_0"
+      },
+      {
+        "model": "voidheart:block/vile_flesh_1"
+      },
+      {
+        "model": "voidheart:block/vile_flesh_2"
+      },
+      {
+        "model": "voidheart:block/vile_flesh_3"
+      }
+    ]
+  }
+}

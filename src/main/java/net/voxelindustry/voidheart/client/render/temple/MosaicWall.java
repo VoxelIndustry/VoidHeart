@@ -6,6 +6,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayMosaicBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.world.underway.MosaicDoor;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayTemple;
 import org.jspecify.annotations.Nullable;
 
@@ -37,32 +38,10 @@ public final class MosaicWall
      */
     public static @Nullable MosaicWall find(BlockGetter level, BlockPos seen, Direction face)
     {
-        if (!face.getAxis().isHorizontal())
-            return null;
-        var right = face.getCounterClockWise();
-        BlockPos anchor = null;
         // The nearest tile still on the wall tells where the whole picture is
-        for (int ring = 0; ring < UnderwayTemple.COLUMNS && anchor == null; ring++)
-        {
-            for (int k = -ring; k <= ring && anchor == null; k++)
-            {
-                for (int j = -Math.min(ring, UnderwayTemple.ROWS); j <= Math.min(ring, UnderwayTemple.ROWS); j++)
-                {
-                    if (Math.max(Math.abs(k), Math.abs(j)) != ring)
-                        continue;
-                    var candidate = seen.relative(right, k).above(j);
-                    if (level.getBlockState(candidate).is(VoidHeartBlocks.UNDERWAY_MOSAIC))
-                    {
-                        anchor = candidate;
-                        break;
-                    }
-                }
-            }
-        }
-        if (anchor == null)
+        var origin = MosaicDoor.mosaicOrigin(level, seen, face);
+        if (origin == null)
             return null;
-        int tile = level.getBlockState(anchor).getValue(UnderwayMosaicBlock.TILE);
-        var origin = anchor.relative(right, -(tile % UnderwayTemple.COLUMNS)).above(tile / UnderwayTemple.COLUMNS);
         var wall = new MosaicWall(origin, face, new int[UnderwayMosaicBlock.TILES]);
         if (!wall.contains(seen, face) || !wall.refresh(level))
             return null;

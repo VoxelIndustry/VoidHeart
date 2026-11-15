@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.api.registry.LandPathTypeRegistry;
 import net.minecraft.world.level.pathfinder.PathType;
+import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleBlock;
 import net.voxelindustry.voidheart.common.content.salt.SaltWardBlock;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeletonHeadBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AlembicBlock;
@@ -159,6 +160,9 @@ public class VoidHeartBlocks
     public static Block VOIDSTONE_TILE_SMALL_CHISELED;
     public static Block ELDRITCH_VOIDSTONE;
     public static Block VOIDSTONE_WRITHING;
+    public static Block VILE_FLESH;
+    public static Block VILE_FLESH_BRUISED;
+    public static Block BLESSED_CRADLE;
     public static Block VOIDSTONE_WRITHING_BLOSSOM;
     public static Block VOIDSTONE_WRITHING_MAW;
     public static Block VOIDSTONE_PILLAR;
@@ -433,6 +437,21 @@ public class VoidHeartBlocks
                         .requiresCorrectToolForDrops()
                         .sound(SoundType.STONE)
                         .strength(1.5F, 6.0F), true);
+
+        BLESSED_CRADLE = registerBlock("blessed_cradle", BlessedCradleBlock::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.GOLD)
+                        .sound(SoundType.DEEPSLATE_BRICKS)
+                        .strength(-1.0F, 3600000.0F)
+                        .noLootTable()
+                        .noOcclusion(), true);
+        VILE_FLESH = registerBlock("vile_flesh", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.CRIMSON_NYLIUM)
+                        .sound(SoundType.SCULK)
+                        .strength(1.2F, 4.0F), true);
+        VILE_FLESH_BRUISED = registerBlock("vile_flesh_bruised", Block::new, BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.TERRACOTTA_PURPLE)
+                        .sound(SoundType.SCULK)
+                        .strength(1.2F, 4.0F), true);
 
         VOIDSTONE_WRITHING = registerBlock("voidstone_writhing", Block::new, BlockBehaviour.Properties.of()
                         .mapColor(MapColor.COLOR_BLACK)

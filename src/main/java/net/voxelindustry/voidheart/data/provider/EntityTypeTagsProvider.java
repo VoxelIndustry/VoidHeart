@@ -29,7 +29,8 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
     {
         builder(VoidHeartTags.MOBS)
                 .addTag(VoidHeartTags.MOBS_VOID_DUNGEON)
-                .addTag(VoidHeartTags.MOBS_DAEDALUS);
+                .addTag(VoidHeartTags.MOBS_DAEDALUS)
+                .addTag(VoidHeartTags.MOBS_SANCTUM);
 
         tag(VoidHeartTags.MOBS_VOID_DUNGEON,
                 VOID_SKELETON, VOID_GHOUL, WRAITH, WRAITH_SCARAB, WRAITH_BEAST,
@@ -38,6 +39,7 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
                 EYE_MAW, LARGE_EYE_MAW, ARCANE_EYE, TREANT);
         tag(VoidHeartTags.MOBS_DAEDALUS,
                 STALKING_WRAITH, FALLEN_BISHOP, MALIGNANT_BOULDER, LEGIONARY, CENTURION, KERNACIAN_DRAGOON);
+        tag(VoidHeartTags.MOBS_SANCTUM, LESSER_SHOGGOTH, VILE_FLESH_MASS);
 
         tag(VoidHeartTags.MOBS_FALLEN, FALLEN_NOVICE, FALLEN_ADEPT, FALLEN_ELDER, FALLEN_BISHOP);
         tag(VoidHeartTags.MOBS_WRAITHS, WRAITH, STALKING_WRAITH, WRAITH_SCARAB, WRAITH_BEAST);
@@ -49,7 +51,7 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
         tag(VoidHeartTags.MOBS_UNDEAD, VOID_SKELETON, VOID_GHOUL)
                 .addTag(VoidHeartTags.MOBS_WRAITHS)
                 .addTag(VoidHeartTags.MOBS_FALLEN);
-        tag(VoidHeartTags.MOBS_BOSSES, KERNACIAN_DRAGOON);
+        tag(VoidHeartTags.MOBS_BOSSES, KERNACIAN_DRAGOON, VILE_FLESH_MASS);
 
         builder(EntityTypeTags.UNDEAD)
                 .setReplace(false)

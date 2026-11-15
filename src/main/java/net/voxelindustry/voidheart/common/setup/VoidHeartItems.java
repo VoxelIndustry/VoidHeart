@@ -208,6 +208,8 @@ public class VoidHeartItems
         registerSpawnEgg("legionary", VoidHeartEntities.LEGIONARY);
         registerSpawnEgg("centurion", VoidHeartEntities.CENTURION);
         registerSpawnEgg("kernacian_dragoon", VoidHeartEntities.KERNACIAN_DRAGOON);
+        registerSpawnEgg("lesser_shoggoth", VoidHeartEntities.LESSER_SHOGGOTH);
+        registerSpawnEgg("vile_flesh_mass", VoidHeartEntities.VILE_FLESH_MASS);
         registerSpawnEgg("treant", VoidHeartEntities.TREANT);
     }
 

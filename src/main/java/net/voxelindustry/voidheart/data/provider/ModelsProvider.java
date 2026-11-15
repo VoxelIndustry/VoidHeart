@@ -12,6 +12,7 @@ import net.minecraft.client.data.models.blockstates.PropertyDispatch;
 import net.minecraft.client.data.models.model.ModelTemplate;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.client.data.models.model.ModelTemplates;
+import net.minecraft.client.renderer.block.dispatch.Variant;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.data.models.model.TextureSlot;
 import net.minecraft.client.resources.model.sprite.Material;
@@ -36,6 +37,7 @@ import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +46,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 public class ModelsProvider extends FabricModelProvider
 {
+    private static final int FLESH_DRAWINGS = 4;
+
     /**
      * Items whose model is hand-written in assets/voidheart/models/item.
      */
@@ -54,7 +58,7 @@ public class ModelsProvider extends FabricModelProvider
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
             "voidstone_writhing_blossom", "voidstone_writhing_maw", "void_key", "permeable_barrier_item", "knowledge_tablet", "knowledge_repository", "knowledge_column", "shoulder_eye", "permeable_barrier", "beam_focus",
             "ravenous_relay", "ravenous_storage", "ravenous_storage_matrix", "cogitant", "meat_proxy", "void_loom",
-            "athanor", "alembic", "crucible", "mending_altar", "dormant_treant"
+            "athanor", "alembic", "crucible", "mending_altar", "dormant_treant", "blessed_cradle"
     );
 
     /**
@@ -111,6 +115,8 @@ public class ModelsProvider extends FabricModelProvider
 
         registerArmillaryCore();
         generator.createTrivialCube(VoidHeartBlocks.VOIDSTONE_CHISELED);
+        fleshVariants(generator, VoidHeartBlocks.VILE_FLESH);
+        fleshVariants(generator, VoidHeartBlocks.VILE_FLESH_BRUISED);
         registerOculusTable(VoidHeartBlocks.OCULUS_TABLE);
         registerBeholder(VoidHeartBlocks.BEHOLDER);
 
@@ -153,6 +159,26 @@ public class ModelsProvider extends FabricModelProvider
             var textures = TextureMapping.column(TextureMapping.getBlockTexture(shelf), TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_POLISHED));
             generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(shelf, plainVariant(ModelTemplates.CUBE_COLUMN.create(shelf, textures, generator.modelOutput))));
         }
+    }
+
+    /**
+     * Flesh comes in several drawings picked at random, which share their folds so any two meet without a seam. None is turned, since a turned
+     * drawing would no longer meet its neighbours.
+     */
+    private static void fleshVariants(BlockModelGenerators generator, Block block)
+    {
+        var variants = new ArrayList<Variant>();
+        Identifier first = null;
+        for (int drawing = 0; drawing < FLESH_DRAWINGS; drawing++)
+        {
+            var textures = TextureMapping.cube(TextureMapping.getBlockTexture(block, "_" + drawing));
+            var model = ModelTemplates.CUBE_ALL.createWithSuffix(block, "_" + drawing, textures, generator.modelOutput);
+            if (first == null)
+                first = model;
+            variants.add(BlockModelGenerators.plainModel(model));
+        }
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(block, BlockModelGenerators.variants(variants.toArray(Variant[]::new))));
+        generator.registerSimpleItemModel(block, first);
     }
 
     /**

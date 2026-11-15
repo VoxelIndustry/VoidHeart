@@ -1,0 +1,284 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_lobe"
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        2,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_eye",
+          "uv": [
+            0,
+            0,
+            5,
+            3
+          ]
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        3,
+        2,
+        5
+      ],
+      "to": [
+        8,
+        3,
+        8
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_lobe"
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        3,
+        2,
+        4
+      ],
+      "to": [
+        8,
+        4,
+        5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_lobe"
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        3,
+        2,
+        8
+      ],
+      "to": [
+        8,
+        3,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_eye",
+          "uv": [
+            0,
+            4,
+            3,
+            6
+          ]
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        9,
+        2,
+        9
+      ],
+      "to": [
+        12,
+        3,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_lobe"
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        9,
+        2,
+        8
+      ],
+      "to": [
+        12,
+        4,
+        9
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_eye",
+          "uv": [
+            0,
+            8,
+            2,
+            10
+          ]
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        11,
+        2,
+        3
+      ],
+      "to": [
+        13,
+        3,
+        5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_lobe"
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        4,
+        2,
+        11
+      ],
+      "to": [
+        7,
+        4,
+        14
+      ]
+    }
+  ],
+  "textures": {
+    "flesh_eye": "voidheart:block/underway/flesh_eye",
+    "flesh_lobe": "voidheart:block/underway/flesh_lobe",
+    "particle": "voidheart:block/underway/flesh_lobe"
+  }
+}
