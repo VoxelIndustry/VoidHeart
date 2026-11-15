@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_tendril_root",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_tendril_root"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_tendril_root",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_tendril_root",
+      "y": 270
+    }
+  }
+}

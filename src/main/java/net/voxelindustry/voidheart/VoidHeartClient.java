@@ -28,6 +28,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallbac
 import net.voxelindustry.voidheart.client.apparatus.ApparatusWornRender;
 import net.voxelindustry.voidheart.client.apparatus.ClientApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHud;
+import net.voxelindustry.voidheart.client.render.temple.MosaicDoorHint;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
 import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
@@ -44,6 +45,7 @@ import net.voxelindustry.voidheart.client.render.ArmillaryRender;
 import net.voxelindustry.voidheart.client.render.ArmillaryRiftRender;
 import net.voxelindustry.voidheart.client.screen.ArmillaryScreen;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
+import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleTile;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
@@ -150,6 +152,7 @@ public class VoidHeartClient implements ClientModInitializer
         // A forge source pillar raises its item to the forge item height so the beam runs level
         BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<VoidPillarTile>(ctx, VoidPillarTile::getStack,
                 pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
+        BlockEntityRenderers.register(VoidHeartTiles.BLESSED_CRADLE, ctx -> new FloatingItemRender<BlessedCradleTile>(ctx, BlessedCradleTile::getContents, 0.85));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.ATHANOR, AthanorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PLACED_FLASKS, PlacedFlasksRender::new);
@@ -268,6 +271,7 @@ public class VoidHeartClient implements ClientModInitializer
 
         CurseDirector.register();
         WallPassageRender.register();
+        MosaicDoorHint.register();
         AvengingReachRender.register();
         KleinStarRender.register();
 

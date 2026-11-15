@@ -68,7 +68,9 @@ class MobModelGeometryTest
             new Model("void_skeleton", VoidSkeletonModel::createBodyLayer, "void_skeleton"),
             new Model("wraith", WraithModel::createBodyLayer, "wraith"),
             new Model("wraith_scarab", WraithScarabModel::createBodyLayer, "wraith_scarab"),
-            new Model("wraith_beast", WraithBeastModel::createBodyLayer, "wraith_beast"));
+            new Model("wraith_beast", WraithBeastModel::createBodyLayer, "wraith_beast"),
+            new Model("lesser_shoggoth", LesserShoggothModel::createBodyLayer, "lesser_shoggoth"),
+            new Model("vile_flesh_mass", VileFleshMassModel::createBodyLayer, "vile_flesh_mass"));
 
     // Openings drawn on purpose, where seeing the far side through a gap is the look: ragged edges, notched crests, a ribcage, open hoods and hems
     private static final Set<String> OPENINGS = Set.of(

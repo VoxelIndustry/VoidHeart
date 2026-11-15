@@ -5,6 +5,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleTile;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.athanor.AspectIntakeTile;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
@@ -57,6 +58,7 @@ public class VoidHeartTiles
     public static BlockEntityType<VoidHeartTile> VOID_HEART;
     public static BlockEntityType<ArmillaryTile> ARMILLARY;
     public static BlockEntityType<ArmillaryRiftTile> ARMILLARY_RIFT;
+    public static BlockEntityType<BlessedCradleTile> BLESSED_CRADLE;
     public static BlockEntityType<VoidDoorTile> VOID_DOOR;
 
     public static BlockEntityType<PermeableBarrierTile> PERMEABLE_BARRIER;
@@ -113,6 +115,9 @@ public class VoidHeartTiles
         registerTile(ARMILLARY_RIFT =
                         FabricBlockEntityTypeBuilder.create(ArmillaryRiftTile::new, VoidHeartBlocks.ARMILLARY_RIFT).build(),
                 "armillary_rift");
+        registerTile(BLESSED_CRADLE =
+                        FabricBlockEntityTypeBuilder.create(BlessedCradleTile::new, VoidHeartBlocks.BLESSED_CRADLE).build(),
+                "blessed_cradle");
 
         registerTile(VOID_ALTAR =
                         FabricBlockEntityTypeBuilder.create(VoidAltarTile::new, VoidHeartBlocks.VOID_ALTAR).build(),

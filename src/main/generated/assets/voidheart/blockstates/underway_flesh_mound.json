@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/underway_flesh_mound",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/underway_flesh_mound"
+    },
+    "facing=south": {
+      "model": "voidheart:block/underway_flesh_mound",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/underway_flesh_mound",
+      "y": 270
+    }
+  }
+}
