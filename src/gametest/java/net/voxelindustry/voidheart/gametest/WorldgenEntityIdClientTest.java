@@ -60,17 +60,24 @@ public class WorldgenEntityIdClientTest implements FabricClientGameTest
             }, "voidheart-worldgen-id-reader");
             reader.start();
 
-            for (int round = 0; round < ROUNDS && failure.get() == null; round++)
-                server.runOnServer(minecraft -> churn(minecraft.overworld()));
-            stop.set(true);
             try
             {
-                reader.join();
+                for (int round = 0; round < ROUNDS && failure.get() == null; round++)
+                    server.runOnServer(minecraft -> churn(minecraft.overworld()));
             }
-            catch (InterruptedException e)
+            finally
             {
-                Thread.currentThread().interrupt();
-                throw new AssertionError("Interrupted waiting for the id reader", e);
+                // Before the world closes, even when a round failed
+                stop.set(true);
+                try
+                {
+                    reader.join();
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError("Interrupted waiting for the id reader", e);
+                }
             }
             server.runCommand("forceload remove " + CHURN.getX() + " " + CHURN.getZ());
 
