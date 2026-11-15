@@ -170,7 +170,7 @@ public class VoidHeartClient implements ClientModInitializer
         ShoulderEyeEntity.hiddenFromLocalPick = eye ->
         {
             var player = Minecraft.getInstance().player;
-            return player != null && player.getId() == eye.getOwnerId() && !player.isShiftKeyDown();
+            return player != null && player.getId() == eye.getOwnerId();
         };
 
         MenuScreens.register(VoidHeartMenus.PERMEABLE_BARRIER, PermeableBarrierScreen::new);

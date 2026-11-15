@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.shouldereye;
 
+import eu.pb4.trinkets.api.TrinketsApi;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.core.particles.ParticleTypes;
@@ -8,59 +9,63 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Keeps every bound Shoulder Eye in the world next to its owner.
- * The eye itself is never saved: the owner carries its state, and a fresh eye is spawned whenever the owner joins, respawns or changes dimension.
+ * Keeps a Shoulder Eye in the world next to whoever wears one in its Trinkets slot.
+ * The eye itself is never saved: the wearer carries its state, kept even while the item is off so swapping it can't heal the eye,
+ * and a fresh eye is spawned whenever the wearer joins, respawns or changes dimension.
  */
 public class ShoulderEyes
 {
+    public static final String SLOT = "head/shoulder_eye";
+
     public static final AttachmentType<ShoulderEyeData> DATA = AttachmentRegistry.create(
+            Identifier.fromNamespaceAndPath(MODID, "shoulder_eye_state"),
+            builder -> builder.persistent(ShoulderEyeData.CODEC).copyOnDeath());
+
+    /**
+     * Left by the time eyes were bound by using the item. Read once to hand the item back to its slot.
+     */
+    private static final AttachmentType<ShoulderEyeData> LEGACY_BOUND = AttachmentRegistry.create(
             Identifier.fromNamespaceAndPath(MODID, "shoulder_eye"),
             builder -> builder.persistent(ShoulderEyeData.CODEC).copyOnDeath());
 
     private static final int AGGRESSOR_MEMORY_TICKS = 30 * 20;
+    // A player older than this who puts the eye on watches it fly in, rather than finding it perched as after joining
+    private static final int SETTLE_TICKS           = 20;
 
     private static final Map<UUID, ShoulderEyeEntity>  EYES        = new HashMap<>();
     private static final Map<UUID, Map<UUID, Long>>    AGGRESSORS  = new HashMap<>();
+    private static final Set<UUID>                     WEARING     = new HashSet<>();
 
     public static void register()
     {
-        // Touching the class is enough to register the attachment
+        // Touching the class is enough to register the attachments
     }
 
     public static boolean hasEye(Player player)
     {
-        return player.hasAttached(DATA);
-    }
-
-    public static void bind(ServerPlayer player)
-    {
-        player.setAttached(DATA, ShoulderEyeData.fresh());
-        var from = player.getEyePosition().add(player.getLookAngle().scale(1.5));
-        spawn(player, ShoulderEyeData.fresh(), from);
-    }
-
-    public static void unbind(ServerPlayer player)
-    {
-        player.removeAttached(DATA);
-        var eye = EYES.remove(player.getUUID());
-        if (eye != null && !eye.isRemoved())
-            eye.discard();
+        var attachment = TrinketsApi.getAttachment(player);
+        return attachment != null && attachment.isEquipped(stack -> stack.getItem() instanceof ShoulderEyeItem, true);
     }
 
     public static void tickServer(MinecraftServer server)
@@ -77,24 +82,32 @@ public class ShoulderEyes
 
     private static void tickPlayer(ServerPlayer player)
     {
-        var data = player.getAttached(DATA);
-        var eye = EYES.get(player.getUUID());
+        migrateLegacy(player);
 
-        if (data == null || player.isSpectator() || !player.isAlive())
+        // Grows back whether or not it is worn, so taking it off doesn't stall it
+        var data = player.getAttachedOrElse(DATA, ShoulderEyeData.fresh());
+        boolean regrown = false;
+        if (data.isRegenerating())
+        {
+            data = new ShoulderEyeData(ShoulderEyeEntity.MAX_HEALTH, data.regenTicks() - 1);
+            player.setAttached(DATA, data);
+            regrown = !data.isRegenerating();
+        }
+
+        boolean wearing = hasEye(player);
+        boolean justPutOn = wearing && WEARING.add(player.getUUID()) && player.tickCount > SETTLE_TICKS;
+        if (!wearing)
+            WEARING.remove(player.getUUID());
+
+        var eye = EYES.get(player.getUUID());
+        if (!wearing || player.isSpectator() || !player.isAlive())
         {
             if (eye != null && !eye.isRemoved() && !eye.isDeadOrDying())
                 eye.discard();
             return;
         }
-
         if (data.isRegenerating())
-        {
-            var remaining = data.regenTicks() - 1;
-            player.setAttached(DATA, new ShoulderEyeData(ShoulderEyeEntity.MAX_HEALTH, remaining));
-            if (remaining == 0)
-                spawn(player, player.getAttached(DATA), returningFrom(player));
             return;
-        }
 
         if (eye != null && !eye.isRemoved())
         {
@@ -102,7 +115,33 @@ public class ShoulderEyes
                 return;
             eye.discard();
         }
-        spawn(player, data, null);
+
+        player.setAttached(DATA, data);
+        Vec3 from = null;
+        if (regrown)
+            from = returningFrom(player);
+        else if (justPutOn)
+            from = player.getEyePosition().add(player.getLookAngle().scale(1.5));
+        spawn(player, data, from);
+    }
+
+    /**
+     * Hands back the eye of a player who bound it before it had a slot: into the slot if it is free, else into their inventory.
+     */
+    private static void migrateLegacy(ServerPlayer player)
+    {
+        var legacy = player.removeAttached(LEGACY_BOUND);
+        if (legacy == null)
+            return;
+
+        player.setAttached(DATA, legacy);
+        var stack = new ItemStack(VoidHeartItems.SHOULDER_EYE);
+        var attachment = TrinketsApi.getAttachment(player);
+        var inventory = attachment == null ? null : attachment.getInventory(SLOT);
+        if (inventory != null && inventory.getContainerSize() > 0 && inventory.getItem(0).isEmpty())
+            inventory.setItem(0, stack);
+        else
+            player.getInventory().placeItemBackInInventory(stack, Prediction.SERVER_ONLY);
     }
 
     /**
@@ -179,6 +218,7 @@ public class ShoulderEyes
 
     public static void onLeave(ServerPlayer player)
     {
+        WEARING.remove(player.getUUID());
         var eye = EYES.remove(player.getUUID());
         if (eye != null && !eye.isRemoved())
             eye.discard();
@@ -189,5 +229,6 @@ public class ShoulderEyes
     {
         EYES.clear();
         AGGRESSORS.clear();
+        WEARING.clear();
     }
 }

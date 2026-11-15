@@ -135,10 +135,14 @@ public class ShoulderEyeRender extends MobRenderer<ShoulderEyeEntity, ShoulderEy
     @Override
     public void submit(ShoulderEyeRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
-        poseStack.pushPose();
-        poseStack.translate(0, state.bob, 0);
-        super.submit(state, poseStack, collector, camera);
-        poseStack.popPose();
+        // Skipped outright when hidden: vanilla would draw a hidden body as a faint ghost whose depth writes erase water behind it
+        if (!state.hiddenToCamera)
+        {
+            poseStack.pushPose();
+            poseStack.translate(0, state.bob, 0);
+            super.submit(state, poseStack, collector, camera);
+            poseStack.popPose();
+        }
 
         if (state.beamFrom != null && state.beamTo != null)
         {

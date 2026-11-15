@@ -1,26 +1,23 @@
 package net.voxelindustry.voidheart.common.content.shouldereye;
 
+import eu.pb4.trinkets.api.callback.TrinketCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
-import net.minecraft.world.level.Level;
 
 import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Binds a Shoulder Eye to whoever uses it. Sneaking with an empty hand on the eye gives it back as this item.
+ * Worn in its own Trinkets slot of the head group, it calls a Shoulder Eye to its wearer. Using it puts it in that slot.
  */
-public class ShoulderEyeItem extends Item
+public class ShoulderEyeItem extends Item implements TrinketCallback
 {
     public ShoulderEyeItem(Properties properties)
     {
@@ -34,20 +31,8 @@ public class ShoulderEyeItem extends Item
     }
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand)
+    public boolean canEquipFromUse(ItemStack stack, LivingEntity entity)
     {
-        if (ShoulderEyes.hasEye(player))
-        {
-            if (!level.isClientSide())
-                player.sendOverlayMessage(Component.translatable(MODID + ".shoulder_eye.already_bound"));
-            return InteractionResult.FAIL;
-        }
-
-        if (player instanceof ServerPlayer serverPlayer)
-        {
-            ShoulderEyes.bind(serverPlayer);
-            player.getItemInHand(hand).consume(1, player);
-        }
-        return InteractionResult.SUCCESS;
+        return true;
     }
 }

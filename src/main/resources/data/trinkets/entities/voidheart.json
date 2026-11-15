@@ -1,4 +1,4 @@
 {
   "entities": ["player"],
-  "slots": ["chest/shielding_apparatus"]
+  "slots": ["chest/shielding_apparatus", "head/shoulder_eye"]
 }

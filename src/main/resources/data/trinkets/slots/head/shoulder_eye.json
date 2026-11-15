@@ -1,0 +1,5 @@
+{
+  "icon": "voidheart:container/slots/shoulder_eye",
+  "order": -256,
+  "validator_predicates": ["trinkets:default"]
+}
