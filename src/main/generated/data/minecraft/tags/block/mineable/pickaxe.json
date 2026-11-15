@@ -353,6 +353,11 @@
     "voidheart:contravoid_reactor_core",
     "voidheart:reactor_containment",
     "voidheart:reactor_intake",
-    "voidheart:deep_siphon"
+    "voidheart:deep_siphon",
+    "voidheart:heart_cradle",
+    "voidheart:ventricle_basin",
+    "voidheart:rubrum_veined_voidstone",
+    "voidheart:azurium_veined_voidstone",
+    "voidheart:ravenous_gold_valve"
   ]
 }

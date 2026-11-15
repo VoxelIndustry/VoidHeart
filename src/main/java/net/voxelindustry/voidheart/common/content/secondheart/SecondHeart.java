@@ -30,6 +30,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -210,8 +212,7 @@ public final class SecondHeart
         player.stopUsingItem();
         player.stopRiding();
         player.clearFire();
-        player.setDeltaMovement(Vec3.ZERO);
-        player.connection.send(new ClientboundSetEntityMotionPacket(player));
+        pin(player, player.position());
         forgetAsTarget(player);
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(), VoidHeartSounds.SECOND_HEART_DISSOLVE, SoundSource.PLAYERS, 1, 1);
     }
@@ -264,7 +265,10 @@ public final class SecondHeart
         if (phase == HeartRules.Phase.GRACE)
         {
             if (elapsed == HeartRules.BURST_TICK)
+            {
+                pin(player, sequence.anchor());
                 burst(player);
+            }
             return;
         }
 
@@ -277,10 +281,19 @@ public final class SecondHeart
 
     private static void hold(ServerPlayer player, Vec3 anchor)
     {
-        player.setDeltaMovement(Vec3.ZERO);
         player.fallDistance = 0;
-        if (player.position().distanceToSqr(anchor) > HOLD_SLACK * HOLD_SLACK)
-            player.teleportTo(anchor.x, anchor.y, anchor.z);
+        if (player.position().distanceToSqr(anchor) > HOLD_SLACK * HOLD_SLACK || player.getDeltaMovement().lengthSqr() > 1.0E-6)
+            pin(player, anchor);
+    }
+
+    /**
+     * Puts the player at a spot with no speed at all, on the client too: a plain teleport keeps the client's own speed, so a killing blow's
+     * knockback would carry the reformed body off its spot.
+     */
+    private static void pin(ServerPlayer player, Vec3 at)
+    {
+        player.setDeltaMovement(Vec3.ZERO);
+        player.connection.teleport(new PositionMoveRotation(at, Vec3.ZERO, 0, 0), Relative.ROTATION);
     }
 
     private static HeartSequence beginReform(ServerPlayer player, HeartSequence sequence)
@@ -292,8 +305,8 @@ public final class SecondHeart
         {
             sequence = sequence.movedTo(spot);
             player.setAttached(SEQUENCE, sequence);
-            player.teleportTo(spot.x, spot.y, spot.z);
         }
+        pin(player, spot);
         player.setHealth(player.getMaxHealth());
         player.clearFire();
         player.setAirSupply(player.getMaxAirSupply());

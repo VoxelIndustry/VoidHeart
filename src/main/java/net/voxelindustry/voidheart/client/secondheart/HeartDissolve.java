@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.secondheart.HeartRules;
 import net.voxelindustry.voidheart.common.content.secondheart.SecondHeart;
+import net.voxelindustry.voidheart.compat.iris.IrisCompat;
 import net.voxelindustry.voidheart.mixin.client.RenderSetupTexturesAccessor;
 import net.voxelindustry.voidheart.mixin.client.RenderTypeStateAccessor;
 import net.voxelindustry.voidheart.mixin.client.TextureBindingAccessor;
@@ -40,7 +41,8 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  * the wound and the body's place in the draw's own space, which no vertex carries, so each draw slot's texture matrix holds them, written as the
  * player is submitted and read when its layers draw later in the same frame. Glint and outline layers are left out while dissolving.
  * <p>
- * Per frame: the player's usual geometry through one more pipeline, and about three motes a tick per dissolving player.
+ * Per frame: the player's usual geometry through one more pipeline, and about three motes a tick per dissolving player. Under an Iris shader
+ * pack, which may not run that pipeline, the body is hidden through the dissolve and reform and only the motes show.
  */
 public final class HeartDissolve
 {
@@ -51,6 +53,8 @@ public final class HeartDissolve
     /** Matches {@code REACH} in the shader: blocks from the origin that count as the far end of the body. */
     private static final float REACH        = 2.0F;
     private static final int   SLOTS        = 8;
+    /** A collector slot that draws nothing of the body. */
+    static final int           HIDDEN       = -1;
 
     private static final int   MOTES_PER_TICK = 4;
     private static final int   MOTE_TRIES     = 24;
@@ -125,6 +129,9 @@ public final class HeartDissolve
         var dissolve = state.getData(DISSOLVE);
         if (dissolve == null)
             return collector;
+        // A shader pack may not run the dissolve's pipeline, so the body is left to its motes until the reform is done
+        if (IrisCompat.shaderPackInUse())
+            return new DissolvingCollector(collector, HIDDEN);
 
         int slot = nextSlot;
         nextSlot = (nextSlot + 1) % SLOTS;
@@ -146,6 +153,8 @@ public final class HeartDissolve
      */
     static @Nullable RenderType dissolveType(RenderType original, int slot)
     {
+        if (slot == HIDDEN)
+            return null;
         var texture = textureOf(original);
         if (texture == null)
             return null;

@@ -32,6 +32,9 @@ import net.voxelindustry.voidheart.client.apparatus.ApparatusWornRender;
 import net.voxelindustry.voidheart.client.apparatus.ClientApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHud;
 import net.voxelindustry.voidheart.client.secondheart.HeartBurstRender;
+import net.voxelindustry.voidheart.client.secondheart.HeartCradleRender;
+import net.voxelindustry.voidheart.client.secondheart.VentricleTearRender;
+import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleContent;
 import net.voxelindustry.voidheart.client.secondheart.HeartDissolve;
 import net.voxelindustry.voidheart.client.secondheart.HeartMoteParticle;
 import net.voxelindustry.voidheart.client.secondheart.SecondHeartHud;
@@ -210,6 +213,8 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(HeartDissolve::tickMotes);
         ClientTickEvents.END_CLIENT_TICK.register(HeartBurstRender::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(HeartBurstRender::collectSubmits);
+        BlockEntityRenderers.register(TwinVentricleContent.HEART_CRADLE_TILE, HeartCradleRender::new);
+        EntityRendererRegistry.register(TwinVentricleContent.VENTRICLE_TEAR, VentricleTearRender::new);
         MenuScreens.register(VoidHeartMenus.APPARATUS, ApparatusScreen::new);
         ShieldingApparatusItem.openFromSlot = holder -> ClientPlayNetworking.send(new ShieldPayloads.Open(holder));
         ClientTooltipComponentCallback.EVENT.register(data -> data instanceof ApparatusTooltip tooltip ? new ClientApparatusTooltip(tooltip) : null);

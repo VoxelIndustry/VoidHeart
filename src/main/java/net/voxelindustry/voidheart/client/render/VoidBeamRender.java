@@ -38,7 +38,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  */
 public class VoidBeamRender
 {
-    static final Identifier VEIL_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/void_veil.png");
+    public static final Identifier VEIL_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/void_veil.png");
 
     private static final int FULL_BRIGHT = 15728880;
 
@@ -443,7 +443,7 @@ public class VoidBeamRender
         return colors;
     }
 
-    static int aspectColor(EssenceType aspect)
+    public static int aspectColor(EssenceType aspect)
     {
         return switch (aspect.identifier().getPath())
         {
@@ -641,7 +641,7 @@ public class VoidBeamRender
     /**
      * Cross-section of a filament: two crossed bands around the curve, so it reads as round from every side.
      */
-    static float[][] crossedSection(Vec3 point, Vec3 tangent, float halfWidth, float alpha, float v)
+    public static float[][] crossedSection(Vec3 point, Vec3 tangent, float halfWidth, float alpha, float v)
     {
         var direction = tangent.normalize();
         var side = direction.cross(Math.abs(direction.y) > 0.99 ? new Vec3(1, 0, 0) : UP).normalize();
@@ -652,7 +652,7 @@ public class VoidBeamRender
         };
     }
 
-    static void crossedStrip(PoseStack.Pose pose, VertexConsumer buffer, int color, float[][] a, float[][] b)
+    public static void crossedStrip(PoseStack.Pose pose, VertexConsumer buffer, int color, float[][] a, float[][] b)
     {
         strip(pose, buffer, color, a[0], b[0]);
         strip(pose, buffer, color, a[1], b[1]);

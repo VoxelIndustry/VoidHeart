@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "S": "voidheart:azurium_shard",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    " V ",
+    "VSV",
+    " V "
+  ],
+  "result": {
+    "count": 4,
+    "id": "voidheart:azurium_veined_voidstone"
+  }
+}
