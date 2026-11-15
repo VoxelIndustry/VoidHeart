@@ -15,6 +15,7 @@
     "MixinPlayerGrafts",
     "MixinPlayerShieldingApparatus",
     "MixinPlayerWallPassage",
+    "MixinServerLevelWorldgenEntityId",
     "MixinServerPlayerGameModeColumns",
     "MixinStableLifecycle",
     "MixinThrownEnderpearlDungeon"
