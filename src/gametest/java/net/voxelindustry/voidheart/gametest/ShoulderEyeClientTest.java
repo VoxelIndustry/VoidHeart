@@ -41,12 +41,16 @@ public class ShoulderEyeClientTest implements FabricClientGameTest
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 10");
 
-            // Using the eye puts it in its own head slot, from which it is called
+            // Using the eye, through the use key like a player, puts it in its own head slot, from which it is called
+            server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.SHOULDER_EYE)));
+            context.waitFor(minecraft -> minecraft.player.getMainHandItem().is(VoidHeartItems.SHOULDER_EYE), 40);
+            context.getInput().pressKey(options -> options.keyUse);
+            // The client predicts the equip at once, so wait for the server to have handled the use
+            for (int i = 0; i < 20 && !server.computeOnServer(minecraft -> worn(minecraft).is(VoidHeartItems.SHOULDER_EYE)); i++)
+                context.waitTick();
             server.runOnServer(minecraft ->
             {
                 var player = player(minecraft);
-                player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.SHOULDER_EYE));
-                player.getMainHandItem().use(minecraft.overworld(), player, InteractionHand.MAIN_HAND);
                 if (!player.getMainHandItem().isEmpty() || !worn(minecraft).is(VoidHeartItems.SHOULDER_EYE))
                     throw new AssertionError("Expected using the eye to put it in its slot, hand holds " + player.getMainHandItem() + ", slot " + worn(minecraft));
             });
