@@ -115,6 +115,11 @@ import net.voxelindustry.voidheart.client.render.RavenousStorageRender;
 import net.voxelindustry.voidheart.client.render.RavenousStorageMatrixRender;
 import net.voxelindustry.voidheart.client.render.RelayLinkPreviewRender;
 import net.voxelindustry.voidheart.client.render.CabinetHighlightRender;
+import net.voxelindustry.voidheart.client.render.temple.MosaicStare;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.voxelindustry.voidheart.client.render.temple.MosaicWakeRender;
 import net.voxelindustry.voidheart.client.render.KnowledgeColumnOutline;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterRender;
 import net.minecraft.client.renderer.special.SpecialModelRenderers;
@@ -199,6 +204,10 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(RelayLinkPreviewRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(CabinetHighlightRender::collectSubmits);
+        ClientTickEvents.END_CLIENT_TICK.register(MosaicStare::tick);
+        LevelRenderEvents.COLLECT_SUBMITS.register(MosaicWakeRender::collectSubmits);
+        ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "temple_mosaic"),
+                (ResourceManagerReloadListener) resources -> MosaicStare.reloaded());
         LevelRenderEvents.AFTER_BLOCK_OUTLINE_EXTRACTION.register(KnowledgeColumnOutline::afterExtraction);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE, RavenousStorageRender::new);
@@ -232,6 +241,7 @@ public class VoidHeartClient implements ClientModInitializer
             OculusMarkers.clear();
             OculusLeyLayer.clear();
             CabinetHighlightRender.clear();
+            MosaicStare.clear();
             TormenterHeads.clear();
             WallPassages.clearClient();
             AvengingReachRender.clear();

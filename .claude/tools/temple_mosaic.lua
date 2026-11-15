@@ -3,7 +3,10 @@
 --
 -- The picture, on a ground of voidstone run through with writhing veins: across the top the flesh that hungers, eyes open all over it, its mouth a gullet of crooked teeth with an eye far down it, its tendrils hanging and its tongue coiled round a ripe world cracked with void light, its trees grown down. On the left the angel as the old texts saw it: wheels within wheels covered in eyes round one great eye, six wings feathered with small bodies and tipped with eyes, its brood dripping from it. On the right, in a niche of its own, a veiled figure without a face under a violet halo. Small faithful kneel along the foot, and ley glyphs run round the edge.
 -- It is drawn as a scene of regions, then laid in tesserae: cells about three pixels across that never straddle two regions, each one colour, with a darker joint on their right and lower sides.
+--
+-- With --script-param "wake=<assets/voidheart folder>" it also writes what the mosaic needs to wake when stared at: textures/misc/temple_mosaic.png, the whole picture over the chipped one with a white patch for plain colours; mosaic/temple_mosaic_map.png, each pixel's tessera, region and figure; and mosaic/temple_mosaic.json, its eyes, tendrils and the rest it moves.
 local out = app.params["out"]
+local wake = app.params["wake"]
 local pc = app.pixelColor
 local W, H, TILE = 240, 128, 16
 local PITCH = 3
@@ -47,13 +50,19 @@ local TEAL_DIM = { 39, 125, 99 }
 local BED_TONE = { 120, 110, 98 }
 local DARK_LINE = { 22, 8, 14 }
 
-local R, G, B, REG = {}, {}, {}, {}
+-- Figures, which the waking moves as one, and which part of one, such as which tendril. Whatever paints last over a pixel owns it.
+local NOBODY, FLESH_BODY, TENDRIL_BODY, ANGEL_BODY, WHEEL_BODY, VEILED_BODY, WORLD_BODY, FAITHFUL_BODY, BORDER_BODY, ALTAR_BODY = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+local body, part = NOBODY, 0
+-- What the waking needs to know besides the pixels, in the order drawn
+local EYES, SHUT, TENDRILS, WHEELS, HEADS = {}, {}, {}, {}, {}
+
+local R, G, B, REG, FIGURE, FIGURE_PART = {}, {}, {}, {}, {}, {}
 local function at(x, y) return y * W + x + 1 end
 local function paint(x, y, c, region)
   x, y = math.floor(x + 0.5), math.floor(y + 0.5)
   if x < 0 or y < 0 or x >= W or y >= H then return end
   local i = at(x, y)
-  R[i], G[i], B[i], REG[i] = c[1], c[2], c[3], region
+  R[i], G[i], B[i], REG[i], FIGURE[i], FIGURE_PART[i] = c[1], c[2], c[3], region, body, part
 end
 local function regionAt(x, y)
   if x < 0 or y < 0 or x >= W or y >= H then return 0 end
@@ -63,6 +72,7 @@ local function colourAt(x, y) local i = at(x, y); return { R[i], G[i], B[i] } en
 
 -- An almond eye: dark rim, sclera, an iris and a slit
 local function eye(cx, cy, rx, ry, iris, irisDark, rim)
+  EYES[#EYES + 1] = { cx, cy, rx, ry, iris, irisDark, rim, body, part }
   for y = math.floor(cy - ry - 1), math.ceil(cy + ry + 1) do
     for x = math.floor(cx - rx - 1), math.ceil(cx + rx + 1) do
       local e = ((x - cx) / rx) ^ 2 + ((y - cy) / ry) ^ 2
@@ -109,6 +119,7 @@ end
 
 -- A ritual circle in ley glyphs behind the ripe world
 local WX, WY, WR = 120, 84, 9
+body, part = WORLD_BODY, 0
 for a = 0, 359, 2 do
   local r = math.rad(a)
   paint(WX + 16 * math.cos(r), WY + 16 * math.sin(r), a % 30 < 4 and TEAL or TEAL_DIM, GLYPH)
@@ -117,6 +128,7 @@ end
 
 -- The flesh across the top, deepest in the middle, ragged at its edge, folded, lit on its upper reaches
 local MOUTH_X, MOUTH_Y, MOUTH_W, MOUTH_H = 120, 23, 38, 11
+body, part = FLESH_BODY, 0
 local function fleshEdge(x)
   local dx = (x - 120) / 112
   if math.abs(dx) >= 1 then return 5 end
@@ -141,12 +153,16 @@ end
 
 -- Tendrils hanging from it, swaying, thinning to hooks
 local function tendril(x0, length, sway, phase, width)
+  body, part = TENDRIL_BODY, #TENDRILS
+  local path = {}
+  TENDRILS[#TENDRILS + 1] = path
   local top = math.floor(fleshEdge(x0)) - 1
   local last = { x0, top }
   for s = 0, length do
     local y = top + s
     local x = x0 + sway * math.sin(s * 0.22 + phase) + (s > length - 4 and (s - length + 4) * (sway > 0 and 1 or -1) or 0)
     local w = math.max(1, math.floor(width * (1 - s / length) + 0.7))
+    path[#path + 1] = { math.floor(x + 0.5), y, w }
     for dx = -w, w do
       local c = (dx == -w or dx == w) and DARK_LINE or (dx < 0 and FLESH_LIT[2] or FLESH_TONES[3])
       paint(x + dx, y, c, TENDRIL)
@@ -160,12 +176,14 @@ tendril(42, 12, -2, 1.3, 1)
 tendril(158, 16, 3, 2.1, 2)
 tendril(196, 30, -4, 0.2, 2)
 tendril(216, 18, 3, 1.0, 1)
+body, part = FLESH_BODY, 0
 
 -- Eyes opened all over the flesh, and a few shut
 for _, e in ipairs({ { 36, 13, 3.4, 2 }, { 66, 26, 2.4, 1.5 }, { 88, 10, 2, 1.2 }, { 160, 9, 2.2, 1.4 }, { 176, 27, 2.6, 1.6 }, { 205, 14, 3.4, 2 }, { 18, 9, 1.8, 1.1 } }) do
   eye(e[1], e[2], e[3], e[4], MAW_IRIS, MAW_IRIS_DARK, { 30, 8, 12 })
 end
 for _, e in ipairs({ { 52, 18 }, { 190, 20 }, { 146, 6 } }) do
+  SHUT[#SHUT + 1] = e
   for dx = -3, 3 do paint(e[1] + dx, e[2] + math.floor(math.abs(dx) / 2), DARK_LINE, OUTLINE) end
   for dx = -2, 2, 2 do paint(e[1] + dx, e[2] + 2, BONE_SHADE, OUTLINE) end
 end
@@ -208,6 +226,7 @@ end
 eye(MOUTH_X, MOUTH_Y, 6.5, 3.6, MAW_IRIS, MAW_IRIS_DARK, { 120, 30, 30 })
 
 -- The ripe world: a dark sphere ringed in tarnished gold, cracked through with void light, its trees grown down from its underside
+body, part = WORLD_BODY, 0
 for y = WY - WR - 2, WY + WR + 2 do
   for x = WX - WR - 2, WX + WR + 2 do
     local d = math.sqrt((x - WX) ^ 2 + (y - WY) ^ 2)
@@ -252,6 +271,7 @@ for a = -90, -320, -2 do
 end
 
 -- The altar under it, as in the temple itself
+body, part = ALTAR_BODY, 0
 for y = 109, 122 do
   for x = 110, 130 do
     local c = { 44, 38, 48 }
@@ -264,7 +284,9 @@ for y = 120, 122 do paint(118, y, { 90, 20, 26 }, OUTLINE) paint(123, y + 1, { 9
 
 -- The angel as the old texts saw it, in its niche
 local AX, AY = 62, 74
+body, part = NOBODY, 0
 niche(AX)
+body, part = ANGEL_BODY, 0
 -- Six wings: one pair up, one spread, one down over where its feet would be. Each wing is a fan of feathers, each feather rows of small bodies with an eye at its tip
 local WINGS = { { 72, 30 }, { 18, 36 }, { -42, 28 } }
 local FAN = { -13, 0, 13 }
@@ -315,6 +337,7 @@ for _, feather in ipairs(feathers) do
   eye(feather[1] + feather[3] * (feather[5] - 3), feather[2] + feather[4] * (feather[5] - 3), 2.2, 1.6, { 150, 30, 30 }, { 90, 16, 18 }, { 30, 14, 18 })
 end
 -- Its brood, dripping from the lower wings towards the faithful
+body, part = ANGEL_BODY, 1
 for i = 0, 26 do
   local x = AX - 26 + math.floor(hash(i, 0, 64) * 52)
   local y = 96 + math.floor(hash(i, 1, 64) ^ 0.6 * 14)
@@ -322,6 +345,8 @@ for i = 0, 26 do
 end
 -- Wheels within wheels, gold gone dark, set with eyes all round
 local function ring(rx, ry, tilt, eyes)
+  body, part = WHEEL_BODY, #WHEELS
+  WHEELS[#WHEELS + 1] = { rx, ry, tilt, eyes }
   local cosT, sinT = math.cos(math.rad(tilt)), math.sin(math.rad(tilt))
   for a = 0, 359, 1 do
     local r = math.rad(a)
@@ -341,10 +366,12 @@ ring(21, 7, 24, 10)
 ring(21, 7, -24, 10)
 ring(7, 19, 0, 8)
 -- The one great eye at the hub, pale gold, slit
+body, part = WHEEL_BODY, #WHEELS
 eye(AX, AY, 6, 4, { 210, 176, 84 }, { 150, 112, 48 }, { 30, 8, 12 })
 
 -- The veiled one: tall, without a face, hands hidden, a violet halo behind its hood
 local SX, HEAD_Y = 178, 64
+body, part = NOBODY, 0
 niche(SX)
 for y = 44, 80 do
   for x = SX - 20, SX + 20 do
@@ -352,6 +379,7 @@ for y = 44, 80 do
     if d > 9 and d < 18 and regionAt(x, y) == VOID then paint(x, y, mix({ 52, 26, 78 }, colourAt(x, y), (d - 9) / 9), VOID) end
   end
 end
+body, part = VEILED_BODY, 0
 for a = 0, 359, 1 do
   local r = math.rad(a)
   local hx, hy = SX + 12.5 * math.cos(r), HEAD_Y - 3 + 12.5 * math.sin(r)
@@ -360,6 +388,7 @@ for a = 0, 359, 1 do
   if a % 3 == 0 then paint(SX + 11.5 * math.cos(r), HEAD_Y - 3 + 11.5 * math.sin(r), VIOLET_PALE, HALO) end
 end
 -- The niche behind it glows faintly, so the veil stands out of the dark
+body, part = NOBODY, 0
 for y = 48, 112 do
   for x = SX - NICHE_R + 1, SX + NICHE_R - 1 do
     if inNiche(x, y, SX) and (regionAt(x, y) == VOID or regionAt(x, y) == VEIN) then
@@ -367,6 +396,7 @@ for y = 48, 112 do
     end
   end
 end
+body, part = VEILED_BODY, 1
 local ROBE = { 44, 30, 60 }
 local ROBE_FOLD = { 26, 16, 38 }
 local ROBE_LIT = { 80, 48, 116 }
@@ -408,6 +438,7 @@ for y = SHOULDERS + 15, SHOULDERS + 19 do
   for x = SX - 2, SX + 2 do paint(x, y, (y == SHOULDERS + 15) and { 70, 44, 100 } or { 20, 12, 28 }, VEIL) end
 end
 -- Under the hood, nothing: black, with the hood's lip lit round it
+body, part = VEILED_BODY, 2
 for y = HEAD_Y - 6, HEAD_Y + 6 do
   for x = SX - 6, SX + 6 do
     local e = ((x - SX) / 4.2) ^ 2 + ((y - (HEAD_Y + 0.5)) / 5) ^ 2
@@ -416,6 +447,7 @@ for y = HEAD_Y - 6, HEAD_Y + 6 do
   end
 end
 -- Violet glyphs along its hem, and shadow spreading from under it
+body, part = VEILED_BODY, 1
 local GLYPH_ROW = 104
 for x = math.ceil(SX - veilHalf(GLYPH_ROW) + 2), math.floor(SX + veilHalf(GLYPH_ROW) - 2) do
   if (x - SX) % 4 ~= 0 and hash(x, 0, 65) < 0.75 then paint(x, GLYPH_ROW + ((x - SX) % 4 == 2 and 1 or 0), (x % 3 == 0) and VIOLET or VIOLET_DARK, OUTLINE) end
@@ -428,6 +460,9 @@ end
 local KNEELER = { "..##...", ".####..", ".####..", "..###..", ".#####h", "######.", "######.", "#######", "#######" }
 local ROBES = { { 76, 44, 32 }, { 36, 54, 48 }, { 64, 26, 36 } }
 local function kneel(fx, facing, robe)
+  body, part = FAITHFUL_BODY, #HEADS
+  -- The middle of the head, the second and third columns of its first two rows
+  HEADS[#HEADS + 1] = { facing > 0 and fx + 2.5 or fx + #KNEELER[1] - 3.5, 112.5, facing }
   for row, line in ipairs(KNEELER) do
     for col = 1, #line do
       local ch = line:sub(col, col)
@@ -443,6 +478,7 @@ for fx = 9, 96, 10 do kneel(fx, 1, ROBES[1 + n % 3]) n = n + 1 end
 for fx = 137, 226, 10 do kneel(fx, -1, ROBES[1 + n % 3]) n = n + 1 end
 
 -- The border: dark stone between a black edge and a line of tarnished gold, with ley glyphs cut in it, a few of them still bright
+body, part = BORDER_BODY, 0
 for y = 0, H - 1 do
   for x = 0, W - 1 do
     local ring = math.min(x, y, W - 1 - x, H - 1 - y)
@@ -511,6 +547,8 @@ local function cellColour(id, i)
   return shade(c, (hash(p[1], p[2], 56) - 0.5) * amp)
 end
 
+-- Which pixels are grout between tesserae, and which a chipped tile shows as bare bed
+local JOINT, BARE = {}, {}
 local function render(chipped)
   local img = Image(W, H, ColorMode.RGB)
   for y = 0, H - 1 do
@@ -531,7 +569,10 @@ local function render(chipped)
           c = shade(BED_TONE, (hash(x, y, 61) - 0.5) * 8)
           fine = false
           joint = joint or (x % 3 == 2) or (y % 3 == 2)
+          BARE[i] = true
         end
+      else
+        JOINT[i] = joint and not fine
       end
       if joint and not fine then c = scale(c, GROUT) end
       img:drawPixel(x, y, pc.rgba(clamp(c[1]), clamp(c[2]), clamp(c[3]), 255))
@@ -554,4 +595,71 @@ for row = 0, H // TILE - 1 do
       tile:saveAs(out .. "/mosaic/tile_" .. n .. version[2] .. ".png")
     end
   end
+end
+
+if wake then
+  -- The whole picture over the chipped one, and a white patch right of them that plain colours are drawn with
+  local texture = Image(256, 256, ColorMode.RGB)
+  texture:drawImage(whole, Point(0, 0))
+  texture:drawImage(chipped, Point(0, H))
+  for y = 0, 15 do for x = W, W + 15 do texture:drawPixel(x, y, pc.rgba(255, 255, 255, 255)) end end
+  app.fs.makeAllDirectories(wake .. "/textures/misc")
+  texture:saveAs(wake .. "/textures/misc/temple_mosaic.png")
+
+  -- Over the picture's height, each pixel's tessera in red and green, all ones for a pixel that is a tessera of its own, and its region in blue,
+  -- plus 64 when it is grout and 128 when a chipped tile shows bare bed there. Under it, its figure in red and which part of it in green.
+  local map = Image(W, H * 2, ColorMode.RGB)
+  for y = 0, H - 1 do
+    for x = 0, W - 1 do
+      local i = at(x, y)
+      local id = cell[i] >= 0 and cell[i] or 0xFFFF
+      map:drawPixel(x, y, pc.rgba(id >> 8, id & 0xFF, REG[i] + (JOINT[i] and 64 or 0) + (BARE[i] and 128 or 0), 255))
+      map:drawPixel(x, y + H, pc.rgba(FIGURE[i], FIGURE_PART[i], 0, 255))
+    end
+  end
+  app.fs.makeAllDirectories(wake .. "/mosaic")
+  map:saveAs(wake .. "/mosaic/temple_mosaic_map.png")
+
+  local function num(v) local text = string.format("%.3f", v):gsub("0+$", ""):gsub("%.$", ""); return text end
+  local function rgb(c) return "[" .. clamp(c[1]) .. ", " .. clamp(c[2]) .. ", " .. clamp(c[3]) .. "]" end
+  local lines = {}
+  local function list(name, items, last)
+    lines[#lines + 1] = '  "' .. name .. '": [\n    ' .. table.concat(items, ",\n    ") .. "\n  ]" .. (last and "" or ",")
+  end
+  local eyes = {}
+  for _, e in ipairs(EYES) do
+    eyes[#eyes + 1] = string.format('{ "x": %s, "y": %s, "rx": %s, "ry": %s, "iris": %s, "irisDark": %s, "rim": %s, "body": %d, "part": %d }',
+      num(e[1]), num(e[2]), num(e[3]), num(e[4]), rgb(e[5]), rgb(e[6]), rgb(e[7]), e[8], e[9])
+  end
+  local shut = {}
+  for _, e in ipairs(SHUT) do shut[#shut + 1] = string.format('{ "x": %d, "y": %d }', e[1], e[2]) end
+  local tendrils = {}
+  for _, path in ipairs(TENDRILS) do
+    local points = {}
+    for _, p in ipairs(path) do points[#points + 1] = "[" .. p[1] .. ", " .. p[2] .. ", " .. p[3] .. "]" end
+    tendrils[#tendrils + 1] = "[" .. table.concat(points, ", ") .. "]"
+  end
+  local wheels = {}
+  for _, w in ipairs(WHEELS) do wheels[#wheels + 1] = string.format('{ "rx": %s, "ry": %s, "tilt": %s, "eyes": %d }', num(w[1]), num(w[2]), num(w[3]), w[4]) end
+  local heads = {}
+  for _, h in ipairs(HEADS) do heads[#heads + 1] = string.format('{ "x": %s, "y": %s, "facing": %d }', num(h[1]), num(h[2]), h[3]) end
+  local edge = {}
+  for x = 0, W - 1 do edge[#edge + 1] = num(fleshEdge(x)) end
+
+  lines[#lines + 1] = "{"
+  lines[#lines + 1] = string.format('  "width": %d, "height": %d,', W, H)
+  lines[#lines + 1] = string.format('  "mouth": { "x": %d, "y": %d, "w": %d, "h": %d },', MOUTH_X, MOUTH_Y, MOUTH_W, MOUTH_H)
+  lines[#lines + 1] = string.format('  "world": { "x": %d, "y": %d, "r": %d },', WX, WY, WR)
+  lines[#lines + 1] = string.format('  "hub": { "x": %d, "y": %d },', AX, AY)
+  lines[#lines + 1] = string.format('  "veiled": { "x": %d, "head": %d },', SX, HEAD_Y)
+  lines[#lines + 1] = '  "fleshEdge": [' .. table.concat(edge, ", ") .. "],"
+  list("eyes", eyes)
+  list("shut", shut)
+  list("tendrils", tendrils)
+  list("wheels", wheels)
+  list("heads", heads, true)
+  lines[#lines + 1] = "}"
+  local file = io.open(wake .. "/mosaic/temple_mosaic.json", "w")
+  file:write(table.concat(lines, "\n") .. "\n")
+  file:close()
 end
