@@ -17,6 +17,7 @@ public final class MosaicTendrils
     /** It stops a block and a half short of the player's eyes, and never grows past this, in pixels. */
     static final float STOP_SHORT = 24F;
     static final float MAX_REACH = 88F;
+    /** With less room than this before its clearance, a tendril only partly comes away from the wall. */
     static final float MIN_REACH = 8F;
     /** The shortest tendril reaches this share of the longest. */
     static final float MIN_REACH_SHARE = 0.6F;
@@ -58,7 +59,9 @@ public final class MosaicTendrils
         double toH = playerH - rootLift;
         double distance = Math.max(1E-3, Math.sqrt(toU * toU + toV * toV + toH * toH));
         double dirU = toU / distance, dirV = toV / distance, dirH = toH / distance;
-        double reachTo = Mth.clamp(distance - STOP_SHORT, MIN_REACH, MAX_REACH * share);
+        // With the player close to it, a tendril has only the room left before its clearance, and with less than a little room it stays on the wall
+        double reachTo = Mth.clamp(distance - STOP_SHORT, 0, MAX_REACH * share);
+        own *= (float) Math.min(1, reachTo / MIN_REACH);
         // Out of the wall and down a little first, then sagging into the last stretch toward the player
         double[] a = {rootU, rootV, rootLift};
         double[] b = {rootU, rootV + 0.25 * reachTo, rootLift + 0.5 * reachTo};

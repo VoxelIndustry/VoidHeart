@@ -33,6 +33,10 @@ public class TempleMosaicWakeClientTest implements FabricClientGameTest
     /** The columns of the picture the angel's wheels and the veiled one's head are in. */
     private static final int ANGEL_COLUMN = 3;
     private static final int VEILED_COLUMN = 11;
+    /** The frozen sweep's steps, and how far each moves across the temple and in toward the mosaic, in blocks. */
+    private static final int SWEEP_STEPS = 8;
+    private static final double SWEEP_ACROSS = 0.05;
+    private static final double SWEEP_INWARD = 0.08;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -58,6 +62,8 @@ public class TempleMosaicWakeClientTest implements FabricClientGameTest
                 look(context, world, fort, left, 3, middle);
                 world.getConnection().waitForChunksRender(false, CHUNK_TIMEOUT_TICKS);
                 context.waitTicks(3);
+                expect(!context.computeOnClient(minecraft -> MosaicStare.wake().noticed()),
+                        "The mosaic noticed the player while chunks rendered, so its rest frame would show it awake: stare " + context.computeOnClient(minecraft -> MosaicStare.wake().stareTicks()));
                 shot(context, "rest");
                 expect(context.computeOnClient(minecraft -> MosaicStare.staring() && MosaicStare.wall() != null),
                         "Looking at the mosaic from the aisle did not count as staring at it: " + context.computeOnClient(TempleMosaicWakeClientTest::seen));
@@ -89,6 +95,7 @@ public class TempleMosaicWakeClientTest implements FabricClientGameTest
                 // It was heard, and it draws the view in
                 expectClient(context, "The mosaic made no sound while it woke", minecraft -> MosaicStare.sounds().played() >= 3);
                 float narrowed = context.computeOnClient(minecraft -> minecraft.player.getFieldOfViewModifier(true, 1));
+                sweep(context, world, fort);
                 lookAt(context, world, fort, angel, 5, ANGEL_COLUMN, middle);
                 shot(context, "reached-angel");
                 lookAt(context, world, fort, veiled, 5, VEILED_COLUMN, middle);
@@ -179,6 +186,38 @@ public class TempleMosaicWakeClientTest implements FabricClientGameTest
                 return w;
         }
         throw new AssertionError("No column " + column + " in the temple's mosaic");
+    }
+
+    /**
+     * With the world frozen at full reach, so nothing moves but the camera, steps the camera a little at a time close to where the flesh, a tendril and the
+     * wheels meet, for any flicker between the layers to show across the frames.
+     */
+    private static void sweep(ClientGameTestContext context, TestSingleplayerContext world, UnderwayFort fort)
+    {
+        var server = world.getServer();
+        var temple = fort.temple();
+        int floor = temple.room().floorY();
+        var from = blockAt(fort, columnAt(fort, ANGEL_COLUMN + 2), floor + 2, UnderwayTemple.DEPTH - 3);
+        var to = blockAt(fort, columnAt(fort, ANGEL_COLUMN + 1), temple.rowY(2), UnderwayTemple.DEPTH);
+        // Steps across the wall and toward it, in the temple's own directions whichever way the fort was turned
+        var across = blockAt(fort, columnAt(fort, ANGEL_COLUMN + 3), floor + 2, UnderwayTemple.DEPTH - 3).subtract(from);
+        var inward = blockAt(fort, columnAt(fort, ANGEL_COLUMN + 2), floor + 2, UnderwayTemple.DEPTH - 2).subtract(from);
+        server.runCommand("tick freeze");
+        try
+        {
+            context.waitTicks(2);
+            for (int step = 0; step < SWEEP_STEPS; step++)
+            {
+                double x = from.getX() + 0.5 + across.getX() * step * SWEEP_ACROSS + inward.getX() * step * SWEEP_INWARD;
+                double z = from.getZ() + 0.5 + across.getZ() * step * SWEEP_ACROSS + inward.getZ() * step * SWEEP_INWARD;
+                server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(x, from.getY() + 0.2, z, to.getX() + 0.5, to.getY() + 0.5, to.getZ() + 0.5));
+                context.waitTicks(2);
+                shot(context, "sweep-" + step);
+            }
+        } finally
+        {
+            server.runCommand("tick unfreeze");
+        }
     }
 
     /** What the player's look meets, and whether a mosaic is found there, to explain a stare that did not count. */

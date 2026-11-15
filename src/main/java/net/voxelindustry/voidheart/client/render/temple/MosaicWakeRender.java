@@ -57,6 +57,8 @@ public final class MosaicWakeRender
     private static final double RING_WIDTH = 2 / 16D;
     private static final double RING_EYE_DEPTH = 1 / 16D;
     private static final double HUB_EYE_DEPTH = 2 / 16D;
+    /** How far toward the player the wheels' eyes lean while the wheels still lie on the wall, against facing them outright. */
+    private static final float EYE_STIR_TURN = 0.35F;
     /** The hood turns over the last of the reach, drawn out this many pixels, its hollow only this share of that. */
     private static final float HOOD_FROM = 0.85F;
     private static final float HOOD_DEPTH = 12F;
@@ -249,11 +251,13 @@ public final class MosaicWakeRender
     }
 
     /**
-     * The wheels as chains of gold boxes round their circles, their eyes as small panels showing the painted eyes. Lying on the wall, the eyes face out of it;
-     * as the wheels come out they turn to face the player, and the great eye comes out at their hub, facing the player too.
+     * The wheels as chains of gold boxes round their circles, their eyes as small panels showing the painted eyes. Lying on the wall, the eyes lean part of the
+     * way toward the player, so they keep watching them as the wheels turn; as the wheels come out they turn to face the player fully, and the great eye comes
+     * out at their hub, facing the player too.
      */
-    private static void drawWheels(Out out, MosaicArt art, MosaicWall wall, ClientLevel level, float stir, float reach, float spin, float tumble, double[] viewer)
+    private static void drawWheels(Out out, MosaicArt art, MosaicWall wall, ClientLevel level, float stir, float reach, float[] spin, float[] tumble, double[] viewer)
     {
+        float watch = Math.max(reach, EYE_STIR_TURN * stir);
         var shape = MosaicWheels.shape(art, stir, reach, spin, tumble);
         var viewerWorld = wall.toWorld(viewer[0], viewer[1], viewer[2]);
         var outward = new Vec3(wall.facing().getStepX(), 0, wall.facing().getStepZ());
@@ -282,7 +286,7 @@ public final class MosaicWakeRender
             for (int n = 0; n < eyes.length && n < painted.size(); n++)
             {
                 var at = wall.toWorld(eyes[n][0], eyes[n][1], eyes[n][2]);
-                var facing = facing(outward, viewerWorld.subtract(at), reach);
+                var facing = facing(outward, viewerWorld.subtract(at), watch);
                 // Set on the gold rather than sunk in it
                 eyePanel(out, level, painted.get(n), at.add(facing.scale((RING_WIDTH + RING_EYE_DEPTH) / 2)), facing, RING_EYE_DEPTH);
             }
@@ -292,7 +296,7 @@ public final class MosaicWakeRender
             art.eyes().stream().filter(eye -> eye.figure() == MosaicArt.WHEEL_BODY && eye.part() == hub).findFirst().ifPresent(eye ->
             {
                 var at = wall.toWorld(shape.hub()[0], shape.hub()[1], shape.hub()[2]);
-                eyePanel(out, level, eye, at, facing(outward, viewerWorld.subtract(at), Math.min(1, reach * 2)), HUB_EYE_DEPTH);
+                eyePanel(out, level, eye, at, facing(outward, viewerWorld.subtract(at), Math.max(EYE_STIR_TURN, Math.min(1, reach * 2))), HUB_EYE_DEPTH);
             });
         }
     }

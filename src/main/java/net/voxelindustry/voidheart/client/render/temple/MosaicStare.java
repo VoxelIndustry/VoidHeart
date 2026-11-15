@@ -91,10 +91,11 @@ public final class MosaicStare
             forget();
             return;
         }
-        if (art() == null)
+        // A frozen world holds the mosaic still with it
+        if (art() == null || !level.tickRateManager().runsNormally())
             return;
         wake.tick(staring);
-        motion.tick(wake);
+        motion.tick(wake, art);
         sounds.tick(level, wall, wake);
         var at = wall.toPicture(player.getEyePosition());
         if (gaze != null)
@@ -127,6 +128,14 @@ public final class MosaicStare
         wake.forget();
         motion.forget();
         sounds.forget();
+    }
+
+    /** Reads the picture's map and features again after resources reload, and lets go of the mosaic it watched, whose eyes may no longer match. */
+    public static void reloaded()
+    {
+        art = null;
+        artMissing = false;
+        forget();
     }
 
     /** Lets go of the world it watched, on leaving it. */

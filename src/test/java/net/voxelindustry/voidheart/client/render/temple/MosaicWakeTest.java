@@ -63,13 +63,10 @@ class MosaicWakeTest
 
         var wake = staredAt(1000);
         assertThat(wake.stareTicks()).isEqualTo(MosaicWake.MOST);
-        int ticks = 0;
-        while (wake.reach(1) > 0)
-        {
+        int bound = (MosaicWake.MOST - MosaicWake.REACH_START) / MosaicWake.WITHDRAW + 1;
+        for (int tick = 0; tick < bound && wake.reach(1) > 0; tick++)
             wake.tick(false);
-            ticks++;
-        }
-        assertThat(ticks).isLessThanOrEqualTo((MosaicWake.MOST - MosaicWake.REACH_START) / MosaicWake.WITHDRAW + 1);
+        assertThat(wake.reach(1)).as("still reaching after %s ticks looking away", bound).isZero();
     }
 
     @Test
@@ -211,7 +208,8 @@ class MosaicWakeTest
     void wheelsStartOnTheirPaintingAndNeverTurnIntoTheWall() throws IOException
     {
         var art = art();
-        var flat = MosaicWheels.shape(art, 1, 0, 0, 0);
+        var still = new float[art.wheels().size()];
+        var flat = MosaicWheels.shape(art, 1, 0, still, still);
         for (int k = 0; k < art.wheels().size(); k++)
         {
             int wheel = k;
@@ -226,12 +224,69 @@ class MosaicWakeTest
         }
         for (float tumble = 0; tumble < 12; tumble += 0.37F)
         {
-            var out = MosaicWheels.shape(art, 1, 1, tumble * 0.7F, tumble);
+            var turned = new float[art.wheels().size()];
+            Arrays.fill(turned, tumble);
+            var out = MosaicWheels.shape(art, 1, 1, turned, turned);
             for (var ring : out.rings())
             {
                 for (var point : ring)
                     assertThat(point[2]).isPositive();
             }
+        }
+    }
+
+    /** Through a long stare and the withdrawal after it, the wheels' eyes never jump, and they come to rest where they were painted. */
+    @Test
+    void wheelsMoveSmoothlyAndSettleOnTheirPainting() throws IOException
+    {
+        var art = art();
+        var wake = new MosaicWake();
+        var motion = new MosaicMotion();
+        float[][][] last = null;
+        float fastest = 0;
+        for (int tick = 0; tick < 1200; tick++)
+        {
+            wake.tick(tick < 900);
+            motion.tick(wake, art);
+            var eyes = MosaicWheels.shape(art, wake.stir(1), wake.reach(1), motion.spin(1), motion.tumble(1)).eyes();
+            if (last != null)
+            {
+                for (int k = 0; k < eyes.length; k++)
+                {
+                    for (int n = 0; n < eyes[k].length; n++)
+                        fastest = Math.max(fastest, (float) Math.sqrt(Math.pow(eyes[k][n][0] - last[k][n][0], 2) + Math.pow(eyes[k][n][1] - last[k][n][1], 2)
+                                + Math.pow(eyes[k][n][2] - last[k][n][2], 2)));
+                }
+            }
+            last = eyes;
+        }
+        // The hub comes out of the wall about this fast as the mosaic withdraws, and the wheels' turning adds a few pixels
+        assertThat(fastest).isLessThan(MosaicWheels.HUB_OUT * MosaicWake.WITHDRAW / (MosaicWake.REACH_FULL - MosaicWake.REACH_START) * 1.6F + 6);
+        var rest = MosaicWheels.shape(art, 1, 0, motion.spin(1), motion.tumble(1)).eyes();
+        var painted = MosaicWheels.shape(art, 1, 0, new float[art.wheels().size()], new float[art.wheels().size()]).eyes();
+        for (int k = 0; k < rest.length; k++)
+        {
+            for (int n = 0; n < rest[k].length; n++)
+            {
+                // Settled by a whole gap counts too: the wheel then looks just as painted
+                float nearest = Float.MAX_VALUE;
+                for (var other : painted[k])
+                    nearest = Math.min(nearest, (float) Math.hypot(rest[k][n][0] - other[0], rest[k][n][1] - other[1]));
+                assertThat(nearest).as("wheel %s eye %s", k, n).isLessThan(0.05F);
+            }
+        }
+    }
+
+    @Test
+    void aTendrilKeepsToTheWallWhenThePlayerIsTooClose() throws IOException
+    {
+        var art = art();
+        for (int tendril = 0; tendril < art.tendrils().size(); tendril++)
+        {
+            var path = art.tendrils().get(tendril);
+            var close = MosaicTendrils.shape(art, tendril, 1, 1, 0, SEED, path.x()[0] + 0.5, path.y()[0] + 0.5, MosaicTendrils.STOP_SHORT - 4, 0);
+            for (var point : close)
+                assertThat(point[2]).as("tendril %s", tendril).isLessThanOrEqualTo(MosaicTendrils.LIFT + 1E-3F);
         }
     }
 
@@ -244,7 +299,7 @@ class MosaicWakeTest
         for (int i = 0; i < MosaicWake.STIR_FULL + 200; i++)
         {
             wake.tick(true);
-            motion.tick(wake);
+            motion.tick(wake, art);
         }
         var gaze = new MosaicGaze(art, SEED);
         var picture = new MosaicPicture();

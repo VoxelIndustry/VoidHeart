@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.client.render.temple;
 
-import net.minecraft.util.Mth;
-
 /**
  * The wheels within wheels around the angel's great eye. Each painted ellipse is a circle seen at a slant, so each wheel is drawn as that circle: while the
  * mosaic stirs it lies flattened onto its painted ellipse a pixel off the wall, turning so its eyes travel round it. When it reaches, the hub comes out of the
@@ -32,7 +30,23 @@ public final class MosaicWheels
     {
     }
 
-    public static Shape shape(MosaicArt art, float stir, float reach, float spin, float tumble)
+    /** @return how fast and which way a wheel turns, against the first */
+    static float spinPace(int wheel)
+    {
+        return SPIN[wheel % SPIN.length];
+    }
+
+    /** @return how fast and which way a wheel tumbles, against the first */
+    static float tumblePace(int wheel)
+    {
+        return TUMBLE[wheel % TUMBLE.length];
+    }
+
+    /**
+     * @param spin   each wheel's turn within the wall, in radians, as {@link MosaicMotion} adds it up
+     * @param tumble each wheel's tumble about its own axis, the same way
+     */
+    public static Shape shape(MosaicArt art, float stir, float reach, float[] spin, float[] tumble)
     {
         var wheels = art.wheels();
         float hubU = art.hubX() + 0.5F;
@@ -65,12 +79,12 @@ public final class MosaicWheels
                 b = second;
                 axis = b;
             }
-            double turn = tumble * TUMBLE[k % TUMBLE.length] * reach;
+            // Both angles settle back to rest as the mosaic calms, so a calm wheel lies on its painting with its eyes where they were painted
+            double turn = k < tumble.length ? tumble[k] : 0;
             a = rotate(a, axis, turn);
             b = rotate(b, axis, turn);
-            // The eyes travel round by at most one gap between them, so they settle back where they were painted as it calms
             float gap = (float) (Math.PI * 2 / wheel.eyes());
-            float offset = Mth.positiveModulo(spin * SPIN[k % SPIN.length], gap) * stir;
+            float offset = k < spin.length ? spin[k] : 0;
 
             rings[k] = new float[SEGMENTS][];
             for (int s = 0; s < SEGMENTS; s++)
