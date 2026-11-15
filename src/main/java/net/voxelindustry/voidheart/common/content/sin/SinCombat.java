@@ -1,11 +1,9 @@
 package net.voxelindustry.voidheart.common.content.sin;
 
-import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,9 +16,7 @@ import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,7 +38,8 @@ public final class SinCombat
     }
 
     /**
-     * What a player carries between hits. Lost on leaving, which only costs a few seconds of stacks or charge.
+     * What a player carries between hits. Lost on leaving, which only costs a few seconds of stacks or charge. Greed's debts are saved with the player instead,
+     * see {@link GreedDebts}.
      */
     private static final class Wielder
     {
@@ -50,14 +47,6 @@ public final class SinCombat
         int  slothCharge;
         Vec3 lastPosition;
         long greedReadyTick;
-        final List<Debt> debts = new ArrayList<>();
-    }
-
-    /**
-     * An effect taken by greed, repaid by its opposite once it ends.
-     */
-    private record Debt(Holder<MobEffect> stolen, Holder<MobEffect> repaid, int ticks, int level)
-    {
     }
 
     private static Wielder wielder(ServerPlayer player)
@@ -228,7 +217,7 @@ public final class SinCombat
             var level = SinTemperament.greedStolenLevel(taken.getAmplifier(), devotion);
             target.removeEffect(effect);
             player.addEffect(new MobEffectInstance(effect, ticks, level));
-            wielder.debts.add(new Debt(effect, GreedDebts.opposite(effect), SinTemperament.greedDebtTicks(ticks, devotion), SinTemperament.greedDebtLevel(level, devotion)));
+            GreedDebts.owe(player, new GreedDebts.Debt(effect, GreedDebts.opposite(effect), SinTemperament.greedDebtTicks(ticks, devotion), SinTemperament.greedDebtLevel(level, devotion)));
         }
         else if (target.getAbsorptionAmount() > 0)
         {
@@ -237,7 +226,7 @@ public final class SinCombat
             var level = Math.max(0, (int) Math.ceil(amount / 4) - 1);
             var ticks = SinBalance.GREED_ABSORPTION_TICKS;
             player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, ticks, level));
-            wielder.debts.add(new Debt(MobEffects.ABSORPTION, GreedDebts.opposite(MobEffects.ABSORPTION), SinTemperament.greedDebtTicks(ticks, devotion), SinTemperament.greedDebtLevel(level, devotion)));
+            GreedDebts.owe(player, new GreedDebts.Debt(MobEffects.ABSORPTION, GreedDebts.opposite(MobEffects.ABSORPTION), SinTemperament.greedDebtTicks(ticks, devotion), SinTemperament.greedDebtLevel(level, devotion)));
         }
         else
             return;
@@ -280,7 +269,7 @@ public final class SinCombat
         {
             var wielder = wielder(player);
             tickSloth(player, wielder);
-            tickDebts(player, wielder);
+            GreedDebts.tick(player);
         }
     }
 
@@ -305,23 +294,6 @@ public final class SinCombat
 
         if (speed != null)
             speed.addOrUpdateTransientModifier(new AttributeModifier(SLOTH_DRAG, -SinTemperament.slothSlow(devotion), AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-    }
-
-    private static void tickDebts(ServerPlayer player, Wielder wielder)
-    {
-        if (wielder.debts.isEmpty())
-            return;
-
-        var iterator = wielder.debts.iterator();
-        while (iterator.hasNext())
-        {
-            var debt = iterator.next();
-            if (player.hasEffect(debt.stolen()))
-                continue;
-            iterator.remove();
-            if (debt.ticks() > 0 && player.isAlive())
-                player.addEffect(new MobEffectInstance(debt.repaid(), debt.ticks(), debt.level()));
-        }
     }
 
     /**

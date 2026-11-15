@@ -1,6 +1,5 @@
 package net.voxelindustry.voidheart.gametest;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -73,6 +72,31 @@ public class SinInfusionClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        // All tests share one client, so the camera and HUD go back to what they were
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        var hudHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
+        try
+        {
+            runScenes(context);
+        }
+        finally
+        {
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
+            setHudHidden(context, hudHidden);
+        }
+    }
+
+    private static void setHudHidden(ClientGameTestContext context, boolean hidden)
+    {
+        context.runOnClient(minecraft ->
+        {
+            if (minecraft.gui.hud.isHidden() != hidden)
+                minecraft.gui.hud.toggle();
+        });
+    }
+
+    private static void runScenes(ClientGameTestContext context)
+    {
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
@@ -91,6 +115,7 @@ public class SinInfusionClientTest implements FabricClientGameTest
             infuseAtAltar(context, server);
             cleanseWithSalt(context, server);
             raiseApparatus(context, server);
+            infusionOvertakesWaitingRecipe(context, server);
 
             server.runCommand("difficulty normal");
             wrath(context, server);
@@ -230,6 +255,32 @@ public class SinInfusionClientTest implements FabricClientGameTest
             expect(grid.equals(raised.get(VoidHeartDataComponents.APPARATUS_GRID)), "Expected the raised apparatus to keep its grid, got " + raised.get(VoidHeartDataComponents.APPARATUS_GRID));
             altar(minecraft).setStack(player(minecraft), ItemStack.EMPTY);
         });
+    }
+
+    /**
+     * A sword set down first starts the Avenging Reach, the exact recipe for it, waiting for its ingredients. Laying a sin's ingots and flask instead makes it
+     * give way to the infusion.
+     */
+    private static void infusionOvertakesWaitingRecipe(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            lay(minecraft);
+            altar(minecraft).setStack(player, enchantedSword(minecraft));
+            expect(altar(minecraft).isCrafting(), "Expected the sword alone to start the recipe made for it, waiting for its ingredients");
+            lay(minecraft, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_FLASK);
+        });
+        waitFor(context, server, 2000, "Expected the waiting recipe to give way to the sloth infusion laid after it", minecraft ->
+                !altar(minecraft).isCrafting() && altar(minecraft).getStack().get(VoidHeartDataComponents.SIN) == Sin.SLOTH);
+        server.runOnServer(minecraft ->
+        {
+            expect(pillarsEmpty(minecraft), "Expected the lead ingots and flask eaten");
+            altar(minecraft).setStack(player(minecraft), ItemStack.EMPTY);
+            ((ExperienceSkullTile) minecraft.overworld().getBlockEntity(SKULL)).setExperience(1000);
+        });
+        context.waitTicks(70);
     }
 
     // The fight
@@ -463,7 +514,7 @@ public class SinInfusionClientTest implements FabricClientGameTest
         context.takeScreenshot("sin-inlays-inventory");
         context.setScreen(() -> null);
 
-        context.getInput().pressKey(InputConstants.KEY_F1);
+        setHudHidden(context, true);
         context.runOnClient(minecraft -> minecraft.player.getInventory().setSelectedSlot(0));
         context.waitTicks(5);
         context.takeScreenshot("sin-inlay-sword-first-person");
@@ -489,8 +540,6 @@ public class SinInfusionClientTest implements FabricClientGameTest
         expect(server.computeOnServer(minecraft -> !minecraft.overworld().getEntities(EntityTypes.TRIDENT, trident -> true).isEmpty()), "Expected the thrown trident in the scene");
         context.takeScreenshot("sin-inlay-trident-thrown");
 
-        context.getInput().pressKey(InputConstants.KEY_F1);
-        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);

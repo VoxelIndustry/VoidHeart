@@ -30,6 +30,7 @@ public final class SinProficiencies
     public static void register()
     {
         SinStageCrossedPayload.register();
+        GreedDebts.register();
     }
 
     public static SinProficiency of(Player player)

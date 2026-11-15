@@ -35,7 +35,9 @@ public abstract class MixinLivingEntitySins
 
         var self = (LivingEntity) (Object) this;
         var dealt = voidheart$lifeBeforeHit - (Math.max(0, self.getHealth()) + self.getAbsorptionAmount());
-        SinCombat.onHitLanded(self, source, dealt);
+        // A hit resisted down to nothing landed, but took nothing for a sin to answer
+        if (dealt > 0)
+            SinCombat.onHitLanded(self, source, dealt);
 
         if (self instanceof ServerPlayer player && amount > 0)
             SinCombat.onPlayerHurt(player);

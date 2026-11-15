@@ -262,6 +262,35 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     }
 
     /**
+     * A recipe still waiting for its first ingredient gives way to another recipe for the same item whose ingredients are all laid, such as a sword set down
+     * for the Avenging Reach before the ingots of a sin were laid.
+     */
+    private void yieldToLaidRecipe()
+    {
+        if (placer == null || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0 || consumingPillarIndex != -1 || !cachedToConsume.isEmpty() || experienceConsumed > 0)
+            return;
+        if (recipeState == null || !recipeState.getIngredientsConsumed(ItemStack.class).isEmpty())
+            return;
+
+        var pillarStacks = pillars.stream().map(VoidPillarTile::getStack).toList();
+        if (ingredientsLaid(currentRecipe, pillarStacks))
+            return;
+        if (!(getLevel().getPlayerByUUID(placer) instanceof ServerPlayer player))
+            return;
+
+        var laid = VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack)
+                .filter(recipe -> recipe != currentRecipe && recipe.changes(stack) && ingredientsLaid(recipe, pillarStacks) && canStart(player, recipe))
+                .findFirst();
+        if (laid.isEmpty())
+            return;
+
+        currentRecipe = laid.get();
+        recipeState = currentRecipe.createState();
+        PartialTileSync.syncPart(this, AltarCraftingSyncElement.IDENTIFIER);
+        setChanged();
+    }
+
+    /**
      * An idle altar holding an item wakes once the ingredients of a recipe for it are laid on the pillars, as if the item were set down again.
      */
     private void retryIdleStart()
@@ -326,6 +355,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
         if (altar.consumeProgress == 0 && altar.pillars.size() != 8)
             altar.refreshPillars();
+
+        altar.yieldToLaidRecipe();
 
         altar.computeConsumeAction();
         altar.computeCraftFinalization();

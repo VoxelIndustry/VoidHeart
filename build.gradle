@@ -32,17 +32,20 @@ repositories {
             }
         }
     }
-    maven {
-        name = "Gitea"
-        url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
+    // Older SteamLayer builds are on the private Gitea, only reachable with gitea_token
+    if (hasProperty("gitea_token")) {
+        maven {
+            name = "Gitea"
+            url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
 
-        credentials(HttpHeaderCredentials) {
-            name = "Authorization"
-            value = "token ${gitea_token}"
-        }
+            credentials(HttpHeaderCredentials) {
+                name = "Authorization"
+                value = "token ${property('gitea_token')}"
+            }
 
-        authentication {
-            header(HttpHeaderAuthentication)
+            authentication {
+                header(HttpHeaderAuthentication)
+            }
         }
     }
 
