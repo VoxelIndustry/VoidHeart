@@ -149,7 +149,7 @@ local function shoggoth()
     if face ~= "north" then return tar[2] end
     if fy == 0 and fx % 2 == 1 then return hex("A49A88") end
     if fy == fh - 1 and fx % 2 == 0 then return hex("8E8676") end
-    return fx == 0 or fx == fw - 1 and hex("3A0A12") or hex("1E050A")
+    return (fx == 0 or fx == fw - 1) and hex("3A0A12") or hex("1E050A")
   end
   for i = 0, 2 do box(img, 64 + i * 12, 48, 5, 2, 1, mouth) end
   for i = 0, 2 do

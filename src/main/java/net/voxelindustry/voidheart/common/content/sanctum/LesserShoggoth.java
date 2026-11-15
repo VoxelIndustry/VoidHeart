@@ -124,7 +124,7 @@ public class LesserShoggoth extends VoidMonster
             lashTicks--;
             if (target != null)
                 getLookControl().setLookAt(target);
-            if (lashTicks == 0 && target != null && target.isAlive() && reaches(target, LASH_REACH + 0.6))
+            if (lashTicks == 0 && target != null && target.isAlive() && reaches(target, LASH_REACH + 0.6) && hasLineOfSight(target))
             {
                 doHurtTarget(level, target);
                 playSound(VoidHeartSounds.SHOGGOTH_LASH, 1, 0.8F + random.nextFloat() * 0.3F);

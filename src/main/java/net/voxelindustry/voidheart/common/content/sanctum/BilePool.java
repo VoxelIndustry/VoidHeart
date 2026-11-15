@@ -63,7 +63,8 @@ public class BilePool extends Entity
         {
             var below = pos.below(down);
             var shape = level.getBlockState(below).getCollisionShape(level, below);
-            if (!shape.isEmpty())
+            // A surface above where the glob struck is the ceiling it hit, not a floor to lie on
+            if (!shape.isEmpty() && below.getY() + shape.max(Direction.Axis.Y) <= at.y + 0.2)
                 return new Vec3(at.x, below.getY() + shape.max(Direction.Axis.Y) + 0.01, at.z);
         }
         return at;

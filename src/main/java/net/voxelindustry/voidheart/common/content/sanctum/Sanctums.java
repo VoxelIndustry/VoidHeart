@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.sanctum;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -33,6 +34,12 @@ public final class Sanctums
     {
     }
 
+    public static void register()
+    {
+        // Tick counts start over with each server, so times kept from one would hold players back in the next
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> PASSED.clear());
+    }
+
     public static SanctumState state(MinecraftServer server)
     {
         return VoidDungeons.level(server).getDataStorage().computeIfAbsent(SanctumState.TYPE);
@@ -54,14 +61,16 @@ public final class Sanctums
         return true;
     }
 
-    public static void enter(ServerPlayer player, MosaicDoor door)
+    /** @return whether the player went through, rather than being held back for having just passed a gate */
+    public static boolean enter(ServerPlayer player, MosaicDoor door)
     {
         if (justPassed(player))
-            return;
+            return false;
         var server = player.level().getServer();
         var home = GlobalPos.of(player.level().dimension(), BlockPos.containing(door.threshold()));
         int index = state(server).indexFor(door.key(), home, door.outwardYaw());
         arrive(player, index);
+        return true;
     }
 
     /** Sends someone to a sanctum's porch, facing in. */
@@ -79,20 +88,22 @@ public final class Sanctums
             SanctumPillar.raiseAll(level, index);
     }
 
-    public static void leave(ServerPlayer player, int index)
+    /** @return whether the player went through, rather than being held back for having just passed a gate */
+    public static boolean leave(ServerPlayer player, int index)
     {
         if (justPassed(player))
-            return;
+            return false;
         var server = player.level().getServer();
         var sanctum = state(server).get(index);
         passed(player);
         if (sanctum == null || sanctum.home().isEmpty() || server.getLevel(sanctum.home().get().dimension()) == null)
         {
             player.teleport(player.findRespawnPositionAndUseSpawnBlock(true, TeleportTransition.DO_NOTHING));
-            return;
+            return true;
         }
         var home = sanctum.home().get();
         TeleportUtil.teleport(player, server.getLevel(home.dimension()), Vec3.atBottomCenterOf(home.pos()), sanctum.homeYaw(), 0);
+        return true;
     }
 
     private static boolean justPassed(ServerPlayer player)

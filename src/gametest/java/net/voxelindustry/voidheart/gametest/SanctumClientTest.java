@@ -334,6 +334,11 @@ public class SanctumClientTest implements FabricClientGameTest
         rightClick(context);
         waitFor(context, server, 20, "Using the cradle did not hand over what it held",
                 minecraft -> player(minecraft).getInventory().countItem(Items.NETHER_STAR) == 1);
+        expect(server.computeOnServer(minecraft -> dungeons(minecraft).getBlockEntity(altar.above(2)) instanceof BlessedCradleTile cradle && cradle.getContents().isEmpty()),
+                "The cradle still holds what it handed over");
+        rightClick(context);
+        context.waitTicks(5);
+        expect(server.computeOnServer(minecraft -> player(minecraft).getInventory().countItem(Items.NETHER_STAR) == 1), "The cradle handed over a second reward");
     }
 
     private static void leave(ClientGameTestContext context, TestSingleplayerContext world, BlockPos origin, MosaicDoor door)

@@ -34,7 +34,6 @@ public class BileGlob extends Projectile
 {
     public static final ResourceKey<DamageType> DAMAGE = ResourceKey.create(Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath(MODID, "bile"));
 
-    private static final double GRAVITY = 0.04;
     private static final int MAX_TICKS = 120;
 
     public BileGlob(EntityType<? extends BileGlob> type, Level level)
@@ -47,22 +46,7 @@ public class BileGlob extends Projectile
         this(VoidHeartEntities.BILE_GLOB, level);
         setOwner(owner);
         setPos(from);
-        setDeltaMovement(launch(from, to));
-    }
-
-    /**
-     * @return a velocity that lands on a spot at the glob's speed, taking the higher arc when the spot is out of a flat throw's reach
-     */
-    static Vec3 launch(Vec3 from, Vec3 to)
-    {
-        double dx = to.x - from.x, dz = to.z - from.z, dy = to.y - from.y;
-        double flat = Math.sqrt(dx * dx + dz * dz);
-        if (flat < 1e-3)
-            return new Vec3(0, BILE_SPEED, 0);
-        // Ticks in the air for a throw at this speed along the ground, then the climb that brings it down on the spot then
-        double ticks = Math.max(8, flat / (BILE_SPEED * 0.7));
-        double vy = dy / ticks + GRAVITY * ticks / 2;
-        return new Vec3(dx / ticks, vy, dz / ticks);
+        setDeltaMovement(BileArc.launch(from, to));
     }
 
     @Override
@@ -91,7 +75,7 @@ public class BileGlob extends Projectile
         }
         var motion = getDeltaMovement();
         setPos(position().add(motion));
-        setDeltaMovement(motion.x * 0.99, motion.y - GRAVITY, motion.z * 0.99);
+        setDeltaMovement(BileArc.step(motion));
         if (level().isClientSide())
             level().addParticle(ParticleTypes.ITEM_SLIME, getX(), getY(), getZ(), 0, 0, 0);
     }

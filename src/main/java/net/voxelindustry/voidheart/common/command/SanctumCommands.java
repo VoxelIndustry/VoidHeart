@@ -11,6 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -20,6 +21,7 @@ import net.voxelindustry.voidheart.common.content.sanctum.VeilGate;
 import net.voxelindustry.voidheart.common.content.sanctum.VileFleshMass;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
+import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 import net.voxelindustry.voidheart.common.world.sanctum.SanctumPlan;
 import net.voxelindustry.voidheart.common.world.underway.MosaicDoor;
 
@@ -74,12 +76,19 @@ final class SanctumCommands
         return index;
     }
 
+    /** @return the sanctum the player stands in, which needs the dungeons' dimension as well as a sanctum's cell */
+    private static int sanctumOf(ServerPlayer player) throws CommandSyntaxException
+    {
+        int index = player.level().dimension() == VoidDungeons.WORLD_KEY ? Sanctums.indexAt(player.blockPosition()) : -1;
+        if (index < 0)
+            throw NOT_IN_SANCTUM.create();
+        return index;
+    }
+
     private static int leave(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
-        int index = Sanctums.indexAt(player.blockPosition());
-        if (index < 0)
-            throw NOT_IN_SANCTUM.create();
+        int index = sanctumOf(player);
         Sanctums.leave(player, index);
         return 1;
     }
@@ -118,9 +127,7 @@ final class SanctumCommands
     private static int slay(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
-        int index = Sanctums.indexAt(player.blockPosition());
-        if (index < 0)
-            throw NOT_IN_SANCTUM.create();
+        sanctumOf(player);
         var level = player.level();
         for (var mass : level.getEntitiesOfClass(VileFleshMass.class, player.getBoundingBox().inflate(SanctumPlan.LENGTH)))
             mass.kill(level);
@@ -131,9 +138,7 @@ final class SanctumCommands
     private static int reset(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
-        int index = Sanctums.indexAt(player.blockPosition());
-        if (index < 0)
-            throw NOT_IN_SANCTUM.create();
+        int index = sanctumOf(player);
         ServerLevel level = player.level();
         var altar = Sanctums.altar(index);
         for (int stone = 0; stone < SanctumPillar.STONES; stone++)

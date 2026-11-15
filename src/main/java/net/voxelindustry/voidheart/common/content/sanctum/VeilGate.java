@@ -149,11 +149,10 @@ public class VeilGate extends Entity
         {
             if (player.isPassenger() || player.isVehicle())
                 continue;
-            level.playSound(null, getX(), getY(), getZ(), VoidHeartSounds.WRAITH_EMERGE, SoundSource.PLAYERS, PASS_VOLUME, 0.7F);
-            if (stays())
-                Sanctums.leave(player, SanctumAddress.at(getBlockX(), getBlockZ()));
-            else
-                Sanctums.enter(player, new MosaicDoor(BlockPos.of(door), face()));
+            boolean passed = stays() ? Sanctums.leave(player, SanctumAddress.at(getBlockX(), getBlockZ()))
+                                     : Sanctums.enter(player, new MosaicDoor(BlockPos.of(door), face()));
+            if (passed)
+                level.playSound(null, getX(), getY(), getZ(), VoidHeartSounds.WRAITH_EMERGE, SoundSource.PLAYERS, PASS_VOLUME, 0.7F);
         }
     }
 

@@ -41,6 +41,7 @@ class SanctumPreview
         COLORS.put(SanctumMaterial.COFFER, 0x5E4E6E);
         COLORS.put(SanctumMaterial.GATE_FRAME, 0x2E8C7A);
         COLORS.put(SanctumMaterial.FLESH, 0x72363F);
+        COLORS.put(SanctumMaterial.FLESH_BRUISED, 0x553548);
         COLORS.put(SanctumMaterial.WRITHING, 0x4A2A3A);
         COLORS.put(SanctumMaterial.WRITHING_MAW, 0x2A1218);
         COLORS.put(SanctumMaterial.WRITHING_BLOSSOM, 0x9A5A62);
