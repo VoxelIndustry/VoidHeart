@@ -409,7 +409,8 @@
         "pitch": 0.8
       }
     ]
-  },  "entity.wraith_beast.ambient": {
+  },
+  "entity.wraith_beast.ambient": {
     "subtitle": "subtitles.voidheart.entity.wraith_beast.ambient",
     "sounds": [
       {
@@ -500,7 +501,6 @@
       }
     ]
   },
-
   "entity.corrupted_barnacle.infect": {
     "subtitle": "subtitles.voidheart.entity.corrupted_barnacle.infect",
     "sounds": [
@@ -1665,6 +1665,63 @@
         "name": "minecraft:block.lava.extinguish",
         "type": "event",
         "pitch": 1.5
+      }
+    ]
+  },
+  "player.second_heart.dissolve": {
+    "subtitle": "subtitles.voidheart.player.second_heart.dissolve",
+    "sounds": [
+      {
+        "name": "minecraft:entity.warden.heartbeat",
+        "type": "event",
+        "pitch": 0.55
+      },
+      {
+        "name": "minecraft:block.respawn_anchor.deplete",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "player.second_heart.reform": {
+    "subtitle": "subtitles.voidheart.player.second_heart.reform",
+    "sounds": [
+      {
+        "name": "minecraft:block.respawn_anchor.charge",
+        "type": "event",
+        "pitch": 0.7
+      }
+    ]
+  },
+  "player.second_heart.burst": {
+    "subtitle": "subtitles.voidheart.player.second_heart.burst",
+    "sounds": [
+      {
+        "name": "minecraft:entity.warden.attack_impact",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "player.second_heart.ready": {
+    "subtitle": "subtitles.voidheart.player.second_heart.ready",
+    "sounds": [
+      {
+        "name": "minecraft:entity.warden.heartbeat",
+        "type": "event",
+        "pitch": 1.1,
+        "volume": 0.6
+      }
+    ]
+  },
+  "player.second_heart.pulse": {
+    "subtitle": "subtitles.voidheart.player.second_heart.pulse",
+    "sounds": [
+      {
+        "name": "minecraft:entity.warden.heartbeat",
+        "type": "event",
+        "pitch": 0.7,
+        "volume": 0.8
       }
     ]
   }

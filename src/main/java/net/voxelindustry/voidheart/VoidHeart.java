@@ -38,6 +38,7 @@ import net.voxelindustry.voidheart.common.energy.EnergySetup;
 import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReach;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBurstPayload;
+import net.voxelindustry.voidheart.common.content.secondheart.SecondHeart;
 import net.voxelindustry.voidheart.common.content.sin.SinCombat;
 import net.voxelindustry.voidheart.common.content.sin.SinProficiencies;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarPathPayload;
@@ -125,6 +126,8 @@ public class VoidHeart implements ModInitializer
     public static SimpleParticleType MARINE_SNOW_PARTICLE;
     public static SimpleParticleType SHOAL_SPECK_PARTICLE;
     public static SimpleParticleType SMALL_SOUL_FLAME_PARTICLE;
+    public static SimpleParticleType SECOND_HEART_MOTE_PARTICLE;
+    public static SimpleParticleType SECOND_HEART_INFALL_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
 
@@ -146,6 +149,7 @@ public class VoidHeart implements ModInitializer
         ShieldingApparatus.register();
         ShieldPayloads.register();
         SinProficiencies.register();
+        SecondHeart.register();
 
         VoidHeartTiles.registerTiles();
         ArmillaryChunkHold.register();
@@ -257,6 +261,7 @@ public class VoidHeart implements ModInitializer
             ShoulderEyes.clear();
             AvengingReach.clear();
             SinCombat.clear();
+            SecondHeart.clear();
             RadiantCover.clear();
             KleinStarSettings.clear();
             Curses.clear();
@@ -304,6 +309,8 @@ public class VoidHeart implements ModInitializer
         MARINE_SNOW_PARTICLE = registerSimpleParticle("marine_snow", false);
         SHOAL_SPECK_PARTICLE = registerSimpleParticle("shoal_speck", true);
         SMALL_SOUL_FLAME_PARTICLE = registerSimpleParticle("small_soul_flame", false);
+        SECOND_HEART_MOTE_PARTICLE = registerSimpleParticle("second_heart_mote", true);
+        SECOND_HEART_INFALL_PARTICLE = registerSimpleParticle("second_heart_infall", true);
 
         EssenceRegistry.bootstrap();
     }
