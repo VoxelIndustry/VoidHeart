@@ -38,6 +38,8 @@ import net.voxelindustry.voidheart.common.energy.EnergySetup;
 import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReach;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBurstPayload;
+import net.voxelindustry.voidheart.common.content.sin.SinCombat;
+import net.voxelindustry.voidheart.common.content.sin.SinProficiencies;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarPathPayload;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarSettings;
 import net.voxelindustry.voidheart.common.content.kleinstar.RadiantCover;
@@ -142,6 +144,7 @@ public class VoidHeart implements ModInitializer
         AvengingReach.register();
         ShieldingApparatus.register();
         ShieldPayloads.register();
+        SinProficiencies.register();
 
         VoidHeartTiles.registerTiles();
         ArmillaryChunkHold.register();
@@ -191,6 +194,8 @@ public class VoidHeart implements ModInitializer
         ServerLivingEntityEvents.AFTER_DEATH.register(OilCoating::onHitLanded);
         ServerPlayerEvents.LEAVE.register(ShoulderEyes::onLeave);
         ServerPlayerEvents.LEAVE.register(AvengingReach::onLeave);
+        ServerTickEvents.END_SERVER_TICK.register(SinCombat::tickServer);
+        ServerPlayerEvents.LEAVE.register(SinCombat::onLeave);
 
         Corruption.register();
         CursePayloads.register();
@@ -249,6 +254,7 @@ public class VoidHeart implements ModInitializer
             OculusSightPayloads.clear();
             ShoulderEyes.clear();
             AvengingReach.clear();
+            SinCombat.clear();
             RadiantCover.clear();
             KleinStarSettings.clear();
             Curses.clear();

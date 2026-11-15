@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/copper_spear",
+  "textures": {
+    "layer1": "voidheart:sin/spear_gluttony"
+  }
+}

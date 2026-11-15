@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/iron_sword",
+  "textures": {
+    "layer1": "voidheart:sin/sword_pride"
+  }
+}

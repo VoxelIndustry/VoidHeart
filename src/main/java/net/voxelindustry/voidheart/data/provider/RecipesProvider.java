@@ -29,6 +29,12 @@ import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
+import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackTransformIngredient;
+import net.voxelindustry.steamlayer.recipe.ingredient.ItemTagRecipeIngredient;
+import net.voxelindustry.voidheart.common.content.sin.Sin;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
+import net.minecraft.core.component.DataComponentPatch;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
@@ -78,6 +84,11 @@ public class RecipesProvider extends FabricRecipeProvider
     private static class VoidHeartRecipeProvider extends RecipeProvider
     {
         private static final int ALTAR_TIME = 20;
+        private static final int SIN_INFUSION_TIME = 40;
+        /**
+         * About fifteen levels, drawn from the experience skulls around the altar.
+         */
+        private static final int SIN_INFUSION_EXPERIENCE = 315;
 
         VoidHeartRecipeProvider(BootstrapContext<Recipe<?>> recipes, BootstrapContext<Advancement> advancements)
         {
@@ -223,6 +234,7 @@ public class RecipesProvider extends FabricRecipeProvider
 
             // Altar: the catalyst sits on the altar, each ingredient on one of the eight pillars
             shieldingApparatus();
+            sinInfusion();
             offerAltarRecipe("armillary_core", VoidHeartBlocks.ARMILLARY_CORE, Items.COMPASS,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
@@ -420,12 +432,12 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
-            offerAltarRecipe("greater_shielding_apparatus", VoidHeartItems.GREATER_SHIELDING_APPARATUS, VoidHeartItems.LESSER_SHIELDING_APPARATUS,
+            offerTierRecipe("greater_shielding_apparatus", VoidHeartItems.GREATER_SHIELDING_APPARATUS, VoidHeartItems.LESSER_SHIELDING_APPARATUS,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
                     VoidHeartItems.AZURIUM_SHARD);
-            offerAltarRecipe("supreme_shielding_apparatus", VoidHeartItems.SUPREME_SHIELDING_APPARATUS, VoidHeartItems.GREATER_SHIELDING_APPARATUS,
+            offerTierRecipe("supreme_shielding_apparatus", VoidHeartItems.SUPREME_SHIELDING_APPARATUS, VoidHeartItems.GREATER_SHIELDING_APPARATUS,
                     Items.NETHERITE_INGOT, Items.NETHERITE_INGOT,
                     VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
                     VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD,
@@ -473,6 +485,69 @@ public class RecipesProvider extends FabricRecipeProvider
         private void component(ApparatusComponent component, ItemLike catalyst, ItemLike... ingredients)
         {
             offerAltarRecipe(component.itemName(), VoidHeartItems.APPARATUS_COMPONENTS.get(component), catalyst, ingredients);
+        }
+
+        /**
+         * The catalyst is raised to the output item, keeping everything set in it.
+         */
+        private void offerTierRecipe(String name, ItemLike output, ItemLike catalyst, ItemLike... ingredients)
+        {
+            saveAltarRecipe(new AltarRecipe(altarRecipeId(name), ItemStackTransformIngredient.transmuting(output.asItem()), ingredient(catalyst), ALTAR_TIME, ingredients(ingredients)), catalyst);
+        }
+
+        /**
+         * A sin metal fused into any infusable weapon at the altar, which keeps its enchantments and takes the sin's temperament. Another sin replaces the
+         * first. Salt cleanses the weapon of its sin.
+         */
+        private void sinInfusion()
+        {
+            for (var sin : Sin.values())
+            {
+                var ingot = sinIngot(sin);
+                var patch = DataComponentPatch.builder().set(VoidHeartDataComponents.SIN, sin).build();
+                var recipe = new AltarRecipe(altarRecipeId("sin_infusion_" + sin.getSerializedName()), ItemStackTransformIngredient.patching(patch),
+                        new ItemTagRecipeIngredient(VoidHeartTags.SIN_INFUSABLE), SIN_INFUSION_TIME,
+                        ingredients(ingot, ingot, ingot, ingot, sinFlask(sin)))
+                        .withExperience(SIN_INFUSION_EXPERIENCE);
+                saveAltarRecipe(recipe, ingot);
+            }
+
+            var cleansing = DataComponentPatch.builder().remove(VoidHeartDataComponents.SIN).build();
+            saveAltarRecipe(new AltarRecipe(altarRecipeId("sin_cleansing"), ItemStackTransformIngredient.patching(cleansing),
+                    new ItemTagRecipeIngredient(VoidHeartTags.SIN_INFUSABLE), SIN_INFUSION_TIME,
+                    ingredients(VoidHeartItems.SALT, VoidHeartItems.SALT, VoidHeartItems.SALT, VoidHeartItems.SALT)), VoidHeartItems.SALT);
+        }
+
+        private static ItemLike sinIngot(Sin sin)
+        {
+            return switch (sin)
+            {
+                case PRIDE -> VoidHeartItems.ARROGANT_IRON_INGOT;
+                case WRATH -> VoidHeartItems.SEETHING_STEEL_INGOT;
+                case GLUTTONY -> VoidHeartItems.RAVENOUS_GOLD_INGOT;
+                case SLOTH -> VoidHeartItems.LISTLESS_LEAD_INGOT;
+                case GREED -> VoidHeartItems.COVETOUS_COPPER_INGOT;
+            };
+        }
+
+        private static ItemLike sinFlask(Sin sin)
+        {
+            return switch (sin)
+            {
+                case PRIDE -> VoidHeartItems.ARROGANT_IRON_FLASK;
+                case WRATH -> VoidHeartItems.SEETHING_STEEL_FLASK;
+                case GLUTTONY -> VoidHeartItems.RAVENOUS_GOLD_FLASK;
+                case SLOTH -> VoidHeartItems.LISTLESS_LEAD_FLASK;
+                case GREED -> VoidHeartItems.COVETOUS_COPPER_FLASK;
+            };
+        }
+
+        private static ItemStackRecipeIngredient[] ingredients(ItemLike... items)
+        {
+            var ingredients = new ItemStackRecipeIngredient[items.length];
+            for (var i = 0; i < items.length; i++)
+                ingredients[i] = ingredient(items[i]);
+            return ingredients;
         }
 
         private void offerAltarRecipe(String name, ItemLike output, ItemLike catalyst, ItemLike... ingredients)

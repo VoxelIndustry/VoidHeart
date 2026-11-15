@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/wooden_spear",
+  "textures": {
+    "layer1": "voidheart:sin/spear_wrath"
+  }
+}

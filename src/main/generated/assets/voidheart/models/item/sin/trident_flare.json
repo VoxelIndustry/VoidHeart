@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/trident",
+  "textures": {
+    "layer1": "voidheart:sin/trident_flare"
+  }
+}

@@ -92,8 +92,11 @@ public record RecipeSheet(Kind kind, List<Part> inputs, Optional<Part> output, i
 
     private static RecipeSheet steamLayerSheet(Kind kind, net.voxelindustry.steamlayer.recipe.RecipeBase recipe, int experience, int monoliths, Optional<Identifier> research)
     {
-        var inputs = recipe.getRecipeInputs(ItemStack.class).stream().map(ingredient -> partOf(ingredient.getRaw())).toList();
-        var output = recipe.getRecipeOutputs(ItemStack.class).stream().map(ingredient -> partOf(ingredient.getRaw())).findFirst();
+        var rawInputs = recipe.getRecipeInputs(ItemStack.class).stream().map(ingredient -> ingredient.getRaw()).toList();
+        var inputs = rawInputs.stream().map(RecipeSheet::partOf).toList();
+        // An output made from the catalyst is shown made from the first catalyst the recipe takes
+        var result = recipe.hasOutputType(ItemStack.class) ? recipe.getRecipeOutput(ItemStack.class, 0, rawInputs) : ItemStack.EMPTY;
+        var output = result.isEmpty() ? Optional.<Part>empty() : Optional.of(partOf(result));
         return new RecipeSheet(kind, merged(inputs, kind == Kind.ALTAR ? 1 : 0), output, experience, monoliths, research);
     }
 

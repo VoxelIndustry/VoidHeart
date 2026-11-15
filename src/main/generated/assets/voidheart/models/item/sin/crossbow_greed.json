@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/crossbow",
+  "textures": {
+    "layer1": "voidheart:sin/crossbow_greed"
+  }
+}

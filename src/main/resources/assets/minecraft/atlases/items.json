@@ -1,0 +1,29 @@
+{
+  "sources": [
+    {
+      "type": "minecraft:paletted_permutations",
+      "palette_key": "voidheart:sin/palette_key",
+      "permutations": {
+        "pride": "voidheart:sin/pride",
+        "wrath": "voidheart:sin/wrath",
+        "gluttony": "voidheart:sin/gluttony",
+        "sloth": "voidheart:sin/sloth",
+        "greed": "voidheart:sin/greed",
+        "flare": "voidheart:sin/flare"
+      },
+      "textures": [
+        "voidheart:sin/sword",
+        "voidheart:sin/axe",
+        "voidheart:sin/mace",
+        "voidheart:sin/spear",
+        "voidheart:sin/spear_in_hand",
+        "voidheart:sin/trident",
+        "voidheart:sin/bow",
+        "voidheart:sin/bow_pulling_0",
+        "voidheart:sin/bow_pulling_1",
+        "voidheart:sin/bow_pulling_2",
+        "voidheart:sin/crossbow"
+      ]
+    }
+  ]
+}

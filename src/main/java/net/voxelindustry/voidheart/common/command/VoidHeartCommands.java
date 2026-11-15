@@ -119,6 +119,7 @@ public class VoidHeartCommands
         CurseCommands.register(builder);
         ResearchCommands.register(builder);
         EnergyCommands.register(builder);
+        SinCommands.register(builder);
 
         dispatcher.register(builder);
     }

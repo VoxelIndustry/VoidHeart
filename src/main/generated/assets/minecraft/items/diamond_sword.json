@@ -1,0 +1,88 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_pride"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "pride"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_wrath"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "wrath"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_gluttony"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "gluttony"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_sloth"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "sloth"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_greed"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/diamond_sword_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "greed"
+      }
+    ],
+    "component": "voidheart:sin",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/diamond_sword"
+    },
+    "property": "minecraft:component"
+  }
+}

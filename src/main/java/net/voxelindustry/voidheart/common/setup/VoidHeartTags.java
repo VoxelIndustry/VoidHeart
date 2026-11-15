@@ -24,6 +24,11 @@ public class VoidHeartTags
      */
     public static final TagKey<Item> PLACEABLE_FLASKS = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "placeable_flasks"));
 
+    /**
+     * Weapons a sin metal can be fused into at the altar. Each needs an inlay drawn in {@code SinInlayModels} too.
+     */
+    public static final TagKey<Item> SIN_INFUSABLE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "sin_infusable"));
+
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "pillar_place_instead_of_store"));
 
     /**

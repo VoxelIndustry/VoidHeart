@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Registry;
+import net.voxelindustry.voidheart.common.content.sin.Sin;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -73,6 +74,8 @@ public class VoidHeartDataComponents
     /** Seconds of strained research a Meat Proxy can still bear. */
     public static DataComponentType<Double>          PROXY_ENDURANCE;
     public static DataComponentType<ApparatusGrid>   APPARATUS_GRID;
+    /** The sin fused into a weapon. It holds no level: the wielder's proficiency decides. */
+    public static DataComponentType<Sin>             SIN;
     /** Contravoid a Klein Star holds. */
     public static DataComponentType<Integer>         CONTRAVOID_CHARGE;
 
@@ -91,6 +94,7 @@ public class VoidHeartDataComponents
         BREW = register("brew", Brew.CODEC);
         PROXY_ENDURANCE = register("proxy_endurance", Codec.DOUBLE);
         APPARATUS_GRID = register("apparatus_grid", ApparatusGrid.CODEC);
+        SIN = register("sin", Sin.CODEC);
         CONTRAVOID_CHARGE = register("contravoid_charge", Codec.INT);
     }
 

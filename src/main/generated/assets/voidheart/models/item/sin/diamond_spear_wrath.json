@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/diamond_spear",
+  "textures": {
+    "layer1": "voidheart:sin/spear_wrath"
+  }
+}

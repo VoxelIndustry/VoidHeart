@@ -16,6 +16,22 @@ group = project.maven_group
 
 repositories {
     mavenLocal()
+    // SteamLayer is published to GitHub Packages, which needs a token even to read: GITHUB_TOKEN in Actions, gpr.user and gpr.key locally
+    def gprUser = findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+    def gprKey = findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+    if (gprKey != null) {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/VoxelIndustry/SteamLayer")
+            credentials {
+                username = gprUser
+                password = gprKey
+            }
+            content {
+                includeGroup "net.voxelindustry"
+            }
+        }
+    }
     maven {
         name = "Gitea"
         url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")

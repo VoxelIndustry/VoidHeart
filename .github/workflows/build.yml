@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:
@@ -19,6 +20,9 @@ jobs:
     env:
       # steamlayer is pulled from the private Gitea maven
       ORG_GRADLE_PROJECT_gitea_token: ${{ secrets.GITEA_TOKEN }}
+      # steamlayer 2.1 onward is on GitHub Packages
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 

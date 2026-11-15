@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/stone_spear_in_hand",
+  "textures": {
+    "layer1": "voidheart:sin/spear_in_hand_sloth"
+  }
+}

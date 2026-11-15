@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart;
 
+import net.voxelindustry.voidheart.client.render.sin.SinClientModels;
+import net.voxelindustry.voidheart.client.render.sin.SinFlare;
+import net.voxelindustry.voidheart.client.render.sin.SinTooltip;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -214,6 +217,9 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE_MATRIX, RavenousStorageMatrixRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.MALIGNANT_TORMENTER, MalignantTormenterRender::new);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "malignant_tormenter"), MalignantTormenterItemRender.Unbaked.MAP_CODEC);
+        SinClientModels.register();
+        SinFlare.register();
+        SinTooltip.register();
         BlockEntityRenderers.register(VoidHeartTiles.KNOWLEDGE_COLUMN, KnowledgeColumnRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.COGITANT, CogitantRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.MEAT_PROXY, MeatProxyRender::new);
