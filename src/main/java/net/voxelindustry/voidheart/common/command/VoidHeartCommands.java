@@ -114,6 +114,7 @@ public class VoidHeartCommands
         DungeonCommands.register(builder);
         DaedalusCommands.register(builder);
         UnderwayCommands.register(builder);
+        SanctumCommands.register(builder);
         ArmillaryCommands.register(builder);
         LeyCommands.register(builder);
         CurseCommands.register(builder);

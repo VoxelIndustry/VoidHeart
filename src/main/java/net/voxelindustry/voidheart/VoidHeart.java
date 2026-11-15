@@ -44,6 +44,7 @@ import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarPathPayload
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarSettings;
 import net.voxelindustry.voidheart.common.content.kleinstar.RadiantCover;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassagePayloads;
+import net.voxelindustry.voidheart.common.content.sanctum.Sanctums;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
@@ -207,6 +208,7 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(KleinStarSettings::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(RadiantCover::tickServer);
         WallPassages.register();
+        Sanctums.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDaedalus::tickServer);

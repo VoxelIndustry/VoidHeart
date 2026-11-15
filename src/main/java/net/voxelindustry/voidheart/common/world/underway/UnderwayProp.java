@@ -208,7 +208,26 @@ public enum UnderwayProp
     // A sign of the cult daubed on a wall, stroke by stroke: an almond mouth ringed by eggs
     WALL_SCRAWL(WALL, STONE, "7 2 15 9 3 16 paint_dark|6 3 15 7 5 16 paint_dark|9 3 15 10 5 16 paint_dark|5 5 15 6 9 16 paint_dark|10 5 15 11 9 16 paint_dark|6 9 15 7 11 16 paint_dark"
             + "|9 9 15 10 11 16 paint_dark|7 11 15 9 12 16 paint_dark|7 5 15 9 9 16 paint_dark|2 6 15 3 7 16 paint_dark|13 6 15 14 7 16 paint_dark|3 10 15 4 11 16 paint_dark"
-            + "|12 10 15 13 11 16 paint_dark|3 2 15 4 3 16 paint_dark|12 2 15 13 3 16 paint_dark|7 13 15 9 14 16 paint_dark|5 3 15 6 5 16 paint_dark|9 1 15 10 3 16 paint_dark");
+            + "|12 10 15 13 11 16 paint_dark|3 2 15 4 3 16 paint_dark|12 2 15 13 3 16 paint_dark|7 13 15 9 14 16 paint_dark|5 3 15 6 5 16 paint_dark|9 1 15 10 3 16 paint_dark"),
+
+    // Flesh, where it took a temple of the old world: lumps on the floor, and tentacles hanging from ceilings and climbing columns
+    // Short tentacles sprouting from a film of flesh, curling as they rise
+    FLESH_MOUND(FLOOR, CLOTH, "2 0 3 12 1 13 flesh_lobe|9 1 5 12 2 9 flesh_lobe|3 1 5 5 5 7 tendril|4 5 6 6 8 8 tendril|6 7 7 7 9 8 tendril"
+            + "|8 1 10 10 4 12 tendril|9 4 9 11 6 11 tendril|10 6 8 11 7 9 tendril|11 1 3 12 3 4 tendril"),
+    // A fold of flesh gaping open along its length, teeth along both lips and an eye looking up out of the gullet between them
+    FLESH_MOUND_LARGE(FLOOR, CLOTH, "0 0 1 16 2 14 flesh_lobe|1 2 3 15 5 6 flesh_lobe|2 2 9 14 5 12 flesh_lobe|5 5 3 11 6 5 flesh_lobe|6 5 10 12 6 12 flesh_lobe"
+            + "|5 2 6 10 3 9 flesh_lobe u=flesh_eye@0,0|2 2 6 5 3 9 flesh_lobe u=flesh_eye@8,0|10 2 6 14 3 9 flesh_lobe u=flesh_eye@8,0"
+            + "|3 4 6 4 5 7 bone|6 4 6 7 5 7 bone|9 4 6 10 5 7 bone|12 4 6 13 5 7 bone"
+            + "|4 4 8 5 5 9 bone|7 4 8 8 5 9 bone|10 4 8 11 5 9 bone|13 4 8 14 5 9 bone|4 0 14 10 1 16 tendril"),
+    // A sheet of flesh with eyes open in it under heavy lids
+    FLESH_EYES(FLOOR, CLOTH, "1 0 1 15 2 15 flesh_lobe|3 2 5 8 3 8 flesh_lobe u=flesh_eye@0,0|3 2 4 8 4 5 flesh_lobe|3 2 8 8 3 9 flesh_lobe"
+            + "|9 2 9 12 3 11 flesh_lobe u=flesh_eye@0,4|9 2 8 12 4 9 flesh_lobe|11 2 3 13 3 5 flesh_lobe u=flesh_eye@0,8|4 2 11 7 4 14 flesh_lobe"),
+    TENDRIL_ROOT(CEILING, CLOTH, "1 14 1 15 16 15 flesh_lobe|3 12 3 13 14 13 flesh_lobe|5 6 5 11 12 11 tendril|6 0 6 11 6 11 tendril"),
+    TENDRIL_HANG(CEILING, CLOTH, "6 12 6 11 16 11 tendril|5 8 6 10 12 11 tendril|5 4 5 10 8 10 tendril|6 0 5 11 4 10 tendril"),
+    TENDRIL_TIP(CEILING, CLOTH, "6 12 5 11 16 10 tendril|6 8 6 10 12 10 tendril|7 5 6 10 8 9 tendril|8 3 7 12 5 9 tendril|10 1 7 13 3 9 tendril|13 2 7 15 3 8 tendril"),
+    // Round a column: across one face rising a block, then flat round the cut corner to the next face
+    TENDRIL_COIL(WALL, CLOTH, "0 0 11 4 5 16 tendril|4 4 11 8 9 16 tendril|8 8 11 12 13 16 tendril|12 11 11 16 16 16 tendril|2 1 10 3 3 11 tendril|10 9 10 11 11 11 tendril"),
+    TENDRIL_COIL_CORNER(FLOOR, CLOTH, "0 0 0 5 5 11 tendril|0 0 11 16 5 16 tendril|5 1 6 6 3 7 tendril");
 
     public enum Mount
     {

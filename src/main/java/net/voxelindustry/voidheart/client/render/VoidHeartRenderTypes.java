@@ -127,6 +127,28 @@ public class VoidHeartRenderTypes
                 RenderSetup.builder(WRAITH_MOUTH_PIPELINE).withTexture("Sampler0", texture).withTexture("DissolveMaskSampler", mask).useLightmap().createRenderSetup()));
     }
 
+    /**
+     * The view through a temple door's hole into its sanctum, see {@code sanctum_window.fsh}. Its own vertex stage hands the fragments their view ray
+     * and place on the door; the ink's mask keeps it to the hole. Opaque and writing depth, lit by its own braziers rather than the world.
+     */
+    private static final RenderPipeline SANCTUM_WINDOW_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_NO_LIGHTMAP_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/sanctum_window"))
+            .withVertexShader(Identifier.fromNamespaceAndPath(MODID, "core/sanctum_window"))
+            .withFragmentShader(Identifier.fromNamespaceAndPath(MODID, "core/sanctum_window"))
+            .withBindGroupLayout(BindGroupLayouts.DISSOLVE_MASK_SAMPLER)
+            .withColorTargetState(ColorTargetState.DEFAULT)
+            .withCull(false)
+            .build();
+
+    private static final Identifier SANCTUM_HALL = Identifier.fromNamespaceAndPath(MODID, "textures/misc/sanctum_window.png");
+    private static final Map<Identifier, RenderType> SANCTUM_WINDOW = new HashMap<>();
+
+    public static RenderType sanctumWindow(Identifier mask)
+    {
+        return SANCTUM_WINDOW.computeIfAbsent(mask, key -> RenderType.create(MODID + "_sanctum_window",
+                RenderSetup.builder(SANCTUM_WINDOW_PIPELINE).withTexture("Sampler0", SANCTUM_HALL).withTexture("DissolveMaskSampler", mask).createRenderSetup()));
+    }
+
     private static final Identifier SILHOUETTE_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/insight_silhouette.png");
 
     public static final RenderType SILHOUETTE = RenderType.create(MODID + "_silhouette",

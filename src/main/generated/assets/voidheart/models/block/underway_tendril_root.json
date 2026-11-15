@@ -1,0 +1,138 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_lobe"
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        1,
+        14,
+        1
+      ],
+      "to": [
+        15,
+        16,
+        15
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#flesh_lobe"
+        },
+        "east": {
+          "texture": "#flesh_lobe"
+        },
+        "north": {
+          "texture": "#flesh_lobe"
+        },
+        "south": {
+          "texture": "#flesh_lobe"
+        },
+        "up": {
+          "texture": "#flesh_lobe"
+        },
+        "west": {
+          "texture": "#flesh_lobe"
+        }
+      },
+      "from": [
+        3,
+        12,
+        3
+      ],
+      "to": [
+        13,
+        14,
+        13
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        5,
+        6,
+        5
+      ],
+      "to": [
+        11,
+        12,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        6,
+        0,
+        6
+      ],
+      "to": [
+        11,
+        6,
+        11
+      ]
+    }
+  ],
+  "textures": {
+    "flesh_lobe": "voidheart:block/underway/flesh_lobe",
+    "particle": "voidheart:block/underway/flesh_lobe",
+    "tendril": "voidheart:block/underway/tendril"
+  }
+}

@@ -77,6 +77,7 @@
       "net.voxelindustry.voidheart.gametest.UnderwayDetailsClientTest",
       "net.voxelindustry.voidheart.gametest.UnderwayTempleClientTest",
       "net.voxelindustry.voidheart.gametest.TempleMosaicWakeClientTest",
+      "net.voxelindustry.voidheart.gametest.SanctumClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusDecorClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusMobsClientTest",
       "net.voxelindustry.voidheart.gametest.DaedalusSpawningClientTest",

@@ -3,6 +3,8 @@ package net.voxelindustry.voidheart.client.render.mob;
 import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.voxelindustry.voidheart.client.model.mob.LesserShoggothModel;
+import net.voxelindustry.voidheart.client.model.mob.VileFleshMassModel;
 import net.voxelindustry.voidheart.client.render.UnderwayKeyRender;
 import net.voxelindustry.voidheart.client.InsightMemory;
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
@@ -66,6 +68,8 @@ public final class VoidMobRenderers
         ModelLayerRegistry.registerModelLayer(CenturionModel.LAYER, CenturionModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(KernacianDragoonModel.LAYER, KernacianDragoonModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(TreantModel.LAYER, TreantModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(LesserShoggothModel.LAYER, LesserShoggothModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(VileFleshMassModel.LAYER, VileFleshMassModel::createBodyLayer);
 
         EntityRenderers.register(VoidHeartEntities.VOID_SKELETON, VoidSkeletonRender::new);
         EntityRenderers.register(VoidHeartEntities.VOID_GHOUL, VoidGhoulRender::new);
@@ -92,6 +96,12 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.ARCANE_EYE, ArcaneEyeRender::new);
         EntityRenderers.register(VoidHeartEntities.ARCANE_BOLT, context -> new GlowQuadRender<>(context, texture("arcane_bolt"), 0.24F));
         EntityRenderers.register(VoidHeartEntities.STALKING_WRAITH, StalkingWraithRender::new);
+        EntityRenderers.register(VoidHeartEntities.LESSER_SHOGGOTH, LesserShoggothRender::new);
+        EntityRenderers.register(VoidHeartEntities.VILE_FLESH_MASS, VileFleshMassRender::new);
+        EntityRenderers.register(VoidHeartEntities.FLESH_TENTACLE, FleshTentacleRender::new);
+        EntityRenderers.register(VoidHeartEntities.BILE_GLOB, context -> new GlowQuadRender<>(context, texture("bile_glob"), 0.3F));
+        EntityRenderers.register(VoidHeartEntities.BILE_POOL, BilePoolRender::new);
+        EntityRenderers.register(VoidHeartEntities.VEIL_GATE, VeilGateRender::new);
         EntityRenderers.register(VoidHeartEntities.FALLEN_BISHOP, FallenBishopRender::new);
         EntityRenderers.register(VoidHeartEntities.MALIGNANT_BOULDER, MalignantBoulderRender::new);
         EntityRenderers.register(VoidHeartEntities.LEGIONARY, LegionaryRender::new);

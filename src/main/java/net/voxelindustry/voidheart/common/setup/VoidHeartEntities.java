@@ -1,5 +1,11 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.voxelindustry.voidheart.common.content.sanctum.VeilGate;
+import net.voxelindustry.voidheart.common.content.sanctum.BilePool;
+import net.voxelindustry.voidheart.common.content.sanctum.BileGlob;
+import net.voxelindustry.voidheart.common.content.sanctum.FleshTentacle;
+import net.voxelindustry.voidheart.common.content.sanctum.VileFleshMass;
+import net.voxelindustry.voidheart.common.content.sanctum.LesserShoggoth;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -71,6 +77,12 @@ public class VoidHeartEntities
     public static EntityType<LargeEyeMaw> LARGE_EYE_MAW;
     public static EntityType<ArcaneEye> ARCANE_EYE;
     public static EntityType<ArcaneBolt> ARCANE_BOLT;
+    public static EntityType<LesserShoggoth> LESSER_SHOGGOTH;
+    public static EntityType<VileFleshMass> VILE_FLESH_MASS;
+    public static EntityType<FleshTentacle> FLESH_TENTACLE;
+    public static EntityType<BileGlob> BILE_GLOB;
+    public static EntityType<BilePool> BILE_POOL;
+    public static EntityType<VeilGate> VEIL_GATE;
     public static EntityType<StalkingWraith> STALKING_WRAITH;
     public static EntityType<WraithScarab> WRAITH_SCARAB;
     public static EntityType<WraithBeast> WRAITH_BEAST;
@@ -215,6 +227,59 @@ public class VoidHeartEntities
 
         registerEyes();
         registerDaedalusMobs();
+        registerSanctum();
+    }
+
+    private static void registerSanctum()
+    {
+        LESSER_SHOGGOTH = register("lesser_shoggoth", EntityType.Builder.of(LesserShoggoth::new, MobCategory.MONSTER)
+                .sized(1.4F, 1.2F)
+                .eyeHeight(0.9F)
+                .clientTrackingRange(10));
+        FabricDefaultAttributeRegistry.register(LESSER_SHOGGOTH, LesserShoggoth.createAttributes());
+
+        VILE_FLESH_MASS = register("vile_flesh_mass", EntityType.Builder.of(VileFleshMass::new, MobCategory.MONSTER)
+                .sized(4.6F, 3.4F)
+                .eyeHeight(2.6F)
+                .clientTrackingRange(10)
+                .updateInterval(1)
+                .fireImmune());
+        FabricDefaultAttributeRegistry.register(VILE_FLESH_MASS, VileFleshMass.createAttributes());
+
+        FLESH_TENTACLE = register("flesh_tentacle", EntityType.Builder.<FleshTentacle>of(FleshTentacle::new, MobCategory.MISC)
+                .sized(0.9F, 0.9F)
+                .clientTrackingRange(10)
+                .updateInterval(1)
+                .fireImmune()
+                .noSave()
+                .noSummon()
+                .noLootTable());
+
+        BILE_GLOB = register("bile_glob", EntityType.Builder.<BileGlob>of(BileGlob::new, MobCategory.MISC)
+                .sized(0.4F, 0.4F)
+                .clientTrackingRange(8)
+                .updateInterval(1)
+                .fireImmune()
+                .noSave()
+                .noSummon()
+                .noLootTable());
+
+        BILE_POOL = register("bile_pool", EntityType.Builder.<BilePool>of(BilePool::new, MobCategory.MISC)
+                .sized(0.5F, 0.1F)
+                .clientTrackingRange(8)
+                .updateInterval(20)
+                .fireImmune()
+                .noSave()
+                .noSummon()
+                .noLootTable());
+
+        VEIL_GATE = register("veil_gate", EntityType.Builder.<VeilGate>of(VeilGate::new, MobCategory.MISC)
+                .sized(0.1F, 0.1F)
+                .clientTrackingRange(8)
+                .updateInterval(20)
+                .fireImmune()
+                .noSummon()
+                .noLootTable());
     }
 
     private static void registerUnderwaySecurity()

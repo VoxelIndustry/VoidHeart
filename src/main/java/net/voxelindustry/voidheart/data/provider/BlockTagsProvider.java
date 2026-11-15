@@ -35,6 +35,11 @@ public class BlockTagsProvider extends FabricTagsProvider.BlockTagsProvider
                 .setReplace(false)
                 .add(VoidHeartBlocks.ABYSSAL_SILT.builtInRegistryHolder().key());
 
+        builder(BlockTags.MINEABLE_WITH_HOE)
+                .setReplace(false)
+                .add(VoidHeartBlocks.VILE_FLESH.builtInRegistryHolder().key())
+                .add(VoidHeartBlocks.VILE_FLESH_BRUISED.builtInRegistryHolder().key());
+
         // Water washes laid salt off the floor
         builder(BlockTags.WASHED_AWAY_BY_FLUIDS)
                 .setReplace(false)

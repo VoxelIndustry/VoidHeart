@@ -31,6 +31,9 @@ public class VoidHeartTags
 
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "pillar_place_instead_of_store"));
 
+    /** What a sanctum's pillar may hold once its guardian is dead. */
+    public static final TagKey<Item> BLESSED_CONTRAPTIONS = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "blessed_contraptions"));
+
     /**
      * Items a player can come across in the world, so the research that also makes them never hides them.
      */
@@ -54,6 +57,7 @@ public class VoidHeartTags
 
     public static final TagKey<EntityType<?>> MOBS_VOID_DUNGEON = mobTag("mobs/void_dungeon");
     public static final TagKey<EntityType<?>> MOBS_DAEDALUS = mobTag("mobs/daedalus");
+    public static final TagKey<EntityType<?>> MOBS_SANCTUM = mobTag("mobs/sanctum");
 
     public static final TagKey<EntityType<?>> MOBS_FALLEN = mobTag("mobs/fallen");
     public static final TagKey<EntityType<?>> MOBS_WRAITHS = mobTag("mobs/wraiths");

@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.content.wraithveil;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
@@ -10,6 +11,8 @@ import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
+import net.voxelindustry.voidheart.common.content.sanctum.Sanctums;
+import net.voxelindustry.voidheart.common.world.underway.MosaicDoor;
 
 import java.util.function.Consumer;
 
@@ -41,6 +44,14 @@ public class WraithVeilItem extends Item
             return InteractionResult.PASS;
 
         var level = context.getLevel();
+        // Pressed to the door in a temple's mosaic, it opens the way to that temple's sanctum instead
+        if (MosaicDoor.at(level, context.getClickedPos(), context.getClickedFace()) != null)
+        {
+            if (level instanceof ServerLevel serverLevel && Sanctums.tryOpen(serverLevel, context.getClickedPos(), context.getClickedFace()))
+                player.getCooldowns().addCooldown(context.getItemInHand(), WallPassagePlan.Plan.cooldownTicks());
+            return InteractionResult.SUCCESS;
+        }
+
         var plan = WallPassagePlan.plan(WallPassages.cells(level, player), context.getClickedPos(), context.getClickedFace(), player.position());
         if (plan == null)
             return InteractionResult.FAIL;

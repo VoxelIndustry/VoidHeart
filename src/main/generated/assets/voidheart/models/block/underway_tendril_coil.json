@@ -1,0 +1,201 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        0,
+        0,
+        11
+      ],
+      "to": [
+        4,
+        5,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        4,
+        4,
+        11
+      ],
+      "to": [
+        8,
+        9,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        8,
+        8,
+        11
+      ],
+      "to": [
+        12,
+        13,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        12,
+        11,
+        11
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        2,
+        1,
+        10
+      ],
+      "to": [
+        3,
+        3,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#tendril"
+        },
+        "east": {
+          "texture": "#tendril"
+        },
+        "north": {
+          "texture": "#tendril"
+        },
+        "south": {
+          "texture": "#tendril"
+        },
+        "up": {
+          "texture": "#tendril"
+        },
+        "west": {
+          "texture": "#tendril"
+        }
+      },
+      "from": [
+        10,
+        9,
+        10
+      ],
+      "to": [
+        11,
+        11,
+        11
+      ]
+    }
+  ],
+  "textures": {
+    "particle": "voidheart:block/underway/tendril",
+    "tendril": "voidheart:block/underway/tendril"
+  }
+}

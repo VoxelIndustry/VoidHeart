@@ -1,6 +1,7 @@
 {
   "values": [
     "#voidheart:mobs/void_dungeon",
-    "#voidheart:mobs/daedalus"
+    "#voidheart:mobs/daedalus",
+    "#voidheart:mobs/sanctum"
   ]
 }

@@ -12,6 +12,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeResolver;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
+import net.voxelindustry.voidheart.common.world.sanctum.SanctumAddress;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -92,6 +93,9 @@ public final class DungeonBiomeSource extends BiomeSource implements BiomeResolv
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ)
     {
+        // A sanctum is a temple of the same old world, under the same sky
+        if (SanctumAddress.at(QuartPos.toBlock(quartX), QuartPos.toBlock(quartZ)) >= 0)
+            return byTheme.get(DungeonTheme.TEMPLE);
         var address = DungeonAddress.at(QuartPos.toBlock(quartX), QuartPos.toBlock(quartZ));
         return address == null ? between : byTheme.get(address.theme());
     }

@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "voidheart:block/vile_flesh_bruised_0"
+      },
+      {
+        "model": "voidheart:block/vile_flesh_bruised_1"
+      },
+      {
+        "model": "voidheart:block/vile_flesh_bruised_2"
+      },
+      {
+        "model": "voidheart:block/vile_flesh_bruised_3"
+      }
+    ]
+  }
+}
