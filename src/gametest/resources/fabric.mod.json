@@ -92,7 +92,8 @@
       "net.voxelindustry.voidheart.gametest.VoidFissureClientTest",
       "net.voxelindustry.voidheart.gametest.ContravoidReactorClientTest",
       "net.voxelindustry.voidheart.gametest.DeepSiphonClientTest",
-      "net.voxelindustry.voidheart.gametest.EnergyWave2ClientTest"
+      "net.voxelindustry.voidheart.gametest.EnergyWave2ClientTest",
+      "net.voxelindustry.voidheart.gametest.WorldgenEntityIdClientTest"
     ]
   },
   "depends": {
