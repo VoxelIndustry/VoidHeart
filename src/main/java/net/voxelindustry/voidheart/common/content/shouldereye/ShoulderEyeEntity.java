@@ -13,9 +13,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Prediction;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
@@ -26,12 +23,10 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.config.VoidHeartConfig;
-import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Comparator;
@@ -69,7 +64,7 @@ public class ShoulderEyeEntity extends Mob
     private static final EntityDataAccessor<Integer> DATA_BEAM_TARGET = SynchedEntityData.defineId(ShoulderEyeEntity.class, EntityDataSerializers.INT);
 
     /**
-     * Set by the client so its own eye does not catch its crosshair, unless sneaking to take it back.
+     * Set by the client so its own eye does not catch its crosshair.
      */
     public static Predicate<ShoulderEyeEntity> hiddenFromLocalPick = eye -> false;
 
@@ -341,21 +336,6 @@ public class ShoulderEyeEntity extends Mob
             if (owner != null)
                 ShoulderEyes.onEyeDeath(owner);
         }
-    }
-
-    @Override
-    protected InteractionResult mobInteract(Player player, InteractionHand hand)
-    {
-        if (player.getId() != getOwnerId() || !player.isShiftKeyDown() || !player.getItemInHand(hand).isEmpty() || isDeadOrDying())
-            return InteractionResult.PASS;
-
-        if (player instanceof ServerPlayer serverPlayer)
-        {
-            ShoulderEyes.unbind(serverPlayer);
-            serverPlayer.getInventory().placeItemBackInInventory(new ItemStack(VoidHeartItems.SHOULDER_EYE), Prediction.SERVER_ONLY);
-            playSound(SoundEvents.ENDER_EYE_DEATH, 0.8F, 1.2F);
-        }
-        return InteractionResult.SUCCESS;
     }
 
     private void clientTick()

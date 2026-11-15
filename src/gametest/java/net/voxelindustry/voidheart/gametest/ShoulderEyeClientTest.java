@@ -1,24 +1,30 @@
 package net.voxelindustry.voidheart.gametest;
 
+import eu.pb4.trinkets.api.TrinketSlotAccess;
+import eu.pb4.trinkets.api.TrinketsApi;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeData;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeEntity;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyes;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.List;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
- * An eye bound to the player perches on their shoulder, burns a mob hunting them, and once slain grows back and flies home.
+ * An eye worn in its slot perches on their shoulder, burns a mob hunting them, and once slain grows back and flies home.
  */
 public class ShoulderEyeClientTest implements FabricClientGameTest
 {
@@ -35,8 +41,28 @@ public class ShoulderEyeClientTest implements FabricClientGameTest
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 10");
 
-            server.runOnServer(minecraft -> ShoulderEyes.bind(player(minecraft)));
+            // Using the eye puts it in its own head slot, from which it is called
+            server.runOnServer(minecraft ->
+            {
+                var player = player(minecraft);
+                player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.SHOULDER_EYE));
+                player.getMainHandItem().use(minecraft.overworld(), player, InteractionHand.MAIN_HAND);
+                if (!player.getMainHandItem().isEmpty() || !worn(minecraft).is(VoidHeartItems.SHOULDER_EYE))
+                    throw new AssertionError("Expected using the eye to put it in its slot, hand holds " + player.getMainHandItem() + ", slot " + worn(minecraft));
+            });
             context.waitTicks(60);
+
+            // Hovering the helmet opens the head group of slots, where the eye is worn
+            context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
+            context.waitTicks(3);
+            double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
+            int helmetX = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScaledWidth() / 2 - 88 + 16);
+            int helmetY = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScaledHeight() / 2 - 83 + 16);
+            context.getInput().setCursorPos(helmetX * scale, helmetY * scale);
+            context.waitTicks(3);
+            context.takeScreenshot("shoulder-eye-head-slot");
+            context.setScreen(() -> null);
+            context.waitTicks(2);
 
             server.runOnServer(minecraft ->
             {
@@ -56,6 +82,33 @@ public class ShoulderEyeClientTest implements FabricClientGameTest
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
             context.waitTicks(5);
             context.takeScreenshot("shoulder-eye-perched-front");
+
+            // Hidden from its owner in first person, it must not hide the water behind where it sits.
+            // It perches at eye height, so the player stands in a pit walled with barriers to have water level with the eye all around.
+            // Its body lags the head, so a head just turned toward the eye's shoulder brings it into view.
+            server.runCommand("fill -8 " + (GROUND - 1) + " -8 8 " + GROUND + " 8 water");
+            server.runCommand("fill -1 " + (GROUND - 1) + " -1 1 " + GROUND + " 1 barrier");
+            server.runCommand("fill 0 " + (GROUND - 1) + " 0 0 " + GROUND + " 0 air");
+            server.runCommand("tp @a 0.5 " + (GROUND - 1) + " 0.5 0 0");
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            context.waitTicks(10);
+            context.runOnClient(minecraft ->
+            {
+                var player = minecraft.player;
+                player.setYRot(-60);
+                player.setYHeadRot(-60);
+                player.setXRot(0);
+                player.yBodyRot = 0;
+                player.yBodyRotO = 0;
+            });
+            context.takeScreenshot("shoulder-eye-first-person-water");
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            context.waitTicks(3);
+            context.takeScreenshot("shoulder-eye-first-person-water-pose");
+            server.runCommand("fill -8 " + (GROUND - 1) + " -8 8 " + (GROUND - 1) + " 8 dirt");
+            server.runCommand("fill -8 " + GROUND + " -8 8 " + GROUND + " 8 grass_block");
+            server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 10");
+            context.waitTicks(5);
 
             server.runCommand("summon husk 3.5 " + (GROUND + 1) + " 7.5 {NoAI:1b,PersistenceRequired:1b}");
             server.runOnServer(minecraft -> husk(minecraft).setTarget(player(minecraft)));
@@ -109,6 +162,25 @@ public class ShoulderEyeClientTest implements FabricClientGameTest
             {
                 if (!eye(minecraft).isPerched())
                     throw new AssertionError("Expected the regrown eye back on the shoulder");
+                eye(minecraft).setHealth(5);
+            });
+            context.waitTick();
+
+            // Taken out of its slot, the eye leaves, but its wounds are kept for when it is worn again
+            server.runOnServer(minecraft -> slot(minecraft).set(ItemStack.EMPTY));
+            context.waitTicks(5);
+            server.runOnServer(minecraft ->
+            {
+                if (!eyes(minecraft).isEmpty())
+                    throw new AssertionError("Expected the eye gone once taken out of its slot");
+                slot(minecraft).set(new ItemStack(VoidHeartItems.SHOULDER_EYE));
+            });
+            context.waitTicks(5);
+            server.runOnServer(minecraft ->
+            {
+                float health = eye(minecraft).getHealth();
+                if (health > 6)
+                    throw new AssertionError("Expected the eye worn again to keep its wounds, got health " + health);
             });
         }
     }
@@ -122,6 +194,16 @@ public class ShoulderEyeClientTest implements FabricClientGameTest
             context.waitTick();
         }
         throw new AssertionError("Expected the eye to fire at the husk hunting the player");
+    }
+
+    private static TrinketSlotAccess slot(MinecraftServer minecraft)
+    {
+        return TrinketsApi.getAttachment(player(minecraft)).getInventory(ShoulderEyes.SLOT).getOrCreateSlotAccess(0);
+    }
+
+    private static ItemStack worn(MinecraftServer minecraft)
+    {
+        return slot(minecraft).get();
     }
 
     private static List<ShoulderEyeEntity> eyes(MinecraftServer minecraft)
