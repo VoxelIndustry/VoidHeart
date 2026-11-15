@@ -87,7 +87,7 @@ dependencies {
 
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    implementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
+    implementation "net.voxelindustry:steamlayer:${project.steamlayer_version}"
     implementation "maven.modrinth:geckolib:${project.geckolib_version}"
 
     implementation "eu.pb4:trinkets:${project.trinkets_version}"
