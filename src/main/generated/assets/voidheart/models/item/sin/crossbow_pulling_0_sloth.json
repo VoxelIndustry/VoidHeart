@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/crossbow_pulling_0",
+  "textures": {
+    "layer1": "voidheart:sin/crossbow_sloth"
+  }
+}

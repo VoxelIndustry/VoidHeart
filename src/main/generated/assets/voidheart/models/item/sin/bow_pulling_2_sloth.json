@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/bow_pulling_2",
+  "textures": {
+    "layer1": "voidheart:sin/bow_pulling_2_sloth"
+  }
+}

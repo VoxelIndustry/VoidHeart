@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/golden_sword",
+  "textures": {
+    "layer1": "voidheart:sin/sword_wrath"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "icon": "voidheart:seething_steel_ingot",
+  "insight_cost": 12,
+  "knowledge_cost": 1200,
+  "knowledge_per_second": 1.5,
+  "requires": [
+    "voidheart:refinement"
+  ],
+  "unlocks": [],
+  "recipes": [
+    "voidheart:altar/sin_infusion_pride",
+    "voidheart:altar/sin_infusion_wrath",
+    "voidheart:altar/sin_infusion_gluttony",
+    "voidheart:altar/sin_infusion_sloth",
+    "voidheart:altar/sin_infusion_greed",
+    "voidheart:altar/sin_cleansing"
+  ]
+}

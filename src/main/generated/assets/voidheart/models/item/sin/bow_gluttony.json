@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/bow",
+  "textures": {
+    "layer1": "voidheart:sin/bow_gluttony"
+  }
+}

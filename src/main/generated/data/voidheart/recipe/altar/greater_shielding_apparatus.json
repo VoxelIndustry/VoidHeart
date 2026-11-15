@@ -43,7 +43,7 @@
   "outputs": {
     "minecraft:itemstack": [
       {
-        "identifier": "steamlayer:itemstack_ingredient",
+        "identifier": "steamlayer:itemstack_transform_ingredient",
         "item": "voidheart:greater_shielding_apparatus"
       }
     ]

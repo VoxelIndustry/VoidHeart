@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/copper_axe",
+  "textures": {
+    "layer1": "voidheart:sin/axe_greed"
+  }
+}

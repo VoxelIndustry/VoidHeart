@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/golden_spear",
+  "textures": {
+    "layer1": "voidheart:sin/spear_pride"
+  }
+}

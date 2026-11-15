@@ -1,0 +1,287 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_pride"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_pride"
+            },
+            "property": "minecraft:display_context"
+          },
+          "on_true": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_flare"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_flare"
+            },
+            "property": "minecraft:display_context"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "pride"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_wrath"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_wrath"
+            },
+            "property": "minecraft:display_context"
+          },
+          "on_true": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_flare"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_flare"
+            },
+            "property": "minecraft:display_context"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "wrath"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_gluttony"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_gluttony"
+            },
+            "property": "minecraft:display_context"
+          },
+          "on_true": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_flare"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_flare"
+            },
+            "property": "minecraft:display_context"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "gluttony"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_sloth"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_sloth"
+            },
+            "property": "minecraft:display_context"
+          },
+          "on_true": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_flare"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_flare"
+            },
+            "property": "minecraft:display_context"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "sloth"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_greed"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_greed"
+            },
+            "property": "minecraft:display_context"
+          },
+          "on_true": {
+            "type": "minecraft:select",
+            "cases": [
+              {
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "voidheart:item/sin/iron_spear_flare"
+                },
+                "when": [
+                  "gui",
+                  "ground",
+                  "fixed",
+                  "on_shelf"
+                ]
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "voidheart:item/sin/iron_spear_in_hand_flare"
+            },
+            "property": "minecraft:display_context"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "greed"
+      }
+    ],
+    "component": "voidheart:sin",
+    "fallback": {
+      "type": "minecraft:select",
+      "cases": [
+        {
+          "model": {
+            "type": "minecraft:model",
+            "model": "minecraft:item/iron_spear"
+          },
+          "when": [
+            "gui",
+            "ground",
+            "fixed",
+            "on_shelf"
+          ]
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:model",
+        "model": "minecraft:item/iron_spear_in_hand"
+      },
+      "property": "minecraft:display_context"
+    },
+    "property": "minecraft:component"
+  },
+  "swap_animation_scale": 1.95
+}

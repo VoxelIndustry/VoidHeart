@@ -16,17 +16,36 @@ group = project.maven_group
 
 repositories {
     mavenLocal()
-    maven {
-        name = "Gitea"
-        url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
-
-        credentials(HttpHeaderCredentials) {
-            name = "Authorization"
-            value = "token ${gitea_token}"
+    // SteamLayer is published to GitHub Packages, which needs a token even to read: GITHUB_TOKEN in Actions, gpr.user and gpr.key locally
+    def gprUser = findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+    def gprKey = findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+    if (gprKey != null) {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/VoxelIndustry/SteamLayer")
+            credentials {
+                username = gprUser
+                password = gprKey
+            }
+            content {
+                includeGroup "net.voxelindustry"
+            }
         }
+    }
+    // Older SteamLayer builds are on the private Gitea, only reachable with gitea_token
+    if (hasProperty("gitea_token")) {
+        maven {
+            name = "Gitea"
+            url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
 
-        authentication {
-            header(HttpHeaderAuthentication)
+            credentials(HttpHeaderCredentials) {
+                name = "Authorization"
+                value = "token ${property('gitea_token')}"
+            }
+
+            authentication {
+                header(HttpHeaderAuthentication)
+            }
         }
     }
 
@@ -71,7 +90,7 @@ dependencies {
 
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    implementation "net.voxelindustry:SteamLayer:${project.steamlayer_version}"
+    implementation "net.voxelindustry:steamlayer:${project.steamlayer_version}"
     implementation "maven.modrinth:geckolib:${project.geckolib_version}"
 
     implementation "eu.pb4:trinkets:${project.trinkets_version}"

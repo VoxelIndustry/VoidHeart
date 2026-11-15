@@ -1,0 +1,43 @@
+{
+  "type": "voidheart:altar",
+  "experience": 315,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemtag_ingredient",
+        "tag": "voidheart:sin_infusable"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:covetous_copper_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:covetous_copper_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:covetous_copper_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:covetous_copper_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:covetous_copper_flask"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "components": {
+          "voidheart:sin": "greed"
+        },
+        "identifier": "steamlayer:itemstack_transform_ingredient"
+      }
+    ]
+  },
+  "time": 40
+}

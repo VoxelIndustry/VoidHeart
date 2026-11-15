@@ -107,14 +107,19 @@ class ResearchTreeDataTest
         {
             var made = new HashSet<String>();
             for (var recipe : entry.getValue().recipes())
-                made.add(madeBy(recipe));
+            {
+                var item = madeBy(recipe);
+                if (item != null)
+                    made.add(item);
+            }
 
             assertThat(entry.getValue().unlocks().stream().map(Identifier::toString)).as("unlocks of %s", entry.getKey()).containsExactlyInAnyOrderElementsOf(made);
         }
     }
 
     /**
-     * An altar recipe with no output gives back a block entity's own item through its first input, as the Void Heart does.
+     * An altar recipe with no output gives back a block entity's own item through its first input, as the Void Heart does. One that transforms its catalyst
+     * without changing its item, as a sin infusion does, makes nothing new.
      */
     private static String madeBy(Identifier recipe) throws IOException
     {
@@ -127,7 +132,10 @@ class ResearchTreeDataTest
 
         var outputs = json.getAsJsonObject("outputs").getAsJsonArray("minecraft:itemstack");
         if (outputs != null)
-            return outputs.get(0).getAsJsonObject().get("item").getAsString();
+        {
+            var output = outputs.get(0).getAsJsonObject();
+            return output.has("item") ? output.get("item").getAsString() : null;
+        }
         return json.getAsJsonObject("inputs").getAsJsonArray("minecraft:itemstack").get(0).getAsJsonObject().get("item").getAsString();
     }
 

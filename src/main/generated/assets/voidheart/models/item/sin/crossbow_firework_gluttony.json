@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/crossbow_firework",
+  "textures": {
+    "layer1": "voidheart:sin/crossbow_gluttony"
+  }
+}

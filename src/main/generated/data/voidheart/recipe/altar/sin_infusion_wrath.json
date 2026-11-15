@@ -1,0 +1,43 @@
+{
+  "type": "voidheart:altar",
+  "experience": 315,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemtag_ingredient",
+        "tag": "voidheart:sin_infusable"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:seething_steel_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:seething_steel_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:seething_steel_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:seething_steel_ingot"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:seething_steel_flask"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "components": {
+          "voidheart:sin": "wrath"
+        },
+        "identifier": "steamlayer:itemstack_transform_ingredient"
+      }
+    ]
+  },
+  "time": 40
+}

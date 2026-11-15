@@ -11,6 +11,7 @@
     "MixinEntityWallPassage",
     "MixinFoodDataGrafts",
     "MixinLivingEntityBarrierDisguise",
+    "MixinLivingEntitySins",
     "MixinLivingEntityWallPassage",
     "MixinPlayerGrafts",
     "MixinPlayerShieldingApparatus",
@@ -18,7 +19,8 @@
     "MixinServerLevelWorldgenEntityId",
     "MixinServerPlayerGameModeColumns",
     "MixinStableLifecycle",
-    "MixinThrownEnderpearlDungeon"
+    "MixinThrownEnderpearlDungeon",
+    "MixinThrownTridentSin"
   ],
   "client": [
     "client.MixinAtmosphericFogClarity",
@@ -39,7 +41,9 @@
     "client.KleinDimPostChainAccessor",
     "client.KleinDimPostPassAccessor",
     "client.MixinGameRendererKleinDim",
-    "client.MixinHumanoidModelKleinStaff"
+    "client.MixinHumanoidModelKleinStaff",
+    "client.MixinThrownTridentRendererSin",
+    "client.MixinThrownTridentRenderStateSin"
   ],
   "injectors": {
     "defaultRequire": 1

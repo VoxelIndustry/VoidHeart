@@ -320,6 +320,7 @@ public class ModelsProvider extends FabricModelProvider
     @Override
     public void generateItemModels(ItemModelGenerators generator)
     {
+        SinInlayModels.generate(generator);
         generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.AZURIUM_SHARD, ModelTemplates.FLAT_ITEM);
