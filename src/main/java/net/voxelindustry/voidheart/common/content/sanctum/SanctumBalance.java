@@ -1,8 +1,9 @@
 package net.voxelindustry.voidheart.common.content.sanctum;
 
 /**
- * Every number of the sanctum's fight, in one place to tune. All guesses for now, set above the Underway's defences, for players in netherite
- * with Protection: the hits that matter go through armour, as plain damage barely dents it.
+ * Every number of the sanctum's fight, in one place to tune. Set above the Underway's defences, for players in netherite. Only the bite and the
+ * bile's corrosion go through armour: the bite is answered by cutting the grab first, and the pools by stepping out of them. Tuned once after a
+ * playtest in unenchanted netherite with the largest Shielding Apparatus and a netherite sword, which found the first numbers unbeatable.
  */
 public final class SanctumBalance
 {
@@ -11,7 +12,8 @@ public final class SanctumBalance
     }
 
     // The Vile Flesh Mass
-    public static final double MASS_HEALTH = 560;
+    /** About 90 hits of an unenchanted netherite sword through its armour, before any feeding. */
+    public static final double MASS_HEALTH = 440;
     public static final double MASS_ARMOR = 12;
     public static final double MASS_TOUGHNESS = 6;
     /** How near a player must come for it to wake, and how far it keeps fighting. */
@@ -61,7 +63,8 @@ public final class SanctumBalance
     public static final int POOL_TICKS = 110;
     public static final double POOL_RADIUS = 1.7;
     public static final int POOL_INTERVAL = 10;
-    public static final float POOL_DAMAGE = 2.5F;
+    /** Through armour, so kept low: 2 health a second for standing in it, while its real cost is the armour it eats. */
+    public static final float POOL_DAMAGE = 1.0F;
     /** Durability each piece of armour loses with every bite of the pool. */
     public static final int POOL_ARMOR_WEAR = 3;
 
@@ -80,7 +83,7 @@ public final class SanctumBalance
     /** Below this share of health a shoggoth goes back to feed the mass, if it is near. */
     public static final float FEED_BELOW = 0.4F;
     public static final double FEED_RANGE = 40;
-    /** What feeding gives back to the mass: a flat amount, and so many times what the shoggoth had left. */
-    public static final float FEED_HEAL = 24;
-    public static final float FEED_HEAL_PER_HEALTH = 3;
+    /** What one shoggoth fed back gives the mass, as a share of its health, and the most all its feeding may give it, so feeding slows a fight but never undoes it. */
+    public static final float FEED_HEAL_SHARE = 0.05F;
+    public static final float FEED_HEAL_CAP_SHARE = 0.2F;
 }

@@ -303,7 +303,8 @@ public class SanctumClientTest implements FabricClientGameTest
                         + shoggoth.isFeeding() + " " + mass(minecraft, box).distanceTo(shoggoth) + " from the mass").toList()),
                 minecraft -> count(minecraft, LesserShoggoth.class, box) == 0);
         float fed = server.computeOnServer(minecraft -> mass(minecraft, box).getHealth());
-        expect(fed > halved + 20, "Feeding did not heal the mass: " + halved + " then " + fed);
+        float share = (float) SanctumBalance.MASS_HEALTH * SanctumBalance.FEED_HEAL_SHARE;
+        expect(fed > halved + share * 0.9F && fed < halved + share * 1.1F, "Feeding did not heal the mass by its share: " + halved + " then " + fed);
 
         // Dead, it sinks while the pillar rises where it sat
         server.runOnServer(minecraft -> mass(minecraft, box).kill(dungeons(minecraft)));

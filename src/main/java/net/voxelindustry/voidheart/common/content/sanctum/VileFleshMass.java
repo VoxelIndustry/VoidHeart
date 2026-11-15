@@ -79,6 +79,8 @@ public class VileFleshMass extends VoidMonster
     private int sweepCooldown;
     private int grabCooldown = GRAB_COOLDOWN / 3;
     private int spitCooldown;
+    /** What feeding has given back so far, kept with the mass so leaving and coming back does not reset the cap. */
+    private float fedHealth;
 
     /** Client only: ticks since each kind of move began, or -1. */
     public int sweepAge = -1, grabAge = -1, spitAge = -1, biteAge = -1, feedAge = -1;
@@ -386,7 +388,13 @@ public class VileFleshMass extends VoidMonster
     {
         if (!(level() instanceof ServerLevel level))
             return;
-        heal(FEED_HEAL + FEED_HEAL_PER_HEALTH * shoggoth.getHealth());
+        // A flat share per shoggoth, whatever its size or what it had left, and never past the cap over the whole fight
+        float heal = Math.min(getMaxHealth() * FEED_HEAL_SHARE, getMaxHealth() * FEED_HEAL_CAP_SHARE - fedHealth);
+        if (heal > 0)
+        {
+            heal(heal);
+            fedHealth += heal;
+        }
         level.broadcastEntityEvent(this, EVENT_FEED);
         playSound(VoidHeartSounds.MASS_FEED, 2, 0.7F);
         level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, VoidHeartBlocks.VILE_FLESH.defaultBlockState()), shoggoth.getX(), shoggoth.getY() + 0.5, shoggoth.getZ(),
@@ -495,6 +503,7 @@ public class VileFleshMass extends VoidMonster
     {
         super.addAdditionalSaveData(output);
         output.putBoolean("Awake", isAwake());
+        output.putFloat("FedHealth", fedHealth);
     }
 
     @Override
@@ -502,6 +511,7 @@ public class VileFleshMass extends VoidMonster
     {
         super.readAdditionalSaveData(input);
         setAwake(input.getBooleanOr("Awake", false));
+        fedHealth = input.getFloatOr("FedHealth", 0);
         if (hasCustomName())
             bossEvent.setName(getDisplayName());
     }
