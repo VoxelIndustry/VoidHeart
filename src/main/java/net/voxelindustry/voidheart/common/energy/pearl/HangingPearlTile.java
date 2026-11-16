@@ -63,6 +63,8 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
 
     // Synced to clients
     private List<BlockPos> choir = List.of();
+    /** The lowest position among every pearl linked to this one through their neighbours, see {@link PearlChoir}. */
+    private long           choirRoot;
     private boolean        fed;
     private boolean        fieryShort;
     private MachinePower   power = MachinePower.IDLE;
@@ -75,6 +77,7 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
     public HangingPearlTile(BlockPos pos, BlockState state)
     {
         super(PearlContent.HANGING_PEARL_TILE, pos, state);
+        choirRoot = pos.asLong();
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, HangingPearlTile pearl)
@@ -94,6 +97,7 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
                 fed = false;
                 fieryShort = false;
                 choir = List.of();
+                choirRoot = worldPosition.asLong();
                 meter.record(0, 0);
                 power = MachinePower.IDLE;
                 setChanged();
@@ -106,9 +110,11 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         if ((level.getGameTime() + worldPosition.asLong()) % SCAN_PERIOD == 0)
         {
             var found = scanChoir(level);
-            if (!found.equals(choir))
+            var root = found.isEmpty() ? worldPosition.asLong() : PearlChoir.root(worldPosition.asLong(), at -> choirOf(level, at, found));
+            if (!found.equals(choir) || root != choirRoot)
             {
                 choir = found;
+                choirRoot = root;
                 changed = true;
             }
         }
@@ -182,6 +188,19 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         }
         found.sort(Comparator.comparingLong(BlockPos::asLong));
         return List.copyOf(found);
+    }
+
+    /**
+     * The pearls a pearl counts in reach, as packed positions: this one's just found, or another loaded one's from its last scan.
+     */
+    private List<Long> choirOf(ServerLevel level, long packed, List<BlockPos> ownFound)
+    {
+        if (packed == worldPosition.asLong())
+            return ownFound.stream().map(BlockPos::asLong).toList();
+        var pos = BlockPos.of(packed);
+        if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof HangingPearlTile other))
+            return List.of();
+        return other.choir.stream().map(BlockPos::asLong).toList();
     }
 
     private void animate()
@@ -323,14 +342,11 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
     }
 
     /**
-     * The choir's shared seed, from the lowest position among it, so every pearl in one choir works out the same.
+     * The choir's shared seed, from its root, so every pearl linked into one choir works out the same, even those out of each other's reach.
      */
     public long choirSeed()
     {
-        var lowest = worldPosition.asLong();
-        for (var other : choir)
-            lowest = Math.min(lowest, other.asLong());
-        return PearlTremor.seedOf(lowest);
+        return PearlTremor.seedOf(choir.isEmpty() ? worldPosition.asLong() : choirRoot);
     }
 
     public long seed()
@@ -351,6 +367,7 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         fiery = Math.clamp(nbt.getIntOr("fiery", 0), 0, PearlBalance.FIERY_TANK);
         credit = Math.clamp(nbt.getDoubleOr("credit", 0), 0, 1);
         choir = nbt.read("choir", BlockPos.CODEC.listOf()).map(List::copyOf).orElse(List.of());
+        choirRoot = nbt.getLongOr("choirRoot", worldPosition.asLong());
         fed = nbt.getBooleanOr("fed", false);
         fieryShort = nbt.getBooleanOr("fieryShort", false);
         power = MachinePower.byOrdinal(nbt.getIntOr("power", 0));
@@ -367,6 +384,7 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         nbt.putInt("fiery", fiery);
         nbt.putDouble("credit", credit);
         nbt.store("choir", BlockPos.CODEC.listOf(), choir);
+        nbt.putLong("choirRoot", choirRoot);
         nbt.putBoolean("fed", fed);
         nbt.putBoolean("fieryShort", fieryShort);
         nbt.putInt("power", power.ordinal());

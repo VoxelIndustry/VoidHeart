@@ -155,7 +155,8 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     public static class State extends BlockEntityRenderState
     {
         public float   share;
-        public float   time;
+        /** Game time with the partial tick, kept in double: a float of an old world's time can't tell a tick's quarters apart. */
+        public double  time;
         public long    tick;
         public long    seed;
         public boolean fed;
@@ -190,7 +191,7 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         var level = pearl.getLevel();
         var pos = pearl.getBlockPos();
         state.share = pearl.growth().share();
-        state.time = level == null ? 0 : level.getGameTime() + partialTicks;
+        state.time = level == null ? 0 : (double) level.getGameTime() + partialTicks;
         state.tick = level == null ? 0 : level.getGameTime();
         state.seed = pearl.seed();
         state.fed = pearl.isFed() && !pearl.growth().isMature();
@@ -331,11 +332,10 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         if (collapse > 0)
         {
             var coreHalf = BODY_HALF * CORE_SCALE * Math.min(1, collapse * 2);
-            var yaw = (state.time * SPIN + (state.seed & 0xFFFF) / 65536F * 360) * Mth.DEG_TO_RAD;
-            var coreTurn = new Quaternionf().rotationY(-yaw * 1.7F + Mth.HALF_PI / 2).mul(UPRIGHT);
+            var coreTurn = new Quaternionf().rotationY(-yaw(state, state.time) * 1.7F + Mth.HALF_PI / 2).mul(UPRIGHT);
             core.cube(jolted(center, state.seed, state.tick, tremor, 0, 1), coreTurn, coreHalf, ARGB.color(255, 0xFFFFFF));
             var rimAlpha = Math.round(Mth.clamp(collapse * RIM_ALPHA + tremor * RIM_FLARE, 0, 255));
-            rim.sprite(center, state.camera, coreHalf * RIM_RADIUS, state.time * RIM_TURN, ARGB.color(rimAlpha, 0xFFFFFF));
+            rim.sprite(center, state.camera, coreHalf * RIM_RADIUS, (float) ((state.time * RIM_TURN) % 360), ARGB.color(rimAlpha, 0xFFFFFF));
         }
 
         motes(state, center, glow);
@@ -345,10 +345,17 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     /**
      * How the whole pearl is turned under its chain at a time.
      */
-    private static Quaternionf turn(State state, float time)
+    private static Quaternionf turn(State state, double time)
     {
-        var yaw = (time * SPIN + (state.seed & 0xFFFF) / 65536F * 360) * Mth.DEG_TO_RAD;
-        return new Quaternionf().rotationY(yaw).mul(UPRIGHT);
+        return new Quaternionf().rotationY(yaw(state, time)).mul(UPRIGHT);
+    }
+
+    /**
+     * How far round the pearl has turned under its chain, in radians, wrapped in double before it becomes a float.
+     */
+    private static float yaw(State state, double time)
+    {
+        return ((float) ((time * SPIN) % 360) + (state.seed & 0xFFFF) / 65536F * 360) * Mth.DEG_TO_RAD;
     }
 
     /**
@@ -412,7 +419,7 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
      */
     private static void afterImages(State state, Vector3f center, int tint, float seamAlpha, Quads ghosts, Quads seams)
     {
-        var since = state.time - state.tick;
+        var since = (float) (state.time - state.tick);
         var color = ARGB.multiply(ARGB.color(255, tint), ARGB.color(255, AFTERIMAGE_SHADE));
         for (int age = 1; age <= AFTERIMAGES; age++)
         {
@@ -478,10 +485,10 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
             return;
         for (int i = 0; i < MOTES; i++)
         {
-            var offset = (float) i / MOTES * MOTE_LIFE;
+            var offset = (double) i / MOTES * MOTE_LIFE;
             var age = state.time + offset;
             var cycle = (long) Math.floor(age / MOTE_LIFE);
-            var t = (age - cycle * MOTE_LIFE) / MOTE_LIFE;
+            var t = (float) ((age - cycle * (double) MOTE_LIFE) / MOTE_LIFE);
             var direction = direction(state.seed, i, cycle);
             var fall = t * t;
             var at = new Vector3f(direction).mul(Mth.lerp(fall, MOTE_FROM, MOTE_TO)).add(center);

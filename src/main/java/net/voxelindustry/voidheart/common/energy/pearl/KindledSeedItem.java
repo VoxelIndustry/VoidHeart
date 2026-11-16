@@ -7,6 +7,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.block.Block;
 
+import java.util.Locale;
 import java.util.function.Consumer;
 
 /**
@@ -27,7 +28,7 @@ public class KindledSeedItem extends BlockItem
         if (growth != null && growth > 0)
         {
             var stage = PearlGrowth.stageOf((float) (growth / PearlBalance.GROWTH_TICKS));
-            tooltip.accept(Component.translatable("voidheart.kindled_fractal_seed.grown." + stage.name().toLowerCase()));
+            tooltip.accept(Component.translatable("voidheart.kindled_fractal_seed.grown." + stage.name().toLowerCase(Locale.ROOT)));
         }
         tooltip.accept(Component.translatable("voidheart.kindled_fractal_seed.hint"));
     }

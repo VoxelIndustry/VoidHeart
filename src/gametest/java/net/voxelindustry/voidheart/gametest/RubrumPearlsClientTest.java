@@ -50,8 +50,8 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.waitFor;
 /**
  * Collapsing Rubrum Pearls hung from chains in a creative well's field. A kindled seed hangs only under an upright chain. Six pearls in reach of
  * each other grow twice as fast as one alone, a pearl without void energy or Fiery pauses, a pearl whose chain is broken drops its seed carrying its
- * growth, which hangs again where it left off, and a mature pearl is picked with an empty hand. One relay feeds every pearl it links, from a storage of Fiery
- * before its collector. Captures show each stage by day and night, a pearl drinking in a relay's Fiery through threads, a choir shuddering
+ * growth, which hangs again where it left off, and a mature pearl is picked with an empty hand. A row whose ends are out of each other's reach still
+ * shares one tremor seed. One relay feeds every pearl it links, from a storage of Fiery before its collector. Captures show each stage by day and night, a pearl drinking in a relay's Fiery through threads, a choir shuddering
  * together and the after-images it leaves, and the items.
  */
 public class RubrumPearlsClientTest implements FabricClientGameTest
@@ -65,6 +65,8 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
     private static final List<BlockPos> CHOIR = List.of(
             new BlockPos(-8, P, 0), new BlockPos(-6, P, 0), new BlockPos(-4, P, 0),
             new BlockPos(-7, P, 2), new BlockPos(-5, P, 2), new BlockPos(-6, P, 3));
+    // Three in a row three blocks apart, so each reaches only its neighbours, and more than 4 from the choir
+    private static final List<BlockPos> ROW = List.of(new BlockPos(-12, P, 8), new BlockPos(-9, P, 8), new BlockPos(-6, P, 8));
     private static final BlockPos LONE     = new BlockPos(8, P, 0);
     private static final BlockPos THIRSTY  = new BlockPos(12, P, 4);
     private static final BlockPos SIDEWAYS = new BlockPos(14, P + 1, 6);
@@ -103,6 +105,7 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
 
             hangsOnlyUnderUprightChains(context, server);
             choirGrowsTwiceAsFast(context, server);
+            rowSharesOneRoot(context, server);
             pausesWhenStarved(context, server);
             dropsItsSeedWithItsGrowth(context, server);
             pickedWhenMature(context, server);
@@ -196,6 +199,38 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
             expect(thirsty.growth().progress() == 0, "A pearl without Fiery should not grow, it grew " + thirsty.growth().progress());
             expect(thirsty.isFieryShort() && !thirsty.isFed(), "A pearl without Fiery should say it is thirsty");
         });
+    }
+
+    /**
+     * Three pearls in a row, each in reach of its neighbours only: the two ends never count each other, yet all three take one tremor seed, the
+     * lowest of the row's, so they fall into step as one choir.
+     */
+    private static void rowSharesOneRoot(ClientGameTestContext context, TestServerContext server)
+    {
+        for (var pos : ROW)
+            hang(server, pos);
+        context.waitTicks(3);
+        server.runOnServer(minecraft ->
+        {
+            for (var pos : ROW)
+                feedFromZero(pearl(minecraft, pos));
+        });
+
+        var lowest = ROW.stream().mapToLong(BlockPos::asLong).min().orElseThrow();
+        waitFor(context, server, 200, () -> "The row's pearls should take one tremor seed, they take "
+                        + server.computeOnServer(minecraft -> ROW.stream().map(pos -> pearl(minecraft, pos).choirSeed()).toList()),
+                minecraft -> ROW.stream().allMatch(pos -> pearl(minecraft, pos).choirSeed() == PearlTremor.seedOf(lowest)));
+        server.runOnServer(minecraft ->
+        {
+            expect(pearl(minecraft, ROW.getFirst()).choir().equals(List.of(ROW.get(1))) && pearl(minecraft, ROW.getLast()).choir().equals(List.of(ROW.get(1))),
+                    "The row's ends should count only the middle pearl, they count " + pearl(minecraft, ROW.getFirst()).choir() + " and "
+                            + pearl(minecraft, ROW.getLast()).choir());
+        });
+        context.waitFor(minecraft -> ROW.stream().allMatch(pos -> minecraft.level.getBlockEntity(pos) instanceof HangingPearlTile pearl
+                && pearl.choirSeed() == PearlTremor.seedOf(lowest)), 100);
+
+        for (var pos : ROW)
+            server.runCommand("setblock " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " air");
     }
 
     private static void pausesWhenStarved(ClientGameTestContext context, TestServerContext server)
@@ -459,8 +494,18 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
             }
         });
         context.waitTicks(PearlTremor.SYNC_TICKS + 60);
-        context.waitFor(minecraft -> sharedBurst(minecraft) > 0.5F, 1200);
-        server.runCommand("tick freeze");
+        // The freeze lands a tick or two after the burst is seen, so make sure it caught the burst, trying again if it just missed
+        var held = 0F;
+        for (int attempt = 0; attempt < 5 && held <= 0; attempt++)
+        {
+            if (attempt > 0)
+                server.runCommand("tick unfreeze");
+            context.waitFor(minecraft -> sharedBurst(minecraft) > 0.5F, 1200);
+            server.runCommand("tick freeze");
+            context.waitTick();
+            held = context.computeOnClient(RubrumPearlsClientTest::sharedBurst);
+        }
+        expect(held > 0, "The choir's shared burst should still be showing once the game is frozen, it reads " + held);
 
         context.getInput().pressKey(InputConstants.KEY_F1);
         for (int step = 0; step < 4; step++)
