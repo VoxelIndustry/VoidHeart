@@ -1,0 +1,17 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:collapsing_rubrum_pearl",
+  "insight_cost": 16,
+  "knowledge_cost": 4500,
+  "knowledge_per_second": 2.5,
+  "requires": [
+    "voidheart:contravoid_reactor"
+  ],
+  "unlocks": [
+    "voidheart:kindled_fractal_seed"
+  ],
+  "recipes": [
+    "voidheart:shatterforge/kindled_fractal_seed_from_fractal_rubrum_seed"
+  ]
+}

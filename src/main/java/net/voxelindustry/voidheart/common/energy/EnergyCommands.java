@@ -9,6 +9,7 @@ import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineContent;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneContent;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorContent;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
 import net.voxelindustry.voidheart.common.energy.siphon.DeepSiphonContent;
 import net.voxelindustry.voidheart.common.energy.spike.LeySpikeContent;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
@@ -40,6 +41,7 @@ public final class EnergyCommands
         VoidFissureContent.registerCommands(energy);
         ContravoidReactorContent.registerCommands(energy);
         DeepSiphonContent.registerCommands(energy);
+        PearlContent.registerCommands(energy);
 
         builder.then(energy);
     }
