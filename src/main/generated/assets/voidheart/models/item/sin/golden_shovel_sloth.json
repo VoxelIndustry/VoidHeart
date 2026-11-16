@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/golden_shovel",
+  "textures": {
+    "layer1": "voidheart:sin/shovel_sloth"
+  }
+}

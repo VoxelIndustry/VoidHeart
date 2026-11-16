@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/iron_shovel",
+  "textures": {
+    "layer1": "voidheart:sin/shovel_pride"
+  }
+}

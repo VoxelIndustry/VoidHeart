@@ -67,6 +67,16 @@ public enum Sin implements StringRepresentable
     }
 
     /**
+     * The line a tool of this sin speaks at a digging stage.
+     *
+     * @param stage from 1 to {@link SinBalance#STAGES}
+     */
+    public String diggingLoreKey(int stage)
+    {
+        return translationKey() + ".digging.stage." + stage;
+    }
+
+    /**
      * The line shown on another sin's weapon to a player devoted to this one.
      */
     public String resentKey()

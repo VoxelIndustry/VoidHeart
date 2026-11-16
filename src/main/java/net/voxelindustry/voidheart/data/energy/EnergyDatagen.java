@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineDatagen;
+import net.voxelindustry.voidheart.common.energy.gnawer.GnawerDatagen;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridDatagen;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneDatagen;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorDatagen;
@@ -46,6 +47,7 @@ public final class EnergyDatagen
         VoidFissureDatagen.blockModels(generators);
         ContravoidReactorDatagen.blockModels(generators);
         DeepSiphonDatagen.blockModels(generators);
+        GnawerDatagen.blockModels(generators);
     }
 
     public static void itemModels(ItemModelGenerators generators)
@@ -58,6 +60,7 @@ public final class EnergyDatagen
         VoidFissureDatagen.itemModels(generators);
         ContravoidReactorDatagen.itemModels(generators);
         DeepSiphonDatagen.itemModels(generators);
+        GnawerDatagen.itemModels(generators);
     }
 
     public static void recipes(EnergyRecipes recipes)
@@ -70,6 +73,7 @@ public final class EnergyDatagen
         VoidFissureDatagen.recipes(recipes);
         ContravoidReactorDatagen.recipes(recipes);
         DeepSiphonDatagen.recipes(recipes);
+        GnawerDatagen.recipes(recipes);
     }
 
     /**
@@ -85,6 +89,7 @@ public final class EnergyDatagen
         VoidFissureDatagen.loot(loot);
         ContravoidReactorDatagen.loot(loot);
         DeepSiphonDatagen.loot(loot);
+        GnawerDatagen.loot(loot);
     }
 
     public static void tags(EnergyTags tags)
@@ -97,6 +102,7 @@ public final class EnergyDatagen
         VoidFissureDatagen.tags(tags);
         ContravoidReactorDatagen.tags(tags);
         DeepSiphonDatagen.tags(tags);
+        GnawerDatagen.tags(tags);
     }
 
     /**

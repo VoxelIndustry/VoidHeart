@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/copper_shovel",
+  "textures": {
+    "layer1": "voidheart:sin/shovel_gluttony"
+  }
+}

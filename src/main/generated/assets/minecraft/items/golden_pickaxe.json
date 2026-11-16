@@ -1,0 +1,88 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_pride"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "pride"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_wrath"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "wrath"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_gluttony"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "gluttony"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_sloth"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "sloth"
+      },
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_greed"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/sin/golden_pickaxe_flare"
+          },
+          "property": "voidheart:sin_flare"
+        },
+        "when": "greed"
+      }
+    ],
+    "component": "voidheart:sin",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/golden_pickaxe"
+    },
+    "property": "minecraft:component"
+  }
+}

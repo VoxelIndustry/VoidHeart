@@ -497,7 +497,7 @@ public class RecipesProvider extends FabricRecipeProvider
 
         /**
          * A sin metal fused into any infusable weapon at the altar, which keeps its enchantments and takes the sin's temperament. Another sin replaces the
-         * first. Salt cleanses the weapon of its sin.
+         * first. Ravenous Gold alone goes into pickaxes and shovels. Salt cleanses a weapon or tool of its sin.
          */
         private void sinInfusion()
         {
@@ -512,9 +512,17 @@ public class RecipesProvider extends FabricRecipeProvider
                 saveAltarRecipe(recipe, ingot);
             }
 
+            // Only Gluttony goes on tools, where it bites into the blocks beside the one broken
+            var ravenousGold = sinIngot(Sin.GLUTTONY);
+            var gluttony = DataComponentPatch.builder().set(VoidHeartDataComponents.SIN, Sin.GLUTTONY).build();
+            saveAltarRecipe(new AltarRecipe(altarRecipeId("ravenous_digging"), ItemStackTransformIngredient.patching(gluttony),
+                    new ItemTagRecipeIngredient(VoidHeartTags.SIN_DIGGABLE), SIN_INFUSION_TIME,
+                    ingredients(ravenousGold, ravenousGold, ravenousGold, ravenousGold, sinFlask(Sin.GLUTTONY)))
+                    .withExperience(SIN_INFUSION_EXPERIENCE), ravenousGold);
+
             var cleansing = DataComponentPatch.builder().remove(VoidHeartDataComponents.SIN).build();
             saveAltarRecipe(new AltarRecipe(altarRecipeId("sin_cleansing"), ItemStackTransformIngredient.patching(cleansing),
-                    new ItemTagRecipeIngredient(VoidHeartTags.SIN_INFUSABLE), SIN_INFUSION_TIME,
+                    new ItemTagRecipeIngredient(VoidHeartTags.SIN_CLEANSABLE), SIN_INFUSION_TIME,
                     ingredients(VoidHeartItems.SALT, VoidHeartItems.SALT, VoidHeartItems.SALT, VoidHeartItems.SALT)), VoidHeartItems.SALT);
         }
 
