@@ -61,6 +61,7 @@ import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusSightPayloads;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
+import net.voxelindustry.voidheart.common.content.divining.LeySightPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugView;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
@@ -221,6 +222,7 @@ public class VoidHeart implements ModInitializer
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
         PayloadTypeRegistry.clientboundPlay().register(LeyDebugPayload.TYPE, LeyDebugPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(LeySightPayload.TYPE, LeySightPayload.CODEC);
         ServerTickEvents.END_SERVER_TICK.register(LeyDebugView::tickServer);
 
         PayloadTypeRegistry.serverboundPlay().register(OculusControlPayload.TYPE, OculusControlPayload.STREAM_CODEC);

@@ -10,7 +10,7 @@ import org.joml.Vector3f;
 /**
  * Colors and small drawing helpers shared by every ley effect, from docs/plans/energy-looks.md.
  */
-final class LeyLook
+public final class LeyLook
 {
     /**
      * An awake Old Anchor.
@@ -29,7 +29,7 @@ final class LeyLook
     /**
      * The flow at which ley effects show at their brightest, the p90 line from N0.
      */
-    static final float FULL_FLOW = 7;
+    public static final float FULL_FLOW = 7;
 
     private LeyLook()
     {
@@ -38,7 +38,7 @@ final class LeyLook
     /**
      * How bright a flow shows, from 0 to 1. A square root, so weak lines still show and the tides still swell.
      */
-    static float flowLevel(float flow)
+    public static float flowLevel(float flow)
     {
         return flow <= 0 ? 0 : Mth.clamp((float) Math.sqrt(flow / FULL_FLOW), 0, 1);
     }
