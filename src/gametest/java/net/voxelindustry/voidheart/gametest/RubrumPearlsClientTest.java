@@ -10,6 +10,7 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -25,6 +26,7 @@ import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlBlock;
 import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
@@ -85,6 +87,12 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
     private static final List<BlockPos> MORE_FED     = List.of(new BlockPos(6, P, 18), new BlockPos(9, P, 13));
     private static final BlockPos       FEED_STORAGE = new BlockPos(5, FLAT_FEET, 19);
     private static final int            STORED_FIERY = 20_000;
+    // One relay shared by a quarter-full store of Fiery with a pearl to feed, and a three-quarters-full Stillness collector with an empty store
+    private static final BlockPos SHARED_RELAY    = new BlockPos(15, P - 1, -14);
+    private static final BlockPos SHARED_PEARL    = new BlockPos(13, P, -14);
+    private static final BlockPos FIERY_STORE     = new BlockPos(15, FLAT_FEET, -17);
+    private static final BlockPos EMPTY_STORE     = new BlockPos(15, FLAT_FEET, -11);
+    private static final BlockPos STILL_COLLECTOR = new BlockPos(17, FLAT_FEET, -14);
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -109,6 +117,7 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
             pausesWhenStarved(context, server);
             dropsItsSeedWithItsGrowth(context, server);
             pickedWhenMature(context, server);
+            fullerSourceTakesSharedRelay(context, server);
             showStages(context, server);
             showFedThroughRelay(context, server);
             showChoirShuddering(context, server);
@@ -317,6 +326,42 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
         });
     }
 
+    // Sharing relays
+
+    /**
+     * A relay carries one aspect at a time, and the fuller source takes a shared one, a store's stock counting as much as a collector's: the
+     * Stillness collector, fuller than the store of Fiery, gets through to the empty store, and the pearl waits for Fiery.
+     */
+    private static void fullerSourceTakesSharedRelay(ClientGameTestContext context, TestServerContext server)
+    {
+        hang(server, SHARED_PEARL);
+        context.waitTicks(3);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            placeStorage(level, FIERY_STORE, EssenceRegistry.FIERY, RavenousStorageTile.CAPACITY / 4);
+            placeStorage(level, EMPTY_STORE, EssenceRegistry.EMPTY, 0);
+            level.setBlockAndUpdate(STILL_COLLECTOR, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
+            if (!(level.getBlockEntity(STILL_COLLECTOR) instanceof RavenousCollectorTile collector))
+                throw new AssertionError("Expected a collector at " + STILL_COLLECTOR.toShortString());
+            collector.storage().attune(EssenceRegistry.STILLNESS);
+            collector.storage().fill(EssenceRegistry.STILLNESS, RavenousCollectorTile.CAPACITY * 3 / 4);
+            level.setBlockAndUpdate(SHARED_RELAY, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
+        });
+
+        waitFor(context, server, 200, () -> "The fuller Stillness collector should take the shared relay to the empty store",
+                minecraft -> storageAt(minecraft, EMPTY_STORE).storage().amount() > 0);
+        server.runOnServer(minecraft ->
+        {
+            expect(storageAt(minecraft, EMPTY_STORE).storage().type() == EssenceRegistry.STILLNESS, "The empty store should fill with Stillness");
+            var fiery = pearl(minecraft, SHARED_PEARL).fiery();
+            expect(fiery == 0, "The pearl should wait while the fuller Stillness holds the shared relay, it was given " + fiery + " Fiery");
+            var stored = storageAt(minecraft, FIERY_STORE).storage().amount();
+            expect(stored == RavenousStorageTile.CAPACITY / 4, "The store of Fiery should keep its stock while the relay carries Stillness, it holds " + stored);
+        });
+        server.runCommand("setblock " + SHARED_RELAY.getX() + " " + SHARED_RELAY.getY() + " " + SHARED_RELAY.getZ() + " air");
+    }
+
     // Looks
 
     private static void showStages(ClientGameTestContext context, TestServerContext server)
@@ -378,13 +423,7 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
             collector(minecraft).storage().attune(EssenceRegistry.FIERY);
             collector(minecraft).storage().fill(EssenceRegistry.FIERY, FEED_FIERY);
 
-            var stored = new EssenceStorage(EssenceRegistry.EMPTY, RavenousStorageTile.CAPACITY);
-            stored.attune(EssenceRegistry.FIERY);
-            stored.fill(EssenceRegistry.FIERY, STORED_FIERY);
-            var stack = new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE);
-            stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, stored);
-            level.setBlockAndUpdate(FEED_STORAGE, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState());
-            VoidHeartBlocks.RAVENOUS_STORAGE.setPlacedBy(level, FEED_STORAGE, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState(), null, stack);
+            placeStorage(level, FEED_STORAGE, EssenceRegistry.FIERY, STORED_FIERY);
 
             level.setBlockAndUpdate(FEED_RELAY, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
         });
@@ -466,11 +505,33 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
         return pearls;
     }
 
+    /**
+     * Places a storage with its pillar as a player would, holding an amount of one aspect, or empty and unattuned for {@code EMPTY}.
+     */
+    private static void placeStorage(ServerLevel level, BlockPos pos, EssenceType aspect, int amount)
+    {
+        var stack = new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE);
+        if (aspect != EssenceRegistry.EMPTY)
+        {
+            var stored = new EssenceStorage(EssenceRegistry.EMPTY, RavenousStorageTile.CAPACITY);
+            stored.attune(aspect);
+            stored.fill(aspect, amount);
+            stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, stored);
+        }
+        level.setBlockAndUpdate(pos, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState());
+        VoidHeartBlocks.RAVENOUS_STORAGE.setPlacedBy(level, pos, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState(), null, stack);
+    }
+
     private static RavenousStorageTile storage(MinecraftServer minecraft)
     {
-        if (minecraft.overworld().getBlockEntity(FEED_STORAGE) instanceof RavenousStorageTile storage)
+        return storageAt(minecraft, FEED_STORAGE);
+    }
+
+    private static RavenousStorageTile storageAt(MinecraftServer minecraft, BlockPos pos)
+    {
+        if (minecraft.overworld().getBlockEntity(pos) instanceof RavenousStorageTile storage)
             return storage;
-        throw new AssertionError("Expected a storage at " + FEED_STORAGE.toShortString());
+        throw new AssertionError("Expected a storage at " + pos.toShortString());
     }
 
     private static RavenousCollectorTile collector(MinecraftServer minecraft)

@@ -86,6 +86,8 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     private static final float STEM_HALF   = 0.5F / 16;
     /** Degrees a tick the whole pearl turns under its chain. */
     private static final float SPIN        = 0.12F;
+    /** How many times as fast the core turns the other way. */
+    private static final double CORE_SPIN  = 1.7;
 
     // Color and light
     private static final int   BODY_COLOR      = 0xFFFFFF;
@@ -332,7 +334,7 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         if (collapse > 0)
         {
             var coreHalf = BODY_HALF * CORE_SCALE * Math.min(1, collapse * 2);
-            var coreTurn = new Quaternionf().rotationY(-yaw(state, state.time) * 1.7F + Mth.HALF_PI / 2).mul(UPRIGHT);
+            var coreTurn = new Quaternionf().rotationY(coreYaw(state, state.time)).mul(UPRIGHT);
             core.cube(jolted(center, state.seed, state.tick, tremor, 0, 1), coreTurn, coreHalf, ARGB.color(255, 0xFFFFFF));
             var rimAlpha = Math.round(Mth.clamp(collapse * RIM_ALPHA + tremor * RIM_FLARE, 0, 255));
             rim.sprite(center, state.camera, coreHalf * RIM_RADIUS, (float) ((state.time * RIM_TURN) % 360), ARGB.color(rimAlpha, 0xFFFFFF));
@@ -355,7 +357,24 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
      */
     private static float yaw(State state, double time)
     {
-        return ((float) ((time * SPIN) % 360) + (state.seed & 0xFFFF) / 65536F * 360) * Mth.DEG_TO_RAD;
+        return (float) ((time * SPIN + seedTurn(state)) % 360) * Mth.DEG_TO_RAD;
+    }
+
+    /**
+     * The core turns the other way, {@value #CORE_SPIN} times as fast, and an eighth turn off the body. Its whole turn is worked out and wrapped in
+     * double, since wrapping the body's turn first would make the core jump every time the body comes full circle.
+     */
+    private static float coreYaw(State state, double time)
+    {
+        return (float) ((-(time * SPIN + seedTurn(state)) * CORE_SPIN) % 360) * Mth.DEG_TO_RAD + Mth.HALF_PI / 2;
+    }
+
+    /**
+     * Degrees each pearl starts turned by, so a row of them never turns in step.
+     */
+    private static double seedTurn(State state)
+    {
+        return (state.seed & 0xFFFF) / 65536.0 * 360;
     }
 
     /**

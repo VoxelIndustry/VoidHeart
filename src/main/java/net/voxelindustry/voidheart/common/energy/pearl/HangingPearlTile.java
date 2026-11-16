@@ -60,6 +60,8 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
     // Server only
     private final PowerMeter meter = new PowerMeter();
     private int ticksSinceFed = FED_GRACE;
+    /** When this pearl's choir was last walked, by it or another pearl of it. */
+    private long rootWalkedAt = Long.MIN_VALUE / 2;
 
     // Synced to clients
     private List<BlockPos> choir = List.of();
@@ -110,7 +112,7 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         if ((level.getGameTime() + worldPosition.asLong()) % SCAN_PERIOD == 0)
         {
             var found = scanChoir(level);
-            var root = found.isEmpty() ? worldPosition.asLong() : PearlChoir.root(worldPosition.asLong(), at -> choirOf(level, at, found));
+            var root = rootOf(level, found);
             if (!found.equals(choir) || root != choirRoot)
             {
                 choir = found;
@@ -188,6 +190,40 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         }
         found.sort(Comparator.comparingLong(BlockPos::asLong));
         return List.copyOf(found);
+    }
+
+    /**
+     * The root of the choir this pearl is in. Another pearl of the choir may have walked it moments ago and handed the root over, which serves
+     * until a scan passes or this pearl's own neighbours change; otherwise this one walks the whole choir and hands the root to the rest.
+     */
+    private long rootOf(ServerLevel level, List<BlockPos> found)
+    {
+        var self = worldPosition.asLong();
+        if (found.isEmpty())
+            return self;
+        var now = level.getGameTime();
+        if (found.equals(choir) && now - rootWalkedAt < SCAN_PERIOD)
+            return choirRoot;
+
+        var walk = PearlChoir.walk(self, at -> choirOf(level, at, found));
+        rootWalkedAt = now;
+        for (var member : walk.members())
+        {
+            var pos = BlockPos.of(member);
+            if (member != self && level.isLoaded(pos) && level.getBlockEntity(pos) instanceof HangingPearlTile other)
+                other.handRoot(walk.root(), now);
+        }
+        return walk.root();
+    }
+
+    private void handRoot(long root, long now)
+    {
+        rootWalkedAt = now;
+        if (choirRoot == root)
+            return;
+        choirRoot = root;
+        setChanged();
+        sync();
     }
 
     /**
