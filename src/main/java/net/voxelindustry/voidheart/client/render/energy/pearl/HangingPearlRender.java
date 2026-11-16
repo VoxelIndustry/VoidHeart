@@ -36,16 +36,20 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  * It hangs by one corner from the chain's foot. A speck grows into a body, buds fold out of the body's corners and smaller buds out of theirs, each
  * sunk into its parent and leaning back toward the centre; then the whole pulls inward, the body shrinks away and a black core shows through the
  * gaps, ringed with dim red. In bursts drawn by {@link PearlTremor} every part jolts on its own each tick, the inner ones most, so it chatters rather
- * than shakes. While fed, Fiery and void motes drift into it, and pearls of one choir that shudder together throw a jagged thread between them.
+ * than shakes, and leaves fading copies of itself where it stood the last few ticks. While fed, Fiery and void motes drift into it, and pearls of
+ * one choir that shudder together throw a jagged thread between them.
  * <p>
  * Render types. The body, its buds and the stem are {@link RenderTypes#entityCutout}, opaque, writing depth and lit by the world, so the pearl is a
  * solid thing by day and in the dark. The core is the same, given full light so its rim glows while its black stays black. The seams over the body
  * and the rim are {@link VoidHeartRenderTypes#radiant}: added, never writing depth, so they cross in any order without flicker while the body and
- * terrain still hide them; the seams sit {@value #SEAM_LIFT} off the faces they light so the depth test never ties. Motes and threads are
+ * terrain still hide them; the seams sit {@value #SEAM_LIFT} off the faces they light so the depth test never ties. The after-images' bodies are
+ * {@link VoidHeartRenderTypes#tint}: blended rather than added, so they keep the rubrum's hue against the sky, and never writing depth, so the
+ * pearl hides them where they sit inside it and only the edges it has left show; their seams join the pearl's own. Motes and threads are
  * {@link VoidHeartRenderTypes#GLOW}, crossed ribbons that read from any side.
  * <p>
  * Per frame, at worst: 13 cubes and a stem (84 quads), 5 seam cubes (30), the core and rim (7), 8 motes (16) and up to 5 threads of
- * {@value #THREAD_JOINTS} segments in two layers (100), all rebuilt from the tile's numbers, about 240 quads a pearl.
+ * {@value #THREAD_JOINTS} segments in two layers (100), all rebuilt from the tile's numbers, about 240 quads a pearl; while it chatters,
+ * {@value #AFTERIMAGES} after-images add up to 324 more.
  */
 public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile, HangingPearlRender.State>
 {
@@ -58,6 +62,7 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     private static final RenderType CORE_TYPE  = RenderTypes.entityCutout(CORE_TEXTURE);
     private static final RenderType SEAMS_TYPE = VoidHeartRenderTypes.radiant(SEAMS_TEXTURE);
     private static final RenderType RIM_TYPE   = VoidHeartRenderTypes.radiant(RIM_TEXTURE);
+    private static final RenderType GHOST_TYPE = VoidHeartRenderTypes.tint(BODY_TEXTURE);
 
     // Shape
     /** Where the chain's foot meets the block. */
@@ -107,6 +112,16 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     /** Jolts at the height of a burst, in blocks: the body and core, the first buds, the second buds. */
     private static final float[] JOLT = {0.7F / 16, 0.4F / 16, 0.25F / 16};
 
+    // After-images
+    /** Ticks back the pearl leaves a copy of itself while it chatters. */
+    private static final int   AFTERIMAGES      = 3;
+    /** Opacity of the newest copy's body at the height of a burst; older ones fade toward nothing. */
+    private static final float AFTERIMAGE_ALPHA = 0.45F;
+    /** Its seams' share of the pearl's own. */
+    private static final float AFTERIMAGE_SEAM  = 0.6F;
+    /** Darkens the copies' body, which takes no world light, so by night they glow faintly rather than outshine the pearl. */
+    private static final int   AFTERIMAGE_SHADE = 0xB08080;
+
     // Motes
     private static final int   MOTES        = 8;
     private static final int   MOTE_LIFE    = 34;
@@ -151,6 +166,8 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         /** False for the seed the reactor throws off, dull and without lit seams until the forge kindles it. */
         public boolean kindled = true;
         public Vector3f camera = new Vector3f();
+        /** The tremor 1, 2 and 3 ticks back, which the after-images stand by; still for the items. */
+        public final float[] afterTremors = new float[AFTERIMAGES];
         public final List<Vector3f> threads = new ArrayList<>();
         public final List<Float>    threadStrengths = new ArrayList<>();
     }
@@ -182,6 +199,8 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
 
         var moment = PearlTremor.at(pearl.seed(), pearl.choirSeed(), pearl.sync(partialTicks), state.time);
         state.tremor = moment.intensity();
+        for (int age = 1; age <= AFTERIMAGES; age++)
+            state.afterTremors[age - 1] = PearlTremor.at(pearl.seed(), pearl.choirSeed(), pearl.sync(partialTicks), state.time - age).intensity();
 
         // A thread to each pearl of the choir shuddering with this one, drawn by the lower of the two so it is drawn once
         state.threads.clear();
@@ -220,12 +239,15 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         var seams = new Quads();
         var rim = new Quads();
         var glow = new Quads();
-        build(state, body, core, seams, rim, glow);
+        var ghosts = new Quads();
+        build(state, body, core, seams, rim, glow, ghosts);
 
         if (!body.isEmpty())
             collector.submitCustomGeometry(poseStack, BODY_TYPE, (pose, buffer) -> body.emitTextured(pose, buffer, state.lightCoords));
         if (!core.isEmpty())
             collector.submitCustomGeometry(poseStack, CORE_TYPE, (pose, buffer) -> core.emitTextured(pose, buffer, LightCoordsUtil.FULL_BRIGHT));
+        if (!ghosts.isEmpty())
+            collector.submitCustomGeometry(poseStack, GHOST_TYPE, (pose, buffer) -> ghosts.emitTextured(pose, buffer, LightCoordsUtil.FULL_BRIGHT));
         if (!seams.isEmpty())
             collector.submitCustomGeometry(poseStack, SEAMS_TYPE, (pose, buffer) -> seams.emitTextured(pose, buffer, LightCoordsUtil.FULL_BRIGHT));
         if (!rim.isEmpty())
@@ -241,7 +263,7 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     /**
      * Where the pearl's centre hangs: a speck right under the chain's foot, then the full body's corner touching it.
      */
-    static Vector3f center(float share)
+    public static Vector3f center(float share)
     {
         var half = share < 0.25F ? Mth.lerp(ease(share / 0.25F), SPECK_HALF, BODY_HALF) : BODY_HALF;
         return new Vector3f(0.5F, HANG_Y - half * SQRT_THREE, 0.5F);
@@ -260,7 +282,7 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     /**
      * How far from its centre a still pearl reaches at this growth, so an item can grow it to fill its slot whatever its stage.
      */
-    static float reach(float share)
+    public static float reach(float share)
     {
         share = Math.min(1, share);
         var grown = share < 0.25F ? Mth.lerp(ease(share / 0.25F), SPECK_HALF, BODY_HALF) : BODY_HALF;
@@ -284,17 +306,13 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         return reach;
     }
 
-    private static void build(State state, Quads body, Quads core, Quads seams, Quads rim, Quads glow)
+    private static void build(State state, Quads body, Quads core, Quads seams, Quads rim, Quads glow, Quads ghosts)
     {
         var share = Math.min(1, state.share);
-        var grown = share < 0.25F ? Mth.lerp(ease(share / 0.25F), SPECK_HALF, BODY_HALF) : BODY_HALF;
-        var firstBuds = ease(stagePart(share, 0.25F));
-        var secondBuds = ease(stagePart(share, 0.5F));
         var collapse = ease(stagePart(share, 0.75F));
         var center = center(share);
 
-        var yaw = (state.time * SPIN + (state.seed & 0xFFFF) / 65536F * 360) * Mth.DEG_TO_RAD;
-        var turn = new Quaternionf().rotationY(yaw).mul(UPRIGHT);
+        var turn = turn(state, state.time);
         var tremor = state.tremor;
         var tint = state.kindled ? lerpColor(BODY_COLOR, BODY_DARK, collapse) : UNKINDLED_TINT;
 
@@ -307,28 +325,55 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         if (state.hanging)
             body.box(new Vector3f(0.5F, (HANG_Y + center.y) / 2, 0.5F), new Quaternionf(), STEM_HALF, (HANG_Y - center.y) / 2, STEM_HALF, ARGB.color(255, STEM_COLOR));
 
-        // The body, shrinking into the core as it collapses
-        var bodyHalf = grown * Mth.lerp(collapse, 1, BODY_COLLAPSED);
-        var bodyAt = jolted(center, state, 0, 0);
-        body.cube(bodyAt, turn, bodyHalf, ARGB.color(255, tint));
-        if (state.kindled)
-            seams.cube(bodyAt, turn, bodyHalf + SEAM_LIFT, seamColor);
+        crystal(state, center, turn, state.tick, tremor, body, state.kindled ? seams : null, ARGB.color(255, tint), seamColor);
+        afterImages(state, center, tint, seamAlpha, ghosts, seams);
 
         if (collapse > 0)
         {
             var coreHalf = BODY_HALF * CORE_SCALE * Math.min(1, collapse * 2);
+            var yaw = (state.time * SPIN + (state.seed & 0xFFFF) / 65536F * 360) * Mth.DEG_TO_RAD;
             var coreTurn = new Quaternionf().rotationY(-yaw * 1.7F + Mth.HALF_PI / 2).mul(UPRIGHT);
-            core.cube(jolted(center, state, 0, 1), coreTurn, coreHalf, ARGB.color(255, 0xFFFFFF));
+            core.cube(jolted(center, state.seed, state.tick, tremor, 0, 1), coreTurn, coreHalf, ARGB.color(255, 0xFFFFFF));
             var rimAlpha = Math.round(Mth.clamp(collapse * RIM_ALPHA + tremor * RIM_FLARE, 0, 255));
             rim.sprite(center, state.camera, coreHalf * RIM_RADIUS, state.time * RIM_TURN, ARGB.color(rimAlpha, 0xFFFFFF));
         }
 
+        motes(state, center, glow);
+        threads(state, glow);
+    }
+
+    /**
+     * How the whole pearl is turned under its chain at a time.
+     */
+    private static Quaternionf turn(State state, float time)
+    {
+        var yaw = (time * SPIN + (state.seed & 0xFFFF) / 65536F * 360) * Mth.DEG_TO_RAD;
+        return new Quaternionf().rotationY(yaw).mul(UPRIGHT);
+    }
+
+    /**
+     * The body, its buds and theirs, each jolted as it stood at one tick: the pearl itself, or one of its after-images.
+     *
+     * @param seams where the seams over the body and first buds go, or null for none
+     */
+    private static void crystal(State state, Vector3f center, Quaternionf turn, long tick, float tremor, Quads body, @Nullable Quads seams, int color,
+                                int seamColor)
+    {
+        var share = Math.min(1, state.share);
+        var grown = share < 0.25F ? Mth.lerp(ease(share / 0.25F), SPECK_HALF, BODY_HALF) : BODY_HALF;
+        var firstBuds = ease(stagePart(share, 0.25F));
+        var secondBuds = ease(stagePart(share, 0.5F));
+        var collapse = ease(stagePart(share, 0.75F));
+
+        // The body, shrinking into the core as it collapses
+        var bodyHalf = grown * Mth.lerp(collapse, 1, BODY_COLLAPSED);
+        var bodyAt = jolted(center, state.seed, tick, tremor, 0, 0);
+        body.cube(bodyAt, turn, bodyHalf, color);
+        if (seams != null)
+            seams.cube(bodyAt, turn, bodyHalf + SEAM_LIFT, seamColor);
+
         if (firstBuds <= 0)
-        {
-            motes(state, center, glow);
-            threads(state, glow);
             return;
-        }
 
         var pull = 1 - PULL * collapse;
         var fold = 1 - BUD_FOLD * collapse;
@@ -340,10 +385,10 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
             var offset = new Vector3f(corner).mul(BODY_HALF * SINK * pull);
             turn.transform(offset);
             var budTurn = new Quaternionf(turn).mul(lean(corner));
-            var budAt = jolted(new Vector3f(center).add(offset), state, 1, 2 + i);
+            var budAt = jolted(new Vector3f(center).add(offset), state.seed, tick, tremor, 1, 2 + i);
             var budHalf = budFull * firstBuds * fold;
-            body.cube(budAt, budTurn, budHalf, ARGB.color(255, tint));
-            if (state.kindled)
+            body.cube(budAt, budTurn, budHalf, color);
+            if (seams != null)
                 seams.cube(budAt, budTurn, budHalf + SEAM_LIFT, budSeamColor);
 
             if (secondBuds <= 0)
@@ -355,13 +400,31 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
                 var childOffset = new Vector3f(child).mul(budFull * SINK * pull);
                 budTurn.transform(childOffset);
                 var childTurn = new Quaternionf(budTurn).mul(lean(child));
-                var childAt = jolted(new Vector3f(budAt).add(childOffset), state, 2, 6 + i * 2 + j);
-                body.cube(childAt, childTurn, budFull * CHILD_SCALE * secondBuds * fold, ARGB.color(255, tint));
+                var childAt = jolted(new Vector3f(budAt).add(childOffset), state.seed, tick, tremor, 2, 6 + i * 2 + j);
+                body.cube(childAt, childTurn, budFull * CHILD_SCALE * secondBuds * fold, color);
             }
         }
+    }
 
-        motes(state, center, glow);
-        threads(state, glow);
+    /**
+     * Faint copies of the pearl where it stood the last few ticks of a burst, fading as they age, so its chatter leaves a blur of itself. A pearl at
+     * rest stands where its copies would, so it leaves none.
+     */
+    private static void afterImages(State state, Vector3f center, int tint, float seamAlpha, Quads ghosts, Quads seams)
+    {
+        var since = state.time - state.tick;
+        var color = ARGB.multiply(ARGB.color(255, tint), ARGB.color(255, AFTERIMAGE_SHADE));
+        for (int age = 1; age <= AFTERIMAGES; age++)
+        {
+            var tremor = state.afterTremors[age - 1];
+            var fade = (1 - (age - 1 + since) / AFTERIMAGES) * tremor;
+            if (tremor <= 0 || fade <= 0)
+                continue;
+            var bodyAlpha = Math.round(255 * AFTERIMAGE_ALPHA * fade);
+            var seamColor = ARGB.color(Math.round(Mth.clamp(seamAlpha * AFTERIMAGE_SEAM * fade, 0, 255)), 0xFFFFFF);
+            crystal(state, center, turn(state, state.time - age), state.tick - age, tremor, ghosts, state.kindled ? seams : null,
+                    ARGB.color(bodyAlpha, color), seamColor);
+        }
     }
 
     /**
@@ -396,14 +459,14 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         return new Vector3f[]{flips[(highest + 1) % 3], flips[(highest + 2) % 3]};
     }
 
-    private static Vector3f jolted(Vector3f at, State state, int depth, int part)
+    private static Vector3f jolted(Vector3f at, long seed, long tick, float tremor, int depth, int part)
     {
-        if (state.tremor <= 0)
+        if (tremor <= 0)
             return new Vector3f(at);
-        var amount = JOLT[depth] * state.tremor;
-        return new Vector3f(at).add(PearlTremor.jolt(state.seed, state.tick, part, 0) * amount,
-                PearlTremor.jolt(state.seed, state.tick, part, 1) * amount,
-                PearlTremor.jolt(state.seed, state.tick, part, 2) * amount);
+        var amount = JOLT[depth] * tremor;
+        return new Vector3f(at).add(PearlTremor.jolt(seed, tick, part, 0) * amount,
+                PearlTremor.jolt(seed, tick, part, 1) * amount,
+                PearlTremor.jolt(seed, tick, part, 2) * amount);
     }
 
     /**

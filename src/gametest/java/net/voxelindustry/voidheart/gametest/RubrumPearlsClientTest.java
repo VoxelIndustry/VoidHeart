@@ -24,11 +24,18 @@ import net.voxelindustry.voidheart.common.energy.machine.PowerMeter;
 import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlBlock;
 import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
+import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlBalance;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlGrowth;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlTremor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.FLAT_FEET;
@@ -43,8 +50,9 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.waitFor;
 /**
  * Collapsing Rubrum Pearls hung from chains in a creative well's field. A kindled seed hangs only under an upright chain. Six pearls in reach of
  * each other grow twice as fast as one alone, a pearl without void energy or Fiery pauses, a pearl whose chain is broken drops its seed carrying its
- * growth, which hangs again where it left off, and a mature pearl is picked with an empty hand. Captures show each stage by day and night, a choir
- * shuddering together, and the items.
+ * growth, which hangs again where it left off, and a mature pearl is picked with an empty hand. One relay feeds every pearl it links, from a storage of Fiery
+ * before its collector. Captures show each stage by day and night, a pearl drinking in a relay's Fiery through threads, a choir shuddering
+ * together and the after-images it leaves, and the items.
  */
 public class RubrumPearlsClientTest implements FabricClientGameTest
 {
@@ -65,6 +73,16 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
     // One pearl at each stage, in a row away from the choir
     private static final float[]  STAGE_SHARES = {0.1F, 0.4F, 0.65F, 0.9F, 1F};
     private static final int      ROW_Z        = -6;
+
+    // A pearl fed through a relay, far enough from the others that the relay links it alone
+    private static final BlockPos FED_PEARL      = new BlockPos(2, P, 14);
+    private static final BlockPos FEED_RELAY     = new BlockPos(5, P - 1, 15);
+    private static final BlockPos FEED_COLLECTOR = new BlockPos(7, FLAT_FEET, 18);
+    private static final int      FEED_FIERY     = 4_000;
+    // Two more pearls on the same relay, and a storage of Fiery it feeds them all from before it draws on the collector
+    private static final List<BlockPos> MORE_FED     = List.of(new BlockPos(6, P, 18), new BlockPos(9, P, 13));
+    private static final BlockPos       FEED_STORAGE = new BlockPos(5, FLAT_FEET, 19);
+    private static final int            STORED_FIERY = 20_000;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -89,6 +107,7 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
             dropsItsSeedWithItsGrowth(context, server);
             pickedWhenMature(context, server);
             showStages(context, server);
+            showFedThroughRelay(context, server);
             showChoirShuddering(context, server);
             showItems(context, server);
             clearScene(server);
@@ -305,6 +324,128 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
     }
 
     /**
+     * A relay carries a collector's Fiery to a pearl, its beam splitting short of the pearl into threads that sink into it. Caught as the threads
+     * grow, then formed from beside, from the far side and from behind the relay, by night, and in a short sweep held still.
+     */
+    private static void showFedThroughRelay(ClientGameTestContext context, TestServerContext server)
+    {
+        hang(server, FED_PEARL);
+        for (var pos : MORE_FED)
+            hang(server, pos);
+        context.waitTicks(3);
+        server.runOnServer(minecraft ->
+        {
+            pearl(minecraft, FED_PEARL).setShare(0.6);
+            pearl(minecraft, MORE_FED.get(0)).setShare(0.3);
+            pearl(minecraft, MORE_FED.get(1)).setShare(0.85);
+            var level = minecraft.overworld();
+            level.setBlockAndUpdate(FEED_COLLECTOR, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
+            collector(minecraft).storage().attune(EssenceRegistry.FIERY);
+            collector(minecraft).storage().fill(EssenceRegistry.FIERY, FEED_FIERY);
+
+            var stored = new EssenceStorage(EssenceRegistry.EMPTY, RavenousStorageTile.CAPACITY);
+            stored.attune(EssenceRegistry.FIERY);
+            stored.fill(EssenceRegistry.FIERY, STORED_FIERY);
+            var stack = new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE);
+            stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, stored);
+            level.setBlockAndUpdate(FEED_STORAGE, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState());
+            VoidHeartBlocks.RAVENOUS_STORAGE.setPlacedBy(level, FEED_STORAGE, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState(), null, stack);
+
+            level.setBlockAndUpdate(FEED_RELAY, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
+        });
+
+        // One relay feeds every pearl it links in the same route, the storage first, so it is drawn down before the collector refills it
+        waitFor(context, server, 400, () -> "Every pearl on the relay should be given Fiery, they hold "
+                        + server.computeOnServer(minecraft -> fedPearls().stream().map(pos -> pearl(minecraft, pos).fiery()).toList()),
+                minecraft -> fedPearls().stream().allMatch(pos -> pearl(minecraft, pos).fiery() > 0));
+        server.runOnServer(minecraft ->
+        {
+            var stored = storage(minecraft).storage().amount();
+            expect(stored < STORED_FIERY, "The relay should feed the pearls from the storage, which still holds " + stored);
+        });
+
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, 2.8, FLAT_FEET + 0.9, 16.5, 2.8, P + 0.62, 14.6, 3);
+        // The beam reaches its split about four fifths of the way through its growth, the threads grow on from there
+        context.waitFor(minecraft -> feedGrowth(minecraft) >= 0.8F, 400);
+        server.runCommand("tick freeze");
+        context.takeScreenshot("pearl-feed-forming");
+        server.runCommand("tick unfreeze");
+
+        context.waitFor(minecraft -> feedGrowth(minecraft) >= 1, 200);
+        context.waitTicks(40);
+        server.runOnServer(minecraft ->
+        {
+            expect(minecraft.overworld().getBlockEntity(FEED_RELAY) instanceof RavenousRelayTile relay && relay.linkedReceivers().containsAll(fedPearls()),
+                    "The relay should link every pearl");
+            for (var pos : fedPearls())
+                expect(pearl(minecraft, pos).isFed(), "Every pearl given Fiery through the relay in the well's field should be fed, "
+                        + pos.toShortString() + " is not");
+        });
+
+        context.takeScreenshot("pearl-feed-side");
+        aimFrom(context, server, 2.6, FLAT_FEET + 0.6, 12.6, 2.8, P + 0.62, 14.6, 3);
+        context.takeScreenshot("pearl-feed-far-side");
+        aimFrom(context, server, 4.0, FLAT_FEET + 0.7, 15.2, 2.5, P + 0.73, 14.5, 3);
+        context.takeScreenshot("pearl-feed-along");
+
+        server.runCommand("tick freeze");
+        for (int step = 0; step < 4; step++)
+        {
+            aimFrom(context, server, 2.8 + step * 0.06, FLAT_FEET + 0.9, 16.2 - step * 0.05, 2.8, P + 0.62, 14.6, 2);
+            context.takeScreenshot("pearl-feed-sweep-" + step);
+        }
+        server.runCommand("tick unfreeze");
+
+        // Close on the split, where the beam parts into threads, from beside and from above
+        aimFrom(context, server, 3.1, FLAT_FEET + 0.83, 15.55, 3.18, P + 0.45, 14.73, 6);
+        context.takeScreenshot("pearl-feed-split-side");
+        aimFrom(context, server, 3.4, FLAT_FEET + 1.48, 13.9, 3.18, P + 0.45, 14.73, 6);
+        context.takeScreenshot("pearl-feed-split-above");
+
+        freezeTime(server, "midnight");
+        aimFrom(context, server, 2.8, FLAT_FEET + 0.9, 16.5, 2.8, P + 0.62, 14.6, 3);
+        context.takeScreenshot("pearl-feed-midnight");
+        freezeTime(server, "noon");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        // The relay would otherwise go on feeding through the later scenes
+        server.runCommand("setblock " + FEED_RELAY.getX() + " " + FEED_RELAY.getY() + " " + FEED_RELAY.getZ() + " air");
+    }
+
+    /**
+     * How far the relay's beam into the fed pearl has grown on the client, 0 while it does not flow.
+     */
+    private static float feedGrowth(Minecraft minecraft)
+    {
+        if (minecraft.level == null || !(minecraft.level.getBlockEntity(FEED_RELAY) instanceof RavenousRelayTile relay))
+            return 0;
+        var link = relay.getOutgoingStrands(0).get(FED_PEARL);
+        return link == null || !link.active() ? 0 : link.growth();
+    }
+
+    private static List<BlockPos> fedPearls()
+    {
+        var pearls = new ArrayList<>(MORE_FED);
+        pearls.addFirst(FED_PEARL);
+        return pearls;
+    }
+
+    private static RavenousStorageTile storage(MinecraftServer minecraft)
+    {
+        if (minecraft.overworld().getBlockEntity(FEED_STORAGE) instanceof RavenousStorageTile storage)
+            return storage;
+        throw new AssertionError("Expected a storage at " + FEED_STORAGE.toShortString());
+    }
+
+    private static RavenousCollectorTile collector(MinecraftServer minecraft)
+    {
+        if (minecraft.overworld().getBlockEntity(FEED_COLLECTOR) instanceof RavenousCollectorTile collector)
+            return collector;
+        throw new AssertionError("Expected a collector at " + FEED_COLLECTOR.toShortString());
+    }
+
+    /**
      * Waits until the choir has fallen into step, then for a burst two of them share, and holds it still for a short sweep.
      */
     private static void showChoirShuddering(ClientGameTestContext context, TestServerContext server)
@@ -327,6 +468,15 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
             aimFrom(context, server, -6 + step * 0.1, FLAT_FEET + 1.2, -3.2, -5.5, P + 0.5, 1.5, 2);
             context.takeScreenshot("pearl-choir-sweep-" + step);
         }
+
+        // Close on the choir's outer pearl from outside it, its after-images held still, by day and by night; with the choir in step all shudder at once
+        var outer = CHOIR.get(2);
+        aimFrom(context, server, outer.getX() + 2.1, FLAT_FEET + 0.9, outer.getZ() + 0.5, outer.getX() + 0.5, P + 0.7, outer.getZ() + 0.5, 3);
+        context.takeScreenshot("pearl-afterimage-close");
+        freezeTime(server, "midnight");
+        context.waitTicks(3);
+        context.takeScreenshot("pearl-afterimage-midnight");
+        freezeTime(server, "noon");
         server.runCommand("tick unfreeze");
         context.getInput().pressKey(InputConstants.KEY_F1);
     }

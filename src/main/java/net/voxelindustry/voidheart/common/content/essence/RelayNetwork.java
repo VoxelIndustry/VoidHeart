@@ -14,13 +14,16 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
 
 /**
- * Routes essence across the relays linked together. Collectors are served fullest first: each claims a path of relays
- * free or already carrying its aspect, down to a storage with room for it. A relay carries a single aspect at a time,
- * so a fuller collector of another aspect takes the shared relays over.
+ * Routes essence across the relays linked together, a route's worth from each source every route. Machines are fed first, from the stores holding
+ * what they take and then from the collectors, each source sharing its route among every machine it reaches with room. Then each collector, fullest
+ * first, sends what it has left down the shortest path of relays to a store with room. A relay carries a single aspect at a time, so whatever
+ * claims a relay first that route keeps it, and a fuller collector of another aspect takes the shared relays over.
  * <p>
  * Collectors a Shatter Forge needs more essence from than they hold are served before any other: the forge draws the
  * shortfall from the storages behind them, and their relays show it flowing back toward the collector.
@@ -104,29 +107,46 @@ public final class RelayNetwork
             }
         }
 
+        // Machines are fed from the stores first, so what a store holds is spent before the collectors are drawn down
+        for (var store : stores(level, relays).entrySet())
+        {
+            var storePos = store.getKey();
+            var receiver = store.getValue();
+            for (var aspect : (Iterable<EssenceType>) EssenceRegistry.ESSENCE_REGISTRY.stream()::iterator)
+            {
+                if (aspect == EssenceRegistry.EMPTY || receiver.amountOf(aspect) <= 0)
+                    continue;
+                feedMachines(level, relays, flows, storePos, relay -> relay.linkedReceivers().contains(storePos), aspect,
+                        Math.min(TRANSFER_AMOUNT, receiver.amountOf(aspect)), amount -> receiver.extract(aspect, amount));
+            }
+        }
+
+        // Then each collector makes up what the machines still lack, and fills a store with whatever of its route it has left
         for (var collector : byPriority)
         {
             var aspect = collector.storage().type();
-            var path = findPath(level, relays, flows, collector.getBlockPos(), aspect, receiver -> receiver.spaceFor(aspect) > 0);
-            if (path == null)
-                continue;
+            var collectorPos = collector.getBlockPos();
+            var budget = Math.min(TRANSFER_AMOUNT, collector.storage().amount());
+            var sent = feedMachines(level, relays, flows, collectorPos, relay -> relay.linkedCollectors().contains(collectorPos), aspect, budget,
+                    amount -> collector.storage().drain(aspect, amount));
 
-            var amount = Math.min(TRANSFER_AMOUNT, Math.min(collector.storage().amount(), path.receiver().spaceFor(aspect)));
-            amount = path.receiver().receive(aspect, amount);
-            if (amount <= 0)
-                continue;
-
-            collector.storage().drain(aspect, amount);
-            collector.setChanged();
-            collector.sync();
-
-            for (var i = 0; i < path.relays().size(); i++)
+            var left = budget - sent;
+            var path = left > 0 ? findPath(level, relays, flows, collectorPos, aspect, receiver -> receiver.isStore() && receiver.spaceFor(aspect) > 0) : null;
+            if (path != null)
             {
-                var flow = flows.get(path.relays().get(i).getBlockPos());
-                flow.aspect = aspect;
-                addOnce(flow.targets, i + 1 < path.relays().size() ? path.relays().get(i + 1).getBlockPos() : path.receiverPos());
-                if (i == 0)
-                    addOnce(flow.sources, collector.getBlockPos());
+                var amount = path.receiver().receive(aspect, Math.min(left, path.receiver().spaceFor(aspect)));
+                if (amount > 0)
+                {
+                    collector.storage().drain(aspect, amount);
+                    sent += amount;
+                    showFlow(flows, path, collectorPos, aspect);
+                }
+            }
+
+            if (sent > 0)
+            {
+                collector.setChanged();
+                collector.sync();
             }
         }
 
@@ -135,6 +155,117 @@ public final class RelayNetwork
             var flow = flows.get(pos);
             relay.updateFlow(flow.aspect, flow.sources, flow.targets);
         });
+    }
+
+    /**
+     * Shares up to a route's worth of one aspect from a source among every machine it reaches with room for it, through relays free or already
+     * carrying that aspect, and shows it flowing to each.
+     *
+     * @param take draws an amount out of the source
+     * @return amount sent
+     */
+    private static int feedMachines(Level level, Map<BlockPos, RavenousRelayTile> relays, Map<BlockPos, Flow> flows, BlockPos sourcePos,
+                                    Predicate<RavenousRelayTile> linkedToSource, EssenceType aspect, int budget, IntUnaryOperator take)
+    {
+        if (budget <= 0)
+            return 0;
+        var paths = machinePaths(level, relays, flows, sourcePos, linkedToSource, aspect);
+        if (paths.isEmpty())
+            return 0;
+
+        var spaces = new int[paths.size()];
+        for (var i = 0; i < spaces.length; i++)
+            spaces[i] = paths.get(i).receiver().spaceFor(aspect);
+        var shares = RelayShares.split(budget, spaces);
+
+        var sent = 0;
+        for (var i = 0; i < shares.length; i++)
+        {
+            if (shares[i] <= 0)
+                continue;
+            var path = paths.get(i);
+            var received = path.receiver().receive(aspect, shares[i]);
+            if (received <= 0)
+                continue;
+            take.applyAsInt(received);
+            sent += received;
+            showFlow(flows, path, sourcePos, aspect);
+        }
+        return sent;
+    }
+
+    /**
+     * Paths to every machine a source reaches with room for the aspect, nearest first, each machine once.
+     */
+    private static List<Path> machinePaths(Level level, Map<BlockPos, RavenousRelayTile> relays, Map<BlockPos, Flow> flows, BlockPos sourcePos,
+                                           Predicate<RavenousRelayTile> linkedToSource, EssenceType aspect)
+    {
+        var paths = new ArrayList<Path>();
+        var found = new HashSet<BlockPos>();
+        var parents = new HashMap<BlockPos, BlockPos>();
+        var queue = new ArrayDeque<RavenousRelayTile>();
+        relays.entrySet().stream()
+                .filter(entry -> linkedToSource.test(entry.getValue()) && canCarry(flows.get(entry.getKey()), aspect))
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry ->
+                {
+                    parents.put(entry.getKey(), entry.getKey());
+                    queue.add(entry.getValue());
+                });
+
+        while (!queue.isEmpty())
+        {
+            var relay = queue.poll();
+            for (var receiverPos : relay.linkedReceivers())
+            {
+                if (receiverPos.equals(sourcePos) || found.contains(receiverPos) || !level.isLoaded(receiverPos)
+                        || !(level.getBlockEntity(receiverPos) instanceof IEssenceReceiver receiver) || receiver.isStore() || receiver.spaceFor(aspect) <= 0)
+                    continue;
+                found.add(receiverPos);
+                paths.add(new Path(unwind(relays, parents, relay.getBlockPos()), receiverPos, receiver));
+            }
+
+            for (var next : relay.linkedRelays())
+            {
+                if (parents.containsKey(next) || !relays.containsKey(next) || !canCarry(flows.get(next), aspect))
+                    continue;
+                parents.put(next, relay.getBlockPos());
+                queue.add(relays.get(next));
+            }
+        }
+        return paths;
+    }
+
+    /**
+     * Stores linked to any relay of the network, in a stable order.
+     */
+    private static Map<BlockPos, IEssenceReceiver> stores(Level level, Map<BlockPos, RavenousRelayTile> relays)
+    {
+        var stores = new TreeMap<BlockPos, IEssenceReceiver>();
+        for (var relay : relays.values())
+        {
+            for (var pos : relay.linkedReceivers())
+            {
+                if (!stores.containsKey(pos) && level.isLoaded(pos) && level.getBlockEntity(pos) instanceof IEssenceReceiver receiver && receiver.isStore())
+                    stores.put(pos, receiver);
+            }
+        }
+        return stores;
+    }
+
+    /**
+     * Shows essence flowing from a source down a path of relays into its receiver.
+     */
+    private static void showFlow(Map<BlockPos, Flow> flows, Path path, BlockPos sourcePos, EssenceType aspect)
+    {
+        for (var i = 0; i < path.relays().size(); i++)
+        {
+            var flow = flows.get(path.relays().get(i).getBlockPos());
+            flow.aspect = aspect;
+            addOnce(flow.targets, i + 1 < path.relays().size() ? path.relays().get(i + 1).getBlockPos() : path.receiverPos());
+            if (i == 0)
+                addOnce(flow.sources, sourcePos);
+        }
     }
 
     private static float priority(RavenousCollectorTile collector, boolean flowing)
