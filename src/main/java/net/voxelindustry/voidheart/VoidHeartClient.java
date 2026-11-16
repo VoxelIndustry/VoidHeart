@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart;
 
+import net.voxelindustry.voidheart.client.render.RavenousBitePreview;
 import net.voxelindustry.voidheart.client.render.sin.SinClientModels;
 import net.voxelindustry.voidheart.client.render.sin.SinFlare;
 import net.voxelindustry.voidheart.client.render.sin.SinTooltip;
@@ -210,6 +211,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(RelayLinkPreviewRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(CabinetHighlightRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(RavenousBitePreview::collectSubmits);
         ClientTickEvents.END_CLIENT_TICK.register(MosaicStare::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(MosaicWakeRender::collectSubmits);
         ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "temple_mosaic"),

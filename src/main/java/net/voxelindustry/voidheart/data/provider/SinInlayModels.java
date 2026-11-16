@@ -48,6 +48,8 @@ public final class SinInlayModels
 
     private static final List<Item> SWORDS = List.of(Items.WOODEN_SWORD, Items.STONE_SWORD, Items.COPPER_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD);
     private static final List<Item> AXES   = List.of(Items.WOODEN_AXE, Items.STONE_AXE, Items.COPPER_AXE, Items.IRON_AXE, Items.GOLDEN_AXE, Items.DIAMOND_AXE, Items.NETHERITE_AXE);
+    private static final List<Item> PICKAXES = List.of(Items.WOODEN_PICKAXE, Items.STONE_PICKAXE, Items.COPPER_PICKAXE, Items.IRON_PICKAXE, Items.GOLDEN_PICKAXE, Items.DIAMOND_PICKAXE, Items.NETHERITE_PICKAXE);
+    private static final List<Item> SHOVELS  = List.of(Items.WOODEN_SHOVEL, Items.STONE_SHOVEL, Items.COPPER_SHOVEL, Items.IRON_SHOVEL, Items.GOLDEN_SHOVEL, Items.DIAMOND_SHOVEL, Items.NETHERITE_SHOVEL);
     private static final List<Item> SPEARS = List.of(Items.WOODEN_SPEAR, Items.STONE_SPEAR, Items.COPPER_SPEAR, Items.GOLDEN_SPEAR, Items.IRON_SPEAR, Items.DIAMOND_SPEAR, Items.NETHERITE_SPEAR);
 
     private static final List<ItemDisplayContext> FLAT_CONTEXTS = List.of(ItemDisplayContext.GUI, ItemDisplayContext.GROUND, ItemDisplayContext.FIXED, ItemDisplayContext.ON_SHELF);
@@ -91,6 +93,11 @@ public final class SinInlayModels
         for (var item : AXES)
             accept(item, look -> look.model(model(item), "axe"));
         accept(Items.MACE, look -> look.model(model(Items.MACE), "mace"));
+        // Only Ravenous Gold goes on tools, the other sins' cases are kept so every sinned item reads the same way
+        for (var item : PICKAXES)
+            accept(item, look -> look.model(model(item), "pickaxe"));
+        for (var item : SHOVELS)
+            accept(item, look -> look.model(model(item), "shovel"));
 
         for (var item : SPEARS)
             generator.itemModelOutput.accept(item, sinned(look -> ItemModelUtils.select(new DisplayContext(),

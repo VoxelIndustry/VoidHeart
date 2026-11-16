@@ -26,6 +26,7 @@
       "net.voxelindustry.voidheart.gametest.RaptureClientTest",
       "net.voxelindustry.voidheart.gametest.VigilClientTest",
       "net.voxelindustry.voidheart.gametest.SinInfusionClientTest",
+      "net.voxelindustry.voidheart.gametest.ExcavationClientTest",
       "net.voxelindustry.voidheart.gametest.ResearchClientTest",
       "net.voxelindustry.voidheart.gametest.ResearchScreenClientTest",
       "net.voxelindustry.voidheart.gametest.ResearchSceneClientTest",

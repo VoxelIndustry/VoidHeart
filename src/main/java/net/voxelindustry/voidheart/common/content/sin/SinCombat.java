@@ -76,7 +76,7 @@ public final class SinCombat
 
     private static Sin sinOfHit(DamageSource source)
     {
-        return SinProficiencies.sinOf(source.getWeaponItem());
+        return SinProficiencies.combatSinOf(source.getWeaponItem());
     }
 
     /**
@@ -241,7 +241,7 @@ public final class SinCombat
     public static void onPlayerHurt(ServerPlayer player)
     {
         var wielder = wielder(player);
-        var sin = SinProficiencies.sinOf(player.getMainHandItem());
+        var sin = SinProficiencies.combatSinOf(player.getMainHandItem());
         if (sin == Sin.PRIDE)
         {
             var devotion = SinProficiencies.devotion(player, sin);
@@ -258,7 +258,7 @@ public final class SinCombat
     {
         if (!(entity instanceof ServerPlayer player) || amount <= 0)
             return amount;
-        if (SinProficiencies.sinOf(player.getMainHandItem()) != Sin.WRATH)
+        if (SinProficiencies.combatSinOf(player.getMainHandItem()) != Sin.WRATH)
             return amount;
         return amount * SinTemperament.wrathHealingKept(player.getHealth(), player.getMaxHealth(), SinProficiencies.devotion(player, Sin.WRATH));
     }
@@ -280,7 +280,7 @@ public final class SinCombat
         wielder.lastPosition = position;
 
         var speed = player.getAttribute(Attributes.MOVEMENT_SPEED);
-        if (SinProficiencies.sinOf(player.getMainHandItem()) != Sin.SLOTH || !player.isAlive())
+        if (SinProficiencies.combatSinOf(player.getMainHandItem()) != Sin.SLOTH || !player.isAlive())
         {
             wielder.slothCharge = 0;
             if (speed != null)

@@ -4,7 +4,7 @@
     "minecraft:itemstack": [
       {
         "identifier": "steamlayer:itemtag_ingredient",
-        "tag": "voidheart:sin_infusable"
+        "tag": "voidheart:sin_cleansable"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",

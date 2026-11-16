@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Registry;
+import net.voxelindustry.voidheart.common.energy.gnawer.GnawerLink;
 import net.voxelindustry.voidheart.common.content.sin.Sin;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentType;
@@ -78,6 +79,8 @@ public class VoidHeartDataComponents
     public static DataComponentType<Sin>             SIN;
     /** Contravoid a Klein Star holds. */
     public static DataComponentType<Integer>         CONTRAVOID_CHARGE;
+    /** The Gnawer a stake is marking a box for, and the first corner once one is chosen. */
+    public static DataComponentType<GnawerLink>      GNAWER_LINK;
 
     public static void registerComponents()
     {
@@ -96,6 +99,7 @@ public class VoidHeartDataComponents
         APPARATUS_GRID = register("apparatus_grid", ApparatusGrid.CODEC);
         SIN = register("sin", Sin.CODEC);
         CONTRAVOID_CHARGE = register("contravoid_charge", Codec.INT);
+        GNAWER_LINK = register("gnawer_link", GnawerLink.CODEC);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

@@ -99,6 +99,29 @@ public final class SinBalance
     public static final float GREED_DEBT_DEVOTED     = 1.5F;
     public static final float GREED_POINTS           = 6;
 
+    // Gluttony on tools: a vein along ores, a square anywhere else, paid in hunger
+    /**
+     * Ore blocks eaten along a vein beside the broken one, at each stage.
+     */
+    public static final int[] DIGGING_VEIN                   = {4, 8, 12, 18, 24};
+    /**
+     * How far from the broken ore a vein bite may reach on any axis.
+     */
+    public static final int   DIGGING_REACH                  = 4;
+    /**
+     * How far the square reaches each side of the broken block, and how many layers deep it goes, at each stage: 3x3x1, 3x3x2, 3x3x3, 5x5x2, 5x5x3.
+     */
+    public static final int[] DIGGING_SQUARE_RADIUS          = {1, 1, 1, 2, 2};
+    public static final int[] DIGGING_SQUARE_DEPTH           = {1, 2, 3, 2, 3};
+    /**
+     * Exhaustion for each bitten block, times its hardness. Four exhaustion is one point of saturation or hunger.
+     */
+    public static final float DIGGING_EXHAUSTION_PER_HARDNESS = 0.3F;
+    /**
+     * Proficiency points of full digging devotion. Each bitten block gives its hardness, so about 20 000 bitten stone.
+     */
+    public static final float DIGGING_DEVOTED_POINTS          = 30_000;
+
     private SinBalance()
     {
     }

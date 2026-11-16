@@ -6,9 +6,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
+import net.voxelindustry.voidheart.common.content.sin.DiggingProficiency;
 import net.voxelindustry.voidheart.common.content.sin.SinBalance;
 import net.voxelindustry.voidheart.common.content.sin.SinProficiencies;
 import net.voxelindustry.voidheart.common.content.sin.SinProficiency;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 
 import java.util.List;
 
@@ -34,9 +36,17 @@ public final class SinTooltip
             return;
 
         var player = Minecraft.getInstance().player;
-        var proficiency = player == null ? SinProficiency.NONE : SinProficiencies.of(player);
-
         lines.add(Component.translatable(sin.translationKey()).withStyle(Style.EMPTY.withColor(sin.color())));
+
+        // A tool speaks of its digging, which is its own proficiency, and no other sin resents it
+        if (stack.is(VoidHeartTags.SIN_DIGGABLE))
+        {
+            var stage = player == null ? 1 : DiggingProficiency.stage(player);
+            lines.add(Component.translatable(sin.diggingLoreKey(stage)).withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+            return;
+        }
+
+        var proficiency = player == null ? SinProficiency.NONE : SinProficiencies.of(player);
         lines.add(Component.translatable(sin.loreKey(proficiency.stage(sin))).withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
 
         // A player devoted to another sin feels it resent this weapon
