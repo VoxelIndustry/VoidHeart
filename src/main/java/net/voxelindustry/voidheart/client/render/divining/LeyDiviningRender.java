@@ -6,6 +6,8 @@ import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -141,7 +143,10 @@ public final class LeyDiviningRender
     {
     }
 
-    private record Sight(long startTick, List<ShownLine> lines, List<ShownNode> nodes)
+    /**
+     * @param level the world it was raised in: a reveal never follows its bearer into another dimension
+     */
+    private record Sight(ClientLevel level, long startTick, List<ShownLine> lines, List<ShownNode> nodes)
     {
     }
 
@@ -179,7 +184,7 @@ public final class LeyDiviningRender
             nodes.add(new ShownNode(x, node.y() + 0.5, z, distance, NODE_RGB[node.kind().ordinal()], level01, node.taint(), seed(node.x(), node.z(), 0, 0)));
         }
 
-        sight = lines.isEmpty() && nodes.isEmpty() ? null : new Sight(level.getGameTime(), lines, nodes);
+        sight = lines.isEmpty() && nodes.isEmpty() ? null : new Sight(level, level.getGameTime(), lines, nodes);
     }
 
     public static void clear()
@@ -206,6 +211,11 @@ public final class LeyDiviningRender
         var current = sight;
         if (current == null)
             return;
+        if (current.level() != Minecraft.getInstance().level)
+        {
+            sight = null;
+            return;
+        }
 
         var levelState = context.levelState();
         float age = (levelState.gameTime - current.startTick()) + levelState.worldPartialTicks;

@@ -13,6 +13,8 @@ import net.voxelindustry.voidheart.client.render.divining.LeySightPlan;
 import net.voxelindustry.voidheart.common.content.divining.LeySight;
 import net.voxelindustry.voidheart.common.ley.LeyEdge;
 import net.voxelindustry.voidheart.common.ley.LeyHeights;
+import net.voxelindustry.voidheart.common.ley.LeyLattice;
+import net.voxelindustry.voidheart.common.ley.LeyLatticeGenerator;
 import net.voxelindustry.voidheart.common.ley.LeyNode;
 import net.voxelindustry.voidheart.common.ley.flow.LatticeLeyFlow;
 import net.voxelindustry.voidheart.common.ley.flow.LeyTopology;
@@ -48,6 +50,20 @@ public class LeyDiviningRodClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        // All tests share one client, so the camera is left as this one found it
+        var previousCamera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
+        {
+            run(context);
+        }
+        finally
+        {
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(previousCamera));
+        }
+    }
+
+    private static void run(ClientGameTestContext context)
+    {
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
@@ -60,6 +76,7 @@ public class LeyDiviningRodClientTest implements FabricClientGameTest
             int x = scene.node().x(), z = scene.node().z();
             server.runCommand("forceload add " + (x - 72) + " " + (z - 72) + " " + (x + 72) + " " + (z + 72));
             checkNothingOutsideOverworld(server);
+            checkLineAcrossRegions(server);
 
             server.runCommand("clear @a");
             server.runCommand("item replace entity @a hotbar.0 with voidheart:ley_divining_rod");
@@ -92,7 +109,9 @@ public class LeyDiviningRodClientTest implements FabricClientGameTest
                     scene.alongX(20), scene.lineY(), scene.alongZ(20), 10);
             context.takeScreenshot("ley-rod-wide");
 
-            sweep(context, server, scene, sideX, sideZ);
+            // Camera facing ribbons, so from both sides of the strand
+            sweep(context, server, scene, sideX, sideZ, "ley-rod-sweep-");
+            sweep(context, server, scene, -sideX, -sideZ, "ley-rod-opposite-sweep-");
 
             // A wall between the player and the line: the strand should still show, faintly
             double wallX = scene.alongX(14) + sideX * 0.5, wallZ = scene.alongZ(14) + sideZ * 0.5;
@@ -118,6 +137,7 @@ public class LeyDiviningRodClientTest implements FabricClientGameTest
             expect(!context.computeOnClient(minecraft -> LeyDiviningRender.isShowing()), "The reveal should be over after " + LeySightPlan.LIFE_TICKS + " ticks");
 
             checkTaintedLine(context, server, scene, feetX, feetY, feetZ);
+            checkLeavesWithDimension(context, server, feetX, feetY, feetZ);
 
             context.getInput().pressKey(InputConstants.KEY_F1);
         }
@@ -171,14 +191,67 @@ public class LeyDiviningRodClientTest implements FabricClientGameTest
     /**
      * Sweeps the camera in small steps near the strand while the game is frozen, so flicker would show as uneven frame differences.
      */
-    private static void sweep(ClientGameTestContext context, TestServerContext server, Scene scene, double sideX, double sideZ)
+    private static void sweep(ClientGameTestContext context, TestServerContext server, Scene scene, double sideX, double sideZ, String name)
     {
         for (int step = 0; step < 8; step++)
         {
             aimFrom(context, server, scene.alongX(18) + sideX * 0.45 + step * 0.06, scene.lineY() + 0.6, scene.alongZ(18) + sideZ * 0.45 + step * 0.09,
                     scene.alongX(10), scene.lineY(), scene.alongZ(10), 2);
-            context.takeScreenshot("ley-rod-sweep-" + step);
+            context.takeScreenshot(name + step);
         }
+    }
+
+    /**
+     * A region keeps only the lines with an end inside it. Raised beside a line whose ends both lie in other regions, the rod must still find it.
+     */
+    private static void checkLineAcrossRegions(TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var lattice = LeyLattice.get(level).orElseThrow();
+            int size = LeyLatticeGenerator.REGION_SIZE;
+            for (var region : lattice.regionsAround(0, 0, size, true))
+            {
+                for (var edge : region.edges())
+                {
+                    for (double t = 0.1; t < 0.9; t += 0.02)
+                    {
+                        double px = edge.fromX() + (edge.toX() - edge.fromX()) * t, pz = edge.fromZ() + (edge.toZ() - edge.fromZ()) * t;
+                        int regionX = Math.floorDiv((int) px, size), regionZ = Math.floorDiv((int) pz, size);
+                        boolean fromHere = Math.floorDiv(edge.fromX(), size) == regionX && Math.floorDiv(edge.fromZ(), size) == regionZ;
+                        boolean toHere = Math.floorDiv(edge.toX(), size) == regionX && Math.floorDiv(edge.toZ(), size) == regionZ;
+                        // Far enough inside its region that the old lookup, by the rod's radius alone, would not have reached the ends' regions
+                        double inside = Math.min(Math.min(px - regionX * size, (regionX + 1) * size - px), Math.min(pz - regionZ * size, (regionZ + 1) * size - pz));
+                        if (fromHere || toHere || inside <= LeySight.RADIUS)
+                            continue;
+
+                        var sight = LeySight.collect(level, new Vec3(px, 0, pz));
+                        boolean found = sight.lines().stream().anyMatch(line -> line.fromX() == edge.fromX() && line.fromZ() == edge.fromZ()
+                                && line.toX() == edge.toX() && line.toZ() == edge.toZ());
+                        expect(found, "The rod raised at " + (int) px + ", " + (int) pz + " should find the line passing under it, whose ends lie in other regions");
+                        return;
+                    }
+                }
+            }
+            throw new AssertionError("Expected a line crossing a region whose ends both lie outside it, to check the rod finds it");
+        });
+    }
+
+    /**
+     * A reveal belongs to the world it was raised in, and stops showing once its bearer leaves for another dimension.
+     */
+    private static void checkLeavesWithDimension(ClientGameTestContext context, TestServerContext server, double feetX, double feetY, double feetZ)
+    {
+        context.getInput().pressKey(options -> options.keyUse);
+        context.waitTicks(5);
+        expect(context.computeOnClient(minecraft -> LeyDiviningRender.isShowing()), "The rod should reveal the lines again before leaving");
+        server.runCommand("execute in minecraft:the_nether run tp @a 0 100 0");
+        context.waitFor(minecraft -> minecraft.level != null && minecraft.level.dimension() == Level.NETHER, 200);
+        context.waitTicks(5);
+        expect(!context.computeOnClient(minecraft -> LeyDiviningRender.isShowing()), "The reveal should not follow its bearer into the nether");
+        server.runCommand("execute in minecraft:overworld run tp @a " + feetX + " " + feetY + " " + feetZ);
+        context.waitFor(minecraft -> minecraft.level != null && minecraft.level.dimension() == Level.OVERWORLD, 200);
     }
 
     private static void checkTaintedLine(ClientGameTestContext context, TestServerContext server, Scene scene, double feetX, double feetY, double feetZ)

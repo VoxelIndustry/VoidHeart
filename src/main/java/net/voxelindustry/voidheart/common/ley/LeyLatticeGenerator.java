@@ -21,7 +21,7 @@ public class LeyLatticeGenerator
     private static final int CELL_MARGIN = 40;
     private static final int ANCHOR_MERGE_RADIUS = 96;
     private static final double SUPPRESSION_RANGE = 1.6 * CELL_SIZE;
-    private static final double MAX_EDGE_LENGTH = 3 * CELL_SIZE;
+    public static final double MAX_EDGE_LENGTH = 3 * CELL_SIZE;
     private static final int MIN_LINES = 2;
     private static final double PRESSURE_SCALE = 1536;
 

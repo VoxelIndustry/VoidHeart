@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.divining;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
+import net.voxelindustry.voidheart.common.ley.LeyLatticeGenerator;
 import net.voxelindustry.voidheart.common.ley.flow.LatticeLeyFlow;
 import net.voxelindustry.voidheart.common.ley.flow.LeyFlowBalance;
 import net.voxelindustry.voidheart.common.ley.flow.LeyTopology;
@@ -43,7 +44,9 @@ public final class LeySight
 
         var heights = lattice.get().heights();
         var seenEdges = new HashSet<EdgeKey>();
-        for (var region : lattice.get().regionsAround((int) origin.x, (int) origin.z, RADIUS, true))
+        // A region keeps only the edges with an end inside it, so a line passing near the rod may belong to regions as far as its longest length away
+        int reach = RADIUS + (int) Math.ceil(LeyLatticeGenerator.MAX_EDGE_LENGTH);
+        for (var region : lattice.get().regionsAround((int) origin.x, (int) origin.z, reach, true))
         {
             for (var edge : region.edges())
             {
