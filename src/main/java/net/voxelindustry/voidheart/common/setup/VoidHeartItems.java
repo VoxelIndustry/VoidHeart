@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.setup;
 
+import net.voxelindustry.voidheart.common.content.divining.LeyDiviningRodItem;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponentItem;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTier;
@@ -59,6 +60,7 @@ public class VoidHeartItems
     public static PermeableBarrierItem PERMEABLE_BARRIER;
     public static ShoulderEyeItem SHOULDER_EYE;
     public static WraithVeilItem WRAITH_VEIL;
+    public static LeyDiviningRodItem LEY_DIVINING_ROD;
     public static KleinStarItem KLEIN_STAR;
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
 
@@ -129,6 +131,7 @@ public class VoidHeartItems
         PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
         SHOULDER_EYE = registerItem("shoulder_eye", ShoulderEyeItem::new);
         WRAITH_VEIL = registerItem("wraith_veil", WraithVeilItem::new);
+        LEY_DIVINING_ROD = registerItem("ley_divining_rod", LeyDiviningRodItem::new);
         KLEIN_STAR = registerItem("klein_star", KleinStarItem::new);
         KNOWLEDGE_TABLET = registerItem("knowledge_tablet", KnowledgeTabletItem::new);
 

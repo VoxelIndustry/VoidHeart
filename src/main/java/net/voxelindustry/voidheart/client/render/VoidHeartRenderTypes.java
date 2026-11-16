@@ -183,6 +183,42 @@ public class VoidHeartRenderTypes
                 RenderSetup.builder(RADIANT_PIPELINE).withTexture("Sampler0", key).createRenderSetup()));
     }
 
+    /**
+     * {@link #radiant} seen through terrain, for what shows faintly behind walls, such as ley lines revealed by a divining rod.
+     */
+    private static final RenderPipeline RADIANT_THROUGH_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_NO_LIGHTMAP_SNIPPET, RenderPipelines.EYES_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/radiant_through"))
+            .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+            .withCull(false)
+            .build();
+
+    private static final Map<Identifier, RenderType> RADIANT_THROUGH = new HashMap<>();
+
+    public static RenderType radiantThrough(Identifier texture)
+    {
+        return RADIANT_THROUGH.computeIfAbsent(texture, key -> RenderType.create(MODID + "_radiant_through",
+                RenderSetup.builder(RADIANT_THROUGH_PIPELINE).withTexture("Sampler0", key).createRenderSetup()));
+    }
+
+    /**
+     * {@link #radiant} blended over what is behind instead of added to it, so a dark tint under a glow keeps its hue against a bright sky.
+     */
+    private static final RenderPipeline TINT_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_NO_LIGHTMAP_SNIPPET, RenderPipelines.EYES_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/tint"))
+            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
+            .withCull(false)
+            .build();
+
+    private static final Map<Identifier, RenderType> TINT = new HashMap<>();
+
+    public static RenderType tint(Identifier texture)
+    {
+        return TINT.computeIfAbsent(texture, key -> RenderType.create(MODID + "_tint",
+                RenderSetup.builder(TINT_PIPELINE).withTexture("Sampler0", key).sortOnUpload().createRenderSetup()));
+    }
+
     private static final Identifier SHIELD_RUNES_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/entity/shield_runes.png");
 
     public static final RenderType SHIELD_RUNES = RenderType.create(MODID + "_shield_runes",

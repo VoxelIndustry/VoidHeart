@@ -25,6 +25,7 @@ Keep sizes, colors, alphas and timings in named constants at the top of the clas
 |---|---|---|
 | Additive glow that overlaps itself: ribbons, waypoints, lines | `VoidHeartRenderTypes.GLOW` | `AnchorWaypointRender`, `LeyDebugRender` |
 | Colored quads that must keep their hue on bright backgrounds | `VoidHeartRenderTypes.MARKER` | `OculusMarkers`, `OculusLeyLayer` |
+| Textured additive glow in the world that must not wash out to white by day | `VoidHeartRenderTypes.radiant` layers over a dark `tint` sheath of the same shape, plus `radiantThrough` for what shows behind walls | `LeyDiviningRender` |
 | Textured beams and veils | `RenderTypes.beaconBeam(texture, true)` | `VoidBeamRender` |
 | Ghost or preview blocks | `RenderTypes.translucentMovingBlock()` | `ForgePreviewRender`, `PillarPlacementRender` |
 | Geometry that ignores world light | `RenderTypes.entityTranslucentEmissive(...)` | `GeometryParticle`, `BarrierMosaicRender` |

@@ -92,6 +92,7 @@ import net.voxelindustry.voidheart.client.render.EyeBottleRender;
 import net.voxelindustry.voidheart.client.render.FloatingItemRender;
 import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
 import net.voxelindustry.voidheart.client.render.LeyDebugRender;
+import net.voxelindustry.voidheart.client.render.divining.LeyDiviningRender;
 import net.voxelindustry.voidheart.client.render.energy.EnergyClientSetup;
 import net.voxelindustry.voidheart.client.render.oculus.OculusControls;
 import net.voxelindustry.voidheart.client.render.oculus.OculusFigurine;
@@ -139,6 +140,7 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.athanor.CrucibleTile;
 import net.voxelindustry.voidheart.client.render.AthanorRender;
 import net.voxelindustry.voidheart.client.render.PlacedFlasksRender;
+import net.voxelindustry.voidheart.common.content.divining.LeySightPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -234,6 +236,7 @@ public class VoidHeartClient implements ClientModInitializer
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
 
         ClientPlayNetworking.registerGlobalReceiver(LeyDebugPayload.TYPE, LeyDebugRender::receive);
+        ClientPlayNetworking.registerGlobalReceiver(LeySightPayload.TYPE, LeyDiviningRender::receive);
         ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.Waypoints.TYPE, AnchorWaypointRender::receive);
         ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelMap.TYPE,
                 (payload, context) -> context.client().setScreenAndShow(new TravelMapScreen(payload)));
@@ -245,6 +248,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
         {
             LeyDebugRender.clear();
+            LeyDiviningRender.clear();
             AnchorWaypointRender.clear();
             ArmillaryTremor.clear();
             OculusRenderer.clear();
@@ -275,6 +279,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(OculusRenderer::tick);
         ClientTickEvents.END_CLIENT_TICK.register(DepthsShoals::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(LeyDebugRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(LeyDiviningRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
 
         CurseDirector.register();

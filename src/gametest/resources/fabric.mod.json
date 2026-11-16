@@ -87,6 +87,7 @@
       "net.voxelindustry.voidheart.gametest.VoidGridClientTest",
       "net.voxelindustry.voidheart.gametest.RubrumStorageClientTest",
       "net.voxelindustry.voidheart.gametest.LeyFlowClientTest",
+      "net.voxelindustry.voidheart.gametest.LeyDiviningRodClientTest",
       "net.voxelindustry.voidheart.gametest.LeyStoneClientTest",
       "net.voxelindustry.voidheart.gametest.RavenousEngineClientTest",
       "net.voxelindustry.voidheart.gametest.MachineRetrofitClientTest",
