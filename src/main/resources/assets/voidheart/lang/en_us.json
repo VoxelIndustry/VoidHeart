@@ -648,6 +648,7 @@
   "voidheart.gnawer.first_corner": "First corner marked. Use the stake on a second one.",
   "voidheart.gnawer.linked": "The Gnawer has its box.",
   "voidheart.gnawer.lost": "The Gnawer this stake remembered is gone.",
+  "voidheart.gnawer.elsewhere": "The Gnawer this stake remembers is in another world.",
   "voidheart.gnawer.busy": "This Gnawer is still eating its box. Sneak and use a stake on it to drop the box.",
   "voidheart.gnawer.cleared": "The Gnawer drops its box, and the stakes come back.",
   "voidheart.gnawer.refused": "The Gnawer won't eat here.",

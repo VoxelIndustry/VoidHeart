@@ -18,7 +18,7 @@ import static net.voxelindustry.voidheart.common.energy.gnawer.GnawerBlock.messa
 
 /**
  * A thin azurium stake marking a corner of a Gnawer's box. It needs nothing under it, so the upper corner can be set in the air. A stake that remembers a
- * Gnawer, used on two placed stakes, gives that Gnawer the box between them.
+ * Gnawer, used on two placed stakes, gives that Gnawer the box between them, eaten as the player who marked it.
  */
 public class GnawingStakeBlock extends Block
 {
@@ -37,6 +37,11 @@ public class GnawingStakeBlock extends Block
             return InteractionResult.TRY_WITH_EMPTY_HAND;
         if (level.isClientSide())
             return InteractionResult.SUCCESS;
+        if (!link.gnawer().dimension().equals(level.dimension()))
+        {
+            player.sendOverlayMessage(message("elsewhere"));
+            return InteractionResult.SUCCESS;
+        }
 
         if (link.first().isEmpty())
         {
@@ -49,7 +54,7 @@ public class GnawingStakeBlock extends Block
         if (first.equals(pos))
             return InteractionResult.SUCCESS;
 
-        if (!(level.getBlockEntity(link.gnawer()) instanceof GnawerTile gnawer))
+        if (!(level.getBlockEntity(link.gnawer().pos()) instanceof GnawerTile gnawer))
         {
             stack.remove(VoidHeartDataComponents.GNAWER_LINK);
             player.sendOverlayMessage(message("lost"));
@@ -62,13 +67,13 @@ public class GnawingStakeBlock extends Block
             return InteractionResult.SUCCESS;
         }
 
-        var refusal = GnawerBox.check(link.gnawer(), first, pos);
+        var refusal = GnawerBox.check(link.gnawer().pos(), first, pos);
         if (refusal != null)
         {
             player.sendOverlayMessage(message(refusal == GnawerBox.Refusal.TOO_WIDE ? "too_wide" : "too_far", GnawerBalance.MAX_WIDTH, GnawerBalance.RANGE));
             return InteractionResult.SUCCESS;
         }
-        if (!gnawer.link(first, pos))
+        if (!gnawer.link(first, pos, player))
         {
             player.sendOverlayMessage(message("busy"));
             return InteractionResult.SUCCESS;

@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -151,7 +152,10 @@ public class GnawerTile extends TileBase
 
             cursor++;
             if (!eat(level, pos, state, erase))
+            {
+                scanned++;
                 continue;
+            }
             credit -= cost;
             eaten++;
             eatenLast = pos;
@@ -185,9 +189,13 @@ public class GnawerTile extends TileBase
         if (!erase && !(state.getBlock() instanceof LiquidBlock))
         {
             var tool = tool();
-            for (var drop : Block.getDrops(state, level, pos, null, breaker, tool))
-                store(level, drop);
-            state.spawnAfterBreak(level, pos, tool, false);
+            var harvested = !state.requiresCorrectToolForDrops() || tool.isCorrectToolForDrops(state);
+            if (harvested)
+            {
+                for (var drop : Block.getDrops(state, level, pos, null, breaker, tool))
+                    store(level, drop);
+                state.spawnAfterBreak(level, pos, tool, false);
+            }
         }
         else if (erase)
             feed(level, GnawerBalance.ERASE_ESSENCE);
@@ -214,7 +222,7 @@ public class GnawerTile extends TileBase
     }
 
     /**
-     * The lent pickaxe, whose tier and enchantments decide the drops without wearing it, or a plain diamond one.
+     * The lent pickaxe, whose tier and enchantments decide the drops without wearing it, or a plain diamond one. What its tier can't harvest is eaten for nothing.
      */
     private ItemStack tool()
     {
@@ -304,12 +312,14 @@ public class GnawerTile extends TileBase
     }
 
     /**
-     * Gives the Gnawer a box, unless it's still eating one.
+     * Gives the Gnawer a box, unless it's still eating one. The box is eaten as the player who marked it, so protection is asked about them.
      */
-    public boolean link(BlockPos first, BlockPos second)
+    public boolean link(BlockPos first, BlockPos second, Player marker)
     {
         if (box != null)
             return false;
+        owner = marker.getUUID();
+        ownerName = marker.getGameProfile().name();
         box = GnawerBox.of(first, second);
         stakes.clear();
         stakes.add(first.immutable());

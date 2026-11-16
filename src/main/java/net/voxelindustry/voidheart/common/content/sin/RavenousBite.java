@@ -89,7 +89,9 @@ public final class RavenousBite
         var rings = plan(level, player, tool, origin, broken, face);
         if (rings.isEmpty())
             return;
-        BITES.put(player.getUUID(), new Bite(level, origin.immutable(), edibility(level, tool, broken), tool, rings));
+        var unfinished = BITES.put(player.getUUID(), new Bite(level, origin.immutable(), edibility(level, tool, broken), tool, rings));
+        if (unfinished != null)
+            DiggingProficiency.gain(player, unfinished.learned);
     }
 
     /**

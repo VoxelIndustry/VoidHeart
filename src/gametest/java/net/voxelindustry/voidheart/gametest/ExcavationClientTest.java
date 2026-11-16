@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.gametest;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -154,6 +155,23 @@ public class ExcavationClientTest implements FabricClientGameTest
         return count;
     }
 
+    /**
+     * The additive outline from a frozen game and a camera stepping past it, so flicker shows between frames. Each name holds {@code sweep}.
+     */
+    private static void previewSweep(ClientGameTestContext context, TestServerContext server, String name, double feetX, BlockPos target)
+    {
+        aimFrom(context, server, feetX, FLAT_FEET, 0.5, target.getX() + 0.5, target.getY() + 0.5, target.getZ());
+        context.waitTicks(5);
+        context.takeScreenshot(name);
+        server.runCommand("tick freeze");
+        for (int step = 0; step < 6; step++)
+        {
+            aimFrom(context, server, feetX - 0.6 + step * 0.24, FLAT_FEET, 0.5 + step * 0.12, target.getX() + 0.5, target.getY() + 0.5, target.getZ(), 2);
+            context.takeScreenshot(name + "-sweep-" + step);
+        }
+        server.runCommand("tick unfreeze");
+    }
+
     private static void holdAndFeed(MinecraftServer minecraft, ItemStack tool, int food, float saturation)
     {
         var player = player(minecraft);
@@ -179,11 +197,13 @@ public class ExcavationClientTest implements FabricClientGameTest
         });
         var before = server.computeOnServer(minecraft -> DiggingProficiency.points(player(minecraft)));
 
+        previewSweep(context, server, "ravenous-preview-square", TX + 3.5, BITTEN);
         aimFrom(context, server, TX + 3.5, FLAT_FEET, 0.5, BITTEN.getX() + 0.5, BITTEN.getY() + 0.5, BITTEN.getZ());
-        context.waitTicks(5);
-        context.takeScreenshot("ravenous-preview-square");
         setHudHidden(context, true);
-        server.runOnServer(minecraft -> player(minecraft).gameMode.destroyBlock(BITTEN));
+        // Mined with a held click, so the face reaches the server the way it does in play
+        context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        waitFor(context, server, 60, "The held click never broke the aimed block", minecraft -> isAir(minecraft, BITTEN));
+        context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
         context.waitTicks(2);
         context.takeScreenshot("ravenous-bite-crumbling");
         context.waitTicks(10);
@@ -271,8 +291,7 @@ public class ExcavationClientTest implements FabricClientGameTest
             server.runCommand("setblock " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " iron_ore");
         server.runOnServer(minecraft -> holdAndFeed(minecraft, gluttonous(Items.IRON_PICKAXE), 20, 5));
         aimFrom(context, server, TX + 5.5, FLAT_FEET, 0.5, ore.getX() + 0.5, ore.getY() + 0.5, ore.getZ());
-        context.waitTicks(5);
-        context.takeScreenshot("ravenous-preview-vein");
+        previewSweep(context, server, "ravenous-preview-vein", TX + 5.5, ore);
         server.runOnServer(minecraft -> player(minecraft).gameMode.destroyBlock(ore));
         context.waitTicks(8);
         expect(server.computeOnServer(minecraft -> isAir(minecraft, veinNext) && isAir(minecraft, veinEdge)), "Expected the ore's vein eaten");

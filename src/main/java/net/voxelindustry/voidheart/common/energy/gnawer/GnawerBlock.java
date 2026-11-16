@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.energy.gnawer;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -90,7 +91,7 @@ public class GnawerBlock extends Block implements EntityBlock
                     player.sendOverlayMessage(message("busy"));
                 else
                 {
-                    stack.set(VoidHeartDataComponents.GNAWER_LINK, new GnawerLink(pos.immutable(), Optional.empty()));
+                    stack.set(VoidHeartDataComponents.GNAWER_LINK, new GnawerLink(GlobalPos.of(level.dimension(), pos.immutable()), Optional.empty()));
                     player.sendOverlayMessage(message("marking"));
                 }
             }
