@@ -107,12 +107,13 @@ final class SecondHeartScenes
         scene.label(96, scene.next(), above(PYLON, 2.6F), EnergyScenes.rate(VentricleBalance.ENERGY_PER_TICK));
 
         scene.use("offering", 150, offer, top);
-        var offerings = new ItemStack[] { new ItemStack(VoidHeartItems.KERNACIAN_CORE), new ItemStack(VoidHeartItems.MEMORIAM_SHARD, VentricleBalance.MEMORIAM_SHARDS),
+        var offerings = new ItemStack[] { new ItemStack(VoidHeartItems.KERNACIAN_CORE), new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION),
+                new ItemStack(VoidHeartItems.MEMORIAM_SHARD, VentricleBalance.MEMORIAM_SHARDS),
                 new ItemStack(VoidHeartItems.WRAITH_INK, VentricleBalance.WRAITH_INKS) };
         for (int index = 0; index < offerings.length; index++)
         {
-            int start = 10 + index * 32;
-            var into = top.add((index - 1) * 0.25, 0.1, 0);
+            int start = 10 + index * 28;
+            var into = top.add((index - 1.5) * 0.22, 0.1, 0);
             scene.flight(start, 14, kindles, offerings[index], into.add(0, 1.6, 0.6), into);
             scene.click(start + 14, top);
         }
