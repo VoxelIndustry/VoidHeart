@@ -8,12 +8,12 @@ import java.util.Map;
 import java.util.function.LongFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static anyLong;
-import static eq;
-import static mock;
-import static never;
-import static verify;
-import static when;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PearlChoirTest
 {
@@ -193,5 +193,4 @@ class PearlChoirTest
         assertThat(separated.root()).isEqualTo(9);
         assertThat(separated.members()).containsExactly(9L);
     }
-
 }

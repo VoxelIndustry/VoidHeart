@@ -87,5 +87,4 @@ class RelaySharesTest
                     assertThat(Arrays.stream(shares).sum()).isEqualTo(Math.min(budget, Math.max(0, first) + Math.max(0, second)));
                 }
     }
-
 }

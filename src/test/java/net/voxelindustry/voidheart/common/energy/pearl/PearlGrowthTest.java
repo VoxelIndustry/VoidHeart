@@ -273,5 +273,4 @@ class PearlGrowthTest
         assertThat(credit).isZero();
         assertThat(consumed).isEqualTo(3);
     }
-
 }

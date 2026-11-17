@@ -76,5 +76,4 @@ class PearlSeedsTest
         assertThat(PearlSeeds.add(12.5, 0)).isEqualTo(new PearlSeeds(12.5, 0));
         assertThat(PearlSeeds.add(12.5, -3)).isEqualTo(new PearlSeeds(12.5, 0));
     }
-
 }

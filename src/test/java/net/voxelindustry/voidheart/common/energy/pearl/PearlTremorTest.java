@@ -186,5 +186,4 @@ class PearlTremorTest
         assertThat(x.stream().distinct().count()).isGreaterThan(1);
         assertThat(x).isNotEqualTo(y);
     }
-
 }
