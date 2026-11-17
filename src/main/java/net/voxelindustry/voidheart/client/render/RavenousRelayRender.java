@@ -11,8 +11,10 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.pearl.HangingPearlRender;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
+import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlTile;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -20,7 +22,8 @@ import java.util.List;
 
 /**
  * Beams carrying essence through the relay: from each collector or storage it draws from into its core, and from its
- * core into the next relay, storage, or the collector a Shatter Forge feeds.
+ * core into the next relay, storage, or the collector a Shatter Forge feeds. Into a hung pearl the beam splits into threads, so the pearl is seen
+ * drinking it in rather than the beam stopping in the air beside it.
  */
 public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTile, RavenousRelayRender.State>
 {
@@ -30,6 +33,8 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
     private static final float RELAY_INSET     = 0.15F;
     private static final float COLLECTOR_INSET = 0.2F;
     private static final float STORAGE_INSET   = 0.45F;
+    /** Threads the beam splits into to sink into a hung pearl. */
+    private static final int   PEARL_THREADS   = 5;
 
     public static class State extends BlockEntityRenderState
     {
@@ -61,7 +66,26 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
         relay.getIncomingStrands(partialTicks).forEach((source, link) ->
                 state.beams.add(beam(relative(source, origin), inset(level, source), CENTER, RELAY_INSET, link, color)));
         relay.getOutgoingStrands(partialTicks).forEach((target, link) ->
-                state.beams.add(beam(CENTER, RELAY_INSET, relative(target, origin), inset(level, target), link, color)));
+        {
+            if (level.getBlockEntity(target) instanceof HangingPearlTile pearl)
+                state.beams.add(intoPearl(pearl, origin, link, color));
+            else
+                state.beams.add(beam(CENTER, RELAY_INSET, relative(target, origin), inset(level, target), link, color));
+        });
+    }
+
+    /**
+     * A hung pearl takes its Fiery in through threads sinking into it from around, the beam aimed at where it hangs in its block.
+     */
+    private static RelayBeamRender.Beam intoPearl(HangingPearlTile pearl, BlockPos origin, RavenousRelayTile.Link link, int color)
+    {
+        var share = pearl.growth().share();
+        var hung = HangingPearlRender.center(share);
+        var pos = pearl.getBlockPos();
+        var center = new Vec3(pos.getX() - origin.getX() + hung.x, pos.getY() - origin.getY() + hung.y, pos.getZ() - origin.getZ() + hung.z);
+        var source = CENTER.add(center.subtract(CENTER).normalize().scale(RELAY_INSET));
+        return new RelayBeamRender.Beam(source, center, link.growth(), link.active(), color,
+                new RelayBeamRender.Intake(HangingPearlRender.reach(share), PEARL_THREADS, pearl.seed() ^ origin.asLong()));
     }
 
     private static RelayBeamRender.Beam beam(Vec3 source, float sourceInset, Vec3 target, float targetInset, RavenousRelayTile.Link link, int color)

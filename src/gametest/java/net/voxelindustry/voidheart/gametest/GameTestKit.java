@@ -25,6 +25,7 @@ import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 
+import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -102,7 +103,8 @@ public final class GameTestKit
     }
 
     /**
-     * The arguments of a {@code tp} that puts the player's feet at one point and their eyes on another.
+     * The arguments of a {@code tp} that puts the player's feet at one point and their eyes on another. Written out in plain decimals, since the
+     * command refuses a number like {@code -4.9E-13}, which a level aim gives, and the camera then silently stays where it was.
      */
     public static String aimedPose(double feetX, double feetY, double feetZ, double x, double y, double z)
     {
@@ -111,7 +113,7 @@ public final class GameTestKit
         double dz = z - feetZ;
         double yaw = Math.toDegrees(Math.atan2(-dx, dz));
         double pitch = -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
-        return feetX + " " + feetY + " " + feetZ + " " + yaw + " " + pitch;
+        return String.format(Locale.ROOT, "%.5f %.5f %.5f %.5f %.5f", feetX, feetY, feetZ, yaw, pitch);
     }
 
     public static void aimCamera(TestServerContext server, double feetX, double feetY, double feetZ, double x, double y, double z)

@@ -1,0 +1,25 @@
+{
+  "type": "voidheart:shatter_forge",
+  "aspects": {
+    "voidheart:fiery": 8
+  },
+  "draw": 6000,
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:fractal_rubrum_seed"
+      }
+    ]
+  },
+  "monolithCount": 7,
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:kindled_fractal_seed"
+      }
+    ]
+  },
+  "time": 200
+}

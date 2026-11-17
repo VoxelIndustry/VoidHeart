@@ -1,0 +1,6 @@
+{
+  "parent": "voidheart:item/rubrum_pearl_display",
+  "textures": {
+    "particle": "voidheart:item/collapsing_rubrum_pearl"
+  }
+}

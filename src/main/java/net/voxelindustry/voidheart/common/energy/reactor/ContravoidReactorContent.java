@@ -79,12 +79,36 @@ public final class ContravoidReactorContent
      */
     public static void registerCommands(LiteralArgumentBuilder<CommandSourceStack> energy)
     {
-        energy.then(literal("reactor").then(literal("fill")
-                .then(argument("pos", BlockPosArgument.blockPos())
-                        .then(argument("fuel", StringArgumentType.word())
-                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(FUELS, builder))
-                                .then(argument("amount", IntegerArgumentType.integer(1))
-                                        .executes(ContravoidReactorContent::fill))))));
+        energy.then(literal("reactor")
+                .then(literal("fill")
+                        .then(argument("pos", BlockPosArgument.blockPos())
+                                .then(argument("fuel", StringArgumentType.word())
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(FUELS, builder))
+                                        .then(argument("amount", IntegerArgumentType.integer(1))
+                                                .executes(ContravoidReactorContent::fill)))))
+                .then(literal("seed")
+                        .then(argument("pos", BlockPosArgument.blockPos())
+                                .executes(ContravoidReactorContent::seed))));
+    }
+
+    /**
+     * /voidheart energy reactor seed &lt;pos&gt; brings the reactor to the edge of its next fractal seed, which it throws off within a few ticks of
+     * burning, for review.
+     */
+    private static int seed(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var source = context.getSource();
+        var pos = BlockPosArgument.getLoadedBlockPos(context, "pos");
+        var level = source.getLevel();
+        var core = level.getBlockEntity(pos) instanceof ContravoidReactorTile tile ? tile : ContravoidReactorTile.coreAround(level, pos);
+        if (core == null)
+        {
+            source.sendFailure(Component.literal("No Contravoid Reactor at " + pos.toShortString()));
+            return 0;
+        }
+        core.primeSeed();
+        source.sendSuccess(() -> Component.literal("The reactor throws off a seed within a few ticks of burning"), false);
+        return 1;
     }
 
     private static int fill(CommandContext<CommandSourceStack> context) throws CommandSyntaxException

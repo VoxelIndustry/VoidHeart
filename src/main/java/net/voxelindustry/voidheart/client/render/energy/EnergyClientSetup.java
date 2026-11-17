@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.client.render.energy;
 
 import net.voxelindustry.voidheart.client.render.energy.gnawer.GnawerClient;
+import net.voxelindustry.voidheart.client.render.energy.pearl.PearlClient;
 import net.voxelindustry.voidheart.client.render.energy.engine.RavenousEngineClient;
 import net.voxelindustry.voidheart.client.render.energy.grid.VoidGridClient;
 import net.voxelindustry.voidheart.client.render.energy.ley.LeyStoneClient;
@@ -32,5 +33,6 @@ public final class EnergyClientSetup
         ContravoidReactorClient.register();
         DeepSiphonClient.register();
         GnawerClient.register();
+        PearlClient.register();
     }
 }
