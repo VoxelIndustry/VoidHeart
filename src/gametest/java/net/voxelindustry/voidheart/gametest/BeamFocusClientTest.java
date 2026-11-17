@@ -1,6 +1,5 @@
 package net.voxelindustry.voidheart.gametest;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -27,8 +26,9 @@ public class BeamFocusClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        // All tests share one client, so the camera is left as this one found it
+        // All tests share one client, so the camera and HUD are left as this one found them
         var previousCamera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        boolean previousHudHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
         try
         {
             run(context);
@@ -36,7 +36,17 @@ public class BeamFocusClientTest implements FabricClientGameTest
         finally
         {
             context.runOnClient(minecraft -> minecraft.options.setCameraType(previousCamera));
+            setHudHidden(context, previousHudHidden);
         }
+    }
+
+    private static void setHudHidden(ClientGameTestContext context, boolean hidden)
+    {
+        context.runOnClient(minecraft ->
+        {
+            if (minecraft.gui.hud.isHidden() != hidden)
+                minecraft.gui.hud.toggle();
+        });
     }
 
     private static void run(ClientGameTestContext context)
@@ -51,17 +61,11 @@ public class BeamFocusClientTest implements FabricClientGameTest
             context.waitTicks(20);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            // F1 hides the HUD and hand over the block captures, pressed again so the item captures keep them
-            context.getInput().pressKey(InputConstants.KEY_F1);
-            try
-            {
-                capturePrism(context, server);
-                captureBase(context, server);
-            }
-            finally
-            {
-                context.getInput().pressKey(InputConstants.KEY_F1);
-            }
+            // The HUD and hand are hidden over the block captures and shown for the item captures
+            setHudHidden(context, true);
+            capturePrism(context, server);
+            captureBase(context, server);
+            setHudHidden(context, false);
             captureItem(context, server);
         }
     }
