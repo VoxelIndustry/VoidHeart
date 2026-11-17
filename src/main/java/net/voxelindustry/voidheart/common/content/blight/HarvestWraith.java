@@ -38,7 +38,7 @@ import java.util.UUID;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * A mob slain by Night's Harvest, raised as a wraith for its wielder. It takes the dead mob's shape and size, rises out of a stain of ink under the
+ * A mob slain by the scythe blight, raised as a wraith for its wielder. It takes the dead mob's shape and size, rises out of a stain of ink under the
  * corpse, glides through blocks at whatever its wielder last struck or whatever struck its wielder, and sinks back into the ground when its time is
  * up. What it kills counts as its wielder's kill. Never kept with the world.
  */

@@ -67,7 +67,7 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
                 .add(vanilla("ender_dragon"))
                 .add(vanilla("wither"));
 
-        // Bosses never rise for Night's Harvest
+        // Bosses never rise for the scythe blight
         tag(HarvestWraith.UNHARVESTABLE, VILE_FLESH_MASS, KERNACIAN_DRAGOON)
                 .add(vanilla("ender_dragon"))
                 .add(vanilla("wither"))

@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * A wraith raised by Night's Harvest is drawn by the renderer of the mob it was, as a husk of wraith ink: its own texture through the husk shader,
+ * A wraith raised by the scythe blight is drawn by the renderer of the mob it was, as a husk of wraith ink: its own texture through the husk shader,
  * how much it frays in the tint, and where its feet are and how tall it is in the overlay coordinates. What it wore or held is left off.
  */
 @Mixin(LivingEntityRenderer.class)

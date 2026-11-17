@@ -61,7 +61,7 @@ public class WraithStain extends Entity
     }
 
     /**
-     * A stain spreading on the ground under a point, without whispers, such as the one a wraith raised by Night's Harvest rises out of and sinks into.
+     * A stain spreading on the ground under a point, without whispers, such as the one a wraith raised by the scythe blight rises out of and sinks into.
      */
     public static WraithStain under(ServerLevel level, Vec3 feet, float radius, int growTicks, int lingerTicks)
     {
