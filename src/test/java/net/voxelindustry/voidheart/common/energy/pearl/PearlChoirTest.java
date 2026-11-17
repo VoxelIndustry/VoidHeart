@@ -8,6 +8,12 @@ import java.util.Map;
 import java.util.function.LongFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PearlChoirTest
 {
@@ -113,5 +119,78 @@ class PearlChoirTest
     {
         Map<Long, List<Long>> reach = Map.of(-5L, List.of(4L), 4L, List.of(-5L, 9L), 9L, List.of(4L));
         assertThat(PearlChoir.walk(9, pos -> reach.getOrDefault(pos, List.of())).root()).isEqualTo(-5);
+    }
+
+    @Test
+    void cyclesAndDuplicateNeighbours_visitEachMemberOnce()
+    {
+        Map<Long, List<Long>> reach = Map.of(
+                9L, List.of(9L, 4L, 4L),
+                4L, List.of(9L, -2L),
+                -2L, List.of(4L, 9L));
+        var visits = new HashMap<Long, Integer>();
+        var walk = PearlChoir.walk(9, pos ->
+        {
+            visits.merge(pos, 1, Integer::sum);
+            return reach.get(pos);
+        });
+        assertThat(walk.root()).isEqualTo(-2);
+        assertThat(walk.members()).containsExactlyInAnyOrder(9L, 4L, -2L);
+        assertThat(visits).containsOnly(Map.entry(9L, 1), Map.entry(4L, 1), Map.entry(-2L, 1));
+    }
+
+    @Test
+    void fedScan_handsRootToEveryOtherMemberOnlyOnce()
+    {
+        var field = mock(PearlChoir.Field.class);
+        when(field.neighbours(9)).thenReturn(List.of(4L, 4L));
+        when(field.neighbours(4)).thenReturn(List.of(9L, -2L));
+        when(field.neighbours(-2)).thenReturn(List.of(4L));
+
+        assertThat(PearlChoir.scan(9, true, field)).isEqualTo(-2);
+
+        verify(field).hand(4, -2);
+        verify(field).hand(-2, -2);
+        verify(field, never()).hand(eq(9L), anyLong());
+        verify(field, never()).root(anyLong());
+    }
+
+    @Test
+    void unfedScan_borrowsLowestExistingRootWithoutJoiningChoirs()
+    {
+        var field = mock(PearlChoir.Field.class);
+        when(field.neighbours(-100)).thenReturn(List.of(20L, 30L));
+        when(field.root(20)).thenReturn(8L);
+        when(field.root(30)).thenReturn(-5L);
+
+        assertThat(PearlChoir.scan(-100, false, field)).isEqualTo(-5);
+
+        verify(field, never()).hand(anyLong(), anyLong());
+        verify(field, never()).neighbours(20);
+        verify(field, never()).neighbours(30);
+    }
+
+    @Test
+    void isolatedScan_usesOwnRootWhetherFedOrUnfed()
+    {
+        var field = mock(PearlChoir.Field.class);
+        when(field.neighbours(7)).thenReturn(List.of());
+        assertThat(PearlChoir.scan(7, true, field)).isEqualTo(7);
+        assertThat(PearlChoir.scan(7, false, field)).isEqualTo(7);
+        verify(field, never()).root(anyLong());
+        verify(field, never()).hand(anyLong(), anyLong());
+    }
+
+    @Test
+    void removedBridge_splitsPreviouslyConnectedChoir()
+    {
+        var reach = new HashMap<>(Map.of(1L, List.of(5L), 5L, List.of(1L, 9L), 9L, List.of(5L)));
+        assertThat(PearlChoir.walk(9, pos -> reach.getOrDefault(pos, List.of())).root()).isEqualTo(1);
+        reach.put(1L, List.of());
+        reach.put(9L, List.of());
+        reach.remove(5L);
+        var separated = PearlChoir.walk(9, pos -> reach.getOrDefault(pos, List.of()));
+        assertThat(separated.root()).isEqualTo(9);
+        assertThat(separated.members()).containsExactly(9L);
     }
 }

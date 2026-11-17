@@ -130,4 +130,60 @@ class PearlTremorTest
         }
         return shared;
     }
+
+    @Test
+    void zeroSync_ignoresChoirSeedAtFractionalTimes()
+    {
+        var seed = PearlTremor.seedOf(17);
+        var moving = false;
+        for (double time = -300; time < 300; time += 0.25)
+        {
+            var alone = PearlTremor.at(seed, seed, 0, time);
+            var withChoir = PearlTremor.at(seed, PearlTremor.seedOf(-42), 0, time);
+            assertThat(withChoir).isEqualTo(alone);
+            assertThat(withChoir.shared()).isFalse();
+            moving |= withChoir.intensity() > 0;
+        }
+        assertThat(moving).isTrue();
+    }
+
+    @Test
+    void fullSync_matchesChoirLeaderAtFractionalAndNegativeTimes()
+    {
+        var choir = PearlTremor.seedOf(-10);
+        var moving = false;
+        for (double time = -300; time < 300; time += 0.25)
+        {
+            var follower = PearlTremor.at(PearlTremor.seedOf(25), choir, 1, time);
+            assertThat(follower).isEqualTo(PearlTremor.at(choir, choir, 1, time));
+            assertThat(follower.intensity()).isBetween(0F, 1F);
+            if (follower.intensity() == 0)
+                assertThat(follower).isEqualTo(PearlTremor.Moment.STILL);
+            else
+            {
+                moving = true;
+                assertThat(follower.shared()).isTrue();
+            }
+        }
+        assertThat(moving).isTrue();
+    }
+
+    @Test
+    void jolt_isRepeatableAndVariesAcrossAxesAndTicks()
+    {
+        var seed = PearlTremor.seedOf(123);
+        var x = new ArrayList<Float>();
+        var y = new ArrayList<Float>();
+        for (long tick = 0; tick < 50; tick++)
+        {
+            var value = PearlTremor.jolt(seed, tick, 2, 0);
+            assertThat(PearlTremor.jolt(seed, tick, 2, 0)).isEqualTo(value);
+            x.add(value);
+            var otherAxis = PearlTremor.jolt(seed, tick, 2, 1);
+            assertThat(otherAxis).isBetween(-1F, 1F);
+            y.add(otherAxis);
+        }
+        assertThat(x.stream().distinct().count()).isGreaterThan(1);
+        assertThat(x).isNotEqualTo(y);
+    }
 }

@@ -2,6 +2,8 @@ package net.voxelindustry.voidheart.common.energy.pearl;
 
 import net.voxelindustry.voidheart.common.energy.pearl.PearlGrowth.Stage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -153,5 +155,122 @@ class PearlGrowthTest
             ticks++;
         }
         return ticks;
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, -1, Long.MIN_VALUE})
+    void invalidDuration_stillRequiresOneTick(long duration)
+    {
+        var growth = new PearlGrowth(duration);
+        assertThat(growth.duration()).isEqualTo(1);
+        assertThat(growth.isMature()).isFalse();
+        assertThat(growth.tick(1, 1)).isTrue();
+        assertThat(growth.share()).isEqualTo(1F);
+    }
+
+    @Test
+    void maturity_isReportedOnlyOnTheTickThatCrossesTheBoundary()
+    {
+        var growth = new PearlGrowth(10);
+        growth.setProgress(9.5);
+        assertThat(growth.tick(2, 0.125)).isFalse();
+        assertThat(growth.progress()).isEqualTo(9.75);
+        assertThat(growth.tick(2, 0.5)).isTrue();
+        assertThat(growth.progress()).isEqualTo(10);
+        assertThat(growth.tick(2, 1)).isFalse();
+    }
+
+    @Test
+    void tick_clampsExcessSupplyAndDoesNotRegressForNegativeInputs()
+    {
+        var growth = new PearlGrowth(100);
+        growth.setProgress(5);
+        assertThat(growth.tick(-2, 1)).isFalse();
+        assertThat(growth.tick(2, -1)).isFalse();
+        assertThat(growth.progress()).isEqualTo(5);
+        assertThat(growth.tick(2, 10)).isFalse();
+        assertThat(growth.progress()).isEqualTo(7);
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = {Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY})
+    void nonFiniteSavedProgress_resetsGrowth(double progress)
+    {
+        var growth = new PearlGrowth(100);
+        growth.setProgress(75);
+        growth.setProgress(progress);
+        assertThat(growth.progress()).isZero();
+        assertThat(growth.stage()).isEqualTo(Stage.SPECK);
+        assertThat(growth.isMature()).isFalse();
+    }
+
+    @Test
+    void stages_changeExactlyAtEachQuarter()
+    {
+        for (var ordinal = 1; ordinal < Stage.values().length; ordinal++)
+        {
+            var boundary = ordinal / 4F;
+            assertThat(PearlGrowth.stageOf(Math.nextDown(boundary))).isEqualTo(Stage.values()[ordinal - 1]);
+            assertThat(PearlGrowth.stageOf(boundary)).isEqualTo(Stage.values()[ordinal]);
+        }
+        assertThat(Stage.byOrdinal(-1)).isEqualTo(Stage.SPECK);
+        assertThat(Stage.byOrdinal(Stage.values().length)).isEqualTo(Stage.SPECK);
+        for (var stage : Stage.values())
+            assertThat(Stage.byOrdinal(stage.ordinal())).isEqualTo(stage);
+    }
+
+    @Test
+    void voidWanted_roundsUpPartialDrawAndClampsToOneTick()
+    {
+        assertThat(PearlGrowth.voidWanted(-1)).isZero();
+        assertThat(PearlGrowth.voidWanted(0.01)).isEqualTo(1);
+        assertThat(PearlGrowth.voidWanted(0.25)).isEqualTo(PearlBalance.VOID_DRAW / 4);
+        assertThat(PearlGrowth.voidWanted(2)).isEqualTo(PearlBalance.VOID_DRAW);
+    }
+
+    @Test
+    void noVoid_preservesBothTankAndCredit()
+    {
+        for (var voidGot : new long[]{0, -1})
+        {
+            var feed = PearlGrowth.feed(0.125, 10, voidGot);
+            assertThat(feed.supply()).isZero();
+            assertThat(feed.fiery()).isZero();
+            assertThat(feed.credit()).isEqualTo(0.125);
+        }
+    }
+
+    @Test
+    void credit_isSpentBeforeAnotherWholePointIsTaken()
+    {
+        var enoughCredit = PearlGrowth.feed(0.5, 10, PearlBalance.VOID_DRAW);
+        assertThat(enoughCredit.fiery()).isZero();
+        assertThat(enoughCredit.credit()).isEqualTo(0.5 - PearlBalance.FIERY_PER_TICK);
+
+        var shortCredit = PearlGrowth.feed(0.125, 10, PearlBalance.VOID_DRAW);
+        assertThat(shortCredit.supply()).isEqualTo(1);
+        assertThat(shortCredit.fiery()).isEqualTo(1);
+        assertThat(shortCredit.credit()).isEqualTo(1.125 - PearlBalance.FIERY_PER_TICK);
+    }
+
+    @Test
+    void varyingField_eventuallyExhaustsTankWithoutCreatingOrLosingFiery()
+    {
+        var tank = 3;
+        double credit = 0;
+        double consumed = 0;
+        for (var tick = 0; tick < 100; tick++)
+        {
+            var feed = PearlGrowth.feed(credit, tank, tick % 3 == 0 ? 0 : PearlBalance.VOID_DRAW / 2);
+            tank -= (int) feed.fiery();
+            credit = feed.credit();
+            consumed += feed.supply() * PearlBalance.FIERY_PER_TICK;
+            assertThat(tank).isNotNegative();
+            assertThat(credit).isGreaterThanOrEqualTo(0).isLessThan(1);
+            assertThat(tank + credit + consumed).isCloseTo(3, within(1e-9));
+        }
+        assertThat(tank).isZero();
+        assertThat(credit).isZero();
+        assertThat(consumed).isEqualTo(3);
     }
 }
