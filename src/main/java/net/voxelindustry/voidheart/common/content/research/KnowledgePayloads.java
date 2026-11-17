@@ -75,9 +75,9 @@ public class KnowledgePayloads
 
     public record Snapshot(double knowledge, double cap, double rate, int insights, double nextInsightCost, double insightCostGrowth, Optional<Identifier> active,
                            Map<Identifier, Double> progress, List<Identifier> revealed, List<Identifier> completed, Map<Identifier, Integer> fed, ColumnInfo columns,
-                           UpgradeInfo upgrades) implements CustomPacketPayload
+                           UpgradeInfo upgrades, List<Identifier> blueprints) implements CustomPacketPayload
     {
-        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, 1, Optional.empty(), Map.of(), List.of(), List.of(), Map.of(), ColumnInfo.NONE, UpgradeInfo.NONE);
+        public static final Snapshot EMPTY = new Snapshot(0, 0, 0, 0, 0, 1, Optional.empty(), Map.of(), List.of(), List.of(), Map.of(), ColumnInfo.NONE, UpgradeInfo.NONE, List.of());
 
         public static final Type<Snapshot> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "knowledge_snapshot"));
 
@@ -95,6 +95,7 @@ public class KnowledgePayloads
                 ByteBufCodecs.<RegistryFriendlyByteBuf, Identifier, Integer, Map<Identifier, Integer>>map(HashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.VAR_INT), Snapshot::fed,
                 ColumnInfo.STREAM_CODEC, Snapshot::columns,
                 UpgradeInfo.STREAM_CODEC, Snapshot::upgrades,
+                Identifier.STREAM_CODEC.apply(ByteBufCodecs.list()), Snapshot::blueprints,
                 Snapshot::new);
 
         @Override

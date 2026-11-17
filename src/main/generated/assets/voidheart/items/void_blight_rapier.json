@@ -1,0 +1,32 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_blight_rapier"
+        },
+        "when": "gui"
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_blight_rapier"
+        },
+        {
+          "type": "minecraft:special",
+          "base": "voidheart:item/void_blight_rapier",
+          "model": {
+            "type": "voidheart:blight_edge",
+            "blade": "rapier"
+          }
+        }
+      ]
+    },
+    "property": "minecraft:display_context"
+  }
+}

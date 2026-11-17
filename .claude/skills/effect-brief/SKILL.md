@@ -47,6 +47,7 @@ Check each brief against these, since they're what the user has sent back before
 | "Not right for minecraft, too detailed", then heads "more embedded" and "a huge droplet" | Smooth meshes and noisy skins read as foreign, and separate parts read as a bundle. Use plain cuboids and sink parts into one mass | `TormenterDroplet` |
 | "Should be more at the level of the other effect of the mod. With textures and depth" | Untextured additive shapes in vertex colors read as a placeholder, and wash out to a white blob by day. Build an effect in layers with pixel textures: a solid textured body that writes depth, additive textured layers around it, and dark parts in front of the light | `KleinStarRender` |
 | A picture's relief "too intense", "a bunch of pillars raised from the mosaic instead of something coming out" | Pixels lifted each to its own height read as columns standing on the surface. Lift one body that rises from nothing at its edge, keep steps between neighbours to a crack, and keep what glows in the cracks dim, or it becomes a net over the body | `MosaicPicture` |
+| Rapier punctures "too detailed" | A sprite drawn finer than the world's 16 pixels a block, with soft alpha and smooth stretching, reads as a decal from another game. Size effect sprites in block pixels, keep alpha to a few flat steps and change size in whole steps | `PunctureRender` |
 
 These are lessons, not rules to apply everywhere. The user's request wins where they conflict. When new feedback teaches something else, add a row here.
 

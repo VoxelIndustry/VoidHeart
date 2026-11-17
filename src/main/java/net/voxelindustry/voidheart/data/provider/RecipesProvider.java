@@ -331,6 +331,11 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
                     VoidHeartItems.VOID_PEARL, Blocks.GLOWSTONE);
 
+            // The first of the void blights, drawn from a contraption's design onto a blade the wielder already trusts
+            offerAltarRecipe("void_blight_rapier", VoidHeartItems.VOID_BLIGHT_RAPIER, Items.NETHERITE_SWORD,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD);
+
             // A membrane is what lets some things through and not others
             offerAltarRecipe("permeable_barrier_item", VoidHeartItems.PERMEABLE_BARRIER, Items.PHANTOM_MEMBRANE,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,

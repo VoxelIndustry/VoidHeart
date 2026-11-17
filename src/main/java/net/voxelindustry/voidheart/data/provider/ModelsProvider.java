@@ -31,6 +31,7 @@ import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
+import net.voxelindustry.voidheart.client.render.blight.BlightEdgeRender;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusProp;
@@ -338,6 +339,13 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.UNDERWAY_KEY, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRAITH_VEIL, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LEY_DIVINING_ROD, ModelTemplates.FLAT_HANDHELD_ITEM);
+        generator.generateFlatItem(VoidHeartItems.BLESSED_CONTRAPTION, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.DARK_AMALGAM, ModelTemplates.FLAT_ITEM);
+        // A void blight's black sprite with the shimmer running along its edge, plain in screens
+        var rapier = generator.createFlatItemModel(VoidHeartItems.VOID_BLIGHT_RAPIER, ModelTemplates.FLAT_HANDHELD_ITEM);
+        generator.itemModelOutput.accept(VoidHeartItems.VOID_BLIGHT_RAPIER, ItemModelUtils.select(new DisplayContext(),
+                ItemModelUtils.composite(ItemModelUtils.plainModel(rapier), ItemModelUtils.specialModel(rapier, new BlightEdgeRender.Unbaked("rapier"))),
+                ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.plainModel(rapier))));
         // A staff in the hand and in the world, from the hand-written model, and its flat picture in screens
         generator.itemModelOutput.accept(VoidHeartItems.KLEIN_STAR, ItemModelUtils.select(new DisplayContext(),
                 ItemModelUtils.plainModel(itemModel("klein_star_staff")),

@@ -149,7 +149,8 @@ public class Knowledge
                 new HashMap<>(data.getFed()),
                 new KnowledgePayloads.ColumnInfo(data.getColumns(), data.columnCapacity(tree), columnRadius()),
                 new KnowledgePayloads.UpgradeInfo(data.getAttunement(), data.tolerance(), Strain.alive(data.getProxies()), rules.proxyStrain(),
-                        data.getCogitants(), rules.cogitants(), data.cogitantRate(tree), data.hasLoom(), rules.proxies(), rules.proxyInsightsPerHour())));
+                        data.getCogitants(), rules.cogitants(), data.cogitantRate(tree), data.hasLoom(), rules.proxies(), rules.proxyInsightsPerHour()),
+                List.copyOf(data.getBlueprints())));
     }
 
     public static void bind(MinecraftServer server, UUID player, GlobalPos repository)

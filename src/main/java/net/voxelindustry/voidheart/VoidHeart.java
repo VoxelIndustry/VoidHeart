@@ -12,6 +12,9 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
+import net.voxelindustry.voidheart.common.content.blight.BlueprintPayloads;
+import net.voxelindustry.voidheart.common.content.blight.RapierStrikes;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -146,6 +149,8 @@ public class VoidHeart implements ModInitializer
         AvengingReach.register();
         ShieldingApparatus.register();
         ShieldPayloads.register();
+        BlueprintPayloads.register();
+        RapierStrikes.register();
         SinProficiencies.register();
 
         VoidHeartTiles.registerTiles();
@@ -181,6 +186,8 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(ShieldingApparatus::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BarnacleInfection::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(RapierStrikes::tickServer);
+        AttackEntityCallback.EVENT.register(RapierStrikes::beforeAttack);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
         ServerLivingEntityEvents.AFTER_DAMAGE.register(AvengingReach::onDamage);
