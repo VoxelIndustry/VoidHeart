@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.data.provider;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
+import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -65,6 +66,13 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
         builder(VoidHeartTags.TORMENTER_REFUSES)
                 .add(vanilla("ender_dragon"))
                 .add(vanilla("wither"));
+
+        // Bosses never rise for Night's Harvest
+        tag(HarvestWraith.UNHARVESTABLE, VILE_FLESH_MASS, KERNACIAN_DRAGOON)
+                .add(vanilla("ender_dragon"))
+                .add(vanilla("wither"))
+                .add(vanilla("warden"))
+                .add(vanilla("elder_guardian"));
     }
 
     private TagAppender<EntityType<?>> tag(TagKey<EntityType<?>> tag, EntityType<?>... types)

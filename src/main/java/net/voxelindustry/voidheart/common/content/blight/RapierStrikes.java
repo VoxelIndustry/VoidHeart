@@ -11,22 +11,16 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Optional;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -45,8 +39,6 @@ public final class RapierStrikes
     /** How far a puncture lands from where the thrust went, in blocks. */
     private static final float SLIT_SPREAD = 0.16F;
 
-    /** The game time each player last swung a rapier charged enough to puncture, since the charge is spent before the item hears of the hit. */
-    private static final WeakHashMap<Player, Long> CHARGED = new WeakHashMap<>();
     /** Those carrying punctures or a fold, ticked until nothing is left on them. */
     private static final Set<LivingEntity>         TRACKED = Collections.newSetFromMap(new IdentityHashMap<>());
 
@@ -64,23 +56,13 @@ public final class RapierStrikes
         return entity.getAttachedOrElse(PUNCTURED, Punctured.NONE);
     }
 
-    /** Called before a player's attack lands, while the charge of the swing can still be read. */
-    public static InteractionResult beforeAttack(Player player, Level level, InteractionHand hand, Entity target, @Nullable EntityHitResult hit)
-    {
-        if (!level.isClientSide() && player.getMainHandItem().getItem() instanceof BlightRapierItem
-            && player.getAttackStrengthScale(0.5F) >= BlightBalance.RAPIER_CHARGE)
-            CHARGED.put(player, level.getGameTime());
-        return InteractionResult.PASS;
-    }
-
     /** A rapier hit that landed. It punctures only when its swing was charged. */
     public static void onHit(LivingEntity target, LivingEntity attacker)
     {
         if (!(attacker instanceof Player player) || !(target.level() instanceof ServerLevel level))
             return;
         long now = level.getGameTime();
-        var charged = CHARGED.remove(player);
-        if (charged == null || charged != now || !target.isAlive())
+        if (!ChargedSwings.isCharged(player) || !target.isAlive())
             return;
 
         var punctured = of(target);

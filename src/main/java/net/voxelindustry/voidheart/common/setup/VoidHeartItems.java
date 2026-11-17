@@ -12,6 +12,7 @@ import net.voxelindustry.voidheart.common.content.research.VoidGraftItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.content.blight.BlessedContraptionItem;
 import net.voxelindustry.voidheart.common.content.blight.BlightRapierItem;
+import net.voxelindustry.voidheart.common.content.blight.BlightScytheItem;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.core.Registry;
@@ -66,6 +67,7 @@ public class VoidHeartItems
     public static KleinStarItem KLEIN_STAR;
     public static BlessedContraptionItem BLESSED_CONTRAPTION;
     public static BlightRapierItem VOID_BLIGHT_RAPIER;
+    public static BlightScytheItem VOID_BLIGHT_SCYTHE;
     public static Item DARK_AMALGAM;
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
 
@@ -141,6 +143,7 @@ public class VoidHeartItems
         KNOWLEDGE_TABLET = registerItem("knowledge_tablet", KnowledgeTabletItem::new);
         BLESSED_CONTRAPTION = registerItem("blessed_contraption", BlessedContraptionItem::new);
         VOID_BLIGHT_RAPIER = registerItem("void_blight_rapier", BlightRapierItem::new);
+        VOID_BLIGHT_SCYTHE = registerItem("void_blight_scythe", BlightScytheItem::new);
         DARK_AMALGAM = registerItem("dark_amalgam", Item::new);
 
         OBSIDIAN_SHARD = registerItem("obsidian_shard", Item::new);

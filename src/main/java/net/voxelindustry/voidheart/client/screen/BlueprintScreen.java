@@ -231,6 +231,11 @@ public class BlueprintScreen extends Screen
         return designs.size();
     }
 
+    public Identifier designAt(int index)
+    {
+        return designs.get(index).blueprint();
+    }
+
     @Override
     public boolean isPauseScreen()
     {

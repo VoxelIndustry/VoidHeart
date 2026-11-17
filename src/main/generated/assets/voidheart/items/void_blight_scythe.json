@@ -1,0 +1,32 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_blight_scythe"
+        },
+        "when": "gui"
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_blight_scythe"
+        },
+        {
+          "type": "minecraft:special",
+          "base": "voidheart:item/void_blight_scythe",
+          "model": {
+            "type": "voidheart:blight_edge",
+            "blade": "scythe"
+          }
+        }
+      ]
+    },
+    "property": "minecraft:display_context"
+  }
+}

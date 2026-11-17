@@ -336,6 +336,11 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
                     VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD);
 
+            // A reaper's blade: the hoe is the closest thing the world has to a scythe
+            offerAltarRecipe("void_blight_scythe", VoidHeartItems.VOID_BLIGHT_SCYTHE, Items.NETHERITE_HOE,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD);
+
             // A membrane is what lets some things through and not others
             offerAltarRecipe("permeable_barrier_item", VoidHeartItems.PERMEABLE_BARRIER, Items.PHANTOM_MEMBRANE,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,

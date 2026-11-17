@@ -140,6 +140,28 @@ public class VoidHeartRenderTypes
             .withCull(false)
             .build();
 
+    /**
+     * A raised wraith's husk, see {@code wraith_husk.fsh}: any mob's model and texture refilled with wraith ink, smoke from the Wraith Veil's realm
+     * drifting inside. Opaque cutout writing depth, ignoring world light. Its own vertex stage hands the fragments the view, the normal and the body's
+     * feet and height, the last two carried in the overlay coordinates.
+     */
+    private static final RenderPipeline WRAITH_HUSK_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_NO_LIGHTMAP_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/wraith_husk"))
+            .withVertexShader(Identifier.fromNamespaceAndPath(MODID, "core/wraith_husk"))
+            .withFragmentShader(Identifier.fromNamespaceAndPath(MODID, "core/wraith_husk"))
+            .withBindGroupLayout(BindGroupLayouts.DISSOLVE_MASK_SAMPLER)
+            .withColorTargetState(ColorTargetState.DEFAULT)
+            .withCull(false)
+            .build();
+
+    private static final Map<Identifier, RenderType> WRAITH_HUSK = new HashMap<>();
+
+    public static RenderType wraithHusk(Identifier texture)
+    {
+        return WRAITH_HUSK.computeIfAbsent(texture, key -> RenderType.create(MODID + "_wraith_husk",
+                RenderSetup.builder(WRAITH_HUSK_PIPELINE).withTexture("Sampler0", key).withTexture("DissolveMaskSampler", WraithInk.SMOKE).createRenderSetup()));
+    }
+
     private static final Identifier SANCTUM_HALL = Identifier.fromNamespaceAndPath(MODID, "textures/misc/sanctum_window.png");
     private static final Map<Identifier, RenderType> SANCTUM_WINDOW = new HashMap<>();
 

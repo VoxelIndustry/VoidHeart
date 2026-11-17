@@ -13,11 +13,17 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
 import net.voxelindustry.voidheart.common.content.blight.BlightBalance;
+import net.voxelindustry.voidheart.common.content.blight.Blueprints;
+import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
+import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
+import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.common.content.blight.RapierStrikes;
 import net.voxelindustry.voidheart.common.content.blight.Wound;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
+import java.util.List;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
@@ -32,6 +38,8 @@ public class VoidBlightClientTest implements FabricClientGameTest
     private static final double TARGET_Z  = 2.8;
     private static final float  STURDY    = 200;
     private static final int    CHARGED   = 13;
+    private static final int    SCYTHE_CHARGED = 24;
+    private static final List<Identifier> BLIGHTS = List.of(id("void_blight_rapier"), id("void_blight_scythe"));
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -51,6 +59,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
 
             contraption(context, server);
             rapier(context, server);
+            scythe(context, server);
         }
         finally
         {
@@ -62,17 +71,21 @@ public class VoidBlightClientTest implements FabricClientGameTest
     {
         server.runCommand("execute as @a run voidheart blueprint forget all");
         server.runCommand("execute as @a run voidheart research grant voidheart:contravoid_reactor");
-        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION, 2)));
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION, 3)));
         context.waitTicks(5);
-        expect(server.computeOnServer(minecraft -> !rapierDiscoverable(minecraft)), "Expected the rapier's research hidden before its blueprint is known");
+        int pool = server.computeOnServer(minecraft -> Blueprints.pool(Knowledge.tree(minecraft.registryAccess())).size());
+        expect(pool >= 2, "Expected at least the rapier's and the scythe's blueprints, got " + pool);
+        for (var blight : BLIGHTS)
+            expect(server.computeOnServer(minecraft -> !discoverable(minecraft, blight)), "Expected " + blight + "'s research hidden before its blueprint is known");
 
         rightClick(context);
         context.waitFor(minecraft -> minecraft.gui.screen() instanceof BlueprintScreen, 40);
         int designs = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designCount());
-        expect(designs == 1, "Expected the contraption to offer the one design there is, got " + designs);
+        expect(designs == Math.min(pool, Blueprints.OFFERED), "Expected the contraption to offer every unknown design up to three, got " + designs);
         context.takeScreenshot("void-blight-contraption-offer");
 
         var plate = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).plateCenter(0));
+        var first = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designAt(0));
         click(context, plate);
         context.takeScreenshot("void-blight-contraption-picked");
         expect(server.computeOnServer(minecraft -> knowledge(minecraft).getBlueprints().isEmpty()), "Expected picking a plate alone to teach nothing");
@@ -83,12 +96,28 @@ public class VoidBlightClientTest implements FabricClientGameTest
         expectClient(context, "Expected keeping a design to close the screen", minecraft -> minecraft.gui.screen() == null);
         server.runOnServer(minecraft ->
         {
-            expect(knowledge(minecraft).knowsBlueprint(id("void_blight_rapier")), "Expected the rapier's blueprint learned");
-            expect(player(minecraft).getMainHandItem().getCount() == 1, "Expected one contraption spent, holds " + player(minecraft).getMainHandItem().getCount());
-            expect(rapierDiscoverable(minecraft), "Expected the rapier's research in sight once its blueprint is known");
+            expect(knowledge(minecraft).knowsBlueprint(first), "Expected the picked blueprint " + first + " learned");
+            expect(player(minecraft).getMainHandItem().getCount() == 2, "Expected one contraption spent, holds " + player(minecraft).getMainHandItem().getCount());
+            expect(discoverable(minecraft, first), "Expected " + first + "'s research in sight once its blueprint is known");
         });
 
-        // With every design known, the second one unfolds nothing
+        // The next one only offers what is still unknown, until nothing is
+        for (int left = pool - 1; left > 0; left--)
+        {
+            rightClick(context);
+            context.waitFor(minecraft -> minecraft.gui.screen() instanceof BlueprintScreen, 40);
+            int offered = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designCount());
+            var shown = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designAt(0));
+            expect(offered == Math.min(left, Blueprints.OFFERED) && !shown.equals(first), "Expected only unknown designs offered, got " + offered + " starting with " + shown);
+            context.getInput().pressKey(InputConstants.KEY_1);
+            context.getInput().pressKey(InputConstants.KEY_RETURN);
+            context.waitTicks(5);
+        }
+        expect(server.computeOnServer(minecraft -> knowledge(minecraft).getBlueprints().size() == pool), "Expected every blueprint learned");
+
+        // With every design known, the last one unfolds nothing
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION)));
+        context.waitTicks(3);
         rightClick(context);
         context.waitTicks(5);
         expectClient(context, "Expected no choice once every design is known", minecraft -> minecraft.gui.screen() == null);
@@ -96,10 +125,9 @@ public class VoidBlightClientTest implements FabricClientGameTest
         expect(server.computeOnServer(minecraft -> player(minecraft).getMainHandItem().getCount() == 1), "Expected the unopened contraption kept");
     }
 
-    private static boolean rapierDiscoverable(MinecraftServer minecraft)
+    private static boolean discoverable(MinecraftServer minecraft, Identifier blueprint)
     {
-        var research = Knowledge.tree(minecraft.registryAccess()).get(id("void_blight_rapier"));
-        return research != null && knowledge(minecraft).isDiscoverable(research);
+        return Blueprints.researchOf(blueprint, Knowledge.tree(minecraft.registryAccess())).filter(entry -> knowledge(minecraft).isDiscoverable(entry.getValue())).isPresent();
     }
 
     private static void rapier(ClientGameTestContext context, TestServerContext server)
@@ -202,6 +230,115 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.takeScreenshot("void-blight-rapier-inventory");
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(3);
+    }
+
+    private static void scythe(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("kill @e[type=!player]");
+        server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+        server.runOnServer(minecraft ->
+        {
+            player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.VOID_BLIGHT_SCYTHE));
+            heal(minecraft);
+        });
+        var reaped = server.computeOnServer(minecraft -> standingHusk(minecraft, 0.5, TARGET_Z, 16));
+        aimFrom(context, server, 0.5, FLAT_FEET, 0.5, 0.5, FLAT_FEET + 1.2, TARGET_Z, 15);
+
+        // Two full swings fell it, and it rises for its slayer out of a stain on the ground
+        attack(context, SCYTHE_CHARGED);
+        attack(context, SCYTHE_CHARGED);
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            expect(!(minecraft.overworld().getEntity(reaped) instanceof LivingEntity living) || !living.isAlive(), "Expected two full swings to kill the husk");
+            var raised = wraiths(minecraft);
+            expect(raised.size() == 1, "Expected the husk to rise as one wraith, got " + raised.size());
+            var wraith = raised.getFirst();
+            expect(player(minecraft).getUUID().equals(wraith.owner()), "Expected the wraith to answer to its slayer");
+            expect(wraith.source().filter(EntityTypes.HUSK::equals).isPresent(), "Expected the wraith to take the husk's shape, got " + wraith.source());
+        });
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        context.takeScreenshot("void-blight-scythe-stain");
+        context.waitTicks(BlightBalance.WRAITH_STAIN_TICKS + BlightBalance.WRAITH_RISE_TICKS / 2 - 2);
+        context.takeScreenshot("void-blight-scythe-rising");
+        context.waitTicks(BlightBalance.WRAITH_RISE_TICKS);
+        context.takeScreenshot("void-blight-scythe-risen");
+        aimFrom(context, server, 2.5, FLAT_FEET, TARGET_Z, 0.5, FLAT_FEET + 1.2, TARGET_Z, 3);
+        context.takeScreenshot("void-blight-scythe-risen-side");
+
+        // It glides through a wall at whatever struck its wielder, and its kill counts as the wielder's
+        server.runCommand("fill -2 " + FLAT_FEET + " 6 3 " + (FLAT_FEET + 3) + " 6 stone");
+        var foe = server.computeOnServer(minecraft ->
+        {
+            var husk = standingHusk(minecraft, 0.5, 8.5, 60);
+            player(minecraft).setLastHurtByMob(husk(minecraft, husk));
+            return husk;
+        });
+        waitFor(context, server, 200, "Expected the wraith to reach the husk behind the wall and strike it",
+                minecraft -> husk(minecraft, foe).getHealth() < 60);
+        aimFrom(context, server, 4.5, FLAT_FEET + 2, 8.5, 0.5, FLAT_FEET + 1, 8.5, 3);
+        context.takeScreenshot("void-blight-scythe-fight");
+        aimFrom(context, server, 4.5, FLAT_FEET, 8.5, 0.5, FLAT_FEET + 1, 8.5, 3);
+        context.takeScreenshot("void-blight-scythe-fight-level");
+        server.runOnServer(minecraft -> husk(minecraft, foe).setHealth(2));
+        waitFor(context, server, 100, "Expected the wraith to finish the husk",
+                minecraft -> !(minecraft.overworld().getEntity(foe) instanceof LivingEntity living) || !living.isAlive());
+        context.waitTicks(3);
+        int orbs = server.computeOnServer(minecraft -> minecraft.overworld().getEntities(EntityTypes.EXPERIENCE_ORB,
+                new AABB(-3, FLAT_FEET - 1, 5, 4, FLAT_FEET + 4, 12), orb -> true).size());
+        expect(orbs > 0, "Expected the wraith's kill to drop experience, as its wielder's kill");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        server.runCommand("fill -2 " + FLAT_FEET + " 6 3 " + (FLAT_FEET + 3) + " 6 air");
+
+        // Weak mobs never rise
+        server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+        var weak = server.computeOnServer(minecraft ->
+        {
+            var silverfish = spawn(minecraft, EntityTypes.SILVERFISH, 0.5, FLAT_FEET, TARGET_Z);
+            silverfish.setNoAi(true);
+            return silverfish.getUUID();
+        });
+        aimFrom(context, server, 0.5, FLAT_FEET, 0.5, 0.5, FLAT_FEET + 0.2, TARGET_Z, 15);
+        attack(context, SCYTHE_CHARGED);
+        context.waitTicks(3);
+        server.runOnServer(minecraft ->
+        {
+            expect(!(minecraft.overworld().getEntity(weak) instanceof LivingEntity living) || !living.isAlive(), "Expected the silverfish dead");
+            expect(wraiths(minecraft).size() == 1, "Expected a silverfish too weak to rise");
+        });
+
+        // A wielder keeps three: a fourth sends the oldest back
+        server.runOnServer(minecraft ->
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                var husk = spawn(minecraft, EntityTypes.HUSK, -2.5 + i * 2, FLAT_FEET, 4.5);
+                HarvestWraith.raise(minecraft.overworld(), husk, player(minecraft));
+                husk.discard();
+            }
+            long standing = wraiths(minecraft).stream().filter(wraith -> !wraith.isSinking()).count();
+            expect(standing == BlightBalance.WRAITH_MAX, "Expected " + BlightBalance.WRAITH_MAX + " wraiths kept, got " + standing);
+        });
+
+        // Their time up, they sink back into the ground and are gone
+        waitFor(context, server, BlightBalance.WRAITH_STAIN_TICKS + BlightBalance.WRAITH_RISE_TICKS + BlightBalance.WRAITH_LIFE_TICKS + BlightBalance.WRAITH_SINK_TICKS + 40,
+                "Expected every wraith gone once its time is up", minecraft -> wraiths(minecraft).isEmpty());
+        server.runCommand("kill @e[type=!player]");
+    }
+
+    private static List<HarvestWraith> wraiths(MinecraftServer minecraft)
+    {
+        return List.copyOf(minecraft.overworld().getEntities(VoidHeartEntities.HARVEST_WRAITH, wraith -> wraith.isAlive()));
+    }
+
+    private static UUID standingHusk(MinecraftServer minecraft, double x, double z, float health)
+    {
+        var husk = spawn(minecraft, EntityTypes.HUSK, x, FLAT_FEET, z);
+        husk.setNoAi(true);
+        husk.getAttribute(Attributes.MAX_HEALTH).setBaseValue(health);
+        husk.setHealth(health);
+        husk.setPersistenceRequired();
+        return husk.getUUID();
     }
 
     private static void attack(ClientGameTestContext context, int afterTicks)

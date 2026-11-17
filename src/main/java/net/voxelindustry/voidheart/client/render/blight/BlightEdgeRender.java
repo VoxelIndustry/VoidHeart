@@ -61,7 +61,11 @@ public class BlightEdgeRender implements SpecialModelRenderer<Void>
     private static final Map<String, List<Pixel>> BLADES = Map.of(
             "rapier", List.of(
                     new Pixel(8, 8, 0), new Pixel(9, 7, 0.12F), new Pixel(10, 6, 0.25F), new Pixel(11, 5, 0.37F), new Pixel(12, 4, 0.5F),
-                    new Pixel(13, 3, 0.62F), new Pixel(14, 2, 0.75F), new Pixel(15, 1, 0.87F), new Pixel(15, 0, 1), new Pixel(14, 0, 0.95F)));
+                    new Pixel(13, 3, 0.62F), new Pixel(14, 2, 0.75F), new Pixel(15, 1, 0.87F), new Pixel(15, 0, 1), new Pixel(14, 0, 0.95F)),
+            // The inner curve of the blade, from the haft to its point
+            "scythe", List.of(
+                    new Pixel(10, 3, 0), new Pixel(9, 3, 0.09F), new Pixel(8, 3, 0.18F), new Pixel(7, 3, 0.27F), new Pixel(6, 3, 0.36F), new Pixel(5, 3, 0.45F),
+                    new Pixel(4, 4, 0.55F), new Pixel(3, 4, 0.62F), new Pixel(2, 5, 0.72F), new Pixel(1, 6, 0.82F), new Pixel(1, 7, 0.9F), new Pixel(0, 8, 1)));
 
     private final List<Pixel> pixels;
 

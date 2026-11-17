@@ -61,6 +61,23 @@ public class WraithStain extends Entity
     }
 
     /**
+     * A stain spreading on the ground under a point, without whispers, such as the one a wraith raised by Night's Harvest rises out of and sinks into.
+     */
+    public static WraithStain under(ServerLevel level, Vec3 feet, float radius, int growTicks, int lingerTicks)
+    {
+        var stain = new WraithStain(VoidHeartEntities.WRAITH_STAIN, level);
+        stain.entityData.set(DATA_FACE, Direction.UP);
+        stain.entityData.set(DATA_HALF_U, radius);
+        stain.entityData.set(DATA_HALF_V, radius);
+        stain.entityData.set(DATA_GROW, Math.max(1, growTicks));
+        stain.entityData.set(DATA_LINGER, Math.max(0, lingerTicks));
+        stain.whispers = false;
+        stain.setPos(feet.x, feet.y + WALL_GAP, feet.z);
+        level.addFreshEntity(stain);
+        return stain;
+    }
+
+    /**
      * A Wraith Veil's mark, sized to the mouth of its tunnel.
      */
     public static WraithStain at(ServerLevel level, WallPassagePlan.Mark mark, int growTicks, int lingerTicks)
