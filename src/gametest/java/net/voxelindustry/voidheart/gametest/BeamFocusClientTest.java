@@ -124,7 +124,9 @@ public class BeamFocusClientTest implements FabricClientGameTest
             inventory.setItem(0, new ItemStack(VoidHeartBlocks.BEAM_FOCUS));
             inventory.setSelectedSlot(0);
         });
-        context.waitTicks(5);
+        context.waitFor(minecraft -> holdsBeamFocus(minecraft), 100);
+        if (!context.computeOnClient(BeamFocusClientTest::holdsBeamFocus))
+            throw new AssertionError("Expected the client to hold the beam focus before the item captures");
         context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
         context.waitTicks(5);
         context.takeScreenshot("beam-focus-inventory");
@@ -133,5 +135,10 @@ public class BeamFocusClientTest implements FabricClientGameTest
         // Looking at open sky, so the hand stands out
         aimFrom(context, server, 6.5, Y + 2, 6.5, 6.5, Y + 4, 20, 6);
         context.takeScreenshot("beam-focus-in-hand");
+    }
+
+    private static boolean holdsBeamFocus(Minecraft minecraft)
+    {
+        return minecraft.player != null && minecraft.player.getInventory().getSelectedItem().is(VoidHeartBlocks.BEAM_FOCUS.asItem());
     }
 }
