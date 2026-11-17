@@ -30,8 +30,9 @@ import java.util.function.Predicate;
  * A relay carries a single aspect at a time, claimed by the first essence that flows through it each route, so a fuller source of another aspect
  * takes the shared relays it uses and the others wait for a free path. Nothing claims a relay without moving essence through it.
  * <p>
- * Collectors a Shatter Forge needs more essence from than they hold are served before any other: the forge draws the
- * shortfall from the storages behind them, and their relays show it flowing back toward the collector.
+ * Collectors a Shatter Forge needs more essence from than they hold route nothing themselves: the forge draws the shortfall from the storages behind
+ * them once its craft completes, and meanwhile their relays show it flowing back toward the collector, wherever no other essence moves through them
+ * that route.
  */
 public final class RelayNetwork
 {
@@ -101,24 +102,6 @@ public final class RelayNetwork
         relays.keySet().forEach(pos -> flows.put(pos, new Flow()));
         BiPredicate<BlockPos, EssenceType> flowCarries = (pos, aspect) -> canCarry(flows.get(pos), aspect);
 
-        // Only shown, the forge moves the essence itself once its craft completes
-        for (var collector : fed.values())
-        {
-            var aspect = collector.storage().type();
-            var path = findPath(level, relays, flowCarries, collector.getBlockPos(), aspect, receiver -> receiver.amountOf(aspect) > 0);
-            if (path == null)
-                continue;
-
-            for (var i = 0; i < path.relays().size(); i++)
-            {
-                var flow = flows.get(path.relays().get(i).getBlockPos());
-                flow.aspect = aspect;
-                addOnce(flow.targets, i == 0 ? collector.getBlockPos() : path.relays().get(i - 1).getBlockPos());
-                if (i == path.relays().size() - 1)
-                    addOnce(flow.sources, path.receiverPos());
-            }
-        }
-
         // Fullest first, a store's stock as much as a collector's, and a relay is claimed only by essence that flows through it
         for (var source : sources(level, relays, collectors.values(), flowing))
         {
@@ -153,6 +136,24 @@ public final class RelayNetwork
             {
                 collector.setChanged();
                 collector.sync();
+            }
+        }
+
+        // Only shown, the forge draws the essence itself once its craft completes, so it comes last and never holds a relay another source needs
+        for (var collector : fed.values())
+        {
+            var aspect = collector.storage().type();
+            var path = findPath(level, relays, flowCarries, collector.getBlockPos(), aspect, receiver -> receiver.amountOf(aspect) > 0);
+            if (path == null)
+                continue;
+
+            for (var i = 0; i < path.relays().size(); i++)
+            {
+                var flow = flows.get(path.relays().get(i).getBlockPos());
+                flow.aspect = aspect;
+                addOnce(flow.targets, i == 0 ? collector.getBlockPos() : path.relays().get(i - 1).getBlockPos());
+                if (i == path.relays().size() - 1)
+                    addOnce(flow.sources, path.receiverPos());
             }
         }
 
