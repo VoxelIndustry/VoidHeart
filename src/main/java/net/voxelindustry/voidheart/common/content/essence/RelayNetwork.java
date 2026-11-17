@@ -22,12 +22,13 @@ import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
 
 /**
- * Routes essence across the relays linked together, a route's worth from each source every route. Machines are fed first, from the stores holding
- * what they take and then from the collectors, each source sharing its route among every machine it reaches with room. Then each collector, fullest
- * first, sends what it has left down the shortest path of relays to a store with room.
+ * Routes essence across the relays linked together, a route's worth from each source every route. The sources move in turn, fullest first, a
+ * store's stock counting as much as a collector's. Each shares its route among every machine it reaches with room; a collector then sends what it
+ * has left down the shortest path of relays to a store with room. So a full store feeds machines before a collector that has less, and a nearly full
+ * collector is drained before it stops collecting.
  * <p>
- * A relay carries a single aspect at a time. Before anything moves, the sources claim the relays they would use, fullest first, a store's stock
- * counting as much as a collector's, so a fuller source of another aspect takes the shared relays over and the others wait for a free path.
+ * A relay carries a single aspect at a time, claimed by the first essence that flows through it each route, so a fuller source of another aspect
+ * takes the shared relays it uses and the others wait for a free path. Nothing claims a relay without moving essence through it.
  * <p>
  * Collectors a Shatter Forge needs more essence from than they hold are served before any other: the forge draws the
  * shortfall from the storages behind them, and their relays show it flowing back toward the collector.
@@ -118,32 +119,25 @@ public final class RelayNetwork
             }
         }
 
-        // Sources of different aspects contend for the relays they share, and the fullest claims them first, a store as much as a collector
-        var sources = sources(level, relays, collectors.values(), flowing);
-        var claims = claimRelays(level, relays, flowCarries, sources);
-        BiPredicate<BlockPos, EssenceType> carries = (pos, aspect) -> canCarry(flows.get(pos), aspect) && claims.getOrDefault(pos, aspect) == aspect;
-
-        // Machines are fed from the stores first, so what a store holds is spent before the collectors are drawn down
-        for (var source : sources)
+        // Fullest first, a store's stock as much as a collector's, and a relay is claimed only by essence that flows through it
+        for (var source : sources(level, relays, collectors.values(), flowing))
         {
-            if (!(source.store() instanceof IEssenceReceiver store))
-                continue;
             var aspect = source.aspect();
-            feedMachines(level, relays, flows, carries, source, Math.min(TRANSFER_AMOUNT, store.amountOf(aspect)), amount -> store.extract(aspect, amount));
-        }
-
-        // Then each collector makes up what the machines still lack, and fills a store with whatever of its route it has left
-        for (var source : sources)
-        {
+            if (source.store() instanceof IEssenceReceiver store)
+            {
+                feedMachines(level, relays, flows, flowCarries, source, Math.min(TRANSFER_AMOUNT, store.amountOf(aspect)), amount -> store.extract(aspect, amount));
+                continue;
+            }
             if (!(source.collector() instanceof RavenousCollectorTile collector))
                 continue;
-            var aspect = source.aspect();
+
+            // A collector feeds machines, and fills a store with whatever of its route it has left
             var collectorPos = source.pos();
             var budget = Math.min(TRANSFER_AMOUNT, collector.storage().amount());
-            var sent = feedMachines(level, relays, flows, carries, source, budget, amount -> collector.storage().drain(aspect, amount));
+            var sent = feedMachines(level, relays, flows, flowCarries, source, budget, amount -> collector.storage().drain(aspect, amount));
 
             var left = budget - sent;
-            var path = left > 0 ? findPath(level, relays, carries, collectorPos, aspect, receiver -> receiver.isStore() && receiver.spaceFor(aspect) > 0) : null;
+            var path = left > 0 ? findPath(level, relays, flowCarries, collectorPos, aspect, receiver -> receiver.isStore() && receiver.spaceFor(aspect) > 0) : null;
             if (path != null)
             {
                 var amount = path.receiver().receive(aspect, Math.min(left, path.receiver().spaceFor(aspect)));
@@ -280,29 +274,6 @@ public final class RelayNetwork
         }
         sources.sort(Comparator.comparingDouble(Source::priority).reversed());
         return sources;
-    }
-
-    /**
-     * Which aspect each shared relay carries this route: every source in turn, fullest first, claims the relays down to the machines it could feed
-     * and, for a collector, to the store it could fill, among those still free or already claimed for its aspect.
-     */
-    private static Map<BlockPos, EssenceType> claimRelays(Level level, Map<BlockPos, RavenousRelayTile> relays, BiPredicate<BlockPos, EssenceType> flowCarries,
-                                                          List<Source> sources)
-    {
-        var claims = new HashMap<BlockPos, EssenceType>();
-        BiPredicate<BlockPos, EssenceType> free = (pos, aspect) -> flowCarries.test(pos, aspect) && claims.getOrDefault(pos, aspect) == aspect;
-        for (var source : sources)
-        {
-            var aspect = source.aspect();
-            for (var path : machinePaths(level, relays, free, source.pos(), source.linked(), aspect))
-                path.relays().forEach(relay -> claims.put(relay.getBlockPos(), aspect));
-            if (source.collector() == null)
-                continue;
-            var path = findPath(level, relays, free, source.pos(), aspect, receiver -> receiver.isStore() && receiver.spaceFor(aspect) > 0);
-            if (path != null)
-                path.relays().forEach(relay -> claims.put(relay.getBlockPos(), aspect));
-        }
-        return claims;
     }
 
     /**

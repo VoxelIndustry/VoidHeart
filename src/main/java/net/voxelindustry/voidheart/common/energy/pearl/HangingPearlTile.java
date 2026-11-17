@@ -18,6 +18,7 @@ import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import net.voxelindustry.voidheart.common.energy.machine.PowerMeter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -193,8 +194,8 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
     }
 
     /**
-     * The root of the choir this pearl is in. Another pearl of the choir may have walked it moments ago and handed the root over, which serves
-     * until a scan passes or this pearl's own neighbours change; otherwise this one walks the whole choir and hands the root to the rest.
+     * The root of the choir this pearl is in, see {@link PearlChoir#scan}. A fed pearl another of its choir walked moments ago keeps the root it was
+     * handed until a scan passes or its own neighbours change; an unfed one borrows its neighbours' each scan, which costs no walk.
      */
     private long rootOf(ServerLevel level, List<BlockPos> found)
     {
@@ -202,18 +203,38 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         if (found.isEmpty())
             return self;
         var now = level.getGameTime();
-        if (found.equals(choir) && now - rootWalkedAt < SCAN_PERIOD)
+        if (fed && found.equals(choir) && now - rootWalkedAt < SCAN_PERIOD)
             return choirRoot;
+        if (fed)
+            rootWalkedAt = now;
 
-        var walk = PearlChoir.walk(self, at -> choirOf(level, at, found));
-        rootWalkedAt = now;
-        for (var member : walk.members())
+        return PearlChoir.scan(self, fed, new PearlChoir.Field()
         {
-            var pos = BlockPos.of(member);
-            if (member != self && level.isLoaded(pos) && level.getBlockEntity(pos) instanceof HangingPearlTile other)
-                other.handRoot(walk.root(), now);
-        }
-        return walk.root();
+            @Override
+            public List<Long> neighbours(long pearl)
+            {
+                return choirOf(level, pearl, found);
+            }
+
+            @Override
+            public long root(long pearl)
+            {
+                return pearlAt(level, pearl) instanceof HangingPearlTile other ? other.choirRoot : pearl;
+            }
+
+            @Override
+            public void hand(long pearl, long root)
+            {
+                if (pearlAt(level, pearl) instanceof HangingPearlTile other)
+                    other.handRoot(root, now);
+            }
+        });
+    }
+
+    private static @Nullable HangingPearlTile pearlAt(ServerLevel level, long packed)
+    {
+        var pos = BlockPos.of(packed);
+        return level.isLoaded(pos) && level.getBlockEntity(pos) instanceof HangingPearlTile pearl ? pearl : null;
     }
 
     private void handRoot(long root, long now)
@@ -233,10 +254,8 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
     {
         if (packed == worldPosition.asLong())
             return ownFound.stream().map(BlockPos::asLong).toList();
-        var pos = BlockPos.of(packed);
-        if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof HangingPearlTile other))
-            return List.of();
-        return other.choir.stream().map(BlockPos::asLong).toList();
+        var other = pearlAt(level, packed);
+        return other == null ? List.of() : other.choir.stream().map(BlockPos::asLong).toList();
     }
 
     private void animate()

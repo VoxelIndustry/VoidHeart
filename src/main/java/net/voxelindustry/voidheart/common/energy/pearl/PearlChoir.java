@@ -28,6 +28,54 @@ public final class PearlChoir
     }
 
     /**
+     * The pearls around, as one pearl's scan sees them.
+     */
+    public interface Field
+    {
+        /**
+         * @return the packed positions of the fed pearls a pearl counts in reach, empty for one gone or not loaded
+         */
+        List<Long> neighbours(long pearl);
+
+        /**
+         * @return the root a pearl last settled on
+         */
+        long root(long pearl);
+
+        /**
+         * Hands a pearl the root its choir was just walked to.
+         */
+        void hand(long pearl, long root);
+    }
+
+    /**
+     * What one pearl's scan settles its root to. A fed pearl walks its whole choir, all fed since no pearl counts an unfed one, and hands the root
+     * to every other member. An unfed pearl counts its fed neighbours without their counting it, so it only borrows the root their choir already has:
+     * walking from it would make it a member of its own making, and two unfed pearls at either end of one choir would then hand it different roots by
+     * turns.
+     */
+    public static long scan(long self, boolean fed, Field field)
+    {
+        var own = field.neighbours(self);
+        if (own.isEmpty())
+            return self;
+        if (!fed)
+        {
+            var lowest = Long.MAX_VALUE;
+            for (var neighbour : own)
+                lowest = Math.min(lowest, field.root(neighbour));
+            return lowest;
+        }
+        var walk = walk(self, field::neighbours);
+        for (var member : walk.members())
+        {
+            if (member != self)
+                field.hand(member, walk.root());
+        }
+        return walk.root();
+    }
+
+    /**
      * @param self       this pearl's packed position
      * @param neighbours the packed positions of the pearls a pearl counts in reach, empty for one gone or not loaded
      */

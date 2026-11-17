@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.energy.pearl;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.LongFunction;
@@ -34,6 +35,49 @@ class PearlChoirTest
         assertThat(fromStart.root()).isZero();
         assertThat(fromEnd.root()).isZero();
         assertThat(fromStart.members()).hasSize((int) length).isEqualTo(fromEnd.members());
+    }
+
+    @Test
+    void unfedEnds_borrowTheFedChoirsRoot_andNeverUnsettleIt()
+    {
+        // X, A, B and Y in a row with only A and B fed: X counts A and Y counts B without being counted back. The unfed ends sit lowest, so a root
+        // of their own making would win over the choir's
+        long x = 1, a = 5, b = 9, y = 3;
+        Map<Long, List<Long>> neighbours = Map.of(x, List.of(a), a, List.of(b), b, List.of(a), y, List.of(b));
+        Map<Long, Boolean> fed = Map.of(x, false, a, true, b, true, y, false);
+        var roots = new HashMap<>(Map.of(x, x, a, a, b, b, y, y));
+        var field = new PearlChoir.Field()
+        {
+            @Override
+            public List<Long> neighbours(long pearl)
+            {
+                return neighbours.getOrDefault(pearl, List.of());
+            }
+
+            @Override
+            public long root(long pearl)
+            {
+                return roots.get(pearl);
+            }
+
+            @Override
+            public void hand(long pearl, long root)
+            {
+                roots.put(pearl, root);
+            }
+        };
+
+        for (var round = 0; round < 6; round++)
+        {
+            var order = round % 2 == 0 ? List.of(x, a, b, y) : List.of(y, b, a, x);
+            for (var pearl : order)
+            {
+                roots.put(pearl, PearlChoir.scan(pearl, fed.get(pearl), field));
+                if (round > 0)
+                    assertThat(List.of(roots.get(a), roots.get(b))).as("the fed pair after %s scanned in round %s", pearl, round).containsOnly(a);
+            }
+        }
+        assertThat(roots).containsEntry(x, a).containsEntry(y, a);
     }
 
     @Test

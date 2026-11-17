@@ -53,7 +53,7 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.waitFor;
  * Collapsing Rubrum Pearls hung from chains in a creative well's field. A kindled seed hangs only under an upright chain. Six pearls in reach of
  * each other grow twice as fast as one alone, a pearl without void energy or Fiery pauses, a pearl whose chain is broken drops its seed carrying its
  * growth, which hangs again where it left off, and a mature pearl is picked with an empty hand. A row whose ends are out of each other's reach still
- * shares one tremor seed. One relay feeds every pearl it links, from a storage of Fiery before its collector. Captures show each stage by day and night, a pearl drinking in a relay's Fiery through threads, a choir shuddering
+ * shares one tremor seed. One relay feeds every pearl it links, from the fuller of a storage and a collector first. Captures show each stage by day and night, a pearl drinking in a relay's Fiery through threads, a choir shuddering
  * together and the after-images it leaves, and the items.
  */
 public class RubrumPearlsClientTest implements FabricClientGameTest
@@ -83,7 +83,7 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
     private static final BlockPos FEED_RELAY     = new BlockPos(5, P - 1, 15);
     private static final BlockPos FEED_COLLECTOR = new BlockPos(7, FLAT_FEET, 18);
     private static final int      FEED_FIERY     = 4_000;
-    // Two more pearls on the same relay, and a storage of Fiery it feeds them all from before it draws on the collector
+    // Two more pearls on the same relay, and a storage of Fiery, fuller than the collector, that it feeds them all from first
     private static final List<BlockPos> MORE_FED     = List.of(new BlockPos(6, P, 18), new BlockPos(9, P, 13));
     private static final BlockPos       FEED_STORAGE = new BlockPos(5, FLAT_FEET, 19);
     private static final int            STORED_FIERY = 20_000;
@@ -428,7 +428,7 @@ public class RubrumPearlsClientTest implements FabricClientGameTest
             level.setBlockAndUpdate(FEED_RELAY, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
         });
 
-        // One relay feeds every pearl it links in the same route, the storage first, so it is drawn down before the collector refills it
+        // One relay feeds every pearl it links in the same route, the fuller storage first, so it is drawn down before the collector refills it
         waitFor(context, server, 400, () -> "Every pearl on the relay should be given Fiery, they hold "
                         + server.computeOnServer(minecraft -> fedPearls().stream().map(pos -> pearl(minecraft, pos).fiery()).toList()),
                 minecraft -> fedPearls().stream().allMatch(pos -> pearl(minecraft, pos).fiery() > 0));
