@@ -31,8 +31,9 @@ import java.util.function.Predicate;
  * takes the shared relays it uses and the others wait for a free path. Nothing claims a relay without moving essence through it.
  * <p>
  * Collectors a Shatter Forge needs more essence from than they hold route nothing themselves: the forge draws the shortfall from the storages behind
- * them once its craft completes, and meanwhile their relays show it flowing back toward the collector, wherever no other essence moves through them
- * that route.
+ * them once its craft completes, and meanwhile their relays show it flowing back toward the collector. That is drawn after routing, over relays left
+ * free or already carrying the same aspect, so it never holds a relay a moving aspect needs; on a relay of the same aspect it shows beside the
+ * essence really moving there, since the forge's draw takes that way too.
  */
 public final class RelayNetwork
 {
@@ -139,7 +140,8 @@ public final class RelayNetwork
             }
         }
 
-        // Only shown, the forge draws the essence itself once its craft completes, so it comes last and never holds a relay another source needs
+        // Only shown, the forge draws the essence itself once its craft completes, so it comes last and never holds a relay another aspect needs;
+        // it may share a relay already carrying its own aspect, as the forge's draw does
         for (var collector : fed.values())
         {
             var aspect = collector.storage().type();
