@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_ravenous_engine": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:ravenous_engine"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:gnawer"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_ravenous_engine"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:gnawer"
+    ]
+  }
+}

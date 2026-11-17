@@ -1,0 +1,19 @@
+{
+  "tier": 2,
+  "constellation": "rites",
+  "icon": "voidheart:gnawer",
+  "insight_cost": 7,
+  "knowledge_cost": 400,
+  "knowledge_per_second": 1.0,
+  "requires": [
+    "voidheart:void_energy"
+  ],
+  "unlocks": [
+    "voidheart:gnawer",
+    "voidheart:gnawing_stake"
+  ],
+  "recipes": [
+    "voidheart:gnawer",
+    "voidheart:gnawing_stake"
+  ]
+}

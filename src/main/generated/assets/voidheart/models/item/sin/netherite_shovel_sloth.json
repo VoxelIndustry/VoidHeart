@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/netherite_shovel",
+  "textures": {
+    "layer1": "voidheart:sin/shovel_sloth"
+  }
+}

@@ -27,6 +27,7 @@
     "client.MixinAtmosphericFogClarity",
     "client.MixinAbstractClientPlayerMosaic",
     "client.MixinLivingEntityRendererMemory",
+    "client.MixinLivingEntityRendererFold",
     "client.MixinBossHealthOverlayInsight",
     "client.MixinCameraTremor",
     "client.MixinCameraWallPassage",

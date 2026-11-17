@@ -1,8 +1,9 @@
 package net.voxelindustry.voidheart.common.content.essence;
 
 /**
- * Storage relays route essence into, as long as it has room for an aspect. The Shatter Forge draws it back out through
- * the relays when its collectors fall short.
+ * Something relays route essence into, as long as it has room for an aspect: a store that holds it for later, or a machine that uses it up.
+ * Stores also give it back: relays feed machines from them before drawing on collectors, and the Shatter Forge draws on them when its collectors
+ * fall short.
  */
 public interface IEssenceReceiver
 {
@@ -22,4 +23,12 @@ public interface IEssenceReceiver
      * @return amount actually taken out
      */
     int extract(EssenceType type, int amount);
+
+    /**
+     * @return whether it holds essence for the network, so relays feed machines from it and never fill one store from another
+     */
+    default boolean isStore()
+    {
+        return false;
+    }
 }

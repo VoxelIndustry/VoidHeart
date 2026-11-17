@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import net.voxelindustry.voidheart.common.setup.VoidHeartTags;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -31,6 +32,8 @@ public final class SinProficiencies
     {
         SinStageCrossedPayload.register();
         GreedDebts.register();
+        DiggingProficiency.register();
+        RavenousBite.register();
     }
 
     public static SinProficiency of(Player player)
@@ -49,6 +52,14 @@ public final class SinProficiencies
     public static Sin sinOf(ItemStack stack)
     {
         return stack == null || stack.isEmpty() ? null : stack.get(VoidHeartDataComponents.SIN);
+    }
+
+    /**
+     * @return the sin a weapon fights with, or null for a diggable tool, whose sin only digs
+     */
+    public static Sin combatSinOf(ItemStack stack)
+    {
+        return stack == null || stack.isEmpty() || stack.is(VoidHeartTags.SIN_DIGGABLE) ? null : sinOf(stack);
     }
 
     public static void gain(ServerPlayer player, Sin sin, float amount)

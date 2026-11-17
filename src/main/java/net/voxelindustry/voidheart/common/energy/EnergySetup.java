@@ -4,6 +4,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineContent;
+import net.voxelindustry.voidheart.common.energy.gnawer.GnawerContent;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneContent;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorContent;
@@ -35,6 +37,8 @@ public final class EnergySetup
         VoidFissureContent.register();
         ContravoidReactorContent.register();
         DeepSiphonContent.register();
+        GnawerContent.register();
+        PearlContent.register();
 
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> CreativeSources.clear());
     }

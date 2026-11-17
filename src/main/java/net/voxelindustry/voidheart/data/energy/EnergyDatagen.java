@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleDatagen;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineDatagen;
+import net.voxelindustry.voidheart.common.energy.gnawer.GnawerDatagen;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlDatagen;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridDatagen;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneDatagen;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorDatagen;
@@ -48,6 +50,8 @@ public final class EnergyDatagen
         ContravoidReactorDatagen.blockModels(generators);
         DeepSiphonDatagen.blockModels(generators);
         TwinVentricleDatagen.blockModels(generators);
+        GnawerDatagen.blockModels(generators);
+        PearlDatagen.blockModels(generators);
     }
 
     public static void itemModels(ItemModelGenerators generators)
@@ -61,6 +65,8 @@ public final class EnergyDatagen
         ContravoidReactorDatagen.itemModels(generators);
         DeepSiphonDatagen.itemModels(generators);
         TwinVentricleDatagen.itemModels(generators);
+        GnawerDatagen.itemModels(generators);
+        PearlDatagen.itemModels(generators);
     }
 
     public static void recipes(EnergyRecipes recipes)
@@ -74,6 +80,8 @@ public final class EnergyDatagen
         ContravoidReactorDatagen.recipes(recipes);
         DeepSiphonDatagen.recipes(recipes);
         TwinVentricleDatagen.recipes(recipes);
+        GnawerDatagen.recipes(recipes);
+        PearlDatagen.recipes(recipes);
     }
 
     /**
@@ -90,6 +98,8 @@ public final class EnergyDatagen
         ContravoidReactorDatagen.loot(loot);
         DeepSiphonDatagen.loot(loot);
         TwinVentricleDatagen.loot(loot);
+        GnawerDatagen.loot(loot);
+        PearlDatagen.loot(loot);
     }
 
     public static void tags(EnergyTags tags)
@@ -102,6 +112,8 @@ public final class EnergyDatagen
         VoidFissureDatagen.tags(tags);
         ContravoidReactorDatagen.tags(tags);
         DeepSiphonDatagen.tags(tags);
+        GnawerDatagen.tags(tags);
+        PearlDatagen.tags(tags);
     }
 
     /**

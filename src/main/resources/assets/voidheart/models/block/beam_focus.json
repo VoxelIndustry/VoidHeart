@@ -13,7 +13,7 @@
       "from": [1, 0, 1],
       "to": [15, 3, 15],
       "faces": {
-        "north": {"uv": [1, 13, 15, 16], "texture": "#output"},
+        "north": {"uv": [1, 13, 15, 16], "texture": "#stone"},
         "east": {"uv": [1, 13, 15, 16], "texture": "#stone"},
         "south": {"uv": [1, 13, 15, 16], "texture": "#stone"},
         "west": {"uv": [1, 13, 15, 16], "texture": "#stone"},
@@ -26,10 +26,26 @@
       "from": [4, 3, 4],
       "to": [12, 10, 12],
       "faces": {
-        "north": {"uv": [4, 6, 12, 13], "texture": "#output"},
+        "north": {"uv": [4, 6, 12, 13], "texture": "#stone"},
         "east": {"uv": [4, 6, 12, 13], "texture": "#stone"},
         "south": {"uv": [4, 6, 12, 13], "texture": "#stone"},
         "west": {"uv": [4, 6, 12, 13], "texture": "#stone"}
+      }
+    },
+    {
+      "name": "plinth_output",
+      "from": [1, 0, 0.98],
+      "to": [15, 3, 0.98],
+      "faces": {
+        "north": {"uv": [1, 13, 15, 16], "texture": "#output"}
+      }
+    },
+    {
+      "name": "column_output",
+      "from": [4, 3, 3.98],
+      "to": [12, 10, 3.98],
+      "faces": {
+        "north": {"uv": [4, 6, 12, 13], "texture": "#output"}
       }
     },
     {

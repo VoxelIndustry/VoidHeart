@@ -7,6 +7,8 @@ import me.shedaniel.rei.plugin.client.BuiltinClientPlugin;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
+import net.voxelindustry.voidheart.common.energy.gnawer.GnawerRei;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlRei;
 import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineRei;
@@ -44,6 +46,8 @@ public final class EnergyRei
         VoidFissureRei.registerCategories(registry);
         ContravoidReactorRei.registerCategories(registry);
         DeepSiphonRei.registerCategories(registry);
+        GnawerRei.registerCategories(registry);
+        PearlRei.registerCategories(registry);
     }
 
     public static void registerDisplays(DisplayRegistry registry)
@@ -57,6 +61,8 @@ public final class EnergyRei
         ContravoidReactorRei.registerDisplays(registry);
         DeepSiphonRei.registerDisplays(registry);
         TwinVentricleRei.registerDisplays();
+        GnawerRei.registerDisplays(registry);
+        PearlRei.registerDisplays(registry);
 
         page(CreativeEnergyContent.CREATIVE_VOID_WELL, null, line("creative_void_well", FoundationBalance.CREATIVE_WELL_RADIUS));
         page(CreativeEnergyContent.CREATIVE_LEY_STONE, null, line("creative_ley_stone", FoundationBalance.CREATIVE_LEY_STONE_RADIUS));

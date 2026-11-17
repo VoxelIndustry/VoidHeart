@@ -44,6 +44,12 @@ public class RavenousStorageMatrixTile extends TileBase implements IEssenceRecei
     }
 
     @Override
+    public boolean isStore()
+    {
+        return true;
+    }
+
+    @Override
     public int extract(EssenceType type, int amount)
     {
         var extracted = storage.drain(type, amount);

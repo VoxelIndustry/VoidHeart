@@ -12,6 +12,9 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
+import net.voxelindustry.voidheart.common.content.blight.BlueprintPayloads;
+import net.voxelindustry.voidheart.common.content.blight.RapierStrikes;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -63,6 +66,7 @@ import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
 import net.voxelindustry.voidheart.common.content.oculus.OculusSightPayloads;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
+import net.voxelindustry.voidheart.common.content.divining.LeySightPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugView;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
@@ -149,6 +153,8 @@ public class VoidHeart implements ModInitializer
         AvengingReach.register();
         ShieldingApparatus.register();
         ShieldPayloads.register();
+        BlueprintPayloads.register();
+        RapierStrikes.register();
         SinProficiencies.register();
         SecondHeart.register();
 
@@ -186,6 +192,8 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(ShieldingApparatus::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BarnacleInfection::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(RapierStrikes::tickServer);
+        AttackEntityCallback.EVENT.register(RapierStrikes::beforeAttack);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Knowledge.sendSnapshot(handler.getPlayer()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ShoulderEyes::onDamage);
         ServerLivingEntityEvents.AFTER_DAMAGE.register(AvengingReach::onDamage);
@@ -227,6 +235,7 @@ public class VoidHeart implements ModInitializer
 
         CommandRegistrationCallback.EVENT.register(VoidHeartCommands::register);
         PayloadTypeRegistry.clientboundPlay().register(LeyDebugPayload.TYPE, LeyDebugPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(LeySightPayload.TYPE, LeySightPayload.CODEC);
         ServerTickEvents.END_SERVER_TICK.register(LeyDebugView::tickServer);
 
         PayloadTypeRegistry.serverboundPlay().register(OculusControlPayload.TYPE, OculusControlPayload.STREAM_CODEC);

@@ -1,0 +1,10 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "voidheart:item/collapsing_rubrum_pearl_display",
+    "model": {
+      "type": "voidheart:rubrum_pearl",
+      "kind": "pearl"
+    }
+  }
+}

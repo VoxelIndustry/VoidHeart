@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart;
 
+import net.voxelindustry.voidheart.client.render.RavenousBitePreview;
 import net.voxelindustry.voidheart.client.render.sin.SinClientModels;
 import net.voxelindustry.voidheart.client.render.sin.SinFlare;
 import net.voxelindustry.voidheart.client.render.sin.SinTooltip;
@@ -42,6 +43,10 @@ import net.voxelindustry.voidheart.client.render.temple.MosaicDoorHint;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
 import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
+import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
+import net.voxelindustry.voidheart.client.render.blight.BlightEdgeRender;
+import net.voxelindustry.voidheart.client.render.blight.PunctureRender;
+import net.voxelindustry.voidheart.common.content.blight.BlueprintPayloads;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -98,6 +103,7 @@ import net.voxelindustry.voidheart.client.render.EyeBottleRender;
 import net.voxelindustry.voidheart.client.render.FloatingItemRender;
 import net.voxelindustry.voidheart.client.render.AnchorWaypointRender;
 import net.voxelindustry.voidheart.client.render.LeyDebugRender;
+import net.voxelindustry.voidheart.client.render.divining.LeyDiviningRender;
 import net.voxelindustry.voidheart.client.render.energy.EnergyClientSetup;
 import net.voxelindustry.voidheart.client.render.oculus.OculusControls;
 import net.voxelindustry.voidheart.client.render.oculus.OculusFigurine;
@@ -145,6 +151,7 @@ import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.athanor.CrucibleTile;
 import net.voxelindustry.voidheart.client.render.AthanorRender;
 import net.voxelindustry.voidheart.client.render.PlacedFlasksRender;
+import net.voxelindustry.voidheart.common.content.divining.LeySightPayload;
 import net.voxelindustry.voidheart.common.ley.LeyDebugPayload;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
@@ -204,6 +211,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(InsightMemory::tick);
 
         ClientPlayNetworking.registerGlobalReceiver(ShieldPayloads.Hit.TYPE, (payload, context) -> ShieldHits.receive(payload));
+        ClientPlayNetworking.registerGlobalReceiver(BlueprintPayloads.Offer.TYPE, (payload, context) -> BlueprintScreen.receive(payload));
         ClientTickEvents.END_CLIENT_TICK.register(ShieldHits::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(ShieldRuneRender::collectSubmits);
         HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shield"), ShieldHud::extract);
@@ -225,8 +233,10 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(WeaverPreviewRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(RelayLinkPreviewRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(CabinetHighlightRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(RavenousBitePreview::collectSubmits);
         ClientTickEvents.END_CLIENT_TICK.register(MosaicStare::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(MosaicWakeRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(PunctureRender::collectSubmits);
         ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "temple_mosaic"),
                 (ResourceManagerReloadListener) resources -> MosaicStare.reloaded());
         LevelRenderEvents.AFTER_BLOCK_OUTLINE_EXTRACTION.register(KnowledgeColumnOutline::afterExtraction);
@@ -235,6 +245,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE_MATRIX, RavenousStorageMatrixRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.MALIGNANT_TORMENTER, MalignantTormenterRender::new);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "malignant_tormenter"), MalignantTormenterItemRender.Unbaked.MAP_CODEC);
+        SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "blight_edge"), BlightEdgeRender.Unbaked.MAP_CODEC);
         SinClientModels.register();
         SinFlare.register();
         SinTooltip.register();
@@ -247,6 +258,7 @@ public class VoidHeartClient implements ClientModInitializer
         ParticleGroupRegistry.register(GeometryParticle.GEOMETRY, GeometryParticle.Group::new);
 
         ClientPlayNetworking.registerGlobalReceiver(LeyDebugPayload.TYPE, LeyDebugRender::receive);
+        ClientPlayNetworking.registerGlobalReceiver(LeySightPayload.TYPE, LeyDiviningRender::receive);
         ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.Waypoints.TYPE, AnchorWaypointRender::receive);
         ClientPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelMap.TYPE,
                 (payload, context) -> context.client().setScreenAndShow(new TravelMapScreen(payload)));
@@ -258,6 +270,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
         {
             LeyDebugRender.clear();
+            LeyDiviningRender.clear();
             AnchorWaypointRender.clear();
             ArmillaryTremor.clear();
             OculusRenderer.clear();
@@ -288,6 +301,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(OculusRenderer::tick);
         ClientTickEvents.END_CLIENT_TICK.register(DepthsShoals::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(LeyDebugRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(LeyDiviningRender::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(AnchorWaypointRender::collectSubmits);
 
         CurseDirector.register();

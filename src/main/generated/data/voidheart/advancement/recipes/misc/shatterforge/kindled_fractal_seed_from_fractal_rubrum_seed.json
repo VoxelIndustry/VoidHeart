@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_fractal_rubrum_seed": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:fractal_rubrum_seed"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:shatterforge/kindled_fractal_seed_from_fractal_rubrum_seed"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_fractal_rubrum_seed"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:shatterforge/kindled_fractal_seed_from_fractal_rubrum_seed"
+    ]
+  }
+}

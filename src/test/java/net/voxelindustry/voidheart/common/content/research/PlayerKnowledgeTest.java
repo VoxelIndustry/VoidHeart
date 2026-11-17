@@ -473,6 +473,34 @@ class PlayerKnowledgeTest
     }
 
     @Test
+    void codec_keepsBlueprintsBesideTheOtherFields()
+    {
+        var blueprint = Identifier.fromNamespaceAndPath("voidheart", "design");
+        data.learnBlueprint(blueprint);
+        data.attune(3);
+
+        var saved = PlayerKnowledge.CODEC.encodeStart(NbtOps.INSTANCE, data).getOrThrow();
+        var loaded = PlayerKnowledge.CODEC.parse(NbtOps.INSTANCE, saved).getOrThrow();
+
+        assertThat(loaded.getBlueprints()).containsExactly(blueprint);
+        assertThat(loaded.getAttunement()).isEqualTo(3);
+    }
+
+    @Test
+    void reveal_givenABlueprintResearch_thenOnlyOnceTheBlueprintIsKnown()
+    {
+        var blueprint = Identifier.fromNamespaceAndPath("voidheart", "design");
+        var hidden = Identifier.fromNamespaceAndPath("voidheart", "hidden");
+        var tree = Map.of(ROOT, TREE.get(ROOT), hidden, new Research(1, Constellation.ARTIFICES, ITEM, 0, 10, 1, List.of(), 0, 0, 0, 0, List.of(), List.of(), List.of(),
+                Optional.of(blueprint)));
+
+        assertThat(data.reveal(hidden, tree)).isFalse();
+        assertThat(data.learnBlueprint(blueprint)).isTrue();
+        assertThat(data.learnBlueprint(blueprint)).isFalse();
+        assertThat(data.reveal(hidden, tree)).isTrue();
+    }
+
+    @Test
     void settle_givenThreeProxies_thenTheyMakeSixInsightsAnHour()
     {
         data.reportProxies(Map.of(new UUID(0, 1), 100D, new UUID(0, 2), 100D, new UUID(0, 3), 100D));

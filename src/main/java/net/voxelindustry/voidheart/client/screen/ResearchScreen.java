@@ -277,7 +277,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             return NodeState.ACTIVE;
         if (snapshot.revealed().contains(id))
             return NodeState.REVEALED;
-        if (research.isDiscoverable(snapshot.completed()))
+        if (research.isDiscoverable(snapshot.completed(), snapshot.blueprints()))
             return NodeState.UNKNOWN;
         return NodeState.HIDDEN;
     }
@@ -324,11 +324,15 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             }
         }
 
+        // A blueprint learned elsewhere brings its research into sight
+        if (!snapshot.blueprints().containsAll(before.blueprints()) || !before.blueprints().containsAll(snapshot.blueprints()))
+            grew = true;
+
         if (grew)
         {
             tree.forEach((id, research) ->
             {
-                if (stateOf(id, research) == NodeState.UNKNOWN && !research.isDiscoverable(before.completed()))
+                if (stateOf(id, research) == NodeState.UNKNOWN && !research.isDiscoverable(before.completed(), before.blueprints()))
                     map.appear(id);
             });
             map.refit();

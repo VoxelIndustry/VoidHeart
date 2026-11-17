@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/stone_pickaxe",
+  "textures": {
+    "layer1": "voidheart:sin/pickaxe_gluttony"
+  }
+}

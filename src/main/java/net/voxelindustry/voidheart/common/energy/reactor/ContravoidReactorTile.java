@@ -1,6 +1,9 @@
 package net.voxelindustry.voidheart.common.energy.reactor;
 
 import com.mojang.serialization.Codec;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -8,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -24,6 +28,9 @@ import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureBalance;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlBalance;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlSeeds;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorCycle.Event;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorCycle.Phase;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorCycle.Refusal;
@@ -73,6 +80,10 @@ public class ContravoidReactorTile extends TileBase
     private boolean complete;
     private boolean powered;
     private double  credit;
+    /**
+     * Pairs cancelled toward the next fractal seed.
+     */
+    private double  seedPairs;
     private @Nullable ReactorEssence burning;
     /**
      * Index into {@link ReactorLayout#intakes} of the intake holding Contravoid, or -1 before either has held any.
@@ -217,6 +228,43 @@ public class ContravoidReactorTile extends TileBase
         lastOutput = step.energy();
         lastBurned = step.burned();
         wasted = Math.max(0, Math.round(step.burned() * essence.pairEnergy()) - step.energy());
+
+        var seeds = PearlSeeds.add(seedPairs, step.burned());
+        seedPairs = seeds.progress();
+        for (int i = 0; i < seeds.seeds(); i++)
+            throwSeed(level);
+    }
+
+    /**
+     * Brings the count to a few ticks of burning short of the next seed, for review.
+     */
+    public void primeSeed()
+    {
+        seedPairs = Math.max(0, PearlBalance.SEED_PAIRS - ReactorBalance.MIN_PAIRS * 5);
+        setChanged();
+    }
+
+    /**
+     * A fractal seed thrown off the burn, out through the top of the shell: into a container standing on it, or onto it.
+     */
+    private void throwSeed(ServerLevel level)
+    {
+        var top = worldPosition.above(2);
+        var seed = new ItemStack(PearlContent.FRACTAL_RUBRUM_SEED);
+        var storage = ItemStorage.SIDED.find(level, top, Direction.DOWN);
+        if (storage != null && storage.supportsInsertion())
+        {
+            try (var transaction = Transaction.openOuter())
+            {
+                var inserted = storage.insert(ItemVariant.of(seed), 1, transaction);
+                transaction.commit();
+                if (inserted > 0)
+                    seed = ItemStack.EMPTY;
+            }
+        }
+        if (!seed.isEmpty())
+            Block.popResource(level, top, seed);
+        level.playSound(null, top, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.BLOCKS, 1F, 0.6F);
     }
 
     private void fail(ServerLevel level, Fuel fuel)
@@ -641,6 +689,7 @@ public class ContravoidReactorTile extends TileBase
         axis = tag.getStringOr("axis", "x").equals("z") ? Direction.Axis.Z : Direction.Axis.X;
         complete = tag.getBooleanOr("complete", false);
         credit = Math.clamp(tag.getDoubleOr("credit", 0), 0, 0.999999);
+        seedPairs = PearlSeeds.add(tag.getDoubleOr("seedPairs", 0), 0).progress();
         burning = tag.read("burning", ESSENCE_CODEC).orElse(null);
         contravoidSide = Math.clamp(tag.getIntOr("contravoidSide", -1), -1, 1);
         targets = List.copyOf(tag.read("targets", BlockPos.CODEC.listOf()).orElse(List.of()));
@@ -663,6 +712,7 @@ public class ContravoidReactorTile extends TileBase
         tag.putString("axis", axis == Direction.Axis.Z ? "z" : "x");
         tag.putBoolean("complete", complete);
         tag.putDouble("credit", credit);
+        tag.putDouble("seedPairs", seedPairs);
         if (burning != null)
             tag.store("burning", ESSENCE_CODEC, burning);
         tag.putInt("contravoidSide", contravoidSide);

@@ -29,6 +29,21 @@ public class VoidHeartTags
      */
     public static final TagKey<Item> SIN_INFUSABLE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "sin_infusable"));
 
+    /**
+     * Tools Ravenous Gold can be fused into at the altar, to bite into the blocks beside the one they break. Only Gluttony goes on tools.
+     */
+    public static final TagKey<Item> SIN_DIGGABLE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "sin_diggable"));
+
+    /**
+     * Everything salt can cleanse of a sin at the altar: infusable weapons and diggable tools.
+     */
+    public static final TagKey<Item> SIN_CLEANSABLE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "sin_cleansable"));
+
+    /**
+     * Blocks a Ravenous tool's bite takes as one kind, so a mixed cave wall goes in one bite.
+     */
+    public static final TagKey<Block> BITE_TOGETHER = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, "bite_together"));
+
     public static final TagKey<Item> PILLAR_PLACE_INSTEAD_OF_STORE = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, "pillar_place_instead_of_store"));
 
     /** What a sanctum's pillar may hold once its guardian is dead. */

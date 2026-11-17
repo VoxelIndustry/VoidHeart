@@ -6,14 +6,23 @@ import net.minecraft.resources.Identifier;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /** A node of the tree, from data/voidheart/voidheart/research, on the island of its constellation. Where it shows on the map is worked out from its requirements, see the client's ResearchMapPlan. Its recipes are the crafting and altar recipes refused until it is done, and unlocks is what they make, since a client is never told the recipes.
  * Strain is what running it weighs on the player, see {@link Strain}. Hidden until keeps it out of sight until all of those researches are done, without
- * hanging it from them on the map. */
+ * hanging it from them on the map. A blueprint keeps it out of sight until the player has learned that blueprint, see {@link Blueprints}. */
 public record Research(int tier, Constellation constellation, Identifier icon, int insightCost, double knowledgeCost, double knowledgePerSecond,
                        List<Identifier> requires, double passiveBonus, double columnCapacity, double cogitantRate, int strain, List<Identifier> unlocks,
-                       List<Identifier> recipes, List<Identifier> hiddenUntil)
+                       List<Identifier> recipes, List<Identifier> hiddenUntil, Optional<Identifier> blueprint)
 {
+    public Research(int tier, Constellation constellation, Identifier icon, int insightCost, double knowledgeCost, double knowledgePerSecond,
+                    List<Identifier> requires, double passiveBonus, double columnCapacity, double cogitantRate, int strain, List<Identifier> unlocks,
+                    List<Identifier> recipes, List<Identifier> hiddenUntil)
+    {
+        this(tier, constellation, icon, insightCost, knowledgeCost, knowledgePerSecond, requires, passiveBonus, columnCapacity, cogitantRate, strain, unlocks, recipes, hiddenUntil,
+                Optional.empty());
+    }
+
     public Research(int tier, Constellation constellation, Identifier icon, int insightCost, double knowledgeCost, double knowledgePerSecond,
                     List<Identifier> requires, double passiveBonus, double columnCapacity, double cogitantRate, int strain, List<Identifier> unlocks,
                     List<Identifier> recipes)
@@ -35,13 +44,21 @@ public record Research(int tier, Constellation constellation, Identifier icon, i
             Codec.intRange(0, 1000).optionalFieldOf("strain", 0).forGetter(Research::strain),
             Identifier.CODEC.listOf().optionalFieldOf("unlocks", List.of()).forGetter(Research::unlocks),
             Identifier.CODEC.listOf().optionalFieldOf("recipes", List.of()).forGetter(Research::recipes),
-            Identifier.CODEC.listOf().optionalFieldOf("hidden_until", List.of()).forGetter(Research::hiddenUntil)
+            Identifier.CODEC.listOf().optionalFieldOf("hidden_until", List.of()).forGetter(Research::hiddenUntil),
+            Identifier.CODEC.optionalFieldOf("blueprint").forGetter(Research::blueprint)
     ).apply(instance, Research::new));
 
     /** Whether it can be seen and revealed: from the roots of the tree or next to what is done, once whatever hides it is done too. */
+    public boolean isDiscoverable(Collection<Identifier> completed, Collection<Identifier> blueprints)
+    {
+        return (requires.isEmpty() || requires.stream().anyMatch(completed::contains)) && completed.containsAll(hiddenUntil)
+               && blueprint.map(blueprints::contains).orElse(true);
+    }
+
+    /** As {@link #isDiscoverable(Collection, Collection)} for a player who knows no blueprint. */
     public boolean isDiscoverable(Collection<Identifier> completed)
     {
-        return (requires.isEmpty() || requires.stream().anyMatch(completed::contains)) && completed.containsAll(hiddenUntil);
+        return isDiscoverable(completed, List.of());
     }
 
     /** How fast it progresses while stored knowledge lasts: its own burn from the store, and everything gathered meanwhile on top. */

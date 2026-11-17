@@ -1,0 +1,215 @@
+package net.voxelindustry.voidheart.client.render.divining;
+
+/**
+ * Where a revealed ley line runs and when each part of what a Ley Divining Rod reveals shows. Pure, so the shape and timing are unit tested.
+ * <p>
+ * A line is cut into points a block apart along its edge, its heights smoothed between the lattice's samples and swayed a little to the side so it
+ * is not ruler straight, then kept only near where the rod was raised.
+ */
+public final class LeySightPlan
+{
+    public static final float STEP = 1;
+    /**
+     * Blocks kept past the reveal radius, so the edge fade has something to fade.
+     */
+    public static final float CLIP_MARGIN = 2;
+
+    static final float SWAY_AMPLITUDE   = 0.35F;
+    static final float SWAY_WAVE_LONG   = 23;
+    static final float SWAY_WAVE_SHORT  = 9;
+    static final float SWAY_SHORT_SHARE = 0.35F;
+    /**
+     * Blocks over which the sway grows from nothing at a node, so every line meets its node at the same point.
+     */
+    static final float SWAY_EASE = 6;
+
+    /**
+     * Ticks the reveal takes to spread from the rod to the edge of its radius.
+     */
+    public static final int SPREAD_TICKS = 20;
+    /**
+     * Tick at which the reveal starts fading, from its far edge back toward the rod.
+     */
+    public static final int HOLD_END_TICKS = 200;
+    public static final int FADE_TICKS     = 40;
+    public static final int LIFE_TICKS     = HOLD_END_TICKS + FADE_TICKS;
+    /**
+     * Blocks over which the spreading front, the fading back and the radius edge soften.
+     */
+    static final float FRONT_SOFT = 6;
+    static final float EDGE_SOFT  = 14;
+    /**
+     * Width in blocks and strength of the brightening that runs out with the spreading front.
+     */
+    static final float FRONT_FLASH_WIDTH = 4;
+    static final float FRONT_FLASH       = 0.8F;
+
+    private LeySightPlan()
+    {
+    }
+
+    /**
+     * The kept stretch of a line.
+     *
+     * @param along    share of the whole edge each point sits at, 0 at the from node
+     * @param distance distance on the ground from the rod to each point
+     * @param start    blocks from the from node to the first kept point
+     */
+    public record Path(double[] x, double[] y, double[] z, float[] along, float[] distance, float start, float edgeLength)
+    {
+        public int size()
+        {
+            return x.length;
+        }
+
+        public boolean isEmpty()
+        {
+            return x.length < 2;
+        }
+    }
+
+    /**
+     * @param heights line heights sampled evenly from the from node to the to node, both ends included
+     * @param seed    picks the sway, so a line keeps its shape from one reveal to the next
+     */
+    public static Path line(int fromX, int fromZ, int toX, int toZ, float[] heights, double originX, double originZ, float radius, long seed)
+    {
+        double dx = toX - fromX;
+        double dz = toZ - fromZ;
+        float length = (float) Math.hypot(dx, dz);
+        int steps = Math.max(1, (int) Math.ceil(length / STEP));
+        double sideX = length == 0 ? 0 : -dz / length;
+        double sideZ = length == 0 ? 0 : dx / length;
+
+        float phaseLong = hashUnit(seed, 1) * (float) (2 * Math.PI);
+        float phaseShort = hashUnit(seed, 2) * (float) (2 * Math.PI);
+        float keep = radius + CLIP_MARGIN;
+
+        int first = -1, last = -1;
+        var all = new double[steps + 1][];
+        for (int i = 0; i <= steps; i++)
+        {
+            float t = (float) i / steps;
+            float s = t * length;
+            double sway = sway(s, length, phaseLong, phaseShort);
+            double x = fromX + 0.5 + dx * t + sideX * sway;
+            double z = fromZ + 0.5 + dz * t + sideZ * sway;
+            double distance = Math.hypot(x - originX, z - originZ);
+            if (distance <= keep)
+            {
+                if (first < 0)
+                    first = i;
+                last = i;
+            }
+            all[i] = new double[] { x, height(heights, t) + 0.5, z, t, distance };
+        }
+
+        if (first < 0 || first == last)
+            return new Path(new double[0], new double[0], new double[0], new float[0], new float[0], 0, length);
+
+        // Keep one point past each end of the kept stretch, so it reaches all the way into the soft edge
+        first = Math.max(0, first - 1);
+        last = Math.min(steps, last + 1);
+        int count = last - first + 1;
+        var path = new Path(new double[count], new double[count], new double[count], new float[count], new float[count], (float) first / steps * length, length);
+        for (int i = 0; i < count; i++)
+        {
+            var point = all[first + i];
+            path.x[i] = point[0];
+            path.y[i] = point[1];
+            path.z[i] = point[2];
+            path.along[i] = (float) point[3];
+            path.distance[i] = (float) point[4];
+        }
+        return path;
+    }
+
+    /**
+     * Sideways offset of a line, nothing at its nodes.
+     */
+    static double sway(float s, float length, float phaseLong, float phaseShort)
+    {
+        float ease = Math.min(1, Math.min(s, length - s) / SWAY_EASE);
+        ease = ease * ease * (3 - 2 * ease);
+        double wave = (1 - SWAY_SHORT_SHARE) * Math.sin(s * 2 * Math.PI / SWAY_WAVE_LONG + phaseLong)
+                + SWAY_SHORT_SHARE * Math.sin(s * 2 * Math.PI / SWAY_WAVE_SHORT + phaseShort);
+        return SWAY_AMPLITUDE * ease * wave;
+    }
+
+    /**
+     * Height at a share of the line, Catmull-Rom between samples so the line bends smoothly instead of kinking every few blocks.
+     */
+    static float height(float[] heights, float t)
+    {
+        if (heights.length == 1)
+            return heights[0];
+
+        float position = t * (heights.length - 1);
+        int index = Math.min((int) position, heights.length - 2);
+        float f = position - index;
+
+        float p0 = heights[Math.max(0, index - 1)];
+        float p1 = heights[index];
+        float p2 = heights[index + 1];
+        float p3 = heights[Math.min(heights.length - 1, index + 2)];
+        return 0.5F * (2 * p1 + (-p0 + p2) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (-p0 + 3 * p1 - 3 * p2 + p3) * f * f * f);
+    }
+
+    /**
+     * How much of what sits this far from the rod shows at this age, from 0 to 1, before any brightening from the front.
+     */
+    public static float reveal(float age, float distance, float radius)
+    {
+        if (age < 0 || age >= LIFE_TICKS)
+            return 0;
+
+        float front = radius * easeOut(Math.min(1, age / SPREAD_TICKS));
+        float shown = smoothstep(front, front - FRONT_SOFT, distance);
+        if (age > HOLD_END_TICKS)
+        {
+            float back = radius * (1 - (age - HOLD_END_TICKS) / FADE_TICKS);
+            shown *= smoothstep(back, back - FRONT_SOFT, distance);
+        }
+        return shown * smoothstep(radius, radius - EDGE_SOFT, distance);
+    }
+
+    /**
+     * Extra brightness where the spreading front is passing, 0 once it has reached the edge.
+     */
+    public static float frontFlash(float age, float distance, float radius)
+    {
+        if (age < 0 || age >= SPREAD_TICKS)
+            return 0;
+        float front = radius * easeOut(age / SPREAD_TICKS);
+        float offset = (distance - front) / FRONT_FLASH_WIDTH;
+        return FRONT_FLASH * (float) Math.exp(-offset * offset);
+    }
+
+    static float easeOut(float t)
+    {
+        return 1 - (1 - t) * (1 - t);
+    }
+
+    /**
+     * 0 at {@code from}, 1 at {@code to}, smooth between. Either may be the larger.
+     */
+    static float smoothstep(float from, float to, float value)
+    {
+        if (from == to)
+            return value < to ? 1 : 0;
+        float t = Math.clamp((value - from) / (to - from), 0, 1);
+        return t * t * (3 - 2 * t);
+    }
+
+    /**
+     * A stable value in 0..1 from a seed and a salt.
+     */
+    static float hashUnit(long seed, long salt)
+    {
+        long h = seed * 0x9E3779B97F4A7C15L + salt * 0xC2B2AE3D27D4EB4FL;
+        h ^= h >>> 33;
+        h *= 0xFF51AFD7ED558CCDL;
+        h ^= h >>> 33;
+        return (h >>> 40) / (float) (1L << 24);
+    }
+}

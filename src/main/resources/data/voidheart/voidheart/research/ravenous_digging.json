@@ -1,0 +1,15 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "icon": "minecraft:golden_pickaxe",
+  "insight_cost": 10,
+  "knowledge_cost": 900,
+  "knowledge_per_second": 1.5,
+  "requires": [
+    "voidheart:sin_infusion"
+  ],
+  "unlocks": [],
+  "recipes": [
+    "voidheart:altar/ravenous_digging"
+  ]
+}

@@ -25,6 +25,7 @@ Keep sizes, colors, alphas and timings in named constants at the top of the clas
 |---|---|---|
 | Additive glow that overlaps itself: ribbons, waypoints, lines | `VoidHeartRenderTypes.GLOW` | `AnchorWaypointRender`, `LeyDebugRender` |
 | Colored quads that must keep their hue on bright backgrounds | `VoidHeartRenderTypes.MARKER` | `OculusMarkers`, `OculusLeyLayer` |
+| Textured additive glow in the world that must not wash out to white by day | `VoidHeartRenderTypes.radiant` layers over a dark `tint` sheath of the same shape, plus `radiantThrough` for what shows behind walls | `LeyDiviningRender` |
 | Textured beams and veils | `RenderTypes.beaconBeam(texture, true)` | `VoidBeamRender` |
 | Ghost or preview blocks | `RenderTypes.translucentMovingBlock()` | `ForgePreviewRender`, `PillarPlacementRender` |
 | Geometry that ignores world light | `RenderTypes.entityTranslucentEmissive(...)` | `GeometryParticle`, `BarrierMosaicRender` |
@@ -66,6 +67,7 @@ If nothing in the table fits, copy the closest vanilla pipeline as `VoidHeartRen
 | Hand-built geometry looks inside-out, its far inner faces showing through | Faces listed clockwise seen from outside, so a culling render type such as `entitySolid` drops the near ones. Right normals don't help | List each face's corners counter-clockwise seen from outside, as `ArmillaryRender.box` does (`ArmillaryRender.linkQuad`) | |
 | Model parts drawn apart from their entity shift or twitch | Renderers share parts between entities and move them when flushing | Copy the cubes and their poses once, then compile the cubes yourself (`TormenterHeads`) | |
 | Something worn on the body pokes through the face when the head turns | Body geometry above y 0 runs inside the head, which turns apart from the body | Stop parts hung on `body` at its top face, y 0 (`ApparatusWornRender`) | |
+| An effect timed from a server game time starts late, or not at all in a capture | The client's game time can trail the server's by a few ticks, so `now - serverTick` is still negative when the synced change arrives | Time what follows a synced change from when the client sees it change (`PunctureRender` snaps) | |
 | Water or other translucent blocks vanish behind an entity hidden from the camera | Returning false from `isBodyVisible` makes `LivingEntityRenderer` draw a 15% ghost that writes depth, so water drawn later is culled behind it | Skip submitting the body yourself when it should be hidden (`ShoulderEyeRender.submit`) | |
 | A worn model or mob reads as plastic | Flat colour fills on its skin, lit evenly by the entity shader | Speckle every face a shade up or down, light its top edge and darken its bottom one, as `automaton.png` does (see `aseprite-texture`) | |
 

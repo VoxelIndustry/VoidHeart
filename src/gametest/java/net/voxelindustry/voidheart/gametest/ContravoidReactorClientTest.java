@@ -8,11 +8,14 @@ import net.minecraft.client.CameraType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
@@ -26,6 +29,7 @@ import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureTile;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridBalance;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorContent;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorTile;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorBalance;
@@ -108,6 +112,7 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
                 buildPylonsAndFeed(context, server);
                 lightWithConstructCharge(context, server);
                 checkOutputNeedsSeveralPylons(context, server);
+                throwsFractalSeeds(context, server);
                 starveAndRecover(context, server);
                 breachAndRecover(context, server);
                 shutDownMidCountdown(context, server);
@@ -337,6 +342,28 @@ public class ContravoidReactorClientTest implements FabricClientGameTest
         });
         waitFor(context, server, 80, "All three pylons should cover the core again", minecraft -> VoidGrid.pylonsCovering(minecraft.overworld(), CORE).size() == 3);
         fillFiery(server, ESSENCE);
+    }
+
+    /**
+     * A burning reactor throws a fractal seed out through the top of its shell, onto it, or into a chest standing on it.
+     */
+    private static void throwsFractalSeeds(ClientGameTestContext context, TestServerContext server)
+    {
+        var top = CORE.above(2);
+        var at = CORE.getX() + " " + CORE.getY() + " " + CORE.getZ();
+        server.runCommand("kill @e[type=item]");
+        server.runCommand("voidheart energy reactor seed " + at);
+        waitFor(context, server, 100, "A burning reactor on the edge of a seed should throw one onto its shell", minecraft ->
+                !minecraft.overworld().getEntitiesOfClass(ItemEntity.class, new AABB(top).inflate(2),
+                        entity -> entity.getItem().is(PearlContent.FRACTAL_RUBRUM_SEED)).isEmpty());
+        server.runCommand("kill @e[type=item]");
+
+        server.runCommand("setblock " + top.getX() + " " + top.getY() + " " + top.getZ() + " chest");
+        server.runCommand("voidheart energy reactor seed " + at);
+        waitFor(context, server, 100, "A chest standing on the shell should take the next seed", minecraft ->
+                minecraft.overworld().getBlockEntity(top) instanceof Container chest && chest.countItem(PearlContent.FRACTAL_RUBRUM_SEED) == 1);
+        server.runCommand("setblock " + top.getX() + " " + top.getY() + " " + top.getZ() + " air");
+        server.runCommand("kill @e[type=item]");
     }
 
     private static void showLit(ClientGameTestContext context, TestServerContext server)
