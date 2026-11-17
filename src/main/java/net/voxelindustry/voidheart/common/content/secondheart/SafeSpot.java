@@ -34,14 +34,15 @@ public final class SafeSpot
     }
 
     /**
-     * @param lastSafe where the player last stood on safe ground, if known
-     * @param fallback where to go when neither is safe, such as the top of the world at the death spot
+     * @param lastSafe    where the player last stood on safe ground, if known
+     * @param lastHazards what makes that ground deadly now, since the world may have changed since
+     * @param fallback    where to go when neither is safe, such as the top of the world at the death spot
      */
-    public static Vec3 choose(Vec3 death, Hazards hazards, @Nullable Vec3 lastSafe, Vec3 fallback)
+    public static Vec3 choose(Vec3 death, Hazards hazards, @Nullable Vec3 lastSafe, Hazards lastHazards, Vec3 fallback)
     {
         if (hazards.safe())
             return death;
-        if (lastSafe != null)
+        if (lastSafe != null && lastHazards.safe())
             return lastSafe;
         return fallback;
     }

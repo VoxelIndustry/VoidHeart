@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
 import net.fabricmc.fabric.api.client.renderer.v1.mesh.MeshView;
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhase;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
@@ -18,6 +19,7 @@ import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.UvMapping;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.client.resources.model.geometry.ItemQuads;
@@ -82,8 +84,13 @@ class DissolvingCollector implements SubmitNodeCollector
     public void submitItem(PoseStack poseStack, ItemDisplayContext displayContext, int lightCoords, int overlayCoords, int outlineColor,
                            int[] tintLayers, ItemQuads quads, ItemStackRenderState.FoilType foilType)
     {
+        submitItemQuads(poseStack, lightCoords, overlayCoords, tintLayers, quads.all());
+    }
+
+    private void submitItemQuads(PoseStack poseStack, int lightCoords, int overlayCoords, int[] tintLayers, List<BakedQuad> quads)
+    {
         var byType = new LinkedHashMap<RenderType, List<BakedQuad>>();
-        for (var quad : quads.all())
+        for (var quad : quads)
         {
             var dissolve = HeartDissolve.dissolveType(quad.materialInfo().itemRenderType(), slot);
             if (dissolve != null)
@@ -112,7 +119,19 @@ class DissolvingCollector implements SubmitNodeCollector
     public void submitItem(PoseStack poseStack, ItemDisplayContext displayContext, int lightCoords, int overlayCoords, int outlineColor,
                            int[] tintLayers, ItemQuads quads, MeshView mesh, ItemStackRenderState.FoilType foilType)
     {
-        submitItem(poseStack, displayContext, lightCoords, overlayCoords, outlineColor, tintLayers, quads, foilType);
+        if (mesh.size() == 0)
+        {
+            submitItem(poseStack, displayContext, lightCoords, overlayCoords, outlineColor, tintLayers, quads, foilType);
+            return;
+        }
+        // Geometry a model emits through Fabric can be absent from the vanilla quads, so it is baked down to dissolve with them
+        var all = new ArrayList<>(quads.all());
+        mesh.forEach(quad ->
+        {
+            if (Minecraft.getInstance().getTextureManager().getTexture(quad.atlas().getTextureLocation()) instanceof TextureAtlas atlas)
+                all.add(quad.toBakedQuad(atlas.spriteFinder().find(quad)));
+        });
+        submitItemQuads(poseStack, lightCoords, overlayCoords, tintLayers, all);
     }
 
     @Override

@@ -280,12 +280,16 @@ public class HeartCradleTile extends TileBase
     void withdraw(ServerPlayer player)
     {
         boolean hadContraption = ceremony.offered(Ingredient.CONTRAPTION) > 0;
+        int drawn = ceremony.experience();
         var back = ceremony.withdraw(player.getUUID());
         if (back.isEmpty())
         {
             tellStatus(player);
             return;
         }
+        // What was already drunk from the skulls comes back too, as it does when the cradle is broken
+        if (drawn > 0)
+            player.giveExperiencePoints(drawn);
         for (var entry : back.entrySet())
             for (var stack : stacksOf(entry.getKey(), entry.getValue(), hadContraption))
                 if (!player.getInventory().add(stack))

@@ -19,6 +19,7 @@ import net.voxelindustry.voidheart.common.content.secondheart.SecondHeart;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.HeartCradleTile;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleContent;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.VentricleBalance;
+import net.voxelindustry.voidheart.common.content.secondheart.ventricle.VentricleCeremony;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.VentricleCeremony.Phase;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.VentricleLayout;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.VentricleTear;
@@ -52,16 +53,21 @@ public class TwinVentricleClientTest implements FabricClientGameTest
             server.runCommand("execute as @a run voidheart research grant voidheart:second_heart");
             server.runOnServer(minecraft -> Knowledge.attune(minecraft, player(minecraft).getUUID(), 3));
 
-            brokenCradleGivesBack(context, server);
-            build(server);
-            chamberIsChecked(context, server);
-            offeringIsTaken(context, server);
-            basinsKindle(context, server);
-            beatCallsWaves(context, server);
-            deathStartsTheBeatOver(context, server);
-            heartStops(context, server);
-
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            var saved = new ClientSettings(CameraType.FIRST_PERSON, context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()));
+            try
+            {
+                brokenCradleGivesBack(context, server);
+                build(server);
+                chamberIsChecked(context, server);
+                offeringIsTaken(context, server);
+                basinsKindle(context, server);
+                beatCallsWaves(context, server);
+                deathStartsTheBeatOver(context, server);
+                heartStops(context, server);
+            } finally
+            {
+                restoreClient(context, server, saved);
+            }
         }
     }
 
@@ -131,14 +137,17 @@ public class TwinVentricleClientTest implements FabricClientGameTest
 
     private static void offeringIsTaken(ClientGameTestContext context, TestServerContext server)
     {
+        // The core through a real right click on the cradle, standing on its dais, and the rest straight in
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KERNACIAN_CORE)));
+        aimCamera(server, CRADLE.getX() + 0.5, CRADLE.getY() + 1, CRADLE.getZ() - 0.6, CRADLE.getX() + 0.5, CRADLE.getY() + 0.2, CRADLE.getZ() + 0.5);
+        context.waitTicks(5);
+        rightClick(context);
+        waitFor(context, server, 20, "Expected right clicking the cradle with the core to offer it", minecraft -> player(minecraft).getMainHandItem().isEmpty());
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
-            // The core through a real use of the cradle, the rest straight in
-            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KERNACIAN_CORE));
-            useOn(player, CRADLE);
-            expect(player.getMainHandItem().isEmpty(), "Expected using the cradle with the core to offer it");
             var cradle = cradle(minecraft);
+            expect(cradle.ceremony().offered(VentricleCeremony.Ingredient.KERNACIAN_CORE) == 1, "Expected the core in the cradle");
             cradle.offer(player, new ItemStack(Items.HEART_OF_THE_SEA));
             cradle.offer(player, new ItemStack(VoidHeartItems.MEMORIAM_SHARD, 12));
             cradle.offer(player, new ItemStack(VoidHeartItems.WRAITH_INK, 4));
@@ -173,6 +182,20 @@ public class TwinVentricleClientTest implements FabricClientGameTest
         {
             context.takeScreenshot("twin-ventricle-kindling-above-" + shot);
             context.waitTicks(7);
+        }
+        // The basins, strands and glow held still while the camera steps along the chamber, so flicker between layers shows
+        server.runCommand("tick freeze");
+        try
+        {
+            for (int step = 0; step < 8; step++)
+            {
+                aimFrom(context, server, CRADLE.getX() + 0.5 + step * 0.06, CRADLE.getY() + 2.6, CRADLE.getZ() - 3.5 + step * 0.08,
+                        CRADLE.getX() + 0.5, CRADLE.getY() + 0.5, CRADLE.getZ() + 0.5, 2);
+                context.takeScreenshot("twin-ventricle-kindling-sweep-" + step);
+            }
+        } finally
+        {
+            server.runCommand("tick unfreeze");
         }
         server.runCommand("execute as @a run voidheart secondheart ventricle " + CRADLE.getX() + " " + CRADLE.getY() + " " + CRADLE.getZ() + " skip kindling "
                 + (VentricleBalance.KINDLING_TICKS - 5));

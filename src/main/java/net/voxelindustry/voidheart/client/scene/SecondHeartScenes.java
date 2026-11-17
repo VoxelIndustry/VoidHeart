@@ -25,7 +25,6 @@ import static net.voxelindustry.voidheart.client.scene.EnergyScenes.AZURIUM;
 import static net.voxelindustry.voidheart.client.scene.EnergyScenes.CONTRAVOID;
 import static net.voxelindustry.voidheart.client.scene.EnergyScenes.bundle;
 import static net.voxelindustry.voidheart.client.scene.EnergyScenes.center;
-import static net.voxelindustry.voidheart.client.scene.EnergyScenes.ground;
 import static net.voxelindustry.voidheart.client.scene.ResearchScenes.FLOOR;
 import static net.voxelindustry.voidheart.client.scene.ResearchScenes.above;
 import static net.voxelindustry.voidheart.client.scene.ResearchScenes.id;
@@ -41,7 +40,8 @@ final class SecondHeartScenes
     /** Where the relays filling each basin stand: on the far wall of its ring, since the ring hides the basin from anything level with it. */
     static final BlockPos ESSENCE_RELAY    = new BlockPos(4, 1, 0);
     static final BlockPos CONTRAVOID_RELAY = new BlockPos(-4, 1, 0);
-    static final BlockPos PYLON            = new BlockPos(0, 0, 3);
+    /** The pylons the rite draws through: no bundle passes its whole draw alone, so three large ones cover the cradle together. */
+    static final List<BlockPos> PYLONS     = List.of(new BlockPos(-2, 0, 3), new BlockPos(2, 0, 3), new BlockPos(-2, 0, -3));
     static final BlockPos SKULL            = new BlockPos(2, 0, -3);
 
     // The red the game's strands give Suffering
@@ -64,7 +64,7 @@ final class SecondHeartScenes
 
         var close = new SceneView(25, 32, 5, 0.5F, 0.3F, 0.5F);
         var whole = new SceneView(25, 40, 12, 0.5F, 0.3F, 0.5F);
-        var fed = new SceneView(25, 42, 16, 0.5F, 0.3F, 1.5F);
+        var fed = new SceneView(25, 42, 16, 0.5F, 0.3F, 0.5F);
         var offer = new SceneView(25, 34, 7, 0.5F, 0.5F, 0F);
         var rite = new SceneView(25, 44, 19, 0.5F, 0.5F, 0.5F);
 
@@ -101,10 +101,14 @@ final class SecondHeartScenes
         scene.place(16, CONTRAVOID_RELAY, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
         scene.link(24, heartStops, center(ESSENCE_RELAY), center(essenceBasin), SUFFERING, Flow.PULSE);
         scene.link(30, heartStops, center(CONTRAVOID_RELAY), center(contravoidBasin), CONTRAVOID, Flow.PULSE);
-        scene.place(70, PYLON, VoidGridContent.AZURIUM_PYLON.defaultBlockState());
-        scene.place(80, PYLON.above(), bundle(PylonBundle.SMALL));
-        scene.reach(88, scene.next(), ground(PYLON), PylonBundle.SMALL.radius(), AZURIUM);
-        scene.label(96, scene.next(), above(PYLON, 2.6F), EnergyScenes.rate(VentricleBalance.ENERGY_PER_TICK));
+        for (int index = 0; index < PYLONS.size(); index++)
+        {
+            var pylon = PYLONS.get(index);
+            scene.place(60 + index * 12, pylon, VoidGridContent.AZURIUM_PYLON.defaultBlockState());
+            scene.place(66 + index * 12, pylon.above(), bundle(PylonBundle.LARGE));
+            scene.link(100, scene.next(), above(pylon.above(), 0.9F), top, AZURIUM, Flow.PULSE);
+        }
+        scene.label(110, scene.next(), above(cradle, 2.4F), EnergyScenes.rate(VentricleBalance.ENERGY_PER_TICK));
 
         scene.use("offering", 150, offer, top);
         var offerings = new ItemStack[] { new ItemStack(VoidHeartItems.KERNACIAN_CORE), new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION),

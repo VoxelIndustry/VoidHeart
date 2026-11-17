@@ -91,10 +91,7 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
                 build(level, GRID_AT, scene(GRID));
                 build(level, REACTOR_AT, scene(REACTOR));
                 build(level, SPIKE_AT, scene(SPIKE));
-                build(level, HEART_AT, scene(HEART));
             });
-            waitFor(context, server, 80, "The heart scene's chamber should complete its cradle", minecraft ->
-                    minecraft.overworld().getBlockEntity(HEART_AT) instanceof HeartCradleTile tile && tile.isComplete());
             waitFor(context, server, 80, "The grid scene's construct should form", minecraft ->
                     minecraft.overworld().getBlockEntity(construct()) instanceof RubrumConstructTile tile && tile.isFormed());
             waitFor(context, server, 80, "The reactor scene's shell should complete its reactor", minecraft ->
@@ -104,6 +101,10 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
                 var grid = VoidGrid.get(minecraft.overworld());
                 return grid != null && grid.layout().arcs().length == 1;
             });
+            // Its pylons arc with each other, so it is built once the grid scene's single arc has been counted
+            server.runOnServer(minecraft -> build(minecraft.overworld(), HEART_AT, scene(HEART)));
+            waitFor(context, server, 80, "The heart scene's chamber should complete its cradle", minecraft ->
+                    minecraft.overworld().getBlockEntity(HEART_AT) instanceof HeartCradleTile tile && tile.isComplete());
             waitFor(context, server, 120, "Every relay of the scenes should find what it is shown feeding",
                     minecraft -> relaysLinked(minecraft.overworld()));
             server.runOnServer(ResearchSceneScriptsClientTest::assertFieldsCover);
@@ -308,7 +309,9 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
             expect(covered(level, engine), "The grid scene's engine should stand in a pylon's field");
         expect(covered(level, REACTOR_AT.above()), "The reactor scene's core should stand in the field it lights from");
         expect(covered(level, SPIKE_AT), "The spike scene's spike should stand in a pylon's field");
-        expect(covered(level, HEART_AT), "The heart scene's cradle should stand in the field it draws from");
+        long carried = VoidGrid.pylonsCovering(level, HEART_AT).stream().mapToLong(GridLayout.Pylon::cap).sum();
+        expect(carried >= net.voxelindustry.voidheart.common.content.secondheart.ventricle.VentricleBalance.ENERGY_PER_TICK,
+                "The heart scene's pylons should pass all the rite draws, they pass " + carried);
 
         // The fissure and the portal are not built, so their pylons are held to the same rule by hand
         for (var research : List.of(FISSURE, PORTAL))

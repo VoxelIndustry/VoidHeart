@@ -300,7 +300,10 @@ public final class SecondHeart
     {
         var level = player.level();
         var anchor = sequence.anchor();
-        var spot = SafeSpot.choose(anchor, hazards(player, anchor), LAST_SAFE.get(player.getUUID()), fallback(level, anchor));
+        // The world may have changed under remembered ground since it was safe
+        var lastSafe = LAST_SAFE.get(player.getUUID());
+        var lastHazards = lastSafe == null ? SafeSpot.Hazards.NONE : hazards(player, lastSafe);
+        var spot = SafeSpot.choose(anchor, hazards(player, anchor), lastSafe, lastHazards, fallback(level, anchor));
         if (!spot.equals(anchor))
         {
             sequence = sequence.movedTo(spot);
@@ -387,14 +390,15 @@ public final class SecondHeart
      */
     private static void onLeave(ServerPlayer player)
     {
-        LAST_SAFE.remove(player.getUUID());
         var sequence = sequence(player);
-        if (sequence == null)
-            return;
-        if (player.level().getGameTime() - sequence.start() < HeartRules.DISSOLVE_TICKS)
-            sequence = beginReform(player, sequence);
-        player.setHealth(player.getMaxHealth());
-        player.removeAttached(SEQUENCE);
+        if (sequence != null)
+        {
+            if (player.level().getGameTime() - sequence.start() < HeartRules.DISSOLVE_TICKS)
+                beginReform(player, sequence);
+            player.setHealth(player.getMaxHealth());
+            player.removeAttached(SEQUENCE);
+        }
+        LAST_SAFE.remove(player.getUUID());
     }
 
     /** For commands and tests. */

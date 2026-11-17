@@ -55,14 +55,50 @@ public class SecondHeartClientTest implements FabricClientGameTest
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
             context.takeScreenshot("second-heart-icon-ready");
 
-            lethalHitDissolvesAndReforms(context, server);
-            spentHeartLetsThePlayerDie(context, server);
-            rechargeBringsTheLifeBack(context, server);
-            totemGoesFirst(context, server);
-            dyingViewDarkens(context, server);
-            voidFallReformsOnSafeGround(context, server);
+            var saved = new ClientSettings(CameraType.FIRST_PERSON, context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()));
+            try
+            {
+                lethalHitDissolvesAndReforms(context, server);
+                spentHeartLetsThePlayerDie(context, server);
+                rechargeBringsTheLifeBack(context, server);
+                totemGoesFirst(context, server);
+                dyingViewDarkens(context, server);
+                voidFallReformsOnSafeGround(context, server);
+            } finally
+            {
+                restoreClient(context, server, saved);
+            }
+        }
+    }
 
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+    /**
+     * The ring and its motes held still while the camera turns around the player in small steps, so flicker between layers shows.
+     */
+    private static void burstSweep(ClientGameTestContext context, TestServerContext server)
+    {
+        float yaw = context.computeOnClient(minecraft -> minecraft.player.getYRot());
+        server.runCommand("tick freeze");
+        try
+        {
+            for (int step = 0; step < 8; step++)
+            {
+                float turned = yaw + step * 2.5F;
+                context.runOnClient(minecraft ->
+                {
+                    minecraft.player.setYRot(turned);
+                    minecraft.player.yRotO = turned;
+                });
+                context.waitTicks(1);
+                context.takeScreenshot("second-heart-burst-sweep-" + step);
+            }
+        } finally
+        {
+            server.runCommand("tick unfreeze");
+            context.runOnClient(minecraft ->
+            {
+                minecraft.player.setYRot(yaw);
+                minecraft.player.yRotO = yaw;
+            });
         }
     }
 
@@ -109,6 +145,7 @@ public class SecondHeartClientTest implements FabricClientGameTest
         }
         waitForElapsed(context, server, HeartRules.BURST_TICK + 2);
         context.takeScreenshot("second-heart-burst");
+        burstSweep(context, server);
         waitForElapsed(context, server, HeartRules.BURST_TICK + 6);
         context.takeScreenshot("second-heart-burst-late");
 

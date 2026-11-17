@@ -14,7 +14,7 @@ class SafeSpotTest
     @Test
     void choose_givenSafeDeathSpot_thenReformsThere()
     {
-        assertThat(SafeSpot.choose(DEATH, SafeSpot.Hazards.NONE, LAST_SAFE, FALLBACK)).isEqualTo(DEATH);
+        assertThat(SafeSpot.choose(DEATH, SafeSpot.Hazards.NONE, LAST_SAFE, SafeSpot.Hazards.NONE, FALLBACK)).isEqualTo(DEATH);
     }
 
     @Test
@@ -26,13 +26,20 @@ class SafeSpotTest
                 new SafeSpot.Hazards(false, false, true, false),
                 new SafeSpot.Hazards(false, false, false, true)};
         for (var hazard : hazards)
-            assertThat(SafeSpot.choose(DEATH, hazard, LAST_SAFE, FALLBACK)).as("%s", hazard).isEqualTo(LAST_SAFE);
+            assertThat(SafeSpot.choose(DEATH, hazard, LAST_SAFE, SafeSpot.Hazards.NONE, FALLBACK)).as("%s", hazard).isEqualTo(LAST_SAFE);
     }
 
     @Test
     void choose_givenUnsafeAndNoLastSafe_thenFallback()
     {
-        assertThat(SafeSpot.choose(DEATH, new SafeSpot.Hazards(false, true, false, false), null, FALLBACK)).isEqualTo(FALLBACK);
+        assertThat(SafeSpot.choose(DEATH, new SafeSpot.Hazards(false, true, false, false), null, SafeSpot.Hazards.NONE, FALLBACK)).isEqualTo(FALLBACK);
+    }
+
+    @Test
+    void choose_givenLastSafeNowUnsafe_thenFallback()
+    {
+        var walledIn = new SafeSpot.Hazards(false, false, true, false);
+        assertThat(SafeSpot.choose(DEATH, new SafeSpot.Hazards(true, false, false, false), LAST_SAFE, walledIn, FALLBACK)).isEqualTo(FALLBACK);
     }
 
     @Test

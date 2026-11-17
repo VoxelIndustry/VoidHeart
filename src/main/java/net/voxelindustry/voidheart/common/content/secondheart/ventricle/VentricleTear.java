@@ -96,16 +96,14 @@ public class VentricleTear extends Entity
     private void release(ServerLevel level)
     {
         var victim = target == null ? null : level.getPlayerByUUID(target);
+        // Legionaries are paired before any is finalized, since one finalized alone calls a partner of its own
+        var mobs = new ArrayList<Mob>();
         Legionary waiting = null;
         for (var id : bringing)
         {
             var type = BuiltInRegistries.ENTITY_TYPE.getValue(id);
             if (!(type.create(level, EntitySpawnReason.MOB_SUMMONED) instanceof Mob mob))
                 continue;
-            mob.snapTo(getX() + (random.nextDouble() - 0.5) * 0.4, getY(), getZ() + (random.nextDouble() - 0.5) * 0.4, random.nextFloat() * 360, 0);
-            mob.setPersistenceRequired();
-            mob.addTag(WAVE_TAG);
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(blockPosition()), EntitySpawnReason.MOB_SUMMONED, null);
             if (mob instanceof Legionary legionary)
             {
                 if (waiting == null)
@@ -116,6 +114,14 @@ public class VentricleTear extends Entity
                     waiting = null;
                 }
             }
+            mobs.add(mob);
+        }
+        for (var mob : mobs)
+        {
+            mob.snapTo(getX() + (random.nextDouble() - 0.5) * 0.4, getY(), getZ() + (random.nextDouble() - 0.5) * 0.4, random.nextFloat() * 360, 0);
+            mob.setPersistenceRequired();
+            mob.addTag(WAVE_TAG);
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(blockPosition()), EntitySpawnReason.MOB_SUMMONED, null);
             level.addFreshEntity(mob);
             if (victim instanceof Player player && !player.isCreative() && !player.isSpectator())
                 mob.setTarget(player);

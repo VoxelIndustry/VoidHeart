@@ -242,6 +242,27 @@ public final class GameTestKit
         context.waitTicks(afterTicks);
     }
 
+    /**
+     * The client settings a test may change and must hand back, since every test shares one client.
+     */
+    public record ClientSettings(net.minecraft.client.CameraType camera, boolean hudHidden)
+    {
+    }
+
+    /**
+     * Puts the settings back and lets the game run again, whether the test passed or not.
+     */
+    public static void restoreClient(ClientGameTestContext context, TestServerContext server, ClientSettings saved)
+    {
+        server.runCommand("tick unfreeze");
+        context.runOnClient(minecraft ->
+        {
+            minecraft.options.setCameraType(saved.camera());
+            if (minecraft.gui.hud.isHidden() != saved.hudHidden())
+                minecraft.gui.hud.toggle();
+        });
+    }
+
     public static void rightClick(ClientGameTestContext context)
     {
         context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
