@@ -64,7 +64,7 @@ final class EnergyScenes
         return Component.translatable("voidheart.scene.blocks", count);
     }
 
-    private static Component rate(long perTick)
+    static Component rate(long perTick)
     {
         return Component.translatable("voidheart.scene.rate", perTick);
     }
