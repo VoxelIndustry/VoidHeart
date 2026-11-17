@@ -3,12 +3,17 @@ package net.voxelindustry.voidheart.client.render.blight;
 import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.content.blight.BlightBalance;
 import net.voxelindustry.voidheart.common.content.blight.Punctured;
+import net.voxelindustry.voidheart.common.content.blight.RapierStrikes;
 import net.voxelindustry.voidheart.common.content.blight.Wound;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The timeline of an Unseaming as seen: the slits run together into one crack, then the target goes black and collapses into it, turning a little, until it
@@ -32,9 +37,34 @@ public final class FoldLook
     {
     }
 
-    public static float age(Punctured.Fold fold, float now)
+    /** When this client first saw each folding target's fold, by entity: the fold's server start, then this client's time. */
+    private static final Map<Integer, double[]> SEEN = new HashMap<>();
+
+    /**
+     * Ticks since this client first saw the fold. The client's clock can trail the server's by a few ticks, so timing from the server's start would cut
+     * the collapse short when the fold ends.
+     */
+    public static float age(Entity entity, Punctured.Fold fold, double now)
     {
-        return now - fold.start();
+        var seen = SEEN.get(entity.getId());
+        if (seen == null || seen[0] != fold.start())
+        {
+            seen = new double[] { fold.start(), now };
+            SEEN.put(entity.getId(), seen);
+        }
+        return (float) (now - seen[1]);
+    }
+
+    /** Lets go of the folds that are over. */
+    public static void forgetEnded(Level level)
+    {
+        SEEN.keySet().removeIf(id -> !(level.getEntity(id) instanceof LivingEntity living) || RapierStrikes.of(living).fold().isEmpty());
+    }
+
+    /** The client's time, kept in double so ticks stay whole however old the world is. */
+    public static double now(Level level, float partial)
+    {
+        return level.getGameTime() + (double) partial;
     }
 
     /** How far the collapse is, from 0 untouched to 1 at a point. */

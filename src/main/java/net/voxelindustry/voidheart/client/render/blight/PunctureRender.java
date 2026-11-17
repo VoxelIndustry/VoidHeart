@@ -69,9 +69,9 @@ public final class PunctureRender
     /**
      * A fold being watched for its end. The snap is timed from when this client sees the fold go, since its clock can trail the server's by a few ticks.
      *
-     * @param end when it was seen to end, or {@link Float#NaN} while it lasts
+     * @param end when it was seen to end, or {@link Double#NaN} while it lasts
      */
-    private record Snap(float end, Vec3 center)
+    private record Snap(double end, Vec3 center)
     {
     }
 
@@ -99,7 +99,7 @@ public final class PunctureRender
             return;
 
         float partial = minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-        float now = level.getGameTime() + partial;
+        double now = FoldLook.now(level, partial);
         var camera = context.levelState().cameraRenderState.pos;
         var orientation = context.levelState().cameraRenderState.orientation;
 
@@ -119,9 +119,10 @@ public final class PunctureRender
             punctured.fold().ifPresent(fold -> crack(lenses, living, feet, bodyYaw, fold, now, camera));
         }
 
+        FoldLook.forgetEnded(level);
         SNAPS.replaceAll((id, snap) ->
         {
-            if (!Float.isNaN(snap.end()))
+            if (!Double.isNaN(snap.end()))
                 return snap;
             boolean folded = level.getEntity(id) instanceof LivingEntity living && living.getAttached(RapierStrikes.PUNCTURED) != null
                              && living.getAttached(RapierStrikes.PUNCTURED).fold().isPresent();
@@ -147,7 +148,7 @@ public final class PunctureRender
         {
             for (var snap : snaps)
             {
-                float age = now - snap.end();
+                float age = (float) (now - snap.end());
                 if (age < 0 || age > DARK_TICKS)
                     continue;
                 float fade = 1 - age / DARK_TICKS;
@@ -158,7 +159,7 @@ public final class PunctureRender
         {
             for (var snap : snaps)
             {
-                float age = now - snap.end();
+                float age = (float) (now - snap.end());
                 if (age < 0 || age > RING_TICKS)
                     continue;
                 float t = age / RING_TICKS;
@@ -168,15 +169,16 @@ public final class PunctureRender
         });
     }
 
-    private static void slits(List<Lens> lenses, LivingEntity entity, Vec3 feet, float bodyYaw, Wound wound, float now, Vec3 camera)
+    private static void slits(List<Lens> lenses, LivingEntity entity, Vec3 feet, float bodyYaw, Wound wound, double now, Vec3 camera)
     {
         var slits = wound.slits();
         for (int i = 0; i < slits.size(); i++)
         {
-            float closeAt = wound.lastHit() + Wound.HOLD + i * Wound.CLOSE_EVERY;
-            float pinch = Mth.clamp((closeAt - now) / PINCH_TICKS, 0, 1);
+            // Ages taken in double before they shrink to float, so ticks stay whole however old the world is
+            long closeAt = wound.lastHit() + Wound.HOLD + i * Wound.CLOSE_EVERY;
+            float pinch = Mth.clamp((float) (closeAt - now) / PINCH_TICKS, 0, 1);
             // Only the newest is still opening: the others were open before the last hit
-            float open = i == slits.size() - 1 ? Mth.clamp((now - wound.lastHit()) / OPEN_TICKS, 0, 1) : 1;
+            float open = i == slits.size() - 1 ? Mth.clamp((float) (now - wound.lastHit()) / OPEN_TICKS, 0, 1) : 1;
             float width = open * pinch;
             if (width <= 0)
                 continue;
@@ -190,12 +192,12 @@ public final class PunctureRender
     /**
      * The slits run into the middle of them all, stretching until they are one crack, which then shrinks with the body collapsing into it.
      */
-    private static void crack(List<Lens> lenses, LivingEntity entity, Vec3 feet, float bodyYaw, Punctured.Fold fold, float now, Vec3 camera)
+    private static void crack(List<Lens> lenses, LivingEntity entity, Vec3 feet, float bodyYaw, Punctured.Fold fold, double now, Vec3 camera)
     {
-        float age = FoldLook.age(fold, now);
+        float age = FoldLook.age(entity, fold, now);
         float[] center = FoldLook.crackCenter(fold.slits());
         var middle = onSurface(entity, feet, bodyYaw, center[0], center[1], center[2], camera);
-        SNAPS.put(entity.getId(), new Snap(Float.NaN, FoldLook.toWorld(entity, feet, bodyYaw, center[0], center[1], center[2])));
+        SNAPS.put(entity.getId(), new Snap(Double.NaN, FoldLook.toWorld(entity, feet, bodyYaw, center[0], center[1], center[2])));
 
         float join = Mth.clamp(age / FoldLook.CRACK_TICKS, 0, 1);
         float shrink = 1 - FoldLook.collapse(age);

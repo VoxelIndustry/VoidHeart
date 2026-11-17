@@ -31,7 +31,7 @@ public class MixinLivingEntityRendererFold
         }
 
         var fold = punctured.fold().get();
-        float age = FoldLook.age(fold, entity.level().getGameTime() + partialTicks);
+        float age = FoldLook.age(entity, fold, FoldLook.now(entity.level(), partialTicks));
         float scale = FoldLook.scale(age);
         float[] center = FoldLook.crackCenter(fold.slits());
         // Shrunk toward the crack rather than toward its feet

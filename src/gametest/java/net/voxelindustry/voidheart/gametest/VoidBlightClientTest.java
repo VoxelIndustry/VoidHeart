@@ -36,6 +36,8 @@ public class VoidBlightClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        // Every test shares this client, so its camera goes back as it was however this one ends
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
@@ -49,6 +51,10 @@ public class VoidBlightClientTest implements FabricClientGameTest
 
             contraption(context, server);
             rapier(context, server);
+        }
+        finally
+        {
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 
@@ -71,8 +77,8 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.takeScreenshot("void-blight-contraption-picked");
         expect(server.computeOnServer(minecraft -> knowledge(minecraft).getBlueprints().isEmpty()), "Expected picking a plate alone to teach nothing");
 
-        var keep = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).keepCenter());
-        click(context, keep);
+        // Kept from the keyboard, as a player without a mouse would
+        context.getInput().pressKey(InputConstants.KEY_RETURN);
         context.waitTicks(5);
         expectClient(context, "Expected keeping a design to close the screen", minecraft -> minecraft.gui.screen() == null);
         server.runOnServer(minecraft ->
@@ -188,6 +194,14 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.takeScreenshot("void-blight-rapier-dropped-night");
         context.getInput().pressKey(InputConstants.KEY_F1);
         server.runCommand("time set noon");
+
+        // In the inventory it stays the flat sprite
+        server.runOnServer(minecraft -> player(minecraft).getInventory().add(new ItemStack(VoidHeartItems.VOID_BLIGHT_RAPIER)));
+        context.getInput().pressKey(InputConstants.KEY_E);
+        context.waitTicks(5);
+        context.takeScreenshot("void-blight-rapier-inventory");
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(3);
     }
 
     private static void attack(ClientGameTestContext context, int afterTicks)

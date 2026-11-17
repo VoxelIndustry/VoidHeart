@@ -1,9 +1,11 @@
 package net.voxelindustry.voidheart.client.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -79,7 +81,8 @@ public class BlueprintScreen extends Screen
 
         keep = addRenderableWidget(new ResearchButton((width - BUTTON_W) / 2, y + PLATE_H + GAP, BUTTON_W, BUTTON_H, pressed -> choose()));
         keep.setMessage(Component.translatable("voidheart.blueprint.screen.choose"));
-        keep.visible = false;
+        // A resize rebuilds the widgets but keeps what was picked
+        keep.visible = selected >= 0;
     }
 
     private long seed()
@@ -114,9 +117,7 @@ public class BlueprintScreen extends Screen
         int plate = plateAt(event.x(), event.y());
         if (plate >= 0 && plate != selected)
         {
-            selected = plate;
-            keep.visible = true;
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.SCULK_CLICKING, 1.4F));
+            select(plate);
             return true;
         }
         if (doubleClick && plate >= 0 && plate == selected)
@@ -125,6 +126,37 @@ public class BlueprintScreen extends Screen
             return true;
         }
         return false;
+    }
+
+    private void select(int plate)
+    {
+        selected = plate;
+        keep.visible = true;
+        minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.SCULK_CLICKING, 1.4F));
+    }
+
+    /** The number keys pick a design, the arrows move between them, and Enter or Space keeps the one picked. */
+    @Override
+    public boolean keyPressed(KeyEvent event)
+    {
+        int key = event.key();
+        if (key >= InputConstants.KEY_1 && key < InputConstants.KEY_1 + designs.size())
+        {
+            select(key - InputConstants.KEY_1);
+            return true;
+        }
+        if ((key == InputConstants.KEY_LEFT || key == InputConstants.KEY_RIGHT) && !designs.isEmpty())
+        {
+            int step = key == InputConstants.KEY_LEFT ? -1 : 1;
+            select(selected < 0 ? (step > 0 ? 0 : designs.size() - 1) : Math.floorMod(selected + step, designs.size()));
+            return true;
+        }
+        if ((key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER || key == InputConstants.KEY_SPACE) && selected >= 0)
+        {
+            choose();
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     @Override
