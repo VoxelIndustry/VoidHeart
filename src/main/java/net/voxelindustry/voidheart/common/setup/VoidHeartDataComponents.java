@@ -20,6 +20,7 @@ import net.voxelindustry.voidheart.common.content.oil.Brew;
 import net.voxelindustry.voidheart.common.content.oil.WeaponOil;
 import net.voxelindustry.voidheart.common.content.tormenter.TormenterSouls;
 
+import java.util.List;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -81,6 +82,8 @@ public class VoidHeartDataComponents
     public static DataComponentType<Integer>         CONTRAVOID_CHARGE;
     /** The Gnawer a stake is marking a box for, and the first corner once one is chosen. */
     public static DataComponentType<GnawerLink>      GNAWER_LINK;
+    /** The designs a blessed contraption drew, kept so that opening it again rerolls nothing. */
+    public static DataComponentType<List<Identifier>> BLUEPRINT_DRAW;
 
     public static void registerComponents()
     {
@@ -100,6 +103,7 @@ public class VoidHeartDataComponents
         SIN = register("sin", Sin.CODEC);
         CONTRAVOID_CHARGE = register("contravoid_charge", Codec.INT);
         GNAWER_LINK = register("gnawer_link", GnawerLink.CODEC);
+        BLUEPRINT_DRAW = register("blueprint_draw", Identifier.CODEC.listOf());
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

@@ -1,0 +1,44 @@
+{
+  "type": "voidheart:altar",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "minecraft:netherite_sword"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:wraith_ink"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:memoriam_shard"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:memoriam_shard"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:void_blight_rapier"
+      }
+    ]
+  },
+  "time": 20
+}

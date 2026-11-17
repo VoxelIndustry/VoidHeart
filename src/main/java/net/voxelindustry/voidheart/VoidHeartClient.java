@@ -36,6 +36,10 @@ import net.voxelindustry.voidheart.client.render.temple.MosaicDoorHint;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
 import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
+import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
+import net.voxelindustry.voidheart.client.render.blight.BlightEdgeRender;
+import net.voxelindustry.voidheart.client.render.blight.PunctureRender;
+import net.voxelindustry.voidheart.common.content.blight.BlueprintPayloads;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -200,6 +204,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(InsightMemory::tick);
 
         ClientPlayNetworking.registerGlobalReceiver(ShieldPayloads.Hit.TYPE, (payload, context) -> ShieldHits.receive(payload));
+        ClientPlayNetworking.registerGlobalReceiver(BlueprintPayloads.Offer.TYPE, (payload, context) -> BlueprintScreen.receive(payload));
         ClientTickEvents.END_CLIENT_TICK.register(ShieldHits::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(ShieldRuneRender::collectSubmits);
         HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shield"), ShieldHud::extract);
@@ -216,6 +221,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(RavenousBitePreview::collectSubmits);
         ClientTickEvents.END_CLIENT_TICK.register(MosaicStare::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(MosaicWakeRender::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(PunctureRender::collectSubmits);
         ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "temple_mosaic"),
                 (ResourceManagerReloadListener) resources -> MosaicStare.reloaded());
         LevelRenderEvents.AFTER_BLOCK_OUTLINE_EXTRACTION.register(KnowledgeColumnOutline::afterExtraction);
@@ -224,6 +230,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE_MATRIX, RavenousStorageMatrixRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.MALIGNANT_TORMENTER, MalignantTormenterRender::new);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "malignant_tormenter"), MalignantTormenterItemRender.Unbaked.MAP_CODEC);
+        SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "blight_edge"), BlightEdgeRender.Unbaked.MAP_CODEC);
         SinClientModels.register();
         SinFlare.register();
         SinTooltip.register();

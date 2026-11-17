@@ -121,6 +121,7 @@ public class VoidHeartCommands
         ResearchCommands.register(builder);
         EnergyCommands.register(builder);
         SinCommands.register(builder);
+        BlueprintCommands.register(builder);
 
         dispatcher.register(builder);
     }

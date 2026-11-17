@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.research;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import lombok.Getter;
 import net.minecraft.core.GlobalPos;
@@ -25,7 +26,8 @@ public class PlayerKnowledge
 
     private static final double FINISHED = 1E-6;
 
-    public static final Codec<PlayerKnowledge> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    // A record codec holds 16 fields at most, so the blueprints are added beside them, still flat in the saved data
+    private static final MapCodec<PlayerKnowledge> FIELDS = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.DOUBLE.optionalFieldOf("knowledge", 0D).forGetter(PlayerKnowledge::getKnowledge),
             Codec.LONG.optionalFieldOf("last_settled", -1L).forGetter(data -> data.lastSettled),
             Codec.INT.optionalFieldOf("insights", 0).forGetter(PlayerKnowledge::getInsights),
@@ -43,6 +45,15 @@ public class PlayerKnowledge
             Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.DOUBLE).optionalFieldOf("proxies", Map.of()).forGetter(PlayerKnowledge::getProxies),
             Codec.DOUBLE.optionalFieldOf("insight_trickle", 0D).forGetter(data -> data.insightTrickle)
     ).apply(instance, PlayerKnowledge::new));
+
+    public static final Codec<PlayerKnowledge> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            FIELDS.forGetter(data -> data),
+            Identifier.CODEC.listOf().optionalFieldOf("blueprints", List.of()).forGetter(data -> List.copyOf(data.blueprints))
+    ).apply(instance, (data, blueprints) ->
+    {
+        data.blueprints.addAll(blueprints);
+        return data;
+    }));
 
     public enum Feed
     {
@@ -85,6 +96,9 @@ public class PlayerKnowledge
     private       Map<UUID, Double>        proxies;
     /** The part of an insight the proxies have made so far. */
     private       double                   insightTrickle;
+    /** Learned from what the void's bosses leave behind, each one bringing its research into sight. */
+    @Getter
+    private final Set<Identifier>          blueprints = new HashSet<>();
 
     public PlayerKnowledge()
     {
@@ -258,7 +272,24 @@ public class PlayerKnowledge
      */
     public boolean isDiscoverable(Research research)
     {
-        return research.isDiscoverable(completed);
+        return research.isDiscoverable(completed, blueprints);
+    }
+
+    public boolean knowsBlueprint(Identifier blueprint)
+    {
+        return blueprints.contains(blueprint);
+    }
+
+    /** @return whether it was not known yet */
+    public boolean learnBlueprint(Identifier blueprint)
+    {
+        return blueprints.add(blueprint);
+    }
+
+    /** @return whether it was known */
+    public boolean forgetBlueprint(Identifier blueprint)
+    {
+        return blueprints.remove(blueprint);
     }
 
     public boolean reveal(Identifier id, Map<Identifier, Research> tree)

@@ -10,6 +10,8 @@ import net.voxelindustry.voidheart.common.content.research.InsightItem;
 import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReachItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGraftItem;
 import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
+import net.voxelindustry.voidheart.common.content.blight.BlessedContraptionItem;
+import net.voxelindustry.voidheart.common.content.blight.BlightRapierItem;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.core.Registry;
@@ -62,6 +64,9 @@ public class VoidHeartItems
     public static WraithVeilItem WRAITH_VEIL;
     public static LeyDiviningRodItem LEY_DIVINING_ROD;
     public static KleinStarItem KLEIN_STAR;
+    public static BlessedContraptionItem BLESSED_CONTRAPTION;
+    public static BlightRapierItem VOID_BLIGHT_RAPIER;
+    public static Item DARK_AMALGAM;
     public static KnowledgeTabletItem KNOWLEDGE_TABLET;
 
     public static Item WRIGGLING_BRAIN;
@@ -134,6 +139,9 @@ public class VoidHeartItems
         LEY_DIVINING_ROD = registerItem("ley_divining_rod", LeyDiviningRodItem::new);
         KLEIN_STAR = registerItem("klein_star", KleinStarItem::new);
         KNOWLEDGE_TABLET = registerItem("knowledge_tablet", KnowledgeTabletItem::new);
+        BLESSED_CONTRAPTION = registerItem("blessed_contraption", BlessedContraptionItem::new);
+        VOID_BLIGHT_RAPIER = registerItem("void_blight_rapier", BlightRapierItem::new);
+        DARK_AMALGAM = registerItem("dark_amalgam", Item::new);
 
         OBSIDIAN_SHARD = registerItem("obsidian_shard", Item::new);
         ENDER_SHARD = registerItem("ender_shard", Item::new);
