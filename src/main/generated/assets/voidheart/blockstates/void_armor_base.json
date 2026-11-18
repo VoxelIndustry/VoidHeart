@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "docked=false": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "docked=true": {
+      "model": "voidheart:block/void_armor_base_docked"
+    }
+  }
+}
