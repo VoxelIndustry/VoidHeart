@@ -24,6 +24,9 @@ public final class VoidArmorLayout
 
     public static final int CHARGE_LABEL_Y = 102;
     public static final int CHARGE_Y       = 114;
+    public static final int CELL_SLOT_X    = HELM_X + 2;
+    public static final int CELL_SLOT_Y    = 114;
+    public static final int PIPS_X         = 34;
 
     public static final int WHISPER_Y   = 141;
     public static final int INVENTORY_X = PAD;

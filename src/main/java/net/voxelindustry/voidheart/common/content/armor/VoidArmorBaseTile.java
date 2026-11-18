@@ -2,25 +2,34 @@ package net.voxelindustry.voidheart.common.content.armor;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumCellItem;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 
 /**
- * Holds the frame docked on a base. Its racks and apparatus socket are a live container while it is docked, written back onto the frame stack on every
- * change, so the stack always carries everything it holds wherever it goes next.
+ * Holds the frame docked on a base and charges it, from the pylon field the base stands in first, then from the rubrum cell in its own socket, which is
+ * what lets a base charge far from any field. The frame's racks and apparatus socket are a live container while it is docked, written back onto the frame
+ * stack on every change, so the stack always carries everything it holds wherever it goes next.
  */
 public class VoidArmorBaseTile extends TileBase
 {
     private ItemStack frame = ItemStack.EMPTY;
     private boolean   loading;
+    private long      syncedCharge;
 
     private final SimpleContainer slots = new SimpleContainer(ArmorBalance.FRAME_SLOTS)
     {
@@ -50,9 +59,71 @@ public class VoidArmorBaseTile extends TileBase
         }
     };
 
+    private final SimpleContainer cell = new SimpleContainer(1)
+    {
+        @Override
+        public int getMaxStackSize()
+        {
+            return 1;
+        }
+
+        @Override
+        public boolean canPlaceItem(int slot, ItemStack stack)
+        {
+            return stack.is(RubrumContent.RUBRUM_CELL);
+        }
+
+        @Override
+        public void setChanged()
+        {
+            super.setChanged();
+            if (!loading)
+                changed();
+        }
+    };
+
     public VoidArmorBaseTile(BlockPos pos, BlockState state)
     {
         super(VoidArmorContent.VOID_ARMOR_BASE_TILE, pos, state);
+    }
+
+    public static void tick(Level level, BlockPos pos, BlockState state, VoidArmorBaseTile tile)
+    {
+        if (level instanceof ServerLevel serverLevel)
+            tile.charge(serverLevel);
+    }
+
+    private void charge(ServerLevel level)
+    {
+        if (frame.isEmpty())
+            return;
+        long capacity = VoidArmorItem.stats(frame).capacity();
+        long charge = VoidArmorItem.charge(frame);
+        if (charge < capacity)
+        {
+            long wanted = Math.min(ArmorBalance.BASE_INTAKE, capacity - charge);
+            long taken = VoidEnergy.draw(level, worldPosition, wanted);
+            var held = cell.getItem(0);
+            if (taken < wanted && !held.isEmpty())
+            {
+                long fromCell = Math.min(wanted - taken, RubrumCellItem.charge(held));
+                if (fromCell > 0)
+                {
+                    RubrumCellItem.setCharge(held, RubrumCellItem.charge(held) - fromCell);
+                    taken += fromCell;
+                }
+            }
+            if (taken > 0)
+            {
+                frame.set(RubrumContent.VOID_CHARGE, charge + taken);
+                setChanged();
+            }
+        }
+        if (VoidArmorItem.charge(frame) != syncedCharge && level.getGameTime() % ArmorBalance.BASE_SYNC == 0)
+        {
+            syncedCharge = VoidArmorItem.charge(frame);
+            sync();
+        }
     }
 
     /**
@@ -80,9 +151,43 @@ public class VoidArmorBaseTile extends TileBase
         return slots;
     }
 
-    public void setFrame(ItemStack frame)
+    public SimpleContainer cell()
+    {
+        return cell;
+    }
+
+    /**
+     * Stands a frame on this base, which becomes the base it goes home to.
+     */
+    public void dock(ItemStack frame)
+    {
+        var docked = frame.copyWithCount(1);
+        if (level instanceof ServerLevel serverLevel)
+            docked.set(VoidArmorContent.ARMOR_HOME, ArmorWear.home(serverLevel, worldPosition));
+        setFrame(docked);
+        if (level != null)
+        {
+            level.setBlockAndUpdate(worldPosition, getBlockState().setValue(VoidArmorBaseBlock.DOCKED, true));
+            level.playSound(null, worldPosition, SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.BLOCKS, 1, 0.8F);
+        }
+    }
+
+    /**
+     * Lets the frame go, to be worn, and leaves the base empty.
+     */
+    public ItemStack undock()
+    {
+        var taken = frame;
+        setFrame(ItemStack.EMPTY);
+        if (level != null)
+            level.setBlockAndUpdate(worldPosition, getBlockState().setValue(VoidArmorBaseBlock.DOCKED, false));
+        return taken;
+    }
+
+    private void setFrame(ItemStack frame)
     {
         this.frame = frame.copyWithCount(frame.isEmpty() ? 0 : 1);
+        syncedCharge = VoidArmorItem.charge(this.frame);
         reloadSlots();
         changed();
     }
@@ -92,11 +197,17 @@ public class VoidArmorBaseTile extends TileBase
         return frame.getOrDefault(VoidArmorContent.ARMOR_GRIDS, ArmorGrids.EMPTY);
     }
 
+    /**
+     * Sets the frame's modules. Charge above what is left of its capacity when batteries come out is lost.
+     */
     public void setGrids(ArmorGrids grids)
     {
         if (frame.isEmpty())
             return;
         frame.set(VoidArmorContent.ARMOR_GRIDS, grids);
+        long capacity = grids.stats().capacity();
+        if (VoidArmorItem.charge(frame) > capacity)
+            frame.set(RubrumContent.VOID_CHARGE, capacity);
         changed();
     }
 
@@ -131,13 +242,19 @@ public class VoidArmorBaseTile extends TileBase
     }
 
     /**
-     * Only a creative break or a command can remove a base holding a frame, since a frame travels only worn. It drops then rather than vanish.
+     * Only a creative break or a command can remove a base holding a frame, since a frame travels only worn. It drops then rather than vanish, and the
+     * cell always drops.
      */
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
-        if (level != null && !frame.isEmpty())
-            Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, frame);
+        if (level != null)
+        {
+            if (!frame.isEmpty())
+                Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, frame);
+            if (!cell.getItem(0).isEmpty())
+                Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, cell.getItem(0));
+        }
         super.preRemoveSideEffects(pos, state);
     }
 
@@ -146,13 +263,18 @@ public class VoidArmorBaseTile extends TileBase
     {
         super.loadAdditional(tag);
         frame = tag.read("frame", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
+        syncedCharge = VoidArmorItem.charge(frame);
         reloadSlots();
+        loading = true;
+        cell.setItem(0, tag.read("cell", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY));
+        loading = false;
     }
 
     @Override
     protected void saveAdditional(ValueOutput tag)
     {
         tag.store("frame", ItemStack.OPTIONAL_CODEC, frame);
+        tag.store("cell", ItemStack.OPTIONAL_CODEC, cell.getItem(0));
         super.saveAdditional(tag);
     }
 }

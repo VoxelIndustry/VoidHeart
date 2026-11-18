@@ -15,6 +15,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 import net.voxelindustry.voidheart.common.content.armor.ArmorGrids.Placement;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -25,7 +26,7 @@ import static net.voxelindustry.voidheart.common.content.armor.VoidArmorLayout.*
 /**
  * The docked frame's three grids, four racks and apparatus socket beside the player's inventory. Modules go from the cursor into a grid and come back
  * onto it through menu buttons carrying the grid and the cell, so the server checks every edit against the frame it holds. Racks and the socket are
- * ordinary slots over the frame's own container.
+ * ordinary slots over the frame's own container, beside the base's own cell socket.
  */
 public class VoidArmorMenu extends AbstractContainerMenu
 {
@@ -37,6 +38,7 @@ public class VoidArmorMenu extends AbstractContainerMenu
     public static final int ALL_SLOTS   = 36;
     public static final int FIRST_RACK  = ALL_SLOTS;
     public static final int SOCKET      = FIRST_RACK + ArmorBalance.RACKS;
+    public static final int CELL        = SOCKET + 1;
 
     private static final Identifier SOCKET_ICON = Identifier.fromNamespaceAndPath(MODID, "container/slots/shielding_apparatus");
 
@@ -52,6 +54,7 @@ public class VoidArmorMenu extends AbstractContainerMenu
         this.player = inventory.player;
         this.base = inventory.player.level().getBlockEntity(pos) instanceof VoidArmorBaseTile tile ? tile : null;
         Container frameSlots = base != null ? base.slots() : new SimpleContainer(ArmorBalance.FRAME_SLOTS);
+        Container cell = base != null ? base.cell() : new SimpleContainer(1);
 
         for (int row = 0; row < 3; row++)
             for (int column = 0; column < 9; column++)
@@ -62,6 +65,20 @@ public class VoidArmorMenu extends AbstractContainerMenu
         for (int rack = 0; rack < ArmorBalance.RACKS; rack++)
             addSlot(new FrameSlot(frameSlots, rack, RACK_X + rack * SLOT, RACK_Y));
         addSlot(new FrameSlot(frameSlots, ArmorBalance.SOCKET_SLOT, socketX(), socketY()));
+        addSlot(new Slot(cell, 0, CELL_SLOT_X, CELL_SLOT_Y)
+        {
+            @Override
+            public boolean mayPlace(ItemStack stack)
+            {
+                return stack.is(RubrumContent.RUBRUM_CELL);
+            }
+
+            @Override
+            public int getMaxStackSize()
+            {
+                return 1;
+            }
+        });
     }
 
     private static class FrameSlot extends Slot
@@ -261,6 +278,8 @@ public class VoidArmorMenu extends AbstractContainerMenu
             moved = moveItemStackTo(stack, 0, ALL_SLOTS, true);
         else if (stack.getItem() instanceof ShieldingApparatusItem)
             moved = moveItemStackTo(stack, SOCKET, SOCKET + 1, false);
+        else if (stack.is(RubrumContent.RUBRUM_CELL))
+            moved = moveItemStackTo(stack, CELL, CELL + 1, false);
         else if (VoidArmorBaseTile.mayHold(0, stack))
             moved = moveItemStackTo(stack, FIRST_RACK, SOCKET, false);
         else

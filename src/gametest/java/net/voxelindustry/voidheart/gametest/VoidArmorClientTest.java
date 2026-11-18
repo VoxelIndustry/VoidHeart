@@ -31,7 +31,7 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.expect;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.player;
 
 /**
- * A frame used on an empty Void Armor Base docks there, and the docked base opens its grids. Modules are set with real clicks in the helm, core and limbs,
+ * A frame used on an empty Void Armor Base docks there, and a sneaking use on the docked base opens its grids. Modules are set with real clicks in the helm, core and limbs,
  * refused in the wrong grid, on the apparatus socket and away from the night vision a lens rests on, then a weapon and a Shielding Apparatus are shift
  * clicked into a rack and the socket. Everything lands on the frame the base holds, and a base holding a frame can't be mined in survival.
  */
@@ -101,12 +101,23 @@ public class VoidArmorClientTest implements FabricClientGameTest
         expect(docked, "Expected the frame used on the empty base to dock there and leave the hand");
         context.takeScreenshot("void-armor-base-docked");
 
+        // A plain use would step into the frame; sneaking opens its grids
         server.runOnServer(minecraft -> player(minecraft).getInventory().setSelectedSlot(1));
         context.waitTicks(3);
+        context.getInput().holdKey(options -> options.keyShift);
+        context.waitFor(minecraft -> minecraft.player != null && minecraft.player.isShiftKeyDown(), 40);
+        context.waitTicks(3);
+        boolean sneaking = server.computeOnServer(minecraft -> player(minecraft).isShiftKeyDown());
+        expect(sneaking, "Expected the server to see the player sneaking before the use");
         context.getInput().pressKey(options -> options.keyUse);
-        context.waitTicks(10);
+        context.waitTicks(3);
+        context.getInput().releaseKey(options -> options.keyShift);
+        context.waitTicks(7);
         boolean open = context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof VoidArmorScreen);
-        expect(open, "Expected using the docked base to open the frame's grids");
+        String state = server.computeOnServer(minecraft -> "wearing " + net.voxelindustry.voidheart.common.content.armor.ArmorWear.wearing(player(minecraft))
+                + ", docked " + (minecraft.overworld().getBlockEntity(BASE) instanceof VoidArmorBaseTile base && base.hasFrame())
+                + ", sneaking " + player(minecraft).isShiftKeyDown() + ", screen " + player(minecraft).containerMenu);
+        expect(open, "Expected a sneaking use on the docked base to open the frame's grids: " + state);
         context.getInput().setCursorPos(10, 10);
         context.waitTicks(2);
         context.takeScreenshot("void-armor-screen-empty");

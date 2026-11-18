@@ -25,6 +25,26 @@ public final class ArmorBalance
     public static final float EXOSKELETON_JUMP  = 2F;
     public static final float EXOSKELETON_HIT   = 3F;
 
+    /** Jump strength added by exoskeleton power, about two blocks of jump over vanilla's 0.42. */
+    public static final double EXOSKELETON_JUMP_STRENGTH = 0.12;
+
+    public static final float  SCALE             = 1.5F;
+    public static final double WEARER_WIDTH      = 0.6 * SCALE;
+    public static final double WEARER_HEIGHT     = 1.8 * SCALE;
+    /** Added to vanilla's 0.6, so the frame walks up full blocks. */
+    public static final double STEP_HEIGHT_BONUS = 0.4;
+    public static final double SAFE_FALL_BONUS   = 3;
+
+    public static final int STEP_IN_TICKS       = 30;
+    public static final int STEP_OUT_TICKS      = 20;
+    public static final int STEP_OUT_HOLD_TICKS = 15;
+    /** How far from a respawned player a frame with no base to go home to stands. */
+    public static final double PARK_BESIDE      = 1.5;
+
+    /** Guess: most a base puts into its frame a tick, from the pylon field first, then its own cell. */
+    public static final long BASE_INTAKE   = 160;
+    public static final int  BASE_SYNC     = 10;
+
     public static final int RACKS        = 4;
     public static final int SOCKET_SLOT  = RACKS;
     public static final int FRAME_SLOTS  = RACKS + 1;

@@ -44,6 +44,7 @@ import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
 import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
 import net.voxelindustry.voidheart.client.screen.VoidArmorScreen;
+import net.voxelindustry.voidheart.client.render.armor.ParkedArmorRender;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
 import net.voxelindustry.voidheart.client.render.blight.BlightEdgeRender;
@@ -226,6 +227,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(HeartBurstRender::collectSubmits);
         BlockEntityRenderers.register(TwinVentricleContent.HEART_CRADLE_TILE, HeartCradleRender::new);
         EntityRendererRegistry.register(TwinVentricleContent.VENTRICLE_TEAR, VentricleTearRender::new);
+        EntityRendererRegistry.register(VoidArmorContent.PARKED_ARMOR, ParkedArmorRender::new);
         MenuScreens.register(VoidHeartMenus.APPARATUS, ApparatusScreen::new);
         MenuScreens.register(VoidArmorContent.VOID_ARMOR_MENU, VoidArmorScreen::new);
         ShieldingApparatusItem.openFromSlot = holder -> ClientPlayNetworking.send(new ShieldPayloads.Open(holder));

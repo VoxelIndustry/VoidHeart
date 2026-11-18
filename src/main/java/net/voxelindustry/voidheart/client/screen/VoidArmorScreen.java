@@ -37,7 +37,8 @@ import static net.voxelindustry.voidheart.common.content.armor.VoidArmorLayout.*
 
 /**
  * The docked frame's grids over the player's inventory, cut in a slab of the knowledge repository's voidstone like the apparatus grid: the helm, the core
- * and the limbs each in a torn hole lit from below, the apparatus socket at the core's heart, the racks under the limbs and the charge under the helm.
+ * and the limbs each in a torn hole lit from below, the apparatus socket at the core's heart, the racks under the limbs, and under the helm the charge
+ * beside the base's cell socket.
  * What the frame gives is on a tablet beside the inventory, and one whisper says what a click does.
  * <p>
  * A module is carried onto a grid like onto any slot, clicked there or dragged there from its slot, its shape following the cursor and turned with R, a
@@ -53,9 +54,9 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
     private static final int LINE    = 11;
     private static final int TEAR    = 3;
 
-    private static final int PIP_W      = 7;
+    private static final int PIP_W      = 5;
     private static final int PIP_H      = 11;
-    private static final int PIP_GAP    = 3;
+    private static final int PIP_GAP    = 2;
     private static final int PIPS_ROW   = 6;
 
     private static final int   PLATE_COLOR    = 0xFF0B0810;
@@ -492,13 +493,10 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
             shares.add(ArmorBalance.BATTERY_CAPACITY);
 
         long left = menu.charge();
-        int perRow = Math.min(PIPS_ROW, shares.size());
-        int rowWidth = perRow * PIP_W + (perRow - 1) * PIP_GAP;
-        int startX = leftPos + HELM_X + (wellW(ArmorGridKind.HELM) - rowWidth) / 2;
         for (int i = 0; i < shares.size(); i++)
         {
-            int x = startX + i % PIPS_ROW * (PIP_W + PIP_GAP);
-            int y = topPos + CHARGE_Y + i / PIPS_ROW * (PIP_H + PIP_GAP);
+            int x = leftPos + PIPS_X + i % PIPS_ROW * (PIP_W + PIP_GAP);
+            int y = topPos + CHARGE_Y + i / PIPS_ROW * (PIP_H + PIP_GAP) - 1;
             long share = shares.get(i);
             float fill = Math.clamp(left / (float) share, 0, 1);
             left = Math.max(0, left - share);
@@ -568,6 +566,8 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
             text = Component.translatable(MODID + ".void_armor_screen.whisper.take");
         else if (cell != null)
             text = Component.translatable(MODID + ".void_armor_screen.whisper.grid." + cell.kind().key());
+        else if (hoveredSlot != null && hoveredSlot.index == VoidArmorMenu.CELL)
+            text = Component.translatable(MODID + ".void_armor_screen.whisper.cell");
         else if (hoveredSlot != null && hoveredSlot.index == VoidArmorMenu.SOCKET)
             text = Component.translatable(MODID + ".void_armor_screen.whisper.socket");
         else if (hoveredSlot != null && hoveredSlot.index >= VoidArmorMenu.FIRST_RACK)

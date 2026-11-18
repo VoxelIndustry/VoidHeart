@@ -2151,5 +2151,10 @@
   "voidheart.void_armor_screen.refusal.needs_support": "It must touch the night vision lens",
   "voidheart.jade.void_armor_base.empty": "No frame",
   "voidheart.jade.void_armor_base.docked": "Frame docked, %s%% charged",
-  "config.jade.plugin_voidheart.void_armor_base": "Void Armor Base"
+  "config.jade.plugin_voidheart.void_armor_base": "Void Armor Base",
+  "entity.voidheart.parked_void_armor": "Void Armor",
+  "voidheart.void_armor.already_worn": "You are already in a frame",
+  "voidheart.void_armor.fitted_to_another": "This frame is fitted to another body",
+  "voidheart.void_armor.no_room": "Not enough room to stand up in the frame",
+  "voidheart.void_armor_screen.whisper.cell": "A rubrum cell here charges the frame away from any pylon"
 }

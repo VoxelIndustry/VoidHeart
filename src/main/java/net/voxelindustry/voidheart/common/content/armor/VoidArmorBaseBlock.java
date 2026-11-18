@@ -4,8 +4,7 @@ import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Inventory;
@@ -17,25 +16,36 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import org.jspecify.annotations.Nullable;
 
+import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
+
 /**
- * Where a frame stands between sorties. A frame used on an empty base docks there, and a docked one opens its grids and racks.
+ * Where a frame stands between sorties and charges. A frame used on an empty base docks there. On a docked base, a use steps into the frame and sneaking
+ * opens its grids. A rubrum cell used on it goes in its socket, for charging away from any pylon, and comes back out with an empty hand while no frame
+ * stands there; with one docked, the cell is in the frame's screen.
  * <p>
- * Until stepping in is built, a plain use opens the grids too; it will step into the frame then, and sneaking will open them.
+ * The plinth is low, so a wearer standing on it still fits under a ceiling three blocks up.
  */
 public class VoidArmorBaseBlock extends Block implements EntityBlock
 {
     public static final BooleanProperty DOCKED = BooleanProperty.create("docked");
 
-    private static final VoxelShape SHAPE = Shapes.or(box(1, 0, 1, 15, 4, 15), box(3, 4, 3, 13, 6, 13));
+    /** Where a wearer's feet stand on the plinth, above the base's own position. */
+    public static final double STAND_HEIGHT = 3 / 16D;
+
+    private static final VoxelShape SHAPE = Shapes.or(box(1, 0, 1, 15, 2, 15), box(3, 2, 3, 13, 3, 13));
 
     public VoidArmorBaseBlock(Properties properties)
     {
@@ -49,33 +59,70 @@ public class VoidArmorBaseBlock extends Block implements EntityBlock
         builder.add(DOCKED);
     }
 
+    public static Vec3 standAt(BlockPos pos)
+    {
+        return new Vec3(pos.getX() + 0.5, pos.getY() + STAND_HEIGHT, pos.getZ() + 0.5);
+    }
+
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
         if (!(level.getBlockEntity(pos) instanceof VoidArmorBaseTile base))
             return InteractionResult.PASS;
+        // An empty hand comes here first too; the empty hand use decides between stepping in and opening the grids
+        if (stack.isEmpty())
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         if (stack.getItem() instanceof VoidArmorItem && !base.hasFrame())
         {
             if (!level.isClientSide())
-            {
-                base.setFrame(stack.consumeAndReturn(1, player));
-                level.setBlockAndUpdate(pos, state.setValue(DOCKED, true));
-                level.playSound(null, pos, SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.BLOCKS, 1, 0.8F);
-            }
+                base.dock(stack.consumeAndReturn(1, player));
             return InteractionResult.SUCCESS;
         }
-        return base.hasFrame() ? open(level, pos, player) : InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (stack.is(RubrumContent.RUBRUM_CELL) && base.cell().getItem(0).isEmpty())
+        {
+            if (!level.isClientSide())
+                base.cell().setItem(0, stack.consumeAndReturn(1, player));
+            return InteractionResult.SUCCESS;
+        }
+        return base.hasFrame() ? stepIn(level, pos, player, base) : InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit)
     {
-        if (!(level.getBlockEntity(pos) instanceof VoidArmorBaseTile base) || !base.hasFrame())
+        if (!(level.getBlockEntity(pos) instanceof VoidArmorBaseTile base))
             return InteractionResult.PASS;
-        return open(level, pos, player);
+        if (!base.hasFrame())
+        {
+            var held = base.cell().getItem(0);
+            if (held.isEmpty())
+                return InteractionResult.PASS;
+            if (!level.isClientSide())
+            {
+                player.getInventory().placeItemBackInInventory(held, Prediction.SERVER_ONLY);
+                base.cell().setItem(0, ItemStack.EMPTY);
+            }
+            return InteractionResult.SUCCESS;
+        }
+        return player.isSecondaryUseActive() ? open(pos, player) : stepIn(level, pos, player, base);
     }
 
-    private static InteractionResult open(Level level, BlockPos pos, Player player)
+    private static InteractionResult stepIn(Level level, BlockPos pos, Player player, VoidArmorBaseTile base)
+    {
+        if (!(player instanceof ServerPlayer serverPlayer))
+            return InteractionResult.SUCCESS;
+        var feet = standAt(pos);
+        var refusal = ArmorWear.refusal(serverPlayer, base.frame(), feet);
+        if (refusal != null)
+        {
+            serverPlayer.sendOverlayMessage(refusal);
+            return InteractionResult.FAIL;
+        }
+        ArmorWear.stepIn(serverPlayer, base.undock(), feet);
+        return InteractionResult.SUCCESS;
+    }
+
+    private static InteractionResult open(BlockPos pos, Player player)
     {
         if (player instanceof ServerPlayer serverPlayer)
             serverPlayer.openMenu(new ExtendedMenuProvider<BlockPos>()
@@ -122,5 +169,11 @@ public class VoidArmorBaseBlock extends Block implements EntityBlock
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state)
     {
         return new VoidArmorBaseTile(pos, state);
+    }
+
+    @Override
+    public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type)
+    {
+        return level.isClientSide() ? null : createTickerHelper(type, VoidArmorContent.VOID_ARMOR_BASE_TILE, VoidArmorBaseTile::tick);
     }
 }
