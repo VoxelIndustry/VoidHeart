@@ -477,8 +477,17 @@ public class VoidBlightClientTest implements FabricClientGameTest
         });
 
         // Then it closes and flies back into the hand that threw it
-        waitFor(context, server, BlightBalance.HOLE_TICKS, "Expected the spear to fly back once its hole closed",
-                minecraft -> !spears(minecraft).isEmpty() && spears(minecraft).getFirst().isReturning());
+        // Checked on every tick it waits, so the spear and its hole are seen to hang still until the hole closes
+        waitFor(context, server, BlightBalance.HOLE_TICKS, "Expected the spear to fly back once its hole closed", minecraft ->
+        {
+            if (spears(minecraft).isEmpty())
+                return false;
+            var spear = spears(minecraft).getFirst();
+            if (spear.isHoleOpen())
+                expect(spear.position().distanceTo(hangs) < 1.0E-6 && spear.holeCenter().distanceTo(center) < 1.0E-6,
+                        "Expected the spear and its hole to stay where they opened, at " + spear.position() + " and " + spear.holeCenter());
+            return spear.isReturning();
+        });
         context.waitTicks(2);
         context.takeScreenshot("void-blight-spear-returning");
         waitFor(context, server, BlightBalance.HOLE_TICKS + 80, "Expected the spear back with its thrower once the hole closed",
