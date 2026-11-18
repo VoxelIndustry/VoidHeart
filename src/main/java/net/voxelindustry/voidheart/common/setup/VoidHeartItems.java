@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.setup;
 
 import net.voxelindustry.voidheart.common.content.divining.LeyDiviningRodItem;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
+import net.voxelindustry.voidheart.common.content.armor.KernacianCoreItem;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponentItem;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTier;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
@@ -170,7 +171,7 @@ public class VoidHeartItems
         AZURIUM_SHARD = registerItem("azurium_shard", properties -> new LoreItem(properties, "voidheart.azurium_shard.lore"));
         RUBRUM_SHARD = registerItem("rubrum_shard", properties -> new LoreItem(properties, "voidheart.rubrum_shard.lore"));
         MEMORIAM_SHARD = registerItem("memoriam_shard", properties -> new LoreItem(properties, "voidheart.memoriam_shard.lore"));
-        KERNACIAN_CORE = registerItem("kernacian_core", properties -> new LoreItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC), "voidheart.kernacian_core.lore"));
+        KERNACIAN_CORE = registerItem("kernacian_core", properties -> new KernacianCoreItem(properties.rarity(net.minecraft.world.item.Rarity.EPIC)));
 
         SALT = registerItem("salt", properties -> new SaltItem(properties, "voidheart.salt.lore", "voidheart.salt.use"));
         QUICKSILVER = registerItem("quicksilver", Item::new);

@@ -10,28 +10,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The designs a blessed contraption can teach. A blueprint is only an id: whatever research names it in its {@code blueprint} field stays out of sight
- * until it is learned, so the pool is whatever the research tree asks for.
+ * until it is learned, so the pool is whatever the research tree asks for, less the designs learned by studying something else.
  */
 public final class Blueprints
 {
     /** How many designs one contraption shows. */
     public static final int OFFERED = 3;
 
+    /** Learned by studying a Kernacian Core, never from a contraption. */
+    public static final Identifier VOID_ARMOR = Identifier.fromNamespaceAndPath(MODID, "void_armor");
+    public static final Set<Identifier> STUDIED = Set.of(VOID_ARMOR);
+
     private Blueprints()
     {
     }
 
     /** Every blueprint some research waits on, in a fixed order. */
-    public static List<Identifier> pool(Map<Identifier, Research> tree)
+    public static List<Identifier> all(Map<Identifier, Research> tree)
     {
         return tree.values().stream()
                 .flatMap(research -> research.blueprint().stream())
                 .distinct()
                 .sorted()
                 .toList();
+    }
+
+    /** The blueprints a contraption can teach. */
+    public static List<Identifier> pool(Map<Identifier, Research> tree)
+    {
+        return all(tree).stream().filter(blueprint -> !STUDIED.contains(blueprint)).toList();
     }
 
     public static List<Identifier> unknown(List<Identifier> pool, Collection<Identifier> known)

@@ -1,0 +1,26 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:void_armor",
+  "insight_cost": 17,
+  "knowledge_cost": 5000,
+  "knowledge_per_second": 2.5,
+  "requires": [
+    "voidheart:void_energy"
+  ],
+  "blueprint": "voidheart:void_armor",
+  "unlocks": [
+    "voidheart:void_armor",
+    "voidheart:void_armor_base",
+    "voidheart:armor_battery_cell",
+    "voidheart:armor_night_vision",
+    "voidheart:armor_exoskeleton_power"
+  ],
+  "recipes": [
+    "voidheart:altar/void_armor",
+    "voidheart:altar/void_armor_base",
+    "voidheart:altar/armor_battery_cell",
+    "voidheart:altar/armor_night_vision",
+    "voidheart:altar/armor_exoskeleton_power"
+  ]
+}

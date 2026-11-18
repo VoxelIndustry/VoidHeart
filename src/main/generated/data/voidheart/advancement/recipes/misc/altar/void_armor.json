@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_kernacian_core": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:kernacian_core"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/void_armor"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_kernacian_core"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/void_armor"
+    ]
+  }
+}

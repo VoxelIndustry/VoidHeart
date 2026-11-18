@@ -40,7 +40,10 @@ import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
+import net.voxelindustry.voidheart.common.content.armor.ArmorModule;
+import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
@@ -235,6 +238,7 @@ public class RecipesProvider extends FabricRecipeProvider
 
             // Altar: the catalyst sits on the altar, each ingredient on one of the eight pillars
             shieldingApparatus();
+            voidArmor();
             sinInfusion();
             offerAltarRecipe("armillary_core", VoidHeartBlocks.ARMILLARY_CORE, Items.COMPASS,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
@@ -491,6 +495,41 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT);
             component(ApparatusComponent.MENDING_CORE, Items.GLISTERING_MELON_SLICE,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+        }
+
+        /**
+         * The frame is built around a Dragoon's Core, in void metal trimmed with Ravenous Gold, with rubrum to hold its charge. Its base, a stand that charges
+         * it, and its modules each have a catalyst of their own, as the apparatus components do.
+         */
+        private void voidArmor()
+        {
+            offerAltarRecipe("void_armor", VoidArmorContent.VOID_ARMOR, VoidHeartItems.KERNACIAN_CORE,
+                    Items.NETHERITE_INGOT, Items.NETHERITE_INGOT,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD);
+            offerAltarRecipe("void_armor_base", VoidArmorContent.VOID_ARMOR_BASE, Items.ARMOR_STAND,
+                    VoidHeartItems.ARROGANT_IRON_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+                    VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD);
+
+            armorModule(ArmorModule.BATTERY_CELL, RubrumContent.RUBRUM_CELL,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD,
+                    VoidHeartItems.AZURIUM_SHARD);
+            armorModule(ArmorModule.NIGHT_VISION, Items.SPYGLASS,
+                    Items.GOLDEN_CARROT, Items.GOLDEN_CARROT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.AZURIUM_SHARD);
+            armorModule(ArmorModule.SPECTRAL_LENS, Items.ENDER_EYE,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, Items.AMETHYST_SHARD, Items.AMETHYST_SHARD,
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.VOID_PEARL);
+            armorModule(ArmorModule.EXOSKELETON_POWER, Items.PISTON,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    Items.REDSTONE, Items.REDSTONE, VoidHeartItems.RUBRUM_SHARD);
+        }
+
+        private void armorModule(ArmorModule module, ItemLike catalyst, ItemLike... ingredients)
+        {
+            offerAltarRecipe(module.itemName(), VoidArmorContent.MODULES.get(module), catalyst, ingredients);
         }
 
         private void component(ApparatusComponent component, ItemLike catalyst, ItemLike... ingredients)

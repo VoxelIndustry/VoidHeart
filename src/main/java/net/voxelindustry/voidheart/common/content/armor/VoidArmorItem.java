@@ -61,6 +61,7 @@ public class VoidArmorItem extends Item
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag)
     {
-        tooltip.accept(Component.translatable(MODID + ".void_armor.dock").withStyle(ChatFormatting.GRAY));
+        tooltip.accept(Component.translatable(MODID + ".void_armor.lore"));
+        tooltip.accept(Component.translatable(MODID + ".void_armor.dock").withStyle(ChatFormatting.DARK_GRAY));
     }
 }

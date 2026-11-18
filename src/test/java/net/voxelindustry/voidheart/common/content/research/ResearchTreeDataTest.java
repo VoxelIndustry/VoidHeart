@@ -242,7 +242,9 @@ class ResearchTreeDataTest
         var step = id;
         while (step != null)
         {
-            chain.add(step);
+            // Where a hider's chain and the research's own meet, what they share is paid for once
+            if (!chain.contains(step))
+                chain.add(step);
             var research = TREE.get(step);
             // What hides a research has to be paid for before it, as surely as what it hangs from
             for (var hider : research.hiddenUntil())
