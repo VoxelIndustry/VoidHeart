@@ -10,6 +10,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
@@ -28,6 +34,7 @@ import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
@@ -74,6 +81,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
             rapier(context, server);
             scythe(context, server);
             spear(context, server);
+            spearFarOut(context, server);
         }
         finally
         {
@@ -504,6 +512,73 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.getInput().pressKey(InputConstants.KEY_ESCAPE);
         context.waitTicks(3);
         server.runCommand("kill @e[type=!player]");
+    }
+
+    /**
+     * Far out in the world, where a float can no longer tell one block from the next, the hole must still open exactly where the spear struck, on a
+     * block or in a mob, and keep its middle through a save mid-hole.
+     */
+    private static void spearFarOut(ClientGameTestContext context, TestServerContext server)
+    {
+        double far = 25_000_000.5;
+        server.runCommand("kill @e[type=!player]");
+        // Written out plainly: a double this large prints in exponent form, which a command can't read
+        server.runCommand(String.format(Locale.ROOT, "tp @a %.1f %d %.1f 0 0", far, FLAT_FEET, far));
+        expect(server.computeOnServer(minecraft -> Math.abs(player(minecraft).getX() - far) < 1), "Expected the player far out, at "
+                + server.computeOnServer(minecraft -> player(minecraft).position()));
+        // Loading that far is work off the game thread, so wait for it rather than a fixed time
+        waitFor(context, server, 400, "Expected the far chunks loaded and ticking", minecraft ->
+                minecraft.overworld().isPositionEntityTicking(BlockPos.containing(far + 3, FLAT_FEET, far + 3))
+                && minecraft.overworld().isPositionEntityTicking(BlockPos.containing(far - 3, FLAT_FEET, far + 4)));
+
+        // Dropped straight onto the floor, its hole hangs the standoff above the very point it struck
+        var dropped = server.computeOnServer(minecraft -> throwSpear(minecraft, new Vec3(far + 3, FLAT_FEET + 3, far + 3), new Vec3(0, -1, 0)));
+        waitFor(context, server, 40, "Expected the far spear to open on the floor", minecraft -> spearById(minecraft, dropped).hasOpened());
+        server.runOnServer(minecraft ->
+        {
+            var spear = spearById(minecraft, dropped);
+            var expected = new Vec3(far + 3, FLAT_FEET + BlightBalance.HOLE_STANDOFF, far + 3);
+            expect(spear.holeCenter().distanceTo(expected) < 1.0E-3, "Expected the far hole at " + expected + ", got " + spear.holeCenter());
+
+            // Saved and loaded while open, it keeps its middle and goes on
+            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, minecraft.registryAccess());
+            spear.saveWithoutId(output);
+            var copy = new ThrownBlightSpear(VoidHeartEntities.THROWN_BLIGHT_SPEAR, minecraft.overworld());
+            copy.load(TagValueInput.create(ProblemReporter.DISCARDING, minecraft.registryAccess(), output.buildResult()));
+            expect(copy.isHoleOpen() && copy.holeCenter().distanceTo(spear.holeCenter()) < 1.0E-6,
+                    "Expected a saved hole to load where it was, " + spear.holeCenter() + " then " + copy.holeCenter());
+        });
+        server.runCommand("kill @e[type=voidheart:thrown_blight_spear]");
+
+        // Thrown into a pig, its hole opens in the pig's middle
+        var pig = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.PIG, far - 3, far + 4));
+        var pigMiddle = server.computeOnServer(minecraft -> husk(minecraft, pig).getBoundingBox().getCenter());
+        var thrown = server.computeOnServer(minecraft -> throwSpear(minecraft, new Vec3(far - 3, pigMiddle.y, far + 1), new Vec3(0, 0, 1)));
+        waitFor(context, server, 40, "Expected the far spear to strike the pig", minecraft -> spearById(minecraft, thrown).hasOpened());
+        server.runOnServer(minecraft -> expect(spearById(minecraft, thrown).holeCenter().distanceTo(pigMiddle) < 1.0E-3,
+                "Expected the hole in the pig's middle, " + pigMiddle + ", got " + spearById(minecraft, thrown).holeCenter()));
+        server.runCommand("kill @e[type=!player]");
+        server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+        context.waitTicks(20);
+    }
+
+    /** A spear thrown by the player from a point, straight along a way, that gives nothing back when it comes home. */
+    private static UUID throwSpear(MinecraftServer minecraft, Vec3 from, Vec3 way)
+    {
+        var level = minecraft.overworld();
+        var spear = new ThrownBlightSpear(level, player(minecraft), new ItemStack(VoidHeartItems.VOID_BLIGHT_SPEAR));
+        spear.setPos(from);
+        spear.shoot(way.x, way.y, way.z, BlightBalance.SPEAR_THROW_SPEED, 0);
+        spear.pickup = AbstractArrow.Pickup.DISALLOWED;
+        level.addFreshEntity(spear);
+        return spear.getUUID();
+    }
+
+    private static ThrownBlightSpear spearById(MinecraftServer minecraft, UUID id)
+    {
+        if (!(minecraft.overworld().getEntity(id) instanceof ThrownBlightSpear spear))
+            throw new AssertionError("Expected the thrown spear still there");
+        return spear;
     }
 
     private static UUID rootedMob(MinecraftServer minecraft, EntityType<? extends Mob> type, double x, double z)
