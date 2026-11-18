@@ -2,9 +2,9 @@ package net.voxelindustry.voidheart.client.secondheart;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
+import net.fabricmc.fabric.api.client.renderer.v1.Renderer;
 import net.fabricmc.fabric.api.client.renderer.v1.mesh.MeshView;
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhase;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
@@ -19,7 +19,6 @@ import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.UvMapping;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.client.resources.model.geometry.ItemQuads;
@@ -33,6 +32,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -124,14 +124,33 @@ class DissolvingCollector implements SubmitNodeCollector
             submitItem(poseStack, displayContext, lightCoords, overlayCoords, outlineColor, tintLayers, quads, foilType);
             return;
         }
-        // Geometry a model emits through Fabric can be absent from the vanilla quads, so it is baked down to dissolve with them
-        var all = new ArrayList<>(quads.all());
-        mesh.forEach(quad ->
+        submitItemQuads(poseStack, lightCoords, overlayCoords, tintLayers, quads.all());
+
+        // Geometry a model emits through Fabric can be absent from the vanilla quads. It is copied, since the view only lives for this call,
+        // lit and tinted as the item's own quads are, then written straight out so its vertex colours survive
+        var copy = Renderer.get().mutableMesh();
+        mesh.outputTo(copy.emitter());
+        var types = new LinkedHashSet<RenderType>();
+        copy.forEachMutable(quad ->
         {
-            if (Minecraft.getInstance().getTextureManager().getTexture(quad.atlas().getTextureLocation()) instanceof TextureAtlas atlas)
-                all.add(quad.toBakedQuad(atlas.spriteFinder().find(quad)));
+            quad.minLightmap(lightCoords);
+            int tint = quad.tintIndex();
+            if (tint >= 0 && tint < tintLayers.length)
+                quad.multiplyColor(tintLayers[tint]);
+            types.add(quad.itemRenderType());
         });
-        submitItemQuads(poseStack, lightCoords, overlayCoords, tintLayers, all);
+        var held = copy.immutableCopy();
+        for (var type : types)
+        {
+            var dissolve = HeartDissolve.dissolveType(type, slot);
+            if (dissolve == null)
+                continue;
+            delegate.submitCustomGeometry(poseStack, dissolve, (pose, buffer) -> held.forEach(quad ->
+            {
+                if (quad.itemRenderType() == type)
+                    quad.buffer(overlayCoords, pose, buffer);
+            }));
+        }
     }
 
     @Override
