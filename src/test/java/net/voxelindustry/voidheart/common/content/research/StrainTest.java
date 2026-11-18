@@ -21,7 +21,8 @@ class StrainTest
         assertThat(Strain.tolerance(1)).isEqualTo(10);
         assertThat(Strain.tolerance(2)).isEqualTo(25);
         assertThat(Strain.tolerance(3)).isEqualTo(45);
-        assertThat(Strain.tolerance(9)).isEqualTo(45);
+        assertThat(Strain.tolerance(4)).isEqualTo(65);
+        assertThat(Strain.tolerance(9)).isEqualTo(65);
     }
 
     @Test

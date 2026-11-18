@@ -1,0 +1,84 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "voidheart:block/heart_cradle_side",
+    "top": "voidheart:block/heart_cradle_top",
+    "side": "voidheart:block/heart_cradle_side",
+    "bottom": "voidheart:block/voidstone_polished"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        6,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bottom",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "cullface": "down"
+        },
+        "up": {
+          "texture": "#top",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#side",
+          "uv": [
+            0,
+            10,
+            16,
+            16
+          ],
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            0,
+            10,
+            16,
+            16
+          ],
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#side",
+          "uv": [
+            0,
+            10,
+            16,
+            16
+          ],
+          "cullface": "east"
+        },
+        "west": {
+          "texture": "#side",
+          "uv": [
+            0,
+            10,
+            16,
+            16
+          ],
+          "cullface": "west"
+        }
+      }
+    }
+  ]
+}

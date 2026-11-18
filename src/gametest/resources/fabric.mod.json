@@ -18,6 +18,8 @@
       "net.voxelindustry.voidheart.gametest.OculusFigurineClientTest",
       "net.voxelindustry.voidheart.gametest.OculusPerformanceClientTest",
       "net.voxelindustry.voidheart.gametest.ShoulderEyeClientTest",
+      "net.voxelindustry.voidheart.gametest.SecondHeartClientTest",
+      "net.voxelindustry.voidheart.gametest.TwinVentricleClientTest",
       "net.voxelindustry.voidheart.gametest.AvengingReachClientTest",
       "net.voxelindustry.voidheart.gametest.KleinStarClientTest",
       "net.voxelindustry.voidheart.gametest.VoidBlightClientTest",

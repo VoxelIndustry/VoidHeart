@@ -1,0 +1,26 @@
+{
+  "tier": 3,
+  "constellation": "rites",
+  "icon": "voidheart:heart_cradle",
+  "insight_cost": 24,
+  "knowledge_cost": 5000,
+  "knowledge_per_second": 2,
+  "strain": 80,
+  "requires": [
+    "voidheart:void_marrow"
+  ],
+  "unlocks": [
+    "voidheart:heart_cradle",
+    "voidheart:ventricle_basin",
+    "voidheart:rubrum_veined_voidstone",
+    "voidheart:azurium_veined_voidstone",
+    "voidheart:ravenous_gold_valve"
+  ],
+  "recipes": [
+    "voidheart:altar/heart_cradle",
+    "voidheart:ventricle_basin",
+    "voidheart:rubrum_veined_voidstone",
+    "voidheart:azurium_veined_voidstone",
+    "voidheart:ravenous_gold_valve"
+  ]
+}

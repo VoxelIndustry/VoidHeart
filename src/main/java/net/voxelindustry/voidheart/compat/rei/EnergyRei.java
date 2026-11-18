@@ -14,6 +14,7 @@ import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineRei;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridRei;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneRei;
+import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleRei;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorRei;
 import net.voxelindustry.voidheart.common.energy.siphon.DeepSiphonRei;
 import net.voxelindustry.voidheart.common.energy.spike.LeySpikeRei;
@@ -59,6 +60,7 @@ public final class EnergyRei
         VoidFissureRei.registerDisplays(registry);
         ContravoidReactorRei.registerDisplays(registry);
         DeepSiphonRei.registerDisplays(registry);
+        TwinVentricleRei.registerDisplays();
         GnawerRei.registerDisplays(registry);
         PearlRei.registerDisplays(registry);
 

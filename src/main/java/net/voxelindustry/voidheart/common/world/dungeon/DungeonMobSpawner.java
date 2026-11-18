@@ -15,7 +15,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 /**
  * Creates the mobs a plan holds in one chunk, only once as that chunk generates. A cleared dungeon therefore stays cleared.
  */
-final class DungeonMobSpawner
+public final class DungeonMobSpawner
 {
     private static final int STAGES = CorruptedBarnacle.GROWN + 1;
 
@@ -97,7 +97,7 @@ final class DungeonMobSpawner
         level.addFreshEntityWithPassengers(mob);
     }
 
-    private static EntityType<? extends Mob> type(DungeonMob mob)
+    public static EntityType<? extends Mob> type(DungeonMob mob)
     {
         return switch (mob)
         {

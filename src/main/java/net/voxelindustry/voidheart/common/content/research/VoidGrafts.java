@@ -14,6 +14,8 @@ public final class VoidGrafts
 {
     public static final int VEIN   = 2;
     public static final int MARROW = 3;
+    /** The second heart, earned through the Twin Ventricle's rite rather than eaten. */
+    public static final int SECOND_HEART = 4;
 
     private static final float VEIN_HUNGER_OUTSIDE  = 1.5F;
     private static final float VEIN_HUNGER_INSIDE   = 0.5F;

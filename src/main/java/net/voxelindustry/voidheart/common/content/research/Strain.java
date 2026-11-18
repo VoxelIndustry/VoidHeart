@@ -13,7 +13,7 @@ import java.util.UUID;
  */
 public final class Strain
 {
-    private static final int[] TOLERANCE = { 0, 10, 25, 45 };
+    private static final int[] TOLERANCE = { 0, 10, 25, 45, 65 };
 
     public static final int MAX_ATTUNEMENT = TOLERANCE.length - 1;
 
