@@ -5,15 +5,12 @@
     "voidheart:voidstone_writhing_blossom",
     "voidheart:voidstone_writhing_maw",
     "voidheart:knowledge_tablet",
-    "minecraft:nautilus_shell",
-    "minecraft:heart_of_the_sea",
-    "minecraft:totem_of_undying",
-    "minecraft:wither_skeleton_skull",
-    "minecraft:dragon_breath",
+    "voidheart:memoriam_shard",
+    "voidheart:ruined_voidstone_bookshelf",
+    "voidheart:underway_tesserae",
+    "voidheart:underway_teeth_idol",
+    "voidheart:underway_brood_idol",
     "minecraft:sculk_catalyst",
-    "minecraft:recovery_compass",
-    "minecraft:ominous_bottle",
-    "minecraft:trial_key",
-    "#minecraft:decorated_pot_sherds"
+    "minecraft:recovery_compass"
   ]
 }

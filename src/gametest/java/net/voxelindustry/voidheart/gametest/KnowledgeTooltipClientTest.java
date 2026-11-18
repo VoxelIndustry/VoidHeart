@@ -47,23 +47,23 @@ public class KnowledgeTooltipClientTest implements FabricClientGameTest
                 player.level().setBlockAndUpdate(REPOSITORY, Blocks.LECTERN.defaultBlockState());
                 player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KNOWLEDGE_TABLET));
                 use(player);
-                player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.GHAST_TEAR, 16));
+                player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.WRAITH_INK, 16));
             });
             context.waitTicks(5);
 
-            expectLore(context, Items.GHAST_TEAR, "Yields 5 knowledge", "Untouched");
+            expectLore(context, VoidHeartItems.WRAITH_INK, "Yields 5 knowledge", "Untouched");
             expectLore(context, Items.DIRT);
             captureLore(context, "research-lore-untouched");
 
             feed(context, server, 1);
-            expectLore(context, Items.GHAST_TEAR, "Yields 1.5 knowledge", "Partly drained");
+            expectLore(context, VoidHeartItems.WRAITH_INK, "Yields 1.5 knowledge", "Partly drained");
             captureLore(context, "research-lore-drained");
 
             feed(context, server, 4);
-            expectLore(context, Items.GHAST_TEAR, "Yields 0.5 knowledge", "Nearly exhausted");
+            expectLore(context, VoidHeartItems.WRAITH_INK, "Yields 0.5 knowledge", "Nearly exhausted");
 
             feed(context, server, 3);
-            expectLore(context, Items.GHAST_TEAR, "Exhausted: nothing more can be learned from it");
+            expectLore(context, VoidHeartItems.WRAITH_INK, "Exhausted: nothing more can be learned from it");
             captureLore(context, "research-lore-spent");
         }
     }

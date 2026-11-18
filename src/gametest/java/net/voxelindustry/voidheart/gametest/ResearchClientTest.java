@@ -292,13 +292,13 @@ public class ResearchClientTest implements FabricClientGameTest
         var player = player(minecraft);
         knowledge(minecraft).addKnowledge(-knowledge(minecraft).getKnowledge());
 
-        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.GHAST_TEAR, 3));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.WRAITH_INK, 3));
         useOn(player, REPOSITORY);
         useOn(player, REPOSITORY);
 
         double knowledge = knowledge(minecraft).getKnowledge();
         if (knowledge < 6.5 || knowledge > 6.6)
-            throw new AssertionError("Expected 5 + 1.5 from two ghast tears, got " + knowledge);
+            throw new AssertionError("Expected 5 + 1.5 from two Wraith Inks, got " + knowledge);
         if (player.getMainHandItem().getCount() != 1)
             throw new AssertionError("Each use should feed a single item, " + player.getMainHandItem().getCount() + " left of 3");
 
