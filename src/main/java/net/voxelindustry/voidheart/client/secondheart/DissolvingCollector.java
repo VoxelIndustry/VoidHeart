@@ -24,6 +24,7 @@ import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.client.resources.model.geometry.ItemQuads;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -133,7 +134,7 @@ class DissolvingCollector implements SubmitNodeCollector
         var types = new LinkedHashSet<RenderType>();
         copy.forEachMutable(quad ->
         {
-            quad.minLightmap(lightCoords);
+            quad.minLightmap(quad.emissive() ? LightCoordsUtil.FULL_BRIGHT : lightCoords);
             int tint = quad.tintIndex();
             if (tint >= 0 && tint < tintLayers.length)
                 quad.multiplyColor(tintLayers[tint]);
