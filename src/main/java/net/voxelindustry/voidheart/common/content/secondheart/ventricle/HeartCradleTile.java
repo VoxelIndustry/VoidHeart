@@ -49,6 +49,8 @@ public class HeartCradleTile extends TileBase
     private static final int SYNC_INTERVAL  = 40;
 
     private VentricleCeremony ceremony = new VentricleCeremony();
+    /** A blessed contraption offered before the offering took a Dark Amalgam instead, given back as it was if the offering is. */
+    private ItemStack         legacyContraption = ItemStack.EMPTY;
     private Orientation       orientation = Orientation.ALL.getFirst();
     private boolean           complete;
     private int               missing = VentricleLayout.BLOCKS;
@@ -205,6 +207,7 @@ public class HeartCradleTile extends TileBase
 
     private void stopHeart(ServerLevel level, @Nullable ServerPlayer celebrant)
     {
+        legacyContraption = ItemStack.EMPTY;
         sync();
         level.playSound(null, worldPosition, VoidHeartSounds.VENTRICLE_STOP, SoundSource.BLOCKS, 2, 1);
         if (celebrant == null)
@@ -288,6 +291,7 @@ public class HeartCradleTile extends TileBase
             for (var stack : stacksOf(entry.getKey(), entry.getValue()))
                 if (!player.getInventory().add(stack))
                     Containers.dropItemStack(player.level(), player.getX(), player.getY(), player.getZ(), stack);
+        legacyContraption = ItemStack.EMPTY;
         setChanged();
         sync();
     }
@@ -300,7 +304,7 @@ public class HeartCradleTile extends TileBase
         switch (ingredient)
         {
             case KERNACIAN_CORE -> stacks.add(new ItemStack(VoidHeartItems.KERNACIAN_CORE, count));
-            case DARK_AMALGAM -> stacks.add(new ItemStack(VoidHeartItems.DARK_AMALGAM, count));
+            case DARK_AMALGAM -> stacks.add(legacyContraption.isEmpty() ? new ItemStack(VoidHeartItems.DARK_AMALGAM, count) : legacyContraption.copy());
             case MEMORIAM -> stacks.add(new ItemStack(VoidHeartItems.MEMORIAM_SHARD, count));
             case WRAITH_INK -> stacks.add(new ItemStack(VoidHeartItems.WRAITH_INK, count));
         }
@@ -360,6 +364,7 @@ public class HeartCradleTile extends TileBase
             for (var ingredient : Ingredient.values())
                 for (var stack : stacksOf(ingredient, ceremony.offered(ingredient)))
                     Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+            legacyContraption = ItemStack.EMPTY;
             if (ceremony.phase() == Phase.OFFERING && ceremony.experience() > 0 && level instanceof ServerLevel serverLevel)
                 ExperienceOrb.award(serverLevel, Vec3.atCenterOf(pos), ceremony.experience());
         }
@@ -396,6 +401,7 @@ public class HeartCradleTile extends TileBase
     {
         super.loadAdditional(tag);
         ceremony = tag.read("ceremony", VentricleCeremony.CODEC).orElseGet(VentricleCeremony::new);
+        legacyContraption = tag.read("contraption", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         complete = tag.getBooleanOr("complete", false);
         missing = tag.getIntOr("missing", VentricleLayout.BLOCKS);
         running = tag.getBooleanOr("running", false);
@@ -410,6 +416,8 @@ public class HeartCradleTile extends TileBase
     {
         super.saveAdditional(tag);
         tag.store("ceremony", VentricleCeremony.CODEC, ceremony);
+        if (!legacyContraption.isEmpty())
+            tag.store("contraption", ItemStack.CODEC, legacyContraption);
         tag.putBoolean("complete", complete);
         tag.putInt("missing", missing);
         tag.putBoolean("running", running);
