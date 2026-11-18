@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.client.render.blight;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -11,12 +13,10 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.common.content.blight.Harvest;
 import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
 import org.jspecify.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
 
 /**
@@ -43,9 +43,14 @@ public class HarvestWraithRender extends EntityRenderer<HarvestWraith, HarvestWr
         float                                     sink;
     }
 
-    private final WeakHashMap<HarvestWraith, LivingEntity> standIns = new WeakHashMap<>();
-    /** The level the stand-ins were made in. They hold it, so they are all let go once the client is in another one. */
-    private WeakReference<Level> standInLevel = new WeakReference<>(null);
+    /** Each stand-in holds the level it was made in, so they are all let go when the client changes level or leaves, see {@link #register()}. */
+    private static final WeakHashMap<HarvestWraith, LivingEntity> STAND_INS = new WeakHashMap<>();
+
+    public static void register()
+    {
+        ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> STAND_INS.clear());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> STAND_INS.clear());
+    }
 
     public HarvestWraithRender(EntityRendererProvider.Context context)
     {
@@ -91,12 +96,7 @@ public class HarvestWraithRender extends EntityRenderer<HarvestWraith, HarvestWr
 
     private @Nullable LivingEntity standIn(HarvestWraith wraith)
     {
-        if (standInLevel.get() != wraith.level())
-        {
-            standIns.clear();
-            standInLevel = new WeakReference<>(wraith.level());
-        }
-        var existing = standIns.get(wraith);
+        var existing = STAND_INS.get(wraith);
         if (existing != null)
             return existing;
         var type = wraith.source().orElse(null);
@@ -104,7 +104,7 @@ public class HarvestWraithRender extends EntityRenderer<HarvestWraith, HarvestWr
             return null;
         // Its render state reads an id, which only joining a world would give it
         created.setId(-wraith.getId() - 1);
-        standIns.put(wraith, created);
+        STAND_INS.put(wraith, created);
         return created;
     }
 
