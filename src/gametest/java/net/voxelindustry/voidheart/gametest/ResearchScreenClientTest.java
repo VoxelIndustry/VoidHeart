@@ -162,10 +162,10 @@ public class ResearchScreenClientTest implements FabricClientGameTest
                 data.toggleActive(FAR_SIGHT);
                 data.getProgress().put(FAR_SIGHT, 80D);
 
-                for (var item : java.util.List.of("minecraft:ender_pearl", "minecraft:echo_shard", "minecraft:ghast_tear", "minecraft:amethyst_shard", "minecraft:nautilus_shell"))
+                for (var item : java.util.List.of("minecraft:ender_pearl", "minecraft:echo_shard", "voidheart:wraith_ink", "minecraft:amethyst_shard", "voidheart:memoriam_shard"))
                 {
                     var identifier = Identifier.parse(item);
-                    int count = item.contains("pearl") ? 9 : item.contains("echo") ? 6 : item.contains("ghast") ? 2 : 1;
+                    int count = item.contains("pearl") ? 9 : item.contains("echo") ? 6 : item.contains("wraith") ? 2 : 1;
                     for (int fed = 0; fed < count; fed++)
                         data.feed(identifier, 1, 1000);
                 }

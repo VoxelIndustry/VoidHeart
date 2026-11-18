@@ -2,11 +2,11 @@
   "replace": false,
   "values": [
     "voidheart:voidstone",
+    "voidheart:ender_shard",
+    "voidheart:obsidian_shard",
+    "voidheart:underway_papers",
+    "voidheart:underway_wall_scrawl",
     "minecraft:ender_pearl",
-    "minecraft:amethyst_shard",
-    "minecraft:phantom_membrane",
-    "minecraft:glow_ink_sac",
-    "minecraft:spider_eye",
-    "minecraft:chorus_fruit"
+    "minecraft:amethyst_shard"
   ]
 }
