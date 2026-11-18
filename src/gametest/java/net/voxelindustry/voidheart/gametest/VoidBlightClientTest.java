@@ -478,6 +478,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.takeScreenshot("void-blight-spear-returning");
         waitFor(context, server, BlightBalance.HOLE_TICKS + 80, "Expected the spear back with its thrower once the hole closed",
                 minecraft -> spears(minecraft).isEmpty() && player(minecraft).getInventory().contains(stack -> stack.is(VoidHeartItems.VOID_BLIGHT_SPEAR)));
+        expect(server.computeOnServer(minecraft -> player(minecraft).position().distanceTo(playerFrom) < 0.2), "Expected the player never drawn in, to the hole's end");
         context.getInput().pressKey(InputConstants.KEY_F1);
         server.runOnServer(minecraft -> expect(husk(minecraft, near).getHealth() <= 60 - 2 * BlightBalance.HOLE_CRUSH_DAMAGE,
                 "Expected the held husk crushed more than once, at " + husk(minecraft, near).getHealth()));

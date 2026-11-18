@@ -35,6 +35,7 @@ import org.joml.Vector3fc;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -245,12 +246,19 @@ public class ThrownBlightSpear extends AbstractArrow
         setDeltaMovement(toward.normalize().scale(Math.min(toward.length(), BlightBalance.SPEAR_RETURN_SPEED)));
     }
 
-    /** Only the nearest mob in a step is struck, as a trident's, so two in its path don't both take the throw's damage. */
+    /**
+     * Only the nearest mob in a step is struck, so two in its path don't both take the throw's damage. Picked from the arrow's own lookup, which won't
+     * strike through a wall the way the single one can.
+     */
     @Override
     protected Collection<EntityHitResult> findHitEntities(Vec3 from, Vec3 to)
     {
-        var hit = findHitEntity(from, to);
-        return hit == null ? List.of() : List.of(hit);
+        if (hasOpened())
+            return List.of();
+        return super.findHitEntities(from, to).stream()
+                .min(Comparator.comparingDouble(hit -> from.distanceToSqr(hit.getEntity().position())))
+                .<Collection<EntityHitResult>>map(List::of)
+                .orElse(List.of());
     }
 
     @Override
