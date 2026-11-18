@@ -247,8 +247,8 @@ public class ThrownBlightSpear extends AbstractArrow
     }
 
     /**
-     * Only the nearest mob in a step is struck, so two in its path don't both take the throw's damage. Picked from the arrow's own lookup, which won't
-     * strike through a wall the way the single one can.
+     * Only the first mob its flight runs into in a step is struck, so two in its path don't both take the throw's damage. Picked from the arrow's own
+     * lookup, which won't strike through a wall the way the single one can, by where each box meets the flight.
      */
     @Override
     protected Collection<EntityHitResult> findHitEntities(Vec3 from, Vec3 to)
@@ -256,7 +256,7 @@ public class ThrownBlightSpear extends AbstractArrow
         if (hasOpened())
             return List.of();
         return super.findHitEntities(from, to).stream()
-                .min(Comparator.comparingDouble(hit -> from.distanceToSqr(hit.getEntity().position())))
+                .min(Comparator.comparingDouble(hit -> from.distanceToSqr(hit.getLocation())))
                 .<Collection<EntityHitResult>>map(List::of)
                 .orElse(List.of());
     }
