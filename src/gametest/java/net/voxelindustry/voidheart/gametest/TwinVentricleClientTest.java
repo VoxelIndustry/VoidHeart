@@ -53,7 +53,13 @@ public class TwinVentricleClientTest implements FabricClientGameTest
             server.runCommand("execute as @a run voidheart research grant voidheart:second_heart");
             server.runOnServer(minecraft -> Knowledge.attune(minecraft, player(minecraft).getUUID(), 3));
 
-            var saved = new ClientSettings(CameraType.FIRST_PERSON, context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()));
+            var saved = new ClientSettings(context.computeOnClient(minecraft -> minecraft.options.getCameraType()), context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()));
+            // Its scenes toggle the HUD with F1, so they start from it shown
+            context.runOnClient(minecraft ->
+            {
+                if (minecraft.gui.hud.isHidden())
+                    minecraft.gui.hud.toggle();
+            });
             try
             {
                 brokenCradleGivesBack(context, server);
@@ -137,18 +143,22 @@ public class TwinVentricleClientTest implements FabricClientGameTest
 
     private static void offeringIsTaken(ClientGameTestContext context, TestServerContext server)
     {
-        // The core through a real right click on the cradle, standing on its dais, and the rest straight in
+        // The core and the Dark Amalgam through real right clicks on the cradle, standing on its dais, and the rest straight in
         server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.KERNACIAN_CORE)));
         aimCamera(server, CRADLE.getX() + 0.5, CRADLE.getY() + 1, CRADLE.getZ() - 0.6, CRADLE.getX() + 0.5, CRADLE.getY() + 0.2, CRADLE.getZ() + 0.5);
         context.waitTicks(5);
         rightClick(context);
         waitFor(context, server, 20, "Expected right clicking the cradle with the core to offer it", minecraft -> player(minecraft).getMainHandItem().isEmpty());
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.DARK_AMALGAM)));
+        context.waitTicks(5);
+        rightClick(context);
+        waitFor(context, server, 20, "Expected right clicking the cradle with a Dark Amalgam to offer it", minecraft -> player(minecraft).getMainHandItem().isEmpty());
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
             var cradle = cradle(minecraft);
             expect(cradle.ceremony().offered(VentricleCeremony.Ingredient.KERNACIAN_CORE) == 1, "Expected the core in the cradle");
-            cradle.offer(player, new ItemStack(Items.HEART_OF_THE_SEA));
+            expect(cradle.ceremony().offered(VentricleCeremony.Ingredient.DARK_AMALGAM) == 1, "Expected the Dark Amalgam in the cradle");
             cradle.offer(player, new ItemStack(VoidHeartItems.MEMORIAM_SHARD, 12));
             cradle.offer(player, new ItemStack(VoidHeartItems.WRAITH_INK, 4));
             expect(cradle.ceremony().itemsComplete(), "Expected every item of the offering in");

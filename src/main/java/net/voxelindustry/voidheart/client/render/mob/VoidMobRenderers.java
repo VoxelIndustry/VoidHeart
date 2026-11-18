@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client.render.mob;
 import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.voxelindustry.voidheart.client.render.blight.HarvestWraithRender;
 import net.voxelindustry.voidheart.client.model.mob.LesserShoggothModel;
 import net.voxelindustry.voidheart.client.model.mob.VileFleshMassModel;
 import net.voxelindustry.voidheart.client.render.UnderwayKeyRender;
@@ -75,6 +76,7 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.VOID_GHOUL, VoidGhoulRender::new);
         EntityRenderers.register(VoidHeartEntities.WRAITH, WraithRender::new);
         EntityRenderers.register(VoidHeartEntities.WRAITH_STAIN, WraithStainRender::new);
+        EntityRenderers.register(VoidHeartEntities.HARVEST_WRAITH, HarvestWraithRender::new);
         EntityRenderers.register(VoidHeartEntities.WRAITH_SCARAB, WraithScarabRender::new);
         EntityRenderers.register(VoidHeartEntities.WRAITH_BEAST, WraithBeastRender::new);
         EntityRenderers.register(VoidHeartEntities.CORRUPTED_CRAB_SMALL, crab(CorruptedCrab.Size.SMALL));

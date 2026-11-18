@@ -7,6 +7,7 @@ import net.voxelindustry.voidheart.common.content.sanctum.FleshTentacle;
 import net.voxelindustry.voidheart.common.content.sanctum.VileFleshMass;
 import net.voxelindustry.voidheart.common.content.sanctum.LesserShoggoth;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -64,6 +65,7 @@ public class VoidHeartEntities
     public static EntityType<VoidGhoul> VOID_GHOUL;
     public static EntityType<Wraith> WRAITH;
     public static EntityType<WraithStain> WRAITH_STAIN;
+    public static EntityType<HarvestWraith> HARVEST_WRAITH;
     public static EntityType<CorruptedCrab> CORRUPTED_CRAB_SMALL;
     public static EntityType<CorruptedCrab> CORRUPTED_CRAB_MEDIUM;
     public static EntityType<CorruptedCrab> CORRUPTED_CRAB_LARGE;
@@ -146,6 +148,17 @@ public class VoidHeartEntities
                 .noSave()
                 .noSummon()
                 .noLootTable());
+
+        // Sized as the mob it was raised from, once it knows which
+        HARVEST_WRAITH = register("harvest_wraith", EntityType.Builder.of(HarvestWraith::new, MobCategory.MISC)
+                .sized(0.6F, 1.8F)
+                .clientTrackingRange(10)
+                .updateInterval(1)
+                .fireImmune()
+                .noSave()
+                .noSummon()
+                .noLootTable());
+        FabricDefaultAttributeRegistry.register(HARVEST_WRAITH, HarvestWraith.createAttributes());
 
         WRAITH_SCARAB = register("wraith_scarab", EntityType.Builder.of(WraithScarab::new, MobCategory.MONSTER)
                 .sized(ScarabHops.WIDTH, ScarabHops.HEIGHT)

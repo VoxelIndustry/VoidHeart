@@ -201,7 +201,7 @@ public class BlueprintScreen extends Screen
         y += 3;
         graphics.fill(plate.x() + PAD, y, plate.x() + plate.width() - PAD, y + 1, ResearchScreen.RULE_COLOR);
         y += 5;
-        var reveals = font.split(Component.translatable("voidheart.blueprint.screen.reveals"), inner);
+        var reveals = font.split(Component.translatable("voidheart.blueprint.screen.reveals", Component.translatable(design.constellation())), inner);
         int revealsTop = plate.y() + plate.height() - PAD - reveals.size() * (font.lineHeight + 1) + 1;
         for (var line : font.split(Component.translatable(Blueprints.loreKey(design.blueprint())), inner))
         {
@@ -229,6 +229,11 @@ public class BlueprintScreen extends Screen
     public int designCount()
     {
         return designs.size();
+    }
+
+    public Identifier designAt(int index)
+    {
+        return designs.get(index).blueprint();
     }
 
     @Override

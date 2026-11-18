@@ -40,6 +40,7 @@ import net.voxelindustry.voidheart.common.recipe.AthanorRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
 import net.voxelindustry.voidheart.data.energy.EnergyDatagen;
@@ -331,10 +332,15 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
                     VoidHeartItems.VOID_PEARL, Blocks.GLOWSTONE);
 
-            // The first of the void blights, drawn from a contraption's design onto a blade the wielder already trusts
+            // The void blights, drawn from a contraption's design onto a blade the wielder already trusts, around a collapsing pearl's pull
             offerAltarRecipe("void_blight_rapier", VoidHeartItems.VOID_BLIGHT_RAPIER, Items.NETHERITE_SWORD,
                     VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
-                    VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD);
+                    VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD, PearlContent.COLLAPSING_RUBRUM_PEARL);
+
+            // A reaper's blade: the hoe is the closest thing the world has to a scythe
+            offerAltarRecipe("void_blight_scythe", VoidHeartItems.VOID_BLIGHT_SCYTHE, Items.NETHERITE_HOE,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD, PearlContent.COLLAPSING_RUBRUM_PEARL);
 
             // A membrane is what lets some things through and not others
             offerAltarRecipe("permeable_barrier_item", VoidHeartItems.PERMEABLE_BARRIER, Items.PHANTOM_MEMBRANE,

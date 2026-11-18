@@ -346,6 +346,10 @@ public class ModelsProvider extends FabricModelProvider
         generator.itemModelOutput.accept(VoidHeartItems.VOID_BLIGHT_RAPIER, ItemModelUtils.select(new DisplayContext(),
                 ItemModelUtils.composite(ItemModelUtils.plainModel(rapier), ItemModelUtils.specialModel(rapier, new BlightEdgeRender.Unbaked("rapier"))),
                 ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.plainModel(rapier))));
+        var scythe = generator.createFlatItemModel(VoidHeartItems.VOID_BLIGHT_SCYTHE, ModelTemplates.FLAT_HANDHELD_ITEM);
+        generator.itemModelOutput.accept(VoidHeartItems.VOID_BLIGHT_SCYTHE, ItemModelUtils.select(new DisplayContext(),
+                ItemModelUtils.composite(ItemModelUtils.plainModel(scythe), ItemModelUtils.specialModel(scythe, new BlightEdgeRender.Unbaked("scythe"))),
+                ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.plainModel(scythe))));
         // A staff in the hand and in the world, from the hand-written model, and its flat picture in screens
         generator.itemModelOutput.accept(VoidHeartItems.KLEIN_STAR, ItemModelUtils.select(new DisplayContext(),
                 ItemModelUtils.plainModel(itemModel("klein_star_staff")),

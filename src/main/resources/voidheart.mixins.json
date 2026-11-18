@@ -28,6 +28,7 @@
     "client.MixinAbstractClientPlayerMosaic",
     "client.MixinLivingEntityRendererMemory",
     "client.MixinLivingEntityRendererFold",
+    "client.MixinLivingEntityRendererHusk",
     "client.MixinBossHealthOverlayInsight",
     "client.MixinCameraTremor",
     "client.MixinCameraWallPassage",

@@ -6,7 +6,7 @@ package net.voxelindustry.voidheart.common.content.secondheart.ventricle;
 public final class VentricleBalance
 {
     public static final int KERNACIAN_CORES   = 1;
-    public static final int CONTRAPTIONS      = 1;
+    public static final int DARK_AMALGAMS     = 1;
     public static final int MEMORIAM_SHARDS   = 8;
     public static final int WRAITH_INKS       = 4;
     /** One full experience skull, about thirty levels. */

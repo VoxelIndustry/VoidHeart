@@ -111,7 +111,7 @@ final class SecondHeartScenes
         scene.label(110, scene.next(), above(cradle, 2.4F), EnergyScenes.rate(VentricleBalance.ENERGY_PER_TICK));
 
         scene.use("offering", 150, offer, top);
-        var offerings = new ItemStack[] { new ItemStack(VoidHeartItems.KERNACIAN_CORE), new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION),
+        var offerings = new ItemStack[] { new ItemStack(VoidHeartItems.KERNACIAN_CORE), new ItemStack(VoidHeartItems.DARK_AMALGAM),
                 new ItemStack(VoidHeartItems.MEMORIAM_SHARD, VentricleBalance.MEMORIAM_SHARDS),
                 new ItemStack(VoidHeartItems.WRAITH_INK, VentricleBalance.WRAITH_INKS) };
         for (int index = 0; index < offerings.length; index++)

@@ -19,12 +19,13 @@ public final class BlueprintPayloads
     private static final StreamCodec<ByteBuf, InteractionHand> HAND = ByteBufCodecs.VAR_INT.map(
             ordinal -> InteractionHand.values()[Math.clamp(ordinal, 0, InteractionHand.values().length - 1)], InteractionHand::ordinal);
 
-    /** One design shown on a contraption, with the icon of the research it brings. */
-    public record Design(Identifier blueprint, Identifier icon)
+    /** One design shown on a contraption, with the icon of the research it brings and the name key of the constellation that research is in. */
+    public record Design(Identifier blueprint, Identifier icon, String constellation)
     {
         public static final StreamCodec<RegistryFriendlyByteBuf, Design> STREAM_CODEC = StreamCodec.composite(
                 Identifier.STREAM_CODEC, Design::blueprint,
                 Identifier.STREAM_CODEC, Design::icon,
+                ByteBufCodecs.STRING_UTF8, Design::constellation,
                 Design::new);
     }
 
