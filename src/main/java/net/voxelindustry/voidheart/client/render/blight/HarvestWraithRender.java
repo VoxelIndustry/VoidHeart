@@ -49,7 +49,8 @@ public class HarvestWraithRender extends EntityRenderer<HarvestWraith, HarvestWr
     public static void register()
     {
         ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> STAND_INS.clear());
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> STAND_INS.clear());
+        // Disconnecting may be heard off the client thread, so the clearing waits for it, after the level is let go and no stand-in is being made
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(STAND_INS::clear));
     }
 
     public HarvestWraithRender(EntityRendererProvider.Context context)

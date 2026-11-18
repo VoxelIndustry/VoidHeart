@@ -49,7 +49,7 @@ public class HarvestWraith extends Mob
     public static final TagKey<EntityType<?>>   UNHARVESTABLE = TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "unharvestable"));
 
     private static final EntityDataAccessor<String>  DATA_SOURCE = SynchedEntityData.defineId(HarvestWraith.class, EntityDataSerializers.STRING);
-    private static final EntityDataAccessor<Integer> DATA_SINK   = SynchedEntityData.defineId(HarvestWraith.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float>   DATA_SINK   = SynchedEntityData.defineId(HarvestWraith.class, EntityDataSerializers.FLOAT);
     /** The game time it was raised at, so every client counts its age alike, however late it began tracking it. */
     private static final EntityDataAccessor<Long>    DATA_RAISED = SynchedEntityData.defineId(HarvestWraith.class, EntityDataSerializers.LONG);
 
@@ -115,7 +115,7 @@ public class HarvestWraith extends Mob
     }
 
     /** The {@link #age()} its sink counts from, or {@link Harvest#NOT_SINKING}. */
-    public int sinkStart()
+    public float sinkStart()
     {
         return entityData.get(DATA_SINK);
     }

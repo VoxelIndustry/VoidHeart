@@ -20,7 +20,7 @@ public final class Harvest
     }
 
     /** The sink start of a wraith that isn't sinking. Any other value can be one, below zero too, see {@link #sinkStartAt}. */
-    public static final int NOT_SINKING = Integer.MIN_VALUE;
+    public static final float NOT_SINKING = -Float.MAX_VALUE;
 
     private Harvest()
     {
@@ -36,7 +36,7 @@ public final class Harvest
      * @param age       ticks since the wraith was raised
      * @param sinkStart the age its sink counts from, or {@link #NOT_SINKING}
      */
-    public static Phase phase(int age, int sinkStart)
+    public static Phase phase(int age, float sinkStart)
     {
         if (sinkStart != NOT_SINKING)
             return age - sinkStart >= BlightBalance.WRAITH_SINK_TICKS ? Phase.GONE : Phase.SINKING;
@@ -54,7 +54,7 @@ public final class Harvest
     }
 
     /** How far below the ground it is, from 1 a whole body under to 0 standing on it. */
-    public static float buried(float age, int sinkStart)
+    public static float buried(float age, float sinkStart)
     {
         if (sinkStart != NOT_SINKING)
             return clamp((age - sinkStart) / BlightBalance.WRAITH_SINK_TICKS);
@@ -66,11 +66,11 @@ public final class Harvest
 
     /**
      * Where to count a sink from so that it starts as deep as the wraith is now: one sent back before it is all the way up goes down from there,
-     * rather than first standing on the ground.
+     * rather than first standing on the ground. It keeps the fraction, so it neither jumps up nor ends early.
      */
-    public static int sinkStartAt(int age)
+    public static float sinkStartAt(int age)
     {
-        return age - Math.round(buried(age, NOT_SINKING) * BlightBalance.WRAITH_SINK_TICKS);
+        return age - buried(age, NOT_SINKING) * BlightBalance.WRAITH_SINK_TICKS;
     }
 
     /**

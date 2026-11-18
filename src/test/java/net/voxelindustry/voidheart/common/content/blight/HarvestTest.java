@@ -53,14 +53,17 @@ class HarvestTest
     {
         for (int age = 0; age <= RISEN + 5; age++)
         {
-            int start = Harvest.sinkStartAt(age);
+            float start = Harvest.sinkStartAt(age);
             assertThat(start).isNotEqualTo(Harvest.NOT_SINKING);
-            assertThat(Harvest.buried(age, start)).as("at age %s", age).isCloseTo(Harvest.buried(age, Harvest.NOT_SINKING), within(1F / BlightBalance.WRAITH_SINK_TICKS));
-            // One with less than a tick of sinking left above ground is simply gone
-            var expected = Math.round(Harvest.buried(age, Harvest.NOT_SINKING) * BlightBalance.WRAITH_SINK_TICKS) >= BlightBalance.WRAITH_SINK_TICKS ? Harvest.Phase.GONE : Harvest.Phase.SINKING;
+            assertThat(Harvest.buried(age, start)).as("at age %s", age).isCloseTo(Harvest.buried(age, Harvest.NOT_SINKING), within(0.001F));
+            // Only one still all the way under is gone at once
+            var expected = Harvest.buried(age, Harvest.NOT_SINKING) >= 1 ? Harvest.Phase.GONE : Harvest.Phase.SINKING;
             assertThat(Harvest.phase(age, start)).as("at age %s", age).isEqualTo(expected);
         }
         assertThat(Harvest.sinkStartAt(RISEN + 50)).isEqualTo(RISEN + 50);
+        // Barely above ground it still takes its last moment to go under
+        float barely = Harvest.sinkStartAt(BlightBalance.WRAITH_STAIN_TICKS + 1);
+        assertThat(Harvest.phase(BlightBalance.WRAITH_STAIN_TICKS + 1, barely)).isEqualTo(Harvest.Phase.SINKING);
     }
 
     @Test

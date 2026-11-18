@@ -54,6 +54,12 @@ public class TwinVentricleClientTest implements FabricClientGameTest
             server.runOnServer(minecraft -> Knowledge.attune(minecraft, player(minecraft).getUUID(), 3));
 
             var saved = new ClientSettings(context.computeOnClient(minecraft -> minecraft.options.getCameraType()), context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()));
+            // Its scenes toggle the HUD with F1, so they start from it shown
+            context.runOnClient(minecraft ->
+            {
+                if (minecraft.gui.hud.isHidden())
+                    minecraft.gui.hud.toggle();
+            });
             try
             {
                 brokenCradleGivesBack(context, server);
