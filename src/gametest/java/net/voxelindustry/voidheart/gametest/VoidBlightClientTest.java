@@ -435,6 +435,8 @@ public class VoidBlightClientTest implements FabricClientGameTest
 
         waitFor(context, server, 40, "Expected the spear to open its hole where it landed", minecraft -> spears(minecraft).getFirst().hasOpened());
         var center = server.computeOnServer(minecraft -> spears(minecraft).getFirst().holeCenter());
+        // Its middle is kept from where the spear hangs, so the spear must not drift while the hole lasts
+        var hangs = server.computeOnServer(minecraft -> spears(minecraft).getFirst().position());
         expect(Math.abs(center.z - SPEAR_Z) < 1.5 && center.y > FLAT_FEET + 0.5 && center.y < FLAT_FEET + 1.5,
                 "Expected the hole to hang just above the floor where the spear was thrown, at " + center);
         context.getInput().pressKey(InputConstants.KEY_F1);
@@ -463,6 +465,9 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.takeScreenshot("void-blight-spear-crushing");
         server.runOnServer(minecraft ->
         {
+            var spear = spears(minecraft).getFirst();
+            expect(spear.isHoleOpen() && spear.position().distanceTo(hangs) < 1.0E-6 && spear.holeCenter().distanceTo(center) < 1.0E-6,
+                    "Expected the spear and its hole to stay where they opened, at " + spear.position() + " and " + spear.holeCenter());
             double nearNow = husk(minecraft, near).position().distanceTo(center);
             double farNow = husk(minecraft, far).position().distanceTo(center);
             expect(nearNow < nearFrom.distanceTo(center) - 0.5, "Expected the near husk drawn in, " + nearFrom.distanceTo(center) + " then " + nearNow);
