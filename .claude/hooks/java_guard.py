@@ -17,6 +17,10 @@ KNOWN_BUGS = [
     (re.compile(r"addBox\([^()]*,\s*0F?(,\s*[\d.]+F?){0,2}\)"),
      "flat model box drawing all its faces. Entity cutout culls nothing since 26.3, so both faces of a flat box show "
      "in one plane and fight. Pass the one face to keep, such as ModelBoxes.FRONT. MobModelGeometryTest checks this."),
+    (re.compile(r"addOrUpdateTransientModifier\("),
+     "AttributeInstance.addOrUpdateTransientModifier keeps the old modifier counted under its old operation when the "
+     "operation changes, so the attribute stays wrong though getModifiers() looks right. If one id ever changes "
+     "operation, removeModifier(id) first, as ArmorWear.set does."),
 ]
 
 

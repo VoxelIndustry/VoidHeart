@@ -49,6 +49,7 @@
       "net.voxelindustry.voidheart.gametest.ElixirClientTest",
       "net.voxelindustry.voidheart.gametest.ShieldingApparatusClientTest",
       "net.voxelindustry.voidheart.gametest.VoidArmorClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidArmorBodyClientTest",
       "net.voxelindustry.voidheart.gametest.VoidArmorWearClientTest",
       "net.voxelindustry.voidheart.gametest.InsightClientTest",
       "net.voxelindustry.voidheart.gametest.SaltClientTest",

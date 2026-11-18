@@ -2156,5 +2156,6 @@
   "voidheart.void_armor.already_worn": "You are already in a frame",
   "voidheart.void_armor.fitted_to_another": "This frame is fitted to another body",
   "voidheart.void_armor.no_room": "Not enough room to stand up in the frame",
+  "voidheart.void_armor.no_bed": "You can't lie down in the frame",
   "voidheart.void_armor_screen.whisper.cell": "A rubrum cell here charges the frame away from any pylon"
 }

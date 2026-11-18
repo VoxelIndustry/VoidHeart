@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.armor;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import net.fabricmc.fabric.api.entity.event.v1.EntitySleepEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -11,6 +12,7 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
@@ -18,9 +20,11 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -35,14 +39,20 @@ import org.jspecify.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Putting the Void Armor on and taking it off. A worn frame lives on its wearer, who keeps moving and fighting as themselves: the frame only changes their
- * size, speed, reach, jump and hit through attribute modifiers, put back every tick so they survive a relog. Holding sneak steps out, onto an empty base if
- * the wearer stands on one, otherwise leaving the frame parked where they stood. On a real death the frame goes back to the last base it docked on.
+ * Putting the Void Armor on, wearing it and taking it off. A worn frame lives on its wearer, who keeps moving and fighting as themselves: the frame only
+ * changes their size, speed, reach, jump and hit through attribute modifiers, put back every tick so they survive a relog. Holding sneak steps out, onto an
+ * empty base if the wearer stands on one, otherwise leaving the frame parked where they stood. On a real death the frame goes back to the last base it
+ * docked on.
+ * <p>
+ * Worn, the frame spends its charge every tick and on each step, powered jump, powered hit and fall it takes, sheds its modules as it runs low
+ * ({@link LoadShedding}) and goes limp when empty. What it spends is counted here and written back to the frame now and then, so clients aren't sent the
+ * whole frame every tick.
  */
 public final class ArmorWear
 {
@@ -50,21 +60,40 @@ public final class ArmorWear
             Identifier.fromNamespaceAndPath(MODID, "void_armor"),
             builder -> builder.persistent(WornArmor.CODEC).copyOnDeath().syncWith(WornArmor.STREAM_CODEC, AttachmentSyncPredicate.all()));
 
-    private static final Identifier SCALE_ID       = id("scale");
-    private static final Identifier SPEED_ID       = id("speed");
-    private static final Identifier JUMP_ID        = id("jump");
+    private static final Identifier SCALE_ID        = id("scale");
+    private static final Identifier SPEED_ID        = id("speed");
+    private static final Identifier JUMP_ID         = id("jump");
     private static final Identifier ENTITY_REACH_ID = id("entity_reach");
-    private static final Identifier BLOCK_REACH_ID = id("block_reach");
-    private static final Identifier HIT_ID         = id("hit");
-    private static final Identifier STEP_ID        = id("step");
-    private static final Identifier FALL_ID        = id("fall");
+    private static final Identifier BLOCK_REACH_ID  = id("block_reach");
+    private static final Identifier HIT_ID          = id("hit");
+    private static final Identifier STEP_ID         = id("step");
+    private static final Identifier FALL_ID         = id("fall");
+
+    private static final List<Identifier> MODIFIERS = List.of(SCALE_ID, SPEED_ID, JUMP_ID, ENTITY_REACH_ID, BLOCK_REACH_ID, HIT_ID, STEP_ID, FALL_ID);
 
     private static final List<Holder<Attribute>> TOUCHED = List.of(Attributes.SCALE, Attributes.MOVEMENT_SPEED, Attributes.JUMP_STRENGTH,
             Attributes.ENTITY_INTERACTION_RANGE, Attributes.BLOCK_INTERACTION_RANGE, Attributes.ATTACK_DAMAGE, Attributes.STEP_HEIGHT,
             Attributes.SAFE_FALL_DISTANCE);
 
-    /** How long each wearer has held sneak, in ticks. */
-    private static final Map<UUID, Integer> SNEAK = new HashMap<>();
+    /** A step longer than this in one move is a correction or a teleport, not walking. */
+    private static final double MOST_STEP = 2;
+
+    /**
+     * What the server keeps about a wearer between ticks and doesn't save.
+     */
+    private static final class Wearer
+    {
+        /** How long sneak has been held, in ticks. */
+        int    sneak;
+        /** Charge spent since it was last written back to the frame. */
+        long   drawn;
+        /** Walking drain not yet a whole unit. */
+        double walking;
+        long   writtenAt;
+        LoadShedding.@Nullable Stage stage;
+    }
+
+    private static final Map<UUID, Wearer> WEARERS = new HashMap<>();
 
     private ArmorWear()
     {
@@ -83,13 +112,26 @@ public final class ArmorWear
                 tick(player);
         });
         ServerLivingEntityEvents.AFTER_DEATH.register(ArmorWear::onDeath);
-        ServerPlayerEvents.LEAVE.register(player -> SNEAK.remove(player.getUUID()));
+        ServerPlayerEvents.LEAVE.register(player ->
+        {
+            writeBack(player);
+            WEARERS.remove(player.getUUID());
+        });
+        EntitySleepEvents.ALLOW_SLEEPING.register((player, pos) ->
+                wearing(player) ? new Player.BedSleepingProblem(Component.translatable(MODID + ".void_armor.no_bed")) : null);
 
         UseItemCallback.EVENT.register((player, level, hand) -> moving(player) ? InteractionResult.FAIL : InteractionResult.PASS);
         UseBlockCallback.EVENT.register((player, level, hand, hit) -> moving(player) ? InteractionResult.FAIL : InteractionResult.PASS);
         UseEntityCallback.EVENT.register((player, level, hand, entity, hit) -> moving(player) ? InteractionResult.FAIL : InteractionResult.PASS);
         AttackBlockCallback.EVENT.register((player, level, hand, pos, direction) -> moving(player) ? InteractionResult.FAIL : InteractionResult.PASS);
-        AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> moving(player) ? InteractionResult.FAIL : InteractionResult.PASS);
+        AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) ->
+        {
+            if (moving(player))
+                return InteractionResult.FAIL;
+            if (player instanceof ServerPlayer serverPlayer && load(player).exoskeleton())
+                draw(serverPlayer, ArmorBalance.POWERED_HIT_DRAIN);
+            return InteractionResult.PASS;
+        });
     }
 
     /**
@@ -113,6 +155,120 @@ public final class ArmorWear
     {
         var worn = worn(player);
         return worn != null && worn.isMoving();
+    }
+
+    // Charge
+
+    /**
+     * What the worn frame has left. Clients hear of it now and then, and straight away when the frame cuts a module or goes limp.
+     */
+    public static long charge(Player player)
+    {
+        var worn = worn(player);
+        if (worn == null)
+            return 0;
+        var wearer = player instanceof ServerPlayer ? WEARERS.get(player.getUUID()) : null;
+        return Math.max(0, worn.charge() - (wearer == null ? 0 : wearer.drawn));
+    }
+
+    public static LoadShedding.Stage stage(Player player)
+    {
+        var worn = worn(player);
+        if (worn == null)
+            return LoadShedding.Stage.FULL;
+        return LoadShedding.stage(charge(player), VoidArmorItem.stats(worn.frame()).capacity());
+    }
+
+    /**
+     * What the worn frame runs right now, after its wearer's switches and what it has cut.
+     */
+    public static ArmorLoad load(Player player)
+    {
+        var worn = worn(player);
+        if (worn == null)
+            return ArmorLoad.NONE;
+        var stats = VoidArmorItem.stats(worn.frame());
+        return ArmorLoad.of(stats, worn.on(), LoadShedding.stage(charge(player), stats.capacity()));
+    }
+
+    public static boolean limp(Player player)
+    {
+        return wearing(player) && load(player).limp();
+    }
+
+    /**
+     * Takes up to the amount from the worn frame.
+     *
+     * @return what it had to give
+     */
+    public static long draw(ServerPlayer player, long amount)
+    {
+        var worn = worn(player);
+        if (worn == null || amount <= 0)
+            return 0;
+        var wearer = wearer(player);
+        long taken = Math.min(amount, Math.max(0, worn.charge() - wearer.drawn));
+        wearer.drawn += taken;
+        return taken;
+    }
+
+    public static void setCharge(ServerPlayer player, long charge)
+    {
+        var worn = worn(player);
+        if (worn == null)
+            return;
+        var wearer = wearer(player);
+        wearer.drawn = 0;
+        wearer.walking = 0;
+        long capacity = VoidArmorItem.stats(worn.frame()).capacity();
+        long clamped = Math.clamp(charge, 0, capacity);
+        player.setAttached(WORN, worn.withCharge(clamped));
+        wearer.stage = LoadShedding.stage(clamped, capacity);
+        wearer.writtenAt = player.level().getGameTime();
+    }
+
+    /**
+     * Switches one of the frame's sights on or off. Cut sights stay dark whatever their switch says.
+     *
+     * @return false when the frame has no such sight working
+     */
+    public static boolean toggle(ServerPlayer player, ArmorModule module)
+    {
+        var worn = worn(player);
+        if (worn == null || worn.isMoving())
+            return false;
+        var stats = VoidArmorItem.stats(worn.frame());
+        boolean fitted = switch (module)
+        {
+            case NIGHT_VISION -> stats.nightVision();
+            case SPECTRAL_LENS -> stats.spectralLens();
+            default -> false;
+        };
+        if (!fitted)
+            return false;
+        writeBack(player);
+        player.setAttached(WORN, worn(player).toggled(module));
+        return true;
+    }
+
+    private static Wearer wearer(ServerPlayer player)
+    {
+        return WEARERS.computeIfAbsent(player.getUUID(), uuid -> new Wearer());
+    }
+
+    /**
+     * Writes what the frame spent back onto it, which also tells clients.
+     */
+    private static void writeBack(ServerPlayer player)
+    {
+        var wearer = WEARERS.get(player.getUUID());
+        var worn = worn(player);
+        if (wearer == null || worn == null)
+            return;
+        if (wearer.drawn != 0)
+            player.setAttached(WORN, worn.withCharge(worn.charge() - wearer.drawn));
+        wearer.drawn = 0;
+        wearer.writtenAt = player.level().getGameTime();
     }
 
     // Stepping in
@@ -149,10 +305,11 @@ public final class ArmorWear
         var fitted = frame.copyWithCount(1);
         if (!fitted.has(VoidArmorContent.ARMOR_OWNER))
             fitted.set(VoidArmorContent.ARMOR_OWNER, player.getUUID());
-        player.teleportTo(player.level(), feet.x, feet.y, feet.z, java.util.Set.of(), player.getYRot(), player.getXRot(), true);
+        player.stopRiding();
+        player.teleportTo(player.level(), feet.x, feet.y, feet.z, Set.of(), player.getYRot(), player.getXRot(), true);
         player.setDeltaMovement(Vec3.ZERO);
         player.setAttached(WORN, new WornArmor(fitted, WornArmor.Phase.STEPPING_IN, player.level().getGameTime()));
-        SNEAK.remove(player.getUUID());
+        WEARERS.remove(player.getUUID());
         applyModifiers(player, player.getAttached(WORN));
         player.level().playSound(null, feet.x, feet.y, feet.z, SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.PLAYERS, 1, 0.7F);
     }
@@ -186,13 +343,14 @@ public final class ArmorWear
             }
             case WORN ->
             {
-                int held = player.isShiftKeyDown() ? SNEAK.merge(player.getUUID(), 1, Integer::sum) : 0;
-                if (held == 0)
-                    SNEAK.remove(player.getUUID());
-                if (held >= ArmorBalance.STEP_OUT_HOLD_TICKS)
+                spend(player);
+                var wearer = wearer(player);
+                wearer.sneak = player.isShiftKeyDown() ? wearer.sneak + 1 : 0;
+                if (wearer.sneak >= ArmorBalance.STEP_OUT_HOLD_TICKS)
                 {
-                    SNEAK.remove(player.getUUID());
-                    player.setAttached(WORN, worn.in(WornArmor.Phase.STEPPING_OUT, time));
+                    wearer.sneak = 0;
+                    writeBack(player);
+                    player.setAttached(WORN, worn(player).in(WornArmor.Phase.STEPPING_OUT, time));
                     player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ARMOR_EQUIP_IRON.value(), SoundSource.PLAYERS, 1, 0.6F);
                 }
             }
@@ -209,15 +367,49 @@ public final class ArmorWear
     }
 
     /**
+     * Takes the tick's steady drain and its walking, then writes the charge back if the frame cut a module or it's been a while.
+     */
+    private static void spend(ServerPlayer player)
+    {
+        var wearer = wearer(player);
+        var load = load(player);
+        draw(player, ArmorDrain.perTick(load));
+        if (load.limp())
+            wearer.walking = 0;
+        long steps = (long) wearer.walking;
+        wearer.walking -= steps;
+        draw(player, steps);
+
+        var stage = stage(player);
+        if (stage != wearer.stage)
+        {
+            if (wearer.stage != null && stage.compareTo(wearer.stage) > 0)
+                shedSound(player, stage);
+            wearer.stage = stage;
+            writeBack(player);
+        }
+        else if (wearer.drawn != 0 && player.level().getGameTime() - wearer.writtenAt >= ArmorBalance.CHARGE_SYNC)
+            writeBack(player);
+    }
+
+    private static void shedSound(ServerPlayer player, LoadShedding.Stage stage)
+    {
+        SoundEvent sound = stage.limp() ? SoundEvents.ARMOR_EQUIP_NETHERITE.value() : SoundEvents.BEACON_DEACTIVATE;
+        float pitch = stage.limp() ? 0.4F : 0.6F + stage.ordinal() * 0.15F;
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.PLAYERS, stage == LoadShedding.Stage.LOW ? 0.4F : 0.8F, pitch);
+    }
+
+    /**
      * Lets the wearer out at once: onto the empty base they stand on, or leaving the frame parked where they stood.
      */
     public static void stepOut(ServerPlayer player)
     {
+        writeBack(player);
         var worn = worn(player);
         if (worn == null)
             return;
         player.removeAttached(WORN);
-        SNEAK.remove(player.getUUID());
+        WEARERS.remove(player.getUUID());
         applyModifiers(player, null);
 
         var level = player.level();
@@ -230,16 +422,73 @@ public final class ArmorWear
         park(level, player.position(), player.getYRot(), worn.frame());
     }
 
+    // The body in the frame
+
+    /**
+     * A wearer's step, from the server's movement check. Walking is paid by the block, so standing still costs only the frame's hum.
+     */
+    public static void onMoved(ServerPlayer player, double dx, double dz)
+    {
+        var worn = worn(player);
+        if (worn == null || worn.phase() != WornArmor.Phase.WORN || player.isPassenger())
+            return;
+        double blocks = Math.sqrt(dx * dx + dz * dz);
+        if (blocks > MOST_STEP)
+            return;
+        wearer(player).walking += ArmorDrain.walking(blocks, player.isSprinting());
+    }
+
+    public static void onJumped(ServerPlayer player)
+    {
+        var worn = worn(player);
+        if (worn != null && worn.phase() == WornArmor.Phase.WORN && load(player).exoskeleton())
+            draw(player, ArmorBalance.POWERED_JUMP_DRAIN);
+    }
+
+    /**
+     * Whether the frame feeds its wearer's walking and jumping, so they don't tire from them.
+     */
+    public static boolean paysForMoving(Player player)
+    {
+        return wearing(player) && charge(player) > 0;
+    }
+
+    /**
+     * The legs take what they can of a fall from the battery, in whole points of damage.
+     *
+     * @return the damage left for the wearer
+     */
+    public static int takeFall(LivingEntity entity, int damage)
+    {
+        if (!(entity instanceof ServerPlayer player) || damage <= 0 || !wearing(player))
+            return damage;
+        int taken = ArmorDrain.fallTaken(damage, charge(player));
+        if (taken <= 0)
+            return damage;
+        draw(player, ArmorDrain.fallCost(taken));
+        if (taken == damage)
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.NETHERITE_BLOCK_FALL, SoundSource.PLAYERS, 1, 0.6F);
+        return damage - taken;
+    }
+
+    /**
+     * Whether a wearer can't sprint: the frame is stepping, limp, or wading.
+     */
+    public static boolean holdsBackSprint(LivingEntity entity)
+    {
+        return entity instanceof Player player && wearing(player) && (moving(player) || entity.isInWater() || limp(player));
+    }
+
     // Death
 
-    private static void onDeath(LivingEntity entity, net.minecraft.world.damagesource.DamageSource source)
+    private static void onDeath(LivingEntity entity, DamageSource source)
     {
         if (!(entity instanceof ServerPlayer player))
             return;
         var worn = worn(player);
         if (worn == null)
             return;
-        SNEAK.remove(player.getUUID());
+        WEARERS.remove(player.getUUID());
         var frame = worn.frame().copy();
         frame.set(RubrumContent.VOID_CHARGE, 0L);
         if (sendHome(player.level().getServer(), frame))
@@ -305,22 +554,35 @@ public final class ArmorWear
             {
                 var instance = player.getAttribute(attribute);
                 if (instance != null)
-                    for (var id : List.of(SCALE_ID, SPEED_ID, JUMP_ID, ENTITY_REACH_ID, BLOCK_REACH_ID, HIT_ID, STEP_ID, FALL_ID))
+                    for (var id : MODIFIERS)
                         instance.removeModifier(id);
             }
             return;
         }
 
-        var stats = VoidArmorItem.stats(worn.frame());
-        boolean moving = worn.isMoving();
+        var load = load(player);
+        var total = AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
         set(player, Attributes.SCALE, SCALE_ID, ArmorBalance.SCALE - 1, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
-        set(player, Attributes.MOVEMENT_SPEED, SPEED_ID, moving ? -1 : stats.speedBonus(),
-                moving ? AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL : AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
-        set(player, Attributes.JUMP_STRENGTH, JUMP_ID, moving ? -1 : stats.exoskeleton() ? ArmorBalance.EXOSKELETON_JUMP_STRENGTH : 0,
-                moving ? AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL : AttributeModifier.Operation.ADD_VALUE);
+        if (worn.isMoving())
+        {
+            set(player, Attributes.MOVEMENT_SPEED, SPEED_ID, -1, total);
+            set(player, Attributes.JUMP_STRENGTH, JUMP_ID, -1, total);
+        }
+        else if (load.limp())
+        {
+            set(player, Attributes.MOVEMENT_SPEED, SPEED_ID, -ArmorBalance.LIMP_SLOW, total);
+            set(player, Attributes.JUMP_STRENGTH, JUMP_ID, -1, total);
+        }
+        else
+        {
+            float speed = ArmorBalance.FRAME_SPEED + (load.exoskeleton() ? ArmorBalance.EXOSKELETON_SPEED : 0);
+            set(player, Attributes.MOVEMENT_SPEED, SPEED_ID, speed, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+            set(player, Attributes.JUMP_STRENGTH, JUMP_ID, load.exoskeleton() ? ArmorBalance.EXOSKELETON_JUMP_STRENGTH : 0,
+                    AttributeModifier.Operation.ADD_VALUE);
+        }
         set(player, Attributes.ENTITY_INTERACTION_RANGE, ENTITY_REACH_ID, ArmorBalance.ENTITY_REACH, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.BLOCK_INTERACTION_RANGE, BLOCK_REACH_ID, ArmorBalance.BLOCK_REACH, AttributeModifier.Operation.ADD_VALUE);
-        set(player, Attributes.ATTACK_DAMAGE, HIT_ID, stats.hitBonus(), AttributeModifier.Operation.ADD_VALUE);
+        set(player, Attributes.ATTACK_DAMAGE, HIT_ID, load.exoskeleton() ? ArmorBalance.EXOSKELETON_HIT : 0, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.STEP_HEIGHT, STEP_ID, ArmorBalance.STEP_HEIGHT_BONUS, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.SAFE_FALL_DISTANCE, FALL_ID, ArmorBalance.SAFE_FALL_BONUS, AttributeModifier.Operation.ADD_VALUE);
     }
@@ -333,13 +595,16 @@ public final class ArmorWear
         var current = instance.getModifier(id);
         if (current != null && current.amount() == amount && current.operation() == operation)
             return;
+        // Updating a modifier in place leaves its old copy counted under its old operation, so one changing operation is taken off first
+        if (current != null && current.operation() != operation)
+            instance.removeModifier(id);
         instance.addOrUpdateTransientModifier(new AttributeModifier(id, amount, operation));
     }
 
     /**
      * Where a frame goes home to, set each time it docks.
      */
-    public static GlobalPos home(ServerLevel level, net.minecraft.core.BlockPos pos)
+    public static GlobalPos home(ServerLevel level, BlockPos pos)
     {
         return GlobalPos.of(level.dimension(), pos);
     }

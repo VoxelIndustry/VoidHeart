@@ -16,6 +16,32 @@ public final class ArmorBalance
     /** Guess: the spectral lens drains 24 a tick while on, and is on about half a fight. */
     public static final long SPECTRAL_FIGHT_DRAIN    = 12;
 
+    /** Guess: what the worn frame costs a tick standing still, before its modules. */
+    public static final long   STANDING_DRAIN         = 12;
+    public static final long   EXOSKELETON_DRAIN      = 6;
+    public static final long   SPECTRAL_DRAIN         = 24;
+    /** Guess: by the block, about 8 a tick walking and 20 sprinting at the frame's pace. */
+    public static final double WALK_DRAIN_PER_BLOCK   = 32;
+    public static final double SPRINT_DRAIN_PER_BLOCK = 60;
+    public static final long   POWERED_JUMP_DRAIN     = 300;
+    public static final long   POWERED_HIT_DRAIN      = 200;
+    /** Guess: 500 a heart of fall damage taken by the legs instead of the wearer. */
+    public static final long   FALL_DRAIN_PER_POINT   = 250;
+
+    /** Shares of the capacity below which the frame warns, then cuts its spectral lens, night vision, exoskeleton power and apparatus regen in turn. */
+    public static final double LOW               = 0.20;
+    public static final double SHED_SPECTRAL     = 0.15;
+    public static final double SHED_NIGHT_VISION = 0.10;
+    public static final double SHED_EXOSKELETON  = 0.05;
+    public static final double SHED_REGEN        = 0.02;
+
+    /** A limp frame's wearer moves at this share of their speed less, and can't jump or sprint. */
+    public static final double LIMP_SLOW = 0.65;
+    /** Added to a wearer's fall each tick in water, so the frame sinks and walks the bottom. */
+    public static final double WATER_SINK = 0.03;
+    /** Most ticks between telling clients a worn frame's charge, sooner when the frame cuts a module. */
+    public static final int    CHARGE_SYNC = 20;
+
     public static final float FRAME_SPEED       = 0.15F;
     public static final float EXOSKELETON_SPEED = 0.20F;
     public static final float ENTITY_REACH      = 1.5F;

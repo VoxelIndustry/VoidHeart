@@ -108,6 +108,8 @@ public class VoidArmorWearClientTest implements FabricClientGameTest
         expect(Math.abs(height - ArmorBalance.WEARER_HEIGHT) < 0.01 && scale == ArmorBalance.SCALE, "Expected the wearer 1.5 times as big, height " + height);
         double reach = server.computeOnServer(minecraft -> player(minecraft).entityInteractionRange());
         expect(reach == 3 + ArmorBalance.ENTITY_REACH, "Expected the wearer's reach lengthened, got " + reach);
+        double freed = server.computeOnServer(minecraft -> player(minecraft).getAttributeValue(Attributes.MOVEMENT_SPEED));
+        expect(Math.abs(freed - 0.1 * (1 + ArmorBalance.FRAME_SPEED)) < 1.0E-6, "Expected the wearer free to move once stepped in, speed " + freed);
 
         server.runCommand("tp @a 0.5 " + GROUND_Y + " -4.5 180 10");
         context.waitTicks(5);
