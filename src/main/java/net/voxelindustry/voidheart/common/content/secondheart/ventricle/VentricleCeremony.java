@@ -32,7 +32,7 @@ public final class VentricleCeremony
     public enum Ingredient
     {
         KERNACIAN_CORE(KERNACIAN_CORES),
-        CONTRAPTION(CONTRAPTIONS),
+        DARK_AMALGAM(DARK_AMALGAMS),
         MEMORIAM(MEMORIAM_SHARDS),
         WRAITH_INK(WRAITH_INKS);
 
@@ -277,8 +277,14 @@ public final class VentricleCeremony
     {
     }
 
+    /** The offering once took a blessed contraption where it now takes a Dark Amalgam, so cradles saved then read it as one. */
+    private static Ingredient ingredientNamed(String name)
+    {
+        return "CONTRAPTION".equals(name) ? Ingredient.DARK_AMALGAM : Ingredient.valueOf(name);
+    }
+
     private static final Codec<Phase>      PHASE_CODEC      = Codec.STRING.xmap(Phase::valueOf, Phase::name);
-    private static final Codec<Ingredient> INGREDIENT_CODEC = Codec.STRING.xmap(Ingredient::valueOf, Ingredient::name);
+    private static final Codec<Ingredient> INGREDIENT_CODEC = Codec.STRING.xmap(VentricleCeremony::ingredientNamed, Ingredient::name);
 
     public static final Codec<VentricleCeremony> CODEC = RecordCodecBuilder.<Saved>create(instance -> instance.group(
             PHASE_CODEC.optionalFieldOf("phase", Phase.IDLE).forGetter(Saved::phase),

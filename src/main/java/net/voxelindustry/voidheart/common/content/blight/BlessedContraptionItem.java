@@ -16,11 +16,14 @@ import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
+import net.voxelindustry.voidheart.common.content.research.Constellation;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeState;
+import net.voxelindustry.voidheart.common.content.research.Research;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -56,7 +59,12 @@ public class BlessedContraptionItem extends Item
 
         stack.set(VoidHeartDataComponents.BLUEPRINT_DRAW, shown);
         var designs = shown.stream()
-                .map(blueprint -> new BlueprintPayloads.Design(blueprint, Blueprints.researchOf(blueprint, tree).map(entry -> entry.getValue().icon()).orElse(Identifier.withDefaultNamespace("paper"))))
+                .map(blueprint ->
+                {
+                    var research = Blueprints.researchOf(blueprint, tree).map(Map.Entry::getValue);
+                    return new BlueprintPayloads.Design(blueprint, research.map(Research::icon).orElse(Identifier.withDefaultNamespace("paper")),
+                            research.map(Research::constellation).orElse(Constellation.ARTIFICES).nameKey());
+                })
                 .toList();
         ServerPlayNetworking.send(serverPlayer, new BlueprintPayloads.Offer(hand, designs));
         world.playSound(null, serverPlayer.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.6F, 0.5F);

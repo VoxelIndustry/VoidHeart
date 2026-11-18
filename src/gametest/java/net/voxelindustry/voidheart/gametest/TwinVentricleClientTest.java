@@ -148,7 +148,7 @@ public class TwinVentricleClientTest implements FabricClientGameTest
             var player = player(minecraft);
             var cradle = cradle(minecraft);
             expect(cradle.ceremony().offered(VentricleCeremony.Ingredient.KERNACIAN_CORE) == 1, "Expected the core in the cradle");
-            cradle.offer(player, new ItemStack(Items.HEART_OF_THE_SEA));
+            cradle.offer(player, new ItemStack(VoidHeartItems.DARK_AMALGAM));
             cradle.offer(player, new ItemStack(VoidHeartItems.MEMORIAM_SHARD, 12));
             cradle.offer(player, new ItemStack(VoidHeartItems.WRAITH_INK, 4));
             expect(cradle.ceremony().itemsComplete(), "Expected every item of the offering in");

@@ -23,7 +23,7 @@ public final class TwinVentricleRei
     {
         page(TwinVentricleContent.HEART_CRADLE, RESEARCH,
                 line("heart_cradle.chamber"),
-                line("heart_cradle.offering", KERNACIAN_CORES, CONTRAPTIONS, MEMORIAM_SHARDS, WRAITH_INKS, amount(EXPERIENCE)),
+                line("heart_cradle.offering", KERNACIAN_CORES, DARK_AMALGAMS, MEMORIAM_SHARDS, WRAITH_INKS, amount(EXPERIENCE)),
                 line("heart_cradle.rite", ENERGY_PER_TICK, KINDLING_TICKS / 20, BEATING_TICKS / 20 / 60, WAVES),
                 line("heart_cradle.heart", HeartRules.RECHARGE_TICKS / 20 / 60));
         page(TwinVentricleContent.VENTRICLE_BASIN, RESEARCH,

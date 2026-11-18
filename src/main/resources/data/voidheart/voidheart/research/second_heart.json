@@ -9,6 +9,7 @@
   "requires": [
     "voidheart:void_marrow"
   ],
+  "blueprint": "voidheart:second_heart",
   "unlocks": [
     "voidheart:heart_cradle",
     "voidheart:ventricle_basin",
