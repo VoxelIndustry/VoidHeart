@@ -102,7 +102,8 @@ public final class HoleLook
         float most = 0;
         for (var spear : OPEN)
         {
-            if (spear.isRemoved() || spear.level() != living.level())
+            // What the hole spares is never drawn as caught, though it stands in it
+            if (spear.isRemoved() || spear.level() != living.level() || ThrownBlightSpear.isSpared(living, spear.getOwner()))
                 continue;
             double distance = middle.distanceTo(spear.holeCenter()) - BlightBalance.HOLE_RADIUS;
             float near = (float) Mth.clamp(1 - distance / (SWALLOW_FROM - BlightBalance.HOLE_RADIUS), 0, 1);

@@ -108,6 +108,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
 
         var plate = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).plateCenter(0));
         var first = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designAt(0));
+        var previous = offerOf(context);
         click(context, plate);
         context.takeScreenshot("void-blight-contraption-picked");
         expect(server.computeOnServer(minecraft -> knowledge(minecraft).getBlueprints().isEmpty()), "Expected picking a plate alone to teach nothing");
@@ -128,15 +129,16 @@ public class VoidBlightClientTest implements FabricClientGameTest
         {
             rightClick(context);
             context.waitFor(minecraft -> minecraft.gui.screen() instanceof BlueprintScreen, 40);
-            int offered = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designCount());
-            // What the stack drew before and is still unknown stays, so it may show fewer than three while more are left
-            expect(offered >= 1 && offered <= Math.min(left, Blueprints.OFFERED), "Expected between 1 and " + Math.min(left, Blueprints.OFFERED) + " designs, got " + offered);
-            for (int i = 0; i < offered; i++)
-            {
-                int index = i;
-                var shown = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designAt(index));
+            var offer = offerOf(context);
+            // What the stack drew before and is still unknown stays, in the same order; only once none is left does it draw afresh
+            var kept = previous.subList(1, previous.size());
+            if (!kept.isEmpty())
+                expect(offer.equals(kept), "Expected the designs not picked kept, " + kept + ", got " + offer);
+            else
+                expect(offer.size() == Math.min(left, Blueprints.OFFERED), "Expected a fresh draw of " + Math.min(left, Blueprints.OFFERED) + " designs, got " + offer);
+            for (var shown : offer)
                 expect(server.computeOnServer(minecraft -> !knowledge(minecraft).knowsBlueprint(shown)), "Expected only unknown designs offered, got " + shown);
-            }
+            previous = offer;
             context.getInput().pressKey(InputConstants.KEY_1);
             context.getInput().pressKey(InputConstants.KEY_RETURN);
             context.waitTicks(5);
@@ -151,6 +153,16 @@ public class VoidBlightClientTest implements FabricClientGameTest
         expectClient(context, "Expected no choice once every design is known", minecraft -> minecraft.gui.screen() == null);
         expect(!overlay(context).isEmpty(), "Expected the spent contraption to say why");
         expect(server.computeOnServer(minecraft -> player(minecraft).getMainHandItem().getCount() == 1), "Expected the unopened contraption kept");
+    }
+
+    /** The designs the open choice shows, in order; the first is the one the scenes pick. */
+    private static List<Identifier> offerOf(ClientGameTestContext context)
+    {
+        return context.computeOnClient(minecraft ->
+        {
+            var screen = (BlueprintScreen) minecraft.gui.screen();
+            return java.util.stream.IntStream.range(0, screen.designCount()).mapToObj(screen::designAt).toList();
+        });
     }
 
     private static boolean discoverable(MinecraftServer minecraft, Identifier blueprint)
@@ -430,6 +442,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.takeScreenshot("void-blight-spear-opening");
         context.waitTicks(BlightBalance.HOLE_OPEN_TICKS + 6);
         context.takeScreenshot("void-blight-spear-hole");
+        expect(server.computeOnServer(minecraft -> player(minecraft).position().distanceTo(playerFrom) < 0.2), "Expected the player never drawn in as it opened");
 
         // Frozen and looked at from a few places, for flicker and to see it is a hole from every side
         server.runCommand("tick freeze");

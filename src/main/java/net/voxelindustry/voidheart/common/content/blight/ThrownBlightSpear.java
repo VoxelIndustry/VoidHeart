@@ -34,6 +34,7 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -51,7 +52,8 @@ public class ThrownBlightSpear extends AbstractArrow
 
     /** The game time its hole opened at, or -1 while it hasn't. */
     private static final EntityDataAccessor<Long>     DATA_HOLE_AT = SynchedEntityData.defineId(ThrownBlightSpear.class, EntityDataSerializers.LONG);
-    private static final EntityDataAccessor<Vector3fc> DATA_CENTER = SynchedEntityData.defineId(ThrownBlightSpear.class, EntityDataSerializers.VECTOR3);
+    /** From the spear to its hole's middle. The spear hangs still while the hole lasts, and an offset stays exact however far out in the world. */
+    private static final EntityDataAccessor<Vector3fc> DATA_OFFSET = SynchedEntityData.defineId(ThrownBlightSpear.class, EntityDataSerializers.VECTOR3);
     private static final EntityDataAccessor<Boolean>  DATA_RETURN  = SynchedEntityData.defineId(ThrownBlightSpear.class, EntityDataSerializers.BOOLEAN);
 
     /** Close enough to its thrower to be caught. */
@@ -74,7 +76,7 @@ public class ThrownBlightSpear extends AbstractArrow
     {
         super.defineSynchedData(builder);
         builder.define(DATA_HOLE_AT, -1L);
-        builder.define(DATA_CENTER, new Vector3f());
+        builder.define(DATA_OFFSET, new Vector3f());
         builder.define(DATA_RETURN, false);
     }
 
@@ -102,8 +104,8 @@ public class ThrownBlightSpear extends AbstractArrow
 
     public Vec3 holeCenter()
     {
-        var center = entityData.get(DATA_CENTER);
-        return new Vec3(center.x(), center.y(), center.z());
+        var offset = entityData.get(DATA_OFFSET);
+        return position().add(offset.x(), offset.y(), offset.z());
     }
 
     @Override
@@ -164,7 +166,8 @@ public class ThrownBlightSpear extends AbstractArrow
     {
         if (level().isClientSide() || hasOpened())
             return;
-        entityData.set(DATA_CENTER, new Vector3f((float) center.x, (float) center.y, (float) center.z));
+        var offset = center.subtract(position());
+        entityData.set(DATA_OFFSET, new Vector3f((float) offset.x, (float) offset.y, (float) offset.z));
         entityData.set(DATA_HOLE_AT, level().getGameTime());
         setDeltaMovement(Vec3.ZERO);
         setNoPhysics(true);
@@ -183,9 +186,10 @@ public class ThrownBlightSpear extends AbstractArrow
             if (isSpared(living, owner))
                 continue;
             var box = living.getBoundingBox();
-            if (!living.getType().builtInRegistryHolder().is(UNPULLABLE))
+            var toward = center.subtract(box.getCenter());
+            if (toward.length() <= BlightBalance.HOLE_PULL_RANGE && !living.getType().builtInRegistryHolder().is(UNPULLABLE))
             {
-                living.setDeltaMovement(SpearHole.pulled(center.subtract(box.getCenter()), living.getDeltaMovement()));
+                living.setDeltaMovement(SpearHole.pulled(toward, living.getDeltaMovement()));
                 living.needsSync = true;
                 living.resetFallDistance();
             }
@@ -200,7 +204,7 @@ public class ThrownBlightSpear extends AbstractArrow
     }
 
     /** Players, its thrower and what belongs to them are never drawn in. */
-    private static boolean isSpared(LivingEntity living, @Nullable Entity owner)
+    public static boolean isSpared(LivingEntity living, @Nullable Entity owner)
     {
         if (!living.isAlive() || living.isSpectator() || living instanceof Player || living == owner || living instanceof ArmorStand || living instanceof HarvestWraith)
             return true;
@@ -239,6 +243,14 @@ public class ThrownBlightSpear extends AbstractArrow
             return;
         }
         setDeltaMovement(toward.normalize().scale(Math.min(toward.length(), BlightBalance.SPEAR_RETURN_SPEED)));
+    }
+
+    /** Only the nearest mob in a step is struck, as a trident's, so two in its path don't both take the throw's damage. */
+    @Override
+    protected Collection<EntityHitResult> findHitEntities(Vec3 from, Vec3 to)
+    {
+        var hit = findHitEntity(from, to);
+        return hit == null ? List.of() : List.of(hit);
     }
 
     @Override
@@ -297,10 +309,10 @@ public class ThrownBlightSpear extends AbstractArrow
     {
         super.addAdditionalSaveData(output);
         output.putLong("HoleAt", entityData.get(DATA_HOLE_AT));
-        var center = entityData.get(DATA_CENTER);
-        output.putFloat("HoleX", center.x());
-        output.putFloat("HoleY", center.y());
-        output.putFloat("HoleZ", center.z());
+        var offset = entityData.get(DATA_OFFSET);
+        output.putFloat("HoleOffsetX", offset.x());
+        output.putFloat("HoleOffsetY", offset.y());
+        output.putFloat("HoleOffsetZ", offset.z());
         output.putBoolean("Returning", isReturning());
         output.putInt("Flight", flight);
     }
@@ -310,7 +322,7 @@ public class ThrownBlightSpear extends AbstractArrow
     {
         super.readAdditionalSaveData(input);
         entityData.set(DATA_HOLE_AT, input.getLongOr("HoleAt", -1L));
-        entityData.set(DATA_CENTER, new Vector3f(input.getFloatOr("HoleX", (float) getX()), input.getFloatOr("HoleY", (float) getY()), input.getFloatOr("HoleZ", (float) getZ())));
+        entityData.set(DATA_OFFSET, new Vector3f(input.getFloatOr("HoleOffsetX", 0), input.getFloatOr("HoleOffsetY", 0), input.getFloatOr("HoleOffsetZ", 0)));
         entityData.set(DATA_RETURN, input.getBooleanOr("Returning", false));
         flight = input.getIntOr("Flight", 0);
         // A hole saved long ago has closed by now, and one that was open goes on where it was
