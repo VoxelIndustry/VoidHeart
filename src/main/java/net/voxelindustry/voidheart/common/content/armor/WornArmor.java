@@ -87,6 +87,11 @@ public record WornArmor(ItemStack frame, Phase phase, long since, Set<ArmorModul
         return new WornArmor(copy, phase, since, on);
     }
 
+    public WornArmor withFrame(ItemStack next)
+    {
+        return new WornArmor(next, phase, since, on);
+    }
+
     public WornArmor toggled(ArmorModule module)
     {
         var next = on.isEmpty() ? EnumSet.noneOf(ArmorModule.class) : EnumSet.copyOf(on);

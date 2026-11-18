@@ -112,6 +112,7 @@ public final class ArmorWear
                 tick(player);
         });
         ServerLivingEntityEvents.AFTER_DEATH.register(ArmorWear::onDeath);
+        ArmorPayloads.register();
         ServerPlayerEvents.LEAVE.register(player ->
         {
             writeBack(player);
@@ -306,6 +307,7 @@ public final class ArmorWear
         if (!fitted.has(VoidArmorContent.ARMOR_OWNER))
             fitted.set(VoidArmorContent.ARMOR_OWNER, player.getUUID());
         player.stopRiding();
+        fitted = ArmorHotbar.take(player, fitted);
         player.teleportTo(player.level(), feet.x, feet.y, feet.z, Set.of(), player.getYRot(), player.getXRot(), true);
         player.setDeltaMovement(Vec3.ZERO);
         player.setAttached(WORN, new WornArmor(fitted, WornArmor.Phase.STEPPING_IN, player.level().getGameTime()));
@@ -405,6 +407,7 @@ public final class ArmorWear
     public static void stepOut(ServerPlayer player)
     {
         writeBack(player);
+        releaseHotbar(player);
         var worn = worn(player);
         if (worn == null)
             return;
@@ -479,6 +482,16 @@ public final class ArmorWear
         return entity instanceof Player player && wearing(player) && (moving(player) || entity.isInWater() || limp(player));
     }
 
+    /**
+     * Puts the racks back on the worn frame from the hotbar and gives the wearer their own back, before they step out or their inventory drops on death.
+     */
+    public static void releaseHotbar(ServerPlayer player)
+    {
+        var worn = worn(player);
+        if (worn != null && player.getAttached(ArmorHotbar.STASH) != null)
+            player.setAttached(WORN, worn.withFrame(ArmorHotbar.give(player, worn.frame())));
+    }
+
     // Death
 
     private static void onDeath(LivingEntity entity, DamageSource source)
@@ -489,7 +502,8 @@ public final class ArmorWear
         if (worn == null)
             return;
         WEARERS.remove(player.getUUID());
-        var frame = worn.frame().copy();
+        releaseHotbar(player);
+        var frame = worn(player).frame().copy();
         frame.set(RubrumContent.VOID_CHARGE, 0L);
         if (sendHome(player.level().getServer(), frame))
             player.removeAttached(WORN);

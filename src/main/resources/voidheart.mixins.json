@@ -4,6 +4,8 @@
   "package": "net.voxelindustry.voidheart.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "MixinAbstractArrowVoidArmor",
+    "MixinAbstractContainerMenuVoidArmor",
     "MixinCrafterBlockResearch",
     "MixinCraftingMenuResearch",
     "MixinEntityBarrierDisguise",
@@ -11,6 +13,7 @@
     "MixinEntityCollisionContextWallPassage",
     "MixinEntityWallPassage",
     "MixinFoodDataGrafts",
+    "MixinInventoryVoidArmor",
     "MixinLivingEntityBarrierDisguise",
     "MixinLivingEntitySecondHeart",
     "MixinLivingEntitySins",
@@ -23,8 +26,11 @@
     "MixinServerLevelWorldgenEntityId",
     "MixinServerPlayerGameModeColumns",
     "MixinServerPlayerVoidArmor",
+    "MixinServerGamePacketListenerVoidArmor",
+    "MixinSlotVoidArmor",
     "MixinStableLifecycle",
     "MixinThrownEnderpearlDungeon",
+    "MixinThrownTridentVoidArmor",
     "MixinThrownTridentSin"
   ],
   "client": [
@@ -43,6 +49,8 @@
     "client.MixinLevelExtractorWallPassage",
     "client.MixinLevelRendererOculus",
     "client.MixinMinecraftOculusControls",
+    "client.MixinMinecraftVoidArmor",
+    "client.MixinMouseHandlerVoidArmor",
     "client.MixinMultiPlayerGameModeColumns",
     "client.MixinSkyRendererCurse",
     "client.KleinDimPostChainAccessor",

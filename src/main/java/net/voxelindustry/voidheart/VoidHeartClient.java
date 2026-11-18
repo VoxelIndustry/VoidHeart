@@ -31,6 +31,7 @@ import eu.pb4.trinkets.api.client.TrinketRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallback;
 import net.voxelindustry.voidheart.client.apparatus.ApparatusWornRender;
 import net.voxelindustry.voidheart.client.apparatus.ClientApparatusTooltip;
+import net.voxelindustry.voidheart.client.armor.ArmorHud;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHud;
 import net.voxelindustry.voidheart.client.secondheart.HeartBurstRender;
 import net.voxelindustry.voidheart.client.secondheart.HeartCradleRender;
@@ -219,6 +220,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(ShieldHits::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(ShieldRuneRender::collectSubmits);
         HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shield"), ShieldHud::extract);
+        HudElementRegistry.replaceElement(VanillaHudElements.HOTBAR, ArmorHud::replacing);
         HudElementRegistry.attachElementAfter(VanillaHudElements.HEALTH_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart"), SecondHeartHud::extractIcon);
         HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart_view"), SecondHeartHud::extractView);
         ClientTickEvents.END_CLIENT_TICK.register(SecondHeartHud::tick);
