@@ -402,6 +402,9 @@ public class HeartCradleTile extends TileBase
         super.loadAdditional(tag);
         ceremony = tag.read("ceremony", VentricleCeremony.CODEC).orElseGet(VentricleCeremony::new);
         legacyContraption = tag.read("contraption", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+        // Only kept while the offering still counts it, or a stale one would be given back for a Dark Amalgam offered since
+        if (ceremony.offered(Ingredient.DARK_AMALGAM) == 0)
+            legacyContraption = ItemStack.EMPTY;
         complete = tag.getBooleanOr("complete", false);
         missing = tag.getIntOr("missing", VentricleLayout.BLOCKS);
         running = tag.getBooleanOr("running", false);

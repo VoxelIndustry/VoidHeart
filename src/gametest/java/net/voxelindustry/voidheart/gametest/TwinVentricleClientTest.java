@@ -53,7 +53,7 @@ public class TwinVentricleClientTest implements FabricClientGameTest
             server.runCommand("execute as @a run voidheart research grant voidheart:second_heart");
             server.runOnServer(minecraft -> Knowledge.attune(minecraft, player(minecraft).getUUID(), 3));
 
-            var saved = new ClientSettings(CameraType.FIRST_PERSON, context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()));
+            var saved = new ClientSettings(context.computeOnClient(minecraft -> minecraft.options.getCameraType()), context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()));
             try
             {
                 brokenCradleGivesBack(context, server);

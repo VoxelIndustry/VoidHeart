@@ -57,7 +57,13 @@ public class VoidBlightClientTest implements FabricClientGameTest
             server.runCommand("difficulty normal");
             clearArea(server, 0);
             server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            context.runOnClient(minecraft ->
+            {
+                minecraft.options.setCameraType(CameraType.FIRST_PERSON);
+                // Its scenes toggle the HUD with F1, so they start from it shown
+                if (minecraft.gui.hud.isHidden())
+                    minecraft.gui.hud.toggle();
+            });
 
             contraption(context, server);
             rapier(context, server);

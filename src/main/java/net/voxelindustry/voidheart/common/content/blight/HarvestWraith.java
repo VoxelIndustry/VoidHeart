@@ -114,7 +114,7 @@ public class HarvestWraith extends Mob
         return raised < 0 ? tickCount : (int) Math.max(0, level().getGameTime() - raised);
     }
 
-    /** The {@link #age()} it began sinking at, or -1. */
+    /** The {@link #age()} its sink counts from, or {@link Harvest#NOT_SINKING}. */
     public int sinkStart()
     {
         return entityData.get(DATA_SINK);
@@ -122,7 +122,7 @@ public class HarvestWraith extends Mob
 
     public boolean isSinking()
     {
-        return sinkStart() >= 0;
+        return sinkStart() != Harvest.NOT_SINKING;
     }
 
     public Harvest.Phase phase()
@@ -139,7 +139,7 @@ public class HarvestWraith extends Mob
     {
         if (isSinking())
             return;
-        entityData.set(DATA_SINK, age());
+        entityData.set(DATA_SINK, Harvest.sinkStartAt(age()));
         setDeltaMovement(Vec3.ZERO);
         stain(BlightBalance.WRAITH_SINK_TICKS);
         level().playSound(null, getX(), getY(), getZ(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.PLAYERS, 0.8F, 0.45F);
@@ -156,7 +156,7 @@ public class HarvestWraith extends Mob
     {
         super.defineSynchedData(builder);
         builder.define(DATA_SOURCE, "");
-        builder.define(DATA_SINK, -1);
+        builder.define(DATA_SINK, Harvest.NOT_SINKING);
         builder.define(DATA_RAISED, -1L);
     }
 
