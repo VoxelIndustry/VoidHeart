@@ -32,6 +32,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallbac
 import net.voxelindustry.voidheart.client.apparatus.ApparatusWornRender;
 import net.voxelindustry.voidheart.client.apparatus.ClientApparatusTooltip;
 import net.voxelindustry.voidheart.client.armor.ArmorHud;
+import net.voxelindustry.voidheart.client.armor.ArmorSight;
+import net.voxelindustry.voidheart.client.render.mob.DormantTreantRender;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHud;
 import net.voxelindustry.voidheart.client.secondheart.HeartBurstRender;
 import net.voxelindustry.voidheart.client.secondheart.HeartCradleRender;
@@ -176,6 +178,7 @@ public class VoidHeartClient implements ClientModInitializer
                 pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
         BlockEntityRenderers.register(VoidHeartTiles.BLESSED_CRADLE, ctx -> new FloatingItemRender<BlessedCradleTile>(ctx, BlessedCradleTile::getContents, 0.85));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.DORMANT_TREANT, DormantTreantRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.ATHANOR, AthanorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PLACED_FLASKS, PlacedFlasksRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.CRUCIBLE, ctx -> new FloatingItemRender<CrucibleTile>(ctx, CrucibleTile::getStack, 0.8));
@@ -214,6 +217,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(OilEmbers::tick);
         ClientTickEvents.END_CLIENT_TICK.register(ClarityFog::tick);
         ClientTickEvents.END_CLIENT_TICK.register(InsightMemory::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(ArmorSight::tick);
 
         ClientPlayNetworking.registerGlobalReceiver(ShieldPayloads.Hit.TYPE, (payload, context) -> ShieldHits.receive(payload));
         ClientPlayNetworking.registerGlobalReceiver(BlueprintPayloads.Offer.TYPE, (payload, context) -> BlueprintScreen.receive(payload));

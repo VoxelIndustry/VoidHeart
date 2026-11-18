@@ -2,7 +2,8 @@ package net.voxelindustry.voidheart.common.content.armor;
 
 /**
  * What wearing a frame costs. Standing in it and its running modules cost a steady amount each tick, walking and sprinting cost by the block so standing
- * still with sprint held costs nothing more, and powered jumps, powered hits and falls taken by the legs cost by the event.
+ * still with sprint held costs nothing more, and powered jumps, powered hits and falls taken by the legs cost by the event. The socketed apparatus's
+ * shield costs by the point refilled.
  */
 public final class ArmorDrain
 {
@@ -45,5 +46,19 @@ public final class ArmorDrain
     public static long fallCost(int taken)
     {
         return taken * ArmorBalance.FALL_DRAIN_PER_POINT;
+    }
+
+    /**
+     * How fast the frame refills the shield of the apparatus in its socket: faster than the apparatus alone while it has the charge to spare, and not at all
+     * once it has cut its regen or gone limp, since inside the frame the apparatus draws on nothing else.
+     */
+    public static float shieldRegen(float regenPerTick, LoadShedding.Stage stage)
+    {
+        return stage.regen() ? regenPerTick * ArmorBalance.REGEN_BOOST : 0;
+    }
+
+    public static double shieldCost(float refilled)
+    {
+        return Math.max(0, refilled) * ArmorBalance.REGEN_DRAIN_PER_POINT;
     }
 }

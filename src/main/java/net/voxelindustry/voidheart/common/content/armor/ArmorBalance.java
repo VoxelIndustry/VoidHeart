@@ -25,6 +25,10 @@ public final class ArmorBalance
     public static final double SPRINT_DRAIN_PER_BLOCK = 60;
     public static final long   POWERED_JUMP_DRAIN     = 300;
     public static final long   POWERED_HIT_DRAIN      = 200;
+    /** Guess: what each shield point the frame refills in its socketed apparatus costs. */
+    public static final double REGEN_DRAIN_PER_POINT = 40;
+    /** How much faster the frame refills its socketed apparatus than the apparatus would alone. */
+    public static final float  REGEN_BOOST           = 1.5F;
     /** Guess: 500 a heart of fall damage taken by the legs instead of the wearer. */
     public static final long   FALL_DRAIN_PER_POINT   = 250;
 
@@ -50,6 +54,8 @@ public final class ArmorBalance
     public static final float FRAME_JUMP        = 1.25F;
     public static final float EXOSKELETON_JUMP  = 2F;
     public static final float EXOSKELETON_HIT   = 3F;
+    /** Guess: knockback added to a powered hit, half of a Knockback I. */
+    public static final float EXOSKELETON_KNOCKBACK = 0.5F;
 
     /** Jump strength added by exoskeleton power, about two blocks of jump over vanilla's 0.42. */
     public static final double EXOSKELETON_JUMP_STRENGTH = 0.12;

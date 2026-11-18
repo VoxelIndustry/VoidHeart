@@ -1,10 +1,12 @@
 package net.voxelindustry.voidheart.common.content.armor;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 
@@ -31,6 +33,16 @@ public class VoidArmorItem extends Item
     public static ArmorStats stats(ItemStack frame)
     {
         return frame.getOrDefault(VoidArmorContent.ARMOR_GRIDS, ArmorGrids.EMPTY).stats();
+    }
+
+    /**
+     * A copy of the Shielding Apparatus in the frame's socket, or an empty stack.
+     */
+    public static ItemStack socketed(ItemStack frame)
+    {
+        var slots = NonNullList.withSize(ArmorBalance.FRAME_SLOTS, ItemStack.EMPTY);
+        frame.getOrDefault(VoidArmorContent.ARMOR_SLOTS, ItemContainerContents.EMPTY).copyInto(slots);
+        return slots.get(ArmorBalance.SOCKET_SLOT);
     }
 
     public static float fill(ItemStack frame)

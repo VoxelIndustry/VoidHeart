@@ -33,6 +33,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldStats;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import org.jspecify.annotations.Nullable;
 
@@ -53,6 +55,9 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  * Worn, the frame spends its charge every tick and on each step, powered jump, powered hit and fall it takes, sheds its modules as it runs low
  * ({@link LoadShedding}) and goes limp when empty. What it spends is counted here and written back to the frame now and then, so clients aren't sent the
  * whole frame every tick.
+ * <p>
+ * A Shielding Apparatus in the frame's socket gives its wearer that apparatus's shield, which the frame refills faster than the apparatus would and pays
+ * for by the point.
  */
 public final class ArmorWear
 {
@@ -66,14 +71,16 @@ public final class ArmorWear
     private static final Identifier ENTITY_REACH_ID = id("entity_reach");
     private static final Identifier BLOCK_REACH_ID  = id("block_reach");
     private static final Identifier HIT_ID          = id("hit");
+    private static final Identifier KNOCKBACK_ID    = id("knockback");
     private static final Identifier STEP_ID         = id("step");
     private static final Identifier FALL_ID         = id("fall");
 
-    private static final List<Identifier> MODIFIERS = List.of(SCALE_ID, SPEED_ID, JUMP_ID, ENTITY_REACH_ID, BLOCK_REACH_ID, HIT_ID, STEP_ID, FALL_ID);
+    private static final List<Identifier> MODIFIERS = List.of(SCALE_ID, SPEED_ID, JUMP_ID, ENTITY_REACH_ID, BLOCK_REACH_ID, HIT_ID, KNOCKBACK_ID, STEP_ID,
+            FALL_ID);
 
     private static final List<Holder<Attribute>> TOUCHED = List.of(Attributes.SCALE, Attributes.MOVEMENT_SPEED, Attributes.JUMP_STRENGTH,
-            Attributes.ENTITY_INTERACTION_RANGE, Attributes.BLOCK_INTERACTION_RANGE, Attributes.ATTACK_DAMAGE, Attributes.STEP_HEIGHT,
-            Attributes.SAFE_FALL_DISTANCE);
+            Attributes.ENTITY_INTERACTION_RANGE, Attributes.BLOCK_INTERACTION_RANGE, Attributes.ATTACK_DAMAGE, Attributes.ATTACK_KNOCKBACK,
+            Attributes.STEP_HEIGHT, Attributes.SAFE_FALL_DISTANCE);
 
     /** A step longer than this in one move is a correction or a teleport, not walking. */
     private static final double MOST_STEP = 2;
@@ -87,8 +94,8 @@ public final class ArmorWear
         int    sneak;
         /** Charge spent since it was last written back to the frame. */
         long   drawn;
-        /** Walking drain not yet a whole unit. */
-        double walking;
+        /** Walking and shield drain not yet a whole unit. */
+        double owed;
         long   writtenAt;
         LoadShedding.@Nullable Stage stage;
     }
@@ -220,7 +227,7 @@ public final class ArmorWear
             return;
         var wearer = wearer(player);
         wearer.drawn = 0;
-        wearer.walking = 0;
+        wearer.owed = 0;
         long capacity = VoidArmorItem.stats(worn.frame()).capacity();
         long clamped = Math.clamp(charge, 0, capacity);
         player.setAttached(WORN, worn.withCharge(clamped));
@@ -248,8 +255,46 @@ public final class ArmorWear
         if (!fitted)
             return false;
         writeBack(player);
-        player.setAttached(WORN, worn(player).toggled(module));
+        var toggled = worn(player).toggled(module);
+        player.setAttached(WORN, toggled);
+        var sound = toggled.on().contains(module) ? SoundEvents.SPYGLASS_USE : SoundEvents.SPYGLASS_STOP_USING;
+        float pitch = module == ArmorModule.SPECTRAL_LENS ? 0.7F : 1.1F;
+        player.level().playSound(null, player.getX(), player.getEyeY(), player.getZ(), sound, SoundSource.PLAYERS, 0.8F, pitch);
         return true;
+    }
+
+    // The apparatus socket
+
+    /**
+     * The Shielding Apparatus in the worn frame's socket, or an empty stack.
+     */
+    public static ItemStack socketed(Player player)
+    {
+        var worn = worn(player);
+        return worn == null ? ItemStack.EMPTY : VoidArmorItem.socketed(worn.frame());
+    }
+
+    /**
+     * The socketed apparatus's stats as the frame runs it: refilling faster while the frame can spare the charge, not at all once it can't.
+     */
+    public static ShieldStats shieldStats(Player player, ShieldStats stats)
+    {
+        return stats.withRegen(ArmorDrain.shieldRegen(stats.regenPerTick(), stage(player)));
+    }
+
+    public static void payForShield(ServerPlayer player, float refilled)
+    {
+        if (refilled > 0 && wearing(player))
+            wearer(player).owed += ArmorDrain.shieldCost(refilled);
+    }
+
+    /**
+     * Stepping in or out changes which apparatus holds the shield, and a new one starts empty.
+     */
+    private static void restartShield(ServerPlayer player)
+    {
+        if (player.hasAttached(ShieldingApparatus.SHIELD))
+            player.removeAttached(ShieldingApparatus.SHIELD);
     }
 
     private static Wearer wearer(ServerPlayer player)
@@ -312,6 +357,7 @@ public final class ArmorWear
         player.setDeltaMovement(Vec3.ZERO);
         player.setAttached(WORN, new WornArmor(fitted, WornArmor.Phase.STEPPING_IN, player.level().getGameTime()));
         WEARERS.remove(player.getUUID());
+        restartShield(player);
         applyModifiers(player, player.getAttached(WORN));
         player.level().playSound(null, feet.x, feet.y, feet.z, SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.PLAYERS, 1, 0.7F);
     }
@@ -377,10 +423,10 @@ public final class ArmorWear
         var load = load(player);
         draw(player, ArmorDrain.perTick(load));
         if (load.limp())
-            wearer.walking = 0;
-        long steps = (long) wearer.walking;
-        wearer.walking -= steps;
-        draw(player, steps);
+            wearer.owed = 0;
+        long owed = (long) wearer.owed;
+        wearer.owed -= owed;
+        draw(player, owed);
 
         var stage = stage(player);
         if (stage != wearer.stage)
@@ -413,6 +459,7 @@ public final class ArmorWear
             return;
         player.removeAttached(WORN);
         WEARERS.remove(player.getUUID());
+        restartShield(player);
         applyModifiers(player, null);
 
         var level = player.level();
@@ -438,7 +485,7 @@ public final class ArmorWear
         double blocks = Math.sqrt(dx * dx + dz * dz);
         if (blocks > MOST_STEP)
             return;
-        wearer(player).walking += ArmorDrain.walking(blocks, player.isSprinting());
+        wearer(player).owed += ArmorDrain.walking(blocks, player.isSprinting());
     }
 
     public static void onJumped(ServerPlayer player)
@@ -597,6 +644,8 @@ public final class ArmorWear
         set(player, Attributes.ENTITY_INTERACTION_RANGE, ENTITY_REACH_ID, ArmorBalance.ENTITY_REACH, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.BLOCK_INTERACTION_RANGE, BLOCK_REACH_ID, ArmorBalance.BLOCK_REACH, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.ATTACK_DAMAGE, HIT_ID, load.exoskeleton() ? ArmorBalance.EXOSKELETON_HIT : 0, AttributeModifier.Operation.ADD_VALUE);
+        set(player, Attributes.ATTACK_KNOCKBACK, KNOCKBACK_ID, load.exoskeleton() ? ArmorBalance.EXOSKELETON_KNOCKBACK : 0,
+                AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.STEP_HEIGHT, STEP_ID, ArmorBalance.STEP_HEIGHT_BONUS, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.SAFE_FALL_DISTANCE, FALL_ID, ArmorBalance.SAFE_FALL_BONUS, AttributeModifier.Operation.ADD_VALUE);
     }

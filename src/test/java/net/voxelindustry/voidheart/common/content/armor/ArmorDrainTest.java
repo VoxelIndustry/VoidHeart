@@ -97,4 +97,22 @@ class ArmorDrainTest
         assertThat(ArmorDrain.fallTaken(0, 100 * point)).isZero();
         assertThat(ArmorDrain.fallCost(4)).isEqualTo(4 * point);
     }
+
+    @Test
+    void framePowersTheSocketedShieldUntilItCutsRegen()
+    {
+        assertThat(ArmorDrain.shieldRegen(0.2F, Stage.FULL)).isEqualTo(0.2F * ArmorBalance.REGEN_BOOST);
+        assertThat(ArmorDrain.shieldRegen(0.2F, Stage.NO_EXOSKELETON)).isEqualTo(0.2F * ArmorBalance.REGEN_BOOST);
+        assertThat(ArmorDrain.shieldRegen(0.2F, Stage.NO_REGEN)).isZero();
+        assertThat(ArmorDrain.shieldRegen(0.2F, Stage.LIMP)).isZero();
+        assertThat(LoadShedding.stage(at(0.019), CAPACITY)).isEqualTo(Stage.NO_REGEN);
+    }
+
+    @Test
+    void shieldCostsByThePointRefilled()
+    {
+        assertThat(ArmorDrain.shieldCost(2.5F)).isEqualTo(2.5 * ArmorBalance.REGEN_DRAIN_PER_POINT);
+        assertThat(ArmorDrain.shieldCost(0)).isZero();
+        assertThat(ArmorDrain.shieldCost(-1)).isZero();
+    }
 }

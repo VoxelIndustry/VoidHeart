@@ -48,6 +48,7 @@
     "client.MixinLevelExtractorOculus",
     "client.MixinLevelExtractorWallPassage",
     "client.MixinLevelRendererOculus",
+    "client.MixinLightmapExtractorVoidArmor",
     "client.MixinMinecraftOculusControls",
     "client.MixinMinecraftVoidArmor",
     "client.MixinMouseHandlerVoidArmor",
