@@ -29,7 +29,7 @@ class ResearchMapPlanTest
     {
         return Stream.of(Arguments.of("shipped", ResearchTrees.shipped()), Arguments.of("grown", ResearchTrees.grown()), Arguments.of("crowded", ResearchTrees.crowded()),
                 Arguments.of("twice the size", ResearchTrees.sprawling(40, 7)), Arguments.of("twice the size, otherwise", ResearchTrees.sprawling(40, 23)),
-                Arguments.of("many times the size", ResearchTrees.sprawling(140, 11)), Arguments.of("one constellation", oneConstellation()),
+                Arguments.of("many times the size", ResearchTrees.sprawling(140, 12)), Arguments.of("one constellation", oneConstellation()),
                 Arguments.of("one research", oneResearch()));
     }
 

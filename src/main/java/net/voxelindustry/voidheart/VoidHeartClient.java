@@ -32,6 +32,13 @@ import net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallbac
 import net.voxelindustry.voidheart.client.apparatus.ApparatusWornRender;
 import net.voxelindustry.voidheart.client.apparatus.ClientApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHud;
+import net.voxelindustry.voidheart.client.secondheart.HeartBurstRender;
+import net.voxelindustry.voidheart.client.secondheart.HeartCradleRender;
+import net.voxelindustry.voidheart.client.secondheart.VentricleTearRender;
+import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleContent;
+import net.voxelindustry.voidheart.client.secondheart.HeartDissolve;
+import net.voxelindustry.voidheart.client.secondheart.HeartMoteParticle;
+import net.voxelindustry.voidheart.client.secondheart.SecondHeartHud;
 import net.voxelindustry.voidheart.client.render.temple.MosaicDoorHint;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
@@ -208,6 +215,14 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(ShieldHits::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(ShieldRuneRender::collectSubmits);
         HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shield"), ShieldHud::extract);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.HEALTH_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart"), SecondHeartHud::extractIcon);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart_view"), SecondHeartHud::extractView);
+        ClientTickEvents.END_CLIENT_TICK.register(SecondHeartHud::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(HeartDissolve::tickMotes);
+        ClientTickEvents.END_CLIENT_TICK.register(HeartBurstRender::tick);
+        LevelRenderEvents.COLLECT_SUBMITS.register(HeartBurstRender::collectSubmits);
+        BlockEntityRenderers.register(TwinVentricleContent.HEART_CRADLE_TILE, HeartCradleRender::new);
+        EntityRendererRegistry.register(TwinVentricleContent.VENTRICLE_TEAR, VentricleTearRender::new);
         MenuScreens.register(VoidHeartMenus.APPARATUS, ApparatusScreen::new);
         ShieldingApparatusItem.openFromSlot = holder -> ClientPlayNetworking.send(new ShieldPayloads.Open(holder));
         ClientTooltipComponentCallback.EVENT.register(data -> data instanceof ApparatusTooltip tooltip ? new ClientApparatusTooltip(tooltip) : null);
@@ -365,6 +380,10 @@ public class VoidHeartClient implements ClientModInitializer
         particles.register(SHOAL_SPECK_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
                 new ShoalSpeckParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
         particles.register(SMALL_SOUL_FLAME_PARTICLE, FlameParticle.SmallFlameProvider::new);
+        particles.register(VoidHeart.SECOND_HEART_MOTE_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                HeartMoteParticle.lifting(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+        particles.register(VoidHeart.SECOND_HEART_INFALL_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                HeartMoteParticle.infalling(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
 
         particles.register(
                 SHATTER_FORGE_EXPERIENCE_PARTICLE,

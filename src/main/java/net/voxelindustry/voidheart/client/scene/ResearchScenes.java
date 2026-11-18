@@ -38,7 +38,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 /**
  * The scenes a finished research can show. The scripts name real blocks and a real recipe: the Shatter Forge item at the altar, and gold ingots at the forge.
  * They are built on first use since blocks only exist once the game has registered them. Those of the energy system are in EnergyScenes, and those of
- * what is set down in the land in LandScenes.
+ * what is set down in the land in LandScenes, and the Twin Ventricle's in SecondHeartScenes.
  */
 public final class ResearchScenes
 {
@@ -72,6 +72,8 @@ public final class ResearchScenes
         script("ley_sense", LandScenes::stones, "ley_stone", "ley_ward", "ley_grower");
         script("portal_flexion", LandScenes::portal, "portal_core");
         script("permeable_barrier", LandScenes::barrier, "permeable_barrier_item");
+        script("second_heart", SecondHeartScenes::ventricle, "heart_cradle", "ventricle_basin", "rubrum_veined_voidstone", "azurium_veined_voidstone",
+                "ravenous_gold_valve");
     }
 
     private static final float ITEM_HEIGHT = 1.25F;

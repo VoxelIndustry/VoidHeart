@@ -122,6 +122,7 @@ public class VoidHeartCommands
         EnergyCommands.register(builder);
         SinCommands.register(builder);
         BlueprintCommands.register(builder);
+        SecondHeartCommands.register(builder);
 
         dispatcher.register(builder);
     }

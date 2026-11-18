@@ -113,6 +113,17 @@ public final class VoidHeartSounds
     public static final SoundEvent CONNECTION_RUMBLE_FAR  = register("connection.rumble_far");
     public static final SoundEvent CONNECTION_RUMBLE_NEAR = register("connection.rumble_near");
 
+    public static final SoundEvent SECOND_HEART_DISSOLVE = register("player.second_heart.dissolve");
+    public static final SoundEvent SECOND_HEART_REFORM   = register("player.second_heart.reform");
+    public static final SoundEvent SECOND_HEART_BURST    = register("player.second_heart.burst");
+    public static final SoundEvent SECOND_HEART_READY    = register("player.second_heart.ready");
+    public static final SoundEvent SECOND_HEART_PULSE    = register("player.second_heart.pulse");
+    public static final SoundEvent VENTRICLE_OFFER       = register("block.heart_cradle.offer");
+    public static final SoundEvent VENTRICLE_KINDLE      = register("block.heart_cradle.kindle");
+    public static final SoundEvent VENTRICLE_BEAT        = register("block.heart_cradle.beat");
+    public static final SoundEvent VENTRICLE_STOP        = register("block.heart_cradle.stop");
+    public static final SoundEvent VENTRICLE_TEAR        = register("entity.ventricle_tear.open");
+
     private VoidHeartSounds()
     {
     }

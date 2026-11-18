@@ -19,6 +19,8 @@ import net.voxelindustry.voidheart.client.screen.ResearchScreen;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFormer;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
+import net.voxelindustry.voidheart.common.content.secondheart.ventricle.HeartCradleTile;
+import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleContent;
 import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
@@ -50,6 +52,7 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
     private static final BlockPos SPIKE_AT   = new BlockPos(-40, FLAT_FEET, -40);
     private static final BlockPos FISSURE_AT = new BlockPos(30, FLAT_FEET, -40);
     private static final BlockPos PORTAL_AT  = new BlockPos(80, FLAT_FEET, 0);
+    private static final BlockPos HEART_AT   = new BlockPos(80, FLAT_FEET, 60);
 
     private static final Identifier GRID    = id("void_energy");
     private static final Identifier REACTOR = id("contravoid_reactor");
@@ -58,10 +61,11 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
     private static final Identifier STONES  = id("ley_sense");
     private static final Identifier PORTAL  = id("portal_flexion");
     private static final Identifier BARRIER = id("permeable_barrier");
+    private static final Identifier HEART   = id("second_heart");
 
     private static final Map<Identifier, String> NAMES = Map.of(GRID, "grid", REACTOR, "reactor", SPIKE, "spike", FISSURE, "fissure",
-            STONES, "stones", PORTAL, "portal", BARRIER, "barrier");
-    private static final List<Identifier> ORDER = List.of(GRID, REACTOR, SPIKE, FISSURE, STONES, PORTAL, BARRIER);
+            STONES, "stones", PORTAL, "portal", BARRIER, "barrier", HEART, "heart");
+    private static final List<Identifier> ORDER = List.of(GRID, REACTOR, SPIKE, FISSURE, STONES, PORTAL, BARRIER, HEART);
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -97,6 +101,10 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
                 var grid = VoidGrid.get(minecraft.overworld());
                 return grid != null && grid.layout().arcs().length == 1;
             });
+            // Its pylons arc with each other, so it is built once the grid scene's single arc has been counted
+            server.runOnServer(minecraft -> build(minecraft.overworld(), HEART_AT, scene(HEART)));
+            waitFor(context, server, 80, "The heart scene's chamber should complete its cradle", minecraft ->
+                    minecraft.overworld().getBlockEntity(HEART_AT) instanceof HeartCradleTile tile && tile.isComplete());
             waitFor(context, server, 120, "Every relay of the scenes should find what it is shown feeding",
                     minecraft -> relaysLinked(minecraft.overworld()));
             server.runOnServer(ResearchSceneScriptsClientTest::assertFieldsCover);
@@ -134,6 +142,12 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
                     captureMoment(context, "reactor-igniting", 4, 75);
                 if (research.equals(BARRIER))
                     captureMoment(context, "barrier-first-corner", 1, 34);
+                if (research.equals(HEART))
+                {
+                    captureMoment(context, "heart-offering", 4, 60);
+                    captureMoment(context, "heart-tear", 7, 50);
+                    captureMoment(context, "heart-stops", 8, 4);
+                }
                 context.getInput().pressKey(InputConstants.KEY_ESCAPE);
                 context.waitTicks(3);
             }
@@ -270,7 +284,18 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
             if (level.getBlockEntity(relay) instanceof RavenousRelayTile tile)
                 tile.linkedReceivers().stream().filter(intakes::contains).forEach(fed::add);
         }
-        return gridRelays.size() == 1 && reactorRelays.size() == 2 && fed.size() == 2;
+        if (gridRelays.size() != 1 || reactorRelays.size() != 2 || fed.size() != 2)
+            return false;
+
+        var heartRelays = blocksOf(scene(HEART), HEART_AT, place -> place.state().is(VoidHeartBlocks.RAVENOUS_RELAY));
+        var basins = new HashSet<>(blocksOf(scene(HEART), HEART_AT, place -> place.state().is(TwinVentricleContent.VENTRICLE_BASIN)));
+        var filled = new HashSet<BlockPos>();
+        for (var relay : heartRelays)
+        {
+            if (level.getBlockEntity(relay) instanceof RavenousRelayTile tile)
+                tile.linkedReceivers().stream().filter(basins::contains).forEach(filled::add);
+        }
+        return heartRelays.size() == 2 && basins.size() == 2 && filled.size() == 2;
     }
 
     /**
@@ -284,6 +309,9 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
             expect(covered(level, engine), "The grid scene's engine should stand in a pylon's field");
         expect(covered(level, REACTOR_AT.above()), "The reactor scene's core should stand in the field it lights from");
         expect(covered(level, SPIKE_AT), "The spike scene's spike should stand in a pylon's field");
+        long carried = VoidGrid.pylonsCovering(level, HEART_AT).stream().mapToLong(GridLayout.Pylon::cap).sum();
+        expect(carried >= net.voxelindustry.voidheart.common.content.secondheart.ventricle.VentricleBalance.ENERGY_PER_TICK,
+                "The heart scene's pylons should pass all the rite draws, they pass " + carried);
 
         // The fissure and the portal are not built, so their pylons are held to the same rule by hand
         for (var research : List.of(FISSURE, PORTAL))

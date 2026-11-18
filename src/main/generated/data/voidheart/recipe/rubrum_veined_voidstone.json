@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "S": "voidheart:rubrum_shard",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    " V ",
+    "VSV",
+    " V "
+  ],
+  "result": {
+    "count": 4,
+    "id": "voidheart:rubrum_veined_voidstone"
+  }
+}
