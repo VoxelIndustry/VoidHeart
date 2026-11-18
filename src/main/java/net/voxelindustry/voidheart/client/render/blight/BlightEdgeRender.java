@@ -58,20 +58,38 @@ public class BlightEdgeRender implements SpecialModelRenderer<Void>
     {
     }
 
-    private static final Map<String, List<Pixel>> BLADES = Map.of(
-            "rapier", List.of(
+    /** One blade's edge, on a sprite this many pixels across. */
+    private record Blade(int size, List<Pixel> pixels)
+    {
+    }
+
+    private static final Map<String, Blade> BLADES = Map.of(
+            "rapier", new Blade(16, List.of(
                     new Pixel(8, 8, 0), new Pixel(9, 7, 0.12F), new Pixel(10, 6, 0.25F), new Pixel(11, 5, 0.37F), new Pixel(12, 4, 0.5F),
-                    new Pixel(13, 3, 0.62F), new Pixel(14, 2, 0.75F), new Pixel(15, 1, 0.87F), new Pixel(15, 0, 1), new Pixel(14, 0, 0.95F)),
+                    new Pixel(13, 3, 0.62F), new Pixel(14, 2, 0.75F), new Pixel(15, 1, 0.87F), new Pixel(15, 0, 1), new Pixel(14, 0, 0.95F))),
             // The inner curve of the blade, from the haft to its point
-            "scythe", List.of(
+            "scythe", new Blade(16, List.of(
                     new Pixel(10, 3, 0), new Pixel(9, 3, 0.09F), new Pixel(8, 3, 0.18F), new Pixel(7, 3, 0.27F), new Pixel(6, 3, 0.36F), new Pixel(5, 3, 0.45F),
-                    new Pixel(4, 4, 0.55F), new Pixel(3, 4, 0.62F), new Pixel(2, 5, 0.72F), new Pixel(1, 6, 0.82F), new Pixel(1, 7, 0.9F), new Pixel(0, 8, 1)));
+                    new Pixel(4, 4, 0.55F), new Pixel(3, 4, 0.62F), new Pixel(2, 5, 0.72F), new Pixel(1, 6, 0.82F), new Pixel(1, 7, 0.9F), new Pixel(0, 8, 1))),
+            // Both sides of the spear's head, from where it meets the haft to its point, on its flat sprite and on the larger one held
+            "spear", new Blade(16, List.of(
+                    new Pixel(7, 4, 0), new Pixel(7, 3, 0.12F), new Pixel(8, 3, 0.25F), new Pixel(9, 2, 0.37F), new Pixel(10, 2, 0.5F),
+                    new Pixel(11, 1, 0.62F), new Pixel(12, 1, 0.75F), new Pixel(13, 0, 0.87F), new Pixel(14, 0, 0.95F), new Pixel(15, 0, 1),
+                    new Pixel(12, 7, 0), new Pixel(13, 6, 0.15F), new Pixel(13, 5, 0.3F), new Pixel(14, 4, 0.45F), new Pixel(14, 3, 0.6F),
+                    new Pixel(15, 2, 0.75F), new Pixel(15, 1, 0.87F))),
+            "spear_in_hand", new Blade(32, List.of(
+                    new Pixel(8, 4, 0), new Pixel(8, 3, 0.12F), new Pixel(7, 3, 0.25F), new Pixel(6, 2, 0.37F), new Pixel(5, 2, 0.5F),
+                    new Pixel(4, 1, 0.62F), new Pixel(3, 1, 0.75F), new Pixel(2, 0, 0.87F), new Pixel(1, 0, 0.95F), new Pixel(0, 0, 1),
+                    new Pixel(4, 8, 0), new Pixel(3, 8, 0.12F), new Pixel(3, 7, 0.25F), new Pixel(2, 6, 0.37F), new Pixel(2, 5, 0.5F),
+                    new Pixel(1, 4, 0.62F), new Pixel(1, 3, 0.75F), new Pixel(0, 2, 0.87F), new Pixel(0, 1, 0.95F))));
 
     private final List<Pixel> pixels;
+    private final float       size;
 
-    public BlightEdgeRender(List<Pixel> pixels)
+    private BlightEdgeRender(Blade blade)
     {
-        this.pixels = pixels;
+        this.pixels = blade.pixels();
+        this.size = blade.size();
     }
 
     @Override
@@ -85,8 +103,8 @@ public class BlightEdgeRender implements SpecialModelRenderer<Void>
                 float phase = seconds * WAVES_PER_S - pixel.along() * ALONG;
                 float crest = (float) Math.pow(Math.max(0, Mth.cos((phase - Mth.floor(phase)) * Mth.TWO_PI)), SHARPNESS);
                 int color = ARGB.color((int) (255 * Mth.clamp(BASE + PEAK * crest, 0, 1)), COLOR);
-                float x0 = pixel.x() / 16F, x1 = (pixel.x() + 1) / 16F;
-                float y0 = 1 - (pixel.y() + 1) / 16F, y1 = 1 - pixel.y() / 16F;
+                float x0 = pixel.x() / size, x1 = (pixel.x() + 1) / size;
+                float y0 = 1 - (pixel.y() + 1) / size, y1 = 1 - pixel.y() / size;
                 square(pose, buffer, x0, x1, y0, y1, FRONT + LIFT, color);
                 square(pose, buffer, x0, x1, y0, y1, BACK - LIFT, color);
             }
@@ -134,7 +152,7 @@ public class BlightEdgeRender implements SpecialModelRenderer<Void>
         @Override
         public SpecialModelRenderer<Void> bake(SpecialModelRenderer.BakingContext context)
         {
-            return new BlightEdgeRender(BLADES.getOrDefault(blade, List.of()));
+            return new BlightEdgeRender(BLADES.getOrDefault(blade, new Blade(16, List.of())));
         }
 
         @Override

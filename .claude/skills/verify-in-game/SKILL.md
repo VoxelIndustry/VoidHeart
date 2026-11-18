@@ -51,6 +51,7 @@ These details have spoiled scenes before:
 - **All tests share one client.** Settings like the camera type carry over from earlier tests, so a scene can look right alone and wrong in the full suite. Set what the scene needs and restore what you change.
 - **Landing ends creative flight.** Set `getAbilities().flying` and call `onUpdateAbilities()` after each `tp` into the air, or the player falls out of frame. Spectator mode avoids this when the test doesn't need clicks.
 - **`server.runCommand` runs as the server, not the player.** Use `execute as @a run ...` for commands that need a player.
+- **A mob without AI ignores pushes.** `setNoAi(true)` stops it travelling, so speed set on it never moves it. To test a pull or a knockback, keep its AI and set its `MOVEMENT_SPEED` attribute to 0 so it can't walk off, as the spear scene in `VoidBlightClientTest` does.
 - **Ticks are faster than real time.** Work off the game thread, such as reading saved chunks, generating far terrain or Jade's tooltip data, gets about a tenth of the real time per tick it would at real speed. Wait for its result with `context.waitFor(...)` rather than a fixed `waitTicks`. In mod code, time animations with `Util.getNanos()` or `Util.getMillis()`, which follow the test clock, never `System.nanoTime()`.
 
 Use real input where the bug could be in the input path. Setting state directly would have missed the travel map's ignored clicks.

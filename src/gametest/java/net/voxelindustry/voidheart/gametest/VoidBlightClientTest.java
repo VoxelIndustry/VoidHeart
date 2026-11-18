@@ -7,7 +7,15 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.client.CameraType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
@@ -20,11 +28,13 @@ import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.common.content.blight.RapierStrikes;
+import net.voxelindustry.voidheart.common.content.blight.ThrownBlightSpear;
 import net.voxelindustry.voidheart.common.content.blight.Wound;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
@@ -40,7 +50,9 @@ public class VoidBlightClientTest implements FabricClientGameTest
     private static final float  STURDY    = 200;
     private static final int    CHARGED   = 13;
     private static final int    SCYTHE_CHARGED = 24;
-    private static final List<Identifier> BLIGHTS = List.of(id("void_blight_rapier"), id("void_blight_scythe"));
+    private static final List<Identifier> BLIGHTS = List.of(id("void_blight_rapier"), id("void_blight_scythe"), id("void_blight_spear"));
+    /** Where the spear is thrown at, on the floor ahead, and where its hole then hangs. */
+    private static final double SPEAR_Z  = 8.5;
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -68,6 +80,8 @@ public class VoidBlightClientTest implements FabricClientGameTest
             contraption(context, server);
             rapier(context, server);
             scythe(context, server);
+            spear(context, server);
+            spearFarOut(context, server);
         }
         finally
         {
@@ -86,10 +100,11 @@ public class VoidBlightClientTest implements FabricClientGameTest
         // What each design's research hangs from, so a learned design brings it into sight
         server.runCommand("execute as @a run voidheart research grant voidheart:contravoid_reactor");
         server.runCommand("execute as @a run voidheart research grant voidheart:void_marrow");
-        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION, 3)));
-        context.waitTicks(5);
         int pool = server.computeOnServer(minecraft -> Blueprints.pool(Knowledge.tree(minecraft.registryAccess())).size());
-        expect(pool >= 2, "Expected at least the rapier's and the scythe's blueprints, got " + pool);
+        expect(pool >= BLIGHTS.size(), "Expected at least the blights' blueprints, got " + pool);
+        // One contraption for each design, the way a player would collect them
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION, pool)));
+        context.waitTicks(5);
         for (var blight : BLIGHTS)
             expect(server.computeOnServer(minecraft -> !discoverable(minecraft, blight)), "Expected " + blight + "'s research hidden before its blueprint is known");
 
@@ -101,6 +116,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
 
         var plate = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).plateCenter(0));
         var first = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designAt(0));
+        var previous = offerOf(context);
         click(context, plate);
         context.takeScreenshot("void-blight-contraption-picked");
         expect(server.computeOnServer(minecraft -> knowledge(minecraft).getBlueprints().isEmpty()), "Expected picking a plate alone to teach nothing");
@@ -112,7 +128,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             expect(knowledge(minecraft).knowsBlueprint(first), "Expected the picked blueprint " + first + " learned");
-            expect(player(minecraft).getMainHandItem().getCount() == 2, "Expected one contraption spent, holds " + player(minecraft).getMainHandItem().getCount());
+            expect(player(minecraft).getMainHandItem().getCount() == pool - 1, "Expected one contraption spent, holds " + player(minecraft).getMainHandItem().getCount());
             expect(discoverable(minecraft, first), "Expected " + first + "'s research in sight once its blueprint is known");
         });
 
@@ -121,9 +137,16 @@ public class VoidBlightClientTest implements FabricClientGameTest
         {
             rightClick(context);
             context.waitFor(minecraft -> minecraft.gui.screen() instanceof BlueprintScreen, 40);
-            int offered = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designCount());
-            var shown = context.computeOnClient(minecraft -> ((BlueprintScreen) minecraft.gui.screen()).designAt(0));
-            expect(offered == Math.min(left, Blueprints.OFFERED) && !shown.equals(first), "Expected only unknown designs offered, got " + offered + " starting with " + shown);
+            var offer = offerOf(context);
+            // What the stack drew before and is still unknown stays, in the same order; only once none is left does it draw afresh
+            var kept = previous.subList(1, previous.size());
+            if (!kept.isEmpty())
+                expect(offer.equals(kept), "Expected the designs not picked kept, " + kept + ", got " + offer);
+            else
+                expect(offer.size() == Math.min(left, Blueprints.OFFERED), "Expected a fresh draw of " + Math.min(left, Blueprints.OFFERED) + " designs, got " + offer);
+            for (var shown : offer)
+                expect(server.computeOnServer(minecraft -> !knowledge(minecraft).knowsBlueprint(shown)), "Expected only unknown designs offered, got " + shown);
+            previous = offer;
             context.getInput().pressKey(InputConstants.KEY_1);
             context.getInput().pressKey(InputConstants.KEY_RETURN);
             context.waitTicks(5);
@@ -138,6 +161,16 @@ public class VoidBlightClientTest implements FabricClientGameTest
         expectClient(context, "Expected no choice once every design is known", minecraft -> minecraft.gui.screen() == null);
         expect(!overlay(context).isEmpty(), "Expected the spent contraption to say why");
         expect(server.computeOnServer(minecraft -> player(minecraft).getMainHandItem().getCount() == 1), "Expected the unopened contraption kept");
+    }
+
+    /** The designs the open choice shows, in order; the first is the one the scenes pick. */
+    private static List<Identifier> offerOf(ClientGameTestContext context)
+    {
+        return context.computeOnClient(minecraft ->
+        {
+            var screen = (BlueprintScreen) minecraft.gui.screen();
+            return java.util.stream.IntStream.range(0, screen.designCount()).mapToObj(screen::designAt).toList();
+        });
     }
 
     private static boolean discoverable(MinecraftServer minecraft, Identifier blueprint)
@@ -362,6 +395,205 @@ public class VoidBlightClientTest implements FabricClientGameTest
     {
         var phases = server.computeOnServer(minecraft -> wraiths(minecraft).stream().map(HarvestWraith::phase).toList());
         expect(phases.equals(List.of(phase)), "Expected one wraith " + phase + ", got " + phases);
+    }
+
+    private static void spear(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("kill @e[type=!player]");
+        server.runCommand("tp @a 0.5 " + FLAT_FEET + " 3.5 0 0");
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            player.getInventory().clearContent();
+            player.getCooldowns().removeCooldown(player.getCooldowns().getCooldownGroup(new ItemStack(VoidHeartItems.VOID_BLIGHT_SPEAR)));
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.VOID_BLIGHT_SPEAR));
+            heal(minecraft);
+        });
+        // Two pigs it should draw in, one beside where it lands and one near the edge of its reach, and a sheep standing in for a boss, which the game
+        // tests tag as one. None can walk, but each still moves as it is pushed, which a mob without its wits would not
+        var near = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.PIG, 2.5, SPEAR_Z));
+        var far = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.PIG, 5, SPEAR_Z + 1));
+        var boss = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.SHEEP, -2.5, SPEAR_Z));
+        var nearFrom = server.computeOnServer(minecraft -> husk(minecraft, near).position());
+        var farFrom = server.computeOnServer(minecraft -> husk(minecraft, far).position());
+        var bossFrom = server.computeOnServer(minecraft -> husk(minecraft, boss).position());
+        var playerFrom = server.computeOnServer(minecraft -> player(minecraft).position());
+        aimFrom(context, server, 0.5, FLAT_FEET, 3.5, 0.5, FLAT_FEET, SPEAR_Z, 10);
+        context.takeScreenshot("void-blight-spear-in-hand");
+
+        // Held back, then let go
+        context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(BlightBalance.SPEAR_CHARGE_TICKS + 6);
+        context.takeScreenshot("void-blight-spear-wind-up");
+        context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        waitFor(context, server, 10, "Expected letting go to throw the spear", minecraft -> !spears(minecraft).isEmpty());
+        // Caught in flight, side on
+        server.runCommand("tick freeze");
+        var flying = server.computeOnServer(minecraft -> spears(minecraft).getFirst().position());
+        aimFrom(context, server, flying.x + 3, FLAT_FEET, flying.z, flying.x, flying.y, flying.z, 2);
+        context.takeScreenshot("void-blight-spear-flight");
+        aimFrom(context, server, 0.5, FLAT_FEET, 3.5, 0.5, FLAT_FEET, SPEAR_Z, 2);
+        server.runCommand("tick unfreeze");
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            expect(player.getMainHandItem().isEmpty(), "Expected the spear out of the hand once thrown, holds " + player.getMainHandItem());
+            expect(player.getCooldowns().isOnCooldown(new ItemStack(VoidHeartItems.VOID_BLIGHT_SPEAR)), "Expected a cooldown on the throw");
+        });
+
+        waitFor(context, server, 40, "Expected the spear to open its hole where it landed", minecraft -> spears(minecraft).getFirst().hasOpened());
+        var center = server.computeOnServer(minecraft -> spears(minecraft).getFirst().holeCenter());
+        // Its middle is kept from where the spear hangs, so the spear must not drift while the hole lasts
+        var hangs = server.computeOnServer(minecraft -> spears(minecraft).getFirst().position());
+        expect(Math.abs(center.z - SPEAR_Z) < 1.5 && center.y > FLAT_FEET + 0.5 && center.y < FLAT_FEET + 1.5,
+                "Expected the hole to hang just above the floor where the spear was thrown, at " + center);
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        context.waitTicks(1);
+        context.takeScreenshot("void-blight-spear-opening");
+        context.waitTicks(BlightBalance.HOLE_OPEN_TICKS + 6);
+        context.takeScreenshot("void-blight-spear-hole");
+        expect(server.computeOnServer(minecraft -> player(minecraft).position().distanceTo(playerFrom) < 0.2), "Expected the player never drawn in as it opened");
+
+        // Frozen and looked at from a few places, for flicker and to see it is a hole from every side
+        server.runCommand("tick freeze");
+        for (int step = 0; step < 8; step++)
+        {
+            double angle = -0.5 + step * 0.14;
+            aimFrom(context, server, center.x + Math.sin(angle) * 5, FLAT_FEET, center.z - Math.cos(angle) * 5, center.x, center.y, center.z, 2);
+            context.takeScreenshot("void-blight-spear-hole-sweep-" + step);
+        }
+        aimFrom(context, server, center.x + 4, FLAT_FEET + 3, center.z + 4, center.x, center.y, center.z, 2);
+        context.takeScreenshot("void-blight-spear-hole-behind");
+        aimFrom(context, server, 0.5, FLAT_FEET, 3.5, center.x, center.y, center.z, 2);
+        server.runCommand("tick unfreeze");
+
+        // It draws the husks in and crushes what it holds, but the boss and the player stand where they were
+        waitFor(context, server, BlightBalance.HOLE_TICKS, "Expected the hole to crush the husk beside it",
+                minecraft -> husk(minecraft, near).getHealth() < 60);
+        context.takeScreenshot("void-blight-spear-crushing");
+        server.runOnServer(minecraft ->
+        {
+            var spear = spears(minecraft).getFirst();
+            expect(spear.isHoleOpen() && spear.position().distanceTo(hangs) < 1.0E-6 && spear.holeCenter().distanceTo(center) < 1.0E-6,
+                    "Expected the spear and its hole to stay where they opened, at " + spear.position() + " and " + spear.holeCenter());
+            double nearNow = husk(minecraft, near).position().distanceTo(center);
+            double farNow = husk(minecraft, far).position().distanceTo(center);
+            expect(nearNow < nearFrom.distanceTo(center) - 0.5, "Expected the near husk drawn in, " + nearFrom.distanceTo(center) + " then " + nearNow);
+            expect(farNow < farFrom.distanceTo(center) - 0.5, "Expected the far husk drawn in, " + farFrom.distanceTo(center) + " then " + farNow);
+            expect(husk(minecraft, boss).position().distanceTo(bossFrom) < 0.2, "Expected the boss to stand fast, moved to " + husk(minecraft, boss).position());
+            expect(player(minecraft).position().distanceTo(playerFrom) < 0.2, "Expected the player never drawn in, moved to " + player(minecraft).position());
+        });
+
+        // Then it closes and flies back into the hand that threw it
+        // Checked on every tick it waits, so the spear and its hole are seen to hang still until the hole closes
+        waitFor(context, server, BlightBalance.HOLE_TICKS, "Expected the spear to fly back once its hole closed", minecraft ->
+        {
+            if (spears(minecraft).isEmpty())
+                return false;
+            var spear = spears(minecraft).getFirst();
+            if (spear.isHoleOpen())
+                expect(spear.position().distanceTo(hangs) < 1.0E-6 && spear.holeCenter().distanceTo(center) < 1.0E-6,
+                        "Expected the spear and its hole to stay where they opened, at " + spear.position() + " and " + spear.holeCenter());
+            return spear.isReturning();
+        });
+        context.waitTicks(2);
+        context.takeScreenshot("void-blight-spear-returning");
+        waitFor(context, server, BlightBalance.HOLE_TICKS + 80, "Expected the spear back with its thrower once the hole closed",
+                minecraft -> spears(minecraft).isEmpty() && player(minecraft).getInventory().contains(stack -> stack.is(VoidHeartItems.VOID_BLIGHT_SPEAR)));
+        expect(server.computeOnServer(minecraft -> player(minecraft).position().distanceTo(playerFrom) < 0.2), "Expected the player never drawn in, to the hole's end");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        server.runOnServer(minecraft -> expect(husk(minecraft, near).getHealth() <= 60 - 2 * BlightBalance.HOLE_CRUSH_DAMAGE,
+                "Expected the held husk crushed more than once, at " + husk(minecraft, near).getHealth()));
+
+        // In the inventory it is the flat sprite
+        context.getInput().pressKey(InputConstants.KEY_E);
+        context.waitTicks(5);
+        context.takeScreenshot("void-blight-spear-inventory");
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(3);
+        server.runCommand("kill @e[type=!player]");
+    }
+
+    /**
+     * Far out in the world, where a float can no longer tell one block from the next, the hole must still open exactly where the spear struck, on a
+     * block or in a mob, and keep its middle through a save mid-hole.
+     */
+    private static void spearFarOut(ClientGameTestContext context, TestServerContext server)
+    {
+        double far = 25_000_000.5;
+        server.runCommand("kill @e[type=!player]");
+        // Written out plainly: a double this large prints in exponent form, which a command can't read
+        server.runCommand(String.format(Locale.ROOT, "tp @a %.1f %d %.1f 0 0", far, FLAT_FEET, far));
+        expect(server.computeOnServer(minecraft -> Math.abs(player(minecraft).getX() - far) < 1), "Expected the player far out, at "
+                + server.computeOnServer(minecraft -> player(minecraft).position()));
+        // Loading that far is work off the game thread, so wait for it rather than a fixed time
+        waitFor(context, server, 400, "Expected the far chunks loaded and ticking", minecraft ->
+                minecraft.overworld().isPositionEntityTicking(BlockPos.containing(far + 3, FLAT_FEET, far + 3))
+                && minecraft.overworld().isPositionEntityTicking(BlockPos.containing(far - 3, FLAT_FEET, far + 4)));
+
+        // Dropped straight onto the floor, its hole hangs the standoff above the very point it struck
+        var dropped = server.computeOnServer(minecraft -> throwSpear(minecraft, new Vec3(far + 3, FLAT_FEET + 3, far + 3), new Vec3(0, -1, 0)));
+        waitFor(context, server, 40, "Expected the far spear to open on the floor", minecraft -> spearById(minecraft, dropped).hasOpened());
+        server.runOnServer(minecraft ->
+        {
+            var spear = spearById(minecraft, dropped);
+            var expected = new Vec3(far + 3, FLAT_FEET + BlightBalance.HOLE_STANDOFF, far + 3);
+            expect(spear.holeCenter().distanceTo(expected) < 1.0E-3, "Expected the far hole at " + expected + ", got " + spear.holeCenter());
+
+            // Saved and loaded while open, it keeps its middle and goes on
+            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, minecraft.registryAccess());
+            spear.saveWithoutId(output);
+            var copy = new ThrownBlightSpear(VoidHeartEntities.THROWN_BLIGHT_SPEAR, minecraft.overworld());
+            copy.load(TagValueInput.create(ProblemReporter.DISCARDING, minecraft.registryAccess(), output.buildResult()));
+            expect(copy.isHoleOpen() && copy.holeCenter().distanceTo(spear.holeCenter()) < 1.0E-6,
+                    "Expected a saved hole to load where it was, " + spear.holeCenter() + " then " + copy.holeCenter());
+        });
+        server.runCommand("kill @e[type=voidheart:thrown_blight_spear]");
+
+        // Thrown into a pig, its hole opens in the pig's middle
+        var pig = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.PIG, far - 3, far + 4));
+        var pigMiddle = server.computeOnServer(minecraft -> husk(minecraft, pig).getBoundingBox().getCenter());
+        var thrown = server.computeOnServer(minecraft -> throwSpear(minecraft, new Vec3(far - 3, pigMiddle.y, far + 1), new Vec3(0, 0, 1)));
+        waitFor(context, server, 40, "Expected the far spear to strike the pig", minecraft -> spearById(minecraft, thrown).hasOpened());
+        server.runOnServer(minecraft -> expect(spearById(minecraft, thrown).holeCenter().distanceTo(pigMiddle) < 1.0E-3,
+                "Expected the hole in the pig's middle, " + pigMiddle + ", got " + spearById(minecraft, thrown).holeCenter()));
+        server.runCommand("kill @e[type=!player]");
+        server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+        context.waitTicks(20);
+    }
+
+    /** A spear thrown by the player from a point, straight along a way, that gives nothing back when it comes home. */
+    private static UUID throwSpear(MinecraftServer minecraft, Vec3 from, Vec3 way)
+    {
+        var level = minecraft.overworld();
+        var spear = new ThrownBlightSpear(level, player(minecraft), new ItemStack(VoidHeartItems.VOID_BLIGHT_SPEAR));
+        spear.setPos(from);
+        spear.shoot(way.x, way.y, way.z, BlightBalance.SPEAR_THROW_SPEED, 0);
+        spear.pickup = AbstractArrow.Pickup.DISALLOWED;
+        level.addFreshEntity(spear);
+        return spear.getUUID();
+    }
+
+    private static ThrownBlightSpear spearById(MinecraftServer minecraft, UUID id)
+    {
+        if (!(minecraft.overworld().getEntity(id) instanceof ThrownBlightSpear spear))
+            throw new AssertionError("Expected the thrown spear still there");
+        return spear;
+    }
+
+    private static UUID rootedMob(MinecraftServer minecraft, EntityType<? extends Mob> type, double x, double z)
+    {
+        var mob = spawn(minecraft, type, x, FLAT_FEET, z);
+        mob.getAttribute(Attributes.MAX_HEALTH).setBaseValue(60);
+        mob.setHealth(60);
+        mob.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0);
+        mob.setPersistenceRequired();
+        return mob.getUUID();
+    }
+
+    private static List<ThrownBlightSpear> spears(MinecraftServer minecraft)
+    {
+        return List.copyOf(minecraft.overworld().getEntities(VoidHeartEntities.THROWN_BLIGHT_SPEAR, spear -> spear.isAlive()));
     }
 
     private static List<HarvestWraith> wraiths(MinecraftServer minecraft)

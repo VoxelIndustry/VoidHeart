@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.renderer.block.dispatch.Variant;
 import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.renderer.item.ClientItem;
 import net.minecraft.client.data.models.model.TextureSlot;
 import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.client.data.models.model.TexturedModel;
@@ -350,6 +351,16 @@ public class ModelsProvider extends FabricModelProvider
         generator.itemModelOutput.accept(VoidHeartItems.VOID_BLIGHT_SCYTHE, ItemModelUtils.select(new DisplayContext(),
                 ItemModelUtils.composite(ItemModelUtils.plainModel(scythe), ItemModelUtils.specialModel(scythe, new BlightEdgeRender.Unbaked("scythe"))),
                 ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.plainModel(scythe))));
+        // As the netherite spear: its larger sprite held, the flat one in screens and lying about, both with the shimmer on its head but in screens
+        var spear = generator.createFlatItemModel(VoidHeartItems.VOID_BLIGHT_SPEAR, ModelTemplates.FLAT_ITEM);
+        var spearHeld = ModelTemplates.SPEAR_IN_HAND.create(VoidHeartItems.VOID_BLIGHT_SPEAR,
+                TextureMapping.layer0(TextureMapping.getItemTexture(VoidHeartItems.VOID_BLIGHT_SPEAR, "_in_hand")), generator.modelOutput);
+        generator.itemModelOutput.accept(VoidHeartItems.VOID_BLIGHT_SPEAR, ItemModelUtils.select(new DisplayContext(),
+                ItemModelUtils.composite(ItemModelUtils.plainModel(spearHeld), ItemModelUtils.specialModel(spearHeld, new BlightEdgeRender.Unbaked("spear_in_hand"))),
+                ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.plainModel(spear)),
+                ItemModelUtils.when(List.of(ItemDisplayContext.GROUND, ItemDisplayContext.FIXED, ItemDisplayContext.ON_SHELF),
+                        ItemModelUtils.composite(ItemModelUtils.plainModel(spear), ItemModelUtils.specialModel(spear, new BlightEdgeRender.Unbaked("spear"))))),
+                new ClientItem.Properties(true, false, 1.95F));
         // A staff in the hand and in the world, from the hand-written model, and its flat picture in screens
         generator.itemModelOutput.accept(VoidHeartItems.KLEIN_STAR, ItemModelUtils.select(new DisplayContext(),
                 ItemModelUtils.plainModel(itemModel("klein_star_staff")),

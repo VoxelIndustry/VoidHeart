@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.data.provider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
 import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
+import net.voxelindustry.voidheart.common.content.blight.ThrownBlightSpear;
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -73,6 +74,8 @@ public class EntityTypeTagsProvider extends FabricTagsProvider.EntityTypeTagsPro
                 .add(vanilla("wither"))
                 .add(vanilla("warden"))
                 .add(vanilla("elder_guardian"));
+        // The same bosses stand fast against the spear blight's hole
+        tag(ThrownBlightSpear.UNPULLABLE).addTag(HarvestWraith.UNHARVESTABLE);
     }
 
     private TagAppender<EntityType<?>> tag(TagKey<EntityType<?>> tag, EntityType<?>... types)

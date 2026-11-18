@@ -39,6 +39,37 @@ public final class BlightBalance
     public static final int   WRAITH_RISE_TICKS     = 15;
     public static final int   WRAITH_SINK_TICKS     = 15;
 
+    /** How long right click must be held before letting go throws the spear, as a trident's, and the wait after a throw before the next. */
+    public static final int   SPEAR_CHARGE_TICKS    = 10;
+    public static final int   SPEAR_COOLDOWN_TICKS  = 120;
+    /** The thrown spear's speed in blocks a tick, and what it hits for when it strikes a mob. */
+    public static final float SPEAR_THROW_SPEED     = 2.5F;
+    public static final float SPEAR_THROW_DAMAGE    = 8;
+    /** A throw that hits nothing opens its hole wherever it is after this long. */
+    public static final int   SPEAR_FLIGHT_TICKS    = 40;
+    /** Blocks a tick it flies back to its thrower at once the hole has closed. */
+    public static final double SPEAR_RETURN_SPEED   = 0.9;
+
+    /** The hole's radius at full size, and how far off the surface the spear struck its middle hangs, so it stands clear of it. */
+    public static final double HOLE_RADIUS          = 1;
+    public static final double HOLE_STANDOFF        = 0.9;
+    /** Its whole life, opening, and closing at the end of it. */
+    public static final int   HOLE_TICKS            = 60;
+    public static final int   HOLE_OPEN_TICKS       = 4;
+    public static final int   HOLE_CLOSE_TICKS      = 4;
+    /** It crushes what is inside this often, for this much, through armor. */
+    public static final int   HOLE_CRUSH_EVERY      = 10;
+    public static final float HOLE_CRUSH_DAMAGE     = 4;
+    /** How much it pinches at each crush, and how long it takes to open back out. */
+    public static final float HOLE_PINCH            = 0.15F;
+    public static final float HOLE_PINCH_TICKS      = 4;
+    /** How far it reaches, the speed it gives a mob at the edge of that reach, twice that at its middle, and how much of a mob's own speed is kept. */
+    public static final double HOLE_PULL_RANGE      = 6;
+    public static final double HOLE_PULL            = 0.22;
+    public static final double HOLE_DRAG            = 0.5;
+    /** How much of its speed a mob inside the hole keeps, so it stays caught. */
+    public static final double HOLE_HOLD            = 0.3;
+
     private BlightBalance()
     {
     }
