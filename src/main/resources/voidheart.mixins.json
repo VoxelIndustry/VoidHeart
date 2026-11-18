@@ -6,6 +6,7 @@
   "mixins": [
     "MixinCrafterBlockResearch",
     "MixinCrossbowItemCharge",
+    "MixinLivingEntityEclipseShare",
     "MixinCraftingMenuResearch",
     "MixinEntityBarrierDisguise",
     "MixinEntityCollisionContextWallPassage",

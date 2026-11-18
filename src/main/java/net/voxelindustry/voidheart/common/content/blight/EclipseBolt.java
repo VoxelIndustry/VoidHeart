@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A bolt of darkness from the crossbow blight: an arrow in all but what it leaves behind, since a mob it wounds is stitched to the last its wielder
- * struck, see {@link EclipseLinks}. It gives back the arrow it was made from.
+ * struck, see {@link EclipseLinks}. Whatever arrow it was loaded from, it is only a bolt of darkness, so it gives back a plain arrow.
  */
 public class EclipseBolt extends AbstractArrow
 {
@@ -23,7 +23,7 @@ public class EclipseBolt extends AbstractArrow
 
     public EclipseBolt(Level level, LivingEntity owner, ItemStack ammo, @Nullable ItemStack weapon)
     {
-        super(VoidHeartEntities.ECLIPSE_BOLT, owner, level, ammo, weapon);
+        super(VoidHeartEntities.ECLIPSE_BOLT, owner, level, new ItemStack(Items.ARROW), weapon);
     }
 
     @Override

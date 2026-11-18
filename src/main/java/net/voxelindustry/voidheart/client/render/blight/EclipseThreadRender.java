@@ -91,8 +91,9 @@ public final class EclipseThreadRender
         var threads = new ArrayList<Thread>();
         var glints = new ArrayList<Glint>();
         var present = new HashSet<Pair>();
+        var shareKeys = new HashSet<String>();
         for (var player : level.players())
-            collect(level, player, partial, now, present, threads, glints);
+            collect(level, player, partial, now, present, shareKeys, threads, glints);
 
         // Threads seen last frame but gone now snap where they were
         for (var gone : new HashSet<>(SEEN.keySet()))
@@ -106,7 +107,8 @@ public final class EclipseThreadRender
             LAST_ENDS.remove(gone);
         }
         SNAPS.removeIf(snap -> now - snap.at() > SNAP_TICKS || now < snap.at());
-        SHARE_SEEN.values().removeIf(at -> now - at > GLINT_TICKS * (1 + 2) + 20);
+        // A share is forgotten only once it has left every link, or it would run along its threads again
+        SHARE_SEEN.keySet().retainAll(shareKeys);
         if (threads.isEmpty() && SNAPS.isEmpty())
             return;
 
@@ -138,7 +140,8 @@ public final class EclipseThreadRender
     {
     }
 
-    private static void collect(ClientLevel level, Player player, float partial, double now, Set<Pair> present, List<Thread> threads, List<Glint> glints)
+    private static void collect(ClientLevel level, Player player, float partial, double now, Set<Pair> present, Set<String> shareKeys, List<Thread> threads,
+                                List<Glint> glints)
     {
         var link = player.getAttached(EclipseLinks.LINK);
         if (link == null || link.members().size() < 2)
@@ -164,7 +167,9 @@ public final class EclipseThreadRender
         // Each share runs out from the mob that took the damage, thread by thread down the link
         for (var share : link.shares())
         {
-            double seen = SHARE_SEEN.computeIfAbsent(player.getId() + ":" + share.from() + ":" + share.at(), key -> now);
+            var key = player.getId() + ":" + share.from() + ":" + share.at();
+            shareKeys.add(key);
+            double seen = SHARE_SEEN.computeIfAbsent(key, k -> now);
             int from = members.indexOf(share.from());
             if (from < 0)
                 continue;

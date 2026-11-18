@@ -2,7 +2,6 @@ package net.voxelindustry.voidheart.common.content.blight;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.minecraft.core.registries.Registries;
@@ -39,7 +38,6 @@ public final class EclipseLinks
 
     public static void register()
     {
-        ServerLivingEntityEvents.AFTER_DAMAGE.register(EclipseLinks::afterDamage);
         ServerTickEvents.END_SERVER_TICK.register(EclipseLinks::tick);
     }
 
@@ -52,9 +50,13 @@ public final class EclipseLinks
         wielder.setAttached(LINK, link.struck(target.getId(), wielder.level().getGameTime()));
     }
 
-    private static void afterDamage(LivingEntity hurt, DamageSource source, float baseTaken, float taken, boolean blocked)
+    /**
+     * A threaded mob lost this much health, after its armor and with a killing blow included: each other mob of its link takes a share. Called from
+     * {@code MixinLivingEntityEclipseShare}, where the damage is applied.
+     */
+    public static void shareFrom(ServerLevel level, LivingEntity hurt, DamageSource source, float lost)
     {
-        if (taken <= 0 || source.is(SHARE) || !(hurt.level() instanceof ServerLevel level))
+        if (lost <= 0 || source.is(SHARE))
             return;
         long now = level.getGameTime();
         for (var wielder : level.players())
@@ -62,7 +64,13 @@ public final class EclipseLinks
             var link = wielder.getAttached(LINK);
             if (link == null || !link.contains(hurt.getId()) || !link.holds(now))
                 continue;
-            float share = EclipseLink.shareOf(taken);
+            // Stretched since the last tick, it comes apart before anything runs along it
+            if (EclipseLink.isStretched(link.members().stream().map(level::getEntity).filter(member -> member != null).map(member -> member.position()).toList()))
+            {
+                wielder.removeAttached(LINK);
+                continue;
+            }
+            float share = EclipseLink.shareOf(lost);
             for (int id : link.othersThan(hurt.getId()))
                 if (level.getEntity(id) instanceof LivingEntity other && other.isAlive())
                     other.hurtServer(level, level.damageSources().source(SHARE, wielder), share);

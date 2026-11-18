@@ -623,8 +623,19 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.getInput().pressKey(InputConstants.KEY_F1);
         aimFrom(context, server, 0.5, FLAT_FEET + 2, 2, 0.5, FLAT_FEET + 0.5, 8.5, 5);
         context.takeScreenshot("void-blight-crossbow-threads");
+        // Frozen and looked at from a few places, for flicker along the threads
+        server.runCommand("tick freeze");
+        for (int step = 0; step < 8; step++)
+        {
+            aimFrom(context, server, 0.5 + step * 0.15, FLAT_FEET + 2, 2 + step * 0.1, 0.5, FLAT_FEET + 0.5, 8.5, 2);
+            context.takeScreenshot("void-blight-crossbow-threads-sweep-" + step);
+        }
+        aimFrom(context, server, 0.5, FLAT_FEET + 2, 2, 0.5, FLAT_FEET + 0.5, 8.5, 2);
+        server.runCommand("tick unfreeze");
 
-        // Wounding one hurts the others by half, and what they took is not passed on again
+        // Wounding one hurts the others by half, and what they took is not passed on again. The shares of the last bolt are waited out first, since a
+        // mob still smarting from a hit takes only what a harder one adds
+        context.waitTicks(20);
         var before = server.computeOnServer(minecraft -> List.of(husk(minecraft, first).getHealth(), husk(minecraft, second).getHealth(), husk(minecraft, third).getHealth()));
         server.runOnServer(minecraft -> husk(minecraft, second).hurtServer(minecraft.overworld(), minecraft.overworld().damageSources().playerAttack(player(minecraft)), 10));
         for (int tick = 0; tick < 4; tick++)
@@ -642,6 +653,23 @@ public class VoidBlightClientTest implements FabricClientGameTest
             expect(Math.abs(husk(minecraft, third).getHealth() - (before.get(2) - share)) < 0.01, "Expected the third pig to share half, at " + husk(minecraft, third).getHealth());
         });
 
+        // A killing blow is shared too, by the health it took
+        context.waitTicks(20);
+        var lethal = server.computeOnServer(minecraft ->
+        {
+            husk(minecraft, first).setHealth(3);
+            return List.of(husk(minecraft, second).getHealth(), husk(minecraft, third).getHealth());
+        });
+        server.runOnServer(minecraft -> husk(minecraft, first).hurtServer(minecraft.overworld(), minecraft.overworld().damageSources().playerAttack(player(minecraft)), 10));
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            float share = EclipseLink.shareOf(3);
+            expect(!(minecraft.overworld().getEntity(first) instanceof LivingEntity living) || !living.isAlive(), "Expected the first pig killed");
+            expect(Math.abs(husk(minecraft, second).getHealth() - (lethal.get(0) - share)) < 0.01, "Expected the killing blow shared, at " + husk(minecraft, second).getHealth());
+            expect(Math.abs(husk(minecraft, third).getHealth() - (lethal.get(1) - share)) < 0.01, "Expected the killing blow shared, at " + husk(minecraft, third).getHealth());
+        });
+
         // Pulled too far apart, the link snaps
         server.runOnServer(minecraft -> husk(minecraft, third).teleportTo(3.5 + BlightBalance.LINK_BREAK + 4, FLAT_FEET, 8));
         waitFor(context, server, 10, "Expected the link to snap once a pig stood too far off", minecraft -> player(minecraft).getAttached(EclipseLinks.LINK) == null);
@@ -652,10 +680,13 @@ public class VoidBlightClientTest implements FabricClientGameTest
         // Left alone, a link comes apart in its time
         server.runOnServer(minecraft ->
         {
-            EclipseLinks.struck(player(minecraft), husk(minecraft, first));
+            husk(minecraft, third).teleportTo(3.5, FLAT_FEET, 8);
             EclipseLinks.struck(player(minecraft), husk(minecraft, second));
+            EclipseLinks.struck(player(minecraft), husk(minecraft, third));
         });
-        waitFor(context, server, BlightBalance.LINK_TICKS + 10, "Expected the link to come apart in its time", minecraft -> player(minecraft).getAttached(EclipseLinks.LINK) == null);
+        context.waitTicks(BlightBalance.LINK_TICKS - 20);
+        expect(server.computeOnServer(minecraft -> link(minecraft).holds(minecraft.overworld().getGameTime())), "Expected the link to hold until its time");
+        waitFor(context, server, 40, "Expected the link to come apart in its time", minecraft -> player(minecraft).getAttached(EclipseLinks.LINK) == null);
 
         // In the inventory it is the flat sprite
         context.getInput().pressKey(InputConstants.KEY_E);
