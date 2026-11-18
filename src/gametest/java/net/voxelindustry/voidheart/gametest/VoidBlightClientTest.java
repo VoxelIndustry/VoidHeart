@@ -29,6 +29,10 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.common.content.blight.RapierStrikes;
 import net.voxelindustry.voidheart.common.content.blight.ThrownBlightSpear;
+import net.voxelindustry.voidheart.common.content.blight.EclipseLink;
+import net.voxelindustry.voidheart.common.content.blight.EclipseLinks;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.Items;
 import net.voxelindustry.voidheart.common.content.blight.Wound;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -50,7 +54,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
     private static final float  STURDY    = 200;
     private static final int    CHARGED   = 13;
     private static final int    SCYTHE_CHARGED = 24;
-    private static final List<Identifier> BLIGHTS = List.of(id("void_blight_rapier"), id("void_blight_scythe"), id("void_blight_spear"));
+    private static final List<Identifier> BLIGHTS = List.of(id("void_blight_rapier"), id("void_blight_scythe"), id("void_blight_spear"), id("void_blight_crossbow"));
     /** Where the spear is thrown at, on the floor ahead, and where its hole then hangs. */
     private static final double SPEAR_Z  = 8.5;
 
@@ -82,6 +86,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
             scythe(context, server);
             spear(context, server);
             spearFarOut(context, server);
+            crossbow(context, server);
         }
         finally
         {
@@ -579,6 +584,108 @@ public class VoidBlightClientTest implements FabricClientGameTest
         if (!(minecraft.overworld().getEntity(id) instanceof ThrownBlightSpear spear))
             throw new AssertionError("Expected the thrown spear still there");
         return spear;
+    }
+
+    private static void crossbow(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("kill @e[type=!player]");
+        server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            player.getInventory().clearContent();
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.VOID_BLIGHT_CROSSBOW));
+            player.getInventory().add(new ItemStack(Items.ARROW, 16));
+            heal(minecraft);
+        });
+        int charge = server.computeOnServer(minecraft -> CrossbowItem.getChargeDuration(player(minecraft).getMainHandItem(), player(minecraft)));
+        expect(charge == BlightBalance.CROSSBOW_CHARGE_TICKS, "Expected the repeater to load in " + BlightBalance.CROSSBOW_CHARGE_TICKS + " ticks, takes " + charge);
+
+        var first = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.PIG, -2.5, 8));
+        var second = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.PIG, 0.5, 9));
+        var third = server.computeOnServer(minecraft -> rootedMob(minecraft, EntityTypes.PIG, 3.5, 8));
+        context.waitTicks(5);
+        context.takeScreenshot("void-blight-crossbow-in-hand");
+
+        // Loaded by holding, then fired at each pig in turn, each bolt stitching its pig to the one before
+        loadAndFire(context, server, first, true);
+        expect(server.computeOnServer(minecraft -> link(minecraft).members().equals(List.of(husk(minecraft, first).getId()))),
+                "Expected the first pig struck to wait in the link");
+        loadAndFire(context, server, second, false);
+        server.runOnServer(minecraft ->
+        {
+            var link = link(minecraft);
+            expect(link.holds(minecraft.overworld().getGameTime()) && link.members().equals(List.of(husk(minecraft, first).getId(), husk(minecraft, second).getId())),
+                    "Expected the two pigs stitched together, got " + link);
+        });
+        loadAndFire(context, server, third, false);
+        expect(server.computeOnServer(minecraft -> link(minecraft).members().size() == 3), "Expected all three pigs in the link");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, 0.5, FLAT_FEET + 2, 2, 0.5, FLAT_FEET + 0.5, 8.5, 5);
+        context.takeScreenshot("void-blight-crossbow-threads");
+
+        // Wounding one hurts the others by half, and what they took is not passed on again
+        var before = server.computeOnServer(minecraft -> List.of(husk(minecraft, first).getHealth(), husk(minecraft, second).getHealth(), husk(minecraft, third).getHealth()));
+        server.runOnServer(minecraft -> husk(minecraft, second).hurtServer(minecraft.overworld(), minecraft.overworld().damageSources().playerAttack(player(minecraft)), 10));
+        for (int tick = 0; tick < 4; tick++)
+        {
+            context.waitTick();
+            context.takeScreenshot("void-blight-crossbow-shared-" + tick);
+        }
+        expect(context.computeOnClient(minecraft -> !minecraft.player.getAttachedOrElse(EclipseLinks.LINK, EclipseLink.NONE).shares().isEmpty()),
+                "Expected the client to hear of the shared wound");
+        server.runOnServer(minecraft ->
+        {
+            float share = EclipseLink.shareOf(10);
+            expect(Math.abs(husk(minecraft, second).getHealth() - (before.get(1) - 10)) < 0.01, "Expected the wounded pig to take only its own wound, at " + husk(minecraft, second).getHealth());
+            expect(Math.abs(husk(minecraft, first).getHealth() - (before.get(0) - share)) < 0.01, "Expected the first pig to share half, at " + husk(minecraft, first).getHealth());
+            expect(Math.abs(husk(minecraft, third).getHealth() - (before.get(2) - share)) < 0.01, "Expected the third pig to share half, at " + husk(minecraft, third).getHealth());
+        });
+
+        // Pulled too far apart, the link snaps
+        server.runOnServer(minecraft -> husk(minecraft, third).teleportTo(3.5 + BlightBalance.LINK_BREAK + 4, FLAT_FEET, 8));
+        waitFor(context, server, 10, "Expected the link to snap once a pig stood too far off", minecraft -> player(minecraft).getAttached(EclipseLinks.LINK) == null);
+        context.waitTicks(2);
+        context.takeScreenshot("void-blight-crossbow-snap");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        // Left alone, a link comes apart in its time
+        server.runOnServer(minecraft ->
+        {
+            EclipseLinks.struck(player(minecraft), husk(minecraft, first));
+            EclipseLinks.struck(player(minecraft), husk(minecraft, second));
+        });
+        waitFor(context, server, BlightBalance.LINK_TICKS + 10, "Expected the link to come apart in its time", minecraft -> player(minecraft).getAttached(EclipseLinks.LINK) == null);
+
+        // In the inventory it is the flat sprite
+        context.getInput().pressKey(InputConstants.KEY_E);
+        context.waitTicks(5);
+        context.takeScreenshot("void-blight-crossbow-inventory");
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(3);
+        server.runCommand("kill @e[type=!player]");
+    }
+
+    /** Loads the repeater by holding right click, then fires it at a mob with a real click and waits for the bolt to strike. */
+    private static void loadAndFire(ClientGameTestContext context, TestServerContext server, UUID target, boolean shot)
+    {
+        var at = server.computeOnServer(minecraft -> husk(minecraft, target).getBoundingBox().getCenter());
+        float health = server.computeOnServer(minecraft -> husk(minecraft, target).getHealth());
+        aimFrom(context, server, 0.5, FLAT_FEET, 0.5, at.x, at.y, at.z, 3);
+        context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(BlightBalance.CROSSBOW_CHARGE_TICKS + 4);
+        context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        waitFor(context, server, 10, "Expected the repeater loaded", minecraft -> CrossbowItem.isCharged(player(minecraft).getMainHandItem()));
+        if (shot)
+            context.takeScreenshot("void-blight-crossbow-loaded");
+        aimFrom(context, server, 0.5, FLAT_FEET, 0.5, at.x, at.y, at.z, 2);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        waitFor(context, server, 40, "Expected the bolt to strike its pig", minecraft -> husk(minecraft, target).getHealth() < health);
+    }
+
+    private static EclipseLink link(MinecraftServer minecraft)
+    {
+        return player(minecraft).getAttachedOrElse(EclipseLinks.LINK, EclipseLink.NONE);
     }
 
     private static UUID rootedMob(MinecraftServer minecraft, EntityType<? extends Mob> type, double x, double z)

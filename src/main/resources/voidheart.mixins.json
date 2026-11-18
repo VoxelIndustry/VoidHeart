@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "MixinCrafterBlockResearch",
+    "MixinCrossbowItemCharge",
     "MixinCraftingMenuResearch",
     "MixinEntityBarrierDisguise",
     "MixinEntityCollisionContextWallPassage",
@@ -30,6 +31,9 @@
     "client.MixinLivingEntityRendererFold",
     "client.MixinLivingEntityRendererHusk",
     "client.MixinLivingEntityRendererSwallow",
+    "client.MixinAvatarRendererBlightCrossbow",
+    "client.MixinFirstPersonHandsBlightCrossbow",
+    "client.MixinFirstPersonRendererBlightCrossbow",
     "client.MixinBossHealthOverlayInsight",
     "client.MixinCameraTremor",
     "client.MixinCameraWallPassage",

@@ -15,6 +15,7 @@ import net.voxelindustry.voidheart.common.content.apparatus.ShieldPayloads;
 import net.voxelindustry.voidheart.common.content.blight.BlueprintPayloads;
 import net.voxelindustry.voidheart.common.content.blight.RapierStrikes;
 import net.voxelindustry.voidheart.common.content.blight.ChargedSwings;
+import net.voxelindustry.voidheart.common.content.blight.EclipseLinks;
 import net.voxelindustry.voidheart.common.content.blight.BlightScytheItem;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
@@ -158,6 +159,7 @@ public class VoidHeart implements ModInitializer
         BlueprintPayloads.register();
         RapierStrikes.register();
         BlightScytheItem.register();
+        EclipseLinks.register();
         SinProficiencies.register();
         SecondHeart.register();
 

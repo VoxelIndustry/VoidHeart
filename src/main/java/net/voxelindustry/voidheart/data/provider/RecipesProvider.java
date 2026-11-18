@@ -346,6 +346,10 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
                     VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD, PearlContent.COLLAPSING_RUBRUM_PEARL);
 
+            offerAltarRecipe("void_blight_crossbow", VoidHeartItems.VOID_BLIGHT_CROSSBOW, Items.CROSSBOW,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.MEMORIAM_SHARD, VoidHeartItems.MEMORIAM_SHARD, PearlContent.COLLAPSING_RUBRUM_PEARL);
+
             // A membrane is what lets some things through and not others
             offerAltarRecipe("permeable_barrier_item", VoidHeartItems.PERMEABLE_BARRIER, Items.PHANTOM_MEMBRANE,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
