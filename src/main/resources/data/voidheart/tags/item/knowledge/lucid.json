@@ -2,13 +2,17 @@
   "replace": false,
   "values": [
     "voidheart:voidstone_writhing",
-    "minecraft:ghast_tear",
-    "minecraft:blaze_rod",
-    "minecraft:shulker_shell",
-    "minecraft:prismarine_crystals",
+    "voidheart:wraith_ink",
+    "voidheart:wriggling_brain",
+    "voidheart:heartwood_knot",
+    "voidheart:azurium_shard",
+    "voidheart:rubrum_shard",
+    "voidheart:vile_flesh",
+    "voidheart:void_skeleton_head",
+    "voidheart:daedalus_books",
+    "voidheart:daedalus_scrolls",
+    "voidheart:daedalus_ledgers",
     "minecraft:echo_shard",
-    "minecraft:rabbit_foot",
-    "minecraft:enchanted_book",
-    "minecraft:disc_fragment_5"
+    "minecraft:shulker_shell"
   ]
 }
