@@ -1,0 +1,57 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_blight_spear"
+        },
+        "when": "gui"
+      },
+      {
+        "model": {
+          "type": "minecraft:composite",
+          "models": [
+            {
+              "type": "minecraft:model",
+              "model": "voidheart:item/void_blight_spear"
+            },
+            {
+              "type": "minecraft:special",
+              "base": "voidheart:item/void_blight_spear",
+              "model": {
+                "type": "voidheart:blight_edge",
+                "blade": "spear"
+              }
+            }
+          ]
+        },
+        "when": [
+          "ground",
+          "fixed",
+          "on_shelf"
+        ]
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:model",
+          "model": "voidheart:item/void_blight_spear_in_hand"
+        },
+        {
+          "type": "minecraft:special",
+          "base": "voidheart:item/void_blight_spear_in_hand",
+          "model": {
+            "type": "voidheart:blight_edge",
+            "blade": "spear_in_hand"
+          }
+        }
+      ]
+    },
+    "property": "minecraft:display_context"
+  },
+  "swap_animation_scale": 1.95
+}

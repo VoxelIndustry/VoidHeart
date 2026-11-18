@@ -29,6 +29,7 @@
     "client.MixinLivingEntityRendererMemory",
     "client.MixinLivingEntityRendererFold",
     "client.MixinLivingEntityRendererHusk",
+    "client.MixinLivingEntityRendererSwallow",
     "client.MixinBossHealthOverlayInsight",
     "client.MixinCameraTremor",
     "client.MixinCameraWallPassage",
