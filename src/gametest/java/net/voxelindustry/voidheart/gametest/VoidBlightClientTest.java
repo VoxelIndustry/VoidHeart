@@ -15,6 +15,7 @@ import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
 import net.voxelindustry.voidheart.common.content.blight.BlightBalance;
 import net.voxelindustry.voidheart.common.content.blight.Blueprints;
 import net.minecraft.resources.Identifier;
+import net.voxelindustry.voidheart.common.content.blight.Harvest;
 import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.minecraft.world.phys.AABB;
@@ -44,8 +45,9 @@ public class VoidBlightClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        // Every test shares this client, so its camera goes back as it was however this one ends
+        // Every test shares this client, so its camera and HUD go back as they were however this one ends
         var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        boolean hudHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
@@ -63,14 +65,21 @@ public class VoidBlightClientTest implements FabricClientGameTest
         }
         finally
         {
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
+            context.runOnClient(minecraft ->
+            {
+                minecraft.options.setCameraType(camera);
+                if (minecraft.gui.hud.isHidden() != hudHidden)
+                    minecraft.gui.hud.toggle();
+            });
         }
     }
 
     private static void contraption(ClientGameTestContext context, TestServerContext server)
     {
         server.runCommand("execute as @a run voidheart blueprint forget all");
+        // What each design's research hangs from, so a learned design brings it into sight
         server.runCommand("execute as @a run voidheart research grant voidheart:contravoid_reactor");
+        server.runCommand("execute as @a run voidheart research grant voidheart:void_marrow");
         server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.BLESSED_CONTRAPTION, 3)));
         context.waitTicks(5);
         int pool = server.computeOnServer(minecraft -> Blueprints.pool(Knowledge.tree(minecraft.registryAccess())).size());
@@ -258,11 +267,18 @@ public class VoidBlightClientTest implements FabricClientGameTest
             expect(wraith.source().filter(EntityTypes.HUSK::equals).isPresent(), "Expected the wraith to take the husk's shape, got " + wraith.source());
         });
         context.getInput().pressKey(InputConstants.KEY_F1);
+        expectPhase(server, Harvest.Phase.STAIN);
         context.takeScreenshot("void-blight-scythe-stain");
         context.waitTicks(BlightBalance.WRAITH_STAIN_TICKS + BlightBalance.WRAITH_RISE_TICKS / 2 - 2);
+        expectPhase(server, Harvest.Phase.RISING);
         context.takeScreenshot("void-blight-scythe-rising");
         context.waitTicks(BlightBalance.WRAITH_RISE_TICKS);
+        expectPhase(server, Harvest.Phase.FIGHTING);
         context.takeScreenshot("void-blight-scythe-risen");
+        // The client counts the wraith's age by the same clock as the server, so its rise and sink line up with the server's
+        int serverAge = server.computeOnServer(minecraft -> wraiths(minecraft).getFirst().age());
+        int clientAge = context.computeOnClient(minecraft -> minecraft.level.getEntitiesOfClass(HarvestWraith.class, minecraft.player.getBoundingBox().inflate(16)).getFirst().age());
+        expect(Math.abs(serverAge - clientAge) <= 3, "Expected the client to count the wraith's age as the server does, " + clientAge + " against " + serverAge);
         aimFrom(context, server, 2.5, FLAT_FEET, TARGET_Z, 0.5, FLAT_FEET + 1.2, TARGET_Z, 3);
         context.takeScreenshot("void-blight-scythe-risen-side");
 
@@ -289,6 +305,16 @@ public class VoidBlightClientTest implements FabricClientGameTest
         expect(orbs > 0, "Expected the wraith's kill to drop experience, as its wielder's kill");
         context.getInput().pressKey(InputConstants.KEY_F1);
         server.runCommand("fill -2 " + FLAT_FEET + " 6 3 " + (FLAT_FEET + 3) + " 6 air");
+
+        // The blade in its bearer's hand, and the flat sprite in the inventory
+        server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+        context.waitTicks(20);
+        context.takeScreenshot("void-blight-scythe-in-hand");
+        context.getInput().pressKey(InputConstants.KEY_E);
+        context.waitTicks(5);
+        context.takeScreenshot("void-blight-scythe-inventory");
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(3);
 
         // Weak mobs never rise
         server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
@@ -324,6 +350,12 @@ public class VoidBlightClientTest implements FabricClientGameTest
         waitFor(context, server, BlightBalance.WRAITH_STAIN_TICKS + BlightBalance.WRAITH_RISE_TICKS + BlightBalance.WRAITH_LIFE_TICKS + BlightBalance.WRAITH_SINK_TICKS + 40,
                 "Expected every wraith gone once its time is up", minecraft -> wraiths(minecraft).isEmpty());
         server.runCommand("kill @e[type=!player]");
+    }
+
+    private static void expectPhase(TestServerContext server, Harvest.Phase phase)
+    {
+        var phases = server.computeOnServer(minecraft -> wraiths(minecraft).stream().map(HarvestWraith::phase).toList());
+        expect(phases.equals(List.of(phase)), "Expected one wraith " + phase + ", got " + phases);
     }
 
     private static List<HarvestWraith> wraiths(MinecraftServer minecraft)

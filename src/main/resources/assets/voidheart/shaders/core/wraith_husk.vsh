@@ -30,8 +30,9 @@ void main() {
     cylindricalVertexDistance = fog_cylindrical_distance(Position);
     vertexColor = Color;
     texCoord0 = UV0;
-    // Feet height relative to the camera, offset to stay positive, and the body's height
-    body = vec2(float(UV1.x) - 32768.0, float(UV1.y)) / 64.0;
+    // Feet height relative to the camera, offset to stay positive, and the body's height. Overlay shorts may arrive signed, so they are read back unsigned
+    ivec2 packed = UV1 & 0xFFFF;
+    body = vec2(float(packed.x) - 32768.0, float(packed.y)) / 64.0;
     viewPos = Position;
     faceNormal = Normal;
 }

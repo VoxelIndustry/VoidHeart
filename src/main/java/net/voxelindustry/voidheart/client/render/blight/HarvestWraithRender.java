@@ -11,10 +11,12 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.common.content.blight.Harvest;
 import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
 import org.jspecify.annotations.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
 
 /**
@@ -42,6 +44,8 @@ public class HarvestWraithRender extends EntityRenderer<HarvestWraith, HarvestWr
     }
 
     private final WeakHashMap<HarvestWraith, LivingEntity> standIns = new WeakHashMap<>();
+    /** The level the stand-ins were made in. They hold it, so they are all let go once the client is in another one. */
+    private WeakReference<Level> standInLevel = new WeakReference<>(null);
 
     public HarvestWraithRender(EntityRendererProvider.Context context)
     {
@@ -70,7 +74,7 @@ public class HarvestWraithRender extends EntityRenderer<HarvestWraith, HarvestWr
         var renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn);
         @SuppressWarnings("unchecked")
         var inner = ((EntityRenderer<LivingEntity, ?>) renderer).createRenderState(standIn, partialTicks);
-        float buried = Harvest.buried(wraith.tickCount + partialTicks, wraith.sinkStart());
+        float buried = Harvest.buried(wraith.age() + partialTicks, wraith.sinkStart());
         if (inner instanceof LivingEntityRenderState living)
         {
             living.walkAnimationPos = wraith.walkAnimation.position(partialTicks);
@@ -87,6 +91,11 @@ public class HarvestWraithRender extends EntityRenderer<HarvestWraith, HarvestWr
 
     private @Nullable LivingEntity standIn(HarvestWraith wraith)
     {
+        if (standInLevel.get() != wraith.level())
+        {
+            standIns.clear();
+            standInLevel = new WeakReference<>(wraith.level());
+        }
         var existing = standIns.get(wraith);
         if (existing != null)
             return existing;

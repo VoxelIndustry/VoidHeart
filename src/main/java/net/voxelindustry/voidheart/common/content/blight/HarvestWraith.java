@@ -50,6 +50,8 @@ public class HarvestWraith extends Mob
 
     private static final EntityDataAccessor<String>  DATA_SOURCE = SynchedEntityData.defineId(HarvestWraith.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Integer> DATA_SINK   = SynchedEntityData.defineId(HarvestWraith.class, EntityDataSerializers.INT);
+    /** The game time it was raised at, so every client counts its age alike, however late it began tracking it. */
+    private static final EntityDataAccessor<Long>    DATA_RAISED = SynchedEntityData.defineId(HarvestWraith.class, EntityDataSerializers.LONG);
 
     /** How far beside its target it stops, past both their sides. */
     private static final double STAND_OFF    = 0.25;
@@ -82,12 +84,13 @@ public class HarvestWraith extends Mob
     public static void raise(ServerLevel level, LivingEntity slain, Player slayer)
     {
         var mine = level.getEntities(VoidHeartEntities.HARVEST_WRAITH, wraith -> wraith.isAlive() && slayer.getUUID().equals(wraith.owner) && !wraith.isSinking());
-        for (var old : Harvest.toRetire(mine, wraith -> wraith.tickCount))
+        for (var old : Harvest.toRetire(mine, HarvestWraith::age))
             old.beginSinking();
 
         var wraith = new HarvestWraith(VoidHeartEntities.HARVEST_WRAITH, level);
         wraith.owner = slayer.getUUID();
         wraith.entityData.set(DATA_SOURCE, BuiltInRegistries.ENTITY_TYPE.getKey(slain.getType()).toString());
+        wraith.entityData.set(DATA_RAISED, level.getGameTime());
         wraith.refreshDimensions();
         wraith.snapTo(slain.getX(), slain.getY(), slain.getZ(), slain.getYRot(), 0);
         wraith.yBodyRot = slain.yBodyRot;
@@ -104,6 +107,14 @@ public class HarvestWraith extends Mob
         return id == null ? Optional.empty() : BuiltInRegistries.ENTITY_TYPE.getOptional(id);
     }
 
+    /** Ticks since it was raised, by the world's clock, which the server and every client share. */
+    public int age()
+    {
+        long raised = entityData.get(DATA_RAISED);
+        return raised < 0 ? tickCount : (int) Math.max(0, level().getGameTime() - raised);
+    }
+
+    /** The {@link #age()} it began sinking at, or -1. */
     public int sinkStart()
     {
         return entityData.get(DATA_SINK);
@@ -116,7 +127,7 @@ public class HarvestWraith extends Mob
 
     public Harvest.Phase phase()
     {
-        return Harvest.phase(tickCount, sinkStart());
+        return Harvest.phase(age(), sinkStart());
     }
 
     public @Nullable UUID owner()
@@ -128,7 +139,7 @@ public class HarvestWraith extends Mob
     {
         if (isSinking())
             return;
-        entityData.set(DATA_SINK, tickCount);
+        entityData.set(DATA_SINK, age());
         setDeltaMovement(Vec3.ZERO);
         stain(BlightBalance.WRAITH_SINK_TICKS);
         level().playSound(null, getX(), getY(), getZ(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.PLAYERS, 0.8F, 0.45F);
@@ -146,6 +157,7 @@ public class HarvestWraith extends Mob
         super.defineSynchedData(builder);
         builder.define(DATA_SOURCE, "");
         builder.define(DATA_SINK, -1);
+        builder.define(DATA_RAISED, -1L);
     }
 
     @Override
@@ -186,7 +198,7 @@ public class HarvestWraith extends Mob
         }
 
         var wielder = owner == null ? null : level.getPlayerByUUID(owner);
-        if (wielder == null || !wielder.isAlive() || wielder.level() != level || Harvest.isSpent(tickCount))
+        if (wielder == null || !wielder.isAlive() || wielder.level() != level || Harvest.isSpent(age()))
         {
             beginSinking();
             return;
