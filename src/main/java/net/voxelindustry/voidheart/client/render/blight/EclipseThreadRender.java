@@ -73,8 +73,16 @@ public final class EclipseThreadRender
     private static final Map<Pair, Vec3[]>          LAST_ENDS  = new HashMap<>();
     private static final List<Snap>                 SNAPS      = new ArrayList<>();
 
+    /** How many glints the last frame drew, for game tests. */
+    private static int glintsDrawn;
+
     private EclipseThreadRender()
     {
+    }
+
+    public static int glintsDrawn()
+    {
+        return glintsDrawn;
     }
 
     public static void collectSubmits(LevelRenderContext context)
@@ -110,6 +118,7 @@ public final class EclipseThreadRender
         SNAPS.removeIf(snap -> now - snap.at() > SNAP_TICKS || now < snap.at());
         // A share is forgotten only once it has left every link, or it would run along its threads again
         SHARE_SEEN.keySet().retainAll(shareKeys);
+        glintsDrawn = glints.size();
         if (threads.isEmpty() && SNAPS.isEmpty())
             return;
 

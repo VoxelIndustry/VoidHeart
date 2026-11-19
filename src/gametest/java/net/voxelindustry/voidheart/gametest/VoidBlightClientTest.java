@@ -19,6 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
+import net.voxelindustry.voidheart.client.render.blight.EclipseThreadRender;
 import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
 import net.voxelindustry.voidheart.common.content.blight.BlightBalance;
 import net.voxelindustry.voidheart.common.content.blight.Blueprints;
@@ -641,11 +642,15 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.waitTicks(20);
         var before = server.computeOnServer(minecraft -> List.of(husk(minecraft, first).getHealth(), husk(minecraft, second).getHealth(), husk(minecraft, third).getHealth()));
         server.runOnServer(minecraft -> husk(minecraft, second).hurtServer(minecraft.overworld(), minecraft.overworld().damageSources().playerAttack(player(minecraft)), 10));
+        // A fresh share runs as a glint along the threads
+        boolean glinted = false;
         for (int tick = 0; tick < 4; tick++)
         {
             context.waitTick();
+            glinted |= context.computeOnClient(minecraft -> EclipseThreadRender.glintsDrawn() > 0);
             context.takeScreenshot("void-blight-crossbow-shared-" + tick);
         }
+        expect(glinted, "Expected a glint to run from the wounded pig");
         expect(context.computeOnClient(minecraft -> !minecraft.player.getAttachedOrElse(EclipseLinks.LINK, EclipseLink.NONE).shares().isEmpty()),
                 "Expected the client to hear of the shared wound");
         server.runOnServer(minecraft ->
@@ -680,10 +685,26 @@ public class VoidBlightClientTest implements FabricClientGameTest
         context.takeScreenshot("void-blight-crossbow-snap");
         context.getInput().pressKey(InputConstants.KEY_F1);
 
-        // Left alone, a link comes apart in its time
+        // A share the client first sees on a link holding one mob has nothing to run along, and never runs down a thread formed after it
         server.runOnServer(minecraft ->
         {
             husk(minecraft, third).teleportTo(3.5, FLAT_FEET, 8);
+            long now = minecraft.overworld().getGameTime();
+            int lone = husk(minecraft, second).getId();
+            player(minecraft).setAttached(EclipseLinks.LINK, new EclipseLink(List.of(lone), now + BlightBalance.LINK_TICKS, List.of(new EclipseLink.Share(lone, now))));
+        });
+        context.waitTicks(2);
+        server.runOnServer(minecraft -> EclipseLinks.struck(player(minecraft), husk(minecraft, third)));
+        for (int tick = 0; tick < 8; tick++)
+        {
+            context.waitTick();
+            expect(context.computeOnClient(minecraft -> EclipseThreadRender.glintsDrawn() == 0), "Expected no glint from a share seen on a lone mob");
+        }
+        server.runOnServer(minecraft -> player(minecraft).removeAttached(EclipseLinks.LINK));
+
+        // Left alone, a link comes apart in its time
+        server.runOnServer(minecraft ->
+        {
             EclipseLinks.struck(player(minecraft), husk(minecraft, second));
             EclipseLinks.struck(player(minecraft), husk(minecraft, third));
         });
