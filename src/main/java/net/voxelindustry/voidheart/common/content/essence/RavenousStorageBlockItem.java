@@ -16,14 +16,20 @@ import java.util.function.Consumer;
  */
 public class RavenousStorageBlockItem extends BlockItem
 {
-    public RavenousStorageBlockItem(Block block, Item.Properties properties)
+    private final String[] loreKeys;
+
+    public RavenousStorageBlockItem(Block block, Item.Properties properties, String... loreKeys)
     {
         super(block, properties);
+        this.loreKeys = loreKeys;
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag)
     {
+        for (var loreKey : loreKeys)
+            tooltip.accept(Component.translatable(loreKey));
+
         var storage = stack.get(VoidHeartDataComponents.ESSENCE_STORAGE);
         if (storage != null)
         {

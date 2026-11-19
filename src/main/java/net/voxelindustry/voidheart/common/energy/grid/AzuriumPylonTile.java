@@ -3,11 +3,13 @@ package net.voxelindustry.voidheart.common.energy.grid;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
 
 import java.util.ArrayList;
@@ -95,7 +97,37 @@ public class AzuriumPylonTile extends TileBase
 
     public PylonBundle bundle()
     {
-        return getLevel() == null ? PylonBundle.NONE : PylonBundle.above(getLevel(), getBlockPos());
+        return getLevel() == null ? PylonBundle.NONE : PylonBundle.held(getLevel(), getBlockPos());
+    }
+
+    public boolean hanging()
+    {
+        return AzuriumPylonBlock.claws(getBlockState()) == Direction.DOWN;
+    }
+
+    public BlockPos bundlePos()
+    {
+        return AzuriumPylonBlock.bundlePos(getBlockState(), getBlockPos());
+    }
+
+    /**
+     * The point of the bundle's crystals, where arcs leave and land: their top, or their bottom when the pylon hangs.
+     */
+    public Vec3 tip()
+    {
+        return alongBundle(bundle().height() / 16D);
+    }
+
+    public Vec3 bundleCenter()
+    {
+        return alongBundle(bundle().height() / 32D);
+    }
+
+    private Vec3 alongBundle(double reach)
+    {
+        var pos = getBlockPos();
+        double y = hanging() ? pos.getY() - reach : pos.getY() + 1 + reach;
+        return new Vec3(pos.getX() + 0.5, y, pos.getZ() + 0.5);
     }
 
     /**

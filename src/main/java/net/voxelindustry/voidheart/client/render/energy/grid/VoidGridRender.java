@@ -164,7 +164,7 @@ public final class VoidGridRender
                 {
                     field.radius = bundle.radius();
                     field.builtAt = time;
-                    field.ring = buildRing(level, pos.above(), bundle.radius());
+                    field.ring = buildRing(level, pylon.bundlePos(), bundle.radius());
                 }
             }
 
@@ -182,8 +182,8 @@ public final class VoidGridRender
                 var arc = ARCS.computeIfAbsent(key, PylonArc::new);
                 arc.seenAt = time;
                 float load = arcLoad(flow.rate(), bundle, other.bundle());
-                var from = tip(pos, bundle);
-                var to = tip(flow.pos(), other.bundle());
+                var from = pylon.tip();
+                var to = other.tip();
                 if (arc.tick(from.distanceTo(to), load))
                     crackle(minecraft, level, key, from.lerp(to, 0.5), load, time);
             }
@@ -206,9 +206,7 @@ public final class VoidGridRender
         var pos = hit.getBlockPos();
         if (level.getBlockState(pos).is(VoidGridContent.AZURIUM_PYLON))
             return pos;
-        if (level.getBlockState(pos.below()).is(VoidGridContent.AZURIUM_PYLON) && PylonBundle.above(level, pos.below()) != PylonBundle.NONE)
-            return pos.below();
-        return null;
+        return PylonBundle.holder(level, pos);
     }
 
     private static float arcLoad(long rate, PylonBundle a, PylonBundle b)
@@ -225,19 +223,6 @@ public final class VoidGridRender
         SOUND_COOLDOWNS.put(key, time + SOUND_COOLDOWN_TICKS);
         float volume = load >= PylonArc.AT_CAP ? SOUND_VOLUME_AT_CAP : SOUND_VOLUME;
         level.playLocalSound(at.x, at.y, at.z, SoundEvents.FIREWORK_ROCKET_TWINKLE_FAR, SoundSource.BLOCKS, volume, 1.5F + level.getRandom().nextFloat() * 0.4F, false);
-    }
-
-    /**
-     * The top of the bundle's crystals, where arcs leave and land.
-     */
-    private static Vec3 tip(BlockPos pylon, PylonBundle bundle)
-    {
-        return new Vec3(pylon.getX() + 0.5, pylon.getY() + 1 + bundle.height() / 16D, pylon.getZ() + 0.5);
-    }
-
-    private static Vec3 bundleCenter(BlockPos pylon, PylonBundle bundle)
-    {
-        return new Vec3(pylon.getX() + 0.5, pylon.getY() + 1 + bundle.height() / 32D, pylon.getZ() + 0.5);
     }
 
     //////////
@@ -291,7 +276,7 @@ public final class VoidGridRender
             {
                 var field = FIELDS.get(pylon.getBlockPos());
                 if (field != null && field.fade(partialTicks) > 0 && !field.ring.isEmpty())
-                    drawRing(pose, buffer, pylon.getBlockPos().above(), field, field.fade(partialTicks), camera, time);
+                    drawRing(pose, buffer, pylon.bundlePos(), field, field.fade(partialTicks), camera, time);
             }
         });
     }
@@ -304,7 +289,7 @@ public final class VoidGridRender
         float glow = pylon.glow(partialTicks);
         if (glow < MIN_GLOW)
             return;
-        var center = relative(bundleCenter(pylon.getBlockPos(), bundle), camera);
+        var center = relative(pylon.bundleCenter(), camera);
         float size = bundle.height() / 15F;
         disc(pose, buffer, center, HALO_RADIUS * (0.6F + 0.4F * size) * (0.7F + 0.3F * glow), ARGB.color((int) (GLOW_HALO_ALPHA * glow), AZURIUM_MID));
         disc(pose, buffer, center, BRIGHT_RADIUS * (0.6F + 0.4F * size), ARGB.color((int) (BRIGHT_ALPHA * glow), AZURIUM_LIGHT));
@@ -325,8 +310,8 @@ public final class VoidGridRender
             if (arc == null || arc.joints() == 0)
                 continue;
 
-            var from = relative(tip(pos, bundle), camera);
-            var to = relative(tip(flow.pos(), other.bundle()), camera);
+            var from = relative(pylon.tip(), camera);
+            var to = relative(other.tip(), camera);
             float load = arcLoad(flow.rate(), bundle, other.bundle());
             if (load <= 0)
             {
@@ -441,7 +426,7 @@ public final class VoidGridRender
      */
     private static void drawThreads(PoseStack.Pose pose, VertexConsumer buffer, AzuriumPylonTile pylon, PylonBundle bundle, float fade, Vec3 camera, float time)
     {
-        var from = relative(bundleCenter(pylon.getBlockPos(), bundle), camera);
+        var from = relative(pylon.bundleCenter(), camera);
         for (var fed : pylon.fed())
         {
             var to = relative(Vec3.atCenterOf(fed.pos()), camera);

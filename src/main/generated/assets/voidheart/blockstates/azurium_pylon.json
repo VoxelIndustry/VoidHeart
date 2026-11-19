@@ -1,7 +1,11 @@
 {
   "variants": {
-    "": {
+    "hanging=false": {
       "model": "voidheart:block/azurium_pylon"
+    },
+    "hanging=true": {
+      "model": "voidheart:block/azurium_pylon",
+      "x": 180
     }
   }
 }

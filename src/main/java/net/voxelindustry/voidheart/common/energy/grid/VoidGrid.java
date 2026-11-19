@@ -142,9 +142,9 @@ public final class VoidGrid
         sorted.sort(Comparator.comparingLong(BlockPos::asLong));
         for (var pos : sorted)
         {
-            var bundle = PylonBundle.above(level, pos);
+            var bundle = PylonBundle.held(level, pos);
             if (bundle != PylonBundle.NONE)
-                found.add(new GridLayout.Pylon(pos, pos.above(), bundle.radius(), bundle.cap()));
+                found.add(new GridLayout.Pylon(pos, AzuriumPylonBlock.bundlePos(level.getBlockState(pos), pos), bundle.radius(), bundle.cap()));
         }
         var layout = GridLayout.link(found, (a, b) -> inSight(level, a, b));
 
