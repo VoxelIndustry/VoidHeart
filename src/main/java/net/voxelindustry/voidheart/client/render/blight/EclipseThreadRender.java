@@ -15,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.common.content.blight.EclipseLink;
 import net.voxelindustry.voidheart.common.content.blight.EclipseLinks;
 import org.joml.Vector3f;
 
@@ -144,7 +145,12 @@ public final class EclipseThreadRender
                                 List<Glint> glints)
     {
         var link = player.getAttached(EclipseLinks.LINK);
-        if (link == null || link.members().size() < 2)
+        if (link == null)
+            return;
+        // Its shares are kept seen even while it holds one mob alone, or they would run again once a second joins
+        for (var share : link.shares())
+            shareKeys.add(shareKey(player, share));
+        if (link.members().size() < 2)
             return;
         var members = link.members();
         var ends = new ArrayList<Vec3>();
@@ -167,9 +173,7 @@ public final class EclipseThreadRender
         // Each share runs out from the mob that took the damage, thread by thread down the link
         for (var share : link.shares())
         {
-            var key = player.getId() + ":" + share.from() + ":" + share.at();
-            shareKeys.add(key);
-            double seen = SHARE_SEEN.computeIfAbsent(key, k -> now);
+            double seen = SHARE_SEEN.computeIfAbsent(shareKey(player, share), k -> now);
             int from = members.indexOf(share.from());
             if (from < 0)
                 continue;
@@ -185,6 +189,11 @@ public final class EclipseThreadRender
                 glints.add(outward ? new Glint(ends.get(i), ends.get(i + 1), t) : new Glint(ends.get(i + 1), ends.get(i), t));
             }
         }
+    }
+
+    private static String shareKey(Player player, EclipseLink.Share share)
+    {
+        return player.getId() + ":" + share.from() + ":" + share.at();
     }
 
     private static Vec3 tiedAt(LivingEntity living, float partial)

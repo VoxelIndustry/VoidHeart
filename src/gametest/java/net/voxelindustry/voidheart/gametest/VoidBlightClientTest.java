@@ -630,6 +630,9 @@ public class VoidBlightClientTest implements FabricClientGameTest
             aimFrom(context, server, 0.5 + step * 0.15, FLAT_FEET + 2, 2 + step * 0.1, 0.5, FLAT_FEET + 0.5, 8.5, 2);
             context.takeScreenshot("void-blight-crossbow-threads-sweep-" + step);
         }
+        // And from behind the pigs, since the threads turn to face the camera
+        aimFrom(context, server, 0.5, FLAT_FEET + 2, 15, 0.5, FLAT_FEET + 0.5, 8.5, 2);
+        context.takeScreenshot("void-blight-crossbow-threads-behind");
         aimFrom(context, server, 0.5, FLAT_FEET + 2, 2, 0.5, FLAT_FEET + 0.5, 8.5, 2);
         server.runCommand("tick unfreeze");
 
