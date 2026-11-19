@@ -411,7 +411,7 @@ public class ResearchSceneClientTest implements FabricClientGameTest
             level.setBlockAndUpdate(ARMILLARY_POS.offset(place.pos()), place.state());
         if (!ArmillaryLayout.isComplete(level, ARMILLARY_POS))
             throw new AssertionError("The armillary scene should build a base a real armillary accepts, with room for its rings");
-        var bundle = PylonBundle.above(level, ARMILLARY_POS.offset(ResearchScenes.ARMILLARY_PYLON));
+        var bundle = PylonBundle.held(level, ARMILLARY_POS.offset(ResearchScenes.ARMILLARY_PYLON));
         if (bundle == PylonBundle.NONE || ResearchScenes.ARMILLARY_PYLON.distSqr(BlockPos.ZERO) > (double) bundle.radius() * bundle.radius())
             throw new AssertionError("The armillary scene's pylon should hold a bundle whose field reaches the core, found " + bundle);
     }

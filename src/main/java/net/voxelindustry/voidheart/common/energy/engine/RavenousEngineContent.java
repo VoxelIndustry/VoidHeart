@@ -48,7 +48,7 @@ public final class RavenousEngineContent
                 .strength(1.5F, 6.0F)
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
-                .sound(SoundType.STONE), RavenousStorageBlockItem::new);
+                .sound(SoundType.STONE), (block, properties) -> new RavenousStorageBlockItem(block, properties, "voidheart.ravenous_engine.lore"));
 
         VoidHeartTiles.registerTile(RAVENOUS_ENGINE_TILE = FabricBlockEntityTypeBuilder.create(RavenousEngineTile::new, RAVENOUS_ENGINE).build(), "ravenous_engine");
     }

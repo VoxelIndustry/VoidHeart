@@ -8,12 +8,22 @@ import net.fabricmc.fabric.api.client.gametest.v1.world.TestWorldSave;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.client.CameraType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AmethystClusterBlock;
 import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineContent;
+import net.voxelindustry.voidheart.common.energy.grid.AzuriumPylonBlock;
 import net.voxelindustry.voidheart.common.energy.grid.AzuriumPylonTile;
+import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridBalance;
 
@@ -54,6 +64,14 @@ public class VoidGridClientTest implements FabricClientGameTest
     private static final BlockPos MACHINE_B = new BlockPos(54, Y, 4);
     private static final BlockPos MACHINE_C = new BlockPos(54, Y, -24);
 
+    // Hanging: two pylons under a ceiling, then one standing on the floor, so arcs run between hanging and standing bundles
+    private static final int      CEILING   = Y + 6;
+    private static final BlockPos HANG_SRC  = new BlockPos(0, Y + 4, -40);
+    private static final BlockPos HANG_1    = new BlockPos(2, CEILING - 1, -40);
+    private static final BlockPos HANG_2    = new BlockPos(13, CEILING - 1, -40);
+    private static final BlockPos HANG_END  = new BlockPos(24, Y, -40);
+    private static final BlockPos HANG_MACH = new BlockPos(27, Y, -40);
+
     private static final Map<BlockPos, Long> ASKS   = new ConcurrentHashMap<>();
     private static final Map<BlockPos, Long> OFFERS = new ConcurrentHashMap<>();
     private static final Map<BlockPos, Long> DRAWN  = new ConcurrentHashMap<>();
@@ -91,6 +109,9 @@ public class VoidGridClientTest implements FabricClientGameTest
             checkBreaks(context, server);
             checkDrops(context, server);
             stopAll(server);
+
+            checkHanging(context, server);
+            checkLore(context);
         }
 
         try (var world = save.open())
@@ -456,5 +477,136 @@ public class VoidGridClientTest implements FabricClientGameTest
         server.runCommand("gamemode creative @a");
         server.runCommand("setblock " + at(spare) + " air");
         server.runCommand("kill @e[type=item]");
+    }
+
+    /**
+     * A pylon set against a ceiling with a real click hangs upside down, holds its bundle hanging below, and joins the grid like a standing one.
+     */
+    private static void checkHanging(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runCommand("fill -2 " + CEILING + " -44 18 " + CEILING + " -36 voidheart:voidstone");
+        server.runCommand("setblock " + at(HANG_SRC) + " voidheart:voidstone_chiseled");
+        server.runCommand("setblock " + at(HANG_MACH) + " voidheart:voidstone_chiseled");
+        context.waitTicks(3);
+
+        // Real clicks: the pylon on the ceiling's underside, then the bundle on the pylon's underside
+        server.runOnServer(minecraft ->
+        {
+            var inventory = player(minecraft).getInventory();
+            inventory.setSelectedSlot(0);
+            inventory.setItem(0, new ItemStack(VoidGridContent.AZURIUM_PYLON));
+        });
+        aimFrom(context, server, HANG_1.getX() + 0.5, Y + 2, HANG_1.getZ() - 2.5, HANG_1.getX() + 0.5, CEILING, HANG_1.getZ() + 0.5, 5);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var state = minecraft.overworld().getBlockState(HANG_1);
+            expect(state.is(VoidGridContent.AZURIUM_PYLON), "A pylon should be placed against the ceiling, found " + state);
+            expect(state.getValue(AzuriumPylonBlock.HANGING), "A pylon placed against a ceiling should hang, found " + state);
+            player(minecraft).getInventory().setItem(0, new ItemStack(VoidHeartBlocks.SMALL_AZURIUM_BUNDLE));
+        });
+        context.waitTicks(2);
+        aimFrom(context, server, HANG_1.getX() + 0.5, Y + 1, HANG_1.getZ() - 2.5, HANG_1.getX() + 0.5, HANG_1.getY(), HANG_1.getZ() + 0.5, 5);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var state = minecraft.overworld().getBlockState(HANG_1.below());
+            expect(state.is(VoidHeartBlocks.SMALL_AZURIUM_BUNDLE) && state.getValue(AmethystClusterBlock.FACING) == Direction.DOWN,
+                    "A bundle set on a hanging pylon should hang from its claws, found " + state);
+            player(minecraft).getInventory().setItem(0, ItemStack.EMPTY);
+        });
+
+        server.runCommand("setblock " + at(HANG_2) + " voidheart:azurium_pylon[hanging=true]");
+        server.runCommand("setblock " + at(HANG_2.below()) + " voidheart:small_azurium_bundle[facing=down]");
+        pylon(server, HANG_END, "small");
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var layout = VoidGrid.get(level).layout();
+            var hanging = layout.pylons().get(layout.indexOf(HANG_2));
+            expect(hanging.bundle().equals(HANG_2.below()), "A hanging pylon's field should centre on the bundle below it, it centres on " + hanging.bundle());
+            expect(layout.arcsOf(layout.indexOf(HANG_1)).size() == 1 && layout.arcsOf(layout.indexOf(HANG_2)).size() == 2,
+                    "The hanging pylons should arc to each other and the standing one");
+            expect(VoidGrid.pylonsCovering(level, HANG_SRC).size() == 1, "The first hanging pylon's field should reach the source");
+            OFFERS.put(HANG_SRC, 50L);
+            ASKS.put(HANG_MACH, 50L);
+        });
+        context.waitTicks(5);
+        server.runOnServer(minecraft -> DRAWN.clear());
+        context.waitTicks(20);
+        expectAbout(server, HANG_MACH, 50, 20, "Through two hanging pylons and a standing one");
+
+        // At cap, from the side and from below
+        server.runOnServer(minecraft ->
+        {
+            OFFERS.put(HANG_SRC, 500L);
+            ASKS.put(HANG_MACH, 500L);
+        });
+        context.waitTicks(2 * VoidGridBalance.DISPLAY_TICKS + 15);
+        context.runOnClient(minecraft ->
+        {
+            var pylon = (AzuriumPylonTile) minecraft.level.getBlockEntity(HANG_2);
+            expect(pylon != null && pylon.hanging() && pylon.tip().y < HANG_2.getY(), "The client should draw the hanging pylon's arcs from below it");
+        });
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, 12.5, Y + 2, -49, 12.5, Y + 3.5, -40, 10);
+        context.takeScreenshot("void-grid-hanging-side");
+        aimFrom(context, server, 4.5, Y, -43, 2.5, CEILING - 1, -39.5, 3);
+        context.takeScreenshot("void-grid-hanging-close");
+        server.runCommand("item replace entity @a weapon.mainhand with voidheart:small_azurium_bundle");
+        aimFrom(context, server, 8, Y + 1, -47, 13, Y + 2, -40, 10);
+        context.takeScreenshot("void-grid-hanging-fields");
+        server.runCommand("item replace entity @a weapon.mainhand with air");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        stopAll(server);
+
+        // Mined off a hanging pylon in survival, the bundle comes back whole; breaking the pylon drops its bundle
+        server.runCommand("kill @e[type=item]");
+        server.runCommand("gamemode survival @a");
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            player(minecraft).gameMode.destroyBlock(HANG_1.below());
+            expect(level.getBlockState(HANG_1.below()).isAir(), "The bundle should come off the hanging claws");
+            var items = level.getEntitiesOfClass(ItemEntity.class, new AABB(HANG_1).inflate(3));
+            boolean whole = items.stream().anyMatch(item -> item.getItem().is(VoidHeartBlocks.SMALL_AZURIUM_BUNDLE.asItem()));
+            boolean shard = items.stream().anyMatch(item -> BuiltInRegistries.ITEM.getKey(item.getItem().getItem()).getPath().equals("azurium_shard"));
+            expect(whole && !shard, "A bundle mined off a hanging pylon should drop whole, dropped " + items.stream().map(item -> item.getItem().toString()).toList());
+        });
+        server.runCommand("gamemode creative @a");
+        server.runCommand("kill @e[type=item]");
+        server.runCommand("setblock " + at(HANG_2) + " air destroy");
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var items = level.getEntitiesOfClass(ItemEntity.class, new AABB(HANG_2).inflate(3));
+            expect(items.stream().anyMatch(item -> item.getItem().is(VoidHeartBlocks.SMALL_AZURIUM_BUNDLE.asItem())),
+                    "A hanging pylon's bundle should drop when the pylon breaks");
+            expect(level.getBlockState(HANG_2.below()).isAir(), "The bundle should not float once its hanging pylon is gone");
+        });
+
+        server.runCommand("fill -2 " + Y + " -44 30 " + CEILING + " -36 air");
+        server.runCommand("kill @e[type=item]");
+    }
+
+    private static void checkLore(ClientGameTestContext context)
+    {
+        context.runOnClient(minecraft ->
+        {
+            var tooltip = Item.TooltipContext.of(minecraft.level);
+            for (var expected : Map.of(
+                    VoidGridContent.AZURIUM_PYLON, "Relay and provide void energy around it",
+                    RavenousEngineContent.RAVENOUS_ENGINE, "Burn fiery essence to produce void energy",
+                    RubrumContent.CELL_SOCKET, "Store energy into rubrum cells").entrySet())
+            {
+                var lines = new ItemStack(expected.getKey()).getTooltipLines(tooltip, minecraft.player, TooltipFlag.NORMAL).stream().map(line -> line.getString()).toList();
+                expect(lines.stream().anyMatch(line -> line.contains(expected.getValue())), expected.getKey() + " should show its lore, shows " + lines);
+            }
+        });
     }
 }

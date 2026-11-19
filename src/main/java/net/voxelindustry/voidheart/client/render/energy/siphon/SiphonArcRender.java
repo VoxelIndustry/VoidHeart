@@ -147,10 +147,10 @@ public final class SiphonArcRender
                 if (pylon.isRemoved() || pylon.getLevel() != level || bundle == PylonBundle.NONE)
                     continue;
                 var pylonPos = pylon.getBlockPos();
-                if (pylonPos.above().distSqr(pos) > (double) bundle.radius() * bundle.radius())
+                if (pylon.bundlePos().distSqr(pos) > (double) bundle.radius() * bundle.radius())
                     continue;
 
-                var tip = new Vec3(pylonPos.getX() + 0.5, pylonPos.getY() + 1 + bundle.height() / 16D, pylonPos.getZ() + 0.5);
+                var tip = pylon.tip();
                 var flat = new Vec3(tip.x - rings.x, 0, tip.z - rings.z);
                 var from = flat.lengthSqr() < 1.0E-4 ? rings.add(0, START_RADIUS, 0) : rings.add(flat.normalize().scale(START_RADIUS));
                 links.add(new Link(pos, pylonPos, from, tip));

@@ -2,6 +2,8 @@ package net.voxelindustry.voidheart.common.energy.grid;
 
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
+import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
+import net.minecraft.client.data.models.blockstates.PropertyDispatch;
 import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.data.loot.BlockLootSubProvider;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -21,12 +23,15 @@ public final class VoidGridDatagen
     }
 
     /**
-     * The model is hand-written in assets/voidheart/models/block, since its claws reach into the block above.
+     * The model is hand-written in assets/voidheart/models/block, since its claws reach into the block above. A hanging pylon turns it upside down.
      */
     public static void blockModels(BlockModelGenerators generators)
     {
-        generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(VoidGridContent.AZURIUM_PYLON,
-                plainVariant(ModelLocationUtils.getModelLocation(VoidGridContent.AZURIUM_PYLON))));
+        var model = plainVariant(ModelLocationUtils.getModelLocation(VoidGridContent.AZURIUM_PYLON));
+        generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidGridContent.AZURIUM_PYLON)
+                .with(PropertyDispatch.initial(AzuriumPylonBlock.HANGING)
+                        .select(false, model)
+                        .select(true, model.with(BlockModelGenerators.X_ROT_180))));
     }
 
     public static void itemModels(ItemModelGenerators generators)

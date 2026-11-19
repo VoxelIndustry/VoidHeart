@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.material.MapColor;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.item.LoreBlockItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -43,7 +44,7 @@ public final class VoidGridContent
                 .requiresCorrectToolForDrops()
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
-                .sound(SoundType.STONE), true);
+                .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties, "voidheart.azurium_pylon.lore"));
         VoidHeartTiles.registerTile(AZURIUM_PYLON_TILE = FabricBlockEntityTypeBuilder.create(AzuriumPylonTile::new, AZURIUM_PYLON).build(), "azurium_pylon");
 
         VoidEnergy.install(VoidGrid.PROVIDER);
@@ -53,10 +54,12 @@ public final class VoidGridContent
         // A bundle mined off a pylon's claws comes back whole, whatever the tool
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) ->
         {
-            if (player.isCreative() || !(level instanceof ServerLevel serverLevel) || PylonBundle.of(state) == PylonBundle.NONE
-                    || !level.getBlockState(pos.below()).is(AZURIUM_PYLON))
+            if (player.isCreative() || !(level instanceof ServerLevel serverLevel))
                 return true;
-            return !AzuriumPylonBlock.releaseBundle(serverLevel, pos);
+            var pylon = PylonBundle.holder(level, pos);
+            if (pylon == null)
+                return true;
+            return !AzuriumPylonBlock.releaseBundle(serverLevel, pos, AzuriumPylonBlock.claws(level.getBlockState(pylon)));
         });
     }
 

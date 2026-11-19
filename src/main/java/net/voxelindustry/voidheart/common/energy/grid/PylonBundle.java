@@ -7,9 +7,10 @@ import net.minecraft.world.level.block.AmethystClusterBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import org.jspecify.annotations.Nullable;
 
 /**
- * The azurium bundle standing upright in the block above a pylon, which sets its field and cap.
+ * The azurium bundle standing upright in the block above a pylon, or hanging below one that hangs, which sets its field and cap.
  */
 public enum PylonBundle
 {
@@ -47,14 +48,36 @@ public enum PylonBundle
         return height;
     }
 
-    public static PylonBundle above(BlockGetter level, BlockPos pylon)
+    /**
+     * The bundle in the claws of the pylon at that position.
+     */
+    public static PylonBundle held(BlockGetter level, BlockPos pylon)
     {
-        return of(level.getBlockState(pylon.above()));
+        var state = level.getBlockState(pylon);
+        if (!state.is(VoidGridContent.AZURIUM_PYLON))
+            return NONE;
+        var claws = AzuriumPylonBlock.claws(state);
+        return of(level.getBlockState(pylon.relative(claws)), claws);
     }
 
-    public static PylonBundle of(BlockState state)
+    /**
+     * The pylon whose claws hold the bundle at that position, if any.
+     */
+    public static @Nullable BlockPos holder(BlockGetter level, BlockPos bundle)
     {
-        if (!state.hasProperty(AmethystClusterBlock.FACING) || state.getValue(AmethystClusterBlock.FACING) != Direction.UP)
+        var state = level.getBlockState(bundle);
+        if (!state.hasProperty(AmethystClusterBlock.FACING))
+            return null;
+        var pylon = bundle.relative(state.getValue(AmethystClusterBlock.FACING).getOpposite());
+        return held(level, pylon) != NONE ? pylon : null;
+    }
+
+    /**
+     * The bundle this state is, when it points the way a pylon's claws face.
+     */
+    public static PylonBundle of(BlockState state, Direction facing)
+    {
+        if (!state.hasProperty(AmethystClusterBlock.FACING) || state.getValue(AmethystClusterBlock.FACING) != facing)
             return NONE;
         return ofBlock(state.getBlock());
     }

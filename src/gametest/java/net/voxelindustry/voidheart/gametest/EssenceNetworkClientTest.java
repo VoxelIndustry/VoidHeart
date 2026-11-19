@@ -59,6 +59,7 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
     private static final BlockPos SECOND_RELAY    = new BlockPos(47, FEET, 0);
     private static final BlockPos STORAGE         = new BlockPos(50, FEET, 0);
     private static final BlockPos WALL            = new BlockPos(44, FEET, 3);
+    private static final BlockPos CEILING         = WALL.offset(0, 3, 3);
     private static final BlockPos HIDDEN_STORAGE  = new BlockPos(44, FEET, 6);
 
     private static final int ROW_X = 60;
@@ -236,8 +237,33 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
             var placed = level.getBlockState(WALL.south());
             expect(placed.is(VoidHeartBlocks.RAVENOUS_RELAY) && placed.getValue(BlockStateProperties.FACING) == Direction.SOUTH,
                     "a relay placed on the south of a wall faces " + (placed.is(VoidHeartBlocks.RAVENOUS_RELAY) ? placed.getValue(BlockStateProperties.FACING) : "nothing"));
-            level.setBlockAndUpdate(WALL.south(), Blocks.AIR.defaultBlockState());
+            level.setBlockAndUpdate(CEILING, Blocks.STONE.defaultBlockState());
+            player(minecraft).getInventory().setItem(0, new ItemStack(VoidHeartBlocks.RAVENOUS_RELAY));
+        });
+
+        // Clicks the underside of a block overhead
+        aimFrom(context, server, CEILING.getX() + 0.5, FEET, CEILING.getZ() + 1.5, CEILING.getX() + 0.5, CEILING.getY(), CEILING.getZ() + 0.5, 5);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var placed = level(minecraft).getBlockState(CEILING.below());
+            expect(placed.is(VoidHeartBlocks.RAVENOUS_RELAY) && placed.getValue(BlockStateProperties.FACING) == Direction.DOWN,
+                    "a relay placed under a ceiling faces " + (placed.is(VoidHeartBlocks.RAVENOUS_RELAY) ? placed.getValue(BlockStateProperties.FACING) : "nothing"));
             player(minecraft).getInventory().setItem(0, ItemStack.EMPTY);
+        });
+
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, WALL.getX() + 2.5, FEET + 0.5, WALL.getZ() + 4.5, WALL.getX() + 0.5, FEET + 1.5, WALL.getZ() + 1.5, 5);
+        context.takeScreenshot("relay-on-wall-and-ceiling");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        server.runOnServer(minecraft ->
+        {
+            var level = level(minecraft);
+            level.setBlockAndUpdate(WALL.south(), Blocks.AIR.defaultBlockState());
+            level.setBlockAndUpdate(CEILING.below(), Blocks.AIR.defaultBlockState());
+            level.setBlockAndUpdate(CEILING, Blocks.AIR.defaultBlockState());
         });
     }
 

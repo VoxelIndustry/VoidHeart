@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.item.LoreBlockItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -77,8 +78,8 @@ public final class RubrumContent
                 .strength(2.5F)
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
-                .sound(SoundType.STONE), true);
-        RUBRUM_CELL = VoidHeartItems.registerItem("rubrum_cell", properties -> new RubrumCellItem(properties.stacksTo(1)));
+                .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".cell_socket.lore"));
+        RUBRUM_CELL =VoidHeartItems.registerItem("rubrum_cell", properties -> new RubrumCellItem(properties.stacksTo(1)));
         VoidHeartItems.addCreativeVariant(RUBRUM_CELL, RubrumCellItem::full);
 
         VoidHeartTiles.registerTile(RUBRUM_CONSTRUCT = FabricBlockEntityTypeBuilder.create(RubrumConstructTile::new, RUBRUM_CONSTRUCT_CORE).build(),
