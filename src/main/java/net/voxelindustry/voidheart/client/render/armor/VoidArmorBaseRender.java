@@ -32,7 +32,7 @@ public class VoidArmorBaseRender implements BlockEntityRenderer<VoidArmorBaseTil
     private static final float DOCKED_GLOW = 0.7F;
 
     private final VoidArmorModel model;
-    private final VoidArmorModel glowModel;
+    private final VoidArmorModel[] glow;
 
     public static class State extends BlockEntityRenderState
     {
@@ -44,7 +44,7 @@ public class VoidArmorBaseRender implements BlockEntityRenderer<VoidArmorBaseTil
     public VoidArmorBaseRender(BlockEntityRendererProvider.Context context)
     {
         model = new VoidArmorModel(context.bakeLayer(VoidArmorModel.LAYER), false);
-        glowModel = new VoidArmorModel(context.bakeLayer(VoidArmorModel.LAYER), true);
+        glow = VoidArmorRender.glow(() -> context.bakeLayer(VoidArmorModel.LAYER));
     }
 
     @Override
@@ -70,7 +70,7 @@ public class VoidArmorBaseRender implements BlockEntityRenderer<VoidArmorBaseTil
             return;
         poseStack.pushPose();
         poseStack.translate(0.5, PLINTH, 0.5);
-        VoidArmorRender.standing(model, glowModel, state.frame, state.yaw, poseStack, collector, state.lightCoords);
+        VoidArmorRender.standing(model, glow, state.frame, state.yaw, poseStack, collector, state.lightCoords);
         poseStack.popPose();
     }
 

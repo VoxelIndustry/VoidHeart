@@ -20,7 +20,7 @@ import net.voxelindustry.voidheart.common.content.armor.ParkedArmor;
 public class ParkedArmorRender extends EntityRenderer<ParkedArmor, ParkedArmorRender.State>
 {
     private final VoidArmorModel model;
-    private final VoidArmorModel glowModel;
+    private final VoidArmorModel[] glow;
 
     public static class State extends EntityRenderState
     {
@@ -32,7 +32,7 @@ public class ParkedArmorRender extends EntityRenderer<ParkedArmor, ParkedArmorRe
     {
         super(context);
         model = VoidArmorRender.model(context.getModelSet(), false);
-        glowModel = VoidArmorRender.model(context.getModelSet(), true);
+        glow = VoidArmorRender.glow(context.getModelSet());
     }
 
     @Override
@@ -53,6 +53,6 @@ public class ParkedArmorRender extends EntityRenderer<ParkedArmor, ParkedArmorRe
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
         super.submit(state, poseStack, collector, camera);
-        VoidArmorRender.standing(model, glowModel, state.frame, state.yaw, poseStack, collector, state.lightCoords);
+        VoidArmorRender.standing(model, glow, state.frame, state.yaw, poseStack, collector, state.lightCoords);
     }
 }

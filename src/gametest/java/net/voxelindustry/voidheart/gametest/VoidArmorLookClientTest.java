@@ -138,6 +138,12 @@ public class VoidArmorLookClientTest implements FabricClientGameTest
         context.getInput().pressKey(options -> options.keyHotbarSlots[5]);
         context.waitTicks(10);
         context.takeScreenshot("void-armor-worn-night");
+        // A quarter of a breath apart, so the rows of lacing are seen moving out of step
+        for (int beat = 1; beat <= 3; beat++)
+        {
+            context.waitTicks(16);
+            context.takeScreenshot("void-armor-breath-" + beat);
+        }
         context.getInput().pressKey(options -> options.keyHotbarSlots[4]);
         context.getInput().pressKey(options -> options.keyHotbarSlots[5]);
         server.runCommand("time set noon");

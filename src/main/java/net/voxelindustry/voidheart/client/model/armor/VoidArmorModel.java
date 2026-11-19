@@ -72,13 +72,30 @@ public class VoidArmorModel extends HumanoidModel<AvatarRenderState>
     private final List<ModelPart> pistons;
     private final List<ModelPart> tubes;
 
+    /** The band of the frame this glow draws, or -1 for all of it. */
+    private final int band;
+
     /**
      * @param glow whether this is the glow drawn over the frame, which shows only the lenses that are on and the tubes still charged
      */
     public VoidArmorModel(ModelPart root, boolean glow)
     {
+        this(root, glow, -1);
+    }
+
+    /**
+     * A glow drawing one band of the frame, see {@link #BANDS}.
+     */
+    public VoidArmorModel(ModelPart root, int band)
+    {
+        this(root, true, band);
+    }
+
+    private VoidArmorModel(ModelPart root, boolean glow, int band)
+    {
         super(root);
         this.glow = glow;
+        this.band = band;
         mask = head.getChild("mask");
         nightLens = head.getChild("night_lens");
         spectralLens = head.getChild("spectral_lens");
@@ -371,6 +388,44 @@ public class VoidArmorModel extends HumanoidModel<AvatarRenderState>
             piston.visible = look.exoskeleton() && !glow;
         for (int i = 0; i < tubes.size(); i++)
             tubes.get(i).visible = i < (glow ? look.litTubes() : look.tubes());
+
+        if (band >= 0)
+            showBand();
+    }
+
+    // The glow's bands
+
+    /** The helm, each chest row, the rest of the torso with the arms and battery tubes, the skirt, and the legs. */
+    public static final int HELM  = 0;
+    public static final int ROW   = 1;
+    public static final int TORSO = ROW + ROWS;
+    public static final int SKIRT = TORSO + 1;
+    public static final int LEGS  = SKIRT + 1;
+    public static final int BANDS = LEGS + 1;
+
+    /**
+     * Keeps only this glow's band of the frame, so each band can breathe on a beat of its own.
+     */
+    private void showBand()
+    {
+        head.visible = band == HELM;
+        boolean torso = band == TORSO;
+        boolean skirt = band == SKIRT;
+        body.visible = band >= ROW && band <= SKIRT;
+        // The torso's own boxes, the gorget, back plate and vents, glow with the arms
+        body.skipDraw = !torso;
+        for (int i = 0; i < ROWS; i++)
+            rows.get(i).visible = band == ROW + i;
+        for (var tube : tubes)
+            tube.visible &= torso;
+        skirtFront.visible = skirt;
+        skirtBack.visible = skirt;
+        skirtRight.visible = skirt;
+        skirtLeft.visible = skirt;
+        rightArm.visible = torso;
+        leftArm.visible = torso;
+        rightLeg.visible = band == LEGS;
+        leftLeg.visible = band == LEGS;
     }
 
     /**
