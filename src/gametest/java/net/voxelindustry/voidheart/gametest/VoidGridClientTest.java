@@ -620,7 +620,7 @@ public class VoidGridClientTest implements FabricClientGameTest
             for (var expected : Map.of(
                     VoidGridContent.AZURIUM_PYLON, "Relay and provide void energy around it",
                     RavenousEngineContent.RAVENOUS_ENGINE, "Burn fiery essence to produce void energy",
-                    RubrumContent.CELL_SOCKET, "Store energy into rubrum cells").entrySet())
+                    RubrumContent.CELL_SOCKET, "Store energy into rubrum cells while given a redstone signal").entrySet())
             {
                 var lines = new ItemStack(expected.getKey()).getTooltipLines(tooltip, minecraft.player, TooltipFlag.NORMAL).stream().map(line -> line.getString()).toList();
                 expect(lines.stream().anyMatch(line -> line.contains(expected.getValue())), expected.getKey() + " should show its lore, shows " + lines);

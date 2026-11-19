@@ -323,7 +323,7 @@
   "block.voidheart.rubrum_construct_frame": "Construct Frame",
   "item.voidheart.rubrum_cell": "Rubrum Cell",
   "block.voidheart.cell_socket": "Cell Socket",
-  "voidheart.cell_socket.lore": "§7Store energy into rubrum cells",
+  "voidheart.cell_socket.lore": "§7Store energy into rubrum cells while given a redstone signal",
   "voidheart.rubrum_construct.preview": "Showing the frame of a %s-wide construct",
   "voidheart.rubrum_construct.preview.off": "Frame preview hidden",
   "voidheart.rubrum_construct.status": "Rubrum Construct: %s / %s, %s per tick, %s rubrum and %s azurium",
