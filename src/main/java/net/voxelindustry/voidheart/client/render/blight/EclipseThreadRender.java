@@ -147,9 +147,13 @@ public final class EclipseThreadRender
         var link = player.getAttached(EclipseLinks.LINK);
         if (link == null)
             return;
-        // Its shares are kept seen even while it holds one mob alone, or they would run again once a second joins
+        // Its shares are seen, and kept seen, even while it holds one mob alone, or they would run once a second joins
         for (var share : link.shares())
-            shareKeys.add(shareKey(player, share));
+        {
+            var key = shareKey(player, share);
+            shareKeys.add(key);
+            SHARE_SEEN.putIfAbsent(key, now);
+        }
         if (link.members().size() < 2)
             return;
         var members = link.members();
