@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineContent;
 import net.voxelindustry.voidheart.common.energy.grid.AzuriumPylonBlock;
 import net.voxelindustry.voidheart.common.energy.grid.AzuriumPylonTile;
+import net.voxelindustry.voidheart.common.energy.grid.PylonBundle;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -531,6 +532,14 @@ public class VoidGridClientTest implements FabricClientGameTest
             expect(layout.arcsOf(layout.indexOf(HANG_1)).size() == 1 && layout.arcsOf(layout.indexOf(HANG_2)).size() == 2,
                     "The hanging pylons should arc to each other and the standing one");
             expect(VoidGrid.pylonsCovering(level, HANG_SRC).size() == 1, "The first hanging pylon's field should reach the source");
+
+            // A bundle hanging under a standing pylon's base is not in its claws
+            var ground = level.getBlockState(HANG_END.below());
+            level.setBlockAndUpdate(HANG_END.below(), VoidHeartBlocks.SMALL_AZURIUM_BUNDLE.defaultBlockState().setValue(AmethystClusterBlock.FACING, Direction.DOWN));
+            expect(PylonBundle.holder(level, HANG_END.below()) == null, "A bundle under a standing pylon's base should not count as held by it");
+            expect(HANG_END.equals(PylonBundle.holder(level, HANG_END.above())), "The bundle in a standing pylon's claws should be held by it");
+            expect(HANG_2.equals(PylonBundle.holder(level, HANG_2.below())), "The bundle in a hanging pylon's claws should be held by it");
+            level.setBlockAndUpdate(HANG_END.below(), ground);
             OFFERS.put(HANG_SRC, 50L);
             ASKS.put(HANG_MACH, 50L);
         });
@@ -556,6 +565,15 @@ public class VoidGridClientTest implements FabricClientGameTest
         context.takeScreenshot("void-grid-hanging-side");
         aimFrom(context, server, 4.5, Y, -43, 2.5, CEILING - 1, -39.5, 3);
         context.takeScreenshot("void-grid-hanging-close");
+
+        // Additive and layered, so a frozen sweep close to a hanging bundle and its arc shows whether either flickers
+        server.runCommand("tick freeze");
+        for (int step = 0; step < 8; step++)
+        {
+            aimFrom(context, server, 10 + step * 0.06, Y + 2, -43.5 + step * 0.09, 12, Y + 3.6, -40, 2);
+            context.takeScreenshot("void-grid-hanging-sweep-" + step);
+        }
+        server.runCommand("tick unfreeze");
         server.runCommand("item replace entity @a weapon.mainhand with voidheart:small_azurium_bundle");
         aimFrom(context, server, 8, Y + 1, -47, 13, Y + 2, -40, 10);
         context.takeScreenshot("void-grid-hanging-fields");

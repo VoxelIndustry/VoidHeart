@@ -69,6 +69,9 @@ public enum PylonBundle
         if (!state.hasProperty(AmethystClusterBlock.FACING))
             return null;
         var pylon = bundle.relative(state.getValue(AmethystClusterBlock.FACING).getOpposite());
+        var pylonState = level.getBlockState(pylon);
+        if (!pylonState.is(VoidGridContent.AZURIUM_PYLON) || !AzuriumPylonBlock.bundlePos(pylonState, pylon).equals(bundle))
+            return null;
         return held(level, pylon) != NONE ? pylon : null;
     }
 
