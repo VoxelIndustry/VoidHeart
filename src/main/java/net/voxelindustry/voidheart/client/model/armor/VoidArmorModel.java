@@ -49,6 +49,8 @@ public class VoidArmorModel extends HumanoidModel<AvatarRenderState>
     private static final float SKIRT_SWING = 0.75F;
     private static final float SIDE_SWAY   = 0.12F;
     private static final float LIMP_BOW    = 0.55F;
+    /** About a pixel of rattle at a plate's lower edge. */
+    private static final float HIT_JOLT    = 0.08F;
     /** The rows sit a degree or so apart, so the stack doesn't look machined. */
     private static final float[] ROW_SKEW  = { 0.02F, -0.015F, 0.025F, -0.01F };
     private static final int     ROWS      = 4;
@@ -348,6 +350,15 @@ public class VoidArmorModel extends HumanoidModel<AvatarRenderState>
 
         rightGuard.zRot = GUARD_TILT + OPEN_GUARD * (1 - guards);
         leftGuard.zRot = -GUARD_TILT - OPEN_GUARD * (1 - guards);
+
+        // A blow knocks the plates out of line for the moment the wearer flashes red
+        if (state.hasRedOverlay)
+        {
+            for (int i = 0; i < ROWS; i++)
+                rows.get(i).xRot += i % 2 == 0 ? HIT_JOLT : -HIT_JOLT;
+            rightGuard.zRot += HIT_JOLT;
+            leftGuard.zRot -= HIT_JOLT;
+        }
         mask.xRot = -OPEN_MASK * (1 - maskClosed);
 
         if (look.limp())

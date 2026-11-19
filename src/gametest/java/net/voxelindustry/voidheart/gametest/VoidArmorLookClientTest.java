@@ -142,6 +142,35 @@ public class VoidArmorLookClientTest implements FabricClientGameTest
         context.getInput().pressKey(options -> options.keyHotbarSlots[5]);
         server.runCommand("time set noon");
 
+        // A blow from the front: sparks at the joints and the plates knocked out of line
+        server.runCommand("execute as @a run tp @s 0.5 " + FLAT_FEET + " 0.5 180 10");
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            var level = minecraft.overworld();
+            var zombie = net.minecraft.world.entity.EntityTypes.ZOMBIE.create(level, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+            zombie.setNoAi(true);
+            zombie.snapTo(player.getX(), player.getY(), player.getZ() - 2, 0, 0);
+            level.addFreshEntity(zombie);
+            player.hurtServer(level, player.damageSources().mobAttack(zombie), 2);
+            zombie.discard();
+        });
+        context.waitTicks(2);
+        context.takeScreenshot("void-armor-hit");
+        server.runOnServer(GameTestKit::heal);
+
+        // At a run, steam puffs from the back now and then
+        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        context.getInput().holdKey(options -> options.keySprint);
+        context.getInput().holdKey(options -> options.keyUp);
+        context.waitTicks(30);
+        context.takeScreenshot("void-armor-running");
+        context.getInput().releaseKey(options -> options.keyUp);
+        context.getInput().releaseKey(options -> options.keySprint);
+        context.waitTicks(10);
+        server.runCommand("execute as @a run tp @s 0.5 " + FLAT_FEET + " 0.5 180 10");
+
         // The hand is hidden with the HUD, so these show it
         context.getInput().pressKey(InputConstants.KEY_F1);
         context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));

@@ -97,6 +97,8 @@ public final class ArmorWear
         long   drawn;
         /** Walking and shield drain not yet a whole unit. */
         double owed;
+        /** Blocks run since the last puff of steam. */
+        double stride;
         long   writtenAt;
         LoadShedding.@Nullable Stage stage;
     }
@@ -120,6 +122,7 @@ public final class ArmorWear
                 tick(player);
         });
         ServerLivingEntityEvents.AFTER_DEATH.register(ArmorWear::onDeath);
+        ServerLivingEntityEvents.AFTER_DAMAGE.register(ArmorWear::onHurt);
         ArmorPayloads.register();
         ServerPlayerEvents.LEAVE.register(player ->
         {
@@ -514,7 +517,45 @@ public final class ArmorWear
         double blocks = Math.sqrt(dx * dx + dz * dz);
         if (blocks > MOST_STEP)
             return;
-        wearer(player).owed += ArmorDrain.walking(blocks, player.isSprinting());
+        var wearer = wearer(player);
+        wearer.owed += ArmorDrain.walking(blocks, player.isSprinting());
+        // Heavy steps vent a puff of steam now and then, more often at a run
+        if (player.isSprinting() && !limp(player))
+        {
+            wearer.stride += blocks;
+            if (wearer.stride >= STEAM_STRIDE)
+            {
+                wearer.stride = player.getRandom().nextFloat() * STEAM_STRIDE / 3;
+                steam(player, ParticleTypes.WHITE_SMOKE, 2 + player.getRandom().nextInt(2));
+            }
+        }
+    }
+
+    /** Blocks run between puffs of steam, a third of it random. */
+    private static final double STEAM_STRIDE = 4.5;
+
+    /**
+     * A small cloud from the vents between the frame's shoulder blades.
+     */
+    private static void steam(ServerPlayer player, net.minecraft.core.particles.SimpleParticleType kind, int puffs)
+    {
+        var back = Vec3.directionFromRotation(0, player.yBodyRot).reverse().scale(0.5);
+        player.level().sendParticles(kind, player.getX() + back.x, player.getY() + 2.1, player.getZ() + back.z, puffs, 0.12, 0.1, 0.12, 0.015);
+    }
+
+    /**
+     * Sparks fly from the frame's joints where a blow lands.
+     */
+    private static void onHurt(LivingEntity entity, DamageSource source, float baseDamage, float damage, boolean blocked)
+    {
+        if (!(entity instanceof ServerPlayer player) || !wearing(player) || baseDamage <= 0 || source.is(ShieldingApparatus.BYPASSES))
+            return;
+        var from = source.getSourcePosition();
+        var center = player.getBoundingBox().getCenter();
+        var toward = from == null ? Vec3.ZERO : from.subtract(center).multiply(1, 0, 1).normalize().scale(0.45);
+        player.level().sendParticles(ParticleTypes.ELECTRIC_SPARK, center.x + toward.x, center.y + 0.3, center.z + toward.z,
+                8, 0.2, 0.4, 0.2, 0.1);
+        player.level().playSound(null, player.getX(), center.y, player.getZ(), SoundEvents.CHAIN_HIT, SoundSource.PLAYERS, 0.7F, 0.8F);
     }
 
     public static void onJumped(ServerPlayer player)
@@ -547,6 +588,8 @@ public final class ArmorWear
         draw(player, ArmorDrain.fallCost(taken));
         if (taken == damage)
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.NETHERITE_BLOCK_FALL, SoundSource.PLAYERS, 1, 0.6F);
+        // The legs vent the landing
+        steam(player, ParticleTypes.CLOUD, 4 + taken / 3);
         return damage - taken;
     }
 
