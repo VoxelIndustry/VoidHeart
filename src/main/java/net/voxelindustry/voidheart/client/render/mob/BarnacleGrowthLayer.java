@@ -15,6 +15,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.voxelindustry.voidheart.client.armor.VoidArmorLook;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleInfection;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -39,7 +40,7 @@ public class BarnacleGrowthLayer extends RenderLayer<AvatarRenderState, PlayerMo
     public void submit(PoseStack poseStack, SubmitNodeCollector collector, int lightCoords, AvatarRenderState state, float yRot, float xRot)
     {
         var level = Minecraft.getInstance().level;
-        if (level == null || state.isInvisible || !(level.getEntity(state.id) instanceof Player player))
+        if (level == null || state.isInvisible || VoidArmorLook.framed(state) || !(level.getEntity(state.id) instanceof Player player))
             return;
 
         int amount = BarnacleInfection.amount(player);

@@ -36,6 +36,10 @@ public final class ArmorHotbar
     public static final AttachmentType<List<ItemStack>> STASH = AttachmentRegistry.create(Identifier.fromNamespaceAndPath(MODID, "void_armor_stash"),
             builder -> builder.persistent(ItemStack.OPTIONAL_CODEC.listOf()));
 
+    /** The hotbar slot the wearer had selected when they stepped in, given back once they are out. */
+    public static final AttachmentType<Integer> SELECTED = AttachmentRegistry.create(Identifier.fromNamespaceAndPath(MODID, "void_armor_selected"),
+            builder -> builder.persistent(Codec.INT));
+
     /** The rack a thrown weapon left, so it comes back there. */
     public static final AttachmentType<Integer> THROWN_FROM = AttachmentRegistry.create(Identifier.fromNamespaceAndPath(MODID, "void_armor_thrown_from"),
             builder -> builder.persistent(Codec.INT));
@@ -79,6 +83,7 @@ public final class ArmorHotbar
             stash.add(inventory.removeItemNoUpdate(i));
         stash.add(inventory.removeItemNoUpdate(OFFHAND));
         player.setAttached(STASH, stash);
+        player.setAttached(SELECTED, inventory.getSelectedSlot());
 
         var slots = slots(frame);
         for (int i = 0; i < RACKS; i++)
@@ -128,6 +133,19 @@ public final class ArmorHotbar
         var filled = frame.copy();
         filled.set(VoidArmorContent.ARMOR_SLOTS, ItemContainerContents.fromItems(slots));
         return filled;
+    }
+
+    /**
+     * Selects the hotbar slot the player had before stepping in. Called once the frame is off them, since while it is on only its racks can be selected.
+     */
+    public static void restoreSelection(ServerPlayer player)
+    {
+        var selected = player.getAttached(SELECTED);
+        if (selected == null || ArmorWear.wearing(player))
+            return;
+        player.removeAttached(SELECTED);
+        player.getInventory().setSelectedSlot(selected);
+        player.connection.send(new ClientboundSetHeldSlotPacket(selected));
     }
 
     private static NonNullList<ItemStack> slots(ItemStack frame)

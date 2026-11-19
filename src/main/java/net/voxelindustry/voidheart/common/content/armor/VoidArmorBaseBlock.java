@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.content.armor;
 
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Prediction;
@@ -21,6 +22,9 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -41,6 +45,8 @@ import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper
 public class VoidArmorBaseBlock extends Block implements EntityBlock
 {
     public static final BooleanProperty DOCKED = BooleanProperty.create("docked");
+    /** The way a docked frame faces: toward whoever placed the base. */
+    public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 
     /** Where a wearer's feet stand on the plinth, above the base's own position. */
     public static final double STAND_HEIGHT = 3 / 16D;
@@ -50,13 +56,19 @@ public class VoidArmorBaseBlock extends Block implements EntityBlock
     public VoidArmorBaseBlock(Properties properties)
     {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(DOCKED, false));
+        registerDefaultState(stateDefinition.any().setValue(DOCKED, false).setValue(FACING, Direction.SOUTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(DOCKED);
+        builder.add(DOCKED, FACING);
+    }
+
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context)
+    {
+        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
     public static Vec3 standAt(BlockPos pos)

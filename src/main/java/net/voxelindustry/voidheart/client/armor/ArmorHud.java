@@ -129,6 +129,37 @@ public final class ArmorHud
         cells(graphics, left + BAR_W + CELLS_GAP, top + (BAR_H - CELL_H) / 2, worn, stage);
     }
 
+    /** The menpō's edge in first person: dark wedges at the corners of the view, faint so they frame it without closing it in. */
+    private static final float MASK_CORNER = 0.16F;
+    private static final int   MASK_SHADE  = 0x400B0810;
+    private static final int   MASK_RIM    = 0x502A2038;
+
+    /**
+     * Frames a wearer's first-person view in the corners of the frame's mask.
+     */
+    public static void maskEdge(GuiGraphicsExtractor graphics, DeltaTracker delta)
+    {
+        var minecraft = Minecraft.getInstance();
+        var player = minecraft.player;
+        if (player == null || !minecraft.options.getCameraType().isFirstPerson() || ArmorWear.worn(player) == null)
+            return;
+        int width = graphics.guiWidth();
+        int height = graphics.guiHeight();
+        int size = Math.round(Math.min(width, height) * MASK_CORNER);
+        for (int i = 0; i < size; i++)
+        {
+            int length = size - i;
+            graphics.fill(0, i, length, i + 1, MASK_SHADE);
+            graphics.fill(width - length, i, width, i + 1, MASK_SHADE);
+            graphics.fill(0, height - 1 - i, length, height - i, MASK_SHADE);
+            graphics.fill(width - length, height - 1 - i, width, height - i, MASK_SHADE);
+            graphics.fill(length - 1, i, length, i + 1, MASK_RIM);
+            graphics.fill(width - length, i, width - length + 1, i + 1, MASK_RIM);
+            graphics.fill(length - 1, height - 1 - i, length, height - i, MASK_RIM);
+            graphics.fill(width - length, height - 1 - i, width - length + 1, height - i, MASK_RIM);
+        }
+    }
+
     private static void plate(GuiGraphicsExtractor graphics, int x, int y, int rim, int back)
     {
         graphics.fill(x, y, x + PLATE - 1, y + PLATE, rim);

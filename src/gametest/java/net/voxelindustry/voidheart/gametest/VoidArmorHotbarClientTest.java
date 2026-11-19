@@ -66,6 +66,9 @@ public class VoidArmorHotbarClientTest implements FabricClientGameTest
             server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
             context.waitTicks(10);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            // The wearer's own selection, given back when they step out
+            context.getInput().pressKey(options -> options.keyHotbarSlots[5]);
+            context.waitTicks(3);
 
             server.runOnServer(minecraft ->
             {
@@ -246,6 +249,9 @@ public class VoidArmorHotbarClientTest implements FabricClientGameTest
             for (int i = 0; i < inventory.getContainerSize(); i++)
                 expect(!inventory.getItem(i).is(Items.DIAMOND_SWORD) && !inventory.getItem(i).is(Items.BOW), "Expected no rack weapon left in the inventory");
         });
+        int server5 = server.computeOnServer(minecraft -> player(minecraft).getInventory().getSelectedSlot());
+        int client5 = context.computeOnClient(minecraft -> minecraft.player.getInventory().getSelectedSlot());
+        expect(server5 == 5 && client5 == 5, "Expected the slot selected before stepping in selected again, server " + server5 + ", client " + client5);
     }
 
     private static void deathKeepsRacks(ClientGameTestContext context, TestServerContext server)

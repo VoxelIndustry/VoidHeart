@@ -48,6 +48,7 @@ import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
 import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
 import net.voxelindustry.voidheart.client.screen.VoidArmorScreen;
 import net.voxelindustry.voidheart.client.render.armor.ParkedArmorRender;
+import net.voxelindustry.voidheart.client.render.armor.VoidArmorBaseRender;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
 import net.voxelindustry.voidheart.client.render.blight.BlightEdgeRender;
@@ -225,6 +226,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(ShieldRuneRender::collectSubmits);
         HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shield"), ShieldHud::extract);
         HudElementRegistry.replaceElement(VanillaHudElements.HOTBAR, ArmorHud::replacing);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "void_armor_mask"), ArmorHud::maskEdge);
         HudElementRegistry.attachElementAfter(VanillaHudElements.HEALTH_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart"), SecondHeartHud::extractIcon);
         HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart_view"), SecondHeartHud::extractView);
         ClientTickEvents.END_CLIENT_TICK.register(SecondHeartHud::tick);
@@ -234,6 +236,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(TwinVentricleContent.HEART_CRADLE_TILE, HeartCradleRender::new);
         EntityRendererRegistry.register(TwinVentricleContent.VENTRICLE_TEAR, VentricleTearRender::new);
         EntityRendererRegistry.register(VoidArmorContent.PARKED_ARMOR, ParkedArmorRender::new);
+        BlockEntityRenderers.register(VoidArmorContent.VOID_ARMOR_BASE_TILE, VoidArmorBaseRender::new);
         MenuScreens.register(VoidHeartMenus.APPARATUS, ApparatusScreen::new);
         MenuScreens.register(VoidArmorContent.VOID_ARMOR_MENU, VoidArmorScreen::new);
         ShieldingApparatusItem.openFromSlot = holder -> ClientPlayNetworking.send(new ShieldPayloads.Open(holder));

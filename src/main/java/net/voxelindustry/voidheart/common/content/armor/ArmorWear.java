@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -370,6 +371,8 @@ public final class ArmorWear
         if (worn == null)
         {
             applyModifiers(player, null);
+            // A tick after stepping out, so the client already knows the frame is off and lets the selection leave the racks
+            ArmorHotbar.restoreSelection(player);
             return;
         }
         long time = player.level().getGameTime();
@@ -386,6 +389,7 @@ public final class ArmorWear
             }
             case STEPPING_IN ->
             {
+                closingSounds(player, elapsed);
                 if (elapsed >= ArmorBalance.STEP_IN_TICKS)
                     player.setAttached(WORN, worn.in(WornArmor.Phase.WORN, time));
             }
@@ -412,6 +416,31 @@ public final class ArmorWear
             }
         }
         applyModifiers(player, player.getAttached(WORN));
+    }
+
+    /** Ticks into stepping in when each chest row drops, the shoulder guards fall and the mask closes, as the frame's model closes. */
+    private static final int[] ROW_CLACKS   = { 11, 14, 17, 20 };
+    private static final int   GUARDS_FALL  = 25;
+    private static final int   MASK_CLOSES  = 29;
+
+    /**
+     * A clack as each chest row drops, a heavier one as the shoulder guards fall, and the mask shutting with a burst of steam from the back.
+     */
+    private static void closingSounds(ServerPlayer player, long elapsed)
+    {
+        var level = player.level();
+        for (int clack : ROW_CLACKS)
+            if (elapsed == clack)
+                level.playSound(null, player.getX(), player.getY() + 1.5, player.getZ(), SoundEvents.CHAIN_PLACE, SoundSource.PLAYERS, 0.7F, 0.8F + clack * 0.02F);
+        if (elapsed == GUARDS_FALL)
+            level.playSound(null, player.getX(), player.getY() + 2, player.getZ(), SoundEvents.ARMOR_EQUIP_IRON.value(), SoundSource.PLAYERS, 0.9F, 0.7F);
+        if (elapsed == MASK_CLOSES)
+        {
+            level.playSound(null, player.getX(), player.getEyeY(), player.getZ(), SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.PLAYERS, 0.8F, 0.6F);
+            level.playSound(null, player.getX(), player.getY() + 1.5, player.getZ(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.5F, 1.3F);
+            var back = Vec3.directionFromRotation(0, player.yBodyRot).reverse().scale(0.5);
+            level.sendParticles(ParticleTypes.CLOUD, player.getX() + back.x, player.getY() + 1.9, player.getZ() + back.z, 10, 0.15, 0.25, 0.15, 0.02);
+        }
     }
 
     /**

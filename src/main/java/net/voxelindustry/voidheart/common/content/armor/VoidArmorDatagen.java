@@ -3,7 +3,6 @@ package net.voxelindustry.voidheart.common.content.armor;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
-import net.minecraft.client.data.models.blockstates.PropertyDispatch;
 import net.minecraft.client.data.models.model.ItemModelUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.data.loot.BlockLootSubProvider;
@@ -13,8 +12,8 @@ import static net.minecraft.client.data.models.BlockModelGenerators.plainVariant
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Datagen for the Void Armor, handed off through EnergyDatagen since its base charges from the energy grid. The base's plinth and the stand it grows when
- * a frame is docked are hand-written in assets/voidheart/models/block, until the frame gets its own model.
+ * Datagen for the Void Armor, handed off through EnergyDatagen since its base charges from the energy grid. The base's plinth is hand-written in
+ * assets/voidheart/models/block, and a docked frame is drawn standing on it by VoidArmorBaseRender.
  */
 public final class VoidArmorDatagen
 {
@@ -29,10 +28,8 @@ public final class VoidArmorDatagen
 
     public static void blockModels(BlockModelGenerators generators)
     {
-        generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidArmorContent.VOID_ARMOR_BASE).with(
-                PropertyDispatch.initial(VoidArmorBaseBlock.DOCKED)
-                        .select(false, plainVariant(model("block/void_armor_base")))
-                        .select(true, plainVariant(model("block/void_armor_base_docked")))));
+        // The plinth is round about, so whether a frame is docked and the way it faces leave it as it is
+        generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidArmorContent.VOID_ARMOR_BASE, plainVariant(model("block/void_armor_base"))));
     }
 
     public static void itemModels(ItemModelGenerators generators)

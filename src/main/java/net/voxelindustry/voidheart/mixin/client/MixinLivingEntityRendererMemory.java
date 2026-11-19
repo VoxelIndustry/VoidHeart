@@ -5,7 +5,10 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.LivingEntity;
 import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.client.TunnelVision;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.world.entity.player.Player;
 import net.voxelindustry.voidheart.client.armor.ArmorSight;
+import net.voxelindustry.voidheart.client.armor.VoidArmorLook;
 import net.voxelindustry.voidheart.client.render.KleinStarRender;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,5 +32,8 @@ public class MixinLivingEntityRendererMemory
         state.setData(KleinStarRender.RAISED_ARM, KleinStarRender.raisedArm(entity));
         // What a Void Armor wearer's spectral lens shows of it through walls
         state.setData(ArmorSight.SPECTRAL, ArmorSight.silhouette(entity, partialTicks));
+        // The Void Armor a player has on, if any, drawn in place of their body
+        if (state instanceof AvatarRenderState)
+            state.setData(VoidArmorLook.KEY, entity instanceof Player player ? VoidArmorLook.of(player, partialTicks) : VoidArmorLook.NONE);
     }
 }
