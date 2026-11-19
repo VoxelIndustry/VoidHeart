@@ -70,6 +70,17 @@ public final class BlightBalance
     /** How much of its speed a mob inside the hole keeps, so it stays caught. */
     public static final double HOLE_HOLD            = 0.3;
 
+    /** How long the crossbow takes to load, against a crossbow's 25 ticks, and what its bolt hits for. */
+    public static final int   CROSSBOW_CHARGE_TICKS = 16;
+    public static final float BOLT_DAMAGE           = 9;
+
+    /** The most mobs one link holds, how long it lasts unless struck again, and how far apart two members may stand before it comes apart. */
+    public static final int    LINK_MAX             = 3;
+    public static final int    LINK_TICKS           = 160;
+    public static final double LINK_BREAK           = 16;
+    /** Share of the damage a member takes that each other member takes too. */
+    public static final float  LINK_SHARE           = 0.5F;
+
     private BlightBalance()
     {
     }

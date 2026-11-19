@@ -9,6 +9,7 @@ import net.voxelindustry.voidheart.common.content.sanctum.LesserShoggoth;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
 import net.voxelindustry.voidheart.common.content.blight.ThrownBlightSpear;
+import net.voxelindustry.voidheart.common.content.blight.EclipseBolt;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -68,6 +69,7 @@ public class VoidHeartEntities
     public static EntityType<WraithStain> WRAITH_STAIN;
     public static EntityType<HarvestWraith> HARVEST_WRAITH;
     public static EntityType<ThrownBlightSpear> THROWN_BLIGHT_SPEAR;
+    public static EntityType<EclipseBolt> ECLIPSE_BOLT;
     public static EntityType<CorruptedCrab> CORRUPTED_CRAB_SMALL;
     public static EntityType<CorruptedCrab> CORRUPTED_CRAB_MEDIUM;
     public static EntityType<CorruptedCrab> CORRUPTED_CRAB_LARGE;
@@ -170,6 +172,14 @@ public class VoidHeartEntities
                 .updateInterval(1)
                 .fireImmune()
                 .noLootTable());
+
+        // As an arrow
+        ECLIPSE_BOLT = register("eclipse_bolt", EntityType.Builder.<EclipseBolt>of(EclipseBolt::new, MobCategory.MISC)
+                .noLootTable()
+                .sized(0.5F, 0.5F)
+                .eyeHeight(0.13F)
+                .clientTrackingRange(4)
+                .updateInterval(20));
 
         WRAITH_SCARAB = register("wraith_scarab", EntityType.Builder.of(WraithScarab::new, MobCategory.MONSTER)
                 .sized(ScarabHops.WIDTH, ScarabHops.HEIGHT)

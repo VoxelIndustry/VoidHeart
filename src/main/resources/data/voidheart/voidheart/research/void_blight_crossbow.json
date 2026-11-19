@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:void_blight_crossbow",
+  "insight_cost": 16,
+  "knowledge_cost": 5500,
+  "knowledge_per_second": 2.5,
+  "strain": 30,
+  "requires": [
+    "voidheart:contravoid_reactor"
+  ],
+  "blueprint": "voidheart:void_blight_crossbow",
+  "unlocks": [
+    "voidheart:void_blight_crossbow"
+  ],
+  "recipes": [
+    "voidheart:altar/void_blight_crossbow"
+  ]
+}

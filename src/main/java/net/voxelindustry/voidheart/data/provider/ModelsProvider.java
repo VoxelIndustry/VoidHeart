@@ -15,6 +15,9 @@ import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.renderer.block.dispatch.Variant;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.renderer.item.ClientItem;
+import net.minecraft.client.renderer.item.properties.numeric.CrossbowPull;
+import net.minecraft.client.renderer.item.properties.select.Charge;
+import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.client.data.models.model.TextureSlot;
 import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.client.data.models.model.TexturedModel;
@@ -361,6 +364,17 @@ public class ModelsProvider extends FabricModelProvider
                 ItemModelUtils.when(List.of(ItemDisplayContext.GROUND, ItemDisplayContext.FIXED, ItemDisplayContext.ON_SHELF),
                         ItemModelUtils.composite(ItemModelUtils.plainModel(spear), ItemModelUtils.specialModel(spear, new BlightEdgeRender.Unbaked("spear"))))),
                 new ClientItem.Properties(true, false, 1.95F));
+        // As a crossbow, drawn and loaded, but it only ever loads arrows, so it has no rocket model
+        var crossbow = VoidHeartItems.VOID_BLIGHT_CROSSBOW;
+        var crossbowIdle = ItemModelUtils.plainModel(generator.createFlatItemModel(crossbow, ModelTemplates.CROSSBOW));
+        generator.itemModelOutput.accept(crossbow, ItemModelUtils.select(new Charge(),
+                ItemModelUtils.conditional(ItemModelUtils.isUsingItem(),
+                        ItemModelUtils.rangeSelect(new CrossbowPull(),
+                                ItemModelUtils.plainModel(generator.createFlatItemModel(crossbow, "_pulling_0", ModelTemplates.CROSSBOW)),
+                                ItemModelUtils.override(ItemModelUtils.plainModel(generator.createFlatItemModel(crossbow, "_pulling_1", ModelTemplates.CROSSBOW)), 0.58F),
+                                ItemModelUtils.override(ItemModelUtils.plainModel(generator.createFlatItemModel(crossbow, "_pulling_2", ModelTemplates.CROSSBOW)), 1.0F)),
+                        crossbowIdle),
+                ItemModelUtils.when(CrossbowItem.ChargeType.ARROW, ItemModelUtils.plainModel(generator.createFlatItemModel(crossbow, "_arrow", ModelTemplates.CROSSBOW)))));
         // A staff in the hand and in the world, from the hand-written model, and its flat picture in screens
         generator.itemModelOutput.accept(VoidHeartItems.KLEIN_STAR, ItemModelUtils.select(new DisplayContext(),
                 ItemModelUtils.plainModel(itemModel("klein_star_staff")),

@@ -46,6 +46,7 @@ import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
 import net.voxelindustry.voidheart.client.screen.BlueprintScreen;
 import net.voxelindustry.voidheart.client.render.blight.BlightEdgeRender;
 import net.voxelindustry.voidheart.client.render.blight.HarvestWraithRender;
+import net.voxelindustry.voidheart.client.render.blight.EclipseThreadRender;
 import net.voxelindustry.voidheart.client.render.blight.HoleLook;
 import net.voxelindustry.voidheart.client.render.blight.PunctureRender;
 import net.voxelindustry.voidheart.common.content.blight.BlueprintPayloads;
@@ -241,6 +242,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(PunctureRender::collectSubmits);
         HarvestWraithRender.register();
         HoleLook.register();
+        LevelRenderEvents.COLLECT_SUBMITS.register(EclipseThreadRender::collectSubmits);
         ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "temple_mosaic"),
                 (ResourceManagerReloadListener) resources -> MosaicStare.reloaded());
         LevelRenderEvents.AFTER_BLOCK_OUTLINE_EXTRACTION.register(KnowledgeColumnOutline::afterExtraction);
