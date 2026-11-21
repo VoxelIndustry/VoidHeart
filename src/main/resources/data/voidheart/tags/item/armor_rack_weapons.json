@@ -1,0 +1,22 @@
+{
+  "values": [
+    "#minecraft:swords",
+    "#minecraft:axes",
+    "#minecraft:spears",
+    "minecraft:mace",
+    "minecraft:trident",
+    "minecraft:bow",
+    "minecraft:crossbow",
+    "voidheart:klein_star",
+    "voidheart:void_blight_rapier",
+    "voidheart:void_blight_scythe",
+    {
+      "id": "voidheart:void_blight_spear",
+      "required": false
+    },
+    {
+      "id": "voidheart:void_blight_crossbow",
+      "required": false
+    }
+  ]
+}

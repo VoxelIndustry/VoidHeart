@@ -44,6 +44,16 @@ class BlueprintsTest
     }
 
     @Test
+    void pool_leavesOutWhatIsLearnedByStudy()
+    {
+        var tree = new java.util.HashMap<>(TREE);
+        tree.put(id("void_armor"), research(Optional.of(Blueprints.VOID_ARMOR)));
+
+        assertThat(Blueprints.pool(tree)).doesNotContain(Blueprints.VOID_ARMOR).containsExactlyElementsOf(POOL);
+        assertThat(Blueprints.all(tree)).contains(Blueprints.VOID_ARMOR);
+    }
+
+    @Test
     void draw_givesThreeUnknownAndDistinctDesigns()
     {
         for (int seed = 0; seed < 50; seed++)

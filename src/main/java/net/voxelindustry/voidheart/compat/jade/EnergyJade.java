@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.compat.jade;
 
+import net.voxelindustry.voidheart.common.content.armor.VoidArmorJade;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleJade;
 import net.voxelindustry.voidheart.common.energy.gnawer.GnawerJade;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlJade;
@@ -49,6 +50,7 @@ public final class EnergyJade
         ContravoidReactorJade.registerClient(registration);
         DeepSiphonJade.registerClient(registration);
         TwinVentricleJade.registerClient(registration);
+        VoidArmorJade.registerClient(registration);
         GnawerJade.registerClient(registration);
         PearlJade.registerClient(registration);
     }

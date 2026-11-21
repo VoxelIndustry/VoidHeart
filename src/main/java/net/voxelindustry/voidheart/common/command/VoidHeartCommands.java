@@ -123,6 +123,7 @@ public class VoidHeartCommands
         SinCommands.register(builder);
         BlueprintCommands.register(builder);
         SecondHeartCommands.register(builder);
+        ArmorCommands.register(builder);
 
         dispatcher.register(builder);
     }

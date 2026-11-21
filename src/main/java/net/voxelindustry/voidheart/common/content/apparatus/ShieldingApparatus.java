@@ -29,6 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.voxelindustry.voidheart.common.content.armor.ArmorWear;
 import net.voxelindustry.voidheart.common.content.mob.MalignantBoulder;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import org.joml.Vector3f;
@@ -66,8 +67,13 @@ public final class ShieldingApparatus
         // Touching the class is enough to register the attachment
     }
 
+    /**
+     * The apparatus whose shield the player carries. Inside the Void Armor it is the one in the frame's socket, and one worn on the body goes dormant.
+     */
     public static ItemStack equipped(Player player)
     {
+        if (ArmorWear.wearing(player))
+            return ArmorWear.socketed(player);
         var attachment = TrinketsApi.getAttachment(player);
         if (attachment == null)
             return ItemStack.EMPTY;
@@ -105,7 +111,14 @@ public final class ShieldingApparatus
         var state = state(player);
         var next = state.fitTo(stats);
         if (stats != null)
-            next = next.tick(stats);
+        {
+            // Inside the Void Armor, the frame refills the shield and pays for every point
+            var refill = ArmorWear.wearing(player) ? ArmorWear.shieldStats(player, stats) : stats;
+            float before = next.points();
+            next = next.tick(refill);
+            if (refill != stats)
+                ArmorWear.payForShield(player, next.points() - before);
+        }
 
         if (next.equals(ShieldState.NONE))
         {

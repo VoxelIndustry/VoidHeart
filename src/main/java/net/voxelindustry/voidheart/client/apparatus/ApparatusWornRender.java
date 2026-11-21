@@ -20,6 +20,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
+import net.voxelindustry.voidheart.client.armor.VoidArmorLook;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTier;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 
@@ -88,7 +89,8 @@ public final class ApparatusWornRender implements TrinketRenderer
     public void submit(ItemStack stack, TrinketSlotAccess slotReference, EntityModel<? extends LivingEntityRenderState> contextModel, PoseStack poseStack,
                        SubmitNodeCollector submit, int light, LivingEntityRenderState state, float limbAngle, float limbDistance)
     {
-        if (state.isInvisible || !(contextModel instanceof HumanoidModel<?> humanoid) || !(stack.getItem() instanceof ShieldingApparatusItem apparatus))
+        // Inside a Void Armor frame the apparatus is the frame's, and one worn on the body is hidden by it
+        if (state.isInvisible || VoidArmorLook.framed(state) || !(contextModel instanceof HumanoidModel<?> humanoid) || !(stack.getItem() instanceof ShieldingApparatusItem apparatus))
             return;
 
         poseStack.pushPose();

@@ -11,6 +11,7 @@ import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.voxelindustry.voidheart.common.content.armor.VoidArmorDatagen;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleDatagen;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineDatagen;
@@ -50,6 +51,7 @@ public final class EnergyDatagen
         ContravoidReactorDatagen.blockModels(generators);
         DeepSiphonDatagen.blockModels(generators);
         TwinVentricleDatagen.blockModels(generators);
+        VoidArmorDatagen.blockModels(generators);
         GnawerDatagen.blockModels(generators);
         PearlDatagen.blockModels(generators);
     }
@@ -65,6 +67,7 @@ public final class EnergyDatagen
         ContravoidReactorDatagen.itemModels(generators);
         DeepSiphonDatagen.itemModels(generators);
         TwinVentricleDatagen.itemModels(generators);
+        VoidArmorDatagen.itemModels(generators);
         GnawerDatagen.itemModels(generators);
         PearlDatagen.itemModels(generators);
     }
@@ -98,6 +101,7 @@ public final class EnergyDatagen
         ContravoidReactorDatagen.loot(loot);
         DeepSiphonDatagen.loot(loot);
         TwinVentricleDatagen.loot(loot);
+        VoidArmorDatagen.loot(loot);
         GnawerDatagen.loot(loot);
         PearlDatagen.loot(loot);
     }
