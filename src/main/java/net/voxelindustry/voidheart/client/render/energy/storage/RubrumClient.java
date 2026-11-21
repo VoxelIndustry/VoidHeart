@@ -19,6 +19,7 @@ public final class RubrumClient
 
         BlockEntityRenderers.register(RubrumContent.RUBRUM_CONSTRUCT, RubrumConstructRender::new);
         BlockEntityRenderers.register(RubrumContent.CELL_SOCKET_TILE, CellSocketRender::new);
+        BlockEntityRenderers.register(RubrumContent.SOCKET_WALL_TILE, SocketWallRender::new);
 
         ParticleProviderRegistry.getInstance().register(RubrumContent.RUBRUM_MOTE,
                 spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->

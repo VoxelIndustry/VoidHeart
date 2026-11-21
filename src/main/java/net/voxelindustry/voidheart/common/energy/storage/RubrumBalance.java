@@ -33,6 +33,8 @@ public final class RubrumBalance
     public static final long CELL_CAPACITY    = 400_000;
     /** Guess: how fast a cell socket charges or discharges its cell. */
     public static final long CELL_SOCKET_RATE = 64;
+    /** Guess: how fast a socket wall charges or discharges each of its four cells. */
+    public static final long SOCKET_WALL_RATE = CELL_SOCKET_RATE;
 
     /** Searing azurium gives out, and Still takes in, this many times its rate. */
     public static final long HABIT_RATE_FACTOR = 2;

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "voidheart:block/socket_wall",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "voidheart:block/socket_wall"
+    },
+    "facing=south": {
+      "model": "voidheart:block/socket_wall",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "voidheart:block/socket_wall",
+      "y": 270
+    }
+  }
+}

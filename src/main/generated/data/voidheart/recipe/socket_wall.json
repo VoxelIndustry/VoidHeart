@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "G": "voidheart:ravenous_gold_ingot",
+    "S": "voidheart:cell_socket",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "VSV",
+    "SGS",
+    "VSV"
+  ],
+  "result": {
+    "id": "voidheart:socket_wall"
+  }
+}

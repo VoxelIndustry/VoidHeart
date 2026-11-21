@@ -14,7 +14,8 @@
     "voidheart:rubrum_construct_core",
     "voidheart:rubrum_construct_frame",
     "voidheart:rubrum_cell",
-    "voidheart:cell_socket"
+    "voidheart:cell_socket",
+    "voidheart:socket_wall"
   ],
   "recipes": [
     "voidheart:altar/azurium_pylon",
@@ -22,6 +23,7 @@
     "voidheart:altar/rubrum_construct_core",
     "voidheart:rubrum_construct_frame",
     "voidheart:rubrum_cell",
-    "voidheart:cell_socket"
+    "voidheart:cell_socket",
+    "voidheart:socket_wall"
   ]
 }

@@ -21,12 +21,13 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Jade hand-off for W2 Rubrum storage, called through EnergyJade: a construct's charge, rate, bundles and bud from its
- * core or any frame block, and a socket's cell.
+ * core or any frame block,, a socket's cell and a socket wall's cells.
  */
 public final class RubrumJade
 {
     private static final Identifier CONSTRUCT   = Identifier.fromNamespaceAndPath(MODID, "rubrum_construct");
     private static final Identifier CELL_SOCKET = Identifier.fromNamespaceAndPath(MODID, "cell_socket");
+    private static final Identifier SOCKET_WALL = Identifier.fromNamespaceAndPath(MODID, "socket_wall");
 
     private RubrumJade()
     {
@@ -38,6 +39,7 @@ public final class RubrumJade
         registration.registerBlockDataProvider(construct, RubrumConstructTile.class);
         registration.registerBlockDataProvider(construct, ConstructFrameBlock.class);
         registration.registerBlockDataProvider(new SocketData(), CellSocketTile.class);
+        registration.registerBlockDataProvider(new WallData(), SocketWallTile.class);
     }
 
     public static void registerClient(IWailaClientRegistration registration)
@@ -46,6 +48,7 @@ public final class RubrumJade
         registration.registerBlockComponent(construct, RubrumConstructBlock.class);
         registration.registerBlockComponent(construct, ConstructFrameBlock.class);
         registration.registerBlockComponent(new SocketTooltip(), CellSocketBlock.class);
+        registration.registerBlockComponent(new WallTooltip(), SocketWallBlock.class);
     }
 
     private static class ConstructData implements IServerDataProvider<BlockAccessor>
@@ -171,6 +174,65 @@ public final class RubrumJade
         public Identifier getUid()
         {
             return CELL_SOCKET;
+        }
+    }
+
+    private static class WallData implements IServerDataProvider<BlockAccessor>
+    {
+        @Override
+        public void appendServerData(CompoundTag tag, BlockAccessor accessor)
+        {
+            if (!(accessor.getBlockEntity() instanceof SocketWallTile wall))
+                return;
+            tag.putInt("cells", wall.cellCount());
+            tag.putLong("charge", wall.totalCharge());
+            // Habits let one wall charge some cells while others discharge, so each way is told apart
+            var charging = false;
+            var discharging = false;
+            for (var slot = 0; slot < SocketWallGeometry.SLOTS; slot++)
+            {
+                var activity = wall.activity(slot);
+                charging |= activity == CellSocketTile.Activity.CHARGING;
+                discharging |= activity == CellSocketTile.Activity.DISCHARGING || activity == CellSocketTile.Activity.BURSTING;
+            }
+            tag.putBoolean("charging", charging);
+            tag.putBoolean("discharging", discharging);
+        }
+
+        @Override
+        public Identifier getUid()
+        {
+            return SOCKET_WALL;
+        }
+    }
+
+    private static class WallTooltip implements IBlockComponentProvider
+    {
+        @Override
+        public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config)
+        {
+            var data = accessor.getServerData();
+            if (!data.contains("cells"))
+                return;
+            var cells = data.getIntOr("cells", 0);
+            if (cells == 0)
+            {
+                tooltip.add(Component.translatable(MODID + ".jade.socket_wall.empty"));
+                return;
+            }
+            tooltip.add(Component.translatable(MODID + ".jade.socket_wall.cells", cells, SocketWallGeometry.SLOTS));
+            tooltip.add(Component.translatable(MODID + ".rubrum_cell.tooltip",
+                    String.format("%,d", data.getLongOr("charge", 0L)), String.format("%,d", RubrumBalance.CELL_CAPACITY * cells)));
+            if (data.getBooleanOr("charging", false))
+                tooltip.add(Component.translatable(MODID + ".jade.socket_wall.charging"));
+            if (data.getBooleanOr("discharging", false))
+                tooltip.add(Component.translatable(MODID + ".jade.socket_wall.discharging"));
+        }
+
+        @Override
+        public Identifier getUid()
+        {
+            return SOCKET_WALL;
         }
     }
 }

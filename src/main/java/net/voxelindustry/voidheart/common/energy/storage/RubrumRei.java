@@ -34,6 +34,9 @@ public final class RubrumRei
                 line("rubrum_construct_frame.sockets"));
         page(RubrumContent.CELL_SOCKET, "void_energy",
                 line("cell_socket.use", RubrumBalance.CELL_SOCKET_RATE));
+        page(RubrumContent.SOCKET_WALL, "void_energy",
+                line("socket_wall.use", RubrumBalance.SOCKET_WALL_RATE),
+                line("socket_wall.comparator"));
         page(RubrumContent.RUBRUM_CELL, "void_energy",
                 line("rubrum_cell.use", amount(RubrumBalance.CELL_CAPACITY)));
     }

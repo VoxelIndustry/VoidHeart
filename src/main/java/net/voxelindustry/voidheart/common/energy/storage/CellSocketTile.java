@@ -1,16 +1,12 @@
 package net.voxelindustry.voidheart.common.energy.storage;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -25,8 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
-
-import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Holds a rubrum cell and moves its energy: out into the field covering it, or in from that field while powered. The cell's habit changes how, as
@@ -50,9 +44,6 @@ public class CellSocketTile extends TileBase
 
     private static final int    SYNC_PERIOD     = 10;
     private static final int    TARGET_RESCAN   = 100;
-    private static final int    TARGET_REACH    = 16;
-    private static final Identifier PYLON_ID    = Identifier.fromNamespaceAndPath(MODID, "azurium_pylon");
-    private static final Identifier WELL_ID     = Identifier.fromNamespaceAndPath(MODID, "creative_void_well");
 
     private ItemStack cell = ItemStack.EMPTY;
     private Activity  activity = Activity.IDLE;
@@ -228,10 +219,10 @@ public class CellSocketTile extends TileBase
             return;
 
         var time = level.getGameTime();
-        if (time - targetScannedAt >= TARGET_RESCAN)
+        if (targetScannedAt == Long.MIN_VALUE || time - targetScannedAt >= TARGET_RESCAN)
         {
             targetScannedAt = time;
-            moteTarget = findTarget();
+            moteTarget = CellTransfer.moteTarget(level, worldPosition);
         }
         if (time < nextMote)
             return;
@@ -245,39 +236,6 @@ public class CellSocketTile extends TileBase
         var start = out ? cellTop : target;
         var end = out ? target : cellTop;
         level.addParticle(RubrumContent.RUBRUM_MOTE, start.x, start.y, start.z, end.x, end.y, end.z);
-    }
-
-    /**
-     * The bundle on the nearest pylon, else the nearest creative well, which the motes run toward.
-     */
-    private @Nullable Vec3 findTarget()
-    {
-        var pylon = BuiltInRegistries.BLOCK.getOptional(PYLON_ID).orElse(Blocks.AIR);
-        var well = BuiltInRegistries.BLOCK.getOptional(WELL_ID).orElse(Blocks.AIR);
-        BlockPos bestPylon = null;
-        BlockPos bestWell = null;
-        double pylonDistance = Double.MAX_VALUE, wellDistance = Double.MAX_VALUE;
-        for (var pos : BlockPos.betweenClosed(worldPosition.offset(-TARGET_REACH, -TARGET_REACH / 2, -TARGET_REACH),
-                worldPosition.offset(TARGET_REACH, TARGET_REACH / 2, TARGET_REACH)))
-        {
-            var state = level.getBlockState(pos);
-            if (state.isAir())
-                continue;
-            var distance = pos.distSqr(worldPosition);
-            if (pylon != Blocks.AIR && state.is(pylon) && distance < pylonDistance)
-            {
-                pylonDistance = distance;
-                bestPylon = pos.immutable();
-            }
-            else if (well != Blocks.AIR && state.is(well) && distance < wellDistance)
-            {
-                wellDistance = distance;
-                bestWell = pos.immutable();
-            }
-        }
-        if (bestPylon != null)
-            return Vec3.atCenterOf(bestPylon.above());
-        return bestWell != null ? Vec3.atCenterOf(bestWell) : null;
     }
 
     public ItemStack getCell()
