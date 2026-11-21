@@ -11,9 +11,11 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.voxelindustry.voidheart.common.content.hoard.HoardMenu;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -151,6 +153,44 @@ public final class WorksPayloads
         {
             return remaining.getOrDefault(recipe, 0L) + working.getOrDefault(recipe, 0L);
         }
+
+        /**
+         * @return crafts of the whole order not yet finished
+         */
+        public long left()
+        {
+            return remaining.values().stream().mapToLong(Long::longValue).sum() + working.values().stream().mapToLong(Long::longValue).sum();
+        }
+
+        public static Job of(WorksQueue.Job job, WorksState.Owner works)
+        {
+            var remaining = new HashMap<String, Long>();
+            var working = new HashMap<String, Long>();
+            job.tasks().forEach(task ->
+            {
+                remaining.merge(task.recipe(), task.remaining(), Long::sum);
+                working.merge(task.recipe(), task.working(), Long::sum);
+            });
+            return new Job(job.id(), job.what(), job.count(), works.graphs().getOrDefault(job.id(), WorksGraph.EMPTY), remaining, working);
+        }
+    }
+
+    /**
+     * The order a player's Reckoning tables show, their oldest running, and how many others wait behind it.
+     */
+    public record Shown(Optional<Job> job, int others) implements CustomPacketPayload
+    {
+        public static final Type<Shown> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "works_shown"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, Shown> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.optional(Job.STREAM_CODEC), Shown::job,
+                ByteBufCodecs.VAR_INT, Shown::others,
+                Shown::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type()
+        {
+            return TYPE;
+        }
     }
 
     public record Kept(ItemVariant item, long level)
@@ -192,6 +232,7 @@ public final class WorksPayloads
         PayloadTypeRegistry.clientboundPlay().register(Makeable.TYPE, Makeable.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Plan.TYPE, Plan.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Jobs.TYPE, Jobs.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Shown.TYPE, Shown.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(AskPlan.TYPE, AskPlan.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Begin.TYPE, Begin.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Cancel.TYPE, Cancel.STREAM_CODEC);

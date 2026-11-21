@@ -21,6 +21,8 @@ import java.util.Map;
  */
 public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> essence)
 {
+    public static final WorksGraph EMPTY = new WorksGraph(List.of(), List.of(), Map.of());
+
     public record Node(ItemVariant item, long needed, long fromStock, long crafts, String recipe, int station, long lacking)
     {
         static final Codec<Node> CODEC = RecordCodecBuilder.create(instance -> instance.group(

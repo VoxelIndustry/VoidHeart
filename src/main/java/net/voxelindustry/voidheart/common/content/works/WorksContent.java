@@ -63,6 +63,7 @@ public final class WorksContent
         MEMORIAM_LENS = VoidHeartItems.registerItem("memoriam_lens", properties -> new LoreItem(properties, MODID + ".memoriam_lens.lore"));
         WorksPayloads.register();
         ServerTickEvents.END_SERVER_TICK.register(WorksContent::keepLevels);
+        ReckoningSync.register();
         VoidHeartTiles.registerTile(OFFICIANT_TILE = FabricBlockEntityTypeBuilder.create(OfficiantTile::new, OFFICIANT).build(), "officiant");
     }
 

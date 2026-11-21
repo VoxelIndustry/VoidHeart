@@ -347,6 +347,10 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusMarkers::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusFigurine::collectSubmits);
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusSky::collectSubmits);
+        LevelRenderEvents.COLLECT_SUBMITS.register(net.voxelindustry.voidheart.client.render.oculus.ReckoningHologram::collectSubmits);
+        ClientPlayNetworking.registerGlobalReceiver(WorksPayloads.Shown.TYPE, net.voxelindustry.voidheart.client.render.oculus.ReckoningHologram::receive);
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register(
+                (handler, client) -> net.voxelindustry.voidheart.client.render.oculus.ReckoningHologram.clear());
         ClientPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Markers.TYPE, OculusMarkers::receive);
 
         ClientPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Sections.TYPE, OculusRenderer::receiveSections);

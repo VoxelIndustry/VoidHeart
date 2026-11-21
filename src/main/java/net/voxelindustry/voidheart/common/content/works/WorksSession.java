@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.voxelindustry.voidheart.common.content.hoard.PocketHoard;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -71,17 +70,7 @@ public final class WorksSession
         var works = WorksState.get(player.level().getServer()).owner(owner);
         var jobs = new ArrayList<WorksPayloads.Job>();
         for (var job : works.queue().jobs())
-        {
-            var remaining = new HashMap<String, Long>();
-            var working = new HashMap<String, Long>();
-            job.tasks().forEach(task ->
-            {
-                remaining.merge(task.recipe(), task.remaining(), Long::sum);
-                working.merge(task.recipe(), task.working(), Long::sum);
-            });
-            var graph = works.graphs().getOrDefault(job.id(), new WorksGraph(List.of(), List.of(), java.util.Map.of()));
-            jobs.add(new WorksPayloads.Job(job.id(), job.what(), job.count(), graph, remaining, working));
-        }
+            jobs.add(WorksPayloads.Job.of(job, works));
         var keeps = works.keeps().entrySet().stream().map(entry -> new WorksPayloads.Kept(entry.getKey(), entry.getValue())).toList();
         return new WorksPayloads.Jobs(containerId, jobs, keeps);
     }

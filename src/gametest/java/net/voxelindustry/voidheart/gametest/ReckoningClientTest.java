@@ -14,6 +14,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.client.render.oculus.ReckoningHologram;
 import net.voxelindustry.voidheart.client.screen.HoardScreen;
 import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
@@ -39,7 +40,7 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 /**
  * A Memoriam Lens set in an Oculus Table makes a Reckoning: used with an empty hand it opens the owner's hoard on its works tab, which lists what the
  * Officiants' stations can make, draws the plan for a chosen item, begins it as an order whose progress it shows, and keeps a level in the hoard.
- * Sneaking takes the lens back.
+ * The table itself shows the running order as a map laid on it, a sigil while idle. Sneaking takes the lens back.
  */
 public class ReckoningClientTest implements FabricClientGameTest
 {
@@ -177,10 +178,29 @@ public class ReckoningClientTest implements FabricClientGameTest
             expect(tile != null && tile.getView().reckoning(), "the lens was not set in the table");
             expect(player(minecraft).getMainHandItem().isEmpty(), "the lens was not used up: " + player(minecraft).getMainHandItem());
         });
-        context.waitTicks(10);
-        aimFrom(context, server, OCULUS.getX() + 0.5, FLAT_FEET + 1, OCULUS.getZ() - 3.5, OCULUS.getX() + 0.5, OCULUS.getY() + 0.6, OCULUS.getZ() + 0.5, 5);
-        shot(context, "reckoning-table");
+        context.waitTicks(20);
+        expect(context.computeOnClient(minecraft -> ReckoningHologram.shown()) == null, "the table shows an order before any was begun");
+        server.runCommand("gamemode spectator @a");
+        tableView(context, server, "reckoning-hologram-idle", 0, 1.2, 2.8);
+        server.runCommand("gamemode survival @a");
+        aimAtTable(context, server);
+    }
+
+    private static void aimAtTable(ClientGameTestContext context, TestServerContext server)
+    {
         aimFrom(context, server, OCULUS.getX() + 0.5, FLAT_FEET, OCULUS.getZ() - 2.5, OCULUS.getX() + 0.5, OCULUS.getY() + 0.6, OCULUS.getZ() + 0.5, 5);
+    }
+
+    /**
+     * A shot of the table from its centre's offset, looking at the middle of its top, once the map has turned to face that side.
+     */
+    private static void tableView(ClientGameTestContext context, TestServerContext server, String name, double dx, double dy, double dz)
+    {
+        double x = OCULUS.getX() + 0.5;
+        double z = OCULUS.getZ() + 0.5;
+        // A half turn of the map takes 20 ticks
+        aimFrom(context, server, x + dx, FLAT_FEET + dy, z + dz, x, OCULUS.getY() + 0.5, z, 25);
+        shot(context, name);
     }
 
     /**
@@ -241,10 +261,46 @@ public class ReckoningClientTest implements FabricClientGameTest
         context.waitTicks(10);
         hover(context, new int[] { 2, 2 });
         shot(context, "reckoning-order");
+        checkHologram(context, server);
 
+        // Opened again, the Reckoning no longer lists the order
+        server.runCommand("gamemode survival @a");
+        aimAtTable(context, server);
+        rightClick(context);
+        waitOnScreen(context, 60, "the finished order still shows", screen -> screen.worksShown() && screen.getMenu().getJobs().isEmpty());
+    }
+
+    /**
+     * The table shows the order at work as a map, frozen mid-craft while the camera moves, then flares and sinks once it is done.
+     */
+    private static void checkHologram(ClientGameTestContext context, TestServerContext server)
+    {
+        context.runOnClient(minecraft -> minecraft.player.closeContainer());
+        context.waitTicks(3);
+        server.runCommand("tick freeze");
+        server.runCommand("gamemode spectator @a");
+        var shownOrder = context.computeOnClient(minecraft -> ReckoningHologram.shown());
+        expect(shownOrder != null && shownOrder.working().values().stream().anyMatch(working -> working > 0), "the table shows no order at work: " + shownOrder);
+
+        tableView(context, server, "reckoning-hologram-south", 0, 1.1, 2.6);
+        var drawn = context.computeOnClient(minecraft -> ReckoningHologram.drawnLastFrame());
+        expect(drawn >= 4, "the table drew " + drawn + " items of the order");
+        tableView(context, server, "reckoning-hologram-east", 2.8, 0.6, 0.3);
+        tableView(context, server, "reckoning-hologram-top", 0.05, 2.6, 0.25);
+        for (int step = 0; step < 6; step++)
+            tableView(context, server, "reckoning-hologram-sweep-" + step, -0.3 + step * 0.12, 1.1, 2.4 - step * 0.05);
+        server.runCommand("tick unfreeze");
+
+        tableView(context, server, "reckoning-hologram-south-running", 0, 1.1, 2.6);
         waitFor(context, server, 2000, "no Void Pearl reached the hoard", minecraft -> held(minecraft, VoidHeartItems.VOID_PEARL) == 1);
-        waitOnScreen(context, 60, "the finished order still shows", screen -> screen.getMenu().getJobs().isEmpty());
-        shot(context, "reckoning-done");
+        for (int tick = 0; tick < 60 && context.computeOnClient(minecraft -> ReckoningHologram.shown()) != null; tick++)
+            context.waitTick();
+        expect(context.computeOnClient(minecraft -> ReckoningHologram.shown()) == null, "the table still shows the finished order");
+        shot(context, "reckoning-hologram-flare");
+        context.waitTicks(12);
+        shot(context, "reckoning-hologram-sinking");
+        context.waitTicks(30);
+        shot(context, "reckoning-hologram-after");
     }
 
     /**
