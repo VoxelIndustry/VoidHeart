@@ -15,7 +15,10 @@ import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
+import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.energy.LeyPower;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.energy.VoidSeep;
 import net.voxelindustry.voidheart.common.energy.ley.LeySpurs;
 import net.voxelindustry.voidheart.common.ley.Ley;
@@ -44,6 +47,9 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
     private final CradleGrowth  growth  = new CradleGrowth();
     private final CradleEssence essence = new CradleEssence(CradleBalance.ESSENCE_TANK);
 
+    // What a finished Deep memoriam recorded, handed to the bundle when it is taken out
+    private CrystalRecordings.@Nullable Ref recording;
+
     private @Nullable UUID owner;
 
     /**
@@ -51,7 +57,7 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
      */
     public enum Source implements StringRepresentable
     {
-        IDLE, LEY, FED, SEEP, SCOURING, BREACHED;
+        IDLE, LEY, FED, SEEP, SCOURING, BREACHED, VOID;
 
         public static final Codec<Source> CODEC = StringRepresentable.fromEnum(Source::values);
 
@@ -63,6 +69,8 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
     }
 
     private float        supply;
+    private float        leyShare;
+    private float        voidShare;
     private CrystalHabit feed    = CrystalHabit.PLAIN;
     private CrystalHabit preview = CrystalHabit.PLAIN;
     private Source       source  = Source.IDLE;
@@ -126,8 +134,13 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         if (Math.floorMod(now + pos.hashCode(), CradleBalance.SEEP_TICKS) == 0)
             cradle.seep = VoidSeep.strengthAt(server, pos);
 
-        if (cradle.growth.isGrowing())
+        boolean wasGrowing = cradle.growth.isGrowing();
+        if (wasGrowing)
+        {
             cradle.feed(server, pos, now);
+            if (!cradle.growth.isGrowing())
+                cradle.onFinished(server);
+        }
         else
         {
             cradle.supply = 0;
@@ -148,6 +161,8 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
      */
     private void feed(ServerLevel server, BlockPos pos, long now)
     {
+        leyShare = 0;
+        voidShare = 0;
         boolean inSeep = seep >= CradleBalance.FOUL_SEEP;
         if (growth.scours() && !inSeep)
         {
@@ -159,7 +174,10 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
             {
                 scourStone = null;
                 flushTaint(server);
-                source = supply > 0 ? Source.LEY : Source.IDLE;
+                leyShare = supply;
+                voidShare = drawVoid(server, pos);
+                supply = Math.min(1, leyShare + voidShare);
+                source = supply <= 0 ? Source.IDLE : voidShare > leyShare ? Source.VOID : Source.LEY;
                 feed = CrystalHabit.FOULED;
                 growth.grow(feed, supply / (double) CradleBalance.TICKS_PER_WORTH);
                 return;
@@ -197,19 +215,57 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
             growth.grow(feed, CradleBalance.SEEP_GROWTH / CradleBalance.TICKS_PER_WORTH);
             return;
         }
-        supply = LeyPower.supply(server, pos, CradleBalance.LEY_NEED);
-        source = supply > 0 ? Source.LEY : Source.IDLE;
-        // Essence teaches the crystal over whatever the line would, but only grows it as far as the ley does
+        leyShare = LeyPower.supply(server, pos, CradleBalance.LEY_NEED);
+        voidShare = drawVoid(server, pos);
+        supply = Math.min(1, leyShare + voidShare);
+        source = supply <= 0 ? Source.IDLE : voidShare > leyShare ? Source.VOID : Source.LEY;
+        // Essence teaches the crystal over whatever powers it, but only grows it as far as that power does
         var fed = supply > 0 ? essence.pay(CradleBalance.ESSENCE_PER_TICK * supply, habit -> takesEssence(server, habit)) : null;
         if (fed != null)
         {
             source = Source.FED;
             feed = fed;
             setChanged();
+            growth.grow(feed, supply / (double) CradleBalance.TICKS_PER_WORTH);
+            return;
         }
-        else
-            feed = feedAt(server, pos);
-        growth.grow(feed, supply / (double) CradleBalance.TICKS_PER_WORTH);
+        var leyFeed = feedAt(server, pos);
+        var voidFeed = voidFeedAt(server);
+        feed = voidShare > leyShare ? voidFeed : leyFeed;
+        growth.grow(leyFeed, leyShare / (double) CradleBalance.TICKS_PER_WORTH);
+        growth.grow(voidFeed, Math.min(voidShare, 1 - leyShare) / (double) CradleBalance.TICKS_PER_WORTH);
+    }
+
+    /**
+     * Void energy for what the ley leaves short, once the owner knows Deep Growth, as a share of a full supply.
+     */
+    private float drawVoid(ServerLevel server, BlockPos pos)
+    {
+        float short_ = 1 - leyShare;
+        if (short_ <= 0 || !CradleResearch.settles(server.getServer(), owner).test(CrystalHabit.DEEP))
+            return 0;
+        long want = Math.round(CradleBalance.VOID_NEED * short_);
+        long got = want > 0 ? VoidEnergy.draw(server, pos, want) : 0;
+        return Math.clamp(got / (float) CradleBalance.VOID_NEED, 0, short_);
+    }
+
+    /**
+     * What void energy teaches a crystal here: Deep in the void's own places, the pockets, the dungeons and the Daedalus, and nothing elsewhere.
+     */
+    static CrystalHabit voidFeedAt(ServerLevel level)
+    {
+        return VoidGrafts.isVoid(level.dimension()) ? CrystalHabit.DEEP : CrystalHabit.PLAIN;
+    }
+
+    /**
+     * Once fully grown, a Deep memoriam records the place it grew in, which an Oculus Table can then show.
+     */
+    private void onFinished(ServerLevel server)
+    {
+        if (growth.kind() != CrystalKind.MEMORIAM || growth.habit(CradleResearch.settles(server.getServer(), owner)) != CrystalHabit.DEEP)
+            return;
+        recording = CrystalRecordings.record(server, worldPosition);
+        setChanged();
     }
 
     /**
@@ -349,6 +405,8 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         if (refusal == CradleGrowth.Refusal.NONE)
         {
             growth.seed(kind, worth, habit);
+            // More to grow: what it records is the place as it is when it finishes again
+            dropRecording();
             publish();
         }
         return refusal;
@@ -368,13 +426,20 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
             return List.of();
         flushTaint(server);
         var harvest = growth.harvest(CradleResearch.settles(server.getServer(), owner));
+        var recorded = recording;
+        recording = null;
         publish();
 
         var items = new ArrayList<ItemStack>();
         if (harvest.kind() == null)
             return items;
         if (harvest.bundle() != null)
-            items.add(CrystalBundles.bundleItem(harvest.kind(), harvest.bundle(), harvest.bundleHabit()));
+        {
+            var bundle = CrystalBundles.bundleItem(harvest.kind(), harvest.bundle(), harvest.bundleHabit());
+            if (recorded != null && harvest.bundleHabit() == CrystalHabit.DEEP)
+                bundle.set(VoidHeartDataComponents.CRYSTAL_RECORDING, recorded);
+            items.add(bundle);
+        }
         if (harvest.shards() > 0)
             items.add(CrystalBundles.shards(harvest.kind(), harvest.shards(), harvest.shardHabit()));
         return items;
@@ -396,7 +461,10 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
     public void advance(CrystalHabit paidBy, double worth)
     {
         double before = growth.grown();
+        boolean wasGrowing = growth.isGrowing();
         growth.grow(paidBy, worth);
+        if (wasGrowing && !growth.isGrowing() && level instanceof ServerLevel server)
+            onFinished(server);
         // Scouring at once still costs the line what scouring slowly would
         if (paidBy == CrystalHabit.SCOURED && scourNode != null && level instanceof ServerLevel server)
         {
@@ -435,6 +503,8 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         output.putDouble("pendingTaint", pendingTaint);
         output.putDouble("taintPushed", taintPushed);
         output.store("essence", CradleEssence.Saved.CODEC, essence.save());
+        if (recording != null)
+            output.store("recording", CrystalRecordings.Ref.CODEC, recording);
     }
 
     @Override
@@ -455,6 +525,7 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         double pushed = input.getDoubleOr("taintPushed", 0);
         taintPushed = Double.isFinite(pushed) ? Math.max(0, pushed) : 0;
         essence.load(input.read("essence", CradleEssence.Saved.CODEC).orElse(new CradleEssence.Saved(java.util.List.of(), java.util.List.of())));
+        recording = input.read("recording", CrystalRecordings.Ref.CODEC).orElse(null);
     }
 
     public Source source()
@@ -486,6 +557,23 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
     public CradleEssence essence()
     {
         return essence;
+    }
+
+    public CrystalRecordings.@Nullable Ref recording()
+    {
+        return recording;
+    }
+
+    private void dropRecording()
+    {
+        if (recording != null && level instanceof ServerLevel server)
+            CrystalRecordings.forget(server.getServer(), recording);
+        recording = null;
+    }
+
+    public float voidShare()
+    {
+        return voidShare;
     }
 
     public float seep()

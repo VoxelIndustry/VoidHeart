@@ -138,6 +138,8 @@ public final class CrystalJade
                 case "seep" -> tooltip.add(Component.translatable(MODID + ".jade.cradle.fed.seep"));
                 case "scouring" -> tooltip.add(Component.translatable(MODID + ".jade.cradle.scouring"));
                 case "breached" -> tooltip.add(Component.translatable(MODID + ".jade.cradle.breached").withStyle(ChatFormatting.RED));
+                case "void" -> tooltip.add(Component.translatable(MODID + (habit(data.getStringOr("feed", "plain")) == CrystalHabit.DEEP
+                        ? ".jade.cradle.fed.void_deep" : ".jade.cradle.fed.void_plain")));
                 default ->
                 {
                     if (data.getFloatOr("supply", 0) <= 0)

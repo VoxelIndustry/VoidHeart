@@ -250,6 +250,7 @@ public class VoidHeart implements ModInitializer
         OculusChunkPayloads.register();
         ServerPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Request.TYPE, OculusChunkServer::handle);
         ServerTickEvents.END_SERVER_TICK.register(OculusChunkServer::tick);
+        net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.register();
         OculusEntityPayloads.register();
         ServerPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Request.TYPE, OculusEntityPayloads::handle);
         OculusLeyPayloads.register();
@@ -273,6 +274,7 @@ public class VoidHeart implements ModInitializer
             AnchorWaypoints.clear();
             AnchorTravel.clear();
             OculusChunkServer.clear();
+            net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.clear();
             OculusEntityPayloads.clear();
             OculusLeyPayloads.clear();
             OculusSightPayloads.clear();

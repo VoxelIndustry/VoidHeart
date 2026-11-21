@@ -304,6 +304,8 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Markers.TYPE, OculusMarkers::receive);
 
         ClientPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Sections.TYPE, OculusRenderer::receiveSections);
+        ClientPlayNetworking.registerGlobalReceiver(net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.Header.TYPE, OculusRenderer::receiveMemoryHeader);
+        ClientPlayNetworking.registerGlobalReceiver(net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.Land.TYPE, OculusRenderer::receiveMemoryLand);
         ClientPlayNetworking.registerGlobalReceiver(OculusSightPayloads.Relief.TYPE, OculusRenderer::receiveRelief);
         ClientPlayNetworking.registerGlobalReceiver(OculusSightPayloads.Sight.TYPE, OculusBeholderLayer::receive);
         LevelRenderEvents.COLLECT_SUBMITS.register(OculusBeholderLayer::collectSubmits);

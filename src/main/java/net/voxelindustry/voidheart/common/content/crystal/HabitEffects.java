@@ -44,6 +44,7 @@ public final class HabitEffects
             case AZURIUM -> switch (habit)
             {
                 case CLEAR -> List.of(new Effect("pylon", MODID + ".habit.clear.arcs"), new Effect("pylon", MODID + ".habit.clear.dark"));
+                case DEEP -> List.of(new Effect("pylon", MODID + ".habit.deep.reach"));
                 case FOULED -> List.of(new Effect("spike", MODID + ".habit.fouled.greedy"));
                 case SCOURED -> List.of(new Effect("pylon", MODID + ".habit.scoured.holds"));
                 case SEARING -> List.of(new Effect("construct", MODID + ".habit.searing.gives"), new Effect("construct", MODID + ".habit.searing.shut"));
@@ -62,6 +63,7 @@ public final class HabitEffects
             case MEMORIAM -> switch (habit)
             {
                 case WRUNG -> List.of(new Effect("altar", MODID + ".habit.wrung.grudge"));
+                case DEEP -> List.of(new Effect("table", MODID + ".habit.deep.records"));
                 default -> List.of();
             };
         };

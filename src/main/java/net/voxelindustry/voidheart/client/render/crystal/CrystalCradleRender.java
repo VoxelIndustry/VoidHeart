@@ -78,6 +78,14 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
     private static final float MOTE_SPREAD   = 1.2F / 16;
     private static final float MOTE_TURN     = 0.6F;
     private static final float MOTE_LOWEST   = 4F / 16;
+    // Void energy pools near-black violet, blended so it darkens the floor, and a Deep growth twinkles with stars in it
+    private static final int   VOID_RGB      = 0x120A22;
+    private static final float VOID_ALPHA    = 0.8F;
+    private static final int   STAR_RGB      = 0xF2ECFF;
+    private static final int   STARS         = 6;
+    private static final float STAR_RADIUS   = 0.022F;
+    private static final float STAR_ALPHA    = 0.95F;
+    private static final float STAR_PERIOD   = 46;
 
     public static class State extends BlockEntityRenderState
     {
@@ -91,6 +99,7 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         float        pool;
         float        time;
         CrystalCradleTile.Source source = CrystalCradleTile.Source.IDLE;
+        CrystalHabit feed = CrystalHabit.PLAIN;
         int          fedRgb;
         float        bundleTop;
         final Vector3f camera = new Vector3f();
@@ -119,6 +128,7 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         state.seed = growth.seedHabit();
         state.pool = cradle.pool(partialTicks);
         state.source = cradle.source();
+        state.feed = cradle.feed();
         state.time = (cradle.getLevel().getGameTime() % 24000L) + partialTicks;
         var essence = CrystalCradleTile.essenceOf(cradle.feed());
         state.fedRgb = essence == null ? POOL_RGB : VoidBeamRender.aspectColor(essence) & 0xFFFFFF;
@@ -151,6 +161,13 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
                 disc(state, pose, buffer, state.fedRgb, FED_ALPHA, POOL_RADIUS);
                 motes(state, pose, buffer);
             });
+            case VOID ->
+            {
+                collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.MARKER, (pose, buffer) ->
+                        fan(pose, buffer, ARGB.color(Mth.clamp((int) (VOID_ALPHA * state.pool * 255), 0, 255), VOID_RGB), ARGB.color(0, VOID_RGB), POOL_RADIUS));
+                if (state.feed == CrystalHabit.DEEP)
+                    collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> stars(state, pose, buffer));
+            }
             case SEEP -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> disc(state, pose, buffer, SEEP_RGB, SEEP_ALPHA,
                     POOL_RADIUS));
             default -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> disc(state, pose, buffer, POOL_RGB, POOL_ALPHA,
@@ -267,6 +284,22 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
             var at = new Vector3f(0.5F + orbit * Mth.cos(angle), Mth.lerp(phase, FLOOR + POOL_HEIGHT, top), 0.5F + orbit * Mth.sin(angle));
             float alpha = MOTE_ALPHA * state.pool * Mth.sin(phase * Mth.PI);
             dot(pose, buffer, at, state.camera, MOTE_RADIUS, state.fedRgb, alpha);
+        }
+    }
+
+    /**
+     * Star glints winking in a Deep pool, each at its own spot and on its own beat.
+     */
+    private static void stars(State state, PoseStack.Pose pose, VertexConsumer buffer)
+    {
+        for (int i = 0; i < STARS; i++)
+        {
+            float angle = i * 2.39996F;
+            float distance = POOL_RADIUS * (0.25F + 0.7F * ((i * 0.61803F) % 1));
+            var at = new Vector3f(0.5F + distance * Mth.cos(angle), FLOOR + POOL_HEIGHT * 2, 0.5F + distance * Mth.sin(angle));
+            float beat = Mth.sin((state.time / STAR_PERIOD + i * 0.37F) * Mth.TWO_PI);
+            float alpha = STAR_ALPHA * state.pool * Math.max(0, beat) * Math.max(0, beat);
+            dot(pose, buffer, at, state.camera, STAR_RADIUS, STAR_RGB, alpha);
         }
     }
 

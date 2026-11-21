@@ -61,6 +61,15 @@ public final class CrystalHabitTooltip
             lines.add(effect.onItem());
         if (CrystalBundles.soakOf(stack) > 0)
             lines.add(Component.translatable(MODID + ".habit.scoured.soaked").withStyle(ChatFormatting.GRAY));
+        if (kind == CrystalKind.MEMORIAM && habit == CrystalHabit.DEEP)
+        {
+            var recording = stack.get(VoidHeartDataComponents.CRYSTAL_RECORDING);
+            lines.add(recording == null
+                    ? Component.translatable(MODID + ".habit.deep.unrecorded").withStyle(ChatFormatting.GRAY)
+                    : Component.translatable(MODID + ".habit.deep.recorded", Component.translatableWithFallback(MODID + ".recording.where."
+                            + recording.dimension().identifier().toLanguageKey(), recording.dimension().identifier().toString()).withStyle(ChatFormatting.WHITE))
+                            .withStyle(ChatFormatting.GRAY));
+        }
         if (kind == CrystalKind.MEMORIAM && habit == CrystalHabit.SCOURED)
         {
             var imprint = stack.get(VoidHeartDataComponents.CRYSTAL_IMPRINT);

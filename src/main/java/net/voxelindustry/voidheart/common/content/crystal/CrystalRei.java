@@ -25,12 +25,13 @@ public final class CrystalRei
                 line("crystal_cradle.clear"),
                 line("crystal_cradle.seep"),
                 line("crystal_cradle.scour", (int) CradleBalance.TAINT_PER_WORTH),
-                line("crystal_cradle.fed", Math.round(CradleBalance.ESSENCE_PER_TICK * CradleBalance.TICKS_PER_WORTH)));
+                line("crystal_cradle.fed", Math.round(CradleBalance.ESSENCE_PER_TICK * CradleBalance.TICKS_PER_WORTH)),
+                line("crystal_cradle.void", CradleBalance.VOID_NEED));
 
         // Each habit made so far on the bundles that carry it, saying where it comes from and what it does
         for (var kind : CrystalKind.values())
         {
-            for (var habit : new CrystalHabit[] { CrystalHabit.FOULED, CrystalHabit.SCOURED, CrystalHabit.SEARING, CrystalHabit.STILL, CrystalHabit.WRUNG })
+            for (var habit : new CrystalHabit[] { CrystalHabit.FOULED, CrystalHabit.SCOURED, CrystalHabit.SEARING, CrystalHabit.STILL, CrystalHabit.WRUNG, CrystalHabit.DEEP })
             {
                 if (!habit.takenBy(kind))
                     continue;
@@ -42,6 +43,8 @@ public final class CrystalRei
                     HabitEffects.of(habit, kind).forEach(effect -> lines.add(effect.onItem()));
                     if (kind == CrystalKind.MEMORIAM && habit == CrystalHabit.SCOURED)
                         lines.add(line("habit.scoured.memory"));
+                    if (kind == CrystalKind.MEMORIAM && habit == CrystalHabit.DEEP)
+                        lines.add(line("habit.deep.memory", CradleBalance.RECORD_RADIUS));
                     if (kind == CrystalKind.RUBRUM && HabitShapedRecipe.CARRIED.contains(habit))
                         lines.add(line("habit.cell"));
                     BuiltinClientPlugin.getInstance().registerInformation(EntryStacks.of(stack), stack.getHoverName(), list ->

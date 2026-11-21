@@ -32,6 +32,12 @@ public final class CradleBalance
     /** Essence of each kind a cradle holds ahead of its growth, enough for 2,000 ticks between relay routes. */
     public static final int ESSENCE_TANK = 200;
 
+    /** Void energy a cradle draws each tick for what ley doesn't give it, once its owner knows Deep Growth. */
+    public static final long VOID_NEED = 24;
+
+    /** Blocks around a cradle a Deep memoriam records when it finishes, every way. */
+    public static final int RECORD_RADIUS = 48;
+
     /** How often a cradle reads the seep it stands in. */
     public static final int SEEP_TICKS = 10;
 
