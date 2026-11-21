@@ -245,6 +245,76 @@ local function write(habit, kind, srcPath, outPath)
   print(outPath)
 end
 
+-- Rubrum Cells carry the habit of the bundle sealed in them. Only the shard column is redrawn: its lit part in the habit's look, with the habit's
+-- brightest colour at the fill line, and its unlit part tinted so even an empty cell shows its habit
+local CELL_HABITS = { "searing", "still", "wrung" }
+local CELL_LEVELS = { "empty", "third", "two_thirds", "full" }
+local CELL_UNLIT = { [0x5A1230] = 0, [0x7A1637] = 1 }
+local CELL_DARK = {
+  searing = { rgb(0x2E1712), rgb(0x4A2416) },
+  still   = { rgb(0x16323A), rgb(0x24505A) },
+  wrung   = { rgb(0x2C0B0D), rgb(0x4A1414) },
+}
+
+local function cellPixel(habit, x, y, base, t, top)
+  if habit == "searing" then
+    -- Hotter than plain rubrum: yellow embers flickering up a column that glows white at the fill line
+    if top then return EMBERS[1] end
+    local c = mix(base, EMBERS[2 + (y % 2)], 0.55)
+    if hash(x, y, 71) < 0.3 then c = EMBERS[2] end
+    return c
+  elseif habit == "still" then
+    if top then return RIME end
+    local c = mix(base, FROST[3 + math.floor(t + 0.5)], 0.88)
+    if hash(x, y, 72) < 0.25 then c = mix(c, FROST[2], 0.5) end
+    return c
+  else
+    -- Deep crimson wrung into darker twists, with rust where it is stained
+    if top then return rgb(0xE8323A) end
+    local twist = (x + y) % 3 == 0
+    local c = mix(base, WRUNG_RED, 0.6)
+    if twist then c = mix(c, WRUNG_DARK, 0.55) end
+    if hash(x, y, 73) < 0.25 then c = mix(c, RUSTS[2], 0.7) end
+    return c
+  end
+end
+
+local function writeCell(habit, srcPath, outPath)
+  local px, w, h = analyse(srcPath)
+  local img = Image(w, h, ColorMode.RGB)
+  local function hex(p) return (p.r << 16) | (p.g << 8) | p.b end
+  local function lit(k)
+    local p = px[k]
+    return p ~= nil and CELL_UNLIT[hex(p)] == nil and nearestIndex(RAMPS.rubrum, p) >= 2 and p.r > 0xC0 and p.g < 0xE0
+  end
+  for y = 0, h - 1 do
+    for x = 0, w - 1 do
+      local k = y * w + x
+      local p = px[k]
+      if p then
+        local c = { p.r, p.g, p.b }
+        local unlit = CELL_UNLIT[hex(p)]
+        if unlit ~= nil then
+          c = CELL_DARK[habit][unlit + 1]
+          if habit == "wrung" and hash(x, y, 74) < 0.3 then c = mix(c, RUSTS[1], 0.7) end
+        elseif lit(k) then
+          local idx = nearestIndex(RAMPS.rubrum, p)
+          c = cellPixel(habit, x, y, rgb(RAMPS.rubrum[idx + 1]), idx / 6, y == 0 or not lit(k - w))
+        end
+        img:drawPixel(x, y, pc.rgba(math.floor(clamp(c[1], 0, 255)), math.floor(clamp(c[2], 0, 255)), math.floor(clamp(c[3], 0, 255)), 255))
+      end
+    end
+  end
+  img:saveAs(outPath)
+  print(outPath)
+end
+
+for _, habit in ipairs(CELL_HABITS) do
+  for _, level in ipairs(CELL_LEVELS) do
+    writeCell(habit, SRC .. "/item/rubrum_cell_" .. level .. ".png", OUT .. "/item/rubrum_cell_" .. habit .. "_" .. level .. ".png")
+  end
+end
+
 for kind, habits in pairs(TAKEN) do
   for _, habit in ipairs(habits) do
     for _, size in ipairs({ "small", "medium", "large" }) do

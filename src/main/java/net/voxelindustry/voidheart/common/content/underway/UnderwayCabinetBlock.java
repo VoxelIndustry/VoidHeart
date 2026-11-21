@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumCellItem;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import net.voxelindustry.voidheart.common.world.underway.UnderwayProp;
@@ -49,8 +50,9 @@ public class UnderwayCabinetBlock extends UnderwayPropBlock
             return InteractionResult.SUCCESS;
         }
         long charge = RubrumCellItem.charge(stack);
+        var habit = CrystalBundles.habitOf(stack);
         stack.consume(1, player);
-        security.insertCell(server, key, charge);
+        security.insertCell(server, key, charge, habit);
         return InteractionResult.SUCCESS;
     }
 
@@ -64,7 +66,7 @@ public class UnderwayCabinetBlock extends UnderwayPropBlock
         if (security == null || key == null || !security.hasCell(key))
             return InteractionResult.PASS;
 
-        var cell = new ItemStack(RubrumContent.RUBRUM_CELL);
+        var cell = CrystalBundles.withHabit(new ItemStack(RubrumContent.RUBRUM_CELL), security.cellHabit(key));
         RubrumCellItem.setCharge(cell, security.removeCell(server, key));
         player.getInventory().placeItemBackInInventory(cell, Prediction.SERVER_ONLY);
         return InteractionResult.SUCCESS;

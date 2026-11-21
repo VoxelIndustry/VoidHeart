@@ -226,7 +226,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder, VoidSe
 
     private void updateSockets()
     {
-        charge.setSockets(sockets.capacity(), sockets.rate());
+        charge.setSockets(sockets.capacity(), sockets.rateIn(), sockets.rateOut());
     }
 
     public BlockPos socketPos(int socket)
@@ -435,6 +435,18 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder, VoidSe
     public long maxRate()
     {
         return charge.maxRate();
+    }
+
+    @Override
+    public long maxRateIn()
+    {
+        return charge.maxRateIn();
+    }
+
+    @Override
+    public long maxRateOut()
+    {
+        return charge.maxRateOut();
     }
 
     @Override

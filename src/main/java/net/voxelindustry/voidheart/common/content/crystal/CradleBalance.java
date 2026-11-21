@@ -26,6 +26,12 @@ public final class CradleBalance
     /** How often a scouring cradle hands its foulness to the node and checks whether the node can still take it. */
     public static final int SCOUR_TICKS = 20;
 
+    /** Essence a relay-fed cradle uses each tick at full ley supply: Fiery grows Searing, Stillness Still, Suffering Wrung. 2,400 per shard's worth. */
+    public static final double ESSENCE_PER_TICK = 0.1;
+
+    /** Essence of each kind a cradle holds ahead of its growth, enough for 2,000 ticks between relay routes. */
+    public static final int ESSENCE_TANK = 200;
+
     /** How often a cradle reads the seep it stands in. */
     public static final int SEEP_TICKS = 10;
 

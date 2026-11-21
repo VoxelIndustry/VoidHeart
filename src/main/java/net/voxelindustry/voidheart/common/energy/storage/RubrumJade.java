@@ -2,6 +2,12 @@ package net.voxelindustry.voidheart.common.energy.storage;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
+import net.voxelindustry.voidheart.common.content.crystal.HabitEffects;
+import net.voxelindustry.voidheart.common.content.crystal.HabitShapedRecipe;
+import java.util.Arrays;
 import net.minecraft.resources.Identifier;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -55,7 +61,9 @@ public final class RubrumJade
             tag.putLong("stored", core.stored());
             tag.putLong("capacity", core.capacity());
             tag.putBoolean("leaking", core.isLeaking());
-            tag.putLong("rate", core.charge().isActive() ? core.maxRate() : core.sockets().rate());
+            boolean active = core.charge().isActive();
+            tag.putLong("rateIn", active ? core.maxRateIn() : core.sockets().rateIn());
+            tag.putLong("rateOut", active ? core.maxRateOut() : core.sockets().rateOut());
             tag.putInt("rubrum", core.sockets().count(true));
             tag.putInt("azurium", core.sockets().count(false));
             tag.putFloat("flow", core.flow());
@@ -83,7 +91,12 @@ public final class RubrumJade
                         ? MODID + ".rubrum_construct.too_many_bundles" : MODID + ".jade.rubrum_construct.loose"));
             tooltip.add(Component.translatable(MODID + ".jade.rubrum_construct.charge",
                     String.format("%,d", data.getLongOr("stored", 0L)), String.format("%,d", data.getLongOr("capacity", 0L))));
-            tooltip.add(Component.translatable(MODID + ".jade.rubrum_construct.rate", data.getLongOr("rate", 0L)));
+            long rateIn = data.getLongOr("rateIn", 0L), rateOut = data.getLongOr("rateOut", 0L);
+            // Searing and Still azurium set what goes in apart from what comes out
+            if (rateIn == rateOut)
+                tooltip.add(Component.translatable(MODID + ".jade.rubrum_construct.rate", rateIn));
+            else
+                tooltip.add(Component.translatable(MODID + ".jade.rubrum_construct.rates", rateIn, rateOut));
             tooltip.add(Component.translatable(MODID + ".jade.rubrum_construct.bundles", data.getIntOr("rubrum", 0), data.getIntOr("azurium", 0)));
 
             var flow = data.getFloatOr("flow", 0F);
@@ -117,6 +130,7 @@ public final class RubrumJade
             tag.putLong("charge", RubrumCellItem.charge(socket.getCell()));
             tag.putBoolean("powered", accessor.getLevel().hasNeighborSignal(accessor.getPosition()));
             tag.putString("activity", socket.activity().name());
+            tag.putString("habit", CrystalBundles.habitOf(socket.getCell()).getSerializedName());
         }
 
         @Override
@@ -141,8 +155,16 @@ public final class RubrumJade
             }
             tooltip.add(Component.translatable(MODID + ".rubrum_cell.tooltip",
                     String.format("%,d", data.getLongOr("charge", 0L)), String.format("%,d", RubrumBalance.CELL_CAPACITY)));
-            tooltip.add(Component.translatable(data.getBooleanOr("powered", false)
-                    ? MODID + ".jade.cell_socket.charging" : MODID + ".jade.cell_socket.discharging"));
+            var habit = Arrays.stream(CrystalHabit.values()).filter(value -> value.getSerializedName().equals(data.getStringOr("habit", ""))).findFirst()
+                    .orElse(CrystalHabit.NONE);
+            // A Still cell charges whether powered or not
+            var way = CellHabits.way(habit, data.getBooleanOr("powered", false), 0);
+            tooltip.add(Component.translatable(way == CellHabits.Way.CHARGE ? MODID + ".jade.cell_socket.charging" : MODID + ".jade.cell_socket.discharging"));
+            if (HabitShapedRecipe.CARRIED.contains(habit))
+            {
+                tooltip.add(HabitEffects.name(habit));
+                HabitEffects.of(habit, CrystalKind.RUBRUM).forEach(effect -> tooltip.add(effect.onBlock()));
+            }
         }
 
         @Override

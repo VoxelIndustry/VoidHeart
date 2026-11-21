@@ -29,6 +29,9 @@ import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.network.chat.Component;
+import net.voxelindustry.voidheart.common.content.mob.DragoonAdaptation;
+import net.voxelindustry.voidheart.common.content.mob.KernacianDragoon;
 import net.voxelindustry.voidheart.common.content.mob.MalignantBoulder;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import org.joml.Vector3f;
@@ -124,12 +127,14 @@ public final class ShieldingApparatus
         if (!(player instanceof ServerPlayer serverPlayer) || damage <= 0 || source.is(BYPASSES))
             return damage;
 
-        var stats = stats(equipped(player));
+        var apparatus = equipped(player);
+        var stats = stats(apparatus);
         var state = state(player);
         if (stats == null || state.capacity() <= 0)
             return damage;
 
-        var absorption = state.absorb(stats, damage, isWarded(stats, source));
+        boolean warded = isWarded(stats, source) || stats.grudge() && GrudgeWard.wards(grudge(apparatus), KernacianDragoon.kindOf(source));
+        var absorption = state.absorb(stats, damage, warded);
         player.setAttached(SHIELD, absorption.state());
 
         if (absorption.absorbed() > 0)
@@ -157,6 +162,29 @@ public final class ShieldingApparatus
         var broken = BROKEN.remove(serverPlayer.getUUID());
         if (broken != null && !serverPlayer.isDeadOrDying())
             onBreak(serverPlayer, broken.source(), broken.stats());
+    }
+
+    /**
+     * The kind of hit a Grudge Ward in this apparatus holds against, or null before anything has broken its shield.
+     */
+    public static DragoonAdaptation.@Nullable Kind grudge(ItemStack apparatus)
+    {
+        return apparatus.get(VoidHeartDataComponents.APPARATUS_GRUDGE);
+    }
+
+    /**
+     * A Grudge Ward takes up the kind of hit that broke the shield, and tells its wearer when that changes.
+     */
+    private static void holdGrudge(ServerPlayer player, DamageSource source)
+    {
+        var apparatus = equipped(player);
+        var held = grudge(apparatus);
+        var next = GrudgeWard.afterBreak(held, KernacianDragoon.kindOf(source));
+        if (next == null || next == held)
+            return;
+        apparatus.set(VoidHeartDataComponents.APPARATUS_GRUDGE, next);
+        player.sendOverlayMessage(Component.translatable("voidheart.grudge_ward.held", Component.translatable("voidheart.grudge.kind." + GrudgeWard.name(next)))
+                .withColor(ApparatusComponent.GRUDGE_WARD.rgb()));
     }
 
     private static boolean isWarded(ShieldStats stats, DamageSource source)
@@ -205,6 +233,8 @@ public final class ShieldingApparatus
         var level = player.level();
         var center = center(player);
         level.playSound(null, center.x, center.y, center.z, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 1, 0.6F);
+        if (stats.grudge())
+            holdGrudge(player, source);
 
         if (stats.breakEffect().isEmpty())
             return;

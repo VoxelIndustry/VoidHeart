@@ -145,6 +145,8 @@ public class ShieldingApparatusItem extends Item
                 .withStyle(ChatFormatting.GRAY));
         for (var ward : stats.wards())
             tooltip.accept(Component.translatable(MODID + ".shielding_apparatus.ward." + ward.name().toLowerCase(Locale.ROOT)).withStyle(ChatFormatting.GOLD));
+        if (stats.grudge())
+            tooltip.accept(Component.translatable(MODID + ".shielding_apparatus.grudge").withStyle(ChatFormatting.GOLD));
         stats.breakEffect().ifPresent(effect ->
                 tooltip.accept(Component.translatable(MODID + ".shielding_apparatus.break." + effect.name().toLowerCase(Locale.ROOT)).withStyle(ChatFormatting.LIGHT_PURPLE)));
     }

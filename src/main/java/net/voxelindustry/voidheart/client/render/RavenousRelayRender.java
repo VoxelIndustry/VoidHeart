@@ -12,6 +12,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.energy.pearl.HangingPearlRender;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleBlock;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlTile;
@@ -33,6 +35,7 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
     private static final float RELAY_INSET     = 0.15F;
     private static final float COLLECTOR_INSET = 0.2F;
     private static final float STORAGE_INSET   = 0.45F;
+    private static final double CRADLE_FLOOR   = (CrystalCradleBlock.FLOOR + 0.5) / 16;
     /** Threads the beam splits into to sink into a hung pearl. */
     private static final int   PEARL_THREADS   = 5;
 
@@ -69,6 +72,9 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
         {
             if (level.getBlockEntity(target) instanceof HangingPearlTile pearl)
                 state.beams.add(intoPearl(pearl, origin, link, color));
+            // A cradle is a low basin, so the beam sinks into its floor rather than stopping in the air above it
+            else if (level.getBlockEntity(target) instanceof CrystalCradleTile)
+                state.beams.add(beam(CENTER, RELAY_INSET, relative(target, origin).add(0, CRADLE_FLOOR - 0.5, 0), 0, link, color));
             else
                 state.beams.add(beam(CENTER, RELAY_INSET, relative(target, origin), inset(level, target), link, color));
         });

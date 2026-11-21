@@ -34,6 +34,20 @@ public final class RubrumBalance
     /** Guess: how fast a cell socket charges or discharges its cell. */
     public static final long CELL_SOCKET_RATE = 64;
 
+    /** Searing azurium gives out, and Still takes in, this many times its rate. */
+    public static final long HABIT_RATE_FACTOR = 2;
+
+    /** Guess: a Searing cell let go empties its whole charge over this many ticks, about 5 seconds. */
+    public static final long SEARING_BURST_TICKS = 100;
+    public static final long SEARING_BURST_RATE  = CELL_CAPACITY / SEARING_BURST_TICKS;
+
+    /** Guesses: a Wrung cell drinks harm done to living things this near, this much per point of damage, banked and taken in at this rate. */
+    public static final double WRUNG_RANGE      = 8;
+    public static final long   WRUNG_PER_DAMAGE = 400;
+    public static final long   WRUNG_RATE       = 64;
+    /** The most harm a Wrung cell banks ahead of taking it in, about 10 seconds' worth. */
+    public static final long   WRUNG_BANK       = WRUNG_RATE * 200;
+
     private RubrumBalance()
     {
     }

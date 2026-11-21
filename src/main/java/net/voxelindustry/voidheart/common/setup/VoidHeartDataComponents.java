@@ -6,6 +6,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.content.crystal.ScouredSoak;
 import net.minecraft.core.BlockPos;
+import net.voxelindustry.voidheart.common.content.apparatus.GrudgeWard;
+import net.voxelindustry.voidheart.common.content.mob.DragoonAdaptation;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Registry;
@@ -93,6 +95,8 @@ public class VoidHeartDataComponents
     public static DataComponentType<Integer>         CRYSTAL_SOAK;
     /** The creature kind a Scoured memoriam bundle was imprinted with, which a Ley Ward it is set in keeps out. */
     public static DataComponentType<EntityType<?>>   CRYSTAL_IMPRINT;
+    /** The kind of hit an apparatus's Grudge Ward holds against: whatever last broke its shield. */
+    public static DataComponentType<DragoonAdaptation.Kind> APPARATUS_GRUDGE;
 
     public static void registerComponents()
     {
@@ -116,6 +120,7 @@ public class VoidHeartDataComponents
         CRYSTAL_HABIT = register("crystal_habit", CrystalHabit.CODEC);
         CRYSTAL_SOAK = register("crystal_soak", Codec.intRange(0, ScouredSoak.MAX));
         CRYSTAL_IMPRINT = register("crystal_imprint", BuiltInRegistries.ENTITY_TYPE.byNameCodec());
+        APPARATUS_GRUDGE = register("apparatus_grudge", GrudgeWard.KIND_CODEC);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

@@ -118,6 +118,28 @@ public class SocketSet
         return SocketBundle.rateOf(Arrays.asList(bundles));
     }
 
+    public long rateIn()
+    {
+        long rate = 0;
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null)
+                rate += bundles[socket].rateIn(habits[socket]);
+        }
+        return rate;
+    }
+
+    public long rateOut()
+    {
+        long rate = 0;
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null)
+                rate += bundles[socket].rateOut(habits[socket]);
+        }
+        return rate;
+    }
+
     public boolean fits(Size size)
     {
         return count() <= ConstructLayout.socketCount(size);

@@ -18,6 +18,7 @@ import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.VoidBeamRender;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
 import net.voxelindustry.voidheart.client.render.energy.BlockQuads;
 import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
@@ -28,13 +29,15 @@ import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleTile;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
 import org.jspecify.annotations.Nullable;
+import org.joml.Vector3f;
 
 /**
  * A bundle rising out of the cradle's bed. The shards fed in lie dim on the basin floor and go as they are used, the bundle's own model grows up from among
- * them, and ley pools faintly at its foot while it is fed. Once grown it rests and nothing moves.
+ * them, and ley pools faintly at its foot while it is fed. Fed essence through a relay, the pool takes the essence's colour and motes of it rise along the
+ * bundle. Once grown it rests and nothing moves.
  * <p>
  * Crystal draws as cutout block quads, or translucent for a habit drawn see-through. The pool is one additive fan just above the floor, so it can't
- * fight it. At most one bundle and four shards, about 21 cached quads, per cradle.
+ * fight it. At most one bundle and four shards, about 21 cached quads, per cradle, plus 40 for the motes of a fed one.
  */
 public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTile, CrystalCradleRender.State>
 {
@@ -65,6 +68,16 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
     private static final float INK_ALPHA     = 0.75F;
     private static final float INK_STALLED   = 0.45F;
     private static final float INK_RADIUS    = 4F / 16;
+    // Essence fed through a relay pools in its own colour, and motes of it climb the bundle
+    private static final float FED_ALPHA     = 0.38F;
+    private static final int   MOTES         = 5;
+    private static final float MOTE_PERIOD   = 70;
+    private static final float MOTE_RADIUS   = 0.028F;
+    private static final float MOTE_ALPHA    = 0.85F;
+    private static final float MOTE_ORBIT    = 2.6F / 16;
+    private static final float MOTE_SPREAD   = 1.2F / 16;
+    private static final float MOTE_TURN     = 0.6F;
+    private static final float MOTE_LOWEST   = 4F / 16;
 
     public static class State extends BlockEntityRenderState
     {
@@ -78,6 +91,9 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         float        pool;
         float        time;
         CrystalCradleTile.Source source = CrystalCradleTile.Source.IDLE;
+        int          fedRgb;
+        float        bundleTop;
+        final Vector3f camera = new Vector3f();
     }
 
     public CrystalCradleRender(BlockEntityRendererProvider.Context context)
@@ -104,6 +120,12 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         state.pool = cradle.pool(partialTicks);
         state.source = cradle.source();
         state.time = (cradle.getLevel().getGameTime() % 24000L) + partialTicks;
+        var essence = CrystalCradleTile.essenceOf(cradle.feed());
+        state.fedRgb = essence == null ? POOL_RGB : VoidBeamRender.aspectColor(essence) & 0xFFFFFF;
+        var rise = CradleRise.of(state.shown, state.target);
+        state.bundleTop = rise == null ? 0 : CradleRise.height(rise.size()) / 16 * rise.scale();
+        var pos = cradle.getBlockPos();
+        state.camera.set((float) (cameraPosition.x - pos.getX()), (float) (cameraPosition.y - pos.getY()), (float) (cameraPosition.z - pos.getZ()));
 
         // The shards not yet grown into the bundle, the one in use shrinking as it goes
         double left = Math.max(0, growth.worth() - state.shown);
@@ -124,6 +146,11 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         switch (state.source)
         {
             case SCOURING, BREACHED -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.MARKER, (pose, buffer) -> ink(state, pose, buffer));
+            case FED -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
+            {
+                disc(state, pose, buffer, state.fedRgb, FED_ALPHA, POOL_RADIUS);
+                motes(state, pose, buffer);
+            });
             case SEEP -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> disc(state, pose, buffer, SEEP_RGB, SEEP_ALPHA,
                     POOL_RADIUS));
             default -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> disc(state, pose, buffer, POOL_RGB, POOL_ALPHA,
@@ -224,6 +251,54 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         float breath = 1 - POOL_BREATH * (0.5F + 0.5F * Mth.sin(state.time / POOL_PERIOD * Mth.TWO_PI));
         int center = ARGB.color(Mth.clamp((int) (alpha * state.pool * breath * 255), 0, 255), rgb);
         fan(pose, buffer, center, ARGB.color(0, rgb), radius);
+    }
+
+    /**
+     * Motes of the fed essence climbing around the bundle from the pool to its tip, each on its own turn, fading in at the floor and out at the top.
+     */
+    private static void motes(State state, PoseStack.Pose pose, VertexConsumer buffer)
+    {
+        float top = FLOOR + Math.max(MOTE_LOWEST, state.bundleTop);
+        for (int i = 0; i < MOTES; i++)
+        {
+            float phase = (state.time / MOTE_PERIOD + i / (float) MOTES + 0.37F * i * i) % 1;
+            float angle = Mth.TWO_PI * (i / (float) MOTES + phase * MOTE_TURN);
+            float orbit = MOTE_ORBIT + MOTE_SPREAD * Mth.sin(i * 2.3F);
+            var at = new Vector3f(0.5F + orbit * Mth.cos(angle), Mth.lerp(phase, FLOOR + POOL_HEIGHT, top), 0.5F + orbit * Mth.sin(angle));
+            float alpha = MOTE_ALPHA * state.pool * Mth.sin(phase * Mth.PI);
+            dot(pose, buffer, at, state.camera, MOTE_RADIUS, state.fedRgb, alpha);
+        }
+    }
+
+    /**
+     * A soft round dot facing the camera, given where the camera is from the cradle.
+     */
+    private static void dot(PoseStack.Pose pose, VertexConsumer buffer, Vector3f at, Vector3f camera, float radius, int rgb, float alpha)
+    {
+        if (alpha <= 0.004F)
+            return;
+        var toCamera = new Vector3f(camera).sub(at);
+        if (toCamera.lengthSquared() < 1.0E-6F)
+            return;
+        toCamera.normalize();
+        var right = new Vector3f(0, 1, 0).cross(toCamera);
+        if (right.lengthSquared() < 1.0E-6F)
+            right.set(1, 0, 0);
+        right.normalize();
+        var up = new Vector3f(toCamera).cross(right).normalize();
+        int core = ARGB.color(Mth.clamp((int) (alpha * 255), 0, 255), rgb);
+        int rim = ARGB.color(0, rgb);
+        int segments = 8;
+        for (int i = 0; i < segments; i++)
+        {
+            float a0 = Mth.TWO_PI * i / segments, a1 = Mth.TWO_PI * (i + 1) / segments;
+            buffer.addVertex(pose, at.x, at.y, at.z).setColor(core);
+            buffer.addVertex(pose, at.x, at.y, at.z).setColor(core);
+            buffer.addVertex(pose, at.x + (right.x * Mth.cos(a0) + up.x * Mth.sin(a0)) * radius, at.y + (right.y * Mth.cos(a0) + up.y * Mth.sin(a0)) * radius,
+                    at.z + (right.z * Mth.cos(a0) + up.z * Mth.sin(a0)) * radius).setColor(rim);
+            buffer.addVertex(pose, at.x + (right.x * Mth.cos(a1) + up.x * Mth.sin(a1)) * radius, at.y + (right.y * Mth.cos(a1) + up.y * Mth.sin(a1)) * radius,
+                    at.z + (right.z * Mth.cos(a1) + up.z * Mth.sin(a1)) * radius).setColor(rim);
+        }
     }
 
     private static void fan(PoseStack.Pose pose, VertexConsumer buffer, int center, int rim, float radius)

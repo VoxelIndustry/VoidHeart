@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.content.underway.security.UnderwayUnitSpawner;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
@@ -72,7 +73,7 @@ public class UnderwaySecurity extends SavedData
         }
     }
 
-    private record Entry(int x, int z, int section, boolean cell, long charge, int wake, int alarm, List<Integer> destroyed)
+    private record Entry(int x, int z, int section, boolean cell, long charge, CrystalHabit cellHabit, int wake, int alarm, List<Integer> destroyed)
     {
         static final Codec<Entry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.INT.fieldOf("x").forGetter(Entry::x),
@@ -80,6 +81,7 @@ public class UnderwaySecurity extends SavedData
                 Codec.INT.fieldOf("section").forGetter(Entry::section),
                 Codec.BOOL.fieldOf("cell").forGetter(Entry::cell),
                 Codec.LONG.fieldOf("charge").forGetter(Entry::charge),
+                CrystalHabit.CODEC.optionalFieldOf("cell_habit", CrystalHabit.NONE).forGetter(Entry::cellHabit),
                 Codec.INT.fieldOf("wake").forGetter(Entry::wake),
                 Codec.INT.fieldOf("alarm").forGetter(Entry::alarm),
                 Codec.INT.listOf().fieldOf("destroyed").forGetter(Entry::destroyed)
@@ -118,7 +120,7 @@ public class UnderwaySecurity extends SavedData
             if (entry.section() < 0 || entry.section() >= SECTIONS)
                 continue;
             sections.put(new Key(entry.x(), entry.z(), UnderwaySection.of(entry.section())),
-                    new SectionState(entry.cell(), entry.charge(), SectionState.Wake.of(entry.wake()), entry.alarm(), entry.destroyed()));
+                    new SectionState(entry.cell(), entry.charge(), entry.cellHabit(), SectionState.Wake.of(entry.wake()), entry.alarm(), entry.destroyed()));
         }
     }
 
@@ -128,7 +130,7 @@ public class UnderwaySecurity extends SavedData
         {
             var key = entry.getKey();
             var state = entry.getValue();
-            return new Entry(key.x(), key.z(), key.section().ordinal(), state.hasCell(), state.charge(), state.wake().ordinal(), state.alarm(), state.destroyed());
+            return new Entry(key.x(), key.z(), key.section().ordinal(), state.hasCell(), state.charge(), state.cellHabit(), state.wake().ordinal(), state.alarm(), state.destroyed());
         }).toList();
     }
 
@@ -225,9 +227,15 @@ public class UnderwaySecurity extends SavedData
     /** Sets a cell in the section's cabinet, which wakes all of its security and locks it down if the cell holds any charge. */
     public void insertCell(ServerLevel level, Key key, long charge)
     {
+        insertCell(level, key, charge, CrystalHabit.NONE);
+    }
+
+    /** Sets a cell with a habit in the cabinet, which keeps the habit to hand it back with the cell. */
+    public void insertCell(ServerLevel level, Key key, long charge, CrystalHabit habit)
+    {
         var state = touch(key);
         boolean wasLive = state.isLive();
-        state.insert(charge);
+        state.insert(charge, habit);
         boolean woke = state.isLive() && !wasLive;
         boolean secured = woke && isSecured(level, key);
         if (secured)
@@ -238,6 +246,12 @@ public class UnderwaySecurity extends SavedData
         if (!secured)
             shutDoors(level, key, null, 0);
         tell(level, key, secured ? "live_secured" : "live", SoundEvents.BEACON_ACTIVATE, 0.7F);
+    }
+
+    /** @return the habit of the cell in the section's cabinet */
+    public CrystalHabit cellHabit(Key key)
+    {
+        return peek(key).cellHabit();
     }
 
     /** @return the charge left in the cell taken out of the section's cabinet */

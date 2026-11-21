@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.underway;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +34,8 @@ public final class SectionState
 
     private boolean cell;
     private long charge;
+    // The habit of the cell in the cabinet, handed back with it
+    private CrystalHabit cellHabit = CrystalHabit.NONE;
     private Wake wake = Wake.NONE;
     private int alarm;
     private final Set<Integer> destroyed = new TreeSet<>();
@@ -42,8 +46,14 @@ public final class SectionState
 
     public SectionState(boolean cell, long charge, Wake wake, int alarm, Collection<Integer> destroyed)
     {
+        this(cell, charge, CrystalHabit.NONE, wake, alarm, destroyed);
+    }
+
+    public SectionState(boolean cell, long charge, CrystalHabit cellHabit, Wake wake, int alarm, Collection<Integer> destroyed)
+    {
         this.cell = cell;
         this.charge = cell ? Math.max(0, charge) : 0;
+        this.cellHabit = cell ? cellHabit : CrystalHabit.NONE;
         this.wake = wake;
         this.alarm = Math.max(0, alarm);
         this.destroyed.addAll(destroyed);
@@ -57,6 +67,11 @@ public final class SectionState
     public long charge()
     {
         return charge;
+    }
+
+    public CrystalHabit cellHabit()
+    {
+        return cellHabit;
     }
 
     public Wake wake()
@@ -83,8 +98,14 @@ public final class SectionState
     /** Sets a cell in its cabinet. With any charge in it the whole section wakes, for good. */
     public void insert(long cellCharge)
     {
+        insert(cellCharge, CrystalHabit.NONE);
+    }
+
+    public void insert(long cellCharge, CrystalHabit habit)
+    {
         cell = true;
         charge = Math.max(0, cellCharge);
+        cellHabit = habit;
         if (isLive())
         {
             wake = Wake.ALL;
@@ -98,6 +119,7 @@ public final class SectionState
         long left = charge;
         cell = false;
         charge = 0;
+        cellHabit = CrystalHabit.NONE;
         return left;
     }
 

@@ -12,6 +12,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
 import net.voxelindustry.voidheart.common.energy.LeyPower;
 import net.voxelindustry.voidheart.common.energy.VoidSeep;
 import net.voxelindustry.voidheart.common.energy.ley.LeySpurs;
@@ -30,14 +33,16 @@ import java.util.WeakHashMap;
 
 /**
  * Regrows the crystal fed into it on ley from a nearby standing stone. A clean line grows azurium Clear, a tainted one grows it plain. It asks for ley
- * only while something is growing, and pauses when none comes.
+ * only while something is growing, and pauses when none comes. Essence a relay feeds it teaches the crystal its own habit instead, and is only taken
+ * while that habit can settle.
  */
-public class CrystalCradleTile extends TileBase
+public class CrystalCradleTile extends TileBase implements IEssenceReceiver
 {
     private static final float  EASE = 0.15F;
     private static final double JUMP = 0.5;
 
-    private final CradleGrowth growth = new CradleGrowth();
+    private final CradleGrowth  growth  = new CradleGrowth();
+    private final CradleEssence essence = new CradleEssence(CradleBalance.ESSENCE_TANK);
 
     private @Nullable UUID owner;
 
@@ -46,7 +51,7 @@ public class CrystalCradleTile extends TileBase
      */
     public enum Source implements StringRepresentable
     {
-        IDLE, LEY, SEEP, SCOURING, BREACHED;
+        IDLE, LEY, FED, SEEP, SCOURING, BREACHED;
 
         public static final Codec<Source> CODEC = StringRepresentable.fromEnum(Source::values);
 
@@ -115,6 +120,7 @@ public class CrystalCradleTile extends TileBase
     {
         var server = (ServerLevel) level;
         var wasSource = cradle.source;
+        var wasFeed = cradle.feed;
         var wasStone = cradle.scourStone;
         long now = level.getGameTime();
         if (Math.floorMod(now + pos.hashCode(), CradleBalance.SEEP_TICKS) == 0)
@@ -131,7 +137,7 @@ public class CrystalCradleTile extends TileBase
         }
 
         boolean stepped = cradle.growth.grownSize() != cradle.syncedSize;
-        boolean changed = wasSource != cradle.source || !java.util.Objects.equals(wasStone, cradle.scourStone);
+        boolean changed = wasSource != cradle.source || wasFeed != cradle.feed || !java.util.Objects.equals(wasStone, cradle.scourStone);
         if (stepped || changed || (cradle.supply > 0 && now - cradle.lastSync >= CradleBalance.SYNC_TICKS))
             cradle.publish();
     }
@@ -193,8 +199,88 @@ public class CrystalCradleTile extends TileBase
         }
         supply = LeyPower.supply(server, pos, CradleBalance.LEY_NEED);
         source = supply > 0 ? Source.LEY : Source.IDLE;
-        feed = feedAt(server, pos);
+        // Essence teaches the crystal over whatever the line would, but only grows it as far as the ley does
+        var fed = supply > 0 ? essence.pay(CradleBalance.ESSENCE_PER_TICK * supply, habit -> takesEssence(server, habit)) : null;
+        if (fed != null)
+        {
+            source = Source.FED;
+            feed = fed;
+            setChanged();
+        }
+        else
+            feed = feedAt(server, pos);
         growth.grow(feed, supply / (double) CradleBalance.TICKS_PER_WORTH);
+    }
+
+    /**
+     * Whether essence teaching this habit is any use here: something is growing that takes it, its owner knows it, and no seep or foulness decides the
+     * habit first. Relays send nothing it would only waste.
+     */
+    private boolean takesEssence(ServerLevel server, CrystalHabit habit)
+    {
+        var kind = growth.kind();
+        return kind != null && growth.isGrowing() && growth.seedHabit() != CrystalHabit.FOULED && seep < CradleBalance.FOUL_SEEP
+               && habit.takenBy(kind) && CradleResearch.settles(server.getServer(), owner).test(habit);
+    }
+
+    /**
+     * The habit an essence teaches, or null for one that teaches none.
+     */
+    public static @Nullable CrystalHabit habitOf(EssenceType type)
+    {
+        if (type == EssenceRegistry.FIERY)
+            return CrystalHabit.SEARING;
+        if (type == EssenceRegistry.STILLNESS)
+            return CrystalHabit.STILL;
+        if (type == EssenceRegistry.SUFFERING)
+            return CrystalHabit.WRUNG;
+        return null;
+    }
+
+    /**
+     * The essence that teaches a habit, or null.
+     */
+    public static @Nullable EssenceType essenceOf(CrystalHabit habit)
+    {
+        return switch (habit)
+        {
+            case SEARING -> EssenceRegistry.FIERY;
+            case STILL -> EssenceRegistry.STILLNESS;
+            case WRUNG -> EssenceRegistry.SUFFERING;
+            default -> null;
+        };
+    }
+
+    @Override
+    public int spaceFor(EssenceType type)
+    {
+        var habit = habitOf(type);
+        if (habit == null || !(level instanceof ServerLevel server) || !takesEssence(server, habit))
+            return 0;
+        return essence.room(habit);
+    }
+
+    @Override
+    public int receive(EssenceType type, int amount)
+    {
+        if (spaceFor(type) <= 0)
+            return 0;
+        int taken = essence.fill(habitOf(type), amount);
+        if (taken > 0)
+            setChanged();
+        return taken;
+    }
+
+    @Override
+    public int amountOf(EssenceType type)
+    {
+        return 0;
+    }
+
+    @Override
+    public int extract(EssenceType type, int amount)
+    {
+        return 0;
     }
 
     /**
@@ -348,6 +434,7 @@ public class CrystalCradleTile extends TileBase
             output.putLong("scourNode", scourNode);
         output.putDouble("pendingTaint", pendingTaint);
         output.putDouble("taintPushed", taintPushed);
+        output.store("essence", CradleEssence.Saved.CODEC, essence.save());
     }
 
     @Override
@@ -367,6 +454,7 @@ public class CrystalCradleTile extends TileBase
         pendingTaint = Double.isFinite(pending) ? Math.max(0, pending) : 0;
         double pushed = input.getDoubleOr("taintPushed", 0);
         taintPushed = Double.isFinite(pushed) ? Math.max(0, pushed) : 0;
+        essence.load(input.read("essence", CradleEssence.Saved.CODEC).orElse(new CradleEssence.Saved(java.util.List.of(), java.util.List.of())));
     }
 
     public Source source()
@@ -393,6 +481,11 @@ public class CrystalCradleTile extends TileBase
     public double taintPushed()
     {
         return taintPushed;
+    }
+
+    public CradleEssence essence()
+    {
+        return essence;
     }
 
     public float seep()

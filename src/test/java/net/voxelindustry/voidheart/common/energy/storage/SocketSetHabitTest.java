@@ -81,4 +81,33 @@ class SocketSetHabitTest
         sockets.load(List.of(new SocketSet.Entry(3, SocketBundle.LARGE_RUBRUM)));
         assertThat(sockets.habit(3)).isEqualTo(CrystalHabit.NONE);
     }
+
+    @Test
+    void searingAndStillAzurium_setTheWaysApart()
+    {
+        var sockets = new SocketSet();
+        sockets.set(0, SocketBundle.SMALL_AZURIUM, CrystalHabit.SEARING);
+        sockets.set(1, SocketBundle.MEDIUM_AZURIUM, CrystalHabit.STILL);
+        sockets.set(2, SocketBundle.LARGE_AZURIUM, CrystalHabit.PLAIN);
+        sockets.set(3, SocketBundle.LARGE_RUBRUM, CrystalHabit.SEARING);
+
+        long small = RubrumBalance.SMALL_AZURIUM_RATE, medium = RubrumBalance.MEDIUM_AZURIUM_RATE, large = RubrumBalance.LARGE_AZURIUM_RATE;
+        assertThat(sockets.rateOut()).as("Searing gives out twice as fast, Still gives nothing").isEqualTo(2 * small + large);
+        assertThat(sockets.rateIn()).as("Still takes in twice as fast, Searing takes nothing").isEqualTo(2 * medium + large);
+        assertThat(new ConstructContents(5, sockets.entries()).rateOut()).isEqualTo(sockets.rateOut());
+        assertThat(SocketBundle.LARGE_RUBRUM.rateIn(CrystalHabit.STILL)).as("rubrum gives no rate whatever its habit").isZero();
+    }
+
+    @Test
+    void aConstructsWaysCapWhatGoesInAndComesOut()
+    {
+        var charge = new ConstructCharge(() -> 0);
+        charge.setSockets(1_000, 100, 0);
+        charge.setActive(true);
+        assertThat(charge.insert(500, false)).isEqualTo(100);
+        assertThat(charge.extract(50, false)).as("nothing comes out of a construct that only takes in").isZero();
+        assertThat(charge.maxRateIn()).isEqualTo(100);
+        assertThat(charge.maxRateOut()).isZero();
+        assertThat(charge.maxRate()).isEqualTo(100);
+    }
 }

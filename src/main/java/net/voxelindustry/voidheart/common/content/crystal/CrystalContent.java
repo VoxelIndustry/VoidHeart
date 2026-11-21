@@ -17,6 +17,8 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.voxelindustry.voidheart.common.item.LoreBlockItem;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumCellItem;
+import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.energy.spike.LeySpikeContent;
@@ -57,6 +59,7 @@ public final class CrystalContent
         VoidHeartTiles.registerTile(CRYSTAL_CRADLE_TILE = FabricBlockEntityTypeBuilder.create(CrystalCradleTile::new, CRYSTAL_CRADLE).build(), "crystal_cradle");
 
         Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Identifier.fromNamespaceAndPath(MODID, "copy_crystal_habit"), CopyCrystalHabitFunction.MAP_CODEC);
+        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, Identifier.fromNamespaceAndPath(MODID, "habit_shaped"), HabitShapedRecipe.SERIALIZER);
 
         addHabitVariants();
         CrystalImprint.register();
@@ -84,6 +87,8 @@ public final class CrystalContent
             spike.set(net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents.CRYSTAL_HABIT, CrystalHabit.FOULED);
             return spike;
         });
+        for (var habit : HabitShapedRecipe.CARRIED.stream().sorted().toList())
+            VoidHeartItems.addCreativeVariant(RubrumContent.RUBRUM_CELL, () -> CrystalBundles.withHabit(RubrumCellItem.full(), habit));
     }
 
     /**

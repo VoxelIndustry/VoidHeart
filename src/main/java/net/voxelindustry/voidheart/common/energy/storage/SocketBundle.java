@@ -44,6 +44,32 @@ public enum SocketBundle implements StringRepresentable
     }
 
     /**
+     * What this bundle lets in with that habit: Still azurium takes in twice as fast and Searing takes nothing.
+     */
+    public long rateIn(CrystalHabit habit)
+    {
+        return switch (rubrum ? CrystalHabit.PLAIN : habit)
+        {
+            case STILL -> rate() * RubrumBalance.HABIT_RATE_FACTOR;
+            case SEARING -> 0;
+            default -> rate();
+        };
+    }
+
+    /**
+     * What this bundle lets out with that habit: Searing azurium gives out twice as fast and Still gives nothing.
+     */
+    public long rateOut(CrystalHabit habit)
+    {
+        return switch (rubrum ? CrystalHabit.PLAIN : habit)
+        {
+            case SEARING -> rate() * RubrumBalance.HABIT_RATE_FACTOR;
+            case STILL -> 0;
+            default -> rate();
+        };
+    }
+
+    /**
      * What this bundle holds with that habit: Fouled rubrum holds too much, twice its size.
      */
     public long capacity(CrystalHabit habit)

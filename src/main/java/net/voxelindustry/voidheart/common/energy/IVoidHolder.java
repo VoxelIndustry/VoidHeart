@@ -15,6 +15,22 @@ public interface IVoidHolder
     long maxRate();
 
     /**
+     * The most a single insert moves, for a holder that takes in at another rate than it gives out.
+     */
+    default long maxRateIn()
+    {
+        return maxRate();
+    }
+
+    /**
+     * The most a single extract moves.
+     */
+    default long maxRateOut()
+    {
+        return maxRate();
+    }
+
+    /**
      * Returns how much was, or with simulate would be, accepted.
      */
     long insert(long amount, boolean simulate);

@@ -36,6 +36,13 @@ public class CellSocketRender implements BlockEntityRenderer<CellSocketTile, Cel
     private static final float SHARD_TOP    = CellSocketGeometry.CELL_TOP - 1.5F / 16;
     private static final float GLOW_ALPHA   = 0.35F;
     private static final float ACTIVE_PULSE = 0.15F;
+    // A Searing cell letting go flares: an ember-bright, wider column flickering fast until it is empty
+    private static final int   FLARE_GLOW   = 0xFFC447;
+    private static final float FLARE_ALPHA  = 1F;
+    private static final float FLARE_HALF   = 1.3F / 16;
+    private static final float HALO_ALPHA   = 0.4F;
+    private static final float HALO_HALF    = 2.8F / 16;
+    private static final float FLARE_FLICKER = 0.25F;
 
     private final ItemModelResolver itemModelResolver;
 
@@ -44,6 +51,7 @@ public class CellSocketRender implements BlockEntityRenderer<CellSocketTile, Cel
         public final ItemStackRenderState item = new ItemStackRenderState();
         public float   fill;
         public boolean active;
+        public boolean bursting;
         public float   time;
     }
 
@@ -65,6 +73,7 @@ public class CellSocketRender implements BlockEntityRenderer<CellSocketTile, Cel
         itemModelResolver.updateForTopItem(state.item, tile.getCell(), ItemDisplayContext.FIXED, tile.getLevel(), null, (int) tile.getBlockPos().asLong());
         state.fill = tile.fill();
         state.active = tile.activity() != CellSocketTile.Activity.IDLE;
+        state.bursting = tile.activity() == CellSocketTile.Activity.BURSTING;
         state.time = tile.getLevel().getGameTime() + partialTicks;
     }
 
@@ -87,15 +96,27 @@ public class CellSocketRender implements BlockEntityRenderer<CellSocketTile, Cel
 
         if (state.fill <= 0.001F)
             return;
+        var top = Mth.lerp(Mth.clamp(state.fill, 0, 1), SHARD_BOTTOM, SHARD_TOP);
+        if (state.bursting)
+        {
+            var flicker = 1 - FLARE_FLICKER + FLARE_FLICKER * Mth.sin(state.time * 1.7F) * Mth.sin(state.time * 0.9F + 1);
+            var flare = ARGB.color(Math.round(255 * FLARE_ALPHA * flicker), FLARE_GLOW);
+            var halo = ARGB.color(Math.round(255 * HALO_ALPHA * flicker), FLARE_GLOW);
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
+            {
+                column(pose, buffer, SHARD_BOTTOM, top, FLARE_HALF, flare);
+                column(pose, buffer, SHARD_BOTTOM, top, HALO_HALF, halo);
+            });
+            return;
+        }
         var pulse = state.active ? 1 - ACTIVE_PULSE + ACTIVE_PULSE * Mth.sin(state.time * 0.3F) : 1;
         var color = ARGB.color(Math.round(255 * GLOW_ALPHA * pulse), RUBRUM_GLOW);
-        var top = Mth.lerp(Mth.clamp(state.fill, 0, 1), SHARD_BOTTOM, SHARD_TOP);
-        collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> column(pose, buffer, SHARD_BOTTOM, top, color));
+        collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> column(pose, buffer, SHARD_BOTTOM, top, GLOW_HALF, color));
     }
 
-    private static void column(PoseStack.Pose pose, VertexConsumer buffer, float bottom, float top, int color)
+    private static void column(PoseStack.Pose pose, VertexConsumer buffer, float bottom, float top, float half, int color)
     {
-        float x0 = 0.5F - GLOW_HALF, x1 = 0.5F + GLOW_HALF, z0 = 0.5F - GLOW_HALF, z1 = 0.5F + GLOW_HALF;
+        float x0 = 0.5F - half, x1 = 0.5F + half, z0 = 0.5F - half, z1 = 0.5F + half;
         vertexQuad(pose, buffer, color, x0, bottom, z0, x1, bottom, z0, x1, top, z0, x0, top, z0);
         vertexQuad(pose, buffer, color, x1, bottom, z1, x0, bottom, z1, x0, top, z1, x1, top, z1);
         vertexQuad(pose, buffer, color, x0, bottom, z1, x0, bottom, z0, x0, top, z0, x0, top, z1);

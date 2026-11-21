@@ -250,4 +250,34 @@ class CradleGrowthTest
         assertThat(harvest.shards()).isEqualTo(1);
         assertThat(harvest.shardHabit()).isEqualTo(FOULED);
     }
+
+    @Test
+    void fedEssence_settlesItsHabitOverTheLine()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 1, NONE);
+        growth.grow(CrystalHabit.SEARING, 0.7);
+        growth.grow(CLEAR, 0.3);
+        assertThat(growth.habit(ALL)).as("Fiery fed two thirds of it").isEqualTo(CrystalHabit.SEARING);
+        assertThat(growth.habit(habit -> habit != CrystalHabit.SEARING)).as("not known, so it grows plain").isEqualTo(PLAIN);
+    }
+
+    @Test
+    void twoEssencesFedTogether_growPlain()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(RUBRUM, 1, NONE);
+        growth.grow(CrystalHabit.SEARING, 0.5);
+        growth.grow(CrystalHabit.STILL, 0.5);
+        assertThat(growth.habit(ALL)).isEqualTo(PLAIN);
+    }
+
+    @Test
+    void anEssenceACrystalDoesntTake_growsPlain()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 1, NONE);
+        growth.grow(WRUNG, 1);
+        assertThat(growth.habit(ALL)).as("azurium carries, it isn't wrung").isEqualTo(PLAIN);
+    }
 }

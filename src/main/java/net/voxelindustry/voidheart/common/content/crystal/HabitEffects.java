@@ -46,15 +46,24 @@ public final class HabitEffects
                 case CLEAR -> List.of(new Effect("pylon", MODID + ".habit.clear.arcs"), new Effect("pylon", MODID + ".habit.clear.dark"));
                 case FOULED -> List.of(new Effect("spike", MODID + ".habit.fouled.greedy"));
                 case SCOURED -> List.of(new Effect("pylon", MODID + ".habit.scoured.holds"));
+                case SEARING -> List.of(new Effect("construct", MODID + ".habit.searing.gives"), new Effect("construct", MODID + ".habit.searing.shut"));
+                case STILL -> List.of(new Effect("construct", MODID + ".habit.still.takes"), new Effect("construct", MODID + ".habit.still.shut"));
                 default -> List.of();
             };
             case RUBRUM -> switch (habit)
             {
                 case FOULED -> List.of(new Effect("construct", MODID + ".habit.fouled.holds"), new Effect("construct", MODID + ".habit.fouled.leaks"));
                 case SCOURED -> List.of(new Effect("node", MODID + ".habit.scoured.draws"));
+                case SEARING -> List.of(new Effect("cell", MODID + ".habit.searing.burst"));
+                case STILL -> List.of(new Effect("cell", MODID + ".habit.still.reserve"), new Effect("cell", MODID + ".habit.still.keeps"));
+                case WRUNG -> List.of(new Effect("cell", MODID + ".habit.wrung.drinks"));
                 default -> List.of();
             };
-            case MEMORIAM -> List.of();
+            case MEMORIAM -> switch (habit)
+            {
+                case WRUNG -> List.of(new Effect("altar", MODID + ".habit.wrung.grudge"));
+                default -> List.of();
+            };
         };
     }
 

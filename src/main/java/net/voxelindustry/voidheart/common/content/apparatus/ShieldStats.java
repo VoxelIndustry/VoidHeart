@@ -7,9 +7,15 @@ import java.util.Set;
  * What an apparatus gives with its components in place.
  *
  * @param regenPerTick points refilled each tick once the wait is over
+ * @param grudge       whether a Grudge Ward is set, warding the kind of hit that last broke the shield
  */
-public record ShieldStats(float capacity, float regenPerTick, int delayTicks, Set<WardKind> wards, Optional<BreakEffect> breakEffect)
+public record ShieldStats(float capacity, float regenPerTick, int delayTicks, Set<WardKind> wards, Optional<BreakEffect> breakEffect, boolean grudge)
 {
+    public ShieldStats(float capacity, float regenPerTick, int delayTicks, Set<WardKind> wards, Optional<BreakEffect> breakEffect)
+    {
+        this(capacity, regenPerTick, delayTicks, wards, breakEffect, false);
+    }
+
     public static final int   MIN_DELAY_TICKS = 20;
     /** What a warded hit costs the shield, against what it would cost unwarded. */
     public static final float WARD_COST       = 0.5F;

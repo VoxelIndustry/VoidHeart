@@ -58,6 +58,7 @@
       "net.voxelindustry.voidheart.gametest.CrystalBundleClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalCradleClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalScouringClientTest",
+      "net.voxelindustry.voidheart.gametest.CrystalFedClientTest",
       "net.voxelindustry.voidheart.gametest.VoidPocketClientTest",
       "net.voxelindustry.voidheart.gametest.VoidDungeonClientTest",
       "net.voxelindustry.voidheart.gametest.VoidMobBehaviourClientTest",

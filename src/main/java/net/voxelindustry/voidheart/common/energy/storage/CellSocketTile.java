@@ -6,6 +6,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -15,13 +16,21 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import org.jspecify.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Holds a rubrum cell and moves its energy: out into the field covering it, or in from that field while powered.
+ * Holds a rubrum cell and moves its energy: out into the field covering it, or in from that field while powered. The cell's habit changes how, as
+ * {@link CellHabits} says, and a Wrung cell drinks the harm done to living things around it.
  */
 public class CellSocketTile extends TileBase
 {
@@ -29,8 +38,15 @@ public class CellSocketTile extends TileBase
     {
         IDLE,
         DISCHARGING,
-        CHARGING
+        CHARGING,
+        // A Searing cell letting go of its whole charge at once
+        BURSTING
     }
+
+    /** Sockets holding a Wrung cell on the server, which harm nearby is offered to. */
+    private static final Set<CellSocketTile> DRINKERS = Collections.newSetFromMap(new WeakHashMap<>());
+
+    private static final int WISPS_MAX = 6;
 
     private static final int    SYNC_PERIOD     = 10;
     private static final int    TARGET_RESCAN   = 100;
@@ -41,6 +57,7 @@ public class CellSocketTile extends TileBase
     private ItemStack cell = ItemStack.EMPTY;
     private Activity  activity = Activity.IDLE;
     private long      syncedCharge;
+    private long      wrungBank;
 
     // Client only
     private @Nullable Vec3 moteTarget;
@@ -63,26 +80,48 @@ public class CellSocketTile extends TileBase
     private void serverTick(ServerLevel level)
     {
         var next = Activity.IDLE;
+        var habit = CrystalBundles.habitOf(cell);
+        if (!cell.isEmpty() && habit == CrystalHabit.WRUNG)
+            DRINKERS.add(this);
+        else
+        {
+            DRINKERS.remove(this);
+            wrungBank = 0;
+        }
+
         if (!cell.isEmpty())
         {
             var charge = RubrumCellItem.charge(cell);
-            if (level.hasNeighborSignal(worldPosition))
+            var drunk = CellHabits.drink(wrungBank, charge);
+            if (drunk > 0)
             {
-                var room = RubrumBalance.CELL_CAPACITY - charge;
-                var drawn = room > 0 ? VoidEnergy.draw(level, worldPosition, Math.min(RubrumBalance.CELL_SOCKET_RATE, room)) : 0;
-                if (drawn > 0)
-                {
-                    RubrumCellItem.setCharge(cell, charge + drawn);
-                    next = Activity.CHARGING;
-                }
+                wrungBank -= drunk;
+                charge += drunk;
+                RubrumCellItem.setCharge(cell, charge);
             }
-            else if (charge > 0)
+            switch (CellHabits.way(habit, level.hasNeighborSignal(worldPosition), charge))
             {
-                var offered = VoidEnergy.offer(level, worldPosition, Math.min(RubrumBalance.CELL_SOCKET_RATE, charge));
-                if (offered > 0)
+                case CHARGE ->
                 {
-                    RubrumCellItem.setCharge(cell, charge - offered);
-                    next = Activity.DISCHARGING;
+                    var room = RubrumBalance.CELL_CAPACITY - charge;
+                    var drawn = VoidEnergy.draw(level, worldPosition, Math.min(RubrumBalance.CELL_SOCKET_RATE, room));
+                    if (drawn > 0)
+                    {
+                        RubrumCellItem.setCharge(cell, charge + drawn);
+                        next = Activity.CHARGING;
+                    }
+                }
+                case DISCHARGE ->
+                {
+                    var offered = VoidEnergy.offer(level, worldPosition, Math.min(CellHabits.dischargeRate(habit), charge));
+                    if (offered > 0)
+                    {
+                        RubrumCellItem.setCharge(cell, charge - offered);
+                        next = habit == CrystalHabit.SEARING ? Activity.BURSTING : Activity.DISCHARGING;
+                    }
+                }
+                case IDLE ->
+                {
                 }
             }
         }
@@ -96,6 +135,48 @@ public class CellSocketTile extends TileBase
             syncedCharge = charge;
             sync();
         }
+    }
+
+    /**
+     * Offers harm done to a living thing to the Wrung cells around it. Each banks it and shows crimson wisps rising from the hurt into the cell.
+     */
+    public static void onHarm(LivingEntity entity, float damage)
+    {
+        if (!(damage > 0) || DRINKERS.isEmpty() || !(entity.level() instanceof ServerLevel level))
+            return;
+        var at = entity.position().add(0, entity.getBbHeight() * 0.6, 0);
+        for (var socket : List.copyOf(DRINKERS))
+        {
+            if (socket.isRemoved() || socket.level != level || Vec3.atCenterOf(socket.worldPosition).distanceToSqr(at) > RubrumBalance.WRUNG_RANGE * RubrumBalance.WRUNG_RANGE)
+                continue;
+            socket.drinkHarm(level, at, damage, entity.getBbWidth());
+        }
+    }
+
+    private void drinkHarm(ServerLevel level, Vec3 from, float damage, float width)
+    {
+        var banked = CellHabits.bank(wrungBank, damage);
+        if (banked == wrungBank)
+            return;
+        wrungBank = banked;
+        setChanged();
+        var cellTop = Vec3.atBottomCenterOf(worldPosition).add(0, CellSocketGeometry.CELL_TOP, 0);
+        var random = level.getRandom();
+        int wisps = Mth.clamp(Mth.ceil(damage * 0.8F), 2, WISPS_MAX);
+        for (int i = 0; i < wisps; i++)
+        {
+            double x = from.x + (random.nextDouble() - 0.5) * width, y = from.y + (random.nextDouble() - 0.5) * 0.4, z = from.z + (random.nextDouble() - 0.5) * width;
+            // A count of 0 hands the target to the mote as its motion, unscaled
+            level.sendParticles(RubrumContent.WRUNG_MOTE, false, true, x, y, z, 0, cellTop.x, cellTop.y, cellTop.z, 1);
+        }
+    }
+
+    /**
+     * Harm banked by a Wrung cell, not yet taken in.
+     */
+    public long wrungBank()
+    {
+        return wrungBank;
     }
 
     private void clientTick()
@@ -113,11 +194,13 @@ public class CellSocketTile extends TileBase
             return;
 
         var random = level.getRandom();
-        nextMote = time + 5 + random.nextInt(6);
+        // A Searing cell letting go streams its motes out
+        nextMote = activity == Activity.BURSTING ? time + 1 : time + 5 + random.nextInt(6);
         var cellTop = Vec3.atBottomCenterOf(worldPosition).add(0, CellSocketGeometry.CELL_TOP, 0);
         var target = moteTarget != null ? moteTarget : cellTop.add(0, 3, 0);
-        var start = activity == Activity.DISCHARGING ? cellTop : target;
-        var end = activity == Activity.DISCHARGING ? target : cellTop;
+        boolean out = activity == Activity.DISCHARGING || activity == Activity.BURSTING;
+        var start = out ? cellTop : target;
+        var end = out ? target : cellTop;
         level.addParticle(RubrumContent.RUBRUM_MOTE, start.x, start.y, start.z, end.x, end.y, end.z);
     }
 
@@ -162,6 +245,7 @@ public class CellSocketTile extends TileBase
     public void setCell(ItemStack cell)
     {
         this.cell = cell.copy();
+        wrungBank = 0;
         syncedCharge = RubrumCellItem.charge(this.cell);
         activity = Activity.IDLE;
         setChanged();
@@ -179,6 +263,13 @@ public class CellSocketTile extends TileBase
     }
 
     @Override
+    public void setRemoved()
+    {
+        super.setRemoved();
+        DRINKERS.remove(this);
+    }
+
+    @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
         if (level != null && !cell.isEmpty())
@@ -193,12 +284,14 @@ public class CellSocketTile extends TileBase
         cell = tag.read("cell", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
         activity = Activity.values()[Mth.clamp(tag.getIntOr("activity", 0), 0, Activity.values().length - 1)];
         syncedCharge = RubrumCellItem.charge(cell);
+        wrungBank = Math.clamp(tag.getLongOr("wrungBank", 0L), 0, RubrumBalance.WRUNG_BANK);
     }
 
     @Override
     protected void saveAdditional(ValueOutput tag)
     {
         tag.store("cell", ItemStack.OPTIONAL_CODEC, cell);
+        tag.putLong("wrungBank", wrungBank);
         tag.putInt("activity", activity.ordinal());
         super.saveAdditional(tag);
     }
