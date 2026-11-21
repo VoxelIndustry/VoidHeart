@@ -50,6 +50,7 @@ public class GreatRavenousStorageClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
@@ -66,6 +67,10 @@ public class GreatRavenousStorageClientTest implements FabricClientGameTest
             checkBreakingKeepsShares(server);
             checkAspectsRefuse(server);
             showLooseAndItems(context, server);
+        }
+        finally
+        {
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 

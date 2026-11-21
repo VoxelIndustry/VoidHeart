@@ -19,6 +19,7 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageBlock;
+import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.essence.GreatStorageLayout;
 import net.voxelindustry.voidheart.common.content.essence.StorageParts;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -180,6 +181,7 @@ public class RelayLinkPreviewRender
         {
             case RavenousCollectorTile collector -> collector.storage().type();
             case RavenousStorageTile storage -> storage.storage().type();
+            case GreatRavenousStorageTile storage -> storage.held().type();
             case null, default -> EssenceRegistry.EMPTY;
         };
         return VoidBeamRender.aspectColor(aspect);
