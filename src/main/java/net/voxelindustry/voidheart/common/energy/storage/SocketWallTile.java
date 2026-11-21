@@ -12,6 +12,8 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.energy.storage.CellSocketTile.Activity;
 import org.jspecify.annotations.Nullable;
 
@@ -19,15 +21,17 @@ import java.util.Arrays;
 
 /**
  * Four rubrum cells set in a wall, each moving its energy like a cell socket's: out into the field covering it, or in
- * from that field while the wall is powered.
+ * from that field while the wall is powered. Habits change them as in a socket, and Wrung cells drink harm nearby.
  */
-public class SocketWallTile extends TileBase
+public class SocketWallTile extends TileBase implements HarmDrinker
 {
     private static final int SYNC_PERIOD   = 10;
     private static final int TARGET_RESCAN = 100;
 
     private final ItemStack[] cells      = new ItemStack[SocketWallGeometry.SLOTS];
     private final Activity[]  activities = new Activity[SocketWallGeometry.SLOTS];
+    /** Harm each Wrung cell has banked and not yet taken in. */
+    private final long[]      wrungBanks = new long[SocketWallGeometry.SLOTS];
     /** Each cell's charge as last sent to clients: cells can charge and discharge at once and leave the total unchanged. */
     private final long[]      syncedCharges = new long[SocketWallGeometry.SLOTS];
 
@@ -55,12 +59,29 @@ public class SocketWallTile extends TileBase
     {
         var powered = level.hasNeighborSignal(worldPosition);
         var changedActivity = false;
+        var wrung = false;
         for (var slot = 0; slot < cells.length; slot++)
         {
+            if (isWrung(slot))
+            {
+                wrung = true;
+                var charge = RubrumCellItem.charge(cells[slot]);
+                var drunk = CellHabits.drink(wrungBanks[slot], charge);
+                if (drunk > 0)
+                {
+                    wrungBanks[slot] -= drunk;
+                    RubrumCellItem.setCharge(cells[slot], charge + drunk);
+                }
+            }
+            else
+                wrungBanks[slot] = 0;
+
             var next = CellTransfer.step(level, worldPosition, cells[slot], powered, RubrumBalance.SOCKET_WALL_RATE);
             changedActivity |= next != activities[slot];
             activities[slot] = next;
         }
+
+        CellSocketTile.drinking(this, wrung);
 
         var changedCharge = false;
         for (var slot = 0; slot < cells.length; slot++)
@@ -92,6 +113,44 @@ public class SocketWallTile extends TileBase
             var cell = Vec3.atLowerCornerOf(worldPosition).add(SocketWallGeometry.cellCenter(facing(), slot));
             CellTransfer.mote(level, cell, moteTarget, activity);
         }
+    }
+
+    private boolean isWrung(int slot)
+    {
+        return !cells[slot].isEmpty() && CrystalBundles.habitOf(cells[slot]) == CrystalHabit.WRUNG;
+    }
+
+    @Override
+    public boolean reaches(ServerLevel level, Vec3 at)
+    {
+        return HarmDrinker.reaches(isRemoved(), this.level, worldPosition, level, at);
+    }
+
+    /**
+     * Each Wrung cell in the wall banks the harm on its own, as it would in a socket.
+     */
+    @Override
+    public void drinkHarm(ServerLevel level, Vec3 from, float damage, float width)
+    {
+        for (var slot = 0; slot < cells.length; slot++)
+        {
+            if (!isWrung(slot))
+                continue;
+            var banked = CellHabits.bank(wrungBanks[slot], damage);
+            if (banked == wrungBanks[slot])
+                continue;
+            wrungBanks[slot] = banked;
+            setChanged();
+            HarmDrinker.sendWisps(level, from, damage, width, Vec3.atLowerCornerOf(worldPosition).add(SocketWallGeometry.cellCenter(facing(), slot)));
+        }
+    }
+
+    /**
+     * Harm banked by the Wrung cell in a slot, not yet taken in.
+     */
+    public long wrungBank(int slot)
+    {
+        return wrungBanks[slot];
     }
 
     public Direction facing()
@@ -128,6 +187,7 @@ public class SocketWallTile extends TileBase
     {
         cells[slot] = cell.copy();
         activities[slot] = Activity.IDLE;
+        wrungBanks[slot] = 0;
         noteSyncedCharges();
         setChanged();
         sync();
@@ -164,6 +224,13 @@ public class SocketWallTile extends TileBase
     }
 
     @Override
+    public void setRemoved()
+    {
+        super.setRemoved();
+        CellSocketTile.drinking(this, false);
+    }
+
+    @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
         if (level != null)
@@ -183,6 +250,7 @@ public class SocketWallTile extends TileBase
             // Only cells belong here, whatever a stale save says
             cells[slot] = cell.is(RubrumContent.RUBRUM_CELL) ? cell : ItemStack.EMPTY;
             activities[slot] = Activity.values()[Mth.clamp(tag.getIntOr("activity" + slot, 0), 0, Activity.values().length - 1)];
+            wrungBanks[slot] = Math.clamp(tag.getLongOr("wrungBank" + slot, 0L), 0, RubrumBalance.WRUNG_BANK);
         }
         noteSyncedCharges();
     }
@@ -200,6 +268,7 @@ public class SocketWallTile extends TileBase
         {
             tag.store("cell" + slot, ItemStack.OPTIONAL_CODEC, cells[slot]);
             tag.putInt("activity" + slot, activities[slot].ordinal());
+            tag.putLong("wrungBank" + slot, wrungBanks[slot]);
         }
         super.saveAdditional(tag);
     }
