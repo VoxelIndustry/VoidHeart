@@ -469,6 +469,16 @@ public class RubrumStorageClientTest implements FabricClientGameTest
         context.takeScreenshot("socket-wall-east");
         context.getInput().pressKey(InputConstants.KEY_F1);
 
+        // A Searing cell lets go in a burst there too, as in a cell socket
+        server.runOnServer(minecraft -> wall(minecraft, WALL_2).setCell(0,
+                net.voxelindustry.voidheart.common.content.crystal.CrystalBundles.withHabit(cellOf(RubrumBalance.CELL_CAPACITY),
+                        net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.SEARING)));
+        context.waitTicks(20);
+        var seared = server.computeOnServer(minecraft -> new long[]{RubrumCellItem.charge(wall(minecraft, WALL_2).getCell(0)),
+                wall(minecraft, WALL_2).activity(0) == CellSocketTile.Activity.BURSTING ? 1 : 0});
+        expect(seared[1] == 1 && seared[0] < RubrumBalance.CELL_CAPACITY - RubrumBalance.SOCKET_WALL_RATE * 20 * 4,
+                "A Searing cell in a wall should burst its charge out, holds " + seared[0]);
+
         server.runCommand("setblock " + WALL_2.getX() + " " + WALL_2.getY() + " " + WALL_2.getZ() + " air destroy");
         context.waitTicks(5);
         var drops = server.computeOnServer(minecraft -> minecraft.overworld().getEntitiesOfClass(ItemEntity.class, new AABB(WALL_2).inflate(2)).stream()

@@ -73,7 +73,7 @@ public final class OculusBeholderLayer
         for (var projector : OculusRenderer.projectors())
         {
             var sight = projector.sight();
-            if (sight == null || projector.view().asleep() || sight.sources().stream().noneMatch(OculusSight.Source::beholder))
+            if (sight == null || projector.view().asleep() || projector.showsMemory() || sight.sources().stream().noneMatch(OculusSight.Source::beholder))
                 continue;
 
             context.submitNodeCollector().submitCustomGeometry(context.poseStack(), VoidHeartRenderTypes.MARKER, (pose, buffer) ->

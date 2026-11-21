@@ -8,6 +8,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.storage.CellSocketTile.Activity;
 import org.jspecify.annotations.Nullable;
@@ -15,8 +17,8 @@ import org.jspecify.annotations.Nullable;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * What a held rubrum cell does each tick, shared by the cell socket and the socket wall: it fills from the field while
- * powered and empties into it otherwise, and its motes run to the nearest pylon.
+ * What a rubrum cell held in a socket wall does each tick: it fills from the field while powered and empties into it
+ * otherwise, changed by its habit as in a cell socket, and its motes run to the nearest pylon.
  */
 public final class CellTransfer
 {
@@ -29,7 +31,8 @@ public final class CellTransfer
     }
 
     /**
-     * Moves up to rate between the cell and the field at pos, changing the cell's charge in place.
+     * Moves up to rate between the cell and the field at pos, changing the cell's charge in place. The cell's habit
+     * changes the way, as {@link CellHabits} says: a Still cell only charges, and a Searing one lets go in a burst.
      *
      * @return what the cell did this tick
      */
@@ -38,35 +41,45 @@ public final class CellTransfer
         if (cell.isEmpty())
             return Activity.IDLE;
 
+        var habit = CrystalBundles.habitOf(cell);
         var charge = RubrumCellItem.charge(cell);
-        if (powered)
+        switch (CellHabits.way(habit, powered, charge))
         {
-            var room = RubrumBalance.CELL_CAPACITY - charge;
-            var drawn = room > 0 ? VoidEnergy.draw(level, pos, Math.min(rate, room)) : 0;
-            if (drawn <= 0)
+            case CHARGE ->
+            {
+                var drawn = VoidEnergy.draw(level, pos, Math.min(rate, RubrumBalance.CELL_CAPACITY - charge));
+                if (drawn <= 0)
+                    return Activity.IDLE;
+                RubrumCellItem.setCharge(cell, charge + drawn);
+                return Activity.CHARGING;
+            }
+            case DISCHARGE ->
+            {
+                var searing = habit == CrystalHabit.SEARING;
+                var offered = VoidEnergy.offer(level, pos, Math.min(searing ? CellHabits.dischargeRate(habit) : rate, charge));
+                if (offered <= 0)
+                    return Activity.IDLE;
+                RubrumCellItem.setCharge(cell, charge - offered);
+                return searing ? Activity.BURSTING : Activity.DISCHARGING;
+            }
+            default ->
+            {
                 return Activity.IDLE;
-            RubrumCellItem.setCharge(cell, charge + drawn);
-            return Activity.CHARGING;
+            }
         }
-        if (charge <= 0)
-            return Activity.IDLE;
-        var offered = VoidEnergy.offer(level, pos, Math.min(rate, charge));
-        if (offered <= 0)
-            return Activity.IDLE;
-        RubrumCellItem.setCharge(cell, charge - offered);
-        return Activity.DISCHARGING;
     }
 
     /**
-     * Sends one mote between a cell and its target: out of the cell while it discharges, into it while it charges.
+     * Sends one mote between a cell and its target: out of the cell while it discharges or bursts, into it while it charges.
      *
      * @param target where motes run to, or null to rise straight up
      */
     public static void mote(Level level, Vec3 cell, @Nullable Vec3 target, Activity activity)
     {
         var end = target != null ? target : cell.add(0, 3, 0);
-        var from = activity == Activity.DISCHARGING ? cell : end;
-        var to = activity == Activity.DISCHARGING ? end : cell;
+        var out = activity == Activity.DISCHARGING || activity == Activity.BURSTING;
+        var from = out ? cell : end;
+        var to = out ? end : cell;
         level.addParticle(RubrumContent.RUBRUM_MOTE, from.x, from.y, from.z, to.x, to.y, to.z);
     }
 

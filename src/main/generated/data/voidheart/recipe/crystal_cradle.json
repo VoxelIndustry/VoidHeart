@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "voidheart:azurium_shard",
+    "L": "minecraft:lapis_lazuli",
+    "V": "voidheart:voidstone_polished"
+  },
+  "pattern": [
+    "LAL",
+    "V V",
+    "VVV"
+  ],
+  "result": {
+    "id": "voidheart:crystal_cradle"
+  }
+}

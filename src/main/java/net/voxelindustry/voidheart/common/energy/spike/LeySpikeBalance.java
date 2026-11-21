@@ -26,6 +26,10 @@ public final class LeySpikeBalance
      * Contravoid per tick for each ley converted on a node at taint 100, scaled by taint / 100 (sim).
      */
     public static final double CONTRAVOID_PER_LEY = 0.085;
+
+    /** A spike driven around a Fouled bundle draws its line greedily: this many times the Contravoid and the taint for the same claim. */
+    public static final double FOULED_CONTRAVOID_FACTOR = 2;
+    public static final double FOULED_TAINT_FACTOR      = 2;
     /**
      * How far Contravoid reaches collectors around the spike (guess, a little beyond Suffering's 6).
      */

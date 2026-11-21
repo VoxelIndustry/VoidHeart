@@ -216,6 +216,26 @@ public final class LeySpurs
         return root == null ? 0 : taints.getOrDefault(root, 0F);
     }
 
+    /**
+     * The node upstream of the line feeding a machine at pos, where foulness pushed down the spur lands, or null for a machine no spur feeds.
+     */
+    public @Nullable Long upstreamNodeFor(BlockPos pos)
+    {
+        var root = network.rootFor(pos);
+        if (root == null)
+            return null;
+        var tap = network.plan().tap(root);
+        return tap == null ? null : tap.fromNode();
+    }
+
+    /**
+     * The stone a machine at pos draws from, or null.
+     */
+    public @Nullable BlockPos stoneFor(BlockPos pos)
+    {
+        return network.stoneFor(pos);
+    }
+
     public float flow(BlockPos root)
     {
         return flows.getOrDefault(root, 0F);

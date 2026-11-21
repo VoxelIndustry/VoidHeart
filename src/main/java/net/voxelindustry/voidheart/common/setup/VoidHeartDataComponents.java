@@ -1,8 +1,14 @@
 package net.voxelindustry.voidheart.common.setup;
 
 import com.mojang.serialization.Codec;
+import net.minecraft.world.entity.EntityType;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.ScouredSoak;
 import net.minecraft.core.BlockPos;
+import net.voxelindustry.voidheart.common.content.apparatus.GrudgeWard;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalRecordings;
+import net.voxelindustry.voidheart.common.content.mob.DragoonAdaptation;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Registry;
@@ -84,6 +90,16 @@ public class VoidHeartDataComponents
     public static DataComponentType<GnawerLink>      GNAWER_LINK;
     /** The designs a blessed contraption drew, kept so that opening it again rerolls nothing. */
     public static DataComponentType<List<Identifier>> BLUEPRINT_DRAW;
+    /** How a crystal grew. Absent on crystal as the world made it, and on shards grown without a habit. */
+    public static DataComponentType<CrystalHabit>    CRYSTAL_HABIT;
+    /** Taint a Scoured rubrum bundle has drawn off a node, kept while it is carried so it can't start over. */
+    public static DataComponentType<Integer>         CRYSTAL_SOAK;
+    /** The creature kind a Scoured memoriam bundle was imprinted with, which a Ley Ward it is set in keeps out. */
+    public static DataComponentType<EntityType<?>>   CRYSTAL_IMPRINT;
+    /** The kind of hit an apparatus's Grudge Ward holds against: whatever last broke its shield. */
+    public static DataComponentType<DragoonAdaptation.Kind> APPARATUS_GRUDGE;
+    /** The place a Deep memoriam recorded when it finished growing, which an Oculus Table can show. */
+    public static DataComponentType<CrystalRecordings.Ref> CRYSTAL_RECORDING;
 
     public static void registerComponents()
     {
@@ -104,6 +120,11 @@ public class VoidHeartDataComponents
         CONTRAVOID_CHARGE = register("contravoid_charge", Codec.INT);
         GNAWER_LINK = register("gnawer_link", GnawerLink.CODEC);
         BLUEPRINT_DRAW = register("blueprint_draw", Identifier.CODEC.listOf());
+        CRYSTAL_HABIT = register("crystal_habit", CrystalHabit.CODEC);
+        CRYSTAL_SOAK = register("crystal_soak", Codec.intRange(0, ScouredSoak.MAX));
+        CRYSTAL_IMPRINT = register("crystal_imprint", BuiltInRegistries.ENTITY_TYPE.byNameCodec());
+        APPARATUS_GRUDGE = register("apparatus_grudge", GrudgeWard.KIND_CODEC);
+        CRYSTAL_RECORDING = register("crystal_recording", CrystalRecordings.Ref.CODEC);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

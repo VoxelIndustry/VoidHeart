@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.energy.storage;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -8,6 +9,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.voxelindustry.voidheart.common.energy.VoidSeep;
+import net.voxelindustry.voidheart.common.energy.fissure.SeepMath;
 import net.minecraft.world.level.block.AmethystClusterBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,7 +33,7 @@ import java.util.List;
  * and stores void energy for the network, which finds it as an {@link IVoidHolder}. A creative void well covering it
  * fills it, standing in for a source.
  */
-public class RubrumConstructTile extends TileBase implements IVoidHolder
+public class RubrumConstructTile extends TileBase implements IVoidHolder, VoidSeep.Leak
 {
     public static final  int  PREVIEW_TICKS = 600;
     private static final int  CHECK_PERIOD  = 20;
@@ -223,7 +226,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
 
     private void updateSockets()
     {
-        charge.setSockets(sockets.capacity(), sockets.rate());
+        charge.setSockets(sockets.capacity(), sockets.rateIn(), sockets.rateOut());
     }
 
     public BlockPos socketPos(int socket)
@@ -238,7 +241,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
     /**
      * Sets a bundle in the free socket nearest to where the construct was clicked. Returns false when none is free.
      */
-    public boolean insertBundle(SocketBundle bundle, Vec3 hit)
+    public boolean insertBundle(SocketBundle bundle, CrystalHabit habit, Vec3 hit)
     {
         if (!formed || layout == null)
             return false;
@@ -247,7 +250,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
         if (socket < 0)
             return false;
 
-        sockets.set(socket, bundle);
+        sockets.set(socket, bundle, habit);
         updateSockets();
         var cell = socketPos(socket);
         level.playSound(null, cell, SoundEvents.AMETHYST_CLUSTER_PLACE, SoundSource.BLOCKS, 1F, 1F);
@@ -258,7 +261,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
 
     public sealed interface Removal
     {
-        record Taken(SocketBundle bundle) implements Removal
+        record Taken(SocketBundle bundle, CrystalHabit habit) implements Removal
         {
         }
 
@@ -284,15 +287,16 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
             return new Removal.Empty();
 
         var bundle = sockets.get(socket);
-        if (bundle.isRubrum() && !charge.canLoseCapacity(bundle.capacity()))
+        if (bundle.isRubrum() && !charge.canLoseCapacity(bundle.capacity(sockets.habit(socket))))
             return new Removal.Held();
 
+        var habit = sockets.habit(socket);
         sockets.set(socket, null);
         updateSockets();
         level.playSound(null, socketPos(socket), SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.BLOCKS, 1F, 1F);
         setChanged();
         sync();
-        return new Removal.Taken(bundle);
+        return new Removal.Taken(bundle, habit);
     }
 
     //
@@ -434,6 +438,18 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
     }
 
     @Override
+    public long maxRateIn()
+    {
+        return charge.maxRateIn();
+    }
+
+    @Override
+    public long maxRateOut()
+    {
+        return charge.maxRateOut();
+    }
+
+    @Override
     public long insert(long amount, boolean simulate)
     {
         return charge.insert(amount, simulate);
@@ -448,6 +464,47 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
     //
     // Accessors
     //
+
+    @Override
+    public void setLevel(Level level)
+    {
+        super.setLevel(level);
+        if (level instanceof ServerLevel server)
+            VoidSeep.addLeak(server, this);
+    }
+
+    @Override
+    public void clearRemoved()
+    {
+        super.clearRemoved();
+        if (level instanceof ServerLevel server)
+            VoidSeep.addLeak(server, this);
+    }
+
+    @Override
+    public void setRemoved()
+    {
+        super.setRemoved();
+        if (level instanceof ServerLevel server)
+            VoidSeep.removeLeak(server, this);
+    }
+
+    /**
+     * Fouled rubrum holds too much: while the construct is over half full, a small seep leaks from its core.
+     */
+    @Override
+    public float leakAt(double x, double y, double z)
+    {
+        if (!isLeaking())
+            return 0;
+        double dx = x - (worldPosition.getX() + 0.5), dy = y - (worldPosition.getY() + 0.5), dz = z - (worldPosition.getZ() + 0.5);
+        return RubrumBalance.FOULED_LEAK_STRENGTH * SeepMath.strength(Math.sqrt(dx * dx + dy * dy + dz * dz), RubrumBalance.FOULED_LEAK_RADIUS);
+    }
+
+    public boolean isLeaking()
+    {
+        return formed && sockets.holdsFouledRubrum() && charge.fill() > RubrumBalance.FOULED_LEAK_FROM;
+    }
 
     public ConstructCharge charge()
     {

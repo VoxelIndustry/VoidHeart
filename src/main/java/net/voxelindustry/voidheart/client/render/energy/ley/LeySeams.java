@@ -8,6 +8,7 @@ import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneTile;
 import net.voxelindustry.voidheart.common.ley.TaintStage;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -32,11 +33,21 @@ final class LeySeams
     private static final float GAP_CHANCE   = 0.18F;
 
     private static final float SWIRL_RADIUS = 0.55F;
+    private static final float SWIRL_INNER  = 0.06F;
+    // Clear of the stone's base, whose corners lie 0.4 from its centre, so no arm ever passes under it
+    private static final float SWIRL_FOOT   = 0.42F;
     private static final float SWIRL_CURL   = 1.7F;
     private static final float SWIRL_TURN   = 0.03F;
     private static final float SWIRL_ALPHA  = 0.5F;
+    private static final float SWIRL_WIDTH  = 0.07F;
+    private static final double SWIRL_LIFT  = 0.01;
     private static final int   SWIRL_ARMS   = 3;
-    private static final int   SWIRL_STEPS  = 8;
+    private static final int   SWIRL_STEPS  = 14;
+    // Ground this far off the swirl's own counts as a step, where an arm fades out instead of being cut by it
+    private static final double SWIRL_STEP  = 0.05;
+    private static final int   SWIRL_GRID   = 2;
+    // A tap nearer the stone than this would whirl under its base, so the swirl wraps the stone's foot instead
+    private static final double SWIRL_AT_FOOT = SWIRL_INNER + SWIRL_RADIUS + STONE_FOOT;
 
     private static final float MOTE_SPEED  = 0.05F;
     private static final float MOTE_ALPHA  = 0.65F;
@@ -54,6 +65,24 @@ final class LeySeams
         float  period;
         float[] motes;
         long   builtAt;
+
+        boolean atFoot;
+        double  swirlX, swirlZ, swirlGround;
+        int     gridX, gridZ;
+        double[] grid;
+
+        /**
+         * 1 where the ground at x, z is level with the swirl's, 0 over a step, a wall or a drop.
+         */
+        float level(double x, double z)
+        {
+            int column = Mth.floor(x) - gridX, row = Mth.floor(z) - gridZ;
+            int side = 2 * SWIRL_GRID + 1;
+            if (grid == null || column < 0 || row < 0 || column >= side || row >= side)
+                return 0;
+            double ground = grid[row * side + column];
+            return Math.abs(ground - swirlGround) < SWIRL_STEP ? 1 : 0;
+        }
     }
 
     private static final Map<LeyStoneTile, Path> PATHS = new WeakHashMap<>();
@@ -65,6 +94,16 @@ final class LeySeams
     static void clear()
     {
         PATHS.clear();
+    }
+
+    /**
+     * The ground points of a stone's seam, from its upstream end at index 0 to its foot, or null while it has none. Shared with the ink thread, which runs
+     * the same way.
+     */
+    static double @Nullable [][] points(LeyStoneTile stone)
+    {
+        var path = PATHS.get(stone);
+        return path == null || path.length <= 0 ? null : new double[][] { path.xs, path.ys, path.zs };
     }
 
     static void tick(Level level, long time)
@@ -134,16 +173,46 @@ final class LeySeams
             along += 1 + LeyLook.hash(pos.asLong(), i, 11);
         }
         path.period = Math.max(along, length + MOTE_TAIL);
+
+        if (stone.isRoot())
+        {
+            boolean atFoot = full < SWIRL_AT_FOOT;
+            placeSwirl(level, path, atFoot, atFoot ? sx : ux, atFoot ? sz : uz, atFoot ? pos.getY() : Mth.floor(path.ys[0]));
+        }
         return path;
+    }
+
+    /**
+     * The swirl lies at the tap, or around the stone's foot when the tap is too near to leave it room. The ground of the few blocks it spans is kept, so
+     * its arms can fade where the land steps.
+     */
+    private static void placeSwirl(Level level, Path path, boolean atFoot, double x, double z, int reference)
+    {
+        path.atFoot = atFoot;
+        path.swirlX = x;
+        path.swirlZ = z;
+        double ground = LeyGround.surface(level, x, z, reference);
+        path.swirlGround = Double.isNaN(ground) ? reference : ground;
+
+        int side = 2 * SWIRL_GRID + 1;
+        path.gridX = Mth.floor(x) - SWIRL_GRID;
+        path.gridZ = Mth.floor(z) - SWIRL_GRID;
+        path.grid = new double[side * side];
+        for (int row = 0; row < side; row++)
+        {
+            for (int column = 0; column < side; column++)
+                path.grid[row * side + column] = LeyGround.surface(level, path.gridX + column + 0.5, path.gridZ + row + 0.5, Mth.floor(path.swirlGround));
+        }
     }
 
     static void draw(PoseStack.Pose pose, VertexConsumer buffer, Vec3 camera, float time, float partialTicks)
     {
         PATHS.forEach((stone, path) ->
         {
-            if (path.length <= 0 || Vec3.atCenterOf(stone.getBlockPos()).distanceToSqr(camera) > DRAW_DISTANCE * DRAW_DISTANCE)
+            // A stone standing on its line has no seam, only the swirl at its foot
+            if ((path.length <= 0 && !path.atFoot) || Vec3.atCenterOf(stone.getBlockPos()).distanceToSqr(camera) > DRAW_DISTANCE * DRAW_DISTANCE)
                 return;
-            float level = LeyLook.flowLevel(stone.glow(partialTicks));
+            float level = LeyLook.flowLevel(stone.glow(partialTicks)) * LeyInk.seamShown(stone);
             if (level < 0.01F)
                 return;
 
@@ -152,10 +221,13 @@ final class LeySeams
             int light = LeyLook.lerp(LeyLook.TEAL_LIGHT, LeyLook.MAUVE, taint / 100);
             float gaps = TaintStage.of(taint).isAtLeast(TaintStage.FESTERING) ? GAP_CHANCE + 0.2F * Mth.clamp((taint - 50) / 50, 0, 1) : 0;
 
-            seam(pose, buffer, camera, stone, path, rgb, level, gaps);
+            if (!path.atFoot)
+            {
+                seam(pose, buffer, camera, stone, path, rgb, level, gaps);
+                motes(pose, buffer, camera, stone, path, light, level, time);
+            }
             if (stone.isRoot())
                 swirl(pose, buffer, camera, path, rgb, level, time);
-            motes(pose, buffer, camera, stone, path, light, level, time);
         });
     }
 
@@ -183,42 +255,51 @@ final class LeySeams
     }
 
     /**
-     * A small whirl on the ground where the spur leaves its line, turning slowly.
+     * A small whirl on the ground where the spur leaves its line, turning slowly: three arms curling out from the tap, or from around the stone's foot when
+     * it stands on its line. Each arm's edges are shared between its segments so it bends without notches, and it fades out over ground of another height.
      */
     private static void swirl(PoseStack.Pose pose, VertexConsumer buffer, Vec3 camera, Path path, int rgb, float level, float time)
     {
-        var centre = LeyLook.relative(path.xs[0], path.ys[0] + 0.01, path.zs[0], camera);
+        var centre = LeyLook.relative(path.swirlX, path.swirlGround + LIFT + SWIRL_LIFT, path.swirlZ, camera);
+        float inner = path.atFoot ? SWIRL_FOOT : SWIRL_INNER;
         float turn = time * SWIRL_TURN;
+        int none = LeyLook.color(rgb, 0);
+        var points = new Vector3f[SWIRL_STEPS + 1];
+        var shown = new float[SWIRL_STEPS + 1];
+        var sides = new Vector3f[SWIRL_STEPS + 1];
         for (int arm = 0; arm < SWIRL_ARMS; arm++)
         {
             float base = turn + Mth.TWO_PI * arm / SWIRL_ARMS;
+            for (int i = 0; i <= SWIRL_STEPS; i++)
+            {
+                float t = (float) i / SWIRL_STEPS;
+                float radius = inner + SWIRL_RADIUS * t;
+                float angle = base + SWIRL_CURL * t;
+                float dx = Mth.cos(angle) * radius, dz = Mth.sin(angle) * radius;
+                points[i] = new Vector3f(centre).add(dx, 0, dz);
+                shown[i] = path.level(path.swirlX + dx, path.swirlZ + dz);
+            }
+            for (int i = 0; i <= SWIRL_STEPS; i++)
+                sides[i] = flatSide(points[Math.max(0, i - 1)], points[Math.min(SWIRL_STEPS, i + 1)]);
+
             for (int i = 0; i < SWIRL_STEPS; i++)
             {
                 float t0 = (float) i / SWIRL_STEPS, t1 = (float) (i + 1) / SWIRL_STEPS;
-                var a = spiral(centre, base, t0);
-                var b = spiral(centre, base, t1);
-                var side = flatSide(a, b);
-                float width = 0.07F * (1 - t0 * 0.6F);
-                int inner = LeyLook.color(rgb, SWIRL_ALPHA * level * (1 - t0));
-                int outer = LeyLook.color(rgb, SWIRL_ALPHA * level * (1 - t1));
-                int none = LeyLook.color(rgb, 0);
-                LeyLook.vertex(buffer, pose, offset(a, side, -width), none);
-                LeyLook.vertex(buffer, pose, a, inner);
-                LeyLook.vertex(buffer, pose, b, outer);
-                LeyLook.vertex(buffer, pose, offset(b, side, -width), none);
-                LeyLook.vertex(buffer, pose, a, inner);
-                LeyLook.vertex(buffer, pose, offset(a, side, width), none);
-                LeyLook.vertex(buffer, pose, offset(b, side, width), none);
-                LeyLook.vertex(buffer, pose, b, outer);
+                var a = points[i];
+                var b = points[i + 1];
+                float widthA = SWIRL_WIDTH * (1 - t0 * 0.6F), widthB = SWIRL_WIDTH * (1 - t1 * 0.6F);
+                int coreA = LeyLook.color(rgb, SWIRL_ALPHA * level * (1 - t0) * shown[i]);
+                int coreB = LeyLook.color(rgb, SWIRL_ALPHA * level * (1 - t1) * shown[i + 1]);
+                LeyLook.vertex(buffer, pose, offset(a, sides[i], -widthA), none);
+                LeyLook.vertex(buffer, pose, a, coreA);
+                LeyLook.vertex(buffer, pose, b, coreB);
+                LeyLook.vertex(buffer, pose, offset(b, sides[i + 1], -widthB), none);
+                LeyLook.vertex(buffer, pose, a, coreA);
+                LeyLook.vertex(buffer, pose, offset(a, sides[i], widthA), none);
+                LeyLook.vertex(buffer, pose, offset(b, sides[i + 1], widthB), none);
+                LeyLook.vertex(buffer, pose, b, coreB);
             }
         }
-    }
-
-    private static Vector3f spiral(Vector3f centre, float base, float t)
-    {
-        float radius = 0.06F + SWIRL_RADIUS * t;
-        float angle = base + SWIRL_CURL * t;
-        return new Vector3f(centre).add(Mth.cos(angle) * radius, 0, Mth.sin(angle) * radius);
     }
 
     /**

@@ -84,7 +84,8 @@ public class SocketWallTile extends TileBase
                 targetScannedAt = time;
                 moteTarget = CellTransfer.moteTarget(level, worldPosition);
             }
-            nextMotes[slot] = time + 5 + level.getRandom().nextInt(6);
+            // A Searing cell letting go streams its motes out
+            nextMotes[slot] = activity == Activity.BURSTING ? time + 1 : time + 5 + level.getRandom().nextInt(6);
             var cell = Vec3.atLowerCornerOf(worldPosition).add(SocketWallGeometry.cellCenter(facing(), slot));
             CellTransfer.mote(level, cell, moteTarget, activity);
         }

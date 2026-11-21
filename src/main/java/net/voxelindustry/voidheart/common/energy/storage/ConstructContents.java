@@ -24,7 +24,7 @@ public record ConstructContents(long stored, List<SocketSet.Entry> sockets)
     {
         long capacity = 0;
         for (var entry : sockets)
-            capacity += entry.bundle().capacity();
+            capacity += entry.bundle().capacity(entry.habit());
         return capacity;
     }
 
@@ -33,6 +33,22 @@ public record ConstructContents(long stored, List<SocketSet.Entry> sockets)
         long rate = 0;
         for (var entry : sockets)
             rate += entry.bundle().rate();
+        return rate;
+    }
+
+    public long rateIn()
+    {
+        long rate = 0;
+        for (var entry : sockets)
+            rate += entry.bundle().rateIn(entry.habit());
+        return rate;
+    }
+
+    public long rateOut()
+    {
+        long rate = 0;
+        for (var entry : sockets)
+            rate += entry.bundle().rateOut(entry.habit());
         return rate;
     }
 }

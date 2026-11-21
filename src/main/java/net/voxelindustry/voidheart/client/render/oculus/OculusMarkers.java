@@ -14,6 +14,7 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
 import net.voxelindustry.voidheart.common.content.oculus.OculusEntityPayloads;
@@ -90,8 +91,11 @@ public final class OculusMarkers
 
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep())
+            if (projector.view().asleep() || projector.showsMemory())
+            {
+                FROM_SERVER.remove(projector.anchor);
                 continue;
+            }
             var area = projector.shownArea();
             double farX = Math.max(Math.abs(area.minX - player.getX()), Math.abs(area.maxX - player.getX()));
             double farZ = Math.max(Math.abs(area.minZ - player.getZ()), Math.abs(area.maxZ - player.getZ()));
@@ -197,6 +201,21 @@ public final class OculusMarkers
     private static List<Pin> pins(ClientLevel level, OculusProjector projector, float partialTick)
     {
         var pins = new ArrayList<Pin>();
+        // A recorded place holds the creatures that were there when it was recorded, standing where they stood
+        if (projector.showsMemory())
+        {
+            var memory = projector.memory();
+            if (memory == null)
+                return pins;
+            for (var creature : memory.creatures())
+            {
+                var holo = projector.toHologram(creature.x(), creature.y(), creature.z());
+                if (holo != null && pins.size() < OculusEntityPayloads.MAX_MARKERS)
+                    pins.add(new Pin(creature.type().getCategory() == MobCategory.MONSTER ? Kind.HOSTILE : Kind.PASSIVE, holo, Optional.empty(),
+                            Optional.of(creature.type())));
+            }
+            return pins;
+        }
         var sight = projector.sight();
         if (sight == null)
             return pins;

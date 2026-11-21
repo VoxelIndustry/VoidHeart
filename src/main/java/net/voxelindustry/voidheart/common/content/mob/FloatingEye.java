@@ -73,7 +73,7 @@ public abstract class FloatingEye extends VoidMonster
     @Override
     protected PathNavigation createNavigation(Level level)
     {
-        var navigation = new FlyingPathNavigation(this, level);
+        var navigation = WardedPaths.flying(this, level);
         navigation.setCanOpenDoors(false);
         navigation.setCanFloat(true);
         navigation.setMaxVisitedNodesMultiplier(PATH_SEARCH_MULTIPLIER);

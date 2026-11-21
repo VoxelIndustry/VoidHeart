@@ -1,6 +1,48 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "voidheart:item/rubrum_shard"
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/rubrum_shard_fouled"
+        },
+        "when": "fouled"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/rubrum_shard_scoured"
+        },
+        "when": "scoured"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/rubrum_shard_searing"
+        },
+        "when": "searing"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/rubrum_shard_still"
+        },
+        "when": "still"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/rubrum_shard_wrung"
+        },
+        "when": "wrung"
+      }
+    ],
+    "component": "voidheart:crystal_habit",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "voidheart:item/rubrum_shard"
+    },
+    "property": "minecraft:component"
   }
 }

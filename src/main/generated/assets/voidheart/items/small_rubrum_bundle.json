@@ -1,6 +1,48 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "voidheart:item/small_rubrum_bundle"
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/small_rubrum_bundle_fouled"
+        },
+        "when": "fouled"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/small_rubrum_bundle_scoured"
+        },
+        "when": "scoured"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/small_rubrum_bundle_searing"
+        },
+        "when": "searing"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/small_rubrum_bundle_still"
+        },
+        "when": "still"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/small_rubrum_bundle_wrung"
+        },
+        "when": "wrung"
+      }
+    ],
+    "component": "voidheart:crystal_habit",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "voidheart:item/small_rubrum_bundle"
+    },
+    "property": "minecraft:component"
   }
 }

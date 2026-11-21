@@ -93,23 +93,32 @@ public class RavenousStorageRender implements BlockEntityRenderer<RavenousStorag
      */
     static void essence(PoseStack.Pose pose, VertexConsumer buffer, float bottom, float top, float ceiling, float fill, int color, float time, long seed)
     {
+        essence(pose, buffer, bottom, top, ceiling, fill, color, time, seed, 0.5F, 1);
+    }
+
+    /**
+     * The same column, {@code width} times as wide, around {@code center} on both horizontal axes.
+     */
+    static void essence(PoseStack.Pose pose, VertexConsumer buffer, float bottom, float top, float ceiling, float fill, int color, float time, long seed,
+                        float center, float width)
+    {
         var phase = (seed & 0xFF) / 40F;
         // The surface of the body heaves slowly, the core reaches a little above it
         var surface = top + (fill > 0 ? SURFACE_WAVE * Mth.sin(time * SURFACE_SPEED + phase) : 0);
         var v = time * SCROLL;
 
-        box(pose, buffer, HALO_HALF, bottom, surface, ARGB.color(Math.round(HALO_ALPHA * 255), color), v * 0.5F);
-        box(pose, buffer, BODY_HALF, bottom, surface, ARGB.color(Math.round(BODY_ALPHA * 255), color), v);
+        box(pose, buffer, center, HALO_HALF * width, bottom, surface, ARGB.color(Math.round(HALO_ALPHA * 255), color), v * 0.5F);
+        box(pose, buffer, center, BODY_HALF * width, bottom, surface, ARGB.color(Math.round(BODY_ALPHA * 255), color), v);
         var core = ARGB.srgbLerp(CORE_WHITE, color, 0xFFFFFF);
-        box(pose, buffer, CORE_HALF, bottom, Math.min(ceiling, surface + CORE_HALF), ARGB.color(Math.round(CORE_ALPHA * 255), core), v * 1.5F);
+        box(pose, buffer, center, CORE_HALF * width, bottom, Math.min(ceiling, surface + CORE_HALF), ARGB.color(Math.round(CORE_ALPHA * 255), core), v * 1.5F);
     }
 
     /**
-     * Box centered on the block, from the rim up, its sides scrolling upward. Its bottom sits on the rim and is left out.
+     * Box around {@code center}, from the rim up, its sides scrolling upward. Its bottom sits on the rim and is left out.
      */
-    private static void box(PoseStack.Pose pose, VertexConsumer buffer, float half, float bottom, float top, int color, float scroll)
+    private static void box(PoseStack.Pose pose, VertexConsumer buffer, float center, float half, float bottom, float top, int color, float scroll)
     {
-        float x0 = 0.5F - half, x1 = 0.5F + half, z0 = 0.5F - half, z1 = 0.5F + half;
+        float x0 = center - half, x1 = center + half, z0 = center - half, z1 = center + half;
         float y0 = bottom, y1 = top;
         float v0 = -scroll, v1 = (y1 - y0) - scroll;
 

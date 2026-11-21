@@ -357,7 +357,10 @@ public final class OculusControls
     private static Component status(OculusView view)
     {
         var status = Component.translatable("voidheart.oculus.scale", view.scale());
-        view.follow().ifPresentOrElse(
+        // A memory set on the table shows its recorded place, whoever is followed
+        if (view.memory().isPresent())
+            status.append("  ").append(Component.translatable("voidheart.oculus.memory"));
+        else view.follow().ifPresentOrElse(
                 target -> status.append("  ").append(Component.translatable("voidheart.oculus.following", playerName(target))),
                 () -> status.append("  ").append(Component.translatable("voidheart.oculus.centered")));
         if (view.caving())

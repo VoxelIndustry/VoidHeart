@@ -15,12 +15,20 @@ import net.minecraft.core.Direction;
 import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.resources.Identifier;
+import net.minecraft.client.renderer.item.ItemModel;
+import net.minecraft.client.renderer.item.SelectItemModel;
+import net.minecraft.client.renderer.item.properties.select.ComponentContents;
 import net.voxelindustry.voidheart.client.render.energy.storage.RubrumChargeProperty;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.HabitShapedRecipe;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.energy.storage.ConstructLayout.FramePart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.energy.EnergyRecipes;
 import net.voxelindustry.voidheart.data.energy.EnergyTags;
+
+import java.util.ArrayList;
 
 import static net.minecraft.client.data.models.BlockModelGenerators.plainVariant;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -237,14 +245,25 @@ public final class RubrumDatagen
     {
         RubrumChargeProperty.register();
         var cell = RubrumContent.RUBRUM_CELL;
-        var empty = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, "_empty", ModelTemplates.FLAT_ITEM));
-        var third = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, "_third", ModelTemplates.FLAT_ITEM));
-        var twoThirds = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, "_two_thirds", ModelTemplates.FLAT_ITEM));
-        var full = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, "_full", ModelTemplates.FLAT_ITEM));
-        generators.itemModelOutput.accept(cell, ItemModelUtils.rangeSelect(new RubrumChargeProperty(), empty,
+        var plain = cellModel(generators, "");
+        // A cell sealed around a habit bundle shows that habit in its shard, at every charge
+        var cases = new ArrayList<SelectItemModel.SwitchCase<CrystalHabit>>();
+        for (var habit : HabitShapedRecipe.CARRIED.stream().sorted().toList())
+            cases.add(ItemModelUtils.when(habit, cellModel(generators, "_" + habit.getSerializedName())));
+        generators.itemModelOutput.accept(cell, ItemModelUtils.select(new ComponentContents<>(VoidHeartDataComponents.CRYSTAL_HABIT), plain, cases));
+    }
+
+    private static ItemModel.Unbaked cellModel(ItemModelGenerators generators, String habit)
+    {
+        var cell = RubrumContent.RUBRUM_CELL;
+        var empty = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, habit + "_empty", ModelTemplates.FLAT_ITEM));
+        var third = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, habit + "_third", ModelTemplates.FLAT_ITEM));
+        var twoThirds = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, habit + "_two_thirds", ModelTemplates.FLAT_ITEM));
+        var full = ItemModelUtils.plainModel(generators.createFlatItemModel(cell, habit + "_full", ModelTemplates.FLAT_ITEM));
+        return ItemModelUtils.rangeSelect(new RubrumChargeProperty(), empty,
                 ItemModelUtils.override(third, 0.0001F),
                 ItemModelUtils.override(twoThirds, 0.5F),
-                ItemModelUtils.override(full, 0.84F)));
+                ItemModelUtils.override(full, 0.84F));
     }
 
     public static void recipes(EnergyRecipes recipes)
@@ -283,7 +302,8 @@ public final class RubrumDatagen
                 .define('G', gold)
                 .define('B', VoidHeartBlocks.SMALL_RUBRUM_BUNDLE)
                 .unlockedBy(provider.getHasName(VoidHeartBlocks.SMALL_RUBRUM_BUNDLE), provider.has(VoidHeartBlocks.SMALL_RUBRUM_BUNDLE))
-                .save(output);
+                // The cell takes the habit of the bundle sealed in it
+                .save(HabitShapedRecipe.carryingHabit(output));
 
         // The core: a rubrum shard at the center of voidstone, gold and both crystals
         recipes.altar("rubrum_construct_core", RubrumContent.RUBRUM_CONSTRUCT_CORE, VoidHeartItems.RUBRUM_SHARD,

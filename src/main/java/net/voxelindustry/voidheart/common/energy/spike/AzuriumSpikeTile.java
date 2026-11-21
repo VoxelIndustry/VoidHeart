@@ -1,6 +1,8 @@
 package net.voxelindustry.voidheart.common.energy.spike;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponentGetter;
+import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
@@ -9,6 +11,8 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
@@ -47,6 +51,7 @@ public class AzuriumSpikeTile extends TileBase
     private static final int    TARGET_SCAN_TICKS = 40;
 
     private int    setting = LeySpikeBalance.DEFAULT_SETTING;
+    private CrystalHabit habit = CrystalHabit.NONE;
     private double credit;
     private double contravoid;
 
@@ -105,7 +110,7 @@ public class AzuriumSpikeTile extends TileBase
         var granted = target > 0 ? Ley.claim(level, worldPosition, target) : 0;
         var step = LeySpikeMath.step(granted, credit, amount -> VoidEnergy.offer(level, worldPosition, amount));
         if (step.ley() > 0)
-            LeyConversion.convert(level, worldPosition, step.ley());
+            LeyConversion.convert(level, worldPosition, step.ley(), isFouled() ? LeySpikeBalance.FOULED_TAINT_FACTOR : 1);
         else if (granted > 0)
             // Converting nothing, so the probe above is given back rather than held for others to wait on
             Ley.release(level, worldPosition);
@@ -127,6 +132,8 @@ public class AzuriumSpikeTile extends TileBase
     {
         var node = node(level);
         var perTick = node.isPresent() ? LeySpikeMath.contravoidPerTick(ley, Ley.taint(level, node.getAsLong())) : 0;
+        if (isFouled())
+            perTick *= LeySpikeBalance.FOULED_CONTRAVOID_FACTOR;
         averageContravoid += (perTick - averageContravoid) * OUTPUT_SMOOTHING;
         if (perTick > 0)
         {
@@ -299,6 +306,30 @@ public class AzuriumSpikeTile extends TileBase
         leanYaw = nbt.getFloatOr("leanYaw", 0);
         activity = Math.clamp(nbt.getIntOr("activity", 0), 0, ACTIVITY_STEPS);
         outputTarget = nbt.read("outputTarget", BlockPos.CODEC).orElse(null);
+        habit = nbt.read("habit", CrystalHabit.CODEC).filter(read -> read == CrystalHabit.FOULED).orElse(CrystalHabit.NONE);
+    }
+
+    /**
+     * A spike driven around a Fouled bundle keeps its foulness from the item placed.
+     */
+    @Override
+    protected void applyImplicitComponents(DataComponentGetter components)
+    {
+        super.applyImplicitComponents(components);
+        habit = components.get(VoidHeartDataComponents.CRYSTAL_HABIT) == CrystalHabit.FOULED ? CrystalHabit.FOULED : CrystalHabit.NONE;
+    }
+
+    @Override
+    protected void collectImplicitComponents(DataComponentMap.Builder components)
+    {
+        super.collectImplicitComponents(components);
+        if (isFouled())
+            components.set(VoidHeartDataComponents.CRYSTAL_HABIT, CrystalHabit.FOULED);
+    }
+
+    public boolean isFouled()
+    {
+        return habit == CrystalHabit.FOULED;
     }
 
     @Override
@@ -315,5 +346,7 @@ public class AzuriumSpikeTile extends TileBase
         nbt.putInt("activity", activity);
         if (outputTarget != null)
             nbt.store("outputTarget", BlockPos.CODEC, outputTarget);
+        if (isFouled())
+            nbt.store("habit", CrystalHabit.CODEC, habit);
     }
 }

@@ -17,7 +17,7 @@ public final class StorageParts
     }
 
     /**
-     * The storage base or matrix core this block belongs to, itself when it is one, or null when it is neither.
+     * The storage base, matrix core or great storage holder this block belongs to, itself when it is one, or null when it is neither.
      */
     public static @Nullable BlockPos holderOf(BlockState state, BlockPos pos)
     {
@@ -27,6 +27,11 @@ public final class StorageParts
         {
             var part = state.getValue(RavenousStorageMatrixBlock.PART);
             return part == RavenousStorageMatrixPart.BASE ? pos : pos.relative(part.face().getOpposite());
+        }
+        if (state.is(VoidHeartBlocks.GREAT_RAVENOUS_STORAGE))
+        {
+            var part = state.getValue(GreatRavenousStorageBlock.PART);
+            return part == GreatStorageLayout.Part.LOOSE ? null : GreatRavenousStorageBlock.origin(pos, part);
         }
         return null;
     }

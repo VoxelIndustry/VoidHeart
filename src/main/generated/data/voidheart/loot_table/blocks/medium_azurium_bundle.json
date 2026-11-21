@@ -1,5 +1,8 @@
 {
   "type": "minecraft:block",
+  "modifier": {
+    "type": "voidheart:copy_crystal_habit"
+  },
   "pools": [
     {
       "entries": [
@@ -12,26 +15,51 @@
               "name": "voidheart:medium_azurium_bundle"
             },
             {
-              "type": "minecraft:item",
-              "modifier": [
+              "type": "minecraft:alternatives",
+              "children": [
                 {
-                  "type": "minecraft:set_count",
-                  "count": {
-                    "type": "minecraft:uniform",
-                    "max": 2,
-                    "min": 1
-                  }
+                  "type": "minecraft:item",
+                  "condition": {
+                    "type": "minecraft:match_block",
+                    "blocks": "voidheart:medium_azurium_bundle",
+                    "state": {
+                      "habit": "none"
+                    }
+                  },
+                  "modifier": [
+                    {
+                      "type": "minecraft:set_count",
+                      "count": {
+                        "type": "minecraft:uniform",
+                        "max": 2,
+                        "min": 1
+                      }
+                    },
+                    {
+                      "type": "minecraft:apply_bonus",
+                      "enchantment": "minecraft:fortune",
+                      "formula": "minecraft:ore_drops"
+                    },
+                    {
+                      "type": "minecraft:explosion_decay"
+                    }
+                  ],
+                  "name": "voidheart:azurium_shard"
                 },
                 {
-                  "type": "minecraft:apply_bonus",
-                  "enchantment": "minecraft:fortune",
-                  "formula": "minecraft:ore_drops"
-                },
-                {
-                  "type": "minecraft:explosion_decay"
+                  "type": "minecraft:item",
+                  "modifier": [
+                    {
+                      "type": "minecraft:set_count",
+                      "count": 2
+                    },
+                    {
+                      "type": "minecraft:explosion_decay"
+                    }
+                  ],
+                  "name": "voidheart:azurium_shard"
                 }
-              ],
-              "name": "voidheart:azurium_shard"
+              ]
             }
           ]
         }

@@ -24,5 +24,8 @@ public final class RubrumClient
         ParticleProviderRegistry.getInstance().register(RubrumContent.RUBRUM_MOTE,
                 spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
                         new RubrumMoteParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+        ParticleProviderRegistry.getInstance().register(RubrumContent.WRUNG_MOTE,
+                spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                        RubrumMoteParticle.wrung(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
     }
 }

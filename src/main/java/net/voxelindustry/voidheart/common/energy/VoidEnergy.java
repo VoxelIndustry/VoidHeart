@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.energy;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
+import net.voxelindustry.voidheart.common.energy.grid.DeepReach;
 
 import java.util.Objects;
 
@@ -24,15 +25,35 @@ public final class VoidEnergy
      */
     public static long available(ServerLevel level, BlockPos pos)
     {
+        long here = availableHere(level, pos);
+        return here == Long.MAX_VALUE ? here : Math.min(Long.MAX_VALUE / 2, here + DeepReach.available(level, pos));
+    }
+
+    /**
+     * What could be drawn at pos from the fields of its own level, leaving aside Deep fields reaching in through portals.
+     */
+    public static long availableHere(ServerLevel level, BlockPos pos)
+    {
         if (CreativeSources.wells(level).covers(pos))
             return Long.MAX_VALUE;
         return Math.max(0, provider.available(level, pos));
     }
 
     /**
-     * Takes up to amount from the fields covering pos, and returns what was taken.
+     * Takes up to amount from the fields covering pos, then from Deep fields reaching it through portals, and returns what was taken.
      */
     public static long draw(ServerLevel level, BlockPos pos, long amount)
+    {
+        long got = drawHere(level, pos, amount);
+        if (got < amount)
+            got += DeepReach.draw(level, pos, amount - got);
+        return got;
+    }
+
+    /**
+     * Takes up to amount from the fields of pos's own level only, so a draw through a portal never goes on through another.
+     */
+    public static long drawHere(ServerLevel level, BlockPos pos, long amount)
     {
         if (amount <= 0)
             return 0;

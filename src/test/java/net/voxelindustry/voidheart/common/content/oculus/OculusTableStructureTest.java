@@ -120,4 +120,50 @@ class OculusTableStructureTest
         assertThat(view.scale()).isEqualTo(4);
         assertThat(OculusView.DEFAULT.zoomIn().scale()).as("intermediate step").isEqualTo(24);
     }
+
+    private static OculusMemory memory(UUID id)
+    {
+        return new OculusMemory(new net.voxelindustry.voidheart.common.content.crystal.CrystalRecordings.Ref(id,
+                net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath("voidheart", "dungeons"))),
+                net.voxelindustry.voidheart.common.content.crystal.BundleSize.SMALL);
+    }
+
+    @Test
+    void joiningTablesKeepsOneMemoryAndReturnsTheRestEvenCopies()
+    {
+        var id = UUID.randomUUID();
+        var reconciled = OculusTableStructure.reconcile(List.of(Optional.of(memory(id)), Optional.empty(), Optional.of(memory(id))));
+        assertThat(reconciled.kept()).contains(memory(id));
+        assertThat(reconciled.returned()).as("a copy of the same recording in another table still comes back out").containsExactly(memory(id));
+
+        var alone = OculusTableStructure.reconcile(List.of(Optional.empty(), Optional.of(memory(id))));
+        assertThat(alone.kept()).contains(memory(id));
+        assertThat(alone.returned()).isEmpty();
+    }
+
+    @Test
+    void aBlockTouchingOneTableTwiceJoinsOneTable()
+    {
+        // A U of table blocks around the joining spot at (1, 64, 1)
+        var blocks = new HashSet<>(Set.of(new BlockPos(0, 64, 0), new BlockPos(1, 64, 0), new BlockPos(2, 64, 0), new BlockPos(0, 64, 1), new BlockPos(2, 64, 1)));
+        var joined = new BlockPos(1, 64, 1);
+        blocks.add(joined);
+        assertThat(OculusTableStructure.joinedTables(joined, blocks::contains)).hasSize(1);
+    }
+
+    @Test
+    void aBridgeJoinsTwoTablesAndReachesPastTheSizeATableProjectsAt()
+    {
+        var blocks = new HashSet<BlockPos>(rectangle(12, 12));
+        for (var pos : rectangle(3, 3))
+            blocks.add(pos.offset(13, 0, 0));
+        var bridge = new BlockPos(12, 64, 0);
+        blocks.add(bridge);
+
+        var tables = OculusTableStructure.joinedTables(bridge, blocks::contains);
+        assertThat(tables).hasSize(2);
+        assertThat(tables.getFirst().size() + tables.getLast().size()).as("every block of both, though one is past the projecting size").isEqualTo(144 + 9);
+        assertThat(OculusTableStructure.connected(new BlockPos(11, 64, 11), blocks::contains, OculusTableStructure.MEMORY_WALK)).hasSize(144 + 9 + 1);
+    }
 }

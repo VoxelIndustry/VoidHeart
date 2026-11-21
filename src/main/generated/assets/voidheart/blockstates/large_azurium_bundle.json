@@ -1,27 +1,235 @@
 {
   "variants": {
-    "facing=down": {
+    "facing=down,habit=clear": {
+      "model": "voidheart:block/large_azurium_bundle_clear",
+      "x": 180
+    },
+    "facing=down,habit=deep": {
+      "model": "voidheart:block/large_azurium_bundle_deep",
+      "x": 180
+    },
+    "facing=down,habit=fouled": {
+      "model": "voidheart:block/large_azurium_bundle_fouled",
+      "x": 180
+    },
+    "facing=down,habit=none": {
       "model": "voidheart:block/large_azurium_bundle",
       "x": 180
     },
-    "facing=east": {
+    "facing=down,habit=plain": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 180
+    },
+    "facing=down,habit=scoured": {
+      "model": "voidheart:block/large_azurium_bundle_scoured",
+      "x": 180
+    },
+    "facing=down,habit=searing": {
+      "model": "voidheart:block/large_azurium_bundle_searing",
+      "x": 180
+    },
+    "facing=down,habit=still": {
+      "model": "voidheart:block/large_azurium_bundle_still",
+      "x": 180
+    },
+    "facing=down,habit=wrung": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 180
+    },
+    "facing=east,habit=clear": {
+      "model": "voidheart:block/large_azurium_bundle_clear",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,habit=deep": {
+      "model": "voidheart:block/large_azurium_bundle_deep",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,habit=fouled": {
+      "model": "voidheart:block/large_azurium_bundle_fouled",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,habit=none": {
       "model": "voidheart:block/large_azurium_bundle",
       "x": 90,
       "y": 90
     },
-    "facing=north": {
+    "facing=east,habit=plain": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,habit=scoured": {
+      "model": "voidheart:block/large_azurium_bundle_scoured",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,habit=searing": {
+      "model": "voidheart:block/large_azurium_bundle_searing",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,habit=still": {
+      "model": "voidheart:block/large_azurium_bundle_still",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,habit=wrung": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north,habit=clear": {
+      "model": "voidheart:block/large_azurium_bundle_clear",
+      "x": 90
+    },
+    "facing=north,habit=deep": {
+      "model": "voidheart:block/large_azurium_bundle_deep",
+      "x": 90
+    },
+    "facing=north,habit=fouled": {
+      "model": "voidheart:block/large_azurium_bundle_fouled",
+      "x": 90
+    },
+    "facing=north,habit=none": {
       "model": "voidheart:block/large_azurium_bundle",
       "x": 90
     },
-    "facing=south": {
+    "facing=north,habit=plain": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90
+    },
+    "facing=north,habit=scoured": {
+      "model": "voidheart:block/large_azurium_bundle_scoured",
+      "x": 90
+    },
+    "facing=north,habit=searing": {
+      "model": "voidheart:block/large_azurium_bundle_searing",
+      "x": 90
+    },
+    "facing=north,habit=still": {
+      "model": "voidheart:block/large_azurium_bundle_still",
+      "x": 90
+    },
+    "facing=north,habit=wrung": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90
+    },
+    "facing=south,habit=clear": {
+      "model": "voidheart:block/large_azurium_bundle_clear",
+      "x": 90,
+      "y": 180
+    },
+    "facing=south,habit=deep": {
+      "model": "voidheart:block/large_azurium_bundle_deep",
+      "x": 90,
+      "y": 180
+    },
+    "facing=south,habit=fouled": {
+      "model": "voidheart:block/large_azurium_bundle_fouled",
+      "x": 90,
+      "y": 180
+    },
+    "facing=south,habit=none": {
       "model": "voidheart:block/large_azurium_bundle",
       "x": 90,
       "y": 180
     },
-    "facing=up": {
+    "facing=south,habit=plain": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90,
+      "y": 180
+    },
+    "facing=south,habit=scoured": {
+      "model": "voidheart:block/large_azurium_bundle_scoured",
+      "x": 90,
+      "y": 180
+    },
+    "facing=south,habit=searing": {
+      "model": "voidheart:block/large_azurium_bundle_searing",
+      "x": 90,
+      "y": 180
+    },
+    "facing=south,habit=still": {
+      "model": "voidheart:block/large_azurium_bundle_still",
+      "x": 90,
+      "y": 180
+    },
+    "facing=south,habit=wrung": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up,habit=clear": {
+      "model": "voidheart:block/large_azurium_bundle_clear"
+    },
+    "facing=up,habit=deep": {
+      "model": "voidheart:block/large_azurium_bundle_deep"
+    },
+    "facing=up,habit=fouled": {
+      "model": "voidheart:block/large_azurium_bundle_fouled"
+    },
+    "facing=up,habit=none": {
       "model": "voidheart:block/large_azurium_bundle"
     },
-    "facing=west": {
+    "facing=up,habit=plain": {
+      "model": "voidheart:block/large_azurium_bundle"
+    },
+    "facing=up,habit=scoured": {
+      "model": "voidheart:block/large_azurium_bundle_scoured"
+    },
+    "facing=up,habit=searing": {
+      "model": "voidheart:block/large_azurium_bundle_searing"
+    },
+    "facing=up,habit=still": {
+      "model": "voidheart:block/large_azurium_bundle_still"
+    },
+    "facing=up,habit=wrung": {
+      "model": "voidheart:block/large_azurium_bundle"
+    },
+    "facing=west,habit=clear": {
+      "model": "voidheart:block/large_azurium_bundle_clear",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=deep": {
+      "model": "voidheart:block/large_azurium_bundle_deep",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=fouled": {
+      "model": "voidheart:block/large_azurium_bundle_fouled",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=none": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=plain": {
+      "model": "voidheart:block/large_azurium_bundle",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=scoured": {
+      "model": "voidheart:block/large_azurium_bundle_scoured",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=searing": {
+      "model": "voidheart:block/large_azurium_bundle_searing",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=still": {
+      "model": "voidheart:block/large_azurium_bundle_still",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,habit=wrung": {
       "model": "voidheart:block/large_azurium_bundle",
       "x": 90,
       "y": 270
