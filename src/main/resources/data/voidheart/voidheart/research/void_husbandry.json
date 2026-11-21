@@ -10,10 +10,12 @@
   ],
   "unlocks": [
     "voidheart:experience_skull",
-    "voidheart:inventory_inserter"
+    "voidheart:inventory_inserter",
+    "voidheart:mending_altar"
   ],
   "recipes": [
     "voidheart:altar/experience_skull",
-    "voidheart:altar/inventory_inserter"
+    "voidheart:altar/inventory_inserter",
+    "voidheart:altar/mending_altar"
   ]
 }

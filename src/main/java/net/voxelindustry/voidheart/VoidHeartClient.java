@@ -74,6 +74,7 @@ import net.voxelindustry.voidheart.client.render.ArmillaryRiftRender;
 import net.voxelindustry.voidheart.client.screen.ArmillaryScreen;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryPayloads;
 import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleTile;
+import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.client.screen.PermeableBarrierScreen;
 import net.voxelindustry.voidheart.client.screen.ResearchScreen;
@@ -185,6 +186,8 @@ public class VoidHeartClient implements ClientModInitializer
                 pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
         BlockEntityRenderers.register(VoidHeartTiles.BLESSED_CRADLE, ctx -> new FloatingItemRender<BlessedCradleTile>(ctx, BlessedCradleTile::getContents, 0.85));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
+        // The tool floats where the void altar's item does, the mending altar being its shape in amber
+        BlockEntityRenderers.register(VoidHeartTiles.MENDING_ALTAR, ctx -> new FloatingItemRender<MendingAltarTile>(ctx, MendingAltarTile::getTool, 1 + 2 / 16D));
         BlockEntityRenderers.register(VoidHeartTiles.DORMANT_TREANT, DormantTreantRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.ATHANOR, AthanorRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.PLACED_FLASKS, PlacedFlasksRender::new);

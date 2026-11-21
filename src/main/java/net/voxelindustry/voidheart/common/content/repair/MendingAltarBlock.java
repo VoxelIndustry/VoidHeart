@@ -35,28 +35,35 @@ public class MendingAltarBlock extends Block implements EntityBlock
     @Override
     protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
-        if (!player.getItemInHand(hand).isDamageableItem())
+        var altarOpt = world.getBlockEntity(pos, VoidHeartTiles.MENDING_ALTAR);
+        if (altarOpt.isEmpty() || !altarOpt.get().getTool().isEmpty() || !heldStack.isDamageableItem())
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
+
+        if (!world.isClientSide())
+        {
+            altarOpt.get().setTool(player, heldStack.copyWithCount(1));
+            if (!player.isCreative())
+                heldStack.shrink(1);
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * Using the altar while it holds a tool takes the tool back, whole or not.
+     */
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit)
+    {
+        var altarOpt = world.getBlockEntity(pos, VoidHeartTiles.MENDING_ALTAR);
+        if (altarOpt.isEmpty() || altarOpt.get().getTool().isEmpty())
             return InteractionResult.PASS;
 
-        var altarOpt = world.getBlockEntity(pos, VoidHeartTiles.MENDING_ALTAR);
-
-        if (altarOpt.isEmpty())
-            return InteractionResult.SUCCESS;
-
-        var altar = altarOpt.get();
-        if (altar.getTool().isEmpty())
+        if (!world.isClientSide())
         {
-            altar.setTool(player, player.getItemInHand(hand).copyWithCount(1));
-
-            if (!player.isCreative())
-                player.getItemInHand(hand).shrink(1);
-        }
-        else
-        {
+            var altar = altarOpt.get();
             player.getInventory().placeItemBackInInventory(altar.getTool(), Prediction.SERVER_ONLY);
             altar.setTool(player, ItemStack.EMPTY);
         }
-
         return InteractionResult.SUCCESS;
     }
 

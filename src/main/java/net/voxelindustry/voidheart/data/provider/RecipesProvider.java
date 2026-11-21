@@ -330,6 +330,12 @@ public class RecipesProvider extends FabricRecipeProvider
             offerAltarRecipe("ravenous_relay", new ItemStack(VoidHeartBlocks.RAVENOUS_RELAY, 2), VoidHeartBlocks.VOID_CONDUIT,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+            // The void altar recast in amber, drawing on the experience skulls beside it to mend
+            offerAltarRecipe("mending_altar", VoidHeartBlocks.MENDING_ALTAR, VoidHeartBlocks.VOID_ALTAR,
+                    Items.DIAMOND, Items.DIAMOND,
+                    Items.GLISTERING_MELON_SLICE, Items.GLISTERING_MELON_SLICE,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
             offerAltarRecipe("shatter_forge", VoidHeartBlocks.SHATTER_FORGE, Blocks.ANVIL,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
