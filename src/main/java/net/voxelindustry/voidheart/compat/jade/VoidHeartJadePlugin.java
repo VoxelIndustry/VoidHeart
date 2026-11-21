@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.compat.jade;
 
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
@@ -89,6 +90,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.registerBlockComponent(new MalignantTormenterProvider.Client(), MalignantTormenterBlock.class);
         registration.registerBlockComponent(new ArmillaryProvider.Client(), ArmillaryCoreBlock.class);
         registration.registerBlockComponent(new AthanorProvider.Client(athanorProvider), AthanorBlock.class);
+        registration.registerBlockComponent(new AltarProvider(), VoidAltarBlock.class);
         registration.registerBlockComponent(new PortalCoreProvider.Client(), PortalFrameBlock.class);
         registration.registerBlockComponent(new BeholderProvider.Client(), BeholderBlock.class);
 

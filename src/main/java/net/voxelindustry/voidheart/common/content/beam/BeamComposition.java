@@ -20,15 +20,12 @@ public record BeamComposition(Map<EssenceType, Integer> attuned, int unattuned)
 {
     public static final BeamComposition EMPTY = new BeamComposition(Map.of(), 0);
 
-    private static final Codec<EssenceType> ASPECT_CODEC = Identifier.CODEC.xmap(
-            id -> EssenceRegistry.ESSENCE_REGISTRY.getValue(id), EssenceType::identifier);
-
     private static final StreamCodec<ByteBuf, EssenceType> ASPECT_STREAM_CODEC = Identifier.STREAM_CODEC.map(
             id -> EssenceRegistry.ESSENCE_REGISTRY.getValue(id), EssenceType::identifier);
 
     public static final Codec<BeamComposition> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
-                    Codec.unboundedMap(ASPECT_CODEC, Codec.INT).fieldOf("attuned").forGetter(BeamComposition::attuned),
+                    Codec.unboundedMap(EssenceRegistry.ASPECT_CODEC, Codec.INT).fieldOf("attuned").forGetter(BeamComposition::attuned),
                     Codec.INT.fieldOf("unattuned").forGetter(BeamComposition::unattuned)
             ).apply(instance, BeamComposition::new));
 

@@ -68,6 +68,17 @@ public class AltarRecipeCategory implements DisplayCategory<AltarRecipeDisplay>
 
         widgets.add(Widgets.createSlot(new Point(bounds.x + startX + 36 + 36, bounds.y + startY)).entries(getOutput(display, 0)).markOutput());
 
+        // The essence a late rite drinks sits under its result
+        int aspectY = bounds.y + startY + 22;
+        for (var aspect : display.getAspects().entrySet())
+        {
+            var color = ReiAspects.color(aspect.getKey());
+            widgets.add(Widgets.createLabel(new Point(bounds.x + startX + 72 + 8, aspectY),
+                            Component.translatable(MODID + ".rei.shatter_forge.aspect", Component.translatable(aspect.getKey().translatableName()), aspect.getValue()))
+                    .centered().noShadow().color(color, color));
+            aspectY += 10;
+        }
+
         if (display.getExperience() > 0)
         {
             var experience = Component.translatable(MODID + ".rei.altar.experience", display.getExperience(), ExperienceUtil.getLevelsToGather(display.getExperience()));

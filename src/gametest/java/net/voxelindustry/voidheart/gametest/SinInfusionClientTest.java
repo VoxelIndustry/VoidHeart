@@ -26,6 +26,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.voxelindustry.voidheart.client.render.sin.SinFlare;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusGrid;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -43,6 +44,7 @@ import java.util.List;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.FLAT_FEET;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.aimFrom;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.clearArea;
+import static net.voxelindustry.voidheart.gametest.GameTestKit.essenceForAltar;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.clearScene;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.expect;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.expectClient;
@@ -142,6 +144,8 @@ public class SinInfusionClientTest implements FabricClientGameTest
                 level.setBlockAndUpdate(ALTAR.offset(offset), VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
             level.setBlockAndUpdate(SKULL, VoidHeartBlocks.EXPERIENCE_SKULL.defaultBlockState());
             ((ExperienceSkullTile) level.getBlockEntity(SKULL)).setExperience(1000);
+            // Infusions drink Fiery, cleansing and raising an apparatus Stillness
+            essenceForAltar(level, ALTAR, EssenceRegistry.FIERY, EssenceRegistry.STILLNESS);
         });
     }
 

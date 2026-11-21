@@ -1,5 +1,8 @@
 {
   "type": "voidheart:altar",
+  "aspects": {
+    "voidheart:contravoid": 3000
+  },
   "inputs": {
     "minecraft:itemstack": [
       {

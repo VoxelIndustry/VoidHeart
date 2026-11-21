@@ -1,5 +1,8 @@
 {
   "type": "voidheart:altar",
+  "aspects": {
+    "voidheart:stillness": 2000
+  },
   "inputs": {
     "minecraft:itemstack": [
       {

@@ -10,18 +10,25 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.PlayerKnowledge;
 import net.voxelindustry.voidheart.common.curse.CurseKind;
 import net.voxelindustry.voidheart.common.curse.Curses;
+import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.world.daedalus.DaedalusTheme;
 import net.voxelindustry.voidheart.common.world.daedalus.DistrictPos;
 
@@ -291,6 +298,25 @@ public final class GameTestKit
     }
 
     // Mod state
+
+    /**
+     * Feeds the deeper rites of an altar: a full Ravenous Storage of each aspect west of it, out of the pillars' way, and a relay between them and the
+     * altar. Relays link on their own within a couple of seconds.
+     */
+    public static void essenceForAltar(ServerLevel level, BlockPos altar, EssenceType... aspects)
+    {
+        level.setBlockAndUpdate(altar.offset(-5, 0, 0), VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
+        for (int index = 0; index < aspects.length; index++)
+        {
+            var stored = new EssenceStorage(aspects[index], RavenousStorageTile.CAPACITY);
+            stored.fill(aspects[index], RavenousStorageTile.CAPACITY);
+            var stack = new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE);
+            stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, stored);
+            var pos = altar.offset(-7, 0, 2 * index - (aspects.length - 1));
+            level.setBlockAndUpdate(pos, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState());
+            VoidHeartBlocks.RAVENOUS_STORAGE.setPlacedBy(level, pos, VoidHeartBlocks.RAVENOUS_STORAGE.defaultBlockState(), null, stack);
+        }
+    }
 
     public static PlayerKnowledge knowledge(MinecraftServer minecraft)
     {

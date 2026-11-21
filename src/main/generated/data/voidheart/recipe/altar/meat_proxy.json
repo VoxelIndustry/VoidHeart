@@ -1,5 +1,8 @@
 {
   "type": "voidheart:altar",
+  "aspects": {
+    "voidheart:suffering": 3000
+  },
   "inputs": {
     "minecraft:itemstack": [
       {

@@ -43,6 +43,7 @@
       "net.voxelindustry.voidheart.gametest.KnowledgeRepositoryFxClientTest",
       "net.voxelindustry.voidheart.gametest.ShatterForgeClientTest",
       "net.voxelindustry.voidheart.gametest.StationFoundationsClientTest",
+      "net.voxelindustry.voidheart.gametest.AltarEssenceClientTest",
       "net.voxelindustry.voidheart.gametest.BeamFocusClientTest",
       "net.voxelindustry.voidheart.gametest.AthanorClientTest",
       "net.voxelindustry.voidheart.gametest.EssenceNetworkClientTest",

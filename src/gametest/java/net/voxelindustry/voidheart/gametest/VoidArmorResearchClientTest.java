@@ -12,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.common.content.blight.Blueprints;
@@ -23,6 +24,7 @@ import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import java.util.List;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.FLAT_FEET;
+import static net.voxelindustry.voidheart.gametest.GameTestKit.essenceForAltar;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.expect;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.knowledge;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.player;
@@ -113,6 +115,7 @@ public class VoidArmorResearchClientTest implements FabricClientGameTest
                 level.setBlockAndUpdate(ALTAR.offset(offset), VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
             level.setBlockAndUpdate(SKULL, VoidHeartBlocks.EXPERIENCE_SKULL.defaultBlockState());
             ((ExperienceSkullTile) level.getBlockEntity(SKULL)).setExperience(1000);
+            essenceForAltar(level, ALTAR, EssenceRegistry.FIERY);
         });
         context.waitTicks(3);
 

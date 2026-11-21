@@ -388,7 +388,7 @@ public final class RelayNetwork
      */
     public static Map<BlockPos, IEssenceReceiver> suppliers(Level level, BlockPos collectorPos, EssenceType aspect)
     {
-        return suppliersFrom(level, collectorPos, relay -> relay.linkedCollectors().contains(collectorPos), aspect);
+        return reachable(level, collectorPos, relay -> relay.linkedCollectors().contains(collectorPos), receiver -> receiver.amountOf(aspect) > 0);
     }
 
     /**
@@ -396,12 +396,23 @@ public final class RelayNetwork
      */
     public static Map<BlockPos, IEssenceReceiver> suppliersOfReceiver(Level level, BlockPos receiverPos, EssenceType aspect)
     {
-        var suppliers = suppliersFrom(level, receiverPos, relay -> relay.linkedReceivers().contains(receiverPos), aspect);
+        var suppliers = reachable(level, receiverPos, relay -> relay.linkedReceivers().contains(receiverPos), receiver -> receiver.amountOf(aspect) > 0);
         suppliers.remove(receiverPos);
         return suppliers;
     }
 
-    private static Map<BlockPos, IEssenceReceiver> suppliersFrom(Level level, BlockPos origin, Predicate<RavenousRelayTile> linkedToOrigin, EssenceType aspect)
+    /**
+     * Stores with room for the aspect, reachable through the relays linked to a receiver, for essence it gives back. Nearer stores come first.
+     */
+    public static Map<BlockPos, IEssenceReceiver> storesWithRoomOfReceiver(Level level, BlockPos receiverPos, EssenceType aspect)
+    {
+        var stores = reachable(level, receiverPos, relay -> relay.linkedReceivers().contains(receiverPos),
+                receiver -> receiver.isStore() && receiver.spaceFor(aspect) > 0);
+        stores.remove(receiverPos);
+        return stores;
+    }
+
+    private static Map<BlockPos, IEssenceReceiver> reachable(Level level, BlockPos origin, Predicate<RavenousRelayTile> linkedToOrigin, Predicate<IEssenceReceiver> wanted)
     {
         var suppliers = new LinkedHashMap<BlockPos, IEssenceReceiver>();
         var visited = new HashSet<BlockPos>();
@@ -418,7 +429,7 @@ public final class RelayNetwork
             for (var pos : relay.linkedReceivers())
             {
                 if (!suppliers.containsKey(pos) && level.isLoaded(pos) && level.getBlockEntity(pos) instanceof IEssenceReceiver receiver
-                        && receiver.amountOf(aspect) > 0)
+                        && wanted.test(receiver))
                     suppliers.put(pos, receiver);
             }
             for (var pos : relay.linkedRelays())

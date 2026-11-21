@@ -1,7 +1,6 @@
 package net.voxelindustry.voidheart.common.recipe;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import lombok.Getter;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
@@ -10,11 +9,9 @@ import net.minecraft.world.level.ItemLike;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeCallback;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
-import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ShatterForgeRecipe extends RecipeBase
@@ -114,18 +111,7 @@ public class ShatterForgeRecipe extends RecipeBase
         this.draw = json.has("draw") ? json.get("draw").getAsInt() : 0;
         this.experience = json.has("experience") ? json.get("experience").getAsInt() : 0;
 
-        var parsed = new LinkedHashMap<EssenceType, Integer>();
-        if (json.has("aspects"))
-        {
-            for (var entry : json.getAsJsonObject("aspects").entrySet())
-            {
-                var id = Identifier.tryParse(entry.getKey());
-                if (id == null || !EssenceRegistry.ESSENCE_REGISTRY.containsKey(id) || id.equals(EssenceRegistry.EMPTY.identifier()))
-                    throw new JsonParseException("Unknown aspect '" + entry.getKey() + "' in shatter forge recipe");
-                parsed.put(EssenceRegistry.ESSENCE_REGISTRY.getValue(id), entry.getValue().getAsInt());
-            }
-        }
-        this.aspects = Map.copyOf(parsed);
+        this.aspects = RecipeAspects.fromJson(json, "shatter forge");
     }
 
     @Override
@@ -137,14 +123,7 @@ public class ShatterForgeRecipe extends RecipeBase
             json.addProperty("draw", draw);
         if (experience != 0)
             json.addProperty("experience", experience);
-        if (!aspects.isEmpty())
-        {
-            var aspectsJson = new JsonObject();
-            aspects.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey(java.util.Comparator.comparing(type -> type.identifier().toString())))
-                    .forEach(entry -> aspectsJson.addProperty(entry.getKey().identifier().toString(), entry.getValue()));
-            json.add("aspects", aspectsJson);
-        }
+        RecipeAspects.toJson(json, aspects);
 
         super.toJson(json);
     }
@@ -157,14 +136,7 @@ public class ShatterForgeRecipe extends RecipeBase
         this.time = buffer.readInt();
         this.monolithCount = buffer.readInt();
 
-        int size = buffer.readInt();
-        var parsed = new LinkedHashMap<EssenceType, Integer>();
-        for (int i = 0; i < size; i++)
-        {
-            var type = EssenceRegistry.ESSENCE_REGISTRY.getValue(Identifier.parse(buffer.readUtf()));
-            parsed.put(type, buffer.readInt());
-        }
-        this.aspects = Map.copyOf(parsed);
+        this.aspects = RecipeAspects.fromByteBuf(buffer);
         this.draw = buffer.readInt();
         this.experience = buffer.readInt();
     }
@@ -177,12 +149,7 @@ public class ShatterForgeRecipe extends RecipeBase
         buffer.writeInt(time);
         buffer.writeInt(monolithCount);
 
-        buffer.writeInt(aspects.size());
-        aspects.forEach((type, amount) ->
-        {
-            buffer.writeUtf(type.identifier().toString());
-            buffer.writeInt(amount);
-        });
+        RecipeAspects.toByteBuf(buffer, aspects);
         buffer.writeInt(draw);
         buffer.writeInt(experience);
     }

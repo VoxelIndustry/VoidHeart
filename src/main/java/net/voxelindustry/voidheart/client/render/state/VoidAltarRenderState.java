@@ -17,6 +17,11 @@ public class VoidAltarRenderState extends FloatingItemRenderState
     public int     coolProgress;
     public double  cameraDistanceSqr;
 
+    public boolean drinking;
+    public float   drinkFill;
+    public int     drinkColor;
+    public long    seed;
+
     public final ItemStackRenderState       output    = new ItemStackRenderState();
     public       int                        outputCount;
     public final List<ItemStackRenderState> toConsume = new ArrayList<>();

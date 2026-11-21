@@ -26,6 +26,11 @@ import net.voxelindustry.steamlayer.tile.TileBase;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.athanor.AthanorMath;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
+import net.voxelindustry.voidheart.common.content.essence.RelayNetwork;
 import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -40,7 +45,9 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -49,8 +56,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class VoidAltarTile extends TileBase implements PartialSyncedTile, PillarLinkedTile
+public class VoidAltarTile extends TileBase implements PartialSyncedTile, PillarLinkedTile, IEssenceReceiver
 {
+    private static final Codec<Map<EssenceType, Integer>> ASPECTS_CODEC = Codec.unboundedMap(EssenceRegistry.ASPECT_CODEC, Codec.INT);
+
     public static final int WARMING_TIME = 80;
     public static final int COOLING_TIME = 60;
     public static final int ITEM_EATING_TIME = 60;
@@ -82,6 +91,19 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private int experienceConsumed;
     private BlockPos consumingSkullPos = BlockPos.ZERO;
     private int skullConsumeProgress;
+
+    /**
+     * Essence the rite has drunk so far, given back to the stores it can reach if the rite stops.
+     */
+    private final Map<EssenceType, Integer> drunk = new HashMap<>();
+    /**
+     * Whether every ingredient is eaten and the rite waits on its essence, the only time relays may feed the altar.
+     */
+    private boolean drinking;
+    /**
+     * The essence the rite drinks, kept on the client, which doesn't know the recipe.
+     */
+    private Map<EssenceType, Integer> clientDraught = Map.of();
 
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
@@ -169,6 +191,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         experienceConsumed = tag.getIntOr("experienceConsumed", 0);
         owner = tag.read("owner", UUIDUtil.CODEC).orElse(null);
         pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
+        drunk.clear();
+        drunk.putAll(tag.read("drunk", ASPECTS_CODEC).orElse(Map.of()));
+        clientDraught = tag.read("draught", ASPECTS_CODEC).orElse(Map.of());
 
         if (isServer())
         {
@@ -222,6 +247,10 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             tag.store("owner", UUIDUtil.CODEC, owner);
         if (pinned != null)
             tag.store("pinned", Identifier.CODEC, pinned);
+        if (!drunk.isEmpty())
+            tag.store("drunk", ASPECTS_CODEC, Map.copyOf(drunk));
+        if (isServer() && currentRecipe != null && !currentRecipe.getAspects().isEmpty())
+            tag.store("draught", ASPECTS_CODEC, currentRecipe.getAspects());
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
@@ -437,7 +466,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
         if (toConsume.isEmpty())
         {
-            if (!computeExperienceConsumption())
+            if (!computeDrink() || !computeExperienceConsumption())
                 return;
 
             finishCrafting();
@@ -472,6 +501,126 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             consumingPillarPos = BlockPos.ZERO;
             cachedToConsume = ItemStack.EMPTY;
         }
+    }
+
+    /**
+     * Once every ingredient is eaten, the relays reaching the altar feed it the rite's essence. Relays route only to a receiver with room, so the altar
+     * has room only now.
+     *
+     * @return true once the recipe's essence is all drunk
+     */
+    private boolean computeDrink()
+    {
+        drinking = !AthanorMath.missing(currentRecipe.getAspects(), drunk).isEmpty();
+        return !drinking;
+    }
+
+    /**
+     * Essence drunk for a rite that did not complete goes back to the stores the altar's relays reach, as far as they have room.
+     */
+    private void giveBackDrink()
+    {
+        drinking = false;
+        if (!drunk.isEmpty() && getLevel() instanceof ServerLevel)
+        {
+            drunk.forEach((aspect, amount) ->
+            {
+                var left = amount;
+                for (var store : RelayNetwork.storesWithRoomOfReceiver(getLevel(), getBlockPos(), aspect).values())
+                {
+                    left -= store.receive(aspect, Math.min(left, store.spaceFor(aspect)));
+                    if (left <= 0)
+                        break;
+                }
+            });
+        }
+        drunk.clear();
+    }
+
+    /**
+     * Whether the stores the altar's relays reach hold the essence a rite still needs, so its ingredients are never laid for a rite that would wait.
+     */
+    public boolean canSupply(AltarRecipe recipe)
+    {
+        var already = recipe == currentRecipe ? drunk : Map.<EssenceType, Integer>of();
+        for (var need : AthanorMath.missing(recipe.getAspects(), already).entrySet())
+        {
+            var held = RelayNetwork.suppliersOfReceiver(getLevel(), getBlockPos(), need.getKey()).values().stream()
+                    .mapToInt(store -> store.amountOf(need.getKey()))
+                    .sum();
+            if (held < need.getValue())
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * @return the essence the rite drinks, on either side
+     */
+    public Map<EssenceType, Integer> getDraught()
+    {
+        if (isClient())
+            return clientDraught;
+        return currentRecipe == null ? Map.of() : currentRecipe.getAspects();
+    }
+
+    public Map<EssenceType, Integer> getDrunk()
+    {
+        return Map.copyOf(drunk);
+    }
+
+    /**
+     * @return how much of the rite's essence is drunk, from 0 to 1
+     */
+    public float drinkFill()
+    {
+        var draught = getDraught();
+        var needed = draught.values().stream().mapToInt(Integer::intValue).sum();
+        if (needed == 0)
+            return 0;
+        var had = draught.entrySet().stream().mapToInt(entry -> Math.min(entry.getValue(), drunk.getOrDefault(entry.getKey(), 0))).sum();
+        return had / (float) needed;
+    }
+
+    /**
+     * @return the aspect the rite drinks most of, or null when it drinks none
+     */
+    @Nullable
+    public EssenceType drinkAspect()
+    {
+        return getDraught().entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
+    }
+
+    @Override
+    public int spaceFor(EssenceType type)
+    {
+        if (!drinking || currentRecipe == null)
+            return 0;
+        return AthanorMath.missing(currentRecipe.getAspects(), drunk).getOrDefault(type, 0);
+    }
+
+    @Override
+    public int receive(EssenceType type, int amount)
+    {
+        var taken = Math.min(amount, spaceFor(type));
+        if (taken <= 0)
+            return 0;
+
+        drunk.merge(type, taken, Integer::sum);
+        setChanged();
+        return taken;
+    }
+
+    @Override
+    public int amountOf(EssenceType type)
+    {
+        return 0;
+    }
+
+    @Override
+    public int extract(EssenceType type, int amount)
+    {
+        return 0;
     }
 
     /**
@@ -755,6 +904,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     {
         dropAteItems();
         refundExperience();
+        giveBackDrink();
         recipeState = null;
         recipeProgress = 0;
         isCrafting = false;
@@ -778,6 +928,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         coolProgress = COOLING_TIME;
         currentRecipe = null;
         pinned = null;
+        drunk.clear();
+        drinking = false;
         experienceConsumed = 0;
         consumingSkullPos = BlockPos.ZERO;
         skullConsumeProgress = 0;
@@ -939,6 +1091,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
         dropAteItems();
         refundExperience();
+        giveBackDrink();
         super.preRemoveSideEffects(pos, state);
     }
 }
