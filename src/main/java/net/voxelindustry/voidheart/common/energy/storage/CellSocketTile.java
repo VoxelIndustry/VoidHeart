@@ -219,7 +219,7 @@ public class CellSocketTile extends TileBase
             return;
 
         var time = level.getGameTime();
-        if (time - targetScannedAt >= TARGET_RESCAN)
+        if (targetScannedAt == Long.MIN_VALUE || time - targetScannedAt >= TARGET_RESCAN)
         {
             targetScannedAt = time;
             moteTarget = CellTransfer.moteTarget(level, worldPosition);

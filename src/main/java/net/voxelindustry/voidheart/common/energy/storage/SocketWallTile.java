@@ -79,7 +79,7 @@ public class SocketWallTile extends TileBase
             var activity = activities[slot];
             if (activity == Activity.IDLE || time < nextMotes[slot])
                 continue;
-            if (time - targetScannedAt >= TARGET_RESCAN)
+            if (targetScannedAt == Long.MIN_VALUE || time - targetScannedAt >= TARGET_RESCAN)
             {
                 targetScannedAt = time;
                 moteTarget = CellTransfer.moteTarget(level, worldPosition);

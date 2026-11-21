@@ -428,6 +428,11 @@ public class RubrumStorageClientTest implements FabricClientGameTest
         context.takeScreenshot("socket-wall-front");
         aimFrom(context, server, WALL.getX() - 1.5, FLAT_FEET, WALL.getZ() - 2.5, WALL.getX() + 0.5, WALL.getY() + 0.5, WALL.getZ() + 0.5, 5);
         context.takeScreenshot("socket-wall-charging");
+        // The glow is additive: frozen, a close sweep across the front shows any flicker as the view moves
+        server.runCommand("tick freeze");
+        for (var step = 0; step < 6; step++)
+            aimSweep(context, server, step);
+        server.runCommand("tick unfreeze");
         context.getInput().pressKey(InputConstants.KEY_F1);
 
         // An empty hand on a niche takes only that niche's cell
@@ -486,6 +491,12 @@ public class RubrumStorageClientTest implements FabricClientGameTest
         expect(drops.stream().filter(item -> item == RubrumContent.RUBRUM_CELL).count() == 4 && drops.contains(RubrumContent.SOCKET_WALL.asItem()),
                 "A broken wall should drop itself and its four cells, dropped " + drops);
         server.runCommand("kill @e[type=item]");
+    }
+
+    private static void aimSweep(ClientGameTestContext context, TestServerContext server, int step)
+    {
+        aimFrom(context, server, WALL.getX() - 0.2 + step * 0.12, FLAT_FEET - 0.5 + step * 0.04, WALL.getZ() - 1.3, WALL.getX() + 0.5, WALL.getY() + 0.5, WALL.getZ(), 2);
+        context.takeScreenshot("socket-wall-sweep-" + step);
     }
 
     private static void setWall(TestServerContext server, BlockPos pos, Direction facing)
