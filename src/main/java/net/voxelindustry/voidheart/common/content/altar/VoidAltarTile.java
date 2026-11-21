@@ -5,6 +5,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
@@ -34,6 +35,7 @@ import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -84,9 +86,17 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
     /**
-     * Who set the item down, whose research decides whether a recipe laid afterwards can start. Not saved: after a reload the item must be set down again.
+     * Who set the item down, whose research decides whether a recipe can start, online or not.
      */
-    private UUID placer;
+    @Getter
+    @Nullable
+    private UUID owner;
+    /**
+     * The only recipe the altar may run on the item set down, so a rite laid out for one recipe never becomes another sharing its catalyst.
+     */
+    @Getter
+    @Nullable
+    private Identifier pinned;
 
     private final List<VoidPillarTile> pillars = new ArrayList<>();
 
@@ -157,6 +167,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         }
 
         experienceConsumed = tag.getIntOr("experienceConsumed", 0);
+        owner = tag.read("owner", UUIDUtil.CODEC).orElse(null);
+        pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
 
         if (isServer())
         {
@@ -206,6 +218,10 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             tag.putLong("consumingSkullPos", consumingSkullPos.asLong());
         }
         tag.putInt("experienceConsumed", experienceConsumed);
+        if (owner != null)
+            tag.store("owner", UUIDUtil.CODEC, owner);
+        if (pinned != null)
+            tag.store("pinned", Identifier.CODEC, pinned);
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
@@ -215,18 +231,23 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     /**
      * The client doesn't know what its player researched, so on locked recipes it waits for the server to start the craft rather than predict it.
+     *
+     * @param player the hand setting the item down, told what research is missing, or null for a quiet check of the owner's research
      */
-    private boolean canStart(Player player, AltarRecipe recipe)
+    private boolean canStart(@Nullable Player player, AltarRecipe recipe)
     {
         if (player instanceof ServerPlayer serverPlayer)
             return Knowledge.canUse(serverPlayer, recipe.getId());
+        if (getLevel() instanceof ServerLevel serverLevel)
+            return owner != null && Knowledge.canUse(serverLevel.getServer(), owner, recipe.getId());
         return Knowledge.lockOf(getLevel().registryAccess(), recipe.getId()).isEmpty();
     }
 
     public void setStack(Player player, ItemStack stack)
     {
         this.stack = stack;
-        placer = stack.isEmpty() ? null : player.getUUID();
+        owner = stack.isEmpty() ? null : player.getUUID();
+        pinned = null;
 
         if (!stack.isEmpty())
         {
@@ -243,7 +264,56 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         sync();
     }
 
-    private boolean tryStart(Player player)
+    /**
+     * Whether nothing is set on the altar, so a rite can be laid out on it.
+     */
+    public boolean isVacant()
+    {
+        return stack.isEmpty() && !isCrafting;
+    }
+
+    /**
+     * Sets an item down in someone's name with no hand involved, for one recipe only. Its ingredients should already wait on the pillars, since a rite
+     * pinned to a recipe whose catalyst is a whole tag only starts once they are laid.
+     *
+     * @return false when the altar already holds something
+     */
+    public boolean layCatalyst(UUID owner, ItemStack catalyst, Identifier recipe)
+    {
+        if (!isVacant() || catalyst.isEmpty())
+            return false;
+
+        stack = catalyst.copyWithCount(1);
+        this.owner = owner;
+        pinned = recipe;
+
+        searchPillars();
+        if (pillars.size() == 8)
+            tryStart(null);
+
+        setChanged();
+        sync();
+        return true;
+    }
+
+    /**
+     * @return what the altar holds once no rite runs on it, its result or an item that never started, now taken off
+     */
+    public ItemStack takeResult()
+    {
+        if (isCrafting || stack.isEmpty())
+            return ItemStack.EMPTY;
+
+        var taken = stack;
+        stack = ItemStack.EMPTY;
+        owner = null;
+        pinned = null;
+        setChanged();
+        sync();
+        return taken;
+    }
+
+    private boolean tryStart(@Nullable Player player)
     {
         retrieveCurrentRecipe();
         if (currentRecipe != null && !canStart(player, currentRecipe))
@@ -266,7 +336,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      */
     private void yieldToLaidRecipe()
     {
-        if (placer == null || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0 || consumingPillarIndex != -1 || !cachedToConsume.isEmpty() || experienceConsumed > 0)
+        if (owner == null || pinned != null || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0 || consumingPillarIndex != -1 || !cachedToConsume.isEmpty() || experienceConsumed > 0)
             return;
         if (recipeState == null || !recipeState.getIngredientsConsumed(ItemStack.class).isEmpty())
             return;
@@ -274,11 +344,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         var pillarStacks = pillars.stream().map(VoidPillarTile::getStack).toList();
         if (ingredientsLaid(currentRecipe, pillarStacks))
             return;
-        if (!(getLevel().getPlayerByUUID(placer) instanceof ServerPlayer player))
-            return;
 
         var laid = VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack)
-                .filter(recipe -> recipe != currentRecipe && recipe.changes(stack) && ingredientsLaid(recipe, pillarStacks) && canStart(player, recipe))
+                .filter(recipe -> recipe != currentRecipe && recipe.changes(stack) && ingredientsLaid(recipe, pillarStacks) && canStart(null, recipe))
                 .findFirst();
         if (laid.isEmpty())
             return;
@@ -294,9 +362,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      */
     private void retryIdleStart()
     {
-        if (placer == null || stack.isEmpty() || coolProgress > 0 || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0)
-            return;
-        if (!(getLevel().getPlayerByUUID(placer) instanceof ServerPlayer player))
+        if (owner == null || stack.isEmpty() || coolProgress > 0 || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0)
             return;
 
         searchPillars();
@@ -304,10 +370,10 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             return;
 
         var pillarStacks = pillars.stream().map(VoidPillarTile::getStack).toList();
-        var laid = VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack)
+        var laid = pinnedTo(VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack).toList(), pinned).stream()
                 .filter(recipe -> recipe.changes(stack) && ingredientsLaid(recipe, pillarStacks))
                 .findFirst();
-        if (laid.isEmpty() || !tryStart(player))
+        if (laid.isEmpty() || !tryStart(null))
             return;
 
         setChanged();
@@ -552,7 +618,17 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private void retrieveCurrentRecipe()
     {
         var pillarStacks = pillars.stream().map(VoidPillarTile::getStack).toList();
-        currentRecipe = chooseRecipe(VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack).toList(), stack, pillarStacks);
+        currentRecipe = chooseRecipe(pinnedTo(VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack).toList(), pinned), stack, pillarStacks);
+    }
+
+    /**
+     * @return only the pinned recipe among the candidates, or all of them when nothing is pinned
+     */
+    public static List<AltarRecipe> pinnedTo(List<AltarRecipe> candidates, @Nullable Identifier pinned)
+    {
+        if (pinned == null)
+            return candidates;
+        return candidates.stream().filter(recipe -> recipe.getId().equals(pinned)).toList();
     }
 
     /**
@@ -701,6 +777,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         recipeProgress = 0;
         coolProgress = COOLING_TIME;
         currentRecipe = null;
+        pinned = null;
         experienceConsumed = 0;
         consumingSkullPos = BlockPos.ZERO;
         skullConsumeProgress = 0;

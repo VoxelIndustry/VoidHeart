@@ -192,10 +192,12 @@ public class InventoryInserterTile extends BlockEntity
 
                 var extractionCandidate = extractable.getStack().copyWithCount(1);
 
-                if (!extractionCandidate.isEmpty())
+                // A forge output can hold two items, so only the one moved is taken off
+                if (inserter.tryInsert(insertInventory, extractionCandidate, direction.getOpposite()))
                 {
-                    if (inserter.tryInsert(insertInventory, extractionCandidate.copy(), direction.getOpposite()))
-                        extractable.setStack(ItemStack.EMPTY);
+                    var remaining = extractable.getStack().copy();
+                    remaining.shrink(1);
+                    extractable.setStack(remaining.isEmpty() ? ItemStack.EMPTY : remaining);
                 }
             }
             return;

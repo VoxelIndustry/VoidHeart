@@ -131,6 +131,39 @@ class AltarRecipeChoiceTest
     }
 
     @Test
+    void choose_givenSupersetLaidAndPinnedToTheSmallerRecipe_thenThePinnedOne()
+    {
+        var focus = fixed("focus", Items.ENDER_EYE, Items.DIAMOND, Items.GOLD_INGOT, Items.GOLD_INGOT, Items.GOLD_INGOT, Items.ENDER_PEARL, Items.ENDER_PEARL);
+        var relay = fixed("relay", Items.ENDER_EYE, Items.EMERALD, Items.GOLD_INGOT, Items.GOLD_INGOT, Items.ENDER_PEARL, Items.ENDER_PEARL);
+        var laid = List.of(new ItemStack(Items.GOLD_INGOT), new ItemStack(Items.GOLD_INGOT), new ItemStack(Items.GOLD_INGOT),
+                new ItemStack(Items.ENDER_PEARL), new ItemStack(Items.ENDER_PEARL));
+
+        var chosen = VoidAltarTile.chooseRecipe(VoidAltarTile.pinnedTo(List.of(focus, relay), relay.getId()), new ItemStack(Items.ENDER_EYE), laid);
+
+        assertThat(chosen).isSameAs(relay);
+    }
+
+    @Test
+    void choose_givenPinnedToARecipeWithoutThatCatalyst_thenNothingStarts()
+    {
+        var first = fixed("first", Items.IRON_SWORD, Items.DIAMOND, Items.BONE);
+        var elsewhere = Identifier.fromNamespaceAndPath("voidheart", "elsewhere");
+
+        var chosen = VoidAltarTile.chooseRecipe(VoidAltarTile.pinnedTo(List.of(first), elsewhere), new ItemStack(Items.IRON_SWORD), List.of(new ItemStack(Items.BONE)));
+
+        assertThat(chosen).isNull();
+    }
+
+    @Test
+    void pinnedTo_givenNothingPinned_thenEveryCandidate()
+    {
+        var first = fixed("first", Items.IRON_SWORD, Items.DIAMOND, Items.BONE);
+        var second = fixed("second", Items.IRON_SWORD, Items.EMERALD, Items.ENDER_PEARL);
+
+        assertThat(VoidAltarTile.pinnedTo(List.of(first, second), null)).containsExactly(first, second);
+    }
+
+    @Test
     void result_givenWornCatalyst_thenKeepsItsComponents()
     {
         var tag = epicInfusion(Items.GOLD_INGOT);

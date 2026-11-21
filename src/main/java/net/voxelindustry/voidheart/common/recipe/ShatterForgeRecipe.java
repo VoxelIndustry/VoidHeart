@@ -41,7 +41,7 @@ public class ShatterForgeRecipe extends RecipeBase
 
     public ShatterForgeRecipe(Identifier identifier)
     {
-        super(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getType(), identifier);
+        super(VoidHeartRecipes.SHATTER_FORGE_TYPE, identifier);
     }
 
     public ShatterForgeRecipe(Identifier identifier, ItemLike output, ItemLike input, int time, int monolithCount)

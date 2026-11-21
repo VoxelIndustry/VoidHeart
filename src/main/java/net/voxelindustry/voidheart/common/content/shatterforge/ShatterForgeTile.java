@@ -61,6 +61,12 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     private VoidPillarTile candidatePillar;
 
     private ShatterForgeRecipe currentRecipe;
+    /**
+     * The only recipe the forge may run while set, so a build short of essence waits rather than making something else.
+     */
+    @Getter
+    @Nullable
+    private Identifier pinned;
     @Getter
     private RecipeState recipeState;
     private boolean hasOutputtedResult;
@@ -400,45 +406,16 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (matching.isEmpty())
             return false;
 
-        var aspectMatching = matching.stream()
-                .filter(recipe -> resolution.result().satisfies(recipe.getAspects()))
-                .toList();
-        var passing = aspectMatching.stream()
-                .filter(recipe -> resolution.totalPairs() + 1 >= recipe.getMonolithCount())
-                .sorted(Comparator.comparingInt(ShatterForgeRecipe::totalAspectRequirement)
-                        .thenComparingInt(ShatterForgeRecipe::getMonolithCount)
-                        .reversed()
-                        .thenComparing(recipe -> recipe.getId().toString()))
-                .toList();
-
-        if (passing.isEmpty())
-        {
-            updateBeamState(resolution.segments(), resolution.result(),
-                    aspectMatching.isEmpty() ? FormationError.MISSING_ASPECTS : FormationError.TOO_FEW_MONOLITH);
-            return false;
-        }
-
         availableExperience = totalExperience(resolution.experienceSources());
+        var choice = ForgeSelection.choose(matching, resolution.result(), resolution.totalPairs(), pinned,
+                recipe -> hasEnoughEssence(recipe, resolution.collectorContributions()),
+                recipe -> planExperience(recipe, resolution.experienceSources()) != null);
 
-        ShatterForgeRecipe selected = null;
-        var lackingExperience = false;
-        for (var recipe : passing)
-        {
-            if (!hasEnoughEssence(recipe, resolution.collectorContributions()))
-                continue;
-            if (planExperience(recipe, resolution.experienceSources()) == null)
-            {
-                lackingExperience = true;
-                continue;
-            }
-            selected = recipe;
-            break;
-        }
-
+        var selected = choice.recipe();
         if (selected == null)
         {
-            updateBeamState(resolution.segments(), resolution.result(),
-                    lackingExperience ? FormationError.NOT_ENOUGH_EXPERIENCE : FormationError.NOT_ENOUGH_ESSENCE);
+            if (choice.error() != null)
+                updateBeamState(resolution.segments(), resolution.result(), choice.error());
             return false;
         }
 
@@ -838,6 +815,68 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         setSourcePillar(null);
     }
 
+    /**
+     * @param recipe the only recipe to run from now on, or null to let the beam choose again
+     */
+    public void pin(@Nullable Identifier recipe)
+    {
+        pinned = recipe;
+        setChanged();
+    }
+
+    /**
+     * @return every recipe the build as it stands can run, whatever its input, most demanding first
+     */
+    public List<ShatterForgeRecipe> runnableRecipes()
+    {
+        var resolution = BeamResolver.resolve(level, worldPosition);
+        if (!resolution.isValid())
+            return List.of();
+
+        var all = new ArrayList<ShatterForgeRecipe>(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getRecipes());
+        all.addAll(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getVanillaRecipes());
+        return ForgeSelection.runnable(all, resolution.result(), resolution.totalPairs());
+    }
+
+    /**
+     * Whether the build can run the recipe and pay its essence and experience right now, so its input is never laid for a craft that would wait.
+     */
+    public boolean canSupply(ShatterForgeRecipe recipe)
+    {
+        var resolution = BeamResolver.resolve(level, worldPosition);
+        return resolution.isValid()
+                && ForgeSelection.fits(recipe, resolution.result(), resolution.totalPairs())
+                && hasEnoughEssence(recipe, resolution.collectorContributions())
+                && planExperience(recipe, resolution.experienceSources()) != null;
+    }
+
+    /**
+     * Sets an input on the source pillar as a hand would.
+     *
+     * @return false when the forge is busy, holds an output, or has no empty source pillar
+     */
+    public boolean placeInput(ItemStack input)
+    {
+        if (isCrafting || !stack.isEmpty() || input.isEmpty() || sourcePillarPos == null)
+            return false;
+        if (!(level.getBlockEntity(sourcePillarPos) instanceof VoidPillarTile source) || !source.getStack().isEmpty())
+            return false;
+
+        source.setStack(input.copyWithCount(1));
+        return true;
+    }
+
+    /**
+     * @return the output, now taken off the forge, which lets the next craft start
+     */
+    public ItemStack takeOutput()
+    {
+        var output = stack;
+        if (!output.isEmpty())
+            setStack(ItemStack.EMPTY);
+        return output;
+    }
+
     public void startCrafting()
     {
         var litState = getBlockState().setValue(BlockStateProperties.LIT, true);
@@ -1023,6 +1062,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         previewPairs = tag.getIntOr("previewPairs", -1);
         previewDirection = Direction.from3DDataValue(tag.getByteOr("previewDirection", (byte) Direction.NORTH.get3DDataValue()));
         previewUntil = tag.getLongOr("previewUntil", 0L);
+        pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
 
         if (isServer())
         {
@@ -1068,6 +1108,8 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.putInt("previewPairs", previewPairs);
         tag.putByte("previewDirection", (byte) previewDirection.get3DDataValue());
         tag.putLong("previewUntil", previewUntil);
+        if (pinned != null)
+            tag.store("pinned", Identifier.CODEC, pinned);
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
