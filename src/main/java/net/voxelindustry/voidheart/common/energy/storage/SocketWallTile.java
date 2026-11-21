@@ -28,7 +28,8 @@ public class SocketWallTile extends TileBase
 
     private final ItemStack[] cells      = new ItemStack[SocketWallGeometry.SLOTS];
     private final Activity[]  activities = new Activity[SocketWallGeometry.SLOTS];
-    private long              syncedCharge;
+    /** Each cell's charge as last sent to clients: cells can charge and discharge at once and leave the total unchanged. */
+    private final long[]      syncedCharges = new long[SocketWallGeometry.SLOTS];
 
     // Client only
     private @Nullable Vec3 moteTarget;
@@ -61,12 +62,14 @@ public class SocketWallTile extends TileBase
             activities[slot] = next;
         }
 
-        var charge = totalCharge();
-        if (charge != syncedCharge)
+        var changedCharge = false;
+        for (var slot = 0; slot < cells.length; slot++)
+            changedCharge |= RubrumCellItem.charge(cells[slot]) != syncedCharges[slot];
+        if (changedCharge)
             setChanged();
-        if (changedActivity || (charge != syncedCharge && level.getGameTime() % SYNC_PERIOD == 0))
+        if (changedActivity || (changedCharge && level.getGameTime() % SYNC_PERIOD == 0))
         {
-            syncedCharge = charge;
+            noteSyncedCharges();
             sync();
         }
     }
@@ -125,7 +128,7 @@ public class SocketWallTile extends TileBase
     {
         cells[slot] = cell.copy();
         activities[slot] = Activity.IDLE;
-        syncedCharge = totalCharge();
+        noteSyncedCharges();
         setChanged();
         sync();
     }
@@ -181,7 +184,13 @@ public class SocketWallTile extends TileBase
             cells[slot] = cell.is(RubrumContent.RUBRUM_CELL) ? cell : ItemStack.EMPTY;
             activities[slot] = Activity.values()[Mth.clamp(tag.getIntOr("activity" + slot, 0), 0, Activity.values().length - 1)];
         }
-        syncedCharge = totalCharge();
+        noteSyncedCharges();
+    }
+
+    private void noteSyncedCharges()
+    {
+        for (var slot = 0; slot < cells.length; slot++)
+            syncedCharges[slot] = RubrumCellItem.charge(cells[slot]);
     }
 
     @Override

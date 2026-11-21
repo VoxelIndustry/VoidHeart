@@ -400,14 +400,23 @@ public class RubrumStorageClientTest implements FabricClientGameTest
         var signal = server.computeOnServer(minecraft -> minecraft.overworld().getBlockState(WALL).getAnalogOutputSignal(minecraft.overworld(), WALL, Direction.NORTH));
         expect(signal >= 6 && signal <= 7, "A comparator should read nearly half full, reads " + signal);
 
-        // A full wall takes no fifth cell
-        server.runOnServer(minecraft ->
+        // A full wall takes no fifth cell, and leaves the four it holds as they were, compared in one tick
+        var refused = server.computeOnServer(minecraft ->
         {
-            player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, cellOf(0));
+            var held = wall(minecraft, WALL);
+            var before = new java.util.ArrayList<ItemStack>();
+            for (var slot = 0; slot < SocketWallGeometry.SLOTS; slot++)
+                before.add(held.getCell(slot).copy());
+            var fifth = cellOf(RubrumBalance.CELL_CAPACITY / 2);
+            player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, fifth.copy());
             useOnFace(minecraft, WALL, nicheFront(WALL, Direction.NORTH, 0), Direction.NORTH);
+            for (var slot = 0; slot < SocketWallGeometry.SLOTS; slot++)
+                if (!ItemStack.matches(before.get(slot), held.getCell(slot)))
+                    return "niche " + slot + " changed from " + before.get(slot) + " to " + held.getCell(slot);
+            var hand = player(minecraft).getMainHandItem();
+            return ItemStack.matches(hand, fifth) ? null : "the hand holds " + hand + " at " + RubrumCellItem.charge(hand);
         });
-        expect(server.computeOnServer(minecraft -> player(minecraft).getMainHandItem().is(RubrumContent.RUBRUM_CELL)),
-                "A full wall should not take a fifth cell");
+        expect(refused == null, "A full wall should not take a fifth cell, but " + refused);
 
         // Unpowered inside the well's field, the cells empty into it
         var before = server.computeOnServer(minecraft -> wall(minecraft, WALL).totalCharge());
@@ -621,6 +630,10 @@ public class RubrumStorageClientTest implements FabricClientGameTest
         });
         aimFrom(context, server, LARGE.getX() + 7.5, FLAT_FEET, LARGE.getZ() - 3.5, LARGE.getX() + 0.5, LARGE.getY(), LARGE.getZ() + 0.5, 10);
         context.takeScreenshot("rubrum-items-hotbar");
+        // The held slot is the client's to choose
+        context.runOnClient(minecraft -> minecraft.player.getInventory().setSelectedSlot(7));
+        context.waitTicks(10);
+        context.takeScreenshot("socket-wall-in-hand");
         server.runOnServer(minecraft -> player(minecraft).getInventory().clearContent());
     }
 

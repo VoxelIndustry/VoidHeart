@@ -186,7 +186,17 @@ public final class RubrumJade
                 return;
             tag.putInt("cells", wall.cellCount());
             tag.putLong("charge", wall.totalCharge());
-            tag.putBoolean("powered", accessor.getLevel().hasNeighborSignal(accessor.getPosition()));
+            // Habits let one wall charge some cells while others discharge, so each way is told apart
+            var charging = false;
+            var discharging = false;
+            for (var slot = 0; slot < SocketWallGeometry.SLOTS; slot++)
+            {
+                var activity = wall.activity(slot);
+                charging |= activity == CellSocketTile.Activity.CHARGING;
+                discharging |= activity == CellSocketTile.Activity.DISCHARGING || activity == CellSocketTile.Activity.BURSTING;
+            }
+            tag.putBoolean("charging", charging);
+            tag.putBoolean("discharging", discharging);
         }
 
         @Override
@@ -213,8 +223,10 @@ public final class RubrumJade
             tooltip.add(Component.translatable(MODID + ".jade.socket_wall.cells", cells, SocketWallGeometry.SLOTS));
             tooltip.add(Component.translatable(MODID + ".rubrum_cell.tooltip",
                     String.format("%,d", data.getLongOr("charge", 0L)), String.format("%,d", RubrumBalance.CELL_CAPACITY * cells)));
-            tooltip.add(Component.translatable(data.getBooleanOr("powered", false)
-                    ? MODID + ".jade.socket_wall.charging" : MODID + ".jade.socket_wall.discharging"));
+            if (data.getBooleanOr("charging", false))
+                tooltip.add(Component.translatable(MODID + ".jade.socket_wall.charging"));
+            if (data.getBooleanOr("discharging", false))
+                tooltip.add(Component.translatable(MODID + ".jade.socket_wall.discharging"));
         }
 
         @Override
