@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "travel",
+  "icon": "voidheart:fold",
+  "insight_cost": 9,
+  "knowledge_cost": 1200,
+  "knowledge_per_second": 1.5,
+  "requires": [
+    "voidheart:portal_flexion"
+  ],
+  "unlocks": [
+    "voidheart:hoard_coffer",
+    "voidheart:fold"
+  ],
+  "recipes": [
+    "voidheart:altar/hoard_coffer",
+    "voidheart:altar/fold"
+  ]
+}

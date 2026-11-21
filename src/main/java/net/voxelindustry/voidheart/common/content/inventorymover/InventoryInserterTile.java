@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.inventorymover;
 
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
@@ -166,6 +168,18 @@ public class InventoryInserterTile extends BlockEntity
 
         var insertInventory = inserter.tryGetInventory(direction);
         var extractInventory = inserter.tryGetInventory(direction.getOpposite());
+
+        // A side that is neither an inventory nor a pillar, such as a Fold, is reached through the transfer API
+        var insertsSomewhere = insertInventory != null || inserter.tryGetInsertable(direction) != null;
+        var extractsSomewhere = extractInventory != null || inserter.tryGetExtractable(direction.getOpposite()) != null;
+        if (!insertsSomewhere || !extractsSomewhere)
+        {
+            var from = ItemStorage.SIDED.find(world, pos.relative(direction.getOpposite()), direction);
+            var to = ItemStorage.SIDED.find(world, pos.relative(direction), direction.getOpposite());
+            if (from != null && to != null)
+                StorageUtil.move(from, to, variant -> true, 1, null);
+            return;
+        }
 
         if (insertInventory == null || extractInventory == null)
         {

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "voidheart:block/covetous_copper_block",
+    "side": "voidheart:block/hoard_coffer_side",
+    "top": "voidheart:block/hoard_coffer_top"
+  }
+}

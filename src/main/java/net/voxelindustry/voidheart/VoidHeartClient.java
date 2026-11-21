@@ -50,6 +50,10 @@ import net.voxelindustry.voidheart.common.content.apparatus.ApparatusTooltip;
 import net.voxelindustry.voidheart.client.apparatus.ShieldRuneRender;
 import net.voxelindustry.voidheart.client.screen.ApparatusScreen;
 import net.voxelindustry.voidheart.client.screen.VoidArmorScreen;
+import net.voxelindustry.voidheart.client.screen.HoardScreen;
+import net.voxelindustry.voidheart.common.content.hoard.HoardContent;
+import net.voxelindustry.voidheart.common.content.hoard.HoardMenu;
+import net.voxelindustry.voidheart.common.content.hoard.HoardPayloads;
 import net.voxelindustry.voidheart.client.render.armor.ParkedArmorRender;
 import net.voxelindustry.voidheart.client.render.armor.VoidArmorBaseRender;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
@@ -249,6 +253,12 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidArmorContent.VOID_ARMOR_BASE_TILE, VoidArmorBaseRender::new);
         MenuScreens.register(VoidHeartMenus.APPARATUS, ApparatusScreen::new);
         MenuScreens.register(VoidArmorContent.VOID_ARMOR_MENU, VoidArmorScreen::new);
+        MenuScreens.register(HoardContent.HOARD_MENU, HoardScreen::new);
+        ClientPlayNetworking.registerGlobalReceiver(HoardPayloads.Page.TYPE, (payload, context) ->
+        {
+            if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())
+                menu.receive(payload);
+        });
         ShieldingApparatusItem.openFromSlot = holder -> ClientPlayNetworking.send(new ShieldPayloads.Open(holder));
         ClientTooltipComponentCallback.EVENT.register(data -> data instanceof ApparatusTooltip tooltip ? new ClientApparatusTooltip(tooltip) : null);
         ModelLayerRegistry.registerModelLayer(ApparatusWornRender.LAYER, ApparatusWornRender::createLayer);

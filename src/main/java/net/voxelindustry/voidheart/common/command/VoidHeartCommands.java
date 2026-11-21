@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.command;
 
 import net.voxelindustry.voidheart.common.content.crystal.CrystalContent;
+import net.voxelindustry.voidheart.common.content.hoard.HoardContent;
 import net.minecraft.commands.Commands;
 import net.voxelindustry.voidheart.common.util.TeleportUtil;
 import net.minecraft.server.players.NameAndId;
@@ -125,6 +126,7 @@ public class VoidHeartCommands
         BlueprintCommands.register(builder);
         SecondHeartCommands.register(builder);
         CrystalContent.registerCommands(builder);
+        HoardContent.registerCommands(builder, commandRegistryAccess);
         ArmorCommands.register(builder);
 
         dispatcher.register(builder);
