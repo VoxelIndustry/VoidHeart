@@ -125,6 +125,7 @@ public class VoidHeartCommands
         BlueprintCommands.register(builder);
         SecondHeartCommands.register(builder);
         CrystalContent.registerCommands(builder);
+        ArmorCommands.register(builder);
 
         dispatcher.register(builder);
     }

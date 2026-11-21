@@ -41,14 +41,14 @@ public class BlueprintCommands
     private static CompletableFuture<Suggestions> suggest(CommandContext<CommandSourceStack> context,
                                          SuggestionsBuilder suggestions)
     {
-        return SharedSuggestionProvider.suggestResource(Blueprints.pool(Knowledge.tree(context.getSource().registryAccess())), suggestions);
+        return SharedSuggestionProvider.suggestResource(Blueprints.all(Knowledge.tree(context.getSource().registryAccess())), suggestions);
     }
 
     private static int list(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
         var server = context.getSource().getServer();
-        var pool = Blueprints.pool(Knowledge.tree(server.registryAccess()));
+        var pool = Blueprints.all(Knowledge.tree(server.registryAccess()));
         var known = Knowledge.of(server, player.getUUID()).getBlueprints();
         var shown = pool.stream().map(blueprint -> (known.contains(blueprint) ? "+ " : "- ") + blueprint).collect(Collectors.joining(", "));
         context.getSource().sendSuccess(() -> Component.literal(shown.isEmpty() ? "no blueprints" : shown), false);
@@ -70,7 +70,7 @@ public class BlueprintCommands
     private static int learnAll(CommandContext<CommandSourceStack> context, boolean learn) throws CommandSyntaxException
     {
         var player = context.getSource().getPlayerOrException();
-        for (var blueprint : Blueprints.pool(Knowledge.tree(context.getSource().registryAccess())))
+        for (var blueprint : Blueprints.all(Knowledge.tree(context.getSource().registryAccess())))
         {
             if (learn)
                 BlessedContraptionItem.learn(player, blueprint);

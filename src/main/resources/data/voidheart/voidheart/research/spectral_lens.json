@@ -1,0 +1,20 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:armor_spectral_lens",
+  "insight_cost": 9,
+  "knowledge_cost": 3000,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:void_armor"
+  ],
+  "hidden_until": [
+    "voidheart:beholder"
+  ],
+  "unlocks": [
+    "voidheart:armor_spectral_lens"
+  ],
+  "recipes": [
+    "voidheart:altar/armor_spectral_lens"
+  ]
+}

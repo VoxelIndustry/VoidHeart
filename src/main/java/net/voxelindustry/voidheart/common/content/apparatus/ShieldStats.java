@@ -26,4 +26,9 @@ public record ShieldStats(float capacity, float regenPerTick, int delayTicks, Se
     {
         return Math.round(delayTicks * BROKEN_DELAY_SCALE);
     }
+
+    public ShieldStats withRegen(float regen)
+    {
+        return new ShieldStats(capacity, regen, delayTicks, wards, breakEffect, grudge);
+    }
 }

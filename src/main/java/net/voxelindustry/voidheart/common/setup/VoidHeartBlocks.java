@@ -62,6 +62,10 @@ import net.voxelindustry.voidheart.common.content.depths.SmokerVentBlock;
 import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
 import net.voxelindustry.voidheart.common.content.depths.TubeWormsBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
+import net.minecraft.world.item.ItemStack;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlockItem;
@@ -69,6 +73,7 @@ import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageItemBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixBlockItem;
+import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.eyebottle.EyeBottleBlock;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartBlock;
 import net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterBlock;
@@ -657,6 +662,11 @@ public class VoidHeartBlocks
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), RavenousStorageBlockItem::new);
+        // Full storages of each essence, to ease debugging
+        VoidHeartItems.addCreativeVariant(RAVENOUS_STORAGE.asItem(), () -> filledStorage(EssenceRegistry.STILLNESS));
+        VoidHeartItems.addCreativeVariant(RAVENOUS_STORAGE.asItem(), () -> filledStorage(EssenceRegistry.FIERY));
+        VoidHeartItems.addCreativeVariant(RAVENOUS_STORAGE.asItem(), () -> filledStorage(EssenceRegistry.SUFFERING));
+        VoidHeartItems.addCreativeVariant(RAVENOUS_STORAGE.asItem(), () -> filledStorage(EssenceRegistry.CONTRAVOID));
         RAVENOUS_STORAGE_MATRIX = registerBlock("ravenous_storage_matrix", RavenousStorageMatrixBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
@@ -1222,5 +1232,14 @@ public class VoidHeartBlocks
     public static Boolean never(BlockState state, BlockGetter world, BlockPos pos, EntityType<?> type)
     {
         return false;
+    }
+
+    private static ItemStack filledStorage(EssenceType type)
+    {
+        var storage = new EssenceStorage(type, RavenousStorageTile.CAPACITY);
+        storage.fill(type, RavenousStorageTile.CAPACITY);
+        var stack = new ItemStack(RAVENOUS_STORAGE);
+        stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, storage);
+        return stack;
     }
 }

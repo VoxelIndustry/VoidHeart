@@ -10,6 +10,9 @@ import net.voxelindustry.voidheart.client.model.mob.LesserShoggothModel;
 import net.voxelindustry.voidheart.client.model.mob.VileFleshMassModel;
 import net.voxelindustry.voidheart.client.render.UnderwayKeyRender;
 import net.voxelindustry.voidheart.client.InsightMemory;
+import net.voxelindustry.voidheart.client.armor.SpectralSilhouetteLayer;
+import net.voxelindustry.voidheart.client.armor.VoidArmorLayer;
+import net.voxelindustry.voidheart.client.model.armor.VoidArmorModel;
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderers;
@@ -50,6 +53,7 @@ public final class VoidMobRenderers
     public static void register()
     {
         ModelLayerRegistry.registerModelLayer(VoidSkeletonModel.LAYER, VoidSkeletonModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(VoidArmorModel.LAYER, VoidArmorModel::createLayer);
         ModelLayerRegistry.registerModelLayer(VoidGhoulModel.LAYER, VoidGhoulModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(WraithModel.LAYER, WraithModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(WraithScarabModel.LAYER, WraithScarabModel::createBodyLayer);
@@ -120,10 +124,15 @@ public final class VoidMobRenderers
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) ->
         {
             if (renderer instanceof AvatarRenderer<?> avatar)
+            {
                 helper.register(new BarnacleGrowthLayer(avatar, context.bakeLayer(BarnacleGrowthModel.LAYER)));
+                helper.register(new VoidArmorLayer(avatar, context.getModelSet()));
+            }
             // Any mob can be remembered under Insight brewed with Memoriam, but wraiths show through walls anyway
             if (!InsightMemory.ignores(type))
                 helper.register(memoryLayer(renderer));
+            // A Void Armor's spectral lens shows any living thing, wraiths and other players too
+            helper.register(spectralLayer(renderer));
         });
     }
 
@@ -131,6 +140,12 @@ public final class VoidMobRenderers
     private static InsightSilhouetteLayer<?, ?> memoryLayer(LivingEntityRenderer<?, ?, ?> renderer)
     {
         return new InsightSilhouetteLayer(renderer, state -> ((FabricRenderState) state).getDataOrDefault(InsightMemory.ALPHA, 0F));
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static SpectralSilhouetteLayer<?, ?> spectralLayer(LivingEntityRenderer<?, ?, ?> renderer)
+    {
+        return new SpectralSilhouetteLayer(renderer);
     }
 
     private static EntityRendererProvider<CorruptedCrab> crab(CorruptedCrab.Size size)

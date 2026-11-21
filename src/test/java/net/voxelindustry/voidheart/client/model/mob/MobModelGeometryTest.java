@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.model.mob;
 
+import net.voxelindustry.voidheart.client.model.armor.VoidArmorModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
@@ -70,7 +71,9 @@ class MobModelGeometryTest
             new Model("wraith_scarab", WraithScarabModel::createBodyLayer, "wraith_scarab"),
             new Model("wraith_beast", WraithBeastModel::createBodyLayer, "wraith_beast"),
             new Model("lesser_shoggoth", LesserShoggothModel::createBodyLayer, "lesser_shoggoth"),
-            new Model("vile_flesh_mass", VileFleshMassModel::createBodyLayer, "vile_flesh_mass"));
+            new Model("vile_flesh_mass", VileFleshMassModel::createBodyLayer, "vile_flesh_mass"),
+            new Model("void_armor", VoidArmorModel::createLayer, "void_armor"),
+            new Model("void_armor_open", VoidArmorModel::createOpenLayer, "void_armor"));
 
     // Openings drawn on purpose, where seeing the far side through a gap is the look: ragged edges, notched crests, a ribcage, open hoods and hems
     private static final Set<String> OPENINGS = Set.of(
