@@ -59,7 +59,6 @@ public class VoidHeartItems
     public static VoidHeartItem VOID_HEART;
     public static VoidAmalgamItem VOID_AMALGAM;
     public static VoidPearlItem VOID_PEARL;
-    public static VoidPearlItem LOCAL_PEARL;
     public static PortalCoreItem PORTAL_CORE;
 
     public static VoidKeyItem VOID_KEY;
@@ -136,8 +135,6 @@ public class VoidHeartItems
         VOID_PEARL = registerItem("void_pearl", VoidPearlItem::new);
 
         PORTAL_CORE = registerItem("portal_core", PortalCoreItem::new);
-
-        LOCAL_PEARL = registerItem("local_pearl", VoidPearlItem::new);
 
         VOID_KEY = registerItem("void_key", VoidKeyItem::new);
         PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
