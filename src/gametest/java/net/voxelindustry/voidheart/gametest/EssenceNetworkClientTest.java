@@ -20,7 +20,10 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.level.ItemLike;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
@@ -38,6 +41,8 @@ import net.voxelindustry.voidheart.common.content.tormenter.TormenterSouls;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+
+import java.util.List;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
@@ -86,7 +91,69 @@ public class EssenceNetworkClientTest implements FabricClientGameTest
             showItems(context, server);
             checkStorageBreaksWhole(server);
             checkMatrix(context, server);
+            checkAltarCrafts(context, server);
         }
+    }
+
+    private static final BlockPos ALTAR = new BlockPos(10, FEET, 20);
+    private static final List<BlockPos> PILLARS = List.of(
+            new BlockPos(-1, 0, 3), new BlockPos(1, 0, 3), new BlockPos(1, 0, -3), new BlockPos(-1, 0, -3),
+            new BlockPos(3, 0, -1), new BlockPos(3, 0, 1), new BlockPos(-3, 0, -1), new BlockPos(-3, 0, 1));
+
+    /**
+     * The storage, the matrix and the relay are each made at the void altar from their datagen recipes.
+     */
+    private static void checkAltarCrafts(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = level(minecraft);
+            level.setBlockAndUpdate(ALTAR, VoidHeartBlocks.VOID_ALTAR.defaultBlockState());
+            for (var offset : PILLARS)
+                level.setBlockAndUpdate(ALTAR.offset(offset), VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
+        });
+
+        craftAtAltar(context, server, Blocks.CAULDRON, new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE),
+                VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+        aimFrom(context, server, ALTAR.getX() + 0.5, FEET + 1, ALTAR.getZ() - 4.5, ALTAR.getX() + 0.5, FEET + 1, ALTAR.getZ() + 0.5, 5);
+        context.takeScreenshot("essence-altar-storage-crafted");
+
+        craftAtAltar(context, server, VoidHeartBlocks.RAVENOUS_STORAGE, new ItemStack(VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX),
+                VoidHeartBlocks.RAVENOUS_GOLD_BLOCK, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK, VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED);
+        craftAtAltar(context, server, VoidHeartBlocks.VOID_CONDUIT, new ItemStack(VoidHeartBlocks.RAVENOUS_RELAY, 2),
+                VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+    }
+
+    private static void craftAtAltar(ClientGameTestContext context, TestServerContext server, ItemLike catalyst, ItemStack expected, ItemLike... ingredients)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = level(minecraft);
+            for (int index = 0; index < PILLARS.size(); index++)
+            {
+                var pillar = (VoidPillarTile) level.getBlockEntity(ALTAR.offset(PILLARS.get(index)));
+                pillar.setStack(index < ingredients.length ? new ItemStack(ingredients[index]) : ItemStack.EMPTY);
+            }
+            altar(minecraft).setStack(player(minecraft), new ItemStack(catalyst));
+            expect(altar(minecraft).isCrafting(), "the altar did not start the recipe for " + expected);
+        });
+        waitFor(context, server, 2000, "the altar did not finish " + expected, minecraft -> !altar(minecraft).isCrafting());
+        server.runOnServer(minecraft ->
+        {
+            var made = altar(minecraft).getStack();
+            expect(ItemStack.isSameItem(made, expected) && made.getCount() == expected.getCount(), "the altar made " + made + ", expected " + expected);
+            expect(PILLARS.stream().allMatch(offset -> ((VoidPillarTile) level(minecraft).getBlockEntity(ALTAR.offset(offset))).getStack().isEmpty()),
+                    "the altar left ingredients on its pillars for " + expected);
+        });
+    }
+
+    private static VoidAltarTile altar(MinecraftServer minecraft)
+    {
+        if (level(minecraft).getBlockEntity(ALTAR) instanceof VoidAltarTile altar)
+            return altar;
+        throw new AssertionError("No altar at " + ALTAR);
     }
 
     private static void checkSufferingFromDeath(ClientGameTestContext context, TestServerContext server)

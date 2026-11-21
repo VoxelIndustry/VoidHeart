@@ -58,7 +58,7 @@ public class ModelsProvider extends FabricModelProvider
      * Items whose model is hand-written in assets/voidheart/models/item.
      */
     private static final List<String> HAND_WRITTEN_ITEM_MODELS = List.of(
-            "barnacle_nest", "void_skeleton_head", "eldritch_voidstone", "ender_shard", "experience_skull", "eye_bottle", "inventory_inserter", "local_pearl",
+            "barnacle_nest", "void_skeleton_head", "eldritch_voidstone", "ender_shard", "experience_skull", "eye_bottle", "inventory_inserter",
             "obsidian_shard", "pocket_wall", "portal_core", "portal_frame", "portal_frame_core", "portal_interior",
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",

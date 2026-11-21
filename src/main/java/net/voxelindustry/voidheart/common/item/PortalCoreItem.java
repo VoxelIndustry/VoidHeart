@@ -10,7 +10,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
-import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.function.Consumer;
 
@@ -29,15 +28,6 @@ public class PortalCoreItem extends Item
     public static boolean checkPearlUseHereAndWarn(ItemStack stack, boolean isInPocket, Player player)
     {
         var linkStart = stack.get(VoidHeartDataComponents.PORTAL_LINK);
-
-        if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
-        {
-            boolean canUse = linkStart == null || linkStart.firstPos().dimension().equals(player.level().dimension());
-
-            if (!canUse)
-                player.sendOverlayMessage(Component.translatable(MODID + ".must_be_same_world"));
-            return canUse;
-        }
 
         // If first point is already set then it must not be already inside a pocket
         if (isInPocket && (linkStart == null || !linkStart.firstPos().dimension().equals(VoidHeart.VOID_WORLD_KEY)))
@@ -59,12 +49,6 @@ public class PortalCoreItem extends Item
     {
         if (alreadyHasFirstPoint)
             return;
-
-        if (stack.getItem() == VoidHeartItems.LOCAL_PEARL)
-        {
-            player.sendOverlayMessage(Component.translatable(MODID + ".link_started_local"));
-            return;
-        }
 
         var linkStart = stack.get(VoidHeartDataComponents.PORTAL_LINK);
         if (linkStart != null && linkStart.firstPos().dimension().equals(VoidHeart.VOID_WORLD_KEY))

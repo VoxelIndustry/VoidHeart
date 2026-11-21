@@ -315,6 +315,27 @@ public class RecipesProvider extends FabricRecipeProvider
             offerAltarRecipe("great_ravenous_storage", VoidHeartBlocks.GREAT_RAVENOUS_STORAGE, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK,
                     VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            // A vat for one aspect, its pillars rising out of the gold as it fills
+            offerAltarRecipe("ravenous_storage", VoidHeartBlocks.RAVENOUS_STORAGE, Blocks.CAULDRON,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            // A storage grown to hold six aspects, so it costs about as much gold as six storages
+            offerAltarRecipe("ravenous_storage_matrix", VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX, VoidHeartBlocks.RAVENOUS_STORAGE,
+                    VoidHeartBlocks.RAVENOUS_GOLD_BLOCK, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED);
+            // A network needs several, so a conduit makes two
+            offerAltarRecipe("ravenous_relay", new ItemStack(VoidHeartBlocks.RAVENOUS_RELAY, 2), VoidHeartBlocks.VOID_CONDUIT,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+            // The void altar recast in amber, drawing on the experience skulls beside it to mend
+            offerAltarRecipe("mending_altar", VoidHeartBlocks.MENDING_ALTAR, VoidHeartBlocks.VOID_ALTAR,
+                    Items.DIAMOND, Items.DIAMOND,
+                    Items.GLISTERING_MELON_SLICE, Items.GLISTERING_MELON_SLICE,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
             offerAltarRecipe("shatter_forge", VoidHeartBlocks.SHATTER_FORGE, Blocks.ANVIL,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,

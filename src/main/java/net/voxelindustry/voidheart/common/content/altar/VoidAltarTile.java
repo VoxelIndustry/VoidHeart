@@ -2,7 +2,6 @@ package net.voxelindustry.voidheart.common.content.altar;
 
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
-import com.mojang.math.Axis;
 import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
@@ -814,36 +813,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      */
     private Vector3f[] computeBezier(Vector3f start)
     {
-        Vector3f bezierFirstPoint;
-        Vector3f bezierSecondPoint;
-
-        var end = new Vector3f(getBlockPos().getX() + 0.5F,
-                getBlockPos().getY() + 1 + 4 / 16F,
-                getBlockPos().getZ() + 0.5F);
-
-        var forward = end.sub(start);
-        float length = forward.length();
-        forward = forward.normalize();
-
-        float dispersion = getLevel().getRandom().nextBoolean() ? getLevel().getRandom().nextFloat() * 50 + 20 : -(getLevel().getRandom().nextFloat() * 50 + 20);
-        var rotation = Axis.YP.rotationDegrees(dispersion);
-
-        bezierFirstPoint = start.add(forward.rotate(rotation).mul(length * (getLevel().getRandom().nextFloat() / 3 + 0.2F)));
-
-        rotation.conjugate();
-        bezierSecondPoint = start.add(forward.rotate(rotation).mul(length * (getLevel().getRandom().nextFloat() / 3 + 0.5F)));
-
-        if (getLevel().getRandom().nextBoolean())
-        {
-            bezierFirstPoint = bezierFirstPoint.add(0, getLevel().getRandom().nextFloat() * 1.25F, 0);
-            bezierFirstPoint = bezierSecondPoint.add(0, -getLevel().getRandom().nextFloat() * 1.25F, 0);
-        }
-        else
-        {
-            bezierFirstPoint = bezierFirstPoint.add(0, -getLevel().getRandom().nextFloat() * 1.25F, 0);
-            bezierFirstPoint = bezierSecondPoint.add(0, getLevel().getRandom().nextFloat() * 1.25F, 0);
-        }
-        return new Vector3f[]{bezierFirstPoint, bezierSecondPoint};
+        return AltarStreams.controlPoints(getLevel().getRandom(), start, AltarStreams.altarTop(getBlockPos()));
     }
 
     @Override
