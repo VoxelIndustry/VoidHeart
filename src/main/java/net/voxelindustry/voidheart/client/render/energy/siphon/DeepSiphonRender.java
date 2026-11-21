@@ -16,8 +16,8 @@ import net.voxelindustry.voidheart.common.energy.siphon.DeepSiphonTile;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
-import static net.voxelindustry.voidheart.client.render.energy.siphon.SiphonGeometry.disc;
-import static net.voxelindustry.voidheart.client.render.energy.siphon.SiphonGeometry.ribbon;
+import static net.voxelindustry.voidheart.client.render.energy.FacingStrips.disc;
+import static net.voxelindustry.voidheart.client.render.energy.FacingStrips.ribbon;
 
 /**
  * A Deep Siphon drawing: pale threads rising out of the chasm's dark into its crown, faint far below and brightening near it, with pulses climbing them

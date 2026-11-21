@@ -57,7 +57,7 @@ public final class LeySpikeDatagen
 
     public static void loot(BlockLootSubProvider loot)
     {
-        // Only the base drops, see AzuriumSpikeBlock.getDrops
+        // Only the base drops, see TwoHighBlock.getDrops
         loot.dropSelf(LeySpikeContent.AZURIUM_SPIKE);
     }
 

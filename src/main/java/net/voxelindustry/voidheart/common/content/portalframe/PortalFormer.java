@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockPos.MutableBlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.Direction.AxisDirection;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -261,70 +262,20 @@ public class PortalFormer
         if (!borderChecker.test(offset))
             return Pair.of(origin, origin);
 
-        int maxInvertedAxis;
-        int minInvertedAxis;
+        // The frame's width runs across both the direction searched and the perpendicular
+        var width = widthAxis(direction, perpendicular);
 
         MutableBlockPos originWidth = origin.mutable().move(direction);
         MutableBlockPos offsetWidth = offset.mutable().move(direction.getOpposite());
-        while (isLineValid(originWidth, offsetWidth, contentChecker)
-                && borderChecker.test(originWidth.relative(direction.getOpposite()))
-                && borderChecker.test(offsetWidth.relative(direction))
-        )
-        {
-            Direction toMove;
-            if (perpendicular.getAxis() == Y)
-                toMove = direction.getAxis() == X ? SOUTH : EAST;
-            else if (direction.getAxis().isHorizontal())
-                toMove = UP;
-            else if (perpendicular.getAxis() == X)
-                toMove = SOUTH;
-            else
-                toMove = EAST;
-
-            originWidth.move(toMove);
-            offsetWidth.move(toMove);
-        }
-        if (perpendicular.getAxis() == Y)
-            maxInvertedAxis = direction.getAxis() == X ? originWidth.getZ() - 1 : originWidth.getX() - 1;
-        else if (direction.getAxis().isHorizontal())
-            maxInvertedAxis = originWidth.getY() - 1;
-        else if (perpendicular.getAxis() == X)
-            maxInvertedAxis = originWidth.getZ() - 1;
-        else
-            maxInvertedAxis = originWidth.getX() - 1;
-
+        widen(originWidth, offsetWidth, direction, fromAxisAndDirection(width, AxisDirection.POSITIVE), contentChecker, borderChecker);
+        int maxInvertedAxis = originWidth.get(width) - 1;
         if (!isLineValid(originWidth, offsetWidth, borderChecker))
             return Pair.of(origin, origin);
 
         originWidth.set(origin).move(direction);
         offsetWidth.set(offset).move(direction.getOpposite());
-        while (isLineValid(originWidth, offsetWidth, contentChecker)
-                && borderChecker.test(originWidth.relative(direction.getOpposite()))
-                && borderChecker.test(offsetWidth.relative(direction))
-        )
-        {
-            Direction toMove;
-            if (perpendicular.getAxis() == Y)
-                toMove = direction.getAxis() == X ? NORTH : WEST;
-            else if (direction.getAxis().isHorizontal())
-                toMove = DOWN;
-            else if (perpendicular.getAxis() == X)
-                toMove = NORTH;
-            else
-                toMove = WEST;
-
-            originWidth.move(toMove);
-            offsetWidth.move(toMove);
-        }
-        if (perpendicular.getAxis() == Y)
-            minInvertedAxis = direction.getAxis() == X ? originWidth.getZ() + 1 : originWidth.getX() + 1;
-        else if (direction.getAxis().isHorizontal())
-            minInvertedAxis = originWidth.getY() + 1;
-        else if (perpendicular.getAxis() == X)
-            minInvertedAxis = originWidth.getZ() + 1;
-        else
-            minInvertedAxis = originWidth.getX() + 1;
-
+        widen(originWidth, offsetWidth, direction, fromAxisAndDirection(width, AxisDirection.NEGATIVE), contentChecker, borderChecker);
+        int minInvertedAxis = originWidth.get(width) + 1;
         if (!isLineValid(originWidth, offsetWidth, borderChecker))
             return Pair.of(origin, origin);
 
@@ -333,53 +284,32 @@ public class PortalFormer
         minInvertedAxis--;
         maxInvertedAxis++;
 
+        var min = new BlockPos(min(originWidth.getX(), offsetWidth.getX()), min(originWidth.getY(), offsetWidth.getY()), min(originWidth.getZ(), offsetWidth.getZ()));
+        var max = new BlockPos(max(originWidth.getX(), offsetWidth.getX()), max(originWidth.getY(), offsetWidth.getY()), max(originWidth.getZ(), offsetWidth.getZ()));
+        return Pair.of(min.relative(width, minInvertedAxis - min.get(width)), max.relative(width, maxInvertedAxis - max.get(width)));
+    }
+
+    private static Axis widthAxis(Direction direction, Direction perpendicular)
+    {
         if (perpendicular.getAxis() == Y)
+            return direction.getAxis() == X ? Axis.Z : X;
+        if (direction.getAxis().isHorizontal())
+            return Y;
+        return perpendicular.getAxis() == X ? Axis.Z : X;
+    }
+
+    /**
+     * Moves the line between both positions sideways while the frame's interior and its two ends hold.
+     */
+    private static void widen(MutableBlockPos originWidth, MutableBlockPos offsetWidth, Direction direction, Direction toMove,
+                              Predicate<BlockPos> contentChecker, Predicate<BlockPos> borderChecker)
+    {
+        while (isLineValid(originWidth, offsetWidth, contentChecker)
+                && borderChecker.test(originWidth.relative(direction.getOpposite()))
+                && borderChecker.test(offsetWidth.relative(direction)))
         {
-            if (direction.getAxis() == X)
-            {
-                int minX = min(originWidth.getX(), offsetWidth.getX());
-                int maxX = max(originWidth.getX(), offsetWidth.getX());
-
-                int minY = min(originWidth.getY(), offsetWidth.getY());
-                int maxY = max(originWidth.getY(), offsetWidth.getY());
-                return Pair.of(new BlockPos(minX, minY, minInvertedAxis), new BlockPos(maxX, maxY, maxInvertedAxis));
-            }
-            else
-            {
-                int minY = min(originWidth.getY(), offsetWidth.getY());
-                int maxY = max(originWidth.getY(), offsetWidth.getY());
-
-                int minZ = min(originWidth.getZ(), offsetWidth.getZ());
-                int maxZ = max(originWidth.getZ(), offsetWidth.getZ());
-                return Pair.of(new BlockPos(minInvertedAxis, minY, minZ), new BlockPos(maxInvertedAxis, maxY, maxZ));
-            }
-        }
-        else if (direction.getAxis().isHorizontal())
-        {
-            int minX = min(originWidth.getX(), offsetWidth.getX());
-            int maxX = max(originWidth.getX(), offsetWidth.getX());
-
-            int minZ = min(originWidth.getZ(), offsetWidth.getZ());
-            int maxZ = max(originWidth.getZ(), offsetWidth.getZ());
-            return Pair.of(new BlockPos(minX, minInvertedAxis, minZ), new BlockPos(maxX, maxInvertedAxis, maxZ));
-        }
-        else if (perpendicular.getAxis() == X)
-        {
-            int minX = min(originWidth.getX(), offsetWidth.getX());
-            int maxX = max(originWidth.getX(), offsetWidth.getX());
-
-            int minY = min(originWidth.getY(), offsetWidth.getY());
-            int maxY = max(originWidth.getY(), offsetWidth.getY());
-            return Pair.of(new BlockPos(minX, minY, minInvertedAxis), new BlockPos(maxX, maxY, maxInvertedAxis));
-        }
-        else
-        {
-            int minY = min(originWidth.getY(), offsetWidth.getY());
-            int maxY = max(originWidth.getY(), offsetWidth.getY());
-
-            int minZ = min(originWidth.getZ(), offsetWidth.getZ());
-            int maxZ = max(originWidth.getZ(), offsetWidth.getZ());
-            return Pair.of(new BlockPos(minInvertedAxis, minY, minZ), new BlockPos(maxInvertedAxis, maxY, maxZ));
+            originWidth.move(toMove);
+            offsetWidth.move(toMove);
         }
     }
 

@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.client.render.energy.fissure;
 
 import net.minecraft.util.Mth;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.fissure.FissureAnimation;
 
 /**
@@ -85,17 +86,17 @@ final class CrackShape
         for (int i = 0; i < JOINTS; i++)
         {
             float u = i / (float) (JOINTS - 1) * 2 - 1;
-            float jitter = i == 0 || i == JOINTS - 1 ? 0 : (FissureLook.hash(seed, i, 1) - 0.5F) * ALONG_JITTER * spacing;
+            float jitter = i == 0 || i == JOINTS - 1 ? 0 : (GlowDraw.hash(seed, i, 1) - 0.5F) * ALONG_JITTER * spacing;
             along[i] = u * length / 2 + jitter;
 
             float taper = (float) Math.pow(Math.max(0, 1 - u * u), TAPER_POWER);
             float amplitude = MEANDER * half + MEANDER_MIN * Math.min(1, length);
-            float wave = 0.65F * Mth.sin(u * Mth.PI * (1.2F + FissureLook.hash(seed, 0, 5)) + Mth.TWO_PI * FissureLook.hash(seed, 0, 6))
-                    + 0.35F * Mth.sin(u * Mth.PI * (2.6F + FissureLook.hash(seed, 0, 7)) + Mth.TWO_PI * FissureLook.hash(seed, 0, 8));
-            float zig = (wave + JOINT_WANDER * (FissureLook.hash(seed, i, 2) * 2 - 1)) * amplitude * (0.35F + 0.65F * taper);
-            float wobble = 0.7F + 0.6F * FissureLook.hash(seed, i, 3);
+            float wave = 0.65F * Mth.sin(u * Mth.PI * (1.2F + GlowDraw.hash(seed, 0, 5)) + Mth.TWO_PI * GlowDraw.hash(seed, 0, 6))
+                    + 0.35F * Mth.sin(u * Mth.PI * (2.6F + GlowDraw.hash(seed, 0, 7)) + Mth.TWO_PI * GlowDraw.hash(seed, 0, 8));
+            float zig = (wave + JOINT_WANDER * (GlowDraw.hash(seed, i, 2) * 2 - 1)) * amplitude * (0.35F + 0.65F * taper);
+            float wobble = 0.7F + 0.6F * GlowDraw.hash(seed, i, 3);
             if (wound)
-                wobble *= 0.75F + 0.5F * FissureLook.hash(seed, i, 4);
+                wobble *= 0.75F + 0.5F * GlowDraw.hash(seed, i, 4);
 
             open[i] = Mth.clamp(((1 - closed) - Math.abs(u)) / CLOSE_SOFTNESS, 0, 1);
             if (closed <= 0)

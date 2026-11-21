@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleTile;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneTile;
 import org.joml.Vector3f;
@@ -195,17 +196,17 @@ final class LeyInk
 
     private static void thread(PoseStack.Pose pose, VertexConsumer buffer, Vec3 camera, Thread thread, float alpha)
     {
-        int none = LeyLook.color(INK_RGB, 0);
+        int none = GlowDraw.color(INK_RGB, 0);
         for (int i = 0; i < thread.xs.length - 1; i++)
         {
-            var a = LeyLook.relative(thread.xs[i], thread.ys[i], thread.zs[i], camera);
-            var b = LeyLook.relative(thread.xs[i + 1], thread.ys[i + 1], thread.zs[i + 1], camera);
+            var a = GlowDraw.relative(thread.xs[i], thread.ys[i], thread.zs[i], camera);
+            var b = GlowDraw.relative(thread.xs[i + 1], thread.ys[i + 1], thread.zs[i + 1], camera);
             if (a.distanceSquared(b) < 1.0E-8F)
                 continue;
             var side = flatSide(a, b);
             // It seeps out of the cradle's foot rather than starting sharp
-            int coreA = LeyLook.color(INK_RGB, alpha * Mth.clamp(thread.along[i] / START_FADE, 0, 1));
-            int coreB = LeyLook.color(INK_RGB, alpha * Mth.clamp(thread.along[i + 1] / START_FADE, 0, 1));
+            int coreA = GlowDraw.color(INK_RGB, alpha * Mth.clamp(thread.along[i] / START_FADE, 0, 1));
+            int coreB = GlowDraw.color(INK_RGB, alpha * Mth.clamp(thread.along[i + 1] / START_FADE, 0, 1));
             strip(pose, buffer, a, b, side, -SOFT_HALF, -CORE_HALF, none, coreA, none, coreB);
             strip(pose, buffer, a, b, side, -CORE_HALF, CORE_HALF, coreA, coreA, coreB, coreB);
             strip(pose, buffer, a, b, side, CORE_HALF, SOFT_HALF, coreA, none, coreB, none);
@@ -222,8 +223,8 @@ final class LeyInk
         {
             float ends = Mth.clamp(Math.min(along, thread.length - along) / 0.8F, 0, 1);
             var at = at(thread, along, camera).add(0, BEAD_HEIGHT, 0);
-            LeyLook.softDot(buffer, pose, at, BEAD_RADIUS * 1.6F, BEAD_RIM_RGB, BEAD_ALPHA * 0.5F * ends * dim);
-            LeyLook.softDot(buffer, pose, at, BEAD_RADIUS, BEAD_RGB, BEAD_ALPHA * ends * dim);
+            GlowDraw.softDot(buffer, pose, at, BEAD_RADIUS * 1.6F, BEAD_RIM_RGB, BEAD_ALPHA * 0.5F * ends * dim);
+            GlowDraw.softDot(buffer, pose, at, BEAD_RADIUS, BEAD_RGB, BEAD_ALPHA * ends * dim);
         }
     }
 
@@ -234,7 +235,7 @@ final class LeyInk
             i++;
         float span = thread.along[i + 1] - thread.along[i];
         float t = span <= 0 ? 0 : Mth.clamp((along - thread.along[i]) / span, 0, 1);
-        return LeyLook.relative(Mth.lerp(t, thread.xs[i], thread.xs[i + 1]), Mth.lerp(t, thread.ys[i], thread.ys[i + 1]),
+        return GlowDraw.relative(Mth.lerp(t, thread.xs[i], thread.xs[i + 1]), Mth.lerp(t, thread.ys[i], thread.ys[i + 1]),
                 Mth.lerp(t, thread.zs[i], thread.zs[i + 1]), camera);
     }
 
@@ -248,9 +249,9 @@ final class LeyInk
     private static void strip(PoseStack.Pose pose, VertexConsumer buffer, Vector3f a, Vector3f b, Vector3f side, float from, float to,
                               int aFrom, int aTo, int bFrom, int bTo)
     {
-        LeyLook.vertex(buffer, pose, new Vector3f(a).add(side.x * from, 0, side.z * from), aFrom);
-        LeyLook.vertex(buffer, pose, new Vector3f(a).add(side.x * to, 0, side.z * to), aTo);
-        LeyLook.vertex(buffer, pose, new Vector3f(b).add(side.x * to, 0, side.z * to), bTo);
-        LeyLook.vertex(buffer, pose, new Vector3f(b).add(side.x * from, 0, side.z * from), bFrom);
+        GlowDraw.vertex(buffer, pose, new Vector3f(a).add(side.x * from, 0, side.z * from), aFrom);
+        GlowDraw.vertex(buffer, pose, new Vector3f(a).add(side.x * to, 0, side.z * to), aTo);
+        GlowDraw.vertex(buffer, pose, new Vector3f(b).add(side.x * to, 0, side.z * to), bTo);
+        GlowDraw.vertex(buffer, pose, new Vector3f(b).add(side.x * from, 0, side.z * from), bFrom);
     }
 }

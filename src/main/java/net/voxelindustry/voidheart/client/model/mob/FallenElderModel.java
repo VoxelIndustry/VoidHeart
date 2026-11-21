@@ -64,14 +64,7 @@ public class FallenElderModel extends EntityModel<FallenElderRenderState>
         var mesh = new MeshDefinition();
         var root = mesh.getRoot();
 
-        root.addOrReplaceChild("head", CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-3.5F, -7, -3.5F, 7, 7, 7)
-                        .texOffs(28, 0).addBox(-5, -10, -7, 10, 1, 11)
-                        .texOffs(70, 0).addBox(-5, -9, -7, 1, 9, 11, ModelBoxes.PROUD)
-                        .texOffs(70, 0).mirror().addBox(4, -9, -7, 1, 9, 11, ModelBoxes.PROUD).mirror(false)
-                        .texOffs(94, 0).addBox(-5, -9, 3, 10, 9, 1)
-                        .texOffs(94, 10).addBox(-4, -3, 4, 8, 8, 1),
-                PartPose.offset(0, -10, 0));
+        root.addOrReplaceChild("head", hood(), PartPose.offset(0, -10, 0));
 
         var robe = root.addOrReplaceChild("robe", CubeListBuilder.create()
                         .texOffs(0, 14).addBox(-7, -10, -4, 14, 4, 8)
@@ -94,6 +87,20 @@ public class FallenElderModel extends EntityModel<FallenElderRenderState>
         root.addOrReplaceChild("right_foot", CubeListBuilder.create().texOffs(44, 40).addBox(-1.5F, -2, -4, 3, 2, 5), PartPose.offset(-3, 24, 0));
         root.addOrReplaceChild("left_foot", CubeListBuilder.create().texOffs(44, 40).mirror().addBox(-1.5F, -2, -4, 3, 2, 5), PartPose.offset(3, 24, 0));
         return LayerDefinition.create(mesh, 128, 128);
+    }
+
+    /**
+     * The skull in its hood, which the Fallen Bishop wears too under its peak.
+     */
+    static CubeListBuilder hood()
+    {
+        return CubeListBuilder.create()
+                .texOffs(0, 0).addBox(-3.5F, -7, -3.5F, 7, 7, 7)
+                .texOffs(28, 0).addBox(-5, -10, -7, 10, 1, 11)
+                .texOffs(70, 0).addBox(-5, -9, -7, 1, 9, 11, ModelBoxes.PROUD)
+                .texOffs(70, 0).mirror().addBox(4, -9, -7, 1, 9, 11, ModelBoxes.PROUD).mirror(false)
+                .texOffs(94, 0).addBox(-5, -9, 3, 10, 9, 1)
+                .texOffs(94, 10).addBox(-4, -3, 4, 8, 8, 1);
     }
 
     private static void addArm(PartDefinition root, String name, float x, boolean mirror)

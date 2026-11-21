@@ -29,6 +29,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static net.voxelindustry.voidheart.client.render.energy.FacingStrips.disc;
+import static net.voxelindustry.voidheart.client.render.energy.FacingStrips.perpendicular;
+import static net.voxelindustry.voidheart.client.render.energy.FacingStrips.ribbon;
+
 /**
  * Draws the void grid: each bundle's glow as its pylon loads, the leaping arcs between pylons, and, on demand, a pylon's field as a dashed ring on the
  * ground with threads to what it feeds. Everything glows additively and writes no depth, except the ring, which is blended so it keeps its hue on bright ground.
@@ -74,7 +78,6 @@ public final class VoidGridRender
     private static final int   GLOW_HALO_ALPHA = 120;
     private static final float BRIGHT_RADIUS   = 0.34F;
     private static final int   BRIGHT_ALPHA    = 190;
-    private static final int   DISC_SEGMENTS   = 16;
     private static final float MIN_GLOW        = 0.02F;
 
     // Field
@@ -639,53 +642,4 @@ public final class VoidGridRender
         return new Vector3f((float) (position.x - camera.x), (float) (position.y - camera.y), (float) (position.z - camera.z));
     }
 
-    private static Vector3f perpendicular(Vector3f direction)
-    {
-        var side = new Vector3f(direction).cross(0, 1, 0);
-        if (side.lengthSquared() < 1.0E-6F)
-            side = new Vector3f(direction).cross(1, 0, 0);
-        return side.normalize();
-    }
-
-    /**
-     * A strip from start to end, turned to face the camera, which sits at the origin.
-     */
-    private static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f start, Vector3f end, float halfWidth, int color)
-    {
-        var direction = new Vector3f(end).sub(start);
-        var toCamera = new Vector3f(start).add(end).mul(-0.5F);
-        var side = direction.cross(toCamera);
-        if (side.lengthSquared() < 1.0E-8F)
-            return;
-        side.normalize(halfWidth);
-
-        buffer.addVertex(pose, start.x - side.x, start.y - side.y, start.z - side.z).setColor(color);
-        buffer.addVertex(pose, start.x + side.x, start.y + side.y, start.z + side.z).setColor(color);
-        buffer.addVertex(pose, end.x + side.x, end.y + side.y, end.z + side.z).setColor(color);
-        buffer.addVertex(pose, end.x - side.x, end.y - side.y, end.z - side.z).setColor(color);
-    }
-
-    /**
-     * A camera-facing disc fading from its color at the center to nothing at its rim, as degenerate quads.
-     */
-    private static void disc(PoseStack.Pose pose, VertexConsumer buffer, Vector3f center, float radius, int color)
-    {
-        var toCamera = new Vector3f(center).negate();
-        if (toCamera.lengthSquared() < 1.0E-6F)
-            return;
-        var right = perpendicular(toCamera).mul(radius);
-        var up = new Vector3f(toCamera).cross(right).normalize(radius);
-        int rim = ARGB.color(0, color);
-        for (int i = 0; i < DISC_SEGMENTS; i++)
-        {
-            double a = Math.PI * 2 * i / DISC_SEGMENTS;
-            double b = Math.PI * 2 * (i + 1) / DISC_SEGMENTS;
-            var edgeA = new Vector3f(center).add(new Vector3f(right).mul((float) Math.cos(a))).add(new Vector3f(up).mul((float) Math.sin(a)));
-            var edgeB = new Vector3f(center).add(new Vector3f(right).mul((float) Math.cos(b))).add(new Vector3f(up).mul((float) Math.sin(b)));
-            buffer.addVertex(pose, center.x, center.y, center.z).setColor(color);
-            buffer.addVertex(pose, center.x, center.y, center.z).setColor(color);
-            buffer.addVertex(pose, edgeA.x, edgeA.y, edgeA.z).setColor(rim);
-            buffer.addVertex(pose, edgeB.x, edgeB.y, edgeB.z).setColor(rim);
-        }
-    }
 }

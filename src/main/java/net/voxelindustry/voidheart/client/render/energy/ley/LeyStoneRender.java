@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneTile;
 import org.jspecify.annotations.Nullable;
 
@@ -91,10 +92,10 @@ public class LeyStoneRender implements BlockEntityRenderer<LeyStoneTile, LeySton
         float top = segment[2] / 16;
         float z = (segment[3] - LIFT) / 16;
 
-        int bright = LeyLook.color(LeyLook.TEAL_LIGHT, core);
-        int edge = LeyLook.color(LeyLook.TEAL, core * 0.8F);
-        int glow = LeyLook.color(LeyLook.TEAL, halo);
-        int none = LeyLook.color(LeyLook.TEAL, 0);
+        int bright = GlowDraw.color(LeyLook.TEAL_LIGHT, core);
+        int edge = GlowDraw.color(LeyLook.TEAL, core * 0.8F);
+        int glow = GlowDraw.color(LeyLook.TEAL, halo);
+        int none = GlowDraw.color(LeyLook.TEAL, 0);
 
         float coreLeft = (centre - CORE_HALF) / 16;
         float coreRight = (centre + CORE_HALF) / 16;
@@ -111,9 +112,9 @@ public class LeyStoneRender implements BlockEntityRenderer<LeyStoneTile, LeySton
 
     private static void quad(PoseStack.Pose pose, VertexConsumer buffer, float left, float right, float bottom, float top, float z, int leftColor, int rightColor)
     {
-        LeyLook.vertex(buffer, pose, left, bottom, z, leftColor);
-        LeyLook.vertex(buffer, pose, right, bottom, z, rightColor);
-        LeyLook.vertex(buffer, pose, right, top, z, rightColor);
-        LeyLook.vertex(buffer, pose, left, top, z, leftColor);
+        GlowDraw.vertex(buffer, pose, left, bottom, z, leftColor);
+        GlowDraw.vertex(buffer, pose, right, bottom, z, rightColor);
+        GlowDraw.vertex(buffer, pose, right, top, z, rightColor);
+        GlowDraw.vertex(buffer, pose, left, top, z, leftColor);
     }
 }

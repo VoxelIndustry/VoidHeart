@@ -1,37 +1,27 @@
 package net.voxelindustry.voidheart.common.energy.spike;
 
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
-import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.voxelindustry.voidheart.common.block.TwoHighBlock;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -45,7 +35,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  * <p>
  * Using it with an empty hand bleeds a larger share of the flow, sneaking a smaller one.
  */
-public class AzuriumSpikeBlock extends Block implements EntityBlock
+public class AzuriumSpikeBlock extends TwoHighBlock<AzuriumSpikeBlock.Part>
 {
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
 
@@ -56,33 +46,18 @@ public class AzuriumSpikeBlock extends Block implements EntityBlock
 
     public AzuriumSpikeBlock(Properties properties)
     {
-        super(properties);
-
-        registerDefaultState(getStateDefinition().any().setValue(PART, Part.BASE));
+        super(properties, Part.BASE, Part.TIP);
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
+    protected EnumProperty<Part> partProperty()
     {
-        builder.add(PART);
+        return PART;
     }
 
     @Override
-    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context)
+    protected void placed(Level level, BlockPos pos, BlockState state, ItemStack stack)
     {
-        var above = context.getClickedPos().above();
-        var level = context.getLevel();
-        if (above.getY() > level.getMaxY() || !level.getBlockState(above).canBeReplaced(context))
-            return null;
-        return defaultBlockState();
-    }
-
-    @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack)
-    {
-        super.setPlacedBy(level, pos, state, placer, stack);
-
-        level.setBlock(pos.above(), state.setValue(PART, Part.TIP), Block.UPDATE_ALL);
         if (!level.isClientSide() && level.getBlockEntity(pos) instanceof AzuriumSpikeTile spike)
             spike.driveIn(level.getRandom());
     }
@@ -90,7 +65,7 @@ public class AzuriumSpikeBlock extends Block implements EntityBlock
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit)
     {
-        var base = state.getValue(PART) == Part.TIP ? pos.below() : pos;
+        var base = isUpper(state) ? pos.below() : pos;
         if (!(level.getBlockEntity(base) instanceof AzuriumSpikeTile spike))
             return InteractionResult.PASS;
 
@@ -103,37 +78,12 @@ public class AzuriumSpikeBlock extends Block implements EntityBlock
     }
 
     /**
-     * The tip falls with the base.
+     * A Fouled spike stays Fouled when taken up.
      */
     @Override
-    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos, Direction direction,
-                                     BlockPos neighbourPos, BlockState neighbourState, RandomSource random)
+    protected List<ItemStack> lowerDrops(BlockState state, LootParams.Builder builder)
     {
-        if (state.getValue(PART) == Part.TIP && direction == Direction.DOWN && !isBase(neighbourState))
-            return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, level, ticks, pos, direction, neighbourPos, neighbourState, random);
-    }
-
-    /**
-     * Breaking the tip pulls the whole stake out, which drops from the base.
-     */
-    @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player)
-    {
-        var below = pos.below();
-        var baseState = level.getBlockState(below);
-        if (!level.isClientSide() && state.getValue(PART) == Part.TIP && isBase(baseState))
-            level.destroyBlock(below, !player.preventsBlockDrops() && player.hasCorrectToolForDrops(baseState), player);
-        return super.playerWillDestroy(level, pos, state, player);
-    }
-
-    @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder)
-    {
-        if (state.getValue(PART) == Part.TIP)
-            return List.of();
-        var drops = super.getDrops(state, builder);
-        // A Fouled spike stays Fouled when taken up
+        var drops = super.lowerDrops(state, builder);
         if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof AzuriumSpikeTile spike && spike.isFouled())
         {
             for (var drop : drops)
@@ -152,41 +102,28 @@ public class AzuriumSpikeBlock extends Block implements EntityBlock
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
+    protected VoxelShape halfShape(BlockState state, boolean upper)
     {
-        if (state.getValue(PART) == Part.TIP)
-            return isBase(level.getBlockState(pos.below())) ? TIP_OUTLINE : TIP_SHAPE;
-        return isTip(level.getBlockState(pos.above())) ? BASE_OUTLINE : BASE_SHAPE;
+        return upper ? TIP_SHAPE : BASE_SHAPE;
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
+    protected VoxelShape outline(BlockState state, boolean upper)
     {
-        return state.getValue(PART) == Part.TIP ? TIP_SHAPE : BASE_SHAPE;
+        return upper ? TIP_OUTLINE : BASE_OUTLINE;
     }
 
-    private boolean isBase(BlockState state)
-    {
-        return state.is(this) && state.getValue(PART) == Part.BASE;
-    }
-
-    private boolean isTip(BlockState state)
-    {
-        return state.is(this) && state.getValue(PART) == Part.TIP;
-    }
-
-    @Nullable
     @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
+    protected BlockEntity newLowerEntity(BlockPos pos, BlockState state)
     {
-        return state.getValue(PART) == Part.BASE ? new AzuriumSpikeTile(pos, state) : null;
+        return new AzuriumSpikeTile(pos, state);
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type)
     {
-        return state.getValue(PART) == Part.BASE ? createTickerHelper(type, LeySpikeContent.AZURIUM_SPIKE_TILE, AzuriumSpikeTile::tick) : null;
+        return isLower(state) ? createTickerHelper(type, LeySpikeContent.AZURIUM_SPIKE_TILE, AzuriumSpikeTile::tick) : null;
     }
 
     public enum Part implements StringRepresentable

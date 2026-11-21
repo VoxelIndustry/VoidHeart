@@ -2,19 +2,10 @@ package net.voxelindustry.voidheart.common.content.essence;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -23,18 +14,17 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.voxelindustry.voidheart.common.block.TwoHighBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 /**
  * Two blocks high: a base holding the essence, and four pillars rising out of it into the block above as it fills.
  */
-public class RavenousStorageBlock extends Block implements EntityBlock
+public class RavenousStorageBlock extends TwoHighBlock<RavenousStorageBlock.RavenousStoragePart>
 {
     public static final EnumProperty<RavenousStoragePart> PART = EnumProperty.create("part", RavenousStoragePart.class);
     public static final int                               MAX_FILL = StorageFill.MAX_FILL;
@@ -95,7 +85,7 @@ public class RavenousStorageBlock extends Block implements EntityBlock
 
     public RavenousStorageBlock(Properties settings)
     {
-        super(settings);
+        super(settings, RavenousStoragePart.BASE, RavenousStoragePart.PILLAR);
 
         this.registerDefaultState(getStateDefinition().any()
                 .setValue(BlockStateProperties.FACING, Direction.UP)
@@ -105,70 +95,32 @@ public class RavenousStorageBlock extends Block implements EntityBlock
     }
 
     @Override
+    protected EnumProperty<RavenousStoragePart> partProperty()
+    {
+        return PART;
+    }
+
+    @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
     {
-        builder.add(BlockStateProperties.FACING, PART, FILL);
+        super.createBlockStateDefinition(builder);
+        builder.add(BlockStateProperties.FACING, FILL);
     }
 
     @Override
-    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context)
+    protected void placed(Level level, BlockPos pos, BlockState state, ItemStack stack)
     {
-        var above = context.getClickedPos().above();
-        var level = context.getLevel();
-        if (above.getY() > level.getMaxY() || !level.getBlockState(above).canBeReplaced(context))
-            return null;
-        return defaultBlockState();
-    }
-
-    @Override
-    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack)
-    {
-        super.setPlacedBy(world, pos, state, placer, stack);
-
-        world.setBlock(pos.above(), state.setValue(PART, RavenousStoragePart.PILLAR), Block.UPDATE_ALL);
-
         var storage = stack.get(VoidHeartDataComponents.ESSENCE_STORAGE);
-        if (storage != null && world.getBlockEntity(pos) instanceof RavenousStorageTile tile)
+        if (storage != null && level.getBlockEntity(pos) instanceof RavenousStorageTile tile)
             tile.restoreStorage(storage);
-    }
-
-    /**
-     * The pillars fall with the base. A base left without them, from before storages stood two blocks high, keeps its
-     * essence.
-     */
-    @Override
-    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos, Direction direction,
-                                     BlockPos neighbourPos, BlockState neighbourState, RandomSource random)
-    {
-        if (state.getValue(PART) == RavenousStoragePart.PILLAR && direction == Direction.DOWN
-                && !(neighbourState.is(this) && neighbourState.getValue(PART) == RavenousStoragePart.BASE))
-            return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, level, ticks, pos, direction, neighbourPos, neighbourState, random);
-    }
-
-    /**
-     * Breaking the pillars breaks the base, which drops the storage with its essence.
-     */
-    @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player)
-    {
-        var below = pos.below();
-        var baseState = level.getBlockState(below);
-        if (!level.isClientSide() && state.getValue(PART) == RavenousStoragePart.PILLAR
-                && baseState.is(this) && baseState.getValue(PART) == RavenousStoragePart.BASE)
-            level.destroyBlock(below, !player.preventsBlockDrops() && player.hasCorrectToolForDrops(baseState), player);
-        return super.playerWillDestroy(level, pos, state, player);
     }
 
     /**
      * Keeps the stored essence on the dropped item, an empty storage drops a plain item so it stacks.
      */
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder)
+    protected List<ItemStack> lowerDrops(BlockState state, LootParams.Builder builder)
     {
-        if (state.getValue(PART) == RavenousStoragePart.PILLAR)
-            return List.of();
-
         var stack = new ItemStack(this);
         if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof RavenousStorageTile storage
                 && !storage.storage().isUnattuned() && storage.storage().amount() > 0)
@@ -176,33 +128,25 @@ public class RavenousStorageBlock extends Block implements EntityBlock
         return List.of(stack);
     }
 
+    /**
+     * A base from before storages stood two blocks high has no pillars above, so it outlines as itself alone and keeps its essence.
+     */
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
+    protected VoxelShape halfShape(BlockState state, boolean upper)
     {
-        var fill = state.getValue(FILL);
-        if (state.getValue(PART) == RavenousStoragePart.PILLAR)
-            return PILLAR_OUTLINES[fill];
-        // A base from before storages stood two blocks high has no pillars above to outline
-        return isPillarOf(world.getBlockState(pos.above())) ? BASE_OUTLINES[fill] : BASE_SHAPES[fill];
+        return (upper ? PILLAR_SHAPES : BASE_SHAPES)[state.getValue(FILL)];
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context)
+    protected VoxelShape outline(BlockState state, boolean upper)
     {
-        var fill = state.getValue(FILL);
-        return state.getValue(PART) == RavenousStoragePart.PILLAR ? PILLAR_SHAPES[fill] : BASE_SHAPES[fill];
+        return (upper ? PILLAR_OUTLINES : BASE_OUTLINES)[state.getValue(FILL)];
     }
 
-    private boolean isPillarOf(BlockState state)
-    {
-        return state.is(this) && state.getValue(PART) == RavenousStoragePart.PILLAR;
-    }
-
-    @Nullable
     @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
+    protected BlockEntity newLowerEntity(BlockPos pos, BlockState state)
     {
-        return state.getValue(PART) == RavenousStoragePart.BASE ? new RavenousStorageTile(pos, state) : null;
+        return new RavenousStorageTile(pos, state);
     }
 
     public enum RavenousStoragePart implements StringRepresentable

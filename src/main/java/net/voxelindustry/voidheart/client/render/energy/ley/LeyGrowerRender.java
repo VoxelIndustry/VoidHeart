@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.ley.LeyGrowerTile;
 import org.jspecify.annotations.Nullable;
 
@@ -73,11 +74,11 @@ public class LeyGrowerRender implements BlockEntityRenderer<LeyGrowerTile, LeyGr
                     float x0 = POOL_MIN + i * step, x1 = x0 + step;
                     float z0 = POOL_MIN + j * step, z1 = z0 + step;
 
-                    int depth = LeyLook.color(LeyLook.TEAL, DEPTH_ALPHA * state.pool);
-                    LeyLook.vertex(buffer, pose, x0 / 16, DEPTH / 16, z0 / 16, depth);
-                    LeyLook.vertex(buffer, pose, x0 / 16, DEPTH / 16, z1 / 16, depth);
-                    LeyLook.vertex(buffer, pose, x1 / 16, DEPTH / 16, z1 / 16, depth);
-                    LeyLook.vertex(buffer, pose, x1 / 16, DEPTH / 16, z0 / 16, depth);
+                    int depth = GlowDraw.color(LeyLook.TEAL, DEPTH_ALPHA * state.pool);
+                    GlowDraw.vertex(buffer, pose, x0 / 16, DEPTH / 16, z0 / 16, depth);
+                    GlowDraw.vertex(buffer, pose, x0 / 16, DEPTH / 16, z1 / 16, depth);
+                    GlowDraw.vertex(buffer, pose, x1 / 16, DEPTH / 16, z1 / 16, depth);
+                    GlowDraw.vertex(buffer, pose, x1 / 16, DEPTH / 16, z0 / 16, depth);
 
                     surface(pose, buffer, x0, z0, state);
                     surface(pose, buffer, x0, z1, state);
@@ -96,7 +97,7 @@ public class LeyGrowerRender implements BlockEntityRenderer<LeyGrowerTile, LeyGr
         // The rim of the pool stays still, as water does against stone
         float rim = 1 - Mth.clamp(distance - 0.8F, 0, 1) * 2;
         float alpha = SURFACE_ALPHA * state.pool * (1 - RIPPLE + RIPPLE * (0.5F + 0.5F * wave) * rim);
-        int color = LeyLook.color(LeyLook.lerp(LeyLook.TEAL, LeyLook.TEAL_LIGHT, 0.5F + 0.5F * wave), alpha);
-        LeyLook.vertex(buffer, pose, x / 16, (SURFACE + RIPPLE_HEIGHT * wave * rim) / 16, z / 16, color);
+        int color = GlowDraw.color(GlowDraw.lerp(LeyLook.TEAL, LeyLook.TEAL_LIGHT, 0.5F + 0.5F * wave), alpha);
+        GlowDraw.vertex(buffer, pose, x / 16, (SURFACE + RIPPLE_HEIGHT * wave * rim) / 16, z / 16, color);
     }
 }

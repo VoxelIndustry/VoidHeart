@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static net.voxelindustry.voidheart.client.render.energy.siphon.SiphonGeometry.perpendicular;
-import static net.voxelindustry.voidheart.client.render.energy.siphon.SiphonGeometry.ribbon;
+import static net.voxelindustry.voidheart.client.render.energy.FacingStrips.perpendicular;
+import static net.voxelindustry.voidheart.client.render.energy.FacingStrips.ribbon;
 
 /**
  * At an armillary in the overworld: whenever a deep siphon delivers through it, small azurium leaping arcs run from its rings to the pylons whose fields

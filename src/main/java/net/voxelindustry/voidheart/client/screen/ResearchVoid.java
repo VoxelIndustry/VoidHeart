@@ -270,6 +270,28 @@ final class ResearchVoid
         return (h & 0xFFFFF) / (float) 0x100000;
     }
 
+    /**
+     * How far inside a torn hole in a slab a pixel is, or minus how far outside it. Each edge of the hole's rectangle wavers inward by up to
+     * {@code tear} pixels.
+     */
+    static int tornHoleDepth(int x, int y, int left, int top, int width, int height, int tear, long seed)
+    {
+        int tornLeft = left + torn(y, tear, seed);
+        int tornRight = left + width - torn(y, tear, seed + 91);
+        int tornTop = top + torn(x, tear, seed + 17);
+        int tornBottom = top + height - torn(x, tear, seed + 29);
+        int inX = Math.min(x - tornLeft, tornRight - 1 - x);
+        int inY = Math.min(y - tornTop, tornBottom - 1 - y);
+        if (inX >= 0 && inY >= 0)
+            return Math.min(inX, inY);
+        return -Math.max(Math.max(-inX, 0), Math.max(-inY, 0));
+    }
+
+    private static int torn(int along, int tear, long seed)
+    {
+        return Math.round(smooth(along * 0.13F, 3.1F, seed) * tear);
+    }
+
     static float smooth(float x, float y, long seed)
     {
         int cellX = (int) Math.floor(x);

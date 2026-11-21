@@ -33,7 +33,6 @@ import static net.voxelindustry.voidheart.client.screen.ResearchScreen.KNOWN_COL
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.LACK_COLOR;
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.MUTED_COLOR;
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.RULE_COLOR;
-import static net.voxelindustry.voidheart.client.screen.ResearchScreen.TEXT_COLOR;
 
 /**
  * The grid of an apparatus over the player's inventory, cut in a small slab of the knowledge repository's voidstone. The grid sits in a torn hole lit from
@@ -154,20 +153,7 @@ public class ApparatusScreen extends AbstractContainerScreen<ApparatusMenu>
      */
     private static int holeDepth(int x, int y, long seed)
     {
-        int left = WELL_X + tear(y, seed);
-        int right = WELL_X + WELL - tear(y, seed + 91);
-        int top = WELL_Y + tear(x, seed + 17);
-        int bottom = WELL_Y + WELL - tear(x, seed + 29);
-        int inX = Math.min(x - left, right - 1 - x);
-        int inY = Math.min(y - top, bottom - 1 - y);
-        if (inX >= 0 && inY >= 0)
-            return Math.min(inX, inY);
-        return -Math.max(Math.max(-inX, 0), Math.max(-inY, 0));
-    }
-
-    private static int tear(int along, long seed)
-    {
-        return Math.round(ResearchVoid.smooth(along * 0.13F, 3.1F, seed) * TEAR);
+        return ResearchVoid.tornHoleDepth(x, y, WELL_X, WELL_Y, WELL, WELL, TEAR, seed);
     }
 
     // Input

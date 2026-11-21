@@ -3,18 +3,12 @@ package net.voxelindustry.voidheart.common.energy.engine;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import org.jetbrains.annotations.Nullable;
-import snownee.jade.api.Accessor;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
-import snownee.jade.api.callback.JadeRayTraceCallback;
 import snownee.jade.api.config.IPluginConfig;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -39,7 +33,6 @@ public final class RavenousEngineJade
     public static void registerClient(IWailaClientRegistration registration)
     {
         registration.registerBlockComponent(new Client(), RavenousEngineBlock.class);
-        registration.addRayTraceCallback(new ChamberRedirect(registration));
     }
 
     public static class Server implements IServerDataProvider<BlockAccessor>
@@ -104,35 +97,6 @@ public final class RavenousEngineJade
         public Identifier getUid()
         {
             return UID;
-        }
-    }
-
-    /**
-     * The chamber holds nothing itself, so looking at it shows the maw below.
-     */
-    private record ChamberRedirect(IWailaClientRegistration registration) implements JadeRayTraceCallback
-    {
-        @Override
-        public @Nullable Accessor<?> onRayTrace(HitResult hitResult, @Nullable Accessor<?> accessor, @Nullable Accessor<?> originalAccessor)
-        {
-            if (!(accessor instanceof BlockAccessor blockAccessor) || !(blockAccessor.getBlock() instanceof RavenousEngineBlock)
-                    || blockAccessor.getBlockState().getValue(RavenousEngineBlock.PART) != RavenousEngineBlock.Part.CHAMBER)
-                return accessor;
-
-            var maw = blockAccessor.getPosition().below();
-            var level = blockAccessor.getLevel();
-            var state = level.getBlockState(maw);
-            var tile = level.getBlockEntity(maw);
-            if (!state.is(blockAccessor.getBlock()) || tile == null)
-                return accessor;
-
-            return registration.blockAccessor()
-                    .from(blockAccessor)
-                    .hit(new BlockHitResult(blockAccessor.getHitResult().getLocation(), blockAccessor.getSide(), maw, false))
-                    .blockState(state)
-                    .blockEntity(tile)
-                    .serversideRep(new ItemStack(state.getBlock()))
-                    .build();
         }
     }
 }

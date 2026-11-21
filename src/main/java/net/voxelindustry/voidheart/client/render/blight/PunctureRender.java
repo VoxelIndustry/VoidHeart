@@ -5,10 +5,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
-import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
@@ -247,30 +245,12 @@ public final class PunctureRender
         var normal = new Vector3f(right).cross(up).normalize();
         var shifted = new Quaternionf().rotationAxis(lens.shiftAngle(), normal).transform(new Vector3f(right)).mul(lens.shift());
         var at = lens.at().subtract(camera).add(shifted.x, shifted.y, shifted.z);
-        quad(pose, buffer, at, along, across, ARGB.color(lens.alpha(), 0xFFFFFF));
+        HoleLook.quad(pose, buffer, at, along, across, ARGB.color(lens.alpha(), 0xFFFFFF));
     }
 
     private static void billboard(PoseStack.Pose pose, VertexConsumer buffer, Vec3 at, Vector3f right, Vector3f up, float size, int color)
     {
-        quad(pose, buffer, at, new Vector3f(right).mul(size / 2), new Vector3f(up).mul(size / 2), color);
+        HoleLook.quad(pose, buffer, at, new Vector3f(right).mul(size / 2), new Vector3f(up).mul(size / 2), color);
     }
 
-    private static void quad(PoseStack.Pose pose, VertexConsumer buffer, Vec3 at, Vector3f along, Vector3f across, int color)
-    {
-        float x = (float) at.x, y = (float) at.y, z = (float) at.z;
-        vertex(pose, buffer, x - along.x - across.x, y - along.y - across.y, z - along.z - across.z, 0, 1, color);
-        vertex(pose, buffer, x + along.x - across.x, y + along.y - across.y, z + along.z - across.z, 1, 1, color);
-        vertex(pose, buffer, x + along.x + across.x, y + along.y + across.y, z + along.z + across.z, 1, 0, color);
-        vertex(pose, buffer, x - along.x + across.x, y - along.y + across.y, z - along.z + across.z, 0, 0, color);
-    }
-
-    private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float z, float u, float v, int color)
-    {
-        buffer.addVertex(pose, x, y, z)
-                .setColor(color)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(LightCoordsUtil.FULL_BRIGHT)
-                .setNormal(pose, 0, 1, 0);
-    }
 }

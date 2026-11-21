@@ -50,40 +50,43 @@ public class PortalFrameVeinModel
     {
         // The quad is directly facing a portal interior
         if (PortalFrameStateProperties.getSideConnection(state, direction).isConnected())
-        {
             return PortalFrameVeinSpriteManager.getOverlaySpriteForFront(variant);
-        }
 
-        var left = FrameConnection.NONE;
-        var right = FrameConnection.NONE;
-        var up = FrameConnection.NONE;
-        var down = FrameConnection.NONE;
+        var edges = Edges.of(state, direction);
+        return PortalFrameVeinSpriteManager.getOverlaySpriteForSide(edges.left, edges.right, edges.up, edges.down, variant);
+    }
 
-        if (direction.getAxis().isVertical())
+    /**
+     * The frame's own texture on a face, its veins running toward the frame blocks around it.
+     */
+    static Material.Baked backgroundSprite(BlockState state, Direction direction, int variant)
+    {
+        // The quad is directly facing a portal interior
+        if (PortalFrameStateProperties.getSideConnection(state, direction).isConnected())
+            return PortalFrameVeinSpriteManager.getBackgroundSpriteForFront(variant);
+
+        var edges = Edges.of(state, direction);
+        return PortalFrameVeinSpriteManager.getBackgroundSpriteForSide(edges.left, edges.right, edges.up, edges.down, variant);
+    }
+
+    /**
+     * The connections on a face's four edges, as seen looking at the face.
+     */
+    private record Edges(FrameConnection left, FrameConnection right, FrameConnection up, FrameConnection down)
+    {
+        static Edges of(BlockState state, Direction face)
         {
-            if (direction == Direction.UP)
-            {
-                left = PortalFrameStateProperties.getSideConnection(state, Direction.EAST);
-                right = PortalFrameStateProperties.getSideConnection(state, Direction.WEST);
-                up = PortalFrameStateProperties.getSideConnection(state, Direction.NORTH);
-                down = PortalFrameStateProperties.getSideConnection(state, Direction.SOUTH);
-            }
-            else
-            {
-                left = PortalFrameStateProperties.getSideConnection(state, Direction.EAST);
-                right = PortalFrameStateProperties.getSideConnection(state, Direction.WEST);
-                up = PortalFrameStateProperties.getSideConnection(state, Direction.SOUTH);
-                down = PortalFrameStateProperties.getSideConnection(state, Direction.NORTH);
-            }
-        }
-        else
-        {
-            left = PortalFrameStateProperties.getSideConnection(state, direction.getCounterClockWise());
-            right = PortalFrameStateProperties.getSideConnection(state, direction.getClockWise());
-            up = PortalFrameStateProperties.getSideConnection(state, Direction.UP);
-            down = PortalFrameStateProperties.getSideConnection(state, Direction.DOWN);
+            if (face == Direction.UP)
+                return of(state, Direction.EAST, Direction.WEST, Direction.NORTH, Direction.SOUTH);
+            if (face == Direction.DOWN)
+                return of(state, Direction.EAST, Direction.WEST, Direction.SOUTH, Direction.NORTH);
+            return of(state, face.getCounterClockWise(), face.getClockWise(), Direction.UP, Direction.DOWN);
         }
 
-        return PortalFrameVeinSpriteManager.getOverlaySpriteForSide(left, right, up, down, variant);
+        private static Edges of(BlockState state, Direction left, Direction right, Direction up, Direction down)
+        {
+            return new Edges(PortalFrameStateProperties.getSideConnection(state, left), PortalFrameStateProperties.getSideConnection(state, right),
+                    PortalFrameStateProperties.getSideConnection(state, up), PortalFrameStateProperties.getSideConnection(state, down));
+        }
     }
 }

@@ -9,14 +9,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
-import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
-import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
-import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.voxelindustry.voidheart.common.ley.Ley;
 import net.voxelindustry.voidheart.common.ley.flow.LeyConversion;
@@ -24,7 +20,6 @@ import net.voxelindustry.voidheart.common.ley.flow.LeyTopology;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.OptionalLong;
 
 /**
@@ -178,7 +173,7 @@ public class AzuriumSpikeTile extends TileBase
         else if (outputTarget == null || level.getGameTime() - targetScannedAt >= TARGET_SCAN_TICKS)
         {
             targetScannedAt = level.getGameTime();
-            newTarget = findTarget(level, worldPosition).orElse(null);
+            newTarget = VoidGrid.arcTarget(level, worldPosition).orElse(null);
         }
 
         if (newActivity == activity && Objects.equals(newTarget, outputTarget))
@@ -187,24 +182,6 @@ public class AzuriumSpikeTile extends TileBase
         outputTarget = newTarget;
         setChanged();
         sync();
-    }
-
-    /**
-     * Where the output arc lands: a creative well whose field covers the spike, since those answer first, or else the bundle of the nearest pylon whose
-     * field covers it, which is where the grid takes what it accepts.
-     */
-    static Optional<BlockPos> findTarget(ServerLevel level, BlockPos pos)
-    {
-        var center = Vec3.atCenterOf(pos);
-        var well = CreativeSources.wells(level).centers().stream()
-                .filter(candidate -> candidate.distSqr(pos) <= (double) FoundationBalance.CREATIVE_WELL_RADIUS * FoundationBalance.CREATIVE_WELL_RADIUS)
-                .min((a, b) -> Double.compare(a.distToCenterSqr(center), b.distToCenterSqr(center)));
-        if (well.isPresent())
-            return well;
-
-        return VoidGrid.pylonsCovering(level, pos).stream()
-                .map(GridLayout.Pylon::bundle)
-                .min((a, b) -> Double.compare(a.distToCenterSqr(center), b.distToCenterSqr(center)));
     }
 
     public void cycleSetting(int by)

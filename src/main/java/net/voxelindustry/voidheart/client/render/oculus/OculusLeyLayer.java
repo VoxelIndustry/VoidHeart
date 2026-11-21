@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.client.render.energy.ley_taint.LeyTaintLook;
 import net.voxelindustry.voidheart.client.render.energy.ley_taint.LeyTaintView;
 import net.voxelindustry.voidheart.common.content.oculus.OculusLeyPayloads;
@@ -170,7 +171,7 @@ public final class OculusLeyLayer
                 float pulse = 0.5F + 0.5F * (float) Math.sin((distance - time * PULSE_SPEED) * 2 * Math.PI / PULSE_WAVELENGTH);
                 var start = previous.subtract(camera).toVector3f();
                 var end = next.subtract(camera).toVector3f();
-                var side = facingSide(start, end);
+                var side = GlowDraw.facingSide(start, end, 1.0E-12F);
                 float mid = (float) (t - 0.5 / pieces);
                 float fromWeight = fromTaint * (1 - (1 - TAINT_DOWNSTREAM_END) * mid);
                 float toWeight = toTaint * Math.clamp(1 - (1 - mid) / TAINT_UPSTREAM_SHARE, 0, 1);
@@ -179,12 +180,12 @@ public final class OculusLeyLayer
                 if (core)
                 {
                     int color = ARGB.color(255, (int) (150 + 70 * pulse), (int) (90 + 70 * pulse), 255);
-                    ribbon(pose, buffer, start, end, side, CORE_HALF_WIDTH, taint > 0 ? ARGB.srgbLerp(taint, color, ARGB.opaque(tone)) : color);
+                    GlowDraw.ribbon(pose, buffer, start, end, side, CORE_HALF_WIDTH, taint > 0 ? ARGB.srgbLerp(taint, color, ARGB.opaque(tone)) : color);
                 }
                 else
                 {
                     int color = ARGB.color((int) ((50 + 60 * pulse) * (1 - TAINT_HALO_DIM * taint)), 140, 80, 255);
-                    ribbon(pose, buffer, start, end, side, GLOW_HALF_WIDTH, taint > 0 ? withRgb(color, ARGB.srgbLerp(taint, color, tone)) : color);
+                    GlowDraw.ribbon(pose, buffer, start, end, side, GLOW_HALF_WIDTH, taint > 0 ? withRgb(color, ARGB.srgbLerp(taint, color, tone)) : color);
                 }
             }
             previous = next;
@@ -215,7 +216,7 @@ public final class OculusLeyLayer
 
         var bottom = base.subtract(camera).toVector3f();
         var top = new Vector3f(bottom).add(0, 0.08F + node.lines() * 0.02F, 0);
-        var side = facingSide(bottom, top);
+        var side = GlowDraw.facingSide(bottom, top, 1.0E-12F);
         int rgb = NODE_COLORS[node.kind().ordinal()];
         var tainted = LeyTaintView.at(node.x(), node.z());
         if (tainted != null)
@@ -223,12 +224,12 @@ public final class OculusLeyLayer
         float halfWidth = 0.01F + 0.002F * node.lines();
         if (core)
         {
-            ribbon(pose, buffer, bottom, top, side, halfWidth, ARGB.color(255, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
+            GlowDraw.ribbon(pose, buffer, bottom, top, side, halfWidth, ARGB.color(255, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
             gem(pose, buffer, top, 0.025F + 0.006F * node.lines(), ARGB.color(255, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
         }
         else
         {
-            ribbon(pose, buffer, bottom, top, side, halfWidth * 3, ARGB.color(70, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
+            GlowDraw.ribbon(pose, buffer, bottom, top, side, halfWidth * 3, ARGB.color(70, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
             gem(pose, buffer, top, (0.025F + 0.006F * node.lines()) * 2.2F, ARGB.color(80, ARGB.red(rgb), ARGB.green(rgb), ARGB.blue(rgb)));
         }
     }
@@ -301,28 +302,6 @@ public final class OculusLeyLayer
     private static int withRgb(int color, int rgb)
     {
         return ARGB.color(ARGB.alpha(color), rgb & 0xFFFFFF);
-    }
-
-    /**
-     * Unit vector across the segment, perpendicular to both the segment and the view direction, so the ribbon faces the camera.
-     */
-    private static Vector3f facingSide(Vector3f start, Vector3f end)
-    {
-        var direction = new Vector3f(end).sub(start);
-        var toCamera = new Vector3f(start).add(end).mul(-0.5F);
-        var side = direction.cross(toCamera);
-        return side.lengthSquared() < 1.0E-12F ? new Vector3f(1, 0, 0) : side.normalize();
-    }
-
-    private static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f start, Vector3f end, Vector3f side, float halfWidth, int color)
-    {
-        float sx = side.x * halfWidth;
-        float sy = side.y * halfWidth;
-        float sz = side.z * halfWidth;
-        buffer.addVertex(pose, start.x - sx, start.y - sy, start.z - sz).setColor(color);
-        buffer.addVertex(pose, start.x + sx, start.y + sy, start.z + sz).setColor(color);
-        buffer.addVertex(pose, end.x + sx, end.y + sy, end.z + sz).setColor(color);
-        buffer.addVertex(pose, end.x - sx, end.y - sy, end.z - sz).setColor(color);
     }
 
     public static void clear()

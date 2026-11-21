@@ -29,7 +29,6 @@ import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeBlock
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBlock;
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterTile;
-import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
@@ -98,6 +97,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.addRayTraceCallback(new MalignantTormenterPartRedirect(registration));
         registration.addRayTraceCallback(new RavenousStoragePartRedirect(registration));
         registration.addRayTraceCallback(new ArmillaryBaseRedirect(registration));
+        registration.addRayTraceCallback(JadeRedirects.upperHalves(registration));
         registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);
         EnergyJade.registerClient(registration);
     }

@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.compat.jade;
 
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.voxelindustry.voidheart.common.content.essence.StorageParts;
 import org.jspecify.annotations.Nullable;
@@ -37,12 +35,6 @@ public class RavenousStoragePartRedirect implements JadeRayTraceCallback
         if (!state.is(blockAccessor.getBlock()) || tile == null)
             return accessor;
 
-        return registration.blockAccessor()
-                .from(blockAccessor)
-                .hit(new BlockHitResult(blockAccessor.getHitResult().getLocation(), blockAccessor.getSide(), holder, false))
-                .blockState(state)
-                .blockEntity(tile)
-                .serversideRep(new ItemStack(state.getBlock()))
-                .build();
+        return JadeRedirects.to(registration, blockAccessor, holder, state, tile);
     }
 }

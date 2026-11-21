@@ -3,12 +3,11 @@ package net.voxelindustry.voidheart.common.energy.reactor;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorCycle.Cause;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorCycle.Phase;
+import net.voxelindustry.voidheart.compat.jade.JadeRedirects;
 import org.jspecify.annotations.Nullable;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.BlockAccessor;
@@ -214,13 +213,7 @@ public final class ContravoidReactorJade
 
             var corePos = core.getBlockPos();
             var state = level.getBlockState(corePos);
-            return registration.blockAccessor()
-                    .from(blockAccessor)
-                    .hit(new BlockHitResult(blockAccessor.getHitResult().getLocation(), blockAccessor.getSide(), corePos, false))
-                    .blockState(state)
-                    .blockEntity(core)
-                    .serversideRep(new ItemStack(state.getBlock()))
-                    .build();
+            return JadeRedirects.to(registration, blockAccessor, corePos, state, core);
         }
     }
 }

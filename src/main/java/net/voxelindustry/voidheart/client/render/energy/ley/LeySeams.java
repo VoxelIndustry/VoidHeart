@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneTile;
 import net.voxelindustry.voidheart.common.ley.TaintStage;
 import org.joml.Vector3f;
@@ -170,7 +171,7 @@ final class LeySeams
         for (int i = 0; i < count; i++)
         {
             path.motes[i] = along;
-            along += 1 + LeyLook.hash(pos.asLong(), i, 11);
+            along += 1 + GlowDraw.hash(pos.asLong(), i, 11);
         }
         path.period = Math.max(along, length + MOTE_TAIL);
 
@@ -217,8 +218,8 @@ final class LeySeams
                 return;
 
             float taint = stone.taint();
-            int rgb = LeyLook.lerp(LeyLook.TEAL, LeyLook.MAUVE, taint / 100);
-            int light = LeyLook.lerp(LeyLook.TEAL_LIGHT, LeyLook.MAUVE, taint / 100);
+            int rgb = GlowDraw.lerp(LeyLook.TEAL, LeyLook.MAUVE, taint / 100);
+            int light = GlowDraw.lerp(LeyLook.TEAL_LIGHT, LeyLook.MAUVE, taint / 100);
             float gaps = TaintStage.of(taint).isAtLeast(TaintStage.FESTERING) ? GAP_CHANCE + 0.2F * Mth.clamp((taint - 50) / 50, 0, 1) : 0;
 
             if (!path.atFoot)
@@ -237,17 +238,17 @@ final class LeySeams
         long seed = stone.getBlockPos().asLong();
         for (int i = 0; i < path.xs.length - 1; i++)
         {
-            if (gaps > 0 && LeyLook.hash(seed, i, 3) < gaps)
+            if (gaps > 0 && GlowDraw.hash(seed, i, 3) < gaps)
                 continue;
 
             float along = stone.pathStart() + (i + 0.5F) * path.step;
             float alpha = SEAM_ALPHA * level * (1 - FAR_END_FADE * Mth.clamp(along / spur, 0, 1));
-            var a = LeyLook.relative(path.xs[i], path.ys[i], path.zs[i], camera);
-            var b = LeyLook.relative(path.xs[i + 1], path.ys[i + 1], path.zs[i + 1], camera);
+            var a = GlowDraw.relative(path.xs[i], path.ys[i], path.zs[i], camera);
+            var b = GlowDraw.relative(path.xs[i + 1], path.ys[i + 1], path.zs[i + 1], camera);
             var side = flatSide(a, b);
 
-            int core = LeyLook.color(rgb, alpha);
-            int none = LeyLook.color(rgb, 0);
+            int core = GlowDraw.color(rgb, alpha);
+            int none = GlowDraw.color(rgb, 0);
             strip(pose, buffer, a, b, side, -SOFT_HALF, -CORE_HALF, none, core);
             strip(pose, buffer, a, b, side, -CORE_HALF, CORE_HALF, core, core);
             strip(pose, buffer, a, b, side, CORE_HALF, SOFT_HALF, core, none);
@@ -260,10 +261,10 @@ final class LeySeams
      */
     private static void swirl(PoseStack.Pose pose, VertexConsumer buffer, Vec3 camera, Path path, int rgb, float level, float time)
     {
-        var centre = LeyLook.relative(path.swirlX, path.swirlGround + LIFT + SWIRL_LIFT, path.swirlZ, camera);
+        var centre = GlowDraw.relative(path.swirlX, path.swirlGround + LIFT + SWIRL_LIFT, path.swirlZ, camera);
         float inner = path.atFoot ? SWIRL_FOOT : SWIRL_INNER;
         float turn = time * SWIRL_TURN;
-        int none = LeyLook.color(rgb, 0);
+        int none = GlowDraw.color(rgb, 0);
         var points = new Vector3f[SWIRL_STEPS + 1];
         var shown = new float[SWIRL_STEPS + 1];
         var sides = new Vector3f[SWIRL_STEPS + 1];
@@ -288,16 +289,16 @@ final class LeySeams
                 var a = points[i];
                 var b = points[i + 1];
                 float widthA = SWIRL_WIDTH * (1 - t0 * 0.6F), widthB = SWIRL_WIDTH * (1 - t1 * 0.6F);
-                int coreA = LeyLook.color(rgb, SWIRL_ALPHA * level * (1 - t0) * shown[i]);
-                int coreB = LeyLook.color(rgb, SWIRL_ALPHA * level * (1 - t1) * shown[i + 1]);
-                LeyLook.vertex(buffer, pose, offset(a, sides[i], -widthA), none);
-                LeyLook.vertex(buffer, pose, a, coreA);
-                LeyLook.vertex(buffer, pose, b, coreB);
-                LeyLook.vertex(buffer, pose, offset(b, sides[i + 1], -widthB), none);
-                LeyLook.vertex(buffer, pose, a, coreA);
-                LeyLook.vertex(buffer, pose, offset(a, sides[i], widthA), none);
-                LeyLook.vertex(buffer, pose, offset(b, sides[i + 1], widthB), none);
-                LeyLook.vertex(buffer, pose, b, coreB);
+                int coreA = GlowDraw.color(rgb, SWIRL_ALPHA * level * (1 - t0) * shown[i]);
+                int coreB = GlowDraw.color(rgb, SWIRL_ALPHA * level * (1 - t1) * shown[i + 1]);
+                GlowDraw.vertex(buffer, pose, offset(a, sides[i], -widthA), none);
+                GlowDraw.vertex(buffer, pose, a, coreA);
+                GlowDraw.vertex(buffer, pose, b, coreB);
+                GlowDraw.vertex(buffer, pose, offset(b, sides[i + 1], -widthB), none);
+                GlowDraw.vertex(buffer, pose, a, coreA);
+                GlowDraw.vertex(buffer, pose, offset(a, sides[i], widthA), none);
+                GlowDraw.vertex(buffer, pose, offset(b, sides[i + 1], widthB), none);
+                GlowDraw.vertex(buffer, pose, b, coreB);
             }
         }
     }
@@ -319,15 +320,15 @@ final class LeySeams
             var tail = at(path, Math.max(0, along - MOTE_TAIL), camera);
             head.add(0, MOTE_HEIGHT, 0);
             tail.add(0, MOTE_HEIGHT, 0);
-            var side = LeyLook.facingSide(tail, head);
-            int bright = LeyLook.color(rgb, alpha * 0.6F);
-            int none = LeyLook.color(rgb, 0);
+            var side = GlowDraw.facingSide(tail, head);
+            int bright = GlowDraw.color(rgb, alpha * 0.6F);
+            int none = GlowDraw.color(rgb, 0);
             float half = MOTE_RADIUS * 0.45F;
-            LeyLook.vertex(buffer, pose, offset(tail, side, -half * 0.3F), none);
-            LeyLook.vertex(buffer, pose, offset(tail, side, half * 0.3F), none);
-            LeyLook.vertex(buffer, pose, offset(head, side, half), bright);
-            LeyLook.vertex(buffer, pose, offset(head, side, -half), bright);
-            LeyLook.softDot(buffer, pose, head, MOTE_RADIUS, rgb, alpha);
+            GlowDraw.vertex(buffer, pose, offset(tail, side, -half * 0.3F), none);
+            GlowDraw.vertex(buffer, pose, offset(tail, side, half * 0.3F), none);
+            GlowDraw.vertex(buffer, pose, offset(head, side, half), bright);
+            GlowDraw.vertex(buffer, pose, offset(head, side, -half), bright);
+            GlowDraw.softDot(buffer, pose, head, MOTE_RADIUS, rgb, alpha);
         }
     }
 
@@ -336,7 +337,7 @@ final class LeySeams
         float index = path.step <= 0 ? 0 : Mth.clamp(along / path.step, 0, path.xs.length - 1);
         int i = Math.min((int) index, path.xs.length - 2);
         float t = index - i;
-        return LeyLook.relative(Mth.lerp(t, path.xs[i], path.xs[i + 1]), Mth.lerp(t, path.ys[i], path.ys[i + 1]), Mth.lerp(t, path.zs[i], path.zs[i + 1]), camera);
+        return GlowDraw.relative(Mth.lerp(t, path.xs[i], path.xs[i + 1]), Mth.lerp(t, path.ys[i], path.ys[i + 1]), Mth.lerp(t, path.zs[i], path.zs[i + 1]), camera);
     }
 
     /**
@@ -356,9 +357,9 @@ final class LeySeams
 
     private static void strip(PoseStack.Pose pose, VertexConsumer buffer, Vector3f a, Vector3f b, Vector3f side, float from, float to, int fromColor, int toColor)
     {
-        LeyLook.vertex(buffer, pose, offset(a, side, from), fromColor);
-        LeyLook.vertex(buffer, pose, offset(a, side, to), toColor);
-        LeyLook.vertex(buffer, pose, offset(b, side, to), toColor);
-        LeyLook.vertex(buffer, pose, offset(b, side, from), fromColor);
+        GlowDraw.vertex(buffer, pose, offset(a, side, from), fromColor);
+        GlowDraw.vertex(buffer, pose, offset(a, side, to), toColor);
+        GlowDraw.vertex(buffer, pose, offset(b, side, to), toColor);
+        GlowDraw.vertex(buffer, pose, offset(b, side, from), fromColor);
     }
 }

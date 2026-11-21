@@ -1,4 +1,4 @@
-package net.voxelindustry.voidheart.client.render.energy.siphon;
+package net.voxelindustry.voidheart.client.render.energy;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -6,17 +6,18 @@ import net.minecraft.util.ARGB;
 import org.joml.Vector3f;
 
 /**
- * Camera-facing strips and discs for additive glow, with the camera at a given point of the pose's space.
+ * Camera-facing strips and discs for additive glow, with the camera at a given point of the pose's space, or at its origin. The pylons' grid, the Deep
+ * Siphon and the relay link preview draw with them.
  */
-final class SiphonGeometry
+public final class FacingStrips
 {
     private static final int DISC_SEGMENTS = 16;
 
-    private SiphonGeometry()
+    private FacingStrips()
     {
     }
 
-    static Vector3f perpendicular(Vector3f direction)
+    public static Vector3f perpendicular(Vector3f direction)
     {
         var side = new Vector3f(direction).cross(0, 1, 0);
         if (side.lengthSquared() < 1.0E-6F)
@@ -27,7 +28,8 @@ final class SiphonGeometry
     /**
      * A strip from start to end turned to face the camera, its color fading from one end to the other.
      */
-    static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f camera, Vector3f start, Vector3f end, float halfWidth, int startColor, int endColor)
+    public static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f camera, Vector3f start, Vector3f end, float halfWidth, int startColor,
+                              int endColor)
     {
         var direction = new Vector3f(end).sub(start);
         var toCamera = new Vector3f(camera).sub(new Vector3f(start).add(end).mul(0.5F));
@@ -42,15 +44,23 @@ final class SiphonGeometry
         buffer.addVertex(pose, end.x - side.x, end.y - side.y, end.z - side.z).setColor(endColor);
     }
 
-    static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f camera, Vector3f start, Vector3f end, float halfWidth, int color)
+    public static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f camera, Vector3f start, Vector3f end, float halfWidth, int color)
     {
         ribbon(pose, buffer, camera, start, end, halfWidth, color, color);
     }
 
     /**
+     * A strip from start to end turned to face a camera at the origin.
+     */
+    public static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f start, Vector3f end, float halfWidth, int color)
+    {
+        ribbon(pose, buffer, new Vector3f(), start, end, halfWidth, color, color);
+    }
+
+    /**
      * A camera-facing disc fading from its color at the center to nothing at its rim, as degenerate quads.
      */
-    static void disc(PoseStack.Pose pose, VertexConsumer buffer, Vector3f camera, Vector3f center, float radius, int color)
+    public static void disc(PoseStack.Pose pose, VertexConsumer buffer, Vector3f camera, Vector3f center, float radius, int color)
     {
         var toCamera = new Vector3f(camera).sub(center);
         if (toCamera.lengthSquared() < 1.0E-6F)
@@ -69,5 +79,13 @@ final class SiphonGeometry
             buffer.addVertex(pose, edgeA.x, edgeA.y, edgeA.z).setColor(rim);
             buffer.addVertex(pose, edgeB.x, edgeB.y, edgeB.z).setColor(rim);
         }
+    }
+
+    /**
+     * A disc facing a camera at the origin.
+     */
+    public static void disc(PoseStack.Pose pose, VertexConsumer buffer, Vector3f center, float radius, int color)
+    {
+        disc(pose, buffer, new Vector3f(), center, radius, color);
     }
 }

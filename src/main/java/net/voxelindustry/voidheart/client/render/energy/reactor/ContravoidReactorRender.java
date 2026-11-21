@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
 import net.voxelindustry.voidheart.client.render.energy.BlockQuads;
+import net.voxelindustry.voidheart.client.render.energy.LeapingArc;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorContent;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorTile;
 import net.voxelindustry.voidheart.common.energy.reactor.ReactorCycle.Phase;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
+import static net.voxelindustry.voidheart.client.render.energy.LeapingArc.ribbon;
 
 /**
  * A Contravoid reactor, after energy-looks.md: two streams meeting head-on in a burning point, seen only through the slits of the containment; the
@@ -61,8 +63,6 @@ public class ContravoidReactorRender implements BlockEntityRenderer<ContravoidRe
     private static final int FISSURE_VIOLET = 0x7A3FD0;
     private static final int CRACK_VIOLET   = 0x9C62F5;
     private static final int BREACH_VIOLET  = 0xA674FF;
-    private static final int AZURIUM_LIGHT  = 0x9EECFF;
-    private static final int AZURIUM_MID    = 0x3D7ED9;
     private static final int SPARK          = 0xDCE6FF;
 
     private static final int BACKDROP_COLOR = 0xFF0B0710;
@@ -128,18 +128,8 @@ public class ContravoidReactorRender implements BlockEntityRenderer<ContravoidRe
     private static final float SPARK_REACH     = 0.48F;
     private static final float SPARK_SIZE      = 0.018F;
 
-    // Arcs, as the pylons' and the engine's
+    // Arcs leave from just inside the crown's corners
     private static final float CROWN_INSET     = 0.12F;
-    private static final float JOINT_SPACING   = 1.5F;
-    private static final int   MIN_JOINTS      = 6;
-    private static final float JOINT_OFFSET    = 0.25F;
-    private static final int   SUBDIVISIONS    = 4;
-    private static final float ARC_CORE_WIDTH  = 0.035F;
-    private static final float ARC_HALO_WIDTH  = 0.09F;
-    private static final float ARC_CORE_ALPHA  = 0.75F;
-    private static final float ARC_HALO_ALPHA  = 0.25F;
-    private static final float LEAP_LENGTH     = 1.5F;
-    private static final float LEAP_WIDEN      = 1.6F;
 
     public record Ghost(BlockPos offset, BlockState state, boolean conflict)
     {
@@ -631,21 +621,6 @@ public class ContravoidReactorRender implements BlockEntityRenderer<ContravoidRe
     }
 
     /**
-     * Two crossed planes along a piece, so it reads from every side but straight down its length.
-     */
-    private static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f from, Vector3f to, Vector3f side, Vector3f up, float width, int color)
-    {
-        for (var across : new Vector3f[]{side, up})
-        {
-            var offset = new Vector3f(across).mul(width);
-            buffer.addVertex(pose, from.x - offset.x, from.y - offset.y, from.z - offset.z).setColor(color);
-            buffer.addVertex(pose, from.x + offset.x, from.y + offset.y, from.z + offset.z).setColor(color);
-            buffer.addVertex(pose, to.x + offset.x, to.y + offset.y, to.z + offset.z).setColor(color);
-            buffer.addVertex(pose, to.x - offset.x, to.y - offset.y, to.z - offset.z).setColor(color);
-        }
-    }
-
-    /**
      * A leaping arc between a corner of the crown and a pylon's bundle: leaps run outward while it gives energy, and inward while it draws to light.
      */
     private static void arc(PoseStack.Pose pose, VertexConsumer buffer, State state, ArcDraw arc, float fade)
@@ -653,50 +628,7 @@ public class ContravoidReactorRender implements BlockEntityRenderer<ContravoidRe
         if (fade <= 0.001F)
             return;
         var end = new Vector3f((float) arc.end().x, (float) arc.end().y, (float) arc.end().z);
-        var start = crownNearest(end);
-        var axis = new Vector3f(end).sub(start);
-        var length = axis.length();
-        if (length < 0.5F)
-            return;
-        axis.div(length);
-        var side = new Vector3f(axis).cross(Math.abs(axis.y) > 0.9F ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0)).normalize();
-        var up = new Vector3f(side).cross(axis).normalize();
-
-        var joints = Math.max(MIN_JOINTS, Mth.ceil(length / JOINT_SPACING));
-        var random = RandomSource.create(arc.seed());
-        var points = new Vector3f[joints + 1];
-        for (var i = 0; i <= joints; i++)
-        {
-            var point = new Vector3f(start).lerp(end, i / (float) joints);
-            if (i > 0 && i < joints)
-            {
-                point.add(new Vector3f(side).mul((random.nextFloat() * 2 - 1) * JOINT_OFFSET));
-                point.add(new Vector3f(up).mul((random.nextFloat() * 2 - 1) * JOINT_OFFSET));
-            }
-            points[i] = point;
-        }
-
-        var pieces = joints * SUBDIVISIONS;
-        for (var piece = 0; piece < pieces; piece++)
-        {
-            var joint = piece / SUBDIVISIONS;
-            var from = new Vector3f(points[joint]).lerp(points[joint + 1], (piece % SUBDIVISIONS) / (float) SUBDIVISIONS);
-            var to = new Vector3f(points[joint]).lerp(points[joint + 1], (piece % SUBDIVISIONS + 1) / (float) SUBDIVISIONS);
-
-            var along = (piece + 0.5F) / pieces * length;
-            var leap = 0F;
-            for (var head : arc.heads())
-            {
-                var progress = arc.inward() ? 1 - head : head;
-                var middle = progress * (length + LEAP_LENGTH) - LEAP_LENGTH / 2;
-                leap = Math.max(leap, 1 - Math.abs(along - middle) / (LEAP_LENGTH / 2));
-            }
-
-            var widen = 1 + (LEAP_WIDEN - 1) * leap;
-            ribbon(pose, buffer, from, to, side, up, ARC_HALO_WIDTH * widen, alpha(ARC_HALO_ALPHA * fade * (1 + leap), AZURIUM_MID));
-            ribbon(pose, buffer, from, to, side, up, ARC_CORE_WIDTH * widen, alpha(Math.min(1, ARC_CORE_ALPHA * (1 + leap)) * fade,
-                    ARGB.srgbLerp(0.6F * leap, AZURIUM_LIGHT, 0xFFFFFF)));
-        }
+        LeapingArc.draw(pose, buffer, crownNearest(end), end, arc.seed(), arc.heads(), arc.inward(), fade);
     }
 
     /**

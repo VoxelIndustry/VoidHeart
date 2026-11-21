@@ -9,21 +9,16 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
 import net.voxelindustry.voidheart.common.content.essence.MultiEssenceStorage;
-import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
-import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
-import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The maw of a Ravenous Engine. Relays link to it as they do to an athanor's intake and fill one tank per essence. Each tick it burns one essence into
@@ -124,7 +119,7 @@ public class RavenousEngineTile extends TileBase implements IEssenceReceiver
         else if (outputTarget == null || level.getGameTime() - targetScannedAt >= TARGET_SCAN_TICKS)
         {
             targetScannedAt = level.getGameTime();
-            newTarget = findTarget(level, worldPosition).orElse(null);
+            newTarget = VoidGrid.arcTarget(level, worldPosition).orElse(null);
         }
 
         if (newFuel == shownFuel && newActivity == activity && Objects.equals(newTarget, outputTarget))
@@ -134,24 +129,6 @@ public class RavenousEngineTile extends TileBase implements IEssenceReceiver
         outputTarget = newTarget;
         setChanged();
         sync();
-    }
-
-    /**
-     * Where the output arc lands: a creative well whose field covers the engine, since those answer first, or else the bundle of the nearest pylon whose
-     * field covers the engine, which is where the grid takes what it accepts.
-     */
-    static Optional<BlockPos> findTarget(ServerLevel level, BlockPos pos)
-    {
-        var center = Vec3.atCenterOf(pos);
-        var well = CreativeSources.wells(level).centers().stream()
-                .filter(candidate -> candidate.distSqr(pos) <= (double) FoundationBalance.CREATIVE_WELL_RADIUS * FoundationBalance.CREATIVE_WELL_RADIUS)
-                .min((a, b) -> Double.compare(a.distToCenterSqr(center), b.distToCenterSqr(center)));
-        if (well.isPresent())
-            return well;
-
-        return VoidGrid.pylonsCovering(level, pos).stream()
-                .map(GridLayout.Pylon::bundle)
-                .min((a, b) -> Double.compare(a.distToCenterSqr(center), b.distToCenterSqr(center)));
     }
 
     private void animate(Level level)

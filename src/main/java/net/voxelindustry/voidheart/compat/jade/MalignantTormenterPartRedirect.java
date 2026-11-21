@@ -1,6 +1,5 @@
 package net.voxelindustry.voidheart.compat.jade;
 
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterBlock;
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterPartBlock;
@@ -36,12 +35,6 @@ public class MalignantTormenterPartRedirect implements JadeRayTraceCallback
             return accessor;
 
         var tile = level.getBlockEntity(tormenter);
-        return registration.blockAccessor()
-                .from(blockAccessor)
-                .hit(new BlockHitResult(blockAccessor.getHitResult().getLocation(), blockAccessor.getSide(), tormenter, false))
-                .blockState(state)
-                .blockEntity(tile)
-                .serversideRep(MalignantTormenterBlock.itemOf(tile))
-                .build();
+        return JadeRedirects.to(registration, blockAccessor, tormenter, state, tile, MalignantTormenterBlock.itemOf(tile));
     }
 }

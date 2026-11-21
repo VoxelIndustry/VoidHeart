@@ -1,7 +1,5 @@
 package net.voxelindustry.voidheart.compat.jade;
 
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryBaseBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
@@ -35,12 +33,6 @@ public class ArmillaryBaseRedirect implements JadeRayTraceCallback
             return accessor;
 
         var state = level.getBlockState(corePos);
-        return registration.blockAccessor()
-                .from(blockAccessor)
-                .hit(new BlockHitResult(blockAccessor.getHitResult().getLocation(), blockAccessor.getSide(), corePos, false))
-                .blockState(state)
-                .blockEntity(armillary)
-                .serversideRep(new ItemStack(state.getBlock()))
-                .build();
+        return JadeRedirects.to(registration, blockAccessor, corePos, state, armillary);
     }
 }

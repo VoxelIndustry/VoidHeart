@@ -14,10 +14,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
-import net.voxelindustry.voidheart.common.energy.engine.EngineAnimation;
 import net.voxelindustry.voidheart.common.energy.engine.EngineFuel;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineTile;
 import org.joml.Vector3f;
@@ -25,6 +23,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.voxelindustry.voidheart.client.render.SolidQuads;
+import net.voxelindustry.voidheart.client.render.energy.LeapingArc;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -48,9 +48,6 @@ public class RavenousEngineRender implements BlockEntityRenderer<RavenousEngineT
     private static final int STILLNESS_COLOR = 0x7FB8FF;
     private static final int FIERY_COLOR     = 0xFF8A3D;
     private static final int SUFFERING_COLOR = 0xC0182F;
-    // Azurium tones sampled from the bundle textures
-    private static final int AZURIUM_LIGHT   = 0x9EECFF;
-    private static final int AZURIUM_MID     = 0x3D7ED9;
 
     private static final float PIXEL = 1 / 16F;
 
@@ -89,16 +86,6 @@ public class RavenousEngineRender implements BlockEntityRenderer<RavenousEngineT
 
     // Arc: from the top of the chamber to the bundle receiving the energy
     private static final float ARC_START_Y      = 31 * PIXEL;
-    private static final float JOINT_SPACING    = 1.5F;
-    private static final int   MIN_JOINTS       = 6;
-    private static final float JOINT_OFFSET     = 0.25F;
-    private static final int   SUBDIVISIONS     = 4;
-    private static final float CORE_WIDTH       = 0.035F;
-    private static final float HALO_WIDTH       = 0.09F;
-    private static final float ARC_CORE_ALPHA   = 0.75F;
-    private static final float ARC_HALO_ALPHA   = 0.25F;
-    private static final float LEAP_LENGTH      = 1.5F;
-    private static final float LEAP_WIDEN       = 1.6F;
 
     public static class State extends BlockEntityRenderState
     {
@@ -160,7 +147,8 @@ public class RavenousEngineRender implements BlockEntityRenderer<RavenousEngineT
 
         collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(VEIL_TEXTURE, true), (pose, buffer) -> column(pose, buffer, state));
         if (state.arcEnd != null)
-            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> arc(pose, buffer, state));
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
+                    LeapingArc.draw(pose, buffer, new Vector3f(0.5F, ARC_START_Y, 0.5F), state.arcEnd, state.jagSeed, state.leapHeads, state.open));
     }
 
     private static void plates(PoseStack.Pose pose, VertexConsumer buffer, float slide, int light)
@@ -178,31 +166,11 @@ public class RavenousEngineRender implements BlockEntityRenderer<RavenousEngineT
      */
     private static void cuboid(PoseStack.Pose pose, VertexConsumer buffer, int light, float x0, float y0, float z0, float x1, float y1, float z1)
     {
-        solid(pose, buffer, light, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, z0, x1, z1, 0, 1, 0);
-        solid(pose, buffer, light, x1, y1, z0, x1, y0, z0, x0, y0, z0, x0, y1, z0, 1 - x1, 1 - y1, 1 - x0, 1 - y0, 0, 0, -1);
-        solid(pose, buffer, light, x0, y1, z1, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, 1 - y1, x1, 1 - y0, 0, 0, 1);
-        solid(pose, buffer, light, x0, y1, z0, x0, y0, z0, x0, y0, z1, x0, y1, z1, z0, 1 - y1, z1, 1 - y0, -1, 0, 0);
-        solid(pose, buffer, light, x1, y1, z1, x1, y0, z1, x1, y0, z0, x1, y1, z0, 1 - z1, 1 - y1, 1 - z0, 1 - y0, 1, 0, 0);
-    }
-
-    private static void solid(PoseStack.Pose pose, VertexConsumer buffer, int light,
-                              float ax, float ay, float az, float bx, float by, float bz, float cx, float cy, float cz, float dx, float dy, float dz,
-                              float u0, float v0, float u1, float v1, int nx, int ny, int nz)
-    {
-        solidVertex(pose, buffer, light, ax, ay, az, u0, v0, nx, ny, nz);
-        solidVertex(pose, buffer, light, bx, by, bz, u0, v1, nx, ny, nz);
-        solidVertex(pose, buffer, light, cx, cy, cz, u1, v1, nx, ny, nz);
-        solidVertex(pose, buffer, light, dx, dy, dz, u1, v0, nx, ny, nz);
-    }
-
-    private static void solidVertex(PoseStack.Pose pose, VertexConsumer buffer, int light, float x, float y, float z, float u, float v, int nx, int ny, int nz)
-    {
-        buffer.addVertex(pose, x, y, z)
-                .setColor(0xFFFFFFFF)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(light)
-                .setNormal(pose, nx, ny, nz);
+        SolidQuads.quad(pose, buffer, light, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, z0, x1, z1, 0, 1, 0);
+        SolidQuads.quad(pose, buffer, light, x1, y1, z0, x1, y0, z0, x0, y0, z0, x0, y1, z0, 1 - x1, 1 - y1, 1 - x0, 1 - y0, 0, 0, -1);
+        SolidQuads.quad(pose, buffer, light, x0, y1, z1, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, 1 - y1, x1, 1 - y0, 0, 0, 1);
+        SolidQuads.quad(pose, buffer, light, x0, y1, z0, x0, y0, z0, x0, y0, z1, x0, y1, z1, z0, 1 - y1, z1, 1 - y0, -1, 0, 0);
+        SolidQuads.quad(pose, buffer, light, x1, y1, z1, x1, y0, z1, x1, y0, z0, x1, y1, z0, 1 - z1, 1 - y1, 1 - z0, 1 - y0, 1, 0, 0);
     }
 
     /**
@@ -287,75 +255,6 @@ public class RavenousEngineRender implements BlockEntityRenderer<RavenousEngineT
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(FULL_BRIGHT)
                 .setNormal(pose, nx, ny, nz);
-    }
-
-    /**
-     * A jagged leaping arc in the pylons' style: an azurium-light core in an azurium-mid halo, with brighter stretches running away from the engine.
-     */
-    private static void arc(PoseStack.Pose pose, VertexConsumer buffer, State state)
-    {
-        var start = new Vector3f(0.5F, ARC_START_Y, 0.5F);
-        var end = new Vector3f((float) state.arcEnd.x, (float) state.arcEnd.y, (float) state.arcEnd.z);
-        var axis = new Vector3f(end).sub(start);
-        var length = axis.length();
-        if (length < 0.5F)
-            return;
-        axis.div(length);
-
-        // Two directions across the arc to offset its joints and cross its planes
-        var side = new Vector3f(axis).cross(Math.abs(axis.y) > 0.9F ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0)).normalize();
-        var up = new Vector3f(side).cross(axis).normalize();
-
-        var joints = Math.max(MIN_JOINTS, Mth.ceil(length / JOINT_SPACING));
-        var random = RandomSource.create(state.jagSeed);
-        var points = new Vector3f[joints + 1];
-        for (int i = 0; i <= joints; i++)
-        {
-            var point = new Vector3f(start).lerp(end, i / (float) joints);
-            if (i > 0 && i < joints)
-            {
-                point.add(new Vector3f(side).mul((random.nextFloat() * 2 - 1) * JOINT_OFFSET));
-                point.add(new Vector3f(up).mul((random.nextFloat() * 2 - 1) * JOINT_OFFSET));
-            }
-            points[i] = point;
-        }
-
-        var fade = state.open;
-        var pieces = joints * SUBDIVISIONS;
-        for (int piece = 0; piece < pieces; piece++)
-        {
-            var joint = piece / SUBDIVISIONS;
-            var from = new Vector3f(points[joint]).lerp(points[joint + 1], (piece % SUBDIVISIONS) / (float) SUBDIVISIONS);
-            var to = new Vector3f(points[joint]).lerp(points[joint + 1], (piece % SUBDIVISIONS + 1) / (float) SUBDIVISIONS);
-
-            var along = (piece + 0.5F) / pieces * length;
-            var leap = 0F;
-            for (var head : state.leapHeads)
-            {
-                var center = head * (length + LEAP_LENGTH) - LEAP_LENGTH / 2;
-                leap = Math.max(leap, 1 - Math.abs(along - center) / (LEAP_LENGTH / 2));
-            }
-
-            var widen = 1 + (LEAP_WIDEN - 1) * leap;
-            ribbon(pose, buffer, from, to, side, up, HALO_WIDTH * widen, alpha(ARC_HALO_ALPHA * fade * (1 + leap), AZURIUM_MID));
-            ribbon(pose, buffer, from, to, side, up, CORE_WIDTH * widen, alpha(Math.min(1, ARC_CORE_ALPHA * (1 + leap)) * fade,
-                    ARGB.srgbLerp(0.6F * leap, AZURIUM_LIGHT, 0xFFFFFF)));
-        }
-    }
-
-    /**
-     * Two crossed planes along a piece of the arc, so it reads from every side but straight down its length.
-     */
-    private static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f from, Vector3f to, Vector3f side, Vector3f up, float width, int color)
-    {
-        for (var across : new Vector3f[]{side, up})
-        {
-            var offset = new Vector3f(across).mul(width);
-            buffer.addVertex(pose, from.x - offset.x, from.y - offset.y, from.z - offset.z).setColor(color);
-            buffer.addVertex(pose, from.x + offset.x, from.y + offset.y, from.z + offset.z).setColor(color);
-            buffer.addVertex(pose, to.x + offset.x, to.y + offset.y, to.z + offset.z).setColor(color);
-            buffer.addVertex(pose, to.x - offset.x, to.y - offset.y, to.z - offset.z).setColor(color);
-        }
     }
 
     /**

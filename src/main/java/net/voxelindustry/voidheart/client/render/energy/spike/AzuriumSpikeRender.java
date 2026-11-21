@@ -13,13 +13,11 @@ import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
 import net.voxelindustry.voidheart.common.energy.spike.AzuriumSpikeTile;
@@ -31,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.function.UnaryOperator;
+import net.voxelindustry.voidheart.client.render.SolidQuads;
+import net.voxelindustry.voidheart.client.render.energy.LeapingArc;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -93,17 +93,6 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
     private static final float FOOT_HEIGHT     = 4 * PIXEL;
     private static final float FOOT_ALPHA      = 0.22F;
 
-    // Arc: from the point to the bundle receiving the energy, as the pylons draw theirs
-    private static final float JOINT_SPACING  = 1.5F;
-    private static final int   MIN_JOINTS     = 6;
-    private static final float JOINT_OFFSET   = 0.25F;
-    private static final int   SUBDIVISIONS   = 4;
-    private static final float CORE_WIDTH     = 0.035F;
-    private static final float HALO_WIDTH     = 0.09F;
-    private static final float ARC_CORE_ALPHA = 0.75F;
-    private static final float ARC_HALO_ALPHA = 0.25F;
-    private static final float LEAP_LENGTH    = 1.5F;
-    private static final float LEAP_WIDEN     = 1.6F;
 
     public static class State extends BlockEntityRenderState
     {
@@ -206,7 +195,8 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
         poseStack.popPose();
 
         if (state.fade > 0 && state.arcEnd != null)
-            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> arc(pose, buffer, state));
+            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
+                    LeapingArc.draw(pose, buffer, state.arcStart, state.arcEnd, state.jagSeed, state.leapHeads, state.fade));
     }
 
     /**
@@ -247,36 +237,16 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
         float u0x = x0 + 0.5F, u1x = x1 + 0.5F, u0z = z0 + 0.5F, u1z = z1 + 0.5F;
         float vTop = v(y1, textureHeight), vBottom = v(y0, textureHeight);
 
-        quad(pose, buffer, light, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0, u0x, u0z, u1x, u1z, 0, 1, 0);
-        quad(pose, buffer, light, x1, y1, z0, x1, y0, z0, x0, y0, z0, x0, y1, z0, 1 - u1x, vTop, 1 - u0x, vBottom, 0, 0, -1);
-        quad(pose, buffer, light, x0, y1, z1, x0, y0, z1, x1, y0, z1, x1, y1, z1, u0x, vTop, u1x, vBottom, 0, 0, 1);
-        quad(pose, buffer, light, x0, y1, z0, x0, y0, z0, x0, y0, z1, x0, y1, z1, u0z, vTop, u1z, vBottom, -1, 0, 0);
-        quad(pose, buffer, light, x1, y1, z1, x1, y0, z1, x1, y0, z0, x1, y1, z0, 1 - u1z, vTop, 1 - u0z, vBottom, 1, 0, 0);
+        SolidQuads.quad(pose, buffer, light, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0, u0x, u0z, u1x, u1z, 0, 1, 0);
+        SolidQuads.quad(pose, buffer, light, x1, y1, z0, x1, y0, z0, x0, y0, z0, x0, y1, z0, 1 - u1x, vTop, 1 - u0x, vBottom, 0, 0, -1);
+        SolidQuads.quad(pose, buffer, light, x0, y1, z1, x0, y0, z1, x1, y0, z1, x1, y1, z1, u0x, vTop, u1x, vBottom, 0, 0, 1);
+        SolidQuads.quad(pose, buffer, light, x0, y1, z0, x0, y0, z0, x0, y0, z1, x0, y1, z1, u0z, vTop, u1z, vBottom, -1, 0, 0);
+        SolidQuads.quad(pose, buffer, light, x1, y1, z1, x1, y0, z1, x1, y0, z0, x1, y1, z0, 1 - u1z, vTop, 1 - u0z, vBottom, 1, 0, 0);
     }
 
     private static float v(float y, float textureHeight)
     {
         return Mth.clamp(1 - y / textureHeight, 0, 1);
-    }
-
-    private static void quad(PoseStack.Pose pose, VertexConsumer buffer, int light,
-                             float ax, float ay, float az, float bx, float by, float bz, float cx, float cy, float cz, float dx, float dy, float dz,
-                             float u0, float v0, float u1, float v1, int nx, int ny, int nz)
-    {
-        vertex(pose, buffer, light, ax, ay, az, u0, v0, nx, ny, nz);
-        vertex(pose, buffer, light, bx, by, bz, u0, v1, nx, ny, nz);
-        vertex(pose, buffer, light, cx, cy, cz, u1, v1, nx, ny, nz);
-        vertex(pose, buffer, light, dx, dy, dz, u1, v0, nx, ny, nz);
-    }
-
-    private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, int light, float x, float y, float z, float u, float v, int nx, int ny, int nz)
-    {
-        buffer.addVertex(pose, x, y, z)
-                .setColor(0xFFFFFFFF)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(light)
-                .setNormal(pose, nx, ny, nz);
     }
 
     /**
@@ -319,75 +289,6 @@ public class AzuriumSpikeRender implements BlockEntityRenderer<AzuriumSpikeTile,
     private static int alpha(float alpha, int color)
     {
         return ARGB.color(Math.round(Mth.clamp(alpha, 0, 1) * 255), color);
-    }
-
-    /**
-     * A jagged leaping arc in the pylons' style: an azurium-light core in an azurium-mid halo, with brighter stretches running away from the spike.
-     */
-    private static void arc(PoseStack.Pose pose, VertexConsumer buffer, State state)
-    {
-        var start = new Vector3f(state.arcStart);
-        var end = new Vector3f((float) state.arcEnd.x, (float) state.arcEnd.y, (float) state.arcEnd.z);
-        var axis = new Vector3f(end).sub(start);
-        var length = axis.length();
-        if (length < 0.5F)
-            return;
-        axis.div(length);
-
-        // Two directions across the arc to offset its joints and cross its planes
-        var side = new Vector3f(axis).cross(Math.abs(axis.y) > 0.9F ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0)).normalize();
-        var up = new Vector3f(side).cross(axis).normalize();
-
-        var joints = Math.max(MIN_JOINTS, Mth.ceil(length / JOINT_SPACING));
-        var random = RandomSource.create(state.jagSeed);
-        var points = new Vector3f[joints + 1];
-        for (int i = 0; i <= joints; i++)
-        {
-            var point = new Vector3f(start).lerp(end, i / (float) joints);
-            if (i > 0 && i < joints)
-            {
-                point.add(new Vector3f(side).mul((random.nextFloat() * 2 - 1) * JOINT_OFFSET));
-                point.add(new Vector3f(up).mul((random.nextFloat() * 2 - 1) * JOINT_OFFSET));
-            }
-            points[i] = point;
-        }
-
-        var fade = state.fade;
-        var pieces = joints * SUBDIVISIONS;
-        for (int piece = 0; piece < pieces; piece++)
-        {
-            var joint = piece / SUBDIVISIONS;
-            var from = new Vector3f(points[joint]).lerp(points[joint + 1], (piece % SUBDIVISIONS) / (float) SUBDIVISIONS);
-            var to = new Vector3f(points[joint]).lerp(points[joint + 1], (piece % SUBDIVISIONS + 1) / (float) SUBDIVISIONS);
-
-            var along = (piece + 0.5F) / pieces * length;
-            var leap = 0F;
-            for (var head : state.leapHeads)
-            {
-                var center = head * (length + LEAP_LENGTH) - LEAP_LENGTH / 2;
-                leap = Math.max(leap, 1 - Math.abs(along - center) / (LEAP_LENGTH / 2));
-            }
-
-            var widen = 1 + (LEAP_WIDEN - 1) * leap;
-            ribbon(pose, buffer, from, to, side, up, HALO_WIDTH * widen, alpha(ARC_HALO_ALPHA * fade * (1 + leap), AZURIUM_MID));
-            ribbon(pose, buffer, from, to, side, up, CORE_WIDTH * widen, alpha(Math.min(1, ARC_CORE_ALPHA * (1 + leap)) * fade,
-                    ARGB.srgbLerp(0.6F * leap, AZURIUM_LIGHT, 0xFFFFFF)));
-        }
-    }
-
-    /**
-     * Two crossed planes along a piece of the arc, so it reads from every side but straight down its length.
-     */
-    private static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vector3f from, Vector3f to, Vector3f side, Vector3f up, float width, int color)
-    {
-        for (var across : new Vector3f[]{side, up})
-        {
-            var offset = new Vector3f(across).mul(width);
-            buffer.addVertex(pose, from.x - offset.x, from.y - offset.y, from.z - offset.z).setColor(color);
-            buffer.addVertex(pose, from.x + offset.x, from.y + offset.y, from.z + offset.z).setColor(color);
-            buffer.addVertex(pose, to.x + offset.x, to.y + offset.y, to.z + offset.z).setColor(color);
-            buffer.addVertex(pose, to.x - offset.x, to.y - offset.y, to.z - offset.z).setColor(color);
-        }
     }
 
     /**

@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -209,7 +208,10 @@ public final class HoleLook
         quad(pose, buffer, at, spin.transform(new Vector3f(wide)), spin.transform(new Vector3f(tall)), color);
     }
 
-    private static void quad(PoseStack.Pose pose, VertexConsumer buffer, Vec3 at, Vector3f along, Vector3f across, int color)
+    /**
+     * A full-bright textured quad centered on a camera-relative point, for the blight render types.
+     */
+    static void quad(PoseStack.Pose pose, VertexConsumer buffer, Vec3 at, Vector3f along, Vector3f across, int color)
     {
         float x = (float) at.x, y = (float) at.y, z = (float) at.z;
         vertex(pose, buffer, x - along.x - across.x, y - along.y - across.y, z - along.z - across.z, 0, 1, color);
