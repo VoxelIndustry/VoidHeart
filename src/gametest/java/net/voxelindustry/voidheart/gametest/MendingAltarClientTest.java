@@ -1,6 +1,5 @@
 package net.voxelindustry.voidheart.gametest;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -87,7 +86,7 @@ public class MendingAltarClientTest implements FabricClientGameTest
         });
 
         context.waitTicks(30);
-        context.getInput().pressKey(InputConstants.KEY_F1);
+        setHudHidden(context, true);
         context.takeScreenshot("mending-altar-eating");
 
         var afterDiamond = DAMAGE - MendingRepair.materialRepair(Items.DIAMOND_PICKAXE.getDefaultInstance().getMaxDamage(), DAMAGE);
@@ -102,18 +101,34 @@ public class MendingAltarClientTest implements FabricClientGameTest
         context.waitTicks(25);
         context.takeScreenshot("mending-altar-drinking");
 
+        // A diamond laid while the altar drinks is eaten before any more experience is spent
+        var laid = server.computeOnServer(minecraft ->
+        {
+            expect(skull(minecraft).getExperience() < EXPERIENCE, "the altar was not drinking from the skull yet");
+            pillar(minecraft, WEST).setStack(new ItemStack(Items.DIAMOND));
+            return new int[]{altar(minecraft).getTool().getDamageValue(), skull(minecraft).getExperience()};
+        });
+        var afterSecondDiamond = laid[0] - MendingRepair.materialRepair(Items.DIAMOND_PICKAXE.getDefaultInstance().getMaxDamage(), laid[0]);
+        waitFor(context, server, 200, "the diamond laid while drinking was not eaten", minecraft -> pillar(minecraft, WEST).getStack().isEmpty());
+        server.runOnServer(minecraft ->
+        {
+            var damage = altar(minecraft).getTool().getDamageValue();
+            expect(damage == afterSecondDiamond, "the pickaxe has " + damage + " damage after the second diamond, expected " + afterSecondDiamond);
+            expect(skull(minecraft).getExperience() == laid[1], "experience was drawn while the second diamond waited");
+        });
+
         waitFor(context, server, 600, () -> "the skull did not finish mending the pickaxe", minecraft -> !altar(minecraft).getTool().isDamaged());
         context.waitTicks(2);
         server.runOnServer(minecraft ->
         {
-            var spent = (afterDiamond + MendingRepair.DURABILITY_PER_EXPERIENCE - 1) / MendingRepair.DURABILITY_PER_EXPERIENCE;
+            var spent = (afterSecondDiamond + MendingRepair.DURABILITY_PER_EXPERIENCE - 1) / MendingRepair.DURABILITY_PER_EXPERIENCE;
             var left = skull(minecraft).getExperience();
-            expect(left == EXPERIENCE - spent, "the skull holds " + left + ", expected " + (EXPERIENCE - spent));
+            expect(left == laid[1] - spent, "the skull holds " + left + ", expected " + (laid[1] - spent));
             expect(!altar(minecraft).isRepairing() && !minecraft.overworld().getBlockState(ALTAR).getValue(BlockStateProperties.LIT),
                     "the altar kept mending a whole tool");
         });
         context.takeScreenshot("mending-altar-whole");
-        context.getInput().pressKey(InputConstants.KEY_F1);
+        setHudHidden(context, false);
 
         rightClick(context);
         server.runOnServer(minecraft ->
@@ -139,6 +154,18 @@ public class MendingAltarClientTest implements FabricClientGameTest
             expect(drops.size() == 1 && drops.getFirst().getItem().getDamageValue() == DAMAGE, "breaking the altar did not drop the tool it held");
         });
         clearScene(server);
+    }
+
+    /**
+     * Sets the HUD rather than toggling it, since an earlier test may have left it either way.
+     */
+    private static void setHudHidden(ClientGameTestContext context, boolean hidden)
+    {
+        context.runOnClient(minecraft ->
+        {
+            if (minecraft.gui.hud.isHidden() != hidden)
+                minecraft.gui.hud.toggle();
+        });
     }
 
     private static void aimAtAltar(ClientGameTestContext context, TestServerContext server)

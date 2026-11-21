@@ -132,18 +132,16 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
      */
     private boolean chooseSource()
     {
+        var hadSource = !consumingPillarPos.equals(BlockPos.ZERO) || !consumingSkullPos.equals(BlockPos.ZERO);
         resetConsumption();
-        searchPillars();
 
-        for (var pillar : pillars)
+        var pillar = findMaterialPillar();
+        if (pillar != null)
         {
-            if (!pillar.getStack().isEmpty() && tool.isValidRepairItem(pillar.getStack()))
-            {
-                consumingPillarPos = pillar.getBlockPos().immutable();
-                cachedToConsume = pillar.getStack().copyWithCount(1);
-                sync();
-                return true;
-            }
+            consumingPillarPos = pillar.getBlockPos().immutable();
+            cachedToConsume = pillar.getStack().copyWithCount(1);
+            sync();
+            return true;
         }
 
         var skull = findSkullToDrain();
@@ -153,7 +151,22 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
             sync();
             return true;
         }
+
+        // Clients would otherwise keep streaming from the source just lost
+        if (hadSource)
+            sync();
         return false;
+    }
+
+    private @Nullable VoidPillarTile findMaterialPillar()
+    {
+        searchPillars();
+        for (var pillar : pillars)
+        {
+            if (!pillar.getStack().isEmpty() && tool.isValidRepairItem(pillar.getStack()))
+                return pillar;
+        }
+        return null;
     }
 
     private void eatMaterial()
@@ -165,11 +178,8 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
             return;
         }
 
-        if (consumeProgress < ITEM_EATING_TIME)
-        {
-            consumeProgress++;
+        if (++consumeProgress < ITEM_EATING_TIME)
             return;
-        }
 
         var repaired = MendingRepair.materialRepair(tool.getMaxDamage(), tool.getDamageValue());
         tool.setDamageValue(tool.getDamageValue() - repaired);
@@ -194,12 +204,16 @@ public class MendingAltarTile extends TileBase implements PillarLinkedTile
             return;
         }
 
-        if (skullConsumeProgress < EXPERIENCE_GULP_TIME)
+        if (++skullConsumeProgress < EXPERIENCE_GULP_TIME)
+            return;
+        skullConsumeProgress = 0;
+
+        // A repair material laid while drinking is cheaper, so it is eaten first
+        if (findMaterialPillar() != null)
         {
-            skullConsumeProgress++;
+            chooseSource();
             return;
         }
-        skullConsumeProgress = 0;
 
         var taken = MendingRepair.experienceToDrain(tool.getDamageValue(), skull.getExperience(), EXPERIENCE_GULP);
         skull.setExperience(skull.getExperience() - taken);
