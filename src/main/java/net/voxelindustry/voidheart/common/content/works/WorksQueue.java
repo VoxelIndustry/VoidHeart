@@ -16,7 +16,20 @@ import java.util.function.Predicate;
  */
 public final class WorksQueue
 {
-    public static final Codec<WorksQueue> CODEC = Job.CODEC.listOf().xmap(WorksQueue::new, queue -> queue.jobs);
+    private record Saved(List<Job> jobs, int nextId)
+    {
+        static final Codec<Saved> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Job.CODEC.listOf().fieldOf("jobs").forGetter(Saved::jobs),
+                Codec.INT.optionalFieldOf("next_id", 1).forGetter(Saved::nextId)
+        ).apply(instance, Saved::new));
+    }
+
+    /**
+     * Saved with the next order's id, so an id is never given twice; queues saved as a bare list of jobs still load.
+     */
+    public static final Codec<WorksQueue> CODEC = Codec.withAlternative(
+            Saved.CODEC.xmap(saved -> new WorksQueue(saved.jobs(), saved.nextId()), queue -> new Saved(queue.jobs, queue.nextId)),
+            Job.CODEC.listOf().xmap(jobs -> new WorksQueue(jobs, 1), queue -> queue.jobs));
 
     /**
      * @param remaining crafts not yet claimed
@@ -78,14 +91,17 @@ public final class WorksQueue
     }
 
     private final List<Job> jobs = new ArrayList<>();
+    /** The id the next order gets, past every id given so far, so a claim on a cancelled order never settles a later one. */
+    private int nextId = 1;
 
     public WorksQueue()
     {
     }
 
-    private WorksQueue(List<Job> jobs)
+    private WorksQueue(List<Job> jobs, int nextId)
     {
         jobs.forEach(job -> this.jobs.add(new Job(job.id(), job.what(), job.count(), job.tasks())));
+        this.nextId = Math.max(nextId, jobs.stream().mapToInt(Job::id).max().orElse(0) + 1);
     }
 
     public List<Job> jobs()
@@ -109,7 +125,7 @@ public final class WorksQueue
             else
                 merged.add(task);
         }
-        var id = jobs.stream().mapToInt(Job::id).max().orElse(0) + 1;
+        var id = nextId++;
         jobs.add(new Job(id, what, count, merged));
         return id;
     }

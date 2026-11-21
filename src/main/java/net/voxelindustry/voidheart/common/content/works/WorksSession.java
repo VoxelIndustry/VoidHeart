@@ -117,7 +117,7 @@ public final class WorksSession
     {
         var server = player.level().getServer();
         var hoard = hoard();
-        var plan = WorksPlan.plan(WorksCatalogues.of(server, owner, hoard).lookup(), hoard.view(), item, Math.max(1, count));
+        var plan = WorksPlan.plan(WorksCatalogues.of(server, owner, hoard).lookup(), hoard.view(), item, Math.clamp(count, 1, WorksBalance.MAX_ORDER));
         var graph = WorksGraph.of(plan);
         var reserve = new java.util.LinkedHashMap<String, Long>();
         for (var aspect : graph.essence().keySet())
@@ -131,7 +131,7 @@ public final class WorksSession
 
     void begin(ItemVariant item, long count)
     {
-        WorksContent.order(player.level().getServer(), owner, item, Math.max(1, count));
+        WorksContent.order(player.level().getServer(), owner, item, Math.clamp(count, 1, WorksBalance.MAX_ORDER));
         broadcast(true);
     }
 
@@ -151,7 +151,7 @@ public final class WorksSession
             works.keepJobs().remove(item);
         }
         else
-            works.keeps().put(item, level);
+            works.keeps().put(item, Math.min(level, WorksBalance.MAX_ORDER));
         state.setDirty();
         broadcast(true);
     }

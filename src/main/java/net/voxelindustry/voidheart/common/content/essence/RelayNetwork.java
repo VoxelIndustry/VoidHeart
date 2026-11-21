@@ -261,18 +261,16 @@ public final class RelayNetwork
             sources.add(new Source(pos, collector.storage().type(), priority(collector, flowing.contains(pos)), collector, null,
                     relay -> relay.linkedCollectors().contains(pos)));
         }
-        // Two stores opening onto one pool, such as two Aspect Folds of one pocket, are one source
-        var pools = new java.util.HashSet<Object>();
+        // Two stores opening onto one pool, such as two Aspect Folds of one pocket, are one source of each aspect: the first that can give it
+        var pools = new java.util.HashSet<java.util.List<Object>>();
         for (var entry : stores(level, relays).entrySet())
         {
             var pos = entry.getKey();
             var store = entry.getValue();
-            if (!pools.add(store.essencePool()))
-                continue;
             for (var aspect : (Iterable<EssenceType>) EssenceRegistry.ESSENCE_REGISTRY.stream()::iterator)
             {
                 var amount = store.amountOf(aspect);
-                if (aspect == EssenceRegistry.EMPTY || amount <= 0)
+                if (aspect == EssenceRegistry.EMPTY || amount <= 0 || !pools.add(java.util.List.of(store.essencePool(), aspect)))
                     continue;
                 var fill = amount / (float) (amount + Math.max(0, store.spaceFor(aspect)));
                 sources.add(new Source(pos, aspect, fill + (flowing.contains(pos) ? FLOWING_BONUS : 0), null, store,

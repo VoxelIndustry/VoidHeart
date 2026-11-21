@@ -161,6 +161,11 @@ public class OculusTableBlock extends Block implements EntityBlock
             player.sendOverlayMessage(Component.translatable(MODID + ".oculus_table.memory.full"));
             return InteractionResult.FAIL;
         }
+        if (tile.getView().reckoning())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".oculus_table.memory.lens"));
+            return InteractionResult.FAIL;
+        }
         OculusTableStructure.remember(level, pos, Optional.of(memory));
         stack.consume(1, player);
         level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 1, 0.7F);

@@ -75,6 +75,8 @@ final class WorksView
     /** Whether the roster of Officiants is shown instead of what they can make. */
     boolean roster;
     private int rosterScroll;
+    /** The first order shown on the strip of order plates. */
+    private int jobScroll;
 
     // The layout of the graph shown, worked out again when it changes, and how it is zoomed and panned
     @Nullable
@@ -449,21 +451,59 @@ final class WorksView
         return new float[] { x, y };
     }
 
+    /** A plate of the strip paging back, or on, rather than showing an order. */
+    private static final int PAGE_BACK = -1;
+    private static final int PAGE_ON   = -2;
+    private static final int STRIP_PLATES = (REGION_W + 2) / (JOB_PLATE_W + 2);
+
+    /**
+     * @return what each plate of the order strip shows, an order's place in the list or a page plate, the same for drawing and clicking
+     */
+    private List<Integer> strip()
+    {
+        int count = menu.getJobs().size();
+        jobScroll = Math.clamp(jobScroll, 0, Math.max(0, count - 1));
+        var plates = new ArrayList<Integer>();
+        if (count <= STRIP_PLATES)
+        {
+            jobScroll = 0;
+            for (int index = 0; index < count; index++)
+                plates.add(index);
+            return plates;
+        }
+        if (jobScroll > 0)
+            plates.add(PAGE_BACK);
+        int room = STRIP_PLATES - plates.size();
+        // Keep the last plate for paging on when the rest do not fit
+        int shown = count - jobScroll <= room ? count - jobScroll : room - 1;
+        for (int index = jobScroll; index < jobScroll + shown; index++)
+            plates.add(index);
+        if (jobScroll + shown < count)
+            plates.add(PAGE_ON);
+        return plates;
+    }
+
     private void extractJobs(GuiGraphicsExtractor graphics, Font font, int left, int top, int mouseX, int mouseY)
     {
         var jobs = menu.getJobs();
-        for (int index = 0; index < jobs.size() && index * (JOB_PLATE_W + 2) + JOB_PLATE_W <= REGION_W; index++)
+        var plates = strip();
+        for (int slot = 0; slot < plates.size(); slot++)
         {
-            var shown = jobs.get(index);
-            int x = left + REGION_X + index * (JOB_PLATE_W + 2);
+            int plate = plates.get(slot);
+            int x = left + REGION_X + slot * (JOB_PLATE_W + 2);
             int y = top + JOBS_Y;
-            boolean selected = job != null && job == shown.id();
             boolean over = mouseX >= x && mouseX < x + JOB_PLATE_W && mouseY >= y && mouseY < y + 12;
+            boolean selected = plate >= 0 && job != null && job == jobs.get(plate).id();
             graphics.fill(x, y, x + JOB_PLATE_W, y + 12, PLATE_BACK);
             graphics.outline(x, y, JOB_PLATE_W, 12, selected ? ACTIVE_COLOR : over ? FRONTIER_COLOR : RULE_COLOR);
-            var label = "#" + shown.id();
+            var label = plate == PAGE_BACK ? "<" : plate == PAGE_ON ? "+" + (jobs.size() - lastShown(plates) - 1) : "#" + jobs.get(plate).id();
             graphics.text(font, label, x + (JOB_PLATE_W - font.width(label)) / 2, y + 2, selected ? ACTIVE_COLOR : MUTED_COLOR, false);
         }
+    }
+
+    private static int lastShown(List<Integer> plates)
+    {
+        return plates.stream().filter(plate -> plate >= 0).mapToInt(Integer::intValue).max().orElse(-1);
     }
 
     /**
@@ -541,15 +581,21 @@ final class WorksView
             return true;
         }
         var jobs = menu.getJobs();
-        for (int index = 0; index < jobs.size(); index++)
+        var plates = strip();
+        for (int slot = 0; slot < plates.size(); slot++)
         {
-            int x = left + REGION_X + index * (JOB_PLATE_W + 2);
+            int x = left + REGION_X + slot * (JOB_PLATE_W + 2);
             int y = top + JOBS_Y;
-            if (mouseX >= x && mouseX < x + JOB_PLATE_W && mouseY >= y && mouseY < y + 12)
-            {
-                job = job != null && job == jobs.get(index).id() ? null : jobs.get(index).id();
-                return true;
-            }
+            if (mouseX < x || mouseX >= x + JOB_PLATE_W || mouseY < y || mouseY >= y + 12)
+                continue;
+            int plate = plates.get(slot);
+            if (plate == PAGE_BACK)
+                jobScroll = Math.max(0, jobScroll - (STRIP_PLATES - 2));
+            else if (plate == PAGE_ON)
+                jobScroll = lastShown(plates) + 1;
+            else
+                job = job != null && job == jobs.get(plate).id() ? null : jobs.get(plate).id();
+            return true;
         }
         return false;
     }

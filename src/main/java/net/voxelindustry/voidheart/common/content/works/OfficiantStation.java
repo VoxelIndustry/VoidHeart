@@ -39,6 +39,14 @@ interface OfficiantStation
     {
     }
 
+    /**
+     * @param placed whether the step was laid; when not, its ingredient is still the Officiant's
+     * @param back   what comes back to the hoard: a table's result, or a player's item found where the step was laid
+     */
+    record Laid(boolean placed, List<ItemStack> back)
+    {
+    }
+
     StationKind kind();
 
     /**
@@ -72,9 +80,13 @@ interface OfficiantStation
      * Lays one step out; the last starts the craft.
      *
      * @param ingredients all of the craft's ingredients, in the order of the recipe's inputs
-     * @return what comes straight back to the hoard, such as a table's result
      */
-    List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients);
+    Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients);
+
+    /**
+     * @return whether the station is still whole enough for a step to be laid, such as an altar still standing among eight pillars
+     */
+    boolean ready(int step, int steps);
 
     /**
      * @return where the fold of a step opens

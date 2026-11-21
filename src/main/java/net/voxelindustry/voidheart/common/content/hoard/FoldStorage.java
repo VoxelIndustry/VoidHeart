@@ -23,6 +23,12 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
     {
     }
 
+    /**
+     * Folds with moves still open. What they will pay counts against every Fold's field until their transaction ends, so two Folds moving items in
+     * one transaction can't both promise the same energy.
+     */
+    private static final java.util.Set<FoldStorage> OPEN = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
     private final FoldTile fold;
     /** Moves made in the transactions still open, in order, negative when taken out. */
     private final List<Move> journal = new ArrayList<>();
@@ -37,12 +43,17 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
         return journal.stream().mapToLong(move -> Math.abs(move.amount())).sum();
     }
 
+    private static long pending()
+    {
+        return OPEN.stream().mapToLong(FoldStorage::moved).sum();
+    }
+
     /**
-     * @return how many more items the energy around the Fold pays for this tick
+     * @return how many more items the energy around the Fold pays for this tick, less what every Fold has moved in transactions still open
      */
     private long affordable(long wanted)
     {
-        return Math.min(wanted, Math.max(0, fold.affordableItems() - moved()));
+        return Math.min(wanted, Math.max(0, fold.affordableItems() - pending()));
     }
 
     @Override
@@ -60,7 +71,10 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
         updateSnapshots(transaction);
         var taken = hoard.insert(resource, amount);
         if (taken > 0)
+        {
             journal.add(new Move(resource, taken));
+            OPEN.add(this);
+        }
         return taken;
     }
 
@@ -79,7 +93,10 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
         updateSnapshots(transaction);
         var taken = hoard.extract(resource, amount);
         if (taken > 0)
+        {
             journal.add(new Move(resource, -taken));
+            OPEN.add(this);
+        }
         return taken;
     }
 
@@ -118,6 +135,8 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
             else
                 hoard.restore(move.variant(), -move.amount());
         }
+        if (journal.isEmpty())
+            OPEN.remove(this);
     }
 
     @Override
@@ -125,6 +144,7 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
     {
         fold.pay(moved());
         journal.clear();
+        OPEN.remove(this);
     }
 
     /**

@@ -97,6 +97,11 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      */
     private final Map<EssenceType, Integer> drunk = new HashMap<>();
     /**
+     * Essence a stopped rite drank that no store could take back yet. It is offered to the stores again every second and no later rite drinks it;
+     * should the altar be broken first, it goes to its owner's pocket reserve if that has room.
+     */
+    private final Map<EssenceType, Integer> refund = new HashMap<>();
+    /**
      * Whether every ingredient is eaten and the rite waits on its essence, the only time relays may feed the altar.
      */
     private boolean drinking;
@@ -193,6 +198,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
         drunk.clear();
         drunk.putAll(tag.read("drunk", ASPECTS_CODEC).orElse(Map.of()));
+        refund.clear();
+        refund.putAll(tag.read("refund", ASPECTS_CODEC).orElse(Map.of()));
         clientDraught = tag.read("draught", ASPECTS_CODEC).orElse(Map.of());
 
         if (isServer())
@@ -249,6 +256,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             tag.store("pinned", Identifier.CODEC, pinned);
         if (!drunk.isEmpty())
             tag.store("drunk", ASPECTS_CODEC, Map.copyOf(drunk));
+        if (!refund.isEmpty())
+            tag.store("refund", ASPECTS_CODEC, Map.copyOf(refund));
         if (isServer() && currentRecipe != null && !currentRecipe.getAspects().isEmpty())
             tag.store("draught", ASPECTS_CODEC, currentRecipe.getAspects());
 
@@ -427,6 +436,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         if (altar.coolProgress > 0)
             altar.coolProgress--;
 
+        if (!altar.refund.isEmpty() && world.getGameTime() % 20 == 0)
+            altar.returnRefund();
+
         if (!altar.isCrafting)
         {
             altar.retryIdleStart();
@@ -521,20 +533,49 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private void giveBackDrink()
     {
         drinking = false;
-        if (!drunk.isEmpty() && getLevel() instanceof ServerLevel)
-        {
-            drunk.forEach((aspect, amount) ->
-            {
-                var left = amount;
-                for (var store : RelayNetwork.storesWithRoomOfReceiver(getLevel(), getBlockPos(), aspect).values())
-                {
-                    left -= store.receive(aspect, Math.min(left, store.spaceFor(aspect)));
-                    if (left <= 0)
-                        break;
-                }
-            });
-        }
+        drunk.forEach((aspect, amount) -> refund.merge(aspect, amount, Integer::sum));
         drunk.clear();
+        returnRefund();
+    }
+
+    /**
+     * Gives what a stopped rite drank back to the stores the altar's relays reach, keeping what none of them can take for later.
+     */
+    private void returnRefund()
+    {
+        if (refund.isEmpty() || !(getLevel() instanceof ServerLevel))
+            return;
+        var entries = refund.entrySet().iterator();
+        while (entries.hasNext())
+        {
+            var entry = entries.next();
+            var aspect = entry.getKey();
+            int left = entry.getValue();
+            for (var store : RelayNetwork.storesWithRoomOfReceiver(getLevel(), getBlockPos(), aspect).values())
+            {
+                left -= store.receive(aspect, Math.min(left, store.spaceFor(aspect)));
+                if (left <= 0)
+                    break;
+            }
+            if (left <= 0)
+                entries.remove();
+            else
+                entry.setValue(left);
+        }
+        setChanged();
+    }
+
+    /**
+     * The altar is going: what is still owed goes to its owner's pocket reserve, as far as that has room.
+     */
+    private void refundToReserve()
+    {
+        if (!refund.isEmpty() && owner != null && getLevel() instanceof ServerLevel server)
+        {
+            var hoard = net.voxelindustry.voidheart.common.content.hoard.PocketHoard.get(server.getServer()).of(owner);
+            refund.forEach((aspect, amount) -> hoard.insertEssence(aspect, amount));
+        }
+        refund.clear();
     }
 
     /**
@@ -1099,6 +1140,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         dropAteItems();
         refundExperience();
         giveBackDrink();
+        refundToReserve();
         super.preRemoveSideEffects(pos, state);
     }
 }

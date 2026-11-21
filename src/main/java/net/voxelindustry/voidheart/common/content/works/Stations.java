@@ -115,13 +115,21 @@ final class Stations
          * One pillar each step, the catalyst last, so a rite never starts as a smaller recipe sharing its catalyst.
          */
         @Override
-        public List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
         {
-            if (step < ingredients.size() - 1)
-                altar.pillarsAround().get(step).setStack(ingredients.get(step + 1));
-            else
-                altar.layCatalyst(owner, ingredients.getFirst(), net.minecraft.resources.Identifier.parse(recipeId));
-            return List.of();
+            if (step >= ingredients.size() - 1)
+                return new Laid(altar.layCatalyst(owner, ingredients.getFirst(), net.minecraft.resources.Identifier.parse(recipeId)), List.of());
+            // Something a player set on the pillar since it was cleared goes to the hoard rather than under the ingredient
+            var pillar = altar.pillarsAround().get(step);
+            var found = pillar.getStack();
+            pillar.setStack(ingredients.get(step + 1));
+            return new Laid(true, found.isEmpty() ? List.of() : List.of(found));
+        }
+
+        @Override
+        public boolean ready(int step, int steps)
+        {
+            return altar.pillarsAround().size() == 8 && (step < steps - 1 || altar.isVacant());
         }
 
         @Override
@@ -207,11 +215,19 @@ final class Stations
         }
 
         @Override
-        public List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
         {
+            var found = pillar.getStack();
+            if (!found.isEmpty())
+                pillar.setStack(ItemStack.EMPTY);
             forge.pin(net.minecraft.resources.Identifier.parse(recipeId));
-            forge.placeInput(ingredients.getFirst());
-            return List.of();
+            return new Laid(forge.placeInput(ingredients.getFirst()), found.isEmpty() ? List.of() : List.of(found));
+        }
+
+        @Override
+        public boolean ready(int step, int steps)
+        {
+            return !forge.isCrafting() && forge.getStack().isEmpty();
         }
 
         @Override
@@ -294,29 +310,43 @@ final class Stations
         }
 
         @Override
-        public List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public boolean ready(int step, int steps)
+        {
+            return true;
+        }
+
+        /**
+         * Fills the grid with a way of giving every slot an item it accepts, then crafts. With no such way, nothing is crafted and the ingredients stay
+         * the Officiant's.
+         */
+        @Override
+        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
         {
             var recipe = (CraftingRecipe) ((RecipeHolder<?>) source).value();
             var slots = WorksCatalogue.slotsOf(recipe);
+            if (slots == null)
+                return new Laid(false, List.of());
             var pool = new ArrayList<ItemStack>();
             ingredients.forEach(stack -> pool.add(stack.copy()));
-            var input = WorksCatalogue.inputOf(recipe, slots, ingredient ->
-            {
-                for (var stack : pool)
-                {
-                    if (!stack.isEmpty() && ingredient.test(stack))
-                        return stack.split(1);
-                }
-                return ItemStack.EMPTY;
-            });
+            var needs = slots.stream().filter(java.util.Optional::isPresent).map(slot -> (java.util.function.Predicate<ItemStack>) slot.get()::test).toList();
+            var counts = pool.stream().mapToInt(ItemStack::getCount).toArray();
+            var picks = SlotAssignment.assign(needs, pool, counts);
+            if (picks == null)
+                return new Laid(false, List.of());
+
+            var chosen = new ArrayList<ItemStack>();
+            for (var pick : picks)
+                chosen.add(pool.get(pick).split(1));
+            var next = chosen.iterator();
+            var input = WorksCatalogue.inputOf(recipe, slots, ingredient -> next.next());
             if (!recipe.matches(input, level))
-                return ingredients;
+                return new Laid(false, List.of());
 
             var back = new ArrayList<ItemStack>();
             back.add(recipe.assemble(input));
             recipe.getRemainingItems(input).stream().filter(stack -> !stack.isEmpty()).forEach(back::add);
             pool.stream().filter(stack -> !stack.isEmpty()).forEach(back::add);
-            return back;
+            return new Laid(true, back);
         }
 
         @Override

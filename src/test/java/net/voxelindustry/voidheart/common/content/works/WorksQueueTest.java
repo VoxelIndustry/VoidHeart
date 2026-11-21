@@ -97,6 +97,33 @@ class WorksQueueTest
     }
 
     @Test
+    void order_givenTheLastOrderCancelled_thenNeverGivesItsIdAgain()
+    {
+        var queue = new WorksQueue();
+        var first = queue.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        var claim = queue.claim(StationKind.ALTAR, any -> true);
+        queue.cancel(first);
+
+        var second = queue.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        queue.finish(claim);
+
+        assertThat(second).isNotEqualTo(first);
+        assertThat(queue.jobs()).singleElement().extracting(WorksQueue.Job::id).isEqualTo(second);
+    }
+
+    @Test
+    void codec_givenAQueueSavedAsAListOfJobs_thenLoadsAndKeepsCountingUp()
+    {
+        var queue = new WorksQueue();
+        queue.order("a", 1, List.of(task("a", StationKind.TABLE, 1)));
+        var old = WorksQueue.Job.CODEC.listOf().encodeStart(com.mojang.serialization.JsonOps.INSTANCE, queue.jobs()).getOrThrow();
+
+        var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
+
+        assertThat(loaded.order("b", 1, List.of(task("b", StationKind.TABLE, 1)))).isEqualTo(2);
+    }
+
+    @Test
     void cancel_givenAnOrderId_thenRemovesOnlyThatOrder()
     {
         var queue = new WorksQueue();

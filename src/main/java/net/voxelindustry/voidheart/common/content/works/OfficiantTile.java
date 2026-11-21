@@ -111,11 +111,14 @@ public class OfficiantTile extends TileBase
             return;
 
         var station = Stations.above(level, worldPosition);
-        if (station == null || isLaying() && station.kind() != layingAt)
+        var claimedAt = claim == null ? null : claim.station();
+        if (station == null || claimedAt != null && station.kind() != claimedAt)
         {
-            // The station went away mid-laying: what was not laid out goes back, and the craft counts again
+            // The station went away or was replaced: what was not laid out goes back, and a craft it worked counts again
             if (isLaying())
-                abortLaying(level, hoard);
+                abortLaying(level, hoard, null);
+            else if (claim != null)
+                abandonClaim(level, hoard);
             return;
         }
 
@@ -215,20 +218,23 @@ public class OfficiantTile extends TileBase
     private void layStep(ServerLevel level, PocketHoard.Hoard hoard, OfficiantStation station, WorksCatalogue catalogue)
     {
         var source = claim == null ? null : catalogue.source(claim.recipe());
-        if (source == null)
+        if (source == null || !station.ready(step, steps))
         {
-            // What it laid lies on a station still there and was cleared for it, so it takes that back too
-            held.addAll(station.clear());
-            abortLaying(level, hoard);
+            abortLaying(level, hoard, station);
             return;
         }
         var fold = station.foldOf(step, steps);
-        var back = station.lay(step, owner, claim.recipe(), source, laying);
+        var laid = station.lay(step, owner, claim.recipe(), source, laying);
+        held.addAll(laid.back());
+        if (!laid.placed())
+        {
+            abortLaying(level, hoard, station);
+            return;
+        }
         if (station.kind() == StationKind.TABLE)
-            fold(level, fold, back.isEmpty() ? ItemStack.EMPTY : back.getFirst(), OfficiantFolds.PASS);
+            fold(level, fold, laid.back().isEmpty() ? ItemStack.EMPTY : laid.back().getFirst(), OfficiantFolds.PASS);
         else
             fold(level, fold, ItemStack.EMPTY, OfficiantFolds.LAY);
-        held.addAll(back);
         step++;
         if (!isLaying())
             finishLaying();
@@ -245,14 +251,37 @@ public class OfficiantTile extends TileBase
         waited = 0;
     }
 
-    private void abortLaying(ServerLevel level, PocketHoard.Hoard hoard)
+    /**
+     * Stops laying a craft out: what was not laid goes back, and so does what was laid if its station is still there, having been cleared for it.
+     * The craft counts again.
+     */
+    private void abortLaying(ServerLevel level, PocketHoard.Hoard hoard, @Nullable OfficiantStation station)
     {
+        if (station != null && station.kind() == layingAt)
+            held.addAll(station.clear());
         if (layingAt != null)
             Stations.unlaid(layingAt, step, laying).forEach(stack -> held.add(stack.copy()));
         if (claim != null)
             WorksState.get(level.getServer()).edit(owner).giveBack(claim);
         claim = null;
         finishLaying();
+        setChanged();
+        store(level, hoard);
+    }
+
+    /**
+     * Lets go of a craft whose station went away or was replaced once it was laid out. A table's craft was over when laid, so it counts as done;
+     * any other is lost with its station and counts again.
+     */
+    private void abandonClaim(ServerLevel level, PocketHoard.Hoard hoard)
+    {
+        var works = WorksState.get(level.getServer()).edit(owner);
+        if (claim.station() == StationKind.TABLE)
+            works.finish(claim);
+        else
+            works.giveBack(claim);
+        claim = null;
+        waited = 0;
         setChanged();
         store(level, hoard);
     }

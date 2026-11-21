@@ -95,8 +95,9 @@ public final class WorksContent
     /**
      * Plans the order against the hoard and queues its crafts with the plan drawn for them. What is lacking doesn't stop it: those crafts wait for it.
      */
-    public static Ordered order(MinecraftServer server, UUID owner, ItemVariant item, long count)
+    public static Ordered order(MinecraftServer server, UUID owner, ItemVariant item, long asked)
     {
+        var count = Math.clamp(asked, 1, WorksBalance.MAX_ORDER);
         var hoard = PocketHoard.get(server).of(owner);
         var plan = WorksPlan.plan(WorksCatalogues.of(server, owner, hoard).lookup(), hoard.view(), item, count);
         var tasks = plan.tasks().stream().map(task -> new WorksQueue.Task(task.recipe().id(), task.recipe().station(), task.crafts())).toList();
