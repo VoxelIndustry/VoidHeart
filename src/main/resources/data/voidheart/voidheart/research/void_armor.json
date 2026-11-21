@@ -6,7 +6,7 @@
   "knowledge_cost": 5000,
   "knowledge_per_second": 2.5,
   "requires": [
-    "voidheart:void_energy"
+    "voidheart:warding_lattice"
   ],
   "blueprint": "voidheart:void_armor",
   "unlocks": [

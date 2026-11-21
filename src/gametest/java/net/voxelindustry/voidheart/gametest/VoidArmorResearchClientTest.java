@@ -56,7 +56,7 @@ public class VoidArmorResearchClientTest implements FabricClientGameTest
             server.runCommand("gamerule advance_time false");
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 -60");
-            server.runCommand("execute as @a run voidheart research grant voidheart:void_energy");
+            server.runCommand("execute as @a run voidheart research grant voidheart:warding_lattice");
             context.waitTicks(10);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
