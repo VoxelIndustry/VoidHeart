@@ -15,6 +15,7 @@ import net.voxelindustry.voidheart.common.content.armillary.ArmillaryRiftTile;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryTile;
 import net.voxelindustry.voidheart.common.content.depths.SmokerVentTile;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTile;
+import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageMatrixTile;
@@ -78,6 +79,7 @@ public class VoidHeartTiles
     public static BlockEntityType<RavenousCollectorTile> RAVENOUS_COLLECTOR;
     public static BlockEntityType<RavenousStorageTile> RAVENOUS_STORAGE;
     public static BlockEntityType<RavenousStorageMatrixTile> RAVENOUS_STORAGE_MATRIX;
+    public static BlockEntityType<GreatRavenousStorageTile> GREAT_RAVENOUS_STORAGE;
     public static BlockEntityType<RavenousRelayTile> RAVENOUS_RELAY;
 
     public static BlockEntityType<MalignantTormenterTile> MALIGNANT_TORMENTER;
@@ -181,6 +183,8 @@ public class VoidHeartTiles
                 "ravenous_storage");
         registerTile(RAVENOUS_STORAGE_MATRIX = FabricBlockEntityTypeBuilder.create(RavenousStorageMatrixTile::new, VoidHeartBlocks.RAVENOUS_STORAGE_MATRIX).build(),
                 "ravenous_storage_matrix");
+        registerTile(GREAT_RAVENOUS_STORAGE = FabricBlockEntityTypeBuilder.create(GreatRavenousStorageTile::new, VoidHeartBlocks.GREAT_RAVENOUS_STORAGE).build(),
+                "great_ravenous_storage");
         registerTile(RAVENOUS_RELAY = FabricBlockEntityTypeBuilder.create(RavenousRelayTile::new, VoidHeartBlocks.RAVENOUS_RELAY).build(),
                 "ravenous_relay");
         registerTile(MALIGNANT_TORMENTER = FabricBlockEntityTypeBuilder.create(MalignantTormenterTile::new, VoidHeartBlocks.MALIGNANT_TORMENTER).build(),

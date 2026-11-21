@@ -307,6 +307,10 @@ public class RecipesProvider extends FabricRecipeProvider
             offerAltarRecipe("ravenous_collector", VoidHeartBlocks.RAVENOUS_COLLECTOR, VoidHeartBlocks.VOID_CONDUIT,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     Items.BUCKET, VoidHeartItems.ENDER_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+            // One of the eight blocks of a cube, built around a block of the gold that hungers
+            offerAltarRecipe("great_ravenous_storage", VoidHeartBlocks.GREAT_RAVENOUS_STORAGE, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK,
+                    VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
             offerAltarRecipe("shatter_forge", VoidHeartBlocks.SHATTER_FORGE, Blocks.ANVIL,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,
                     VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD, VoidHeartItems.OBSIDIAN_SHARD,

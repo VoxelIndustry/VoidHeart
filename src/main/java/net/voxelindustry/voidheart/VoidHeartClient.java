@@ -141,6 +141,7 @@ import net.voxelindustry.voidheart.client.render.KnowledgeRepositoryRender;
 import net.voxelindustry.voidheart.client.render.RavenousRelayRender;
 import net.voxelindustry.voidheart.client.render.RavenousStorageRender;
 import net.voxelindustry.voidheart.client.render.RavenousStorageMatrixRender;
+import net.voxelindustry.voidheart.client.render.GreatRavenousStorageRender;
 import net.voxelindustry.voidheart.client.render.RelayLinkPreviewRender;
 import net.voxelindustry.voidheart.client.render.CabinetHighlightRender;
 import net.voxelindustry.voidheart.client.render.temple.MosaicStare;
@@ -264,6 +265,7 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_RELAY, RavenousRelayRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE, RavenousStorageRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.RAVENOUS_STORAGE_MATRIX, RavenousStorageMatrixRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.GREAT_RAVENOUS_STORAGE, GreatRavenousStorageRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.MALIGNANT_TORMENTER, MalignantTormenterRender::new);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "malignant_tormenter"), MalignantTormenterItemRender.Unbaked.MAP_CODEC);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(VoidHeart.MODID, "blight_edge"), BlightEdgeRender.Unbaked.MAP_CODEC);
