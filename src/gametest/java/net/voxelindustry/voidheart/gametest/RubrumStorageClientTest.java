@@ -28,6 +28,9 @@ import net.voxelindustry.voidheart.common.energy.storage.RubrumCellItem;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumConstructTile;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import net.voxelindustry.voidheart.common.energy.storage.SocketBundle;
+import net.voxelindustry.voidheart.common.energy.storage.SocketWallBlock;
+import net.voxelindustry.voidheart.common.energy.storage.SocketWallGeometry;
+import net.voxelindustry.voidheart.common.energy.storage.SocketWallTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 
 import java.util.function.Function;
@@ -37,7 +40,9 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 /**
  * W2 Rubrum storage in a real world: a small construct shown by its preview, formed from its frame, given bundles by a
  * real click and by use, charged by a creative well at its rate, grown a bud, broken and set back with its charge and
- * bundles, and a cell charged then emptied through a socket. A large construct forms too, and both survive a reload.
+ * bundles, and a cell charged then emptied through a socket. A socket wall takes a cell in each niche, by use and by a
+ * real click, empties and fills them, gives one back and drops them all when broken. A large construct forms too, and
+ * the constructs and the wall survive a reload.
  */
 public class RubrumStorageClientTest implements FabricClientGameTest
 {
@@ -45,11 +50,14 @@ public class RubrumStorageClientTest implements FabricClientGameTest
     private static final BlockPos LARGE  = new BlockPos(-14, FLAT_FEET + 2, 10);
     private static final BlockPos WELL   = new BlockPos(7, FLAT_FEET, 10);
     private static final BlockPos SOCKET = new BlockPos(4, FLAT_FEET, 5);
+    private static final BlockPos WALL   = new BlockPos(7, FLAT_FEET, 6);
+    private static final BlockPos WALL_2 = new BlockPos(10, FLAT_FEET, 6);
+    private static final long[]   WALL_FILLS = {RubrumBalance.CELL_CAPACITY, 250_000, 100_000, 0};
 
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        EnergyTestKit.expectRegistered("rubrum_construct_core", "rubrum_construct_frame", "rubrum_cell", "cell_socket");
+        EnergyTestKit.expectRegistered("rubrum_construct_core", "rubrum_construct_frame", "rubrum_cell", "cell_socket", "socket_wall");
 
         TestWorldSave save;
         long largeStored;
@@ -69,6 +77,7 @@ public class RubrumStorageClientTest implements FabricClientGameTest
             bud(context, server);
             breakAndReplace(context, server);
             cellRoundTrip(context, server);
+            socketWall(context, server);
             largeStored = formLarge(context, server);
             items(context, server);
         }
@@ -86,6 +95,11 @@ public class RubrumStorageClientTest implements FabricClientGameTest
             var large = core(server, LARGE, tile -> new long[]{tile.isFormed() ? 1 : 0, tile.stored(), tile.capacity(), tile.maxRate()});
             expect(large[0] == 1 && large[1] == largeStored && large[2] == 8_000_000 && large[3] == 640,
                     "The large construct should come back as it was, holds " + large[1] + " / " + large[2] + " at " + large[3]);
+
+            var wall = server.computeOnServer(minecraft -> minecraft.overworld().getBlockEntity(WALL) instanceof SocketWallTile tile
+                    ? new long[]{tile.cellCount(), tile.getCell(1).isEmpty() ? 1 : 0, tile.facing() == Direction.NORTH ? 1 : 0, tile.totalCharge()} : null);
+            expect(wall != null && wall[0] == 3 && wall[1] == 1 && wall[2] == 1 && wall[3] > 0,
+                    "The socket wall should keep its three cells, their charge and its facing after a reload, got " + java.util.Arrays.toString(wall));
         }
     }
 
@@ -349,6 +363,163 @@ public class RubrumStorageClientTest implements FabricClientGameTest
     }
 
     //
+    // Socket wall
+    //
+
+    private static void socketWall(ClientGameTestContext context, TestServerContext server)
+    {
+        // A wall facing north, its front toward the player standing north of it
+        setWall(server, WALL, Direction.NORTH);
+        context.waitTicks(2);
+        for (var slot : new int[]{0, 1, 3})
+        {
+            var fill = WALL_FILLS[slot];
+            var target = slot;
+            server.runOnServer(minecraft ->
+            {
+                player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, cellOf(fill));
+                useOnFace(minecraft, WALL, nicheFront(WALL, Direction.NORTH, target), Direction.NORTH);
+            });
+        }
+
+        // A real click on the bottom left niche from in front of it
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, cellOf(WALL_FILLS[2])));
+        var aim = nicheFront(WALL, Direction.NORTH, 2);
+        aimFrom(context, server, WALL.getX() + 0.5, FLAT_FEET, WALL.getZ() - 2.5, aim.x, aim.y, aim.z, 5);
+        rightClick(context);
+
+        for (var slot = 0; slot < SocketWallGeometry.SLOTS; slot++)
+        {
+            var expected = WALL_FILLS[slot];
+            var index = slot;
+            var held = server.computeOnServer(minecraft -> wall(minecraft, WALL).getCell(index).copy());
+            // Charged cells have been emptying into the well's field since they went in
+            expect(held.is(RubrumContent.RUBRUM_CELL) && nearCharge(RubrumCellItem.charge(held), expected),
+                    "Niche " + slot + " should hold the cell pressed into it, holding " + held + " at " + RubrumCellItem.charge(held));
+        }
+        var signal = server.computeOnServer(minecraft -> minecraft.overworld().getBlockState(WALL).getAnalogOutputSignal(minecraft.overworld(), WALL, Direction.NORTH));
+        expect(signal >= 6 && signal <= 7, "A comparator should read nearly half full, reads " + signal);
+
+        // A full wall takes no fifth cell
+        server.runOnServer(minecraft ->
+        {
+            player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, cellOf(0));
+            useOnFace(minecraft, WALL, nicheFront(WALL, Direction.NORTH, 0), Direction.NORTH);
+        });
+        expect(server.computeOnServer(minecraft -> player(minecraft).getMainHandItem().is(RubrumContent.RUBRUM_CELL)),
+                "A full wall should not take a fifth cell");
+
+        // Unpowered inside the well's field, the cells empty into it
+        var before = server.computeOnServer(minecraft -> wall(minecraft, WALL).totalCharge());
+        context.waitTicks(20);
+        var discharged = before - server.computeOnServer(minecraft -> wall(minecraft, WALL).totalCharge());
+        expect(discharged > 0 && discharged <= 3 * RubrumBalance.SOCKET_WALL_RATE * 22,
+                "Three charged cells should empty at their rate, emptied " + discharged + " in 20 ticks");
+
+        // Powered, every cell fills, the empty one too
+        setBlock(server, WALL.south(), Blocks.REDSTONE_BLOCK);
+        waitFor(context, server, 60, "A powered wall should charge its empty cell",
+                minecraft -> RubrumCellItem.charge(wall(minecraft, WALL).getCell(3)) >= RubrumBalance.SOCKET_WALL_RATE * 10);
+        expect(server.computeOnServer(minecraft -> wall(minecraft, WALL).activity(1) == CellSocketTile.Activity.CHARGING),
+                "Each cell of a powered wall should charge");
+
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, WALL.getX() + 0.5, FLAT_FEET - 0.6, WALL.getZ() - 1.4, WALL.getX() + 0.5, WALL.getY() + 0.5, WALL.getZ(), 5);
+        context.takeScreenshot("socket-wall-front");
+        aimFrom(context, server, WALL.getX() - 1.5, FLAT_FEET, WALL.getZ() - 2.5, WALL.getX() + 0.5, WALL.getY() + 0.5, WALL.getZ() + 0.5, 5);
+        context.takeScreenshot("socket-wall-charging");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        // An empty hand on a niche takes only that niche's cell
+        var taken = server.computeOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            minecraft.overworld().setBlock(WALL.south(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            useOnFace(minecraft, WALL, nicheFront(WALL, Direction.NORTH, 1), Direction.NORTH);
+            return player.getMainHandItem().copy();
+        });
+        expect(taken.is(RubrumContent.RUBRUM_CELL) && server.computeOnServer(minecraft -> wall(minecraft, WALL).getCell(1).isEmpty()
+                        && wall(minecraft, WALL).cellCount() == 3),
+                "An empty hand should take back only the cell in the niche used, got " + taken);
+        // Nor from its side
+        server.runOnServer(minecraft ->
+        {
+            player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            useOnFace(minecraft, WALL, Vec3.atCenterOf(WALL).add(0.5, 0, 0), Direction.EAST);
+        });
+        expect(server.computeOnServer(minecraft -> wall(minecraft, WALL).cellCount() == 3), "An empty hand on the wall's side should take nothing");
+
+        // A wall turned east, filled from its front and broken
+        setWall(server, WALL_2, Direction.EAST);
+        context.waitTicks(2);
+        for (var slot = 0; slot < SocketWallGeometry.SLOTS; slot++)
+        {
+            var target = slot;
+            server.runOnServer(minecraft ->
+            {
+                player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, cellOf(WALL_FILLS[target]));
+                useOnFace(minecraft, WALL_2, nicheFront(WALL_2, Direction.EAST, target), Direction.EAST);
+            });
+            expect(nearCharge(RubrumCellItem.charge(server.computeOnServer(minecraft -> wall(minecraft, WALL_2).getCell(target).copy())), WALL_FILLS[target]),
+                    "An east-facing wall's niche " + slot + " should hold the cell pressed into it");
+        }
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, WALL_2.getX() + 2.5, FLAT_FEET, WALL_2.getZ() - 1.5, WALL_2.getX() + 0.5, WALL_2.getY() + 0.5, WALL_2.getZ() + 0.5, 5);
+        context.takeScreenshot("socket-wall-east");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+
+        server.runCommand("setblock " + WALL_2.getX() + " " + WALL_2.getY() + " " + WALL_2.getZ() + " air destroy");
+        context.waitTicks(5);
+        var drops = server.computeOnServer(minecraft -> minecraft.overworld().getEntitiesOfClass(ItemEntity.class, new AABB(WALL_2).inflate(2)).stream()
+                .map(item -> item.getItem().getItem()).toList());
+        expect(drops.stream().filter(item -> item == RubrumContent.RUBRUM_CELL).count() == 4 && drops.contains(RubrumContent.SOCKET_WALL.asItem()),
+                "A broken wall should drop itself and its four cells, dropped " + drops);
+        server.runCommand("kill @e[type=item]");
+    }
+
+    private static void setWall(TestServerContext server, BlockPos pos, Direction facing)
+    {
+        server.runOnServer(minecraft -> minecraft.overworld().setBlock(pos,
+                RubrumContent.SOCKET_WALL.defaultBlockState().setValue(SocketWallBlock.FACING, facing), Block.UPDATE_ALL));
+    }
+
+    /**
+     * A point on the wall's front face over a niche's cell.
+     */
+    private static Vec3 nicheFront(BlockPos pos, Direction facing, int slot)
+    {
+        var center = SocketWallGeometry.cellCenter(facing, slot);
+        var depth = SocketWallGeometry.CELL_DEPTH / 16;
+        return Vec3.atLowerCornerOf(pos).add(center).add(facing.getStepX() * depth, 0, facing.getStepZ() * depth);
+    }
+
+    private static boolean nearCharge(long charge, long expected)
+    {
+        return charge <= expected && charge >= expected - RubrumBalance.SOCKET_WALL_RATE * 40;
+    }
+
+    private static ItemStack cellOf(long charge)
+    {
+        var cell = new ItemStack(RubrumContent.RUBRUM_CELL);
+        RubrumCellItem.setCharge(cell, charge);
+        return cell;
+    }
+
+    private static SocketWallTile wall(MinecraftServer minecraft, BlockPos pos)
+    {
+        if (minecraft.overworld().getBlockEntity(pos) instanceof SocketWallTile wall)
+            return wall;
+        throw new AssertionError("Expected a socket wall at " + pos);
+    }
+
+    private static void useOnFace(MinecraftServer minecraft, BlockPos pos, Vec3 hit, Direction face)
+    {
+        var player = player(minecraft);
+        player.gameMode.useItemOn(player, player.level(), player.getMainHandItem(), InteractionHand.MAIN_HAND, new BlockHitResult(hit, face, pos, false));
+    }
+
+    //
     // Large construct
     //
 
@@ -424,6 +595,7 @@ public class RubrumStorageClientTest implements FabricClientGameTest
             inventory.setItem(4, core);
             inventory.setItem(5, new ItemStack(RubrumContent.RUBRUM_CONSTRUCT_FRAME));
             inventory.setItem(6, new ItemStack(RubrumContent.CELL_SOCKET));
+            inventory.setItem(7, new ItemStack(RubrumContent.SOCKET_WALL));
             inventory.setSelectedSlot(3);
         });
         aimFrom(context, server, LARGE.getX() + 7.5, FLAT_FEET, LARGE.getZ() - 3.5, LARGE.getX() + 0.5, LARGE.getY(), LARGE.getZ() + 0.5, 10);

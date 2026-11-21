@@ -27,7 +27,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Startup registrar for W2 Rubrum storage, called once by EnergySetup: the construct, its frame, the cell and the cell socket.
+ * Startup registrar for W2 Rubrum storage, called once by EnergySetup: the construct, its frame, the cell, the cell socket and the socket wall.
  */
 public final class RubrumContent
 {
@@ -35,9 +35,11 @@ public final class RubrumContent
     public static Block RUBRUM_CONSTRUCT_FRAME;
     public static Item  RUBRUM_CELL;
     public static Block CELL_SOCKET;
+    public static Block SOCKET_WALL;
 
     public static BlockEntityType<RubrumConstructTile> RUBRUM_CONSTRUCT;
     public static BlockEntityType<CellSocketTile>      CELL_SOCKET_TILE;
+    public static BlockEntityType<SocketWallTile>      SOCKET_WALL_TILE;
 
     /** Energy and bundles a broken construct core carries. */
     public static DataComponentType<ConstructContents> CONSTRUCT_CONTENTS;
@@ -79,12 +81,21 @@ public final class RubrumContent
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".cell_socket.lore"));
-        RUBRUM_CELL =VoidHeartItems.registerItem("rubrum_cell", properties -> new RubrumCellItem(properties.stacksTo(1)));
+        SOCKET_WALL = VoidHeartBlocks.registerBlock("socket_wall", SocketWallBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(3F)
+                .noOcclusion()
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".socket_wall.lore"));
+        RUBRUM_CELL = VoidHeartItems.registerItem("rubrum_cell", properties -> new RubrumCellItem(properties.stacksTo(1)));
         VoidHeartItems.addCreativeVariant(RUBRUM_CELL, RubrumCellItem::full);
 
         VoidHeartTiles.registerTile(RUBRUM_CONSTRUCT = FabricBlockEntityTypeBuilder.create(RubrumConstructTile::new, RUBRUM_CONSTRUCT_CORE).build(),
                 "rubrum_construct");
         VoidHeartTiles.registerTile(CELL_SOCKET_TILE = FabricBlockEntityTypeBuilder.create(CellSocketTile::new, CELL_SOCKET).build(), "cell_socket");
+        VoidHeartTiles.registerTile(SOCKET_WALL_TILE = FabricBlockEntityTypeBuilder.create(SocketWallTile::new, SOCKET_WALL).build(), "socket_wall");
 
         RUBRUM_MOTE = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MODID, "rubrum_mote"),
                 FabricParticleTypes.simple(false));

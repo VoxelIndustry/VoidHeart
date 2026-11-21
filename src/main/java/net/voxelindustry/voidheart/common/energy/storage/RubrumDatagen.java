@@ -64,6 +64,101 @@ public final class RubrumDatagen
         // Hand-written model, a plinth with a gold clasp
         generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(RubrumContent.CELL_SOCKET,
                 plainVariant(ModelLocationUtils.getModelLocation(RubrumContent.CELL_SOCKET))));
+
+        var wall = ModelLocationUtils.getModelLocation(RubrumContent.SOCKET_WALL);
+        generators.modelOutput.accept(wall, RubrumDatagen::socketWallModel);
+        generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(RubrumContent.SOCKET_WALL, plainVariant(wall))
+                .with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+    }
+
+    /**
+     * The socket wall facing north, built from {@link SocketWallGeometry#NICHES}: a voidstone back, a carved frame
+     * around four niches veined with rubrum, and a gold ledge in each for its cell to stand on. Bars run full width
+     * across and stand between them upright; faces against the back or against another bar end are left out.
+     */
+    private static JsonObject socketWallModel()
+    {
+        var textures = new JsonObject();
+        textures.addProperty("particle", MODID + ":block/voidstone_polished");
+        textures.addProperty("body", MODID + ":block/voidstone_polished");
+        textures.addProperty("frame", MODID + ":block/voidstone_tile_small_carved");
+        textures.addProperty("niche", MODID + ":block/rubrum_veined_voidstone");
+        textures.addProperty("gold", MODID + ":block/cut_ravenous_gold");
+
+        var depth = SocketWallGeometry.NICHE_DEPTH;
+        var elements = new JsonArray();
+        elements.add(wallBox(0, 0, depth, 16, 16, 16, face -> face == Direction.NORTH ? "niche" : "body", face -> true));
+
+        // Bars across the whole width under, between and over the niches
+        int[][] rows = {{0, 1}, {7, 9}, {15, 16}};
+        for (var row : rows)
+            elements.add(wallBox(0, row[0], 0, 16, row[1], depth, face -> frameTexture(face, row[0], row[1], 0, 16),
+                    face -> face != Direction.SOUTH));
+        // Uprights between the bars, beside each niche
+        int[][] columns = {{0, 1}, {7, 9}, {15, 16}};
+        int[][] spans = {{1, 7}, {9, 15}};
+        for (var column : columns)
+            for (var span : spans)
+                elements.add(wallBox(column[0], span[0], 0, column[1], span[1], depth, face -> frameTexture(face, span[0], span[1], column[0], column[1]),
+                        face -> face != Direction.SOUTH && face.getAxis() != Direction.Axis.Y));
+
+        for (var niche : SocketWallGeometry.NICHES)
+            elements.add(wallBox(niche.x0() + 1, niche.y0(), 1, niche.x1() - 1, niche.y0() + 1, depth, face -> "gold",
+                    face -> face != Direction.SOUTH && face != Direction.DOWN));
+
+        var model = new JsonObject();
+        model.addProperty("parent", "minecraft:block/block");
+        model.add("textures", textures);
+        model.add("elements", elements);
+        return model;
+    }
+
+    /**
+     * The carved frame on the front and inside the niches, plain voidstone where a bar meets the block's outside.
+     */
+    private static String frameTexture(Direction face, int y0, int y1, int x0, int x1)
+    {
+        if (face == Direction.NORTH)
+            return "frame";
+        var outside = switch (face)
+        {
+            case DOWN -> y0 == 0;
+            case UP -> y1 == 16;
+            case WEST -> x0 == 0;
+            case EAST -> x1 == 16;
+            default -> false;
+        };
+        return outside ? "body" : "frame";
+    }
+
+    private static JsonObject wallBox(int x0, int y0, int z0, int x1, int y1, int z1,
+                                      java.util.function.Function<Direction, String> texture, java.util.function.Predicate<Direction> drawn)
+    {
+        var element = new JsonObject();
+        element.add("from", vector(x0, y0, z0));
+        element.add("to", vector(x1, y1, z1));
+        var faces = new JsonObject();
+        for (var face : Direction.values())
+        {
+            if (!drawn.test(face))
+                continue;
+            var json = new JsonObject();
+            json.addProperty("texture", "#" + texture.apply(face));
+            var flush = switch (face)
+            {
+                case DOWN -> y0 == 0;
+                case UP -> y1 == 16;
+                case NORTH -> z0 == 0;
+                case SOUTH -> z1 == 16;
+                case WEST -> x0 == 0;
+                case EAST -> x1 == 16;
+            };
+            if (flush)
+                json.addProperty("cullface", face.getSerializedName());
+            faces.add(face.getSerializedName(), json);
+        }
+        element.add("faces", faces);
+        return element;
     }
 
     /**
@@ -173,6 +268,15 @@ public final class RubrumDatagen
                 .unlockedBy(provider.getHasName(gold), provider.has(gold))
                 .save(output);
 
+        var socket = RubrumContent.CELL_SOCKET;
+        provider.shaped(RecipeCategory.MISC, RubrumContent.SOCKET_WALL)
+                .pattern("VSV").pattern("SGS").pattern("VSV")
+                .define('V', voidstone)
+                .define('S', socket)
+                .define('G', gold)
+                .unlockedBy(provider.getHasName(socket), provider.has(socket))
+                .save(output);
+
         provider.shaped(RecipeCategory.MISC, RubrumContent.RUBRUM_CELL)
                 .pattern(" G ").pattern("VBV").pattern(" G ")
                 .define('V', voidstone)
@@ -196,6 +300,7 @@ public final class RubrumDatagen
         loot.dropSelf(RubrumContent.RUBRUM_CONSTRUCT_CORE);
         loot.dropSelf(RubrumContent.RUBRUM_CONSTRUCT_FRAME);
         loot.dropSelf(RubrumContent.CELL_SOCKET);
+        loot.dropSelf(RubrumContent.SOCKET_WALL);
     }
 
     public static void tags(EnergyTags tags)
