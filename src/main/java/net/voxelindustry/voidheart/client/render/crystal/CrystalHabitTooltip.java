@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
+import net.voxelindustry.voidheart.common.energy.spike.LeySpikeContent;
 import net.voxelindustry.voidheart.common.content.crystal.HabitEffects;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 
@@ -41,13 +43,35 @@ public final class CrystalHabitTooltip
             return;
 
         lines.add(HabitEffects.name(habit));
+        // A spike driven around a Fouled bundle is where the habit acts, so it says the change alone
+        if (stack.is(LeySpikeContent.AZURIUM_SPIKE.asItem()))
+        {
+            HabitEffects.of(habit, CrystalKind.AZURIUM).forEach(effect -> lines.add(effect.onBlock()));
+            return;
+        }
         var bundle = CrystalBundles.bundleOf(stack);
         if (bundle == null)
         {
-            lines.add(Component.translatable(MODID + ".habit.regrows", HabitEffects.name(habit)).withStyle(ChatFormatting.GRAY));
+            if (CrystalBundles.kindOfShard(stack) != null)
+                lines.add(Component.translatable(MODID + ".habit.regrows", HabitEffects.name(habit)).withStyle(ChatFormatting.GRAY));
             return;
         }
-        for (var effect : HabitEffects.of(habit, CrystalBundles.kindOfBundle(bundle)))
+        var kind = CrystalBundles.kindOfBundle(bundle);
+        for (var effect : HabitEffects.of(habit, kind))
             lines.add(effect.onItem());
+        if (CrystalBundles.soakOf(stack) > 0)
+            lines.add(Component.translatable(MODID + ".habit.scoured.soaked").withStyle(ChatFormatting.GRAY));
+        if (kind == CrystalKind.MEMORIAM && habit == CrystalHabit.SCOURED)
+        {
+            var imprint = stack.get(VoidHeartDataComponents.CRYSTAL_IMPRINT);
+            if (imprint == null)
+                lines.add(Component.translatable(MODID + ".habit.scoured.blank").withStyle(ChatFormatting.WHITE));
+            else
+            {
+                lines.add(Component.translatable(MODID + ".habit.scoured.remembers", imprint.getDescription().copy().withStyle(ChatFormatting.WHITE))
+                        .withStyle(ChatFormatting.GRAY));
+                lines.add(new HabitEffects.Effect("ward", MODID + ".habit.scoured.keeps").onItem());
+            }
+        }
     }
 }

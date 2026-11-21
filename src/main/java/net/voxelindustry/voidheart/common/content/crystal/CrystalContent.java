@@ -19,6 +19,7 @@ import net.minecraft.world.level.material.MapColor;
 import net.voxelindustry.voidheart.common.item.LoreBlockItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.energy.spike.LeySpikeContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
 import java.util.Arrays;
@@ -58,6 +59,7 @@ public final class CrystalContent
         Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Identifier.fromNamespaceAndPath(MODID, "copy_crystal_habit"), CopyCrystalHabitFunction.MAP_CODEC);
 
         addHabitVariants();
+        CrystalImprint.register();
     }
 
     /**
@@ -76,6 +78,12 @@ public final class CrystalContent
                     VoidHeartItems.addCreativeVariant(CrystalBundles.bundle(kind, size).asItem(), () -> CrystalBundles.bundleItem(kind, size, habit));
             }
         }
+        VoidHeartItems.addCreativeVariant(LeySpikeContent.AZURIUM_SPIKE.asItem(), () ->
+        {
+            var spike = new net.minecraft.world.item.ItemStack(LeySpikeContent.AZURIUM_SPIKE);
+            spike.set(net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents.CRYSTAL_HABIT, CrystalHabit.FOULED);
+            return spike;
+        });
     }
 
     /**

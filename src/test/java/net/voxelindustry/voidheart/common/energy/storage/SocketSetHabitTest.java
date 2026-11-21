@@ -52,6 +52,29 @@ class SocketSetHabitTest
     }
 
     @Test
+    void fouledRubrum_holdsTwiceAndLeaks()
+    {
+        var sockets = new SocketSet();
+        sockets.set(0, SocketBundle.LARGE_RUBRUM, CrystalHabit.FOULED);
+        sockets.set(1, SocketBundle.SMALL_RUBRUM, CrystalHabit.PLAIN);
+        sockets.set(2, SocketBundle.SMALL_AZURIUM, CrystalHabit.FOULED);
+
+        assertThat(sockets.capacity()).isEqualTo(2 * SocketBundle.LARGE_RUBRUM.capacity() + SocketBundle.SMALL_RUBRUM.capacity());
+        assertThat(sockets.holdsFouledRubrum()).isTrue();
+        assertThat(new ConstructContents(0, sockets.entries()).capacity()).isEqualTo(sockets.capacity());
+    }
+
+    @Test
+    void fouledAzurium_changesNothingInASocket()
+    {
+        var sockets = new SocketSet();
+        sockets.set(0, SocketBundle.LARGE_AZURIUM, CrystalHabit.FOULED);
+
+        assertThat(sockets.capacity()).isZero();
+        assertThat(sockets.holdsFouledRubrum()).isFalse();
+    }
+
+    @Test
     void entry_fromBeforeHabitsLoadsAsWorldCrystal()
     {
         var sockets = new SocketSet();

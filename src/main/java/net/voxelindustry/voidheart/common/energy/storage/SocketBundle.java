@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.energy.storage;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+
 import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
 
@@ -39,6 +41,19 @@ public enum SocketBundle implements StringRepresentable
     public long rate()
     {
         return rubrum ? 0 : value;
+    }
+
+    /**
+     * What this bundle holds with that habit: Fouled rubrum holds too much, twice its size.
+     */
+    public long capacity(CrystalHabit habit)
+    {
+        return isFouledRubrum(habit) ? capacity() * RubrumBalance.FOULED_CAPACITY_FACTOR : capacity();
+    }
+
+    public boolean isFouledRubrum(CrystalHabit habit)
+    {
+        return rubrum && habit == CrystalHabit.FOULED;
     }
 
     /**

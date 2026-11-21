@@ -24,7 +24,7 @@ public record ConstructContents(long stored, List<SocketSet.Entry> sockets)
     {
         long capacity = 0;
         for (var entry : sockets)
-            capacity += entry.bundle().capacity();
+            capacity += entry.bundle().capacity(entry.habit());
         return capacity;
     }
 

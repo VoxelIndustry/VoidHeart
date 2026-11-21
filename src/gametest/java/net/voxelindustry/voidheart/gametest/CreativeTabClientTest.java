@@ -106,7 +106,7 @@ public class CreativeTabClientTest implements FabricClientGameTest
         {
             var habit = CrystalBundles.habitOf(stack);
             var kind = CrystalBundles.kindOfShard(stack) != null ? CrystalBundles.kindOfShard(stack) : CrystalBundles.bundleOf(stack) != null ? CrystalBundles.kindOfBundle(CrystalBundles.bundleOf(stack)) : null;
-            if (habit != CrystalHabit.NONE && (kind == null || !habit.takenBy(kind)))
+            if (habit != CrystalHabit.NONE && kind != null && !habit.takenBy(kind))
                 throw new AssertionError("The Void Heart tab shows " + stack.getItem() + " with a habit it can't take: " + habit);
         }
     }

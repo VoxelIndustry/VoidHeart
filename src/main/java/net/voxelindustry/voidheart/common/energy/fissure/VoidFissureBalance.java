@@ -18,6 +18,12 @@ public final class VoidFissureBalance
     static final float[] SEEP_RADIUS = { 6, 10, 16, 24, 32 };
 
     /**
+     * What is left of the seep inside a Scoured bundle's field: its strength, the chance a creature comes through there, and the taint it puts on a line
+     * passing there. Guess.
+     */
+    static final float SCOURED_SEEP = 0.5F;
+
+    /**
      * Blocks a minute the seep spreads until it reaches its width's radius. Guess.
      */
     public static final float SEEP_GROWTH_PER_MINUTE = 1;

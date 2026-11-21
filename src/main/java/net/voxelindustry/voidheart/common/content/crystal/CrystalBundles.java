@@ -122,11 +122,36 @@ public final class CrystalBundles
     }
 
     /**
-     * The item a placed bundle is when taken whole, with its habit.
+     * Taint a Scoured rubrum bundle has drawn in so far.
+     */
+    public static int soakOf(ItemStack stack)
+    {
+        return Math.clamp(stack.getOrDefault(VoidHeartDataComponents.CRYSTAL_SOAK, 0), 0, ScouredSoak.MAX);
+    }
+
+    public static int soakOf(BlockState state)
+    {
+        return state.hasProperty(CrystalBundleBlock.SOAKED) ? state.getValue(CrystalBundleBlock.SOAKED) : 0;
+    }
+
+    /**
+     * Keeps what a bundle has soaked on its item, and nothing on an item that hasn't.
+     */
+    public static ItemStack withSoak(ItemStack stack, int soaked)
+    {
+        if (soaked > 0 && bundleOf(stack) != null)
+            stack.set(VoidHeartDataComponents.CRYSTAL_SOAK, Math.min(soaked, ScouredSoak.MAX));
+        else
+            stack.remove(VoidHeartDataComponents.CRYSTAL_SOAK);
+        return stack;
+    }
+
+    /**
+     * The item a placed bundle is when taken whole, with its habit and what it has soaked.
      */
     public static ItemStack itemOf(BlockState bundle)
     {
-        return withHabit(new ItemStack(bundle.getBlock()), habitOf(bundle));
+        return withSoak(withHabit(new ItemStack(bundle.getBlock()), habitOf(bundle)), soakOf(bundle));
     }
 
     public static ItemStack bundleItem(CrystalKind kind, BundleSize size, CrystalHabit habit)

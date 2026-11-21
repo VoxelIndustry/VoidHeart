@@ -70,6 +70,12 @@ public class CrystalCradleBlock extends Block implements EntityBlock
             return InteractionResult.SUCCESS;
 
         cradle.claim(player.getUUID());
+        // Regrowing would let a bundle that drew taint in start over empty
+        if (CrystalBundles.soakOf(stack) > 0)
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".crystal_cradle.refused.soaked"));
+            return InteractionResult.FAIL;
+        }
         var habit = CrystalBundles.habitOf(stack);
         CrystalKind kind;
         int worth;

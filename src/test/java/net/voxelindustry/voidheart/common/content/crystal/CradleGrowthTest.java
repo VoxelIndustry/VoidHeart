@@ -7,8 +7,10 @@ import java.util.function.Predicate;
 
 import static net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.CLEAR;
 import static net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.DEEP;
+import static net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.FOULED;
 import static net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.NONE;
 import static net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.PLAIN;
+import static net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.SCOURED;
 import static net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.WRUNG;
 import static net.voxelindustry.voidheart.common.content.crystal.CrystalKind.AZURIUM;
 import static net.voxelindustry.voidheart.common.content.crystal.CrystalKind.RUBRUM;
@@ -178,5 +180,74 @@ class CradleGrowthTest
         var copy = new CradleGrowth();
         copy.load(growth.save());
         assertThat(copy.save()).isEqualTo(growth.save());
+    }
+    @Test
+    void fouled_neverWashesOutOnACleanLine()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, FOULED);
+        growth.grow(CLEAR, 4);
+
+        assertThat(growth.scours()).isTrue();
+        assertThat(growth.habit(ALL)).isEqualTo(FOULED);
+    }
+
+    @Test
+    void fouled_scouredForTwoThirdsComesOutScoured()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(RUBRUM, 4, FOULED);
+        growth.grow(SCOURED, 3);
+        growth.grow(FOULED, 1);
+
+        assertThat(growth.habit(ALL)).isEqualTo(SCOURED);
+    }
+
+    @Test
+    void fouled_scouredForLessThanTwoThirdsStaysFouled()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(RUBRUM, 4, FOULED);
+        growth.grow(SCOURED, 2);
+        growth.grow(FOULED, 2);
+
+        assertThat(growth.habit(ALL)).isEqualTo(FOULED);
+    }
+
+    @Test
+    void fouled_staysFouledWithoutScouringResearch()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, FOULED);
+        growth.grow(SCOURED, 4);
+
+        assertThat(growth.habit(habit -> habit != SCOURED)).isEqualTo(FOULED);
+        assertThat(growth.habit(habit -> false)).isEqualTo(FOULED);
+    }
+
+    @Test
+    void seep_growsFouledOnlyWithItsResearch()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, NONE);
+        growth.grow(FOULED, 4);
+
+        assertThat(growth.scours()).isFalse();
+        assertThat(growth.habit(ALL)).isEqualTo(FOULED);
+        assertThat(growth.habit(habit -> habit != FOULED)).isEqualTo(PLAIN);
+    }
+
+    @Test
+    void harvest_ofAPartScourKeepsTheShardsFouled()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 3, FOULED);
+        growth.grow(SCOURED, 2.5);
+
+        var harvest = growth.harvest(ALL);
+        assertThat(harvest.bundle()).isEqualTo(BundleSize.MEDIUM);
+        assertThat(harvest.bundleHabit()).isEqualTo(SCOURED);
+        assertThat(harvest.shards()).isEqualTo(1);
+        assertThat(harvest.shardHabit()).isEqualTo(FOULED);
     }
 }

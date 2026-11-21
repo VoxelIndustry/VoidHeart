@@ -34,6 +34,12 @@ final class ConstructInteraction
         if (level.isClientSide())
             return InteractionResult.SUCCESS;
 
+        // A socket keeps only the habit, so a bundle that drew taint in would come back out empty
+        if (CrystalBundles.soakOf(stack) > 0)
+        {
+            player.sendOverlayMessage(Component.translatable("voidheart.rubrum_construct.soaked"));
+            return InteractionResult.SUCCESS;
+        }
         if (core.insertBundle(bundle, CrystalBundles.habitOf(stack), hit))
             stack.consume(1, player);
         else

@@ -17,12 +17,18 @@ public final class GridLayout
     /**
      * @param bundle the azurium bundle's block, the center of the field and the end of every arc
      * @param clear  whether the bundle grew Clear, so its arcs to other Clear bundles pass through blocks
+     * @param scoured whether the bundle was scoured, so its field holds back the seep
      */
-    public record Pylon(BlockPos pos, BlockPos bundle, int radius, long cap, boolean clear)
+    public record Pylon(BlockPos pos, BlockPos bundle, int radius, long cap, boolean clear, boolean scoured)
     {
         public Pylon(BlockPos pos, BlockPos bundle, int radius, long cap)
         {
-            this(pos, bundle, radius, cap, false);
+            this(pos, bundle, radius, cap, false, false);
+        }
+
+        public Pylon(BlockPos pos, BlockPos bundle, int radius, long cap, boolean clear)
+        {
+            this(pos, bundle, radius, cap, clear, false);
         }
 
         public boolean covers(BlockPos target)

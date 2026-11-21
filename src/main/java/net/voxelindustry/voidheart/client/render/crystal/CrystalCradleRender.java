@@ -58,6 +58,13 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
     private static final int   POOL_SEGMENTS = 12;
     private static final float POOL_BREATH   = 0.2F;
     private static final float POOL_PERIOD   = 90;
+    // Seep pools violet where ley pools teal, and a scouring cradle's floor is an ink drain blended over the stone so it darkens it
+    private static final int   SEEP_RGB      = 0x7A3FD0;
+    private static final float SEEP_ALPHA    = 0.3F;
+    private static final int   INK_RGB       = 0x1A0F24;
+    private static final float INK_ALPHA     = 0.75F;
+    private static final float INK_STALLED   = 0.45F;
+    private static final float INK_RADIUS    = 4F / 16;
 
     public static class State extends BlockEntityRenderState
     {
@@ -70,6 +77,7 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         CrystalHabit seed  = CrystalHabit.PLAIN;
         float        pool;
         float        time;
+        CrystalCradleTile.Source source = CrystalCradleTile.Source.IDLE;
     }
 
     public CrystalCradleRender(BlockEntityRendererProvider.Context context)
@@ -94,6 +102,7 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         state.habit = cradle.preview();
         state.seed = growth.seedHabit();
         state.pool = cradle.pool(partialTicks);
+        state.source = cradle.source();
         state.time = (cradle.getLevel().getGameTime() % 24000L) + partialTicks;
 
         // The shards not yet grown into the bundle, the one in use shrinking as it goes
@@ -110,8 +119,16 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
             return;
         submitBed(state, poseStack, collector);
         submitBundle(state, poseStack, collector);
-        if (state.pool > 0.01F)
-            collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> pool(state, pose, buffer));
+        if (state.pool <= 0.01F)
+            return;
+        switch (state.source)
+        {
+            case SCOURING, BREACHED -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.MARKER, (pose, buffer) -> ink(state, pose, buffer));
+            case SEEP -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> disc(state, pose, buffer, SEEP_RGB, SEEP_ALPHA,
+                    POOL_RADIUS));
+            default -> collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) -> disc(state, pose, buffer, POOL_RGB, POOL_ALPHA,
+                    POOL_RADIUS));
+        }
     }
 
     private static void submitBundle(State state, PoseStack poseStack, SubmitNodeCollector collector)
@@ -189,21 +206,36 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
     }
 
     /**
-     * A soft disc of ley at the bundle's foot, brightest in the middle and gone at its rim, breathing slowly while fed.
+     * The drain the foulness leaves by while scouring: dark in the middle, fading to the floor, steady while a breached line holds it back.
      */
-    private static void pool(State state, PoseStack.Pose pose, VertexConsumer buffer)
+    private static void ink(State state, PoseStack.Pose pose, VertexConsumer buffer)
+    {
+        float alpha = state.source == CrystalCradleTile.Source.BREACHED ? INK_STALLED : INK_ALPHA;
+        int center = ARGB.color(Mth.clamp((int) (alpha * state.pool * 255), 0, 255), INK_RGB);
+        int rim = ARGB.color(0, INK_RGB);
+        fan(pose, buffer, center, rim, INK_RADIUS);
+    }
+
+    /**
+     * A soft disc of what feeds the cradle at the bundle's foot, brightest in the middle and gone at its rim, breathing slowly while fed.
+     */
+    private static void disc(State state, PoseStack.Pose pose, VertexConsumer buffer, int rgb, float alpha, float radius)
     {
         float breath = 1 - POOL_BREATH * (0.5F + 0.5F * Mth.sin(state.time / POOL_PERIOD * Mth.TWO_PI));
-        int center = ARGB.color(Mth.clamp((int) (POOL_ALPHA * state.pool * breath * 255), 0, 255), POOL_RGB);
-        int rim = ARGB.color(0, POOL_RGB);
+        int center = ARGB.color(Mth.clamp((int) (alpha * state.pool * breath * 255), 0, 255), rgb);
+        fan(pose, buffer, center, ARGB.color(0, rgb), radius);
+    }
+
+    private static void fan(PoseStack.Pose pose, VertexConsumer buffer, int center, int rim, float radius)
+    {
         float y = FLOOR + POOL_HEIGHT;
         for (int i = 0; i < POOL_SEGMENTS; i++)
         {
             float a0 = i * Mth.TWO_PI / POOL_SEGMENTS;
             float a1 = (i + 1) * Mth.TWO_PI / POOL_SEGMENTS;
             buffer.addVertex(pose, 0.5F, y, 0.5F).setColor(center);
-            buffer.addVertex(pose, 0.5F + POOL_RADIUS * Mth.cos(a1), y, 0.5F + POOL_RADIUS * Mth.sin(a1)).setColor(rim);
-            buffer.addVertex(pose, 0.5F + POOL_RADIUS * Mth.cos(a0), y, 0.5F + POOL_RADIUS * Mth.sin(a0)).setColor(rim);
+            buffer.addVertex(pose, 0.5F + radius * Mth.cos(a1), y, 0.5F + radius * Mth.sin(a1)).setColor(rim);
+            buffer.addVertex(pose, 0.5F + radius * Mth.cos(a0), y, 0.5F + radius * Mth.sin(a0)).setColor(rim);
             buffer.addVertex(pose, 0.5F, y, 0.5F).setColor(center);
         }
     }

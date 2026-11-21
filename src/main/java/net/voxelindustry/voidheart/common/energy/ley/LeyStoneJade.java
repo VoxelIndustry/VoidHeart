@@ -121,6 +121,9 @@ public final class LeyStoneJade
                     tag.putFloat("strength", ward.strength());
                     tag.putFloat("taint", ward.taint());
                     tag.putFloat("seep", ward.seep());
+                    var keepsOut = ward.keepsOut();
+                    if (keepsOut != null)
+                        tag.putString("keepsOut", net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(keepsOut).toString());
                 }
                 case LeyGrowerTile grower -> tag.putFloat("supply", grower.supply());
                 default ->
@@ -157,6 +160,9 @@ public final class LeyStoneJade
                 tooltip.add(Component.translatable(MODID + ".jade.ley_ward.taint"));
             if (data.getFloatOr("seep", 0) > 0.01F)
                 tooltip.add(Component.translatable(MODID + ".jade.ley_ward.seep"));
+            var keepsOut = data.getString("keepsOut").map(net.minecraft.resources.Identifier::tryParse)
+                    .flatMap(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE::getOptional);
+            keepsOut.ifPresent(type -> tooltip.add(Component.translatable(MODID + ".jade.ley_ward.keeps_out", type.getDescription())));
         }
 
         @Override

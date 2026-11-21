@@ -34,7 +34,13 @@ public class CopyCrystalHabitFunction extends LootItemConditionalFunction
     protected ItemStack run(ItemStack stack, LootContext context)
     {
         var state = context.getOptional(LootContextParams.BLOCK_STATE);
-        return state == null ? stack : CrystalBundles.withHabit(stack, CrystalBundles.habitOf(state));
+        if (state == null)
+            return stack;
+        int soaked = CrystalBundles.soakOf(state);
+        // Taken whole it keeps what it soaked; broken, a bundle that has drawn any taint in breaks into Fouled shards, so soaking can't start over
+        if (CrystalBundles.bundleOf(stack) != null)
+            return CrystalBundles.withSoak(CrystalBundles.withHabit(stack, CrystalBundles.habitOf(state)), soaked);
+        return CrystalBundles.withHabit(stack, soaked > 0 ? CrystalHabit.FOULED : CrystalBundles.habitOf(state));
     }
 
     public static Builder<?> copy()

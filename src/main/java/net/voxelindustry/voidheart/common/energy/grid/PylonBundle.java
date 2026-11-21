@@ -98,6 +98,14 @@ public enum PylonBundle
     }
 
     /**
+     * Whether the bundle at that position was scoured, so its field holds back the seep.
+     */
+    public static boolean isScoured(BlockGetter level, BlockPos bundle)
+    {
+        return CrystalBundles.habitOf(level.getBlockState(bundle)) == CrystalHabit.SCOURED;
+    }
+
+    /**
      * A Clear bundle carries nothing inside any seep.
      */
     public static boolean isDarkInSeep(ServerLevel level, BlockPos bundle)

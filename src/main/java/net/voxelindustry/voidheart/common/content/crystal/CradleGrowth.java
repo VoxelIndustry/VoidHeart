@@ -152,6 +152,13 @@ public final class CradleGrowth
         if (kind == null)
             return CrystalHabit.PLAIN;
         double total = fed.values().stream().mapToDouble(Double::doubleValue).sum();
+        // Foulness only leaves a crystal by being scoured into a line, so no other feed and no lack of research washes it out
+        if (seed == CrystalHabit.FOULED)
+        {
+            double scoured = fed.getOrDefault(CrystalHabit.SCOURED, 0D);
+            boolean wasScoured = total > EPSILON && scoured >= total * SETTLING_SHARE - EPSILON;
+            return wasScoured && CrystalHabit.SCOURED.takenBy(kind) && settles.test(CrystalHabit.SCOURED) ? CrystalHabit.SCOURED : CrystalHabit.FOULED;
+        }
         if (total > EPSILON)
         {
             for (var entry : fed.entrySet())
@@ -210,6 +217,14 @@ public final class CradleGrowth
     public CrystalHabit seedHabit()
     {
         return seed;
+    }
+
+    /**
+     * Fouled crystal is scoured on ley rather than grown: it pushes its foulness into the line that powers it.
+     */
+    public boolean scours()
+    {
+        return seed == CrystalHabit.FOULED && worth > 0;
     }
 
     public Saved save()

@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.energy.fissure;
 
 import net.minecraft.core.BlockPos;
+import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -72,6 +73,9 @@ public final class SeepCreatures
                 continue;
             var feet = floor(level, column);
             if (feet == null || level.getNearestPlayer(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5, PLAYER_BUFFER, false) != null)
+                continue;
+            // A Scoured field holds the seep back, so creatures come through there half as often
+            if (VoidGrid.inScouredField(level, feet) && random.nextFloat() >= VoidFissureBalance.SCOURED_SEEP)
                 continue;
 
             var types = types();

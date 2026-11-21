@@ -420,6 +420,13 @@ public class RecipesProvider extends FabricRecipeProvider
                 }
 
                 @Override
+                public void altarTransform(String name, ItemLike output, ItemStack catalyst, ItemLike... ingredients)
+                {
+                    saveAltarRecipe(new AltarRecipe(altarRecipeId(name), ItemStackTransformIngredient.transmuting(output.asItem()),
+                            new ItemStackRecipeIngredient(catalyst, true), ALTAR_TIME, ingredients(ingredients)), catalyst.getItem());
+                }
+
+                @Override
                 public void shatterForge(ItemLike input, ItemLike output, int outputCount, int time, int monolithCount, int draw, Map<EssenceType, Integer> aspects)
                 {
                     offerShatterForgeRecipe(input, output, outputCount, time, monolithCount, draw, aspects);

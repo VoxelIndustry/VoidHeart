@@ -122,6 +122,22 @@ public final class VoidGrid
         return covering;
     }
 
+    /**
+     * Whether a Scoured bundle's field covers the position, where the seep is held back. Reads the last layout, so it never waits on a rebuild.
+     */
+    public static boolean inScouredField(ServerLevel level, BlockPos pos)
+    {
+        var grid = GRIDS.get(level);
+        if (grid == null)
+            return false;
+        for (var pylon : grid.ledger.layout().pylons())
+        {
+            if (pylon.scoured() && pylon.covers(pos))
+                return true;
+        }
+        return false;
+    }
+
     public VoidGridLedger ledger()
     {
         return ledger;
@@ -149,7 +165,7 @@ public final class VoidGrid
             boolean clear = PylonBundle.isClear(level, bundlePos);
             if (clear && PylonBundle.isDarkInSeep(level, bundlePos))
                 continue;
-            found.add(new GridLayout.Pylon(pos, bundlePos, bundle.radius(), bundle.cap(), clear));
+            found.add(new GridLayout.Pylon(pos, bundlePos, bundle.radius(), bundle.cap(), clear, PylonBundle.isScoured(level, bundlePos)));
         }
         var layout = GridLayout.link(found, (a, b) -> inSight(level, a, b));
 

@@ -24,6 +24,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public final class CrystalJade
 {
     private static final Identifier CRADLE = Identifier.fromNamespaceAndPath(MODID, "crystal_cradle");
+    private static final Identifier BUNDLE = Identifier.fromNamespaceAndPath(MODID, "crystal_bundle");
 
     private CrystalJade()
     {
@@ -37,6 +38,40 @@ public final class CrystalJade
     public static void registerClient(IWailaClientRegistration registration)
     {
         registration.registerBlockComponent(new Client(), CrystalCradleBlock.class);
+        registration.registerBlockComponent(new BundleClient(), CrystalBundleBlock.class);
+    }
+
+    /**
+     * A placed bundle's habit and what it changes there, and whether Scoured rubrum has drawn any taint in yet. All of it is in the block state.
+     */
+    private static final class BundleClient implements IBlockComponentProvider
+    {
+        @Override
+        public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config)
+        {
+            var state = accessor.getBlockState();
+            var habit = CrystalBundles.habitOf(state);
+            var kind = CrystalBundles.kindOfBundle(state.getBlock());
+            if (kind == null)
+                return;
+            if (habit == CrystalHabit.PLAIN)
+            {
+                tooltip.add(Component.translatable(habit.translationKey()).withStyle(ChatFormatting.DARK_GRAY));
+                return;
+            }
+            if (!habit.isHabit())
+                return;
+            tooltip.add(HabitEffects.name(habit));
+            HabitEffects.of(habit, kind).forEach(effect -> tooltip.add(effect.onBlock()));
+            if (CrystalBundleBlock.soaks(state) && CrystalBundles.soakOf(state) > 0)
+                tooltip.add(Component.translatable(MODID + ".habit.scoured.soaked").withStyle(ChatFormatting.GRAY));
+        }
+
+        @Override
+        public Identifier getUid()
+        {
+            return BUNDLE;
+        }
     }
 
     private static final class Server implements IServerDataProvider<BlockAccessor>
@@ -60,6 +95,7 @@ public final class CrystalJade
             tag.putString("habit", growth.habit(CradleResearch.settles(level.getServer(), cradle.owner())).getSerializedName());
             tag.putFloat("supply", cradle.supply());
             tag.putString("feed", cradle.feed().getSerializedName());
+            tag.putString("source", cradle.source().getSerializedName());
         }
 
         @Override
@@ -97,10 +133,19 @@ public final class CrystalJade
 
             if (!growing)
                 return;
-            if (data.getFloatOr("supply", 0) <= 0)
-                tooltip.add(Component.translatable(MODID + ".jade.cradle.unfed").withStyle(ChatFormatting.RED));
-            else
-                tooltip.add(Component.translatable(MODID + ".jade.cradle.fed." + habit(data.getStringOr("feed", "plain")).getSerializedName()));
+            switch (data.getStringOr("source", "idle"))
+            {
+                case "seep" -> tooltip.add(Component.translatable(MODID + ".jade.cradle.fed.seep"));
+                case "scouring" -> tooltip.add(Component.translatable(MODID + ".jade.cradle.scouring"));
+                case "breached" -> tooltip.add(Component.translatable(MODID + ".jade.cradle.breached").withStyle(ChatFormatting.RED));
+                default ->
+                {
+                    if (data.getFloatOr("supply", 0) <= 0)
+                        tooltip.add(Component.translatable(MODID + ".jade.cradle.unfed").withStyle(ChatFormatting.RED));
+                    else
+                        tooltip.add(Component.translatable(MODID + ".jade.cradle.fed." + habit(data.getStringOr("feed", "plain")).getSerializedName()));
+                }
+            }
         }
 
         private static CrystalHabit habit(String name)

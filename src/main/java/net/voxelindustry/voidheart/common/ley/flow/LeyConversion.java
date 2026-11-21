@@ -23,13 +23,21 @@ public final class LeyConversion
      */
     public static double convert(ServerLevel level, BlockPos claimant, double amount)
     {
+        return convert(level, claimant, amount, 1);
+    }
+
+    /**
+     * Converts as {@link #convert(ServerLevel, BlockPos, double)}, the taint it causes scaled by how greedily it draws.
+     */
+    public static double convert(ServerLevel level, BlockPos claimant, double amount, double taintWeight)
+    {
         double granted = Ley.claim(level, claimant, amount);
         if (granted > 0)
         {
             LeyTopology.get(level)
                     .map(topology -> topology.attachment(claimant.getX(), claimant.getZ()))
                     .filter(attachment -> !attachment.isNone())
-                    .ifPresent(attachment -> LeyTaint.recordConversion(attachment.sourceNode(), granted));
+                    .ifPresent(attachment -> LeyTaint.recordConversion(attachment.sourceNode(), granted, taintWeight));
         }
         return granted;
     }

@@ -91,7 +91,26 @@ public class SocketSet
 
     public long capacity()
     {
-        return SocketBundle.capacityOf(Arrays.asList(bundles));
+        long capacity = 0;
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null)
+                capacity += bundles[socket].capacity(habits[socket]);
+        }
+        return capacity;
+    }
+
+    /**
+     * Whether any socket holds Fouled rubrum, which leaks a seep while the construct is over half full.
+     */
+    public boolean holdsFouledRubrum()
+    {
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null && bundles[socket].isFouledRubrum(habits[socket]))
+                return true;
+        }
+        return false;
     }
 
     public long rate()

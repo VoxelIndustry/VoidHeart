@@ -2,7 +2,19 @@ package net.voxelindustry.voidheart.common.energy.ley;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.util.Prediction;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -55,6 +67,44 @@ public class LeyWardBlock extends Block implements EntityBlock
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
     {
         return state.getValue(FACING).getAxis() == Direction.Axis.Z ? ALONG_X : ALONG_Z;
+    }
+
+    /**
+     * An imprinted Scoured memoriam bundle sets into the ward, one at a time, and the ward then keeps the creature it remembers out of its reach.
+     */
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    {
+        if (stack.get(VoidHeartDataComponents.CRYSTAL_IMPRINT) == null || CrystalBundles.habitOf(stack) != CrystalHabit.SCOURED)
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (level.isClientSide() || !(level.getBlockEntity(pos) instanceof LeyWardTile ward))
+            return InteractionResult.SUCCESS;
+        if (!ward.memory().isEmpty())
+        {
+            player.sendOverlayMessage(Component.translatable("voidheart.ley_ward.memory.full"));
+            return InteractionResult.FAIL;
+        }
+        ward.setMemory(stack);
+        stack.consume(1, player);
+        level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 1F, 0.7F);
+        return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * An empty hand takes the memory back out.
+     */
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit)
+    {
+        if (!(level.getBlockEntity(pos) instanceof LeyWardTile ward) || ward.memory().isEmpty())
+            return InteractionResult.PASS;
+        if (level.isClientSide())
+            return InteractionResult.SUCCESS;
+        var memory = ward.memory().copy();
+        ward.setMemory(ItemStack.EMPTY);
+        player.getInventory().placeItemBackInInventory(memory, Prediction.SERVER_ONLY);
+        level.playSound(null, pos, SoundEvents.MEDIUM_AMETHYST_BUD_BREAK, SoundSource.BLOCKS, 1F, 1F);
+        return InteractionResult.SUCCESS;
     }
 
     @Override

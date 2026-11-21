@@ -39,9 +39,23 @@ public final class HabitEffects
 
     public static List<Effect> of(CrystalHabit habit, CrystalKind kind)
     {
-        if (habit == CrystalHabit.CLEAR && kind == CrystalKind.AZURIUM)
-            return List.of(new Effect("pylon", MODID + ".habit.clear.arcs"), new Effect("pylon", MODID + ".habit.clear.dark"));
-        return List.of();
+        return switch (kind)
+        {
+            case AZURIUM -> switch (habit)
+            {
+                case CLEAR -> List.of(new Effect("pylon", MODID + ".habit.clear.arcs"), new Effect("pylon", MODID + ".habit.clear.dark"));
+                case FOULED -> List.of(new Effect("spike", MODID + ".habit.fouled.greedy"));
+                case SCOURED -> List.of(new Effect("pylon", MODID + ".habit.scoured.holds"));
+                default -> List.of();
+            };
+            case RUBRUM -> switch (habit)
+            {
+                case FOULED -> List.of(new Effect("construct", MODID + ".habit.fouled.holds"), new Effect("construct", MODID + ".habit.fouled.leaks"));
+                case SCOURED -> List.of(new Effect("node", MODID + ".habit.scoured.draws"));
+                default -> List.of();
+            };
+            case MEMORIAM -> List.of();
+        };
     }
 
     public static MutableComponent name(CrystalHabit habit)

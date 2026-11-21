@@ -8,6 +8,7 @@ import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneTile;
 import net.voxelindustry.voidheart.common.ley.TaintStage;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -93,6 +94,16 @@ final class LeySeams
     static void clear()
     {
         PATHS.clear();
+    }
+
+    /**
+     * The ground points of a stone's seam, from its upstream end at index 0 to its foot, or null while it has none. Shared with the ink thread, which runs
+     * the same way.
+     */
+    static double @Nullable [][] points(LeyStoneTile stone)
+    {
+        var path = PATHS.get(stone);
+        return path == null || path.length <= 0 ? null : new double[][] { path.xs, path.ys, path.zs };
     }
 
     static void tick(Level level, long time)
@@ -201,7 +212,7 @@ final class LeySeams
             // A stone standing on its line has no seam, only the swirl at its foot
             if ((path.length <= 0 && !path.atFoot) || Vec3.atCenterOf(stone.getBlockPos()).distanceToSqr(camera) > DRAW_DISTANCE * DRAW_DISTANCE)
                 return;
-            float level = LeyLook.flowLevel(stone.glow(partialTicks));
+            float level = LeyLook.flowLevel(stone.glow(partialTicks)) * LeyInk.seamShown(stone);
             if (level < 0.01F)
                 return;
 

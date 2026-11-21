@@ -9,6 +9,14 @@ public final class RubrumBalance
     public static final long MEDIUM_RUBRUM_CAPACITY = 1_000_000;
     public static final long LARGE_RUBRUM_CAPACITY  = 4_000_000;
 
+    /** Fouled rubrum holds this many times its size. */
+    public static final long FOULED_CAPACITY_FACTOR = 2;
+
+    /** A construct holding Fouled rubrum leaks a seep this far, this strong at its core, while over half full. Guesses. */
+    public static final float FOULED_LEAK_RADIUS   = 4;
+    public static final float FOULED_LEAK_STRENGTH = 0.3F;
+    public static final float FOULED_LEAK_FROM     = 0.5F;
+
     public static final long SMALL_AZURIUM_RATE  = 64;
     public static final long MEDIUM_AZURIUM_RATE = 160;
     public static final long LARGE_AZURIUM_RATE  = 320;

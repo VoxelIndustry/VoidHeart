@@ -54,6 +54,7 @@ public final class RubrumJade
             tag.putBoolean("tooManyBundles", core.problem() == RubrumConstructTile.Problem.TOO_MANY_BUNDLES);
             tag.putLong("stored", core.stored());
             tag.putLong("capacity", core.capacity());
+            tag.putBoolean("leaking", core.isLeaking());
             tag.putLong("rate", core.charge().isActive() ? core.maxRate() : core.sockets().rate());
             tag.putInt("rubrum", core.sockets().count(true));
             tag.putInt("azurium", core.sockets().count(false));
@@ -94,6 +95,8 @@ public final class RubrumJade
             var bud = data.getFloatOr("bud", 0F);
             if (bud > 0)
                 tooltip.add(Component.translatable(MODID + ".jade.rubrum_construct.bud", Math.round(bud * 100)));
+            if (data.getBooleanOr("leaking", false))
+                tooltip.add(Component.translatable(MODID + ".jade.rubrum_construct.leaking").withStyle(net.minecraft.ChatFormatting.DARK_PURPLE));
         }
 
         @Override
