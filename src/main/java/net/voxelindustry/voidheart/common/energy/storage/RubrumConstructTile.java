@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.energy.storage;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -238,7 +239,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
     /**
      * Sets a bundle in the free socket nearest to where the construct was clicked. Returns false when none is free.
      */
-    public boolean insertBundle(SocketBundle bundle, Vec3 hit)
+    public boolean insertBundle(SocketBundle bundle, CrystalHabit habit, Vec3 hit)
     {
         if (!formed || layout == null)
             return false;
@@ -247,7 +248,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
         if (socket < 0)
             return false;
 
-        sockets.set(socket, bundle);
+        sockets.set(socket, bundle, habit);
         updateSockets();
         var cell = socketPos(socket);
         level.playSound(null, cell, SoundEvents.AMETHYST_CLUSTER_PLACE, SoundSource.BLOCKS, 1F, 1F);
@@ -258,7 +259,7 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
 
     public sealed interface Removal
     {
-        record Taken(SocketBundle bundle) implements Removal
+        record Taken(SocketBundle bundle, CrystalHabit habit) implements Removal
         {
         }
 
@@ -287,12 +288,13 @@ public class RubrumConstructTile extends TileBase implements IVoidHolder
         if (bundle.isRubrum() && !charge.canLoseCapacity(bundle.capacity()))
             return new Removal.Held();
 
+        var habit = sockets.habit(socket);
         sockets.set(socket, null);
         updateSockets();
         level.playSound(null, socketPos(socket), SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.BLOCKS, 1F, 1F);
         setChanged();
         sync();
-        return new Removal.Taken(bundle);
+        return new Removal.Taken(bundle, habit);
     }
 
     //

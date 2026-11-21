@@ -1,6 +1,55 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "voidheart:item/medium_azurium_bundle"
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/medium_azurium_bundle_clear"
+        },
+        "when": "clear"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/medium_azurium_bundle_deep"
+        },
+        "when": "deep"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/medium_azurium_bundle_fouled"
+        },
+        "when": "fouled"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/medium_azurium_bundle_scoured"
+        },
+        "when": "scoured"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/medium_azurium_bundle_searing"
+        },
+        "when": "searing"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/medium_azurium_bundle_still"
+        },
+        "when": "still"
+      }
+    ],
+    "component": "voidheart:crystal_habit",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "voidheart:item/medium_azurium_bundle"
+    },
+    "property": "minecraft:component"
   }
 }

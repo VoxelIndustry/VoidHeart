@@ -1,6 +1,41 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "voidheart:item/memoriam_shard"
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/memoriam_shard_deep"
+        },
+        "when": "deep"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/memoriam_shard_fouled"
+        },
+        "when": "fouled"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/memoriam_shard_scoured"
+        },
+        "when": "scoured"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/memoriam_shard_wrung"
+        },
+        "when": "wrung"
+      }
+    ],
+    "component": "voidheart:crystal_habit",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "voidheart:item/memoriam_shard"
+    },
+    "property": "minecraft:component"
   }
 }

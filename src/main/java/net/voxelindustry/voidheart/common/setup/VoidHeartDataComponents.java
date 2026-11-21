@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.setup;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -84,6 +85,8 @@ public class VoidHeartDataComponents
     public static DataComponentType<GnawerLink>      GNAWER_LINK;
     /** The designs a blessed contraption drew, kept so that opening it again rerolls nothing. */
     public static DataComponentType<List<Identifier>> BLUEPRINT_DRAW;
+    /** How a crystal grew. Absent on crystal as the world made it, and on shards grown without a habit. */
+    public static DataComponentType<CrystalHabit>    CRYSTAL_HABIT;
 
     public static void registerComponents()
     {
@@ -104,6 +107,7 @@ public class VoidHeartDataComponents
         CONTRAVOID_CHARGE = register("contravoid_charge", Codec.INT);
         GNAWER_LINK = register("gnawer_link", GnawerLink.CODEC);
         BLUEPRINT_DRAW = register("blueprint_draw", Identifier.CODEC.listOf());
+        CRYSTAL_HABIT = register("crystal_habit", CrystalHabit.CODEC);
     }
 
     private static <T> DataComponentType<T> register(String name, Codec<T> codec)

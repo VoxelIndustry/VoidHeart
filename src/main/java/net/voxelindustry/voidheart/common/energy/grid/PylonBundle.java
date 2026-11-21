@@ -2,6 +2,10 @@ package net.voxelindustry.voidheart.common.energy.grid;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.energy.VoidSeep;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.AmethystClusterBlock;
 import net.minecraft.world.level.block.Block;
@@ -83,6 +87,22 @@ public enum PylonBundle
         if (!state.hasProperty(AmethystClusterBlock.FACING) || state.getValue(AmethystClusterBlock.FACING) != facing)
             return NONE;
         return ofBlock(state.getBlock());
+    }
+
+    /**
+     * Whether the bundle at that position grew Clear.
+     */
+    public static boolean isClear(BlockGetter level, BlockPos bundle)
+    {
+        return CrystalBundles.habitOf(level.getBlockState(bundle)) == CrystalHabit.CLEAR;
+    }
+
+    /**
+     * A Clear bundle carries nothing inside any seep.
+     */
+    public static boolean isDarkInSeep(ServerLevel level, BlockPos bundle)
+    {
+        return isClear(level, bundle) && VoidSeep.strengthAt(level, bundle) > 0;
     }
 
     public static PylonBundle ofBlock(Block block)

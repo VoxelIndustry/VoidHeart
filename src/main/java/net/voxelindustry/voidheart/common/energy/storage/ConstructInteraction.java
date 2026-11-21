@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.energy.storage;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -33,7 +34,7 @@ final class ConstructInteraction
         if (level.isClientSide())
             return InteractionResult.SUCCESS;
 
-        if (core.insertBundle(bundle, hit))
+        if (core.insertBundle(bundle, CrystalBundles.habitOf(stack), hit))
             stack.consume(1, player);
         else
             player.sendOverlayMessage(Component.translatable("voidheart.rubrum_construct.no_socket"));
@@ -58,7 +59,8 @@ final class ConstructInteraction
             switch (core.removeBundle(hit))
             {
                 case RubrumConstructTile.Removal.Taken taken ->
-                        player.getInventory().placeItemBackInInventory(new ItemStack(ConstructBundles.blockOf(taken.bundle())), Prediction.SERVER_ONLY);
+                        player.getInventory().placeItemBackInInventory(
+                                CrystalBundles.withHabit(new ItemStack(ConstructBundles.blockOf(taken.bundle())), taken.habit()), Prediction.SERVER_ONLY);
                 case RubrumConstructTile.Removal.Held held ->
                         player.sendOverlayMessage(Component.translatable("voidheart.rubrum_construct.rubrum_held"));
                 case RubrumConstructTile.Removal.Empty empty ->

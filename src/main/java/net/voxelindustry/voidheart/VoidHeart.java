@@ -45,6 +45,7 @@ import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReach;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBurstPayload;
 import net.voxelindustry.voidheart.common.content.secondheart.SecondHeart;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalContent;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleContent;
 import net.voxelindustry.voidheart.common.content.sin.SinCombat;
 import net.voxelindustry.voidheart.common.content.sin.SinProficiencies;
@@ -168,6 +169,7 @@ public class VoidHeart implements ModInitializer
         VoidHeartMenus.registerMenus();
         EnergySetup.register();
         TwinVentricleContent.register();
+        CrystalContent.register();
 
         ITEMGROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(MODID, "item_group"), FabricCreativeModeTab.builder()
                 .icon(() -> new ItemStack(VoidHeartItems.VOID_HEART))

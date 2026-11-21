@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.compat.jade;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalJade;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleJade;
 import net.voxelindustry.voidheart.common.energy.gnawer.GnawerJade;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlJade;
@@ -36,6 +37,7 @@ public final class EnergyJade
         TwinVentricleJade.register(registration);
         GnawerJade.register(registration);
         PearlJade.register(registration);
+        CrystalJade.register(registration);
     }
 
     public static void registerClient(IWailaClientRegistration registration)
@@ -51,5 +53,6 @@ public final class EnergyJade
         TwinVentricleJade.registerClient(registration);
         GnawerJade.registerClient(registration);
         PearlJade.registerClient(registration);
+        CrystalJade.registerClient(registration);
     }
 }
