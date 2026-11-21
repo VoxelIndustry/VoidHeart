@@ -3,8 +3,13 @@ package net.voxelindustry.voidheart.common.content.armor;
 /**
  * What a frame gives with its working modules in place.
  */
-public record ArmorStats(int batteries, boolean nightVision, boolean spectralLens, boolean exoskeleton)
+public record ArmorStats(int batteries, boolean nightVision, boolean spectralLens, int exoskeletons)
 {
+    public boolean exoskeleton()
+    {
+        return exoskeletons > 0;
+    }
+
     public long capacity()
     {
         return ArmorBalance.FRAME_CAPACITY + batteries * ArmorBalance.BATTERY_CAPACITY;
@@ -16,8 +21,7 @@ public record ArmorStats(int batteries, boolean nightVision, boolean spectralLen
     public long fightDrain()
     {
         long drain = ArmorBalance.FIGHT_DRAIN;
-        if (exoskeleton)
-            drain += ArmorBalance.EXOSKELETON_FIGHT_DRAIN;
+        drain += exoskeletons * ArmorBalance.EXOSKELETON_FIGHT_DRAIN;
         if (nightVision)
             drain += ArmorBalance.NIGHT_VISION_DRAIN;
         if (spectralLens)
@@ -36,16 +40,16 @@ public record ArmorStats(int batteries, boolean nightVision, boolean spectralLen
 
     public float speedBonus()
     {
-        return ArmorBalance.FRAME_SPEED + (exoskeleton ? ArmorBalance.EXOSKELETON_SPEED : 0);
+        return ArmorBalance.FRAME_SPEED + exoskeletons * ArmorBalance.EXOSKELETON_SPEED;
     }
 
     public float jumpBlocks()
     {
-        return exoskeleton ? ArmorBalance.EXOSKELETON_JUMP : ArmorBalance.FRAME_JUMP;
+        return exoskeletons == 0 ? ArmorBalance.FRAME_JUMP : ArmorBalance.EXOSKELETON_JUMP + (exoskeletons - 1) * ArmorBalance.EXTRA_EXOSKELETON_JUMP;
     }
 
     public float hitBonus()
     {
-        return exoskeleton ? ArmorBalance.EXOSKELETON_HIT : 0;
+        return exoskeletons * ArmorBalance.EXOSKELETON_HIT;
     }
 }

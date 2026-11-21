@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ArmorDrainTest
 {
-    private static final ArmorStats EVERYTHING = new ArmorStats(1, true, true, true);
+    private static final ArmorStats EVERYTHING = new ArmorStats(1, true, true, 1);
     private static final long       CAPACITY   = EVERYTHING.capacity();
 
     private static long at(double fill)
@@ -64,7 +64,7 @@ class ArmorDrainTest
         assertThat(shed.nightVision()).isTrue();
         assertThat(shed.spectral()).isFalse();
 
-        var unfitted = ArmorLoad.of(new ArmorStats(0, false, false, false), Set.of(NIGHT_VISION), Stage.FULL);
+        var unfitted = ArmorLoad.of(new ArmorStats(0, false, false, 0), Set.of(NIGHT_VISION), Stage.FULL);
         assertThat(unfitted).isEqualTo(ArmorLoad.NONE);
     }
 

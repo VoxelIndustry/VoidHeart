@@ -20,7 +20,8 @@ public enum ArmorModule implements StringRepresentable
     BATTERY_CELL(ComponentShape.of("##", "##"), EnumSet.allOf(ArmorGridKind.class), null, false, 0xD4415E),
     NIGHT_VISION(ComponentShape.of("##"), EnumSet.of(ArmorGridKind.HELM), null, true, 0x36C5B0),
     SPECTRAL_LENS(ComponentShape.of("##", "#."), EnumSet.of(ArmorGridKind.HELM), "night_vision", true, 0xD6C9F5),
-    EXOSKELETON_POWER(ComponentShape.of("##", "##", "##"), EnumSet.of(ArmorGridKind.LIMBS), null, true, 0xE8C46A);
+    // Stacks: each one fitted adds its boost again, as far as the limbs have room
+    EXOSKELETON_POWER(ComponentShape.of("##", "##", "##"), EnumSet.of(ArmorGridKind.LIMBS), null, false, 0xE8C46A);
 
     public static final Codec<ArmorModule> CODEC = StringRepresentable.fromEnum(ArmorModule::values);
 

@@ -70,9 +70,22 @@ class ArmorGridsTest
     {
         var grids = set(ArmorGrids.EMPTY, HELM, NIGHT_VISION, 0, 0, 0);
         assertThat(grids.refusal(HELM, NIGHT_VISION, 0, 2, 0)).isEqualTo(Refusal.SECOND);
-        grids = set(grids, LIMBS, EXOSKELETON_POWER, 0, 0, 0);
-        assertThat(grids.refusal(LIMBS, EXOSKELETON_POWER, 2, 0, 0)).isEqualTo(Refusal.SECOND);
         assertThat(grids.canPlace(LIMBS, BATTERY_CELL, 2, 0, 0)).isTrue();
+    }
+
+    @Test
+    void exoskeletonsStackAsFarAsTheLimbsHaveRoom()
+    {
+        var one = set(ArmorGrids.EMPTY, LIMBS, EXOSKELETON_POWER, 0, 0, 0);
+        assertThat(one.canPlace(LIMBS, EXOSKELETON_POWER, 2, 0, 0)).isTrue();
+        var two = set(one, LIMBS, EXOSKELETON_POWER, 2, 0, 0);
+        assertThat(two.stats().exoskeletons()).isEqualTo(2);
+        assertThat(two.stats().speedBonus()).isGreaterThan(one.stats().speedBonus());
+        assertThat(two.stats().hitBonus()).isEqualTo(2 * one.stats().hitBonus());
+        assertThat(two.stats().jumpBlocks()).isGreaterThan(one.stats().jumpBlocks());
+        assertThat(two.stats().sortieMinutes()).isLessThan(one.stats().sortieMinutes());
+        // Two fill twelve of the limbs' sixteen cells, so a third has nowhere to go
+        assertThat(two.canPlace(LIMBS, EXOSKELETON_POWER, 0, 0, 1)).isFalse();
     }
 
     @Test

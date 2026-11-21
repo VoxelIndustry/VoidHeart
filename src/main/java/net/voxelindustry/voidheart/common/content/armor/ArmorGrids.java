@@ -219,7 +219,8 @@ public record ArmorGrids(List<Placement> helm, List<Placement> core, List<Placem
     public ArmorStats stats()
     {
         int batteries = 0;
-        boolean nightVision = false, spectral = false, exoskeleton = false;
+        int exoskeletons = 0;
+        boolean nightVision = false, spectral = false;
         for (var placements : valid().values())
             for (var placement : placements)
                 switch (placement.module())
@@ -227,8 +228,8 @@ public record ArmorGrids(List<Placement> helm, List<Placement> core, List<Placem
                     case BATTERY_CELL -> batteries++;
                     case NIGHT_VISION -> nightVision = true;
                     case SPECTRAL_LENS -> spectral = true;
-                    case EXOSKELETON_POWER -> exoskeleton = true;
+                    case EXOSKELETON_POWER -> exoskeletons++;
                 }
-        return new ArmorStats(batteries, nightVision, spectral, exoskeleton);
+        return new ArmorStats(batteries, nightVision, spectral, exoskeletons);
     }
 }

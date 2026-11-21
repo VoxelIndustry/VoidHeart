@@ -53,6 +53,8 @@ public final class ArmorBalance
     /** Blocks cleared by a jump with and without exoskeleton power. */
     public static final float FRAME_JUMP        = 1.25F;
     public static final float EXOSKELETON_JUMP  = 2F;
+    /** Guess: about what each exoskeleton past the first adds to the jump, in blocks, for the frame's screen. */
+    public static final float EXTRA_EXOSKELETON_JUMP = 0.85F;
     public static final float EXOSKELETON_HIT   = 3F;
     /** Guess: knockback added to a powered hit, half of a Knockback I. */
     public static final float EXOSKELETON_KNOCKBACK = 0.5F;

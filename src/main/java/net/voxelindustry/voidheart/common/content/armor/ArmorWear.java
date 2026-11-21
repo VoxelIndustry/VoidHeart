@@ -143,7 +143,7 @@ public final class ArmorWear
             // A fall can take the charge below the cutoff since the last refresh, so the hit's bonus is brought in line with what the frame runs now
             applyModifiers(player, player.getAttached(WORN));
             if (player instanceof ServerPlayer serverPlayer && load(player).exoskeleton())
-                draw(serverPlayer, ArmorBalance.POWERED_HIT_DRAIN);
+                draw(serverPlayer, load(player).exoskeletons() * ArmorBalance.POWERED_HIT_DRAIN);
             return InteractionResult.PASS;
         });
     }
@@ -573,7 +573,7 @@ public final class ArmorWear
     {
         var worn = worn(player);
         if (worn != null && worn.phase() == WornArmor.Phase.WORN && load(player).exoskeleton())
-            draw(player, ArmorBalance.POWERED_JUMP_DRAIN);
+            draw(player, load(player).exoskeletons() * ArmorBalance.POWERED_JUMP_DRAIN);
     }
 
     /**
@@ -751,15 +751,16 @@ public final class ArmorWear
         }
         else
         {
-            float speed = ArmorBalance.FRAME_SPEED + (load.exoskeleton() ? ArmorBalance.EXOSKELETON_SPEED : 0);
+            // Each exoskeleton fitted adds its boost again, and its cost
+            float speed = ArmorBalance.FRAME_SPEED + load.exoskeletons() * ArmorBalance.EXOSKELETON_SPEED;
             set(player, Attributes.MOVEMENT_SPEED, SPEED_ID, speed, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
-            set(player, Attributes.JUMP_STRENGTH, JUMP_ID, load.exoskeleton() ? ArmorBalance.EXOSKELETON_JUMP_STRENGTH : 0,
+            set(player, Attributes.JUMP_STRENGTH, JUMP_ID, load.exoskeletons() * ArmorBalance.EXOSKELETON_JUMP_STRENGTH,
                     AttributeModifier.Operation.ADD_VALUE);
         }
         set(player, Attributes.ENTITY_INTERACTION_RANGE, ENTITY_REACH_ID, ArmorBalance.ENTITY_REACH, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.BLOCK_INTERACTION_RANGE, BLOCK_REACH_ID, ArmorBalance.BLOCK_REACH, AttributeModifier.Operation.ADD_VALUE);
-        set(player, Attributes.ATTACK_DAMAGE, HIT_ID, load.exoskeleton() ? ArmorBalance.EXOSKELETON_HIT : 0, AttributeModifier.Operation.ADD_VALUE);
-        set(player, Attributes.ATTACK_KNOCKBACK, KNOCKBACK_ID, load.exoskeleton() ? ArmorBalance.EXOSKELETON_KNOCKBACK : 0,
+        set(player, Attributes.ATTACK_DAMAGE, HIT_ID, load.exoskeletons() * ArmorBalance.EXOSKELETON_HIT, AttributeModifier.Operation.ADD_VALUE);
+        set(player, Attributes.ATTACK_KNOCKBACK, KNOCKBACK_ID, load.exoskeletons() * ArmorBalance.EXOSKELETON_KNOCKBACK,
                 AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.STEP_HEIGHT, STEP_ID, ArmorBalance.STEP_HEIGHT_BONUS, AttributeModifier.Operation.ADD_VALUE);
         set(player, Attributes.SAFE_FALL_DISTANCE, FALL_ID, ArmorBalance.SAFE_FALL_BONUS, AttributeModifier.Operation.ADD_VALUE);

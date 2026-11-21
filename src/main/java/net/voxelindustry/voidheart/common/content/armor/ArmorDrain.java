@@ -19,8 +19,7 @@ public final class ArmorDrain
         if (load.limp())
             return 0;
         long drain = ArmorBalance.STANDING_DRAIN;
-        if (load.exoskeleton())
-            drain += ArmorBalance.EXOSKELETON_DRAIN;
+        drain += load.exoskeletons() * ArmorBalance.EXOSKELETON_DRAIN;
         if (load.nightVision())
             drain += ArmorBalance.NIGHT_VISION_DRAIN;
         if (load.spectral())
