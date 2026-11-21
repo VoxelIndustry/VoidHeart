@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "voidheart:habit_shaped",
   "key": {
     "B": "voidheart:small_rubrum_bundle",
     "G": "voidheart:ravenous_gold_ingot",

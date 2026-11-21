@@ -57,7 +57,8 @@ public record ApparatusGrid(List<Placement> placements)
         OUTSIDE,
         OVERLAPS,
         SECOND_CORE,
-        SAME_WARD
+        SAME_WARD,
+        SECOND_GRUDGE
     }
 
     public @Nullable Refusal refusal(int size, ApparatusComponent component, int x, int y, int rotation)
@@ -76,6 +77,8 @@ public record ApparatusGrid(List<Placement> placements)
             return Refusal.SECOND_CORE;
         if (component.ward() != null && placements.stream().anyMatch(placement -> placement.component().ward() == component.ward()))
             return Refusal.SAME_WARD;
+        if (component.grudge() && placements.stream().anyMatch(placement -> placement.component().grudge()))
+            return Refusal.SECOND_GRUDGE;
         return null;
     }
 
@@ -125,6 +128,7 @@ public record ApparatusGrid(List<Placement> placements)
         float delay = 1;
         var wards = EnumSet.noneOf(WardKind.class);
         BreakEffect breakEffect = null;
+        boolean grudge = false;
 
         for (var placement : valid(tier.size()))
         {
@@ -136,9 +140,10 @@ public record ApparatusGrid(List<Placement> placements)
                 wards.add(component.ward());
             if (component.breakEffect() != null)
                 breakEffect = component.breakEffect();
+            grudge |= component.grudge();
         }
 
         int delayTicks = Math.max(ShieldStats.MIN_DELAY_TICKS, Math.round(tier.delayTicks() * delay));
-        return new ShieldStats(capacity, tier.regenPerSecond() * regen / 20, delayTicks, wards, Optional.ofNullable(breakEffect));
+        return new ShieldStats(capacity, tier.regenPerSecond() * regen / 20, delayTicks, wards, Optional.ofNullable(breakEffect), grudge);
     }
 }

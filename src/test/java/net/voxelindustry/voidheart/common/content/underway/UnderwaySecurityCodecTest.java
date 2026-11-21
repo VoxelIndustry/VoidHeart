@@ -38,4 +38,21 @@ class UnderwaySecurityCodecTest
         assertThat(UnderwaySecurity.CODEC.encodeStart(JsonOps.INSTANCE, again).getOrThrow().getAsJsonObject().getAsJsonArray("sections"))
                 .as("a section that names no level of a fort is dropped").hasSize(2);
     }
+
+    @Test
+    void aCellsHabitStaysWithItInTheCabinet()
+    {
+        var state = new SectionState();
+        state.insert(500, net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.STILL);
+        assertThat(state.cellHabit()).isEqualTo(net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.STILL);
+        state.remove();
+        assertThat(state.cellHabit()).isEqualTo(net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.NONE);
+
+        var saved = """
+                {"sections": [{"x": 1, "z": 1, "section": 1, "cell": true, "charge": 90, "cell_habit": "searing", "wake": 2, "alarm": 0, "destroyed": []}]}""";
+        var loaded = UnderwaySecurity.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString(saved)).getOrThrow();
+        var again = UnderwaySecurity.CODEC.parse(JsonOps.INSTANCE, UnderwaySecurity.CODEC.encodeStart(JsonOps.INSTANCE, loaded).getOrThrow()).getOrThrow();
+        assertThat(again.cellHabit(new UnderwaySecurity.Key(1, 1, UnderwaySection.LIVING)))
+                .isEqualTo(net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.SEARING);
+    }
 }

@@ -41,6 +41,11 @@ public class ApparatusComponentItem extends Item
             tooltip.accept(Component.translatable(MODID + ".apparatus_component.quickening", Math.round(component.quickening() * 100)).withStyle(ChatFormatting.AQUA));
         if (component.ward() != null)
             tooltip.accept(Component.translatable(MODID + ".shielding_apparatus.ward." + component.ward().name().toLowerCase(Locale.ROOT)).withStyle(ChatFormatting.GOLD));
+        if (component.grudge())
+        {
+            tooltip.accept(Component.translatable(MODID + ".shielding_apparatus.grudge").withStyle(ChatFormatting.GOLD));
+            tooltip.accept(Component.translatable(MODID + ".apparatus_component.one_grudge").withStyle(ChatFormatting.DARK_GRAY));
+        }
         if (component.breakEffect() != null)
         {
             tooltip.accept(Component.translatable(MODID + ".shielding_apparatus.break." + component.breakEffect().name().toLowerCase(Locale.ROOT)).withStyle(ChatFormatting.LIGHT_PURPLE));

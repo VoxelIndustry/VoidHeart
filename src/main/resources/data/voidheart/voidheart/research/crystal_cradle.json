@@ -1,0 +1,17 @@
+{
+  "tier": 2,
+  "constellation": "artifices",
+  "icon": "voidheart:crystal_cradle",
+  "insight_cost": 6,
+  "knowledge_cost": 300,
+  "knowledge_per_second": 0.75,
+  "requires": [
+    "voidheart:ley_sense"
+  ],
+  "unlocks": [
+    "voidheart:crystal_cradle"
+  ],
+  "recipes": [
+    "voidheart:crystal_cradle"
+  ]
+}

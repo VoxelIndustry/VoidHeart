@@ -72,6 +72,22 @@ class AltarRecipeChoiceTest
     }
 
     @Test
+    void choose_givenACatalystWithComponents_thenItsExactRecipeComesFirst()
+    {
+        var anyBundle = fixed("any", Items.AMETHYST_CLUSTER, Items.DIAMOND, Items.BONE);
+        var marked = new ItemStack(Items.AMETHYST_CLUSTER);
+        marked.set(DataComponents.RARITY, Rarity.EPIC);
+        var exact = new AltarRecipe(Identifier.fromNamespaceAndPath("voidheart", "exact"), ItemStackTransformIngredient.transmuting(Items.EMERALD),
+                new ItemStackRecipeIngredient(marked, true), 20, items(Items.BONE));
+
+        var chosen = VoidAltarTile.chooseRecipe(List.of(anyBundle, exact), marked, List.of(new ItemStack(Items.BONE)));
+
+        assertThat(chosen).isSameAs(exact);
+        assertThat(chosen.resultFor(marked).get(DataComponents.RARITY)).isEqualTo(Rarity.EPIC);
+        assertThat(chosen.resultFor(marked).is(Items.EMERALD)).isTrue();
+    }
+
+    @Test
     void choose_givenNothingLaid_thenExactCatalystRecipeWaits()
     {
         var exact = fixed("exact", Items.IRON_SWORD, Items.DIAMOND, Items.BONE);

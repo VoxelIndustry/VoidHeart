@@ -1,5 +1,10 @@
 package net.voxelindustry.voidheart.common.energy.spike;
 
+import net.minecraft.world.level.ItemLike;
+import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
@@ -39,11 +44,16 @@ public final class LeySpikeDatagen
      */
     public static void recipes(EnergyRecipes recipes)
     {
-        recipes.altar("azurium_spike", LeySpikeContent.AZURIUM_SPIKE, VoidHeartBlocks.LARGE_AZURIUM_BUNDLE,
-                VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
-                VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
-                VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
+        recipes.altar("azurium_spike", LeySpikeContent.AZURIUM_SPIKE, VoidHeartBlocks.LARGE_AZURIUM_BUNDLE, SPIKE_PILLARS);
+        // Driven around a Fouled bundle, the spike keeps its foulness and draws the line greedily
+        recipes.altarTransform("fouled_azurium_spike", LeySpikeContent.AZURIUM_SPIKE,
+                CrystalBundles.bundleItem(CrystalKind.AZURIUM, BundleSize.LARGE, CrystalHabit.FOULED), SPIKE_PILLARS);
     }
+
+    private static final ItemLike[] SPIKE_PILLARS = {
+            VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+            VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+            VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD };
 
     public static void loot(BlockLootSubProvider loot)
     {

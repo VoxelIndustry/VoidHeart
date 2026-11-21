@@ -43,6 +43,10 @@ import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.content.armor.ArmorModule;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
+import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.VoidHeartDataGenerator;
@@ -428,6 +432,13 @@ public class RecipesProvider extends FabricRecipeProvider
                 }
 
                 @Override
+                public void altarTransform(String name, ItemLike output, ItemStack catalyst, ItemLike... ingredients)
+                {
+                    saveAltarRecipe(new AltarRecipe(altarRecipeId(name), ItemStackTransformIngredient.transmuting(output.asItem()),
+                            new ItemStackRecipeIngredient(catalyst, true), ALTAR_TIME, ingredients(ingredients)), catalyst.getItem());
+                }
+
+                @Override
                 public void shatterForge(ItemLike input, ItemLike output, int outputCount, int time, int monolithCount, int draw, Map<EssenceType, Integer> aspects)
                 {
                     offerShatterForgeRecipe(input, output, outputCount, time, monolithCount, draw, aspects);
@@ -507,6 +518,10 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT);
             component(ApparatusComponent.MENDING_CORE, Items.GLISTERING_MELON_SLICE,
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+            // Made around Wrung memoriam, which remembers harm: only that habit will do
+            componentAround(ApparatusComponent.GRUDGE_WARD, CrystalBundles.bundleItem(CrystalKind.MEMORIAM, BundleSize.SMALL, CrystalHabit.WRUNG),
+                    VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.LISTLESS_LEAD_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL);
         }
 
         /**
@@ -547,6 +562,18 @@ public class RecipesProvider extends FabricRecipeProvider
         private void component(ApparatusComponent component, ItemLike catalyst, ItemLike... ingredients)
         {
             offerAltarRecipe(component.itemName(), VoidHeartItems.APPARATUS_COMPONENTS.get(component), catalyst, ingredients);
+        }
+
+        /**
+         * A component made around a catalyst whose components must match, such as a crystal of one habit. The component comes out plain.
+         */
+        private void componentAround(ApparatusComponent component, ItemStack catalyst, ItemLike... ingredients)
+        {
+            var ingredientList = new ItemStackRecipeIngredient[ingredients.length];
+            for (var i = 0; i < ingredients.length; i++)
+                ingredientList[i] = ingredient(ingredients[i]);
+            saveAltarRecipe(new AltarRecipe(altarRecipeId(component.itemName()), new ItemStackRecipeIngredient(new ItemStack(VoidHeartItems.APPARATUS_COMPONENTS.get(component)), false),
+                    new ItemStackRecipeIngredient(catalyst, true), ALTAR_TIME, ingredientList), catalyst.getItem());
         }
 
         /**

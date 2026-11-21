@@ -12,7 +12,14 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.advancements.predicates.StatePropertiesPredicate;
+import net.minecraft.world.level.storage.loot.entries.AlternativesEntry;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
+import net.minecraft.world.level.storage.loot.predicates.MatchBlock;
+import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
+import net.voxelindustry.voidheart.common.content.crystal.CopyCrystalHabitFunction;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundleBlock;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.minecraft.world.level.storage.loot.entries.LootPoolEntryContainer;
 import net.minecraft.world.level.storage.loot.functions.ApplyBonusCount;
 import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
@@ -117,21 +124,27 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
 
     private void dropBundles(Item shard, Block small, Block medium, Block large)
     {
-        dropBundle(small, shard, 1, 1);
-        dropBundle(medium, shard, 1, 2);
-        dropBundle(large, shard, 2, 4);
+        dropBundle(small, shard, 1, 1, BundleSize.SMALL);
+        dropBundle(medium, shard, 1, 2, BundleSize.MEDIUM);
+        dropBundle(large, shard, 2, 4, BundleSize.LARGE);
     }
 
     /**
-     * Silk touch keeps the bundle whole, anything else breaks it into shards that fortune multiplies.
+     * Silk touch keeps the bundle whole. Anything else breaks a world bundle into shards that fortune multiplies, and a bundle grown in a cradle into
+     * exactly the shards that grew it, so regrowing never makes crystal. Either way the drops keep its habit.
      */
-    private void dropBundle(Block bundle, Item shard, int min, int max)
+    private void dropBundle(Block bundle, Item shard, int min, int max, BundleSize size)
     {
-        var shards = LootItem.lootTableItem(shard)
+        var fromTheWorld = MatchBlock.blockMatches(blocks, bundle,
+                StatePropertiesPredicate.Builder.properties().hasProperty(CrystalBundleBlock.HABIT, CrystalHabit.NONE));
+        var worldShards = applyExplosionDecay(bundle, LootItem.lootTableItem(shard)
+                .when(fromTheWorld)
                 .apply(SetItemCountFunction.setCount(ContextIntProviders.between(min, max)))
-                .apply(ApplyBonusCount.addOreBonusCount(enchantments.getOrThrow(Enchantments.FORTUNE)));
-        LootPoolEntryContainer.Builder<?> entry = applyExplosionDecay(bundle, shards);
-        add(bundle, createSilkTouchDispatchTable(bundle, entry));
+                .apply(ApplyBonusCount.addOreBonusCount(enchantments.getOrThrow(Enchantments.FORTUNE))));
+        var grownShards = applyExplosionDecay(bundle, LootItem.lootTableItem(shard)
+                .apply(SetItemCountFunction.setCount(ContextIntProviders.exactly(size.worth()))));
+        LootPoolEntryContainer.Builder<?> entry = AlternativesEntry.alternatives(worldShards, grownShards);
+        add(bundle, createSilkTouchDispatchTable(bundle, entry).apply(CopyCrystalHabitFunction.copy()));
     }
 
     private void dropMetalFamily(Block block, Block cut, Block stairs, Block slab, Block wall)

@@ -29,6 +29,8 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -128,6 +130,11 @@ final class OculusProjector implements AutoCloseable
 
     private final Long2ObjectMap<ChunkSlot> slots = new Long2ObjectOpenHashMap<>();
 
+    /**
+     * The recording a Deep memoriam set on the table holds, shown instead of the table's own land, or null.
+     */
+    private @Nullable UUID memoryId;
+
     private @Nullable DynamicTexture mask;
     private boolean maskDirty = true;
 
@@ -161,8 +168,30 @@ final class OculusProjector implements AutoCloseable
             maskDirty = true;
         }
 
-        followed = view.follow().map(level::getPlayerByUUID).orElse(null);
-        if (followed != null)
+        // Set on or taken off, a memory swaps every chunk shown for another place's
+        var shownMemory = view.memory().map(held -> held.recording().id()).orElse(null);
+        if (!Objects.equals(shownMemory, memoryId))
+        {
+            memoryId = shownMemory;
+            slots.values().forEach(slot ->
+            {
+                if (slot.mesh != null)
+                    slot.mesh.close();
+            });
+            slots.clear();
+            displayX = Double.NaN;
+            windowBottom = Integer.MIN_VALUE;
+            epoch++;
+        }
+        var memory = memory();
+        followed = memoryId != null ? null : view.follow().map(level::getPlayerByUUID).orElse(null);
+        if (memoryId != null)
+        {
+            // A recorded place is shown around where its cradle stood, followed players aside
+            targetX = memory != null ? memory.center().getX() + 0.5 : footprint.centerX();
+            targetZ = memory != null ? memory.center().getZ() + 0.5 : footprint.centerZ();
+        }
+        else if (followed != null)
         {
             targetX = followed.getX();
             targetZ = followed.getZ();
@@ -183,8 +212,8 @@ final class OculusProjector implements AutoCloseable
         caving.tick(tick, view.caving(), followed != null, followed != null && isCovered(level, followed),
                 VoidHeartConfig.get().oculusTableMixedSeconds * 20);
 
-        int bottom = windowBottom(level, view.scale(), caving.goal(tick) > 0);
-        if (view.scale() != scale || Math.abs(bottom - windowBottom) >= view.scale() * WINDOW_HYSTERESIS)
+        int bottom = memoryId != null ? memoryWindowBottom(memory, view.scale(), caving.goal(tick) > 0) : windowBottom(level, view.scale(), caving.goal(tick) > 0);
+        if (view.scale() != scale || windowBottom == Integer.MIN_VALUE || Math.abs(bottom - windowBottom) >= view.scale() * WINDOW_HYSTERESIS)
         {
             scale = view.scale();
             windowBottom = bottom;
@@ -227,6 +256,37 @@ final class OculusProjector implements AutoCloseable
                     : surface - Math.max(1, Math.round(height * SURFACE_HEIGHT));
         }
         return Mth.clamp(bottom, level.getMinY(), level.getMaxY() + 1 - height);
+    }
+
+    /**
+     * Rests the window on the ground recorded around the cradle, within the land recorded.
+     */
+    private int memoryWindowBottom(OculusMemories.@Nullable Memory memory, int height, boolean hollows)
+    {
+        if (memory == null)
+            return windowBottom == Integer.MIN_VALUE ? footprint.y() - height / 2 : windowBottom;
+        int bottom = hollows
+                ? memory.surface() - Math.round(height * (1 - CAVING_ABOVE_SURFACE))
+                : memory.surface() - Math.max(1, Math.round(height * SURFACE_HEIGHT));
+        return Mth.clamp(bottom, memory.bottom(), Math.max(memory.bottom(), memory.top() - height));
+    }
+
+    /**
+     * The recorded place shown instead of the table's land, once it has arrived.
+     */
+    OculusMemories.@Nullable Memory memory()
+    {
+        return memoryId == null ? null : OculusMemories.get(memoryId, anchor, OculusRenderer.ticks());
+    }
+
+    boolean showsMemory()
+    {
+        return memoryId != null;
+    }
+
+    boolean shows(UUID memory)
+    {
+        return memory.equals(memoryId);
     }
 
     /**
@@ -339,6 +399,9 @@ final class OculusProjector implements AutoCloseable
      */
     void onSectionDirty(int sectionX, int sectionY, int sectionZ)
     {
+        // A recording never changes with the land around the table
+        if (memoryId != null)
+            return;
         if (sectionY < SectionPos.blockToSectionCoord(windowBottom) || sectionY > SectionPos.blockToSectionCoord(windowBottom + scale - 1))
             return;
 
@@ -383,7 +446,8 @@ final class OculusProjector implements AutoCloseable
      */
     int scheduleBuilds(ClientLevel level, long tick, int budget, long deadlineNanos, Consumer<BuildTask> submit)
     {
-        if (sight == null)
+        var memory = memory();
+        if (memoryId != null ? memory == null || !memory.found() : sight == null)
             return 0;
 
         var candidates = new ArrayList<Long2ObjectMap.Entry<ChunkSlot>>();
@@ -405,7 +469,9 @@ final class OculusProjector implements AutoCloseable
             var slot = entry.getValue();
             long chunk = entry.getLongKey();
             // Stays dirty while land or relief is missing: the server is asked, and asked again later if it never answers
-            var snapshot = OculusSnapshot.capture(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale, tick, sight, anchor);
+            var snapshot = memory != null
+                    ? OculusSnapshot.captureMemory(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale, memory)
+                    : OculusSnapshot.capture(level, ChunkPos.getX(chunk), ChunkPos.getZ(chunk), windowBottom, scale, tick, sight, anchor);
             if (snapshot == null)
                 continue;
 

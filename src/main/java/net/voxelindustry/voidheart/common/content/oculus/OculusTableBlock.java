@@ -25,6 +25,16 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Prediction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.phys.BlockHitResult;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import org.jspecify.annotations.Nullable;
 
@@ -33,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Projects the land around it as a hologram. Its controls float above the table and are handled client side.
@@ -114,6 +125,59 @@ public class OculusTableBlock extends Block implements EntityBlock
     protected boolean useShapeForLightOcclusion(BlockState state)
     {
         return true;
+    }
+
+    /**
+     * A Deep memoriam that recorded a place is set on the table, which shows that place instead of its own land until it is taken back.
+     */
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    {
+        if (stack.isEmpty())
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
+        var memory = OculusMemory.of(stack);
+        if (memory == null)
+        {
+            boolean deepMemoriam = CrystalBundles.bundleOf(stack) instanceof Block bundle && CrystalBundles.kindOfBundle(bundle) == CrystalKind.MEMORIAM
+                                   && CrystalBundles.habitOf(stack) == CrystalHabit.DEEP;
+            if (!deepMemoriam)
+                return InteractionResult.PASS;
+            if (!level.isClientSide())
+                player.sendOverlayMessage(Component.translatable(MODID + ".oculus_table.memory.none"));
+            return InteractionResult.FAIL;
+        }
+        if (level.isClientSide())
+            return InteractionResult.SUCCESS;
+        var tile = OculusTableStructure.getTile(level, pos);
+        if (tile == null)
+            return InteractionResult.PASS;
+        if (tile.getView().memory().isPresent())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".oculus_table.memory.full"));
+            return InteractionResult.FAIL;
+        }
+        OculusTableStructure.remember(level, pos, Optional.of(memory));
+        stack.consume(1, player);
+        level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 1, 0.7F);
+        return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * An empty hand takes the memory back, and the table shows its own land again.
+     */
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit)
+    {
+        var tile = OculusTableStructure.getTile(level, pos);
+        if (tile == null || tile.getView().memory().isEmpty())
+            return InteractionResult.PASS;
+        if (level.isClientSide())
+            return InteractionResult.SUCCESS;
+        var memory = tile.getView().memory().get();
+        OculusTableStructure.remember(level, pos, Optional.empty());
+        player.getInventory().placeItemBackInInventory(memory.toStack(), Prediction.SERVER_ONLY);
+        level.playSound(null, pos, SoundEvents.MEDIUM_AMETHYST_BUD_BREAK, SoundSource.BLOCKS, 1, 0.9F);
+        return InteractionResult.SUCCESS;
     }
 
     @Override

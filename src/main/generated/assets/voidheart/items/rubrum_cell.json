@@ -1,33 +1,142 @@
 {
   "model": {
-    "type": "minecraft:range_dispatch",
-    "entries": [
+    "type": "minecraft:select",
+    "cases": [
       {
         "model": {
-          "type": "minecraft:model",
-          "model": "voidheart:item/rubrum_cell_third"
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_searing_third"
+              },
+              "threshold": 1.0E-4
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_searing_two_thirds"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_searing_full"
+              },
+              "threshold": 0.84
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/rubrum_cell_searing_empty"
+          },
+          "property": "voidheart:rubrum_charge"
         },
-        "threshold": 1.0E-4
+        "when": "searing"
       },
       {
         "model": {
-          "type": "minecraft:model",
-          "model": "voidheart:item/rubrum_cell_two_thirds"
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_still_third"
+              },
+              "threshold": 1.0E-4
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_still_two_thirds"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_still_full"
+              },
+              "threshold": 0.84
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/rubrum_cell_still_empty"
+          },
+          "property": "voidheart:rubrum_charge"
         },
-        "threshold": 0.5
+        "when": "still"
       },
       {
         "model": {
-          "type": "minecraft:model",
-          "model": "voidheart:item/rubrum_cell_full"
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_wrung_third"
+              },
+              "threshold": 1.0E-4
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_wrung_two_thirds"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "voidheart:item/rubrum_cell_wrung_full"
+              },
+              "threshold": 0.84
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/rubrum_cell_wrung_empty"
+          },
+          "property": "voidheart:rubrum_charge"
         },
-        "threshold": 0.84
+        "when": "wrung"
       }
     ],
+    "component": "voidheart:crystal_habit",
     "fallback": {
-      "type": "minecraft:model",
-      "model": "voidheart:item/rubrum_cell_empty"
+      "type": "minecraft:range_dispatch",
+      "entries": [
+        {
+          "model": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/rubrum_cell_third"
+          },
+          "threshold": 1.0E-4
+        },
+        {
+          "model": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/rubrum_cell_two_thirds"
+          },
+          "threshold": 0.5
+        },
+        {
+          "model": {
+            "type": "minecraft:model",
+            "model": "voidheart:item/rubrum_cell_full"
+          },
+          "threshold": 0.84
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:model",
+        "model": "voidheart:item/rubrum_cell_empty"
+      },
+      "property": "voidheart:rubrum_charge"
     },
-    "property": "voidheart:rubrum_charge"
+    "property": "minecraft:component"
   }
 }

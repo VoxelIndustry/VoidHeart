@@ -187,6 +187,7 @@ public final class OculusRenderer
             closeProjectors();
             OculusRemoteChunks.clear();
             OculusRelief.clear();
+            OculusMemories.clear();
             lastLevel = level;
         }
         if (level == null)
@@ -204,6 +205,29 @@ public final class OculusRenderer
         OculusBeholderLayer.tick(ticks);
         OculusMarkers.tick(level, ticks);
         OculusLeyLayer.tick(ticks);
+        OculusMemories.tick(ticks);
+    }
+
+    /**
+     * A recording's header came: tables showing it start building its land.
+     */
+    static void onMemory(java.util.UUID memory)
+    {
+        PROJECTORS.values().forEach(projector ->
+        {
+            if (projector.shows(memory))
+                projector.markAllDirty();
+        });
+    }
+
+    public static void receiveMemoryHeader(net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.Header payload, ClientPlayNetworking.Context context)
+    {
+        OculusMemories.receiveHeader(payload, context);
+    }
+
+    public static void receiveMemoryLand(net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.Land payload, ClientPlayNetworking.Context context)
+    {
+        OculusMemories.receiveLand(payload, context);
     }
 
     private static void updateProjectors(ClientLevel level)

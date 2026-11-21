@@ -170,6 +170,9 @@ public class ApparatusMenu extends AbstractContainerMenu
             return false;
 
         apparatus.set(VoidHeartDataComponents.APPARATUS_GRID, grid.without(placement));
+        // The grudge lives in the ward: taken out, it is forgotten
+        if (placement.component().grudge())
+            apparatus.remove(VoidHeartDataComponents.APPARATUS_GRUDGE);
         sound(player, false);
         return true;
     }

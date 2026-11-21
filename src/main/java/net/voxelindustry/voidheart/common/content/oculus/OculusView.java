@@ -14,8 +14,9 @@ import java.util.UUID;
  * @param follow player the projection is centered on, the table itself otherwise
  * @param asleep whether redstone power keeps the table from projecting
  * @param caving whether the hollows inside the land are shown instead of its surface, when no followed player decides
+ * @param memory a Deep memoriam set on the table, whose recorded place it shows instead of its own land
  */
-public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep, boolean caving)
+public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep, boolean caving, Optional<OculusMemory> memory)
 {
     /**
      * World blocks per table block at each zoom step, halving every two steps below 1:32 and gentler beyond it.
@@ -35,8 +36,14 @@ public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, bool
             UUIDUtil.CODEC.optionalFieldOf("follow").forGetter(OculusView::follow),
             Codec.BOOL.optionalFieldOf("ley_lines", false).forGetter(OculusView::leyLines),
             Codec.BOOL.optionalFieldOf("asleep", false).forGetter(OculusView::asleep),
-            Codec.BOOL.optionalFieldOf("caving", false).forGetter(OculusView::caving)
+            Codec.BOOL.optionalFieldOf("caving", false).forGetter(OculusView::caving),
+            OculusMemory.CODEC.optionalFieldOf("memory").forGetter(OculusView::memory)
     ).apply(instance, OculusView::new));
+
+    public OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep, boolean caving)
+    {
+        this(zoom, follow, leyLines, asleep, caving, Optional.empty());
+    }
 
     /**
      * World blocks represented along each axis of a single table block.
@@ -48,31 +55,36 @@ public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, bool
 
     public OculusView zoomIn()
     {
-        return new OculusView(Math.min(zoom + 1, ZOOM_STEPS - 1), follow, leyLines, asleep, caving);
+        return new OculusView(Math.min(zoom + 1, ZOOM_STEPS - 1), follow, leyLines, asleep, caving, memory);
     }
 
     public OculusView zoomOut()
     {
-        return new OculusView(Math.max(zoom - 1, 0), follow, leyLines, asleep, caving);
+        return new OculusView(Math.max(zoom - 1, 0), follow, leyLines, asleep, caving, memory);
     }
 
     public OculusView following(Optional<UUID> target)
     {
-        return new OculusView(zoom, target, leyLines, asleep, caving);
+        return new OculusView(zoom, target, leyLines, asleep, caving, memory);
     }
 
     public OculusView toggleLeyLines()
     {
-        return new OculusView(zoom, follow, !leyLines, asleep, caving);
+        return new OculusView(zoom, follow, !leyLines, asleep, caving, memory);
     }
 
     public OculusView toggleCaving()
     {
-        return new OculusView(zoom, follow, leyLines, asleep, !caving);
+        return new OculusView(zoom, follow, leyLines, asleep, !caving, memory);
     }
 
     public OculusView sleeping(boolean asleep)
     {
-        return new OculusView(zoom, follow, leyLines, asleep, caving);
+        return new OculusView(zoom, follow, leyLines, asleep, caving, memory);
+    }
+
+    public OculusView remembering(Optional<OculusMemory> memory)
+    {
+        return new OculusView(zoom, follow, leyLines, asleep, caving, memory);
     }
 }

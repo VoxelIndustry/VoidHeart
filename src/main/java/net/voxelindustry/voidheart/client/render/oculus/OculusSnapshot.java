@@ -45,6 +45,10 @@ final class OculusSnapshot implements BlockAndTintGetter
     private static final int RELIEF_LOW = 0x24183D;
     private static final int RELIEF_HIGH = 0x8676B8;
     private static final int RELIEF_CONTOUR = 0xC2B0FF;
+    // A recorded place is drawn from a dark cold violet to a pale grey, by each block's lightness
+    private static final int   MEMORY_DARK  = 0x231E33;
+    private static final int   MEMORY_LIGHT = 0xD4CEE3;
+    private static final float MEMORY_GAMMA = 0.85F;
 
     final int chunkX;
     final int chunkZ;
@@ -69,11 +73,23 @@ final class OculusSnapshot implements BlockAndTintGetter
      * Per column, the first open block above everything covering it: open space below is hollow.
      */
     private final int[] cover;
+    /**
+     * Whether this is a recorded place, drawn in the cold monochrome of a memory.
+     */
+    private final boolean memory;
 
     private OculusSnapshot(int chunkX, int chunkZ, int windowBottom, int windowHeight, int minSection,
                            @Nullable LevelChunkSection[][] sections, Holder<Biome> fallbackBiome, int levelMinY, int levelHeight,
                            int seaLevel, boolean[] seen, int[] relief, int[] cover)
     {
+        this(chunkX, chunkZ, windowBottom, windowHeight, minSection, sections, fallbackBiome, levelMinY, levelHeight, seaLevel, seen, relief, cover, false);
+    }
+
+    private OculusSnapshot(int chunkX, int chunkZ, int windowBottom, int windowHeight, int minSection,
+                           @Nullable LevelChunkSection[][] sections, Holder<Biome> fallbackBiome, int levelMinY, int levelHeight,
+                           int seaLevel, boolean[] seen, int[] relief, int[] cover, boolean memory)
+    {
+        this.memory = memory;
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
         this.windowBottom = windowBottom;
@@ -233,6 +249,61 @@ final class OculusSnapshot implements BlockAndTintGetter
     }
 
     /**
+     * Copies a slice of a recorded place: only what lies within the radius recorded shows, all of it seen, and nothing past it, not even relief.
+     *
+     * @return nothing while this chunk's recorded land has not arrived yet
+     */
+    static @Nullable OculusSnapshot captureMemory(ClientLevel level, int chunkX, int chunkZ, int windowBottom, int windowHeight, OculusMemories.Memory memory)
+    {
+        int originX = chunkX << 4;
+        int originZ = chunkZ << 4;
+        if (memory.records(chunkX, chunkZ) && !memory.sections().containsKey(ChunkPos.pack(chunkX, chunkZ)))
+            return null;
+
+        int minSection = SectionPos.blockToSectionCoord(windowBottom);
+        int maxSection = SectionPos.blockToSectionCoord(windowBottom + windowHeight - 1);
+        var sections = new LevelChunkSection[CHUNK_OFFSETS.length][maxSection - minSection + 1];
+        var covers = new int[CHUNK_OFFSETS.length][];
+        for (int chunk = 0; chunk < CHUNK_OFFSETS.length; chunk++)
+        {
+            long pos = ChunkPos.pack(chunkX + CHUNK_OFFSETS[chunk][0], chunkZ + CHUNK_OFFSETS[chunk][1]);
+            var recorded = memory.sections().get(pos);
+            covers[chunk] = memory.covers().get(pos);
+            if (recorded == null)
+                continue;
+            for (int sectionY = minSection; sectionY <= maxSection; sectionY++)
+            {
+                int index = sectionY - memory.minSection();
+                if (index < 0 || index >= recorded.length || recorded[index] == null)
+                    continue;
+                // Recorded sections are never written once decoded, so builders can share them
+                OculusPalette.ensure(recorded[index].getStates());
+                sections[chunk][sectionY - minSection] = recorded[index];
+            }
+        }
+
+        var seen = new boolean[SIDE * SIDE];
+        var relief = new int[SIDE * SIDE];
+        var cover = new int[SIDE * SIDE];
+        for (int z = -1; z <= OculusMesher.CHUNK; z++)
+        {
+            for (int x = -1; x <= OculusMesher.CHUNK; x++)
+            {
+                if (isCorner(x, z))
+                    continue;
+                int column = column(x, z);
+                var covered = covers[chunkOf(x, z)];
+                seen[column] = covered != null && memory.recordsColumn(originX + x, originZ + z);
+                relief[column] = NO_RELIEF;
+                cover[column] = covered == null ? NO_RELIEF : covered[(x & 15) + (z & 15) * 16];
+            }
+        }
+        var center = new BlockPos(originX + 8, windowBottom + windowHeight / 2, originZ + 8);
+        return new OculusSnapshot(chunkX, chunkZ, windowBottom, windowHeight, minSection, sections, level.getBiome(center), level.getMinY(), level.getHeight(),
+                level.getSeaLevel(), seen, relief, cover, true);
+    }
+
+    /**
      * Turns the copied blocks into colored voxels. Neighbor voxels only matter for hiding faces, so they are not colored.
      */
     OculusMesher.Volume voxelize()
@@ -270,11 +341,22 @@ final class OculusSnapshot implements BlockAndTintGetter
                         continue;
                     }
 
-                    volume.set(x, y, z, borderX || borderZ ? 1 : entry.colorAt(state, this, pos.set(originX + x, windowBottom + y, originZ + z)));
+                    int color = borderX || borderZ ? 1 : entry.colorAt(state, this, pos.set(originX + x, windowBottom + y, originZ + z));
+                    volume.set(x, y, z, memory && !(borderX || borderZ) ? remembered(color) : color);
                 }
             }
         }
         return volume;
+    }
+
+    /**
+     * A block's color as a memory holds it: its lightness kept, its hue gone to a cold violet grey.
+     */
+    static int remembered(int color)
+    {
+        float lightness = (0.299F * ARGB.red(color) + 0.587F * ARGB.green(color) + 0.114F * ARGB.blue(color)) / 255F;
+        float shade = (float) Math.pow(Mth.clamp(lightness, 0, 1), MEMORY_GAMMA);
+        return ARGB.color(ARGB.alpha(color), ARGB.srgbLerp(shade, MEMORY_DARK, MEMORY_LIGHT));
     }
 
     /**

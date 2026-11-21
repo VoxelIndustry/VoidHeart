@@ -24,6 +24,8 @@ public final class LeyTaint
      * Ley converted per node this window, summed over ticks.
      */
     private static final Long2DoubleOpenHashMap CONVERTED = new Long2DoubleOpenHashMap();
+    /** The same ley, each part times how greedily it was drawn, so a Fouled spike taints twice as much for the same claim. */
+    private static final Long2DoubleOpenHashMap WEIGHTED  = new Long2DoubleOpenHashMap();
     /**
      * Taint added directly this window, already applied to its node and waiting to pass downstream.
      */
@@ -73,8 +75,20 @@ public final class LeyTaint
      */
     public static void recordConversion(long nodeId, double ley)
     {
+        recordConversion(nodeId, ley, 1);
+    }
+
+    /**
+     * Converting drawn with a weight: the share of flow is the ley alone, so the threshold and curve stay the same, and the gain it makes is scaled by the
+     * weight.
+     */
+    public static void recordConversion(long nodeId, double ley, double weight)
+    {
         if (ley > 0)
+        {
             CONVERTED.addTo(nodeId, ley);
+            WEIGHTED.addTo(nodeId, ley * Math.max(0, weight));
+        }
     }
 
     public static void tick(ServerLevel overworld)
@@ -100,7 +114,8 @@ public final class LeyTaint
             long node = entry.getLongKey();
             double flow = LatticeLeyFlow.nodeFlow(level, node);
             double share = flow > 0 ? entry.getDoubleValue() / LeyFlowBalance.WINDOW_TICKS / flow : 1;
-            double gain = LeyTaintMath.gainPerMinute(share) * LeyTaintMath.saltFactor(isSalted(level, node));
+            double weight = entry.getDoubleValue() > 0 ? WEIGHTED.get(node) / entry.getDoubleValue() : 1;
+            double gain = LeyTaintMath.gainPerMinute(share) * weight * LeyTaintMath.saltFactor(isSalted(level, node));
             if (gain > 0)
             {
                 gains.addTo(node, gain);
@@ -122,6 +137,7 @@ public final class LeyTaint
             state.set(node, LeyTaintMath.step(state.taint(node), gains.get(node), WINDOW_MINUTES));
 
         CONVERTED.clear();
+        WEIGHTED.clear();
         DIRECT_GAINS.clear();
     }
 
@@ -182,6 +198,7 @@ public final class LeyTaint
     public static void clear()
     {
         CONVERTED.clear();
+        WEIGHTED.clear();
         DIRECT_GAINS.clear();
         forgetSalt();
     }

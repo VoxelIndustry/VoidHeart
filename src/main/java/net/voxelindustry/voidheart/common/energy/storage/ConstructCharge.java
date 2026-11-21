@@ -5,8 +5,8 @@ import net.voxelindustry.voidheart.common.energy.IVoidHolder;
 import java.util.function.LongSupplier;
 
 /**
- * The energy a construct holds. Its rate caps what goes in and what comes out over each tick, however many calls the
- * network makes in it, and it moves nothing while the construct is not formed.
+ * The energy a construct holds. Its rates cap what goes in and what comes out over each tick, however many calls the
+ * network makes in it, and it moves nothing while the construct is not formed. Searing and Still azurium set the two apart.
  * <p>
  * Stored never exceeds capacity: the construct refuses to give up rubrum that would push it over.
  */
@@ -16,7 +16,8 @@ public class ConstructCharge implements IVoidHolder
 
     private long    stored;
     private long    capacity;
-    private long    rate;
+    private long    rateIn;
+    private long    rateOut;
     private boolean active;
 
     private long tick = Long.MIN_VALUE;
@@ -46,7 +47,19 @@ public class ConstructCharge implements IVoidHolder
     @Override
     public long maxRate()
     {
-        return active ? rate : 0;
+        return active ? Math.max(rateIn, rateOut) : 0;
+    }
+
+    @Override
+    public long maxRateIn()
+    {
+        return active ? rateIn : 0;
+    }
+
+    @Override
+    public long maxRateOut()
+    {
+        return active ? rateOut : 0;
     }
 
     public boolean isActive()
@@ -64,8 +77,14 @@ public class ConstructCharge implements IVoidHolder
      */
     public void setSockets(long capacity, long rate)
     {
+        setSockets(capacity, rate, rate);
+    }
+
+    public void setSockets(long capacity, long rateIn, long rateOut)
+    {
         this.capacity = Math.max(0, capacity);
-        this.rate = Math.max(0, rate);
+        this.rateIn = Math.max(0, rateIn);
+        this.rateOut = Math.max(0, rateOut);
         stored = Math.clamp(stored, 0, this.capacity);
     }
 
@@ -106,7 +125,7 @@ public class ConstructCharge implements IVoidHolder
         if (!active || amount <= 0)
             return 0;
         roll();
-        var accepted = Math.max(0, Math.min(Math.min(amount, rate - inThisTick), capacity - stored));
+        var accepted = Math.max(0, Math.min(Math.min(amount, rateIn - inThisTick), capacity - stored));
         if (!simulate)
         {
             stored += accepted;
@@ -121,7 +140,7 @@ public class ConstructCharge implements IVoidHolder
         if (!active || amount <= 0)
             return 0;
         roll();
-        var taken = Math.max(0, Math.min(Math.min(amount, rate - outThisTick), stored));
+        var taken = Math.max(0, Math.min(Math.min(amount, rateOut - outThisTick), stored));
         if (!simulate)
         {
             stored -= taken;

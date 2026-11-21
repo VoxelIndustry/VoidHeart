@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.energy.spike;
 
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -129,7 +132,17 @@ public class AzuriumSpikeBlock extends Block implements EntityBlock
     {
         if (state.getValue(PART) == Part.TIP)
             return List.of();
-        return super.getDrops(state, builder);
+        var drops = super.getDrops(state, builder);
+        // A Fouled spike stays Fouled when taken up
+        if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof AzuriumSpikeTile spike && spike.isFouled())
+        {
+            for (var drop : drops)
+            {
+                if (drop.is(asItem()))
+                    drop.set(VoidHeartDataComponents.CRYSTAL_HABIT, CrystalHabit.FOULED);
+            }
+        }
+        return drops;
     }
 
     @Override

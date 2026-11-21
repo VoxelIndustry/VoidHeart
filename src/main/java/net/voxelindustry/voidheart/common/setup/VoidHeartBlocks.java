@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.api.registry.LandPathTypeRegistry;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundleBlock;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleBlock;
 import net.voxelindustry.voidheart.common.content.salt.SaltWardBlock;
@@ -1218,7 +1219,7 @@ public class VoidHeartBlocks
 
     private static Block registerBundle(String name, MapColor color, SoundType sound, int light, float height, float inset)
     {
-        return registerBlock(name, properties -> new AmethystClusterBlock(height, inset, properties), BlockBehaviour.Properties.of()
+        return registerBlock(name, properties -> new CrystalBundleBlock(height, inset, properties), BlockBehaviour.Properties.of()
                 .mapColor(color)
                 .forceSolidOn()
                 .noOcclusion()

@@ -29,13 +29,16 @@ public enum ApparatusComponent implements StringRepresentable
     PULSE_CORE(Shapes.CORE, 0, 0, 0, null, BreakEffect.PULSE),
     BLINK_CORE(Shapes.CORE, 0, 0, 0, null, BreakEffect.BLINK),
     STASIS_CORE(Shapes.CORE, 0, 0, 0, null, BreakEffect.STASIS),
-    MENDING_CORE(Shapes.CORE, 0, 0, 0, null, BreakEffect.MEND);
+    MENDING_CORE(Shapes.CORE, 0, 0, 0, null, BreakEffect.MEND),
+    GRUDGE_WARD(Shapes.WARD, 0, 0, 0, null, null, true);
 
     private static final int CAPACITY_RGB = 0x36C5B0;
     private static final int REGEN_RGB    = 0x9B7BF0;
     private static final int QUICKEN_RGB  = 0xF4D670;
     private static final int WARD_RGB     = 0xD6C9F5;
     private static final int CORE_RGB     = 0xF2A65A;
+    // Wrung crimson, from the memoriam it grows from
+    private static final int GRUDGE_RGB   = 0xE0574F;
 
     public static final Codec<ApparatusComponent> CODEC = StringRepresentable.fromEnum(ApparatusComponent::values);
 
@@ -45,9 +48,17 @@ public enum ApparatusComponent implements StringRepresentable
     private final float                 quickening;
     private final @Nullable WardKind    ward;
     private final @Nullable BreakEffect breakEffect;
+    private final boolean               grudge;
 
     ApparatusComponent(ComponentShape shape, float capacity, float regen, float quickening, @Nullable WardKind ward, @Nullable BreakEffect breakEffect)
     {
+        this(shape, capacity, regen, quickening, ward, breakEffect, false);
+    }
+
+    ApparatusComponent(ComponentShape shape, float capacity, float regen, float quickening, @Nullable WardKind ward, @Nullable BreakEffect breakEffect,
+                       boolean grudge)
+    {
+        this.grudge = grudge;
         this.shape = shape;
         this.capacity = capacity;
         this.regen = regen;
@@ -87,10 +98,20 @@ public enum ApparatusComponent implements StringRepresentable
     }
 
     /**
+     * Whether this is the Grudge Ward, which wards whatever kind of hit last broke the shield. At most one fits an apparatus.
+     */
+    public boolean grudge()
+    {
+        return grudge;
+    }
+
+    /**
      * The colour of what the piece gives, shared by its pieces in the grid and its line in a tooltip.
      */
     public int rgb()
     {
+        if (grudge)
+            return GRUDGE_RGB;
         if (breakEffect != null)
             return CORE_RGB;
         if (ward != null)

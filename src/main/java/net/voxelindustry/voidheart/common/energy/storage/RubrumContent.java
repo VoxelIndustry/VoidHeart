@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.energy.storage;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.Registry;
@@ -45,6 +46,8 @@ public final class RubrumContent
     public static DataComponentType<Long>              VOID_CHARGE;
 
     public static SimpleParticleType RUBRUM_MOTE;
+    /** Crimson mote of harm drawn into a Wrung cell. */
+    public static SimpleParticleType WRUNG_MOTE;
 
     private RubrumContent()
     {
@@ -88,6 +91,13 @@ public final class RubrumContent
 
         RUBRUM_MOTE = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MODID, "rubrum_mote"),
                 FabricParticleTypes.simple(false));
+        WRUNG_MOTE = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MODID, "wrung_mote"),
+                FabricParticleTypes.simple(false));
+
+        // A killing blow never reaches AFTER_DAMAGE, so ALLOW_DEATH counts it, from the health the creature had before it
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, damage) -> CellSocketTile.beforeHarm(entity));
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damage, blocked) -> CellSocketTile.afterHarm(entity, damage));
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, damage) -> CellSocketTile.killingBlow(entity, damage));
     }
 
     /**

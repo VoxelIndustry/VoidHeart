@@ -83,6 +83,15 @@ public class AltarRecipe extends RecipeBase
     }
 
     /**
+     * Whether the recipe asks for one exact catalyst carrying components, rather than an item however it is.
+     */
+    public boolean hasComponentCatalyst()
+    {
+        var inputs = getRecipeInputs(ItemStack.class);
+        return !inputs.isEmpty() && !(inputs.getFirst() instanceof ItemTagRecipeIngredient) && !inputs.getFirst().getRaw().getComponentsPatch().isEmpty();
+    }
+
+    /**
      * Every catalyst the recipe takes, one stack each, for displays.
      */
     public List<ItemStack> catalystChoices()

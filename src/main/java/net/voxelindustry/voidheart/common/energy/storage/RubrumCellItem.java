@@ -6,6 +6,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
+import net.voxelindustry.voidheart.common.content.crystal.HabitEffects;
+import net.voxelindustry.voidheart.common.content.crystal.HabitShapedRecipe;
 
 import java.util.function.Consumer;
 
@@ -75,5 +79,12 @@ public class RubrumCellItem extends Item
     {
         tooltip.accept(Component.translatable("voidheart.rubrum_cell.tooltip",
                 String.format("%,d", charge(stack)), String.format("%,d", RubrumBalance.CELL_CAPACITY)).withStyle(ChatFormatting.GRAY));
+        // A cell sealed around a habit bundle is where that habit acts, so it says the change alone
+        var habit = CrystalBundles.habitOf(stack);
+        if (HabitShapedRecipe.CARRIED.contains(habit))
+        {
+            tooltip.accept(HabitEffects.name(habit));
+            HabitEffects.of(habit, CrystalKind.RUBRUM).forEach(effect -> tooltip.accept(effect.onBlock()));
+        }
     }
 }

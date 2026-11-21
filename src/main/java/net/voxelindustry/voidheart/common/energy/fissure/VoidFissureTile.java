@@ -20,6 +20,7 @@ import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.voxelindustry.voidheart.common.ley.Ley;
+import net.voxelindustry.voidheart.common.ley.LeyEdge;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -186,8 +187,23 @@ public class VoidFissureTile extends TileBase implements IEssenceReceiver
             return;
         var distance = Math.sqrt(line.get().distanceSq(worldPosition.getX() + 0.5, worldPosition.getZ() + 0.5));
         var perMinute = SeepMath.taintPerMinute(width, distance);
+        // Where the seep reaches the line inside a Scoured field, it taints the line half as much
+        if (perMinute > 0 && VoidGrid.inScouredField(level, nearestOnLine(line.get())))
+            perMinute *= VoidFissureBalance.SCOURED_SEEP;
         if (perMinute > 0)
             Ley.addTaint(level, line.get().from(), perMinute * TAINT_TICKS / SeepMath.TICKS_PER_MINUTE);
+    }
+
+    /**
+     * The point of the line nearest the crack, at the crack's height.
+     */
+    private BlockPos nearestOnLine(LeyEdge edge)
+    {
+        double px = worldPosition.getX() + 0.5, pz = worldPosition.getZ() + 0.5;
+        double dx = edge.toX() - edge.fromX(), dz = edge.toZ() - edge.fromZ();
+        double lengthSq = dx * dx + dz * dz;
+        double t = lengthSq == 0 ? 0 : Math.clamp(((px - edge.fromX()) * dx + (pz - edge.fromZ()) * dz) / lengthSq, 0, 1);
+        return BlockPos.containing(edge.fromX() + dx * t, worldPosition.getY(), edge.fromZ() + dz * t);
     }
 
     private void updateShown(ServerLevel level, boolean active)
