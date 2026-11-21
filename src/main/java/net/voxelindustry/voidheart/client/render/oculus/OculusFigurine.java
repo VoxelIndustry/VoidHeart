@@ -44,7 +44,7 @@ public final class OculusFigurine
     private static @Nullable Figure figure(OculusProjector projector, float partialTick)
     {
         var sight = projector.sight();
-        if (projector.view().asleep() || sight == null || !(projector.followed() instanceof Player player) || player.isRemoved())
+        if (projector.view().dormant() || sight == null || !(projector.followed() instanceof Player player) || player.isRemoved())
             return null;
 
         var position = player.getPosition(partialTick);

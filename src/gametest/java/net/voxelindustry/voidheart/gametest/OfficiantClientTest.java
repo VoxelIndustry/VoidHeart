@@ -144,14 +144,15 @@ public class OfficiantClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             hoard(minecraft).insert(ItemVariant.of(Items.ENDER_PEARL), 1);
-            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.ENDER_SHARD), 4);
+            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.ENDER_SHARD), 4).plan();
             expect(plan.isComplete() && plan.tasks().size() == 1, "the ender shards planned " + plan.tasks() + ", lacking " + plan.lacking());
         });
         waitFor(context, server, 200, "the table's Officiant made no ender shards", minecraft -> held(minecraft, VoidHeartItems.ENDER_SHARD) >= 4);
+        // The order goes once the Officiant sees its craft finished
+        waitFor(context, server, 40, "the order is still queued", minecraft -> WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty());
         server.runOnServer(minecraft ->
         {
             expect(held(minecraft, Items.ENDER_PEARL) == 0, "the ender pearl is still in the hoard");
-            expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(), "the order is still queued");
             hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), held(minecraft, VoidHeartItems.ENDER_SHARD));
         });
     }
@@ -167,7 +168,7 @@ public class OfficiantClientTest implements FabricClientGameTest
             Knowledge.lockOf(minecraft.registryAccess(), pearl).ifPresent(knowledge(minecraft)::grant);
             hoard(minecraft).insert(ItemVariant.of(Items.ENDER_PEARL), 1);
             hoard(minecraft).insert(ItemVariant.of(Items.OBSIDIAN), 2);
-            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.VOID_PEARL), 1);
+            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.VOID_PEARL), 1).plan();
             expect(plan.isComplete(), "the Void Pearl plan lacks " + plan.lacking());
         });
 
@@ -193,7 +194,7 @@ public class OfficiantClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             hoard(minecraft).insert(ItemVariant.of(Items.IRON_INGOT), 1);
-            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), 1);
+            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), 1).plan();
             expect(plan.isComplete(), "the Seething Steel plan lacks " + plan.lacking() + ", tasks " + plan.tasks());
         });
         waitFor(context, server, 900, "no Seething Steel reached the hoard", minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);

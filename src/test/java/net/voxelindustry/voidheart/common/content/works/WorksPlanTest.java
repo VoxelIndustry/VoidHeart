@@ -47,26 +47,28 @@ class WorksPlanTest
     }
 
     @Test
-    void plan_givenTheTargetInStock_thenCraftsNothing()
+    void plan_givenTheTargetInStock_thenStillCraftsTheWholeCount()
     {
         recipe("pearl", 1, StationKind.ALTAR, "shard", 8);
 
-        var plan = plan(Map.of("pearl", 5L), "pearl", 3);
+        var plan = plan(Map.of("pearl", 5L, "shard", 100L), "pearl", 3);
 
-        assertThat(plan.tasks()).isEmpty();
-        assertThat(plan.isComplete()).isTrue();
-        assertThat(plan.nodes().get("pearl").fromStock()).isEqualTo(3);
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::crafts).isEqualTo(3L);
+        assertThat(plan.nodes().get("pearl").fromStock()).isZero();
+        assertThat(plan.nodes().get("shard").fromStock()).isEqualTo(24);
     }
 
     @Test
-    void plan_givenPartOfTheTargetInStock_thenCraftsOnlyTheShortfall()
+    void plan_givenPartOfAnIngredientInStock_thenCraftsOnlyItsShortfall()
     {
         recipe("pearl", 1, StationKind.ALTAR, "shard", 8);
+        recipe("shard", 4, StationKind.TABLE, "ender", 1);
 
-        var plan = plan(Map.of("pearl", 1L, "shard", 100L), "pearl", 3);
+        var plan = plan(Map.of("shard", 10L, "ender", 5L), "pearl", 2);
 
-        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::crafts).isEqualTo(2L);
-        assertThat(plan.nodes().get("shard").needed()).isEqualTo(16);
+        assertThat(plan.nodes().get("shard").fromStock()).isEqualTo(10);
+        assertThat(plan.nodes().get("shard").crafts()).isEqualTo(2);
+        assertThat(plan.isComplete()).isTrue();
     }
 
     @Test

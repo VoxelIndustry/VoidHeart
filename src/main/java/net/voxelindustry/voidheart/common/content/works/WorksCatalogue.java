@@ -64,6 +64,16 @@ public final class WorksCatalogue
         return byOutput.getOrDefault(item.getItem(), List.of()).stream().filter(recipe -> recipe.makes(item) > 0).toList();
     }
 
+    /**
+     * @return every kind some recipe here makes
+     */
+    public java.util.Set<ItemVariant> outputs()
+    {
+        var outputs = new java.util.LinkedHashSet<ItemVariant>();
+        byOutput.values().forEach(recipes -> recipes.forEach(recipe -> outputs.add(recipe.outputs().getFirst().item())));
+        return outputs;
+    }
+
     public Function<ItemVariant, List<WorksRecipe<ItemVariant>>> lookup()
     {
         return this::recipesFor;

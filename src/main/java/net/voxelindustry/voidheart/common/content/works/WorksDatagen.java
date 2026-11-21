@@ -42,6 +42,11 @@ public final class WorksDatagen
         generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(WorksContent.OFFICIANT, plainVariant(model)));
     }
 
+    public static void itemModels(net.minecraft.client.data.models.ItemModelGenerators generators)
+    {
+        generators.generateFlatItem(WorksContent.MEMORIAM_LENS, ModelTemplates.FLAT_ITEM);
+    }
+
     /**
      * Raised around a Void Pearl, since it reaches into the pocket, with memoriam to remember the rites it lays out.
      */
@@ -50,6 +55,10 @@ public final class WorksDatagen
         recipes.altar("officiant", WorksContent.OFFICIANT, VoidHeartItems.VOID_PEARL,
                 VoidHeartBlocks.VOIDSTONE_CHISELED, VoidHeartBlocks.VOIDSTONE_CHISELED, VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT,
                 VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, CrystalBundles.shard(CrystalKind.MEMORIAM), CrystalBundles.shard(CrystalKind.AZURIUM));
+        // Memoriam remembers what it saw and works things out, framed in greed's copper
+        recipes.altar("memoriam_lens", WorksContent.MEMORIAM_LENS, net.minecraft.world.item.Items.GLASS_PANE,
+                CrystalBundles.shard(CrystalKind.MEMORIAM), CrystalBundles.shard(CrystalKind.MEMORIAM),
+                VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
     }
 
     public static void loot(BlockLootSubProvider loot)

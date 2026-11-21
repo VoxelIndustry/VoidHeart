@@ -13,8 +13,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Works out how to make an amount of an item from a stock and the recipes the stations can run. What is in stock is used first and only the shortfall
- * is crafted; a kind needed in several places is one node; among an ingredient's options the one most in stock is taken; what crafts give back or make
+ * Works out how to make an amount of an item from a stock and the recipes the stations can run. The target is always made in full, since an order asks
+ * for more of it; for its ingredients what is in stock is used first and only the shortfall is crafted; a kind needed in several places is one node; among an ingredient's options the one most in stock is taken; what crafts give back or make
  * beyond the need goes back to the stock for the rest of the plan. A kind that would have to be made from itself, or that no recipe makes, is lacking.
  *
  * @param nodes   every kind the plan touches, in the order first reached, the target first
@@ -93,7 +93,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
             var node = counts.computeIfAbsent(item, kind -> new long[4]);
             node[NEEDED] += amount;
 
-            var taken = Math.min(available.getOrDefault(item, 0L), amount);
+            var taken = depth == 0 ? 0 : Math.min(available.getOrDefault(item, 0L), amount);
             if (taken > 0)
             {
                 available.merge(item, -taken, Long::sum);

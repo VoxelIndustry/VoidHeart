@@ -44,19 +44,44 @@ class WorksQueueTest
         var claim = queue.claim(StationKind.ALTAR, candidate -> candidate.recipe().equals("ready"));
 
         assertThat(claim.recipe()).isEqualTo("ready");
-        assertThat(queue.jobs()).extracting(WorksQueue.Job::what).containsExactly("first");
+        assertThat(queue.jobs().get(0).tasks().getFirst().remaining()).isEqualTo(1);
+        assertThat(queue.jobs().get(1).tasks().getFirst().remaining()).isZero();
     }
 
     @Test
-    void claim_givenTheLastCraftOfAnOrder_thenTheOrderIsGone()
+    void claim_givenTheLastCraftOfAnOrder_thenTheOrderStaysWhileItIsWorked()
     {
         var queue = new WorksQueue();
         queue.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
 
         queue.claim(StationKind.ALTAR, any -> true);
 
-        assertThat(queue.jobs()).isEmpty();
+        assertThat(queue.jobs()).singleElement().extracting(job -> job.tasks().getFirst().working()).isEqualTo(1L);
         assertThat(queue.claim(StationKind.ALTAR, any -> true)).isNull();
+    }
+
+    @Test
+    void finish_givenTheLastCraftOfAnOrder_thenTheOrderIsGone()
+    {
+        var queue = new WorksQueue();
+        queue.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        var claim = queue.claim(StationKind.ALTAR, any -> true);
+
+        queue.finish(claim);
+
+        assertThat(queue.jobs()).isEmpty();
+    }
+
+    @Test
+    void finish_givenCraftsStillToClaim_thenTheOrderStays()
+    {
+        var queue = new WorksQueue();
+        queue.order("pearls", 2, List.of(task("pearl", StationKind.ALTAR, 2)));
+        var claim = queue.claim(StationKind.ALTAR, any -> true);
+
+        queue.finish(claim);
+
+        assertThat(queue.jobs()).singleElement().extracting(job -> job.tasks().getFirst()).isEqualTo(task("pearl", StationKind.ALTAR, 1));
     }
 
     @Test
@@ -68,7 +93,7 @@ class WorksQueueTest
 
         queue.giveBack(claim);
 
-        assertThat(queue.jobs().getFirst().tasks().getFirst().remaining()).isEqualTo(2);
+        assertThat(queue.jobs().getFirst().tasks().getFirst()).isEqualTo(task("pearl", StationKind.ALTAR, 2));
     }
 
     @Test

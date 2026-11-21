@@ -16,7 +16,7 @@ import java.util.UUID;
  * @param caving whether the hollows inside the land are shown instead of its surface, when no followed player decides
  * @param memory a Deep memoriam set on the table, whose recorded place it shows instead of its own land
  */
-public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep, boolean caving, Optional<OculusMemory> memory)
+public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep, boolean caving, Optional<OculusMemory> memory, boolean reckoning)
 {
     /**
      * World blocks per table block at each zoom step, halving every two steps below 1:32 and gentler beyond it.
@@ -37,12 +37,21 @@ public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, bool
             Codec.BOOL.optionalFieldOf("ley_lines", false).forGetter(OculusView::leyLines),
             Codec.BOOL.optionalFieldOf("asleep", false).forGetter(OculusView::asleep),
             Codec.BOOL.optionalFieldOf("caving", false).forGetter(OculusView::caving),
-            OculusMemory.CODEC.optionalFieldOf("memory").forGetter(OculusView::memory)
+            OculusMemory.CODEC.optionalFieldOf("memory").forGetter(OculusView::memory),
+            Codec.BOOL.optionalFieldOf("reckoning", false).forGetter(OculusView::reckoning)
     ).apply(instance, OculusView::new));
 
     public OculusView(int zoom, Optional<UUID> follow, boolean leyLines, boolean asleep, boolean caving)
     {
-        this(zoom, follow, leyLines, asleep, caving, Optional.empty());
+        this(zoom, follow, leyLines, asleep, caving, Optional.empty(), false);
+    }
+
+    /**
+     * @return whether the table shows no land: asleep under redstone, or planning works through a Memoriam Lens
+     */
+    public boolean dormant()
+    {
+        return asleep || reckoning;
     }
 
     /**
@@ -55,36 +64,44 @@ public record OculusView(int zoom, Optional<UUID> follow, boolean leyLines, bool
 
     public OculusView zoomIn()
     {
-        return new OculusView(Math.min(zoom + 1, ZOOM_STEPS - 1), follow, leyLines, asleep, caving, memory);
+        return new OculusView(Math.min(zoom + 1, ZOOM_STEPS - 1), follow, leyLines, asleep, caving, memory, reckoning);
     }
 
     public OculusView zoomOut()
     {
-        return new OculusView(Math.max(zoom - 1, 0), follow, leyLines, asleep, caving, memory);
+        return new OculusView(Math.max(zoom - 1, 0), follow, leyLines, asleep, caving, memory, reckoning);
     }
 
     public OculusView following(Optional<UUID> target)
     {
-        return new OculusView(zoom, target, leyLines, asleep, caving, memory);
+        return new OculusView(zoom, target, leyLines, asleep, caving, memory, reckoning);
     }
 
     public OculusView toggleLeyLines()
     {
-        return new OculusView(zoom, follow, !leyLines, asleep, caving, memory);
+        return new OculusView(zoom, follow, !leyLines, asleep, caving, memory, reckoning);
     }
 
     public OculusView toggleCaving()
     {
-        return new OculusView(zoom, follow, leyLines, asleep, !caving, memory);
+        return new OculusView(zoom, follow, leyLines, asleep, !caving, memory, reckoning);
     }
 
     public OculusView sleeping(boolean asleep)
     {
-        return new OculusView(zoom, follow, leyLines, asleep, caving, memory);
+        return new OculusView(zoom, follow, leyLines, asleep, caving, memory, reckoning);
     }
 
     public OculusView remembering(Optional<OculusMemory> memory)
     {
-        return new OculusView(zoom, follow, leyLines, asleep, caving, memory);
+        return new OculusView(zoom, follow, leyLines, asleep, caving, memory, reckoning);
+    }
+
+    /**
+     * @param reckoning whether a Memoriam Lens is set in the table, which then plans works instead of showing land
+     */
+    public OculusView withReckoning(boolean reckoning)
+    {
+        return new OculusView(zoom, follow, leyLines, asleep, caving, memory, reckoning);
     }
 }

@@ -54,6 +54,7 @@ import net.voxelindustry.voidheart.client.screen.HoardScreen;
 import net.voxelindustry.voidheart.common.content.hoard.HoardContent;
 import net.voxelindustry.voidheart.common.content.hoard.HoardMenu;
 import net.voxelindustry.voidheart.common.content.hoard.HoardPayloads;
+import net.voxelindustry.voidheart.common.content.works.WorksPayloads;
 import net.voxelindustry.voidheart.client.render.armor.ParkedArmorRender;
 import net.voxelindustry.voidheart.client.render.armor.VoidArmorBaseRender;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
@@ -255,6 +256,21 @@ public class VoidHeartClient implements ClientModInitializer
         MenuScreens.register(VoidArmorContent.VOID_ARMOR_MENU, VoidArmorScreen::new);
         MenuScreens.register(HoardContent.HOARD_MENU, HoardScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(HoardPayloads.Page.TYPE, (payload, context) ->
+        {
+            if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())
+                menu.receive(payload);
+        });
+        ClientPlayNetworking.registerGlobalReceiver(WorksPayloads.Makeable.TYPE, (payload, context) ->
+        {
+            if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())
+                menu.receive(payload);
+        });
+        ClientPlayNetworking.registerGlobalReceiver(WorksPayloads.Plan.TYPE, (payload, context) ->
+        {
+            if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())
+                menu.receive(payload);
+        });
+        ClientPlayNetworking.registerGlobalReceiver(WorksPayloads.Jobs.TYPE, (payload, context) ->
         {
             if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())
                 menu.receive(payload);

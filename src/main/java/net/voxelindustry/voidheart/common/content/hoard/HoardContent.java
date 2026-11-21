@@ -42,7 +42,7 @@ public final class HoardContent
     public static BlockEntityType<HoardCofferTile> HOARD_COFFER_TILE;
     public static BlockEntityType<FoldTile>        FOLD_TILE;
 
-    public static ExtendedMenuType<HoardMenu, BlockPos> HOARD_MENU;
+    public static ExtendedMenuType<HoardMenu, HoardMenu.Opening> HOARD_MENU;
 
     private HoardContent()
     {
@@ -72,7 +72,7 @@ public final class HoardContent
         ItemStorage.SIDED.registerForBlockEntity((fold, direction) -> fold.storage(), FOLD_TILE);
 
         HOARD_MENU = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "hoard"),
-                new ExtendedMenuType<>(HoardMenu::new, BlockPos.STREAM_CODEC));
+                new ExtendedMenuType<>(HoardMenu::new, HoardMenu.Opening.STREAM_CODEC));
         HoardPayloads.register();
     }
 

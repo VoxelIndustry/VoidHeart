@@ -6,10 +6,13 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.item.ItemArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -19,9 +22,12 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.voxelindustry.voidheart.common.content.hoard.PocketHoard;
 import net.voxelindustry.voidheart.common.item.LoreBlockItem;
+import net.voxelindustry.voidheart.common.item.LoreItem;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
+import java.util.List;
 import java.util.UUID;
 
 import static net.minecraft.commands.Commands.argument;
@@ -34,8 +40,12 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 public final class WorksContent
 {
     public static Block OFFICIANT;
+    /** Set in an Oculus Table, it turns the table to planning works. */
+    public static Item  MEMORIAM_LENS;
 
     public static BlockEntityType<OfficiantTile> OFFICIANT_TILE;
+
+    private static final int KEEP_TICKS = 100;
 
     private WorksContent()
     {
@@ -50,6 +60,9 @@ public final class WorksContent
                 .strength(3F, 6F)
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".officiant.lore"));
+        MEMORIAM_LENS = VoidHeartItems.registerItem("memoriam_lens", properties -> new LoreItem(properties, MODID + ".memoriam_lens.lore"));
+        WorksPayloads.register();
+        ServerTickEvents.END_SERVER_TICK.register(WorksContent::keepLevels);
         VoidHeartTiles.registerTile(OFFICIANT_TILE = FabricBlockEntityTypeBuilder.create(OfficiantTile::new, OFFICIANT).build(), "officiant");
     }
 
@@ -71,23 +84,62 @@ public final class WorksContent
     }
 
     /**
-     * Plans the order against the hoard and queues its crafts, saying what is lacking. The crafts are queued even then, and wait for it.
+     * @param job the order's id, 0 when nothing needed crafting
      */
-    public static WorksPlan<ItemVariant> order(net.minecraft.server.MinecraftServer server, UUID owner, ItemVariant item, long count)
+    public record Ordered(WorksPlan<ItemVariant> plan, int job)
+    {
+    }
+
+    /**
+     * Plans the order against the hoard and queues its crafts with the plan drawn for them. What is lacking doesn't stop it: those crafts wait for it.
+     */
+    public static Ordered order(MinecraftServer server, UUID owner, ItemVariant item, long count)
     {
         var hoard = PocketHoard.get(server).of(owner);
         var plan = WorksPlan.plan(WorksCatalogues.of(server, owner, hoard).lookup(), hoard.view(), item, count);
         var tasks = plan.tasks().stream().map(task -> new WorksQueue.Task(task.recipe().id(), task.recipe().station(), task.crafts())).toList();
-        if (!tasks.isEmpty())
-            WorksState.get(server).edit(owner).order(item.toStack().getHoverName().getString(), count, tasks);
-        return plan;
+        if (tasks.isEmpty())
+            return new Ordered(plan, 0);
+        var state = WorksState.get(server);
+        var job = state.edit(owner).order(item.toStack().getHoverName().getString(), count, tasks);
+        state.owner(owner).graphs().put(job, WorksGraph.of(plan));
+        return new Ordered(plan, job);
+    }
+
+    /**
+     * Every few seconds, each kept item the hoard holds too few of is ordered up to its level, unless its last order is still running.
+     */
+    private static void keepLevels(MinecraftServer server)
+    {
+        if (server.getTickCount() % KEEP_TICKS != 0)
+            return;
+        var state = WorksState.get(server);
+        for (var entry : List.copyOf(state.owners().entrySet()))
+        {
+            var owner = entry.getKey();
+            var works = entry.getValue();
+            if (works.keeps().isEmpty())
+                continue;
+            works.tidy();
+            var hoard = PocketHoard.get(server).of(owner);
+            for (var keep : List.copyOf(works.keeps().entrySet()))
+            {
+                var held = hoard.count(keep.getKey());
+                if (works.keepJobs().containsKey(keep.getKey()) || held >= keep.getValue())
+                    continue;
+                var ordered = order(server, owner, keep.getKey(), keep.getValue() - held);
+                if (ordered.job() != 0)
+                    works.keepJobs().put(keep.getKey(), ordered.job());
+            }
+            state.setDirty();
+        }
     }
 
     private static int order(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         var item = ItemVariant.of(ItemArgument.getItem(context, "item").createItemStack(1));
         var count = IntegerArgumentType.getInteger(context, "count");
-        var plan = order(context.getSource().getServer(), caller(context), item, count);
+        var plan = order(context.getSource().getServer(), caller(context), item, count).plan();
         var source = context.getSource();
         source.sendSuccess(() -> Component.literal("Queued " + plan.tasks().stream().mapToLong(WorksPlan.Task::crafts).sum() + " craft(s), essence " + plan.essence()), false);
         plan.lacking().forEach((kind, lacking) -> source.sendSuccess(() -> Component.literal("Lacking " + lacking + " ").append(kind.toStack().getHoverName()), false));

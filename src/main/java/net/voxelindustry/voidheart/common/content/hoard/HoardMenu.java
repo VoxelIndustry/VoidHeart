@@ -5,7 +5,10 @@ import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -13,6 +16,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.works.WorksPayloads;
+import net.voxelindustry.voidheart.common.content.works.WorksSession;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -34,11 +39,27 @@ public class HoardMenu extends AbstractContainerMenu
 
     private static final double REACH_SQR = 8 * 8;
 
+    /**
+     * What the client is told on opening: where the hoard is seen from, and whether it is a Reckoning table that also plans works.
+     */
+    public record Opening(BlockPos source, boolean works)
+    {
+        public static final StreamCodec<RegistryFriendlyByteBuf, Opening> STREAM_CODEC = StreamCodec.composite(
+                BlockPos.STREAM_CODEC, Opening::source,
+                ByteBufCodecs.BOOL, Opening::works,
+                Opening::new);
+    }
+
     private final Player player;
     private final BlockPos source;
+    @Getter
+    private final boolean works;
     @Nullable
     private final UUID owner;
     private long sentVersion = -1;
+    @Nullable
+    private final WorksSession session;
+    private boolean sessionStarted;
 
     // Client only
     private final List<HoardPayloads.Entry> pending = new ArrayList<>();
@@ -52,17 +73,33 @@ public class HoardMenu extends AbstractContainerMenu
     @Getter
     private int listing;
 
-    public HoardMenu(int containerId, Inventory inventory, BlockPos source)
+    // Client only, the works of a Reckoning
+    private final List<ItemVariant> pendingMakeable = new ArrayList<>();
+    @Getter
+    private List<ItemVariant> makeable = List.of();
+    @Getter
+    private int makeableListing;
+    @Getter
+    @Nullable
+    private WorksPayloads.Plan plan;
+    @Getter
+    private List<WorksPayloads.Job> jobs = List.of();
+    @Getter
+    private List<WorksPayloads.Kept> keeps = List.of();
+
+    public HoardMenu(int containerId, Inventory inventory, Opening opening)
     {
-        this(containerId, inventory, source, null);
+        this(containerId, inventory, opening, null);
     }
 
-    private HoardMenu(int containerId, Inventory inventory, BlockPos source, @Nullable UUID owner)
+    private HoardMenu(int containerId, Inventory inventory, Opening opening, @Nullable UUID owner)
     {
         super(HoardContent.HOARD_MENU, containerId);
         this.player = inventory.player;
-        this.source = source;
+        this.source = opening.source();
+        this.works = opening.works();
         this.owner = owner;
+        this.session = works && owner != null && inventory.player instanceof ServerPlayer serverPlayer ? new WorksSession(serverPlayer, owner, containerId) : null;
 
         for (int row = 0; row < 3; row++)
             for (int column = 0; column < 9; column++)
@@ -76,29 +113,38 @@ public class HoardMenu extends AbstractContainerMenu
      */
     public static void open(ServerPlayer player, @Nullable UUID owner, BlockPos source)
     {
+        open(player, owner, source, false);
+    }
+
+    /**
+     * @param works whether it is seen from a Reckoning table, which also plans works
+     */
+    public static void open(ServerPlayer player, @Nullable UUID owner, BlockPos source, boolean works)
+    {
         if (owner == null)
         {
             player.sendOverlayMessage(Component.translatable(MODID + ".hoard.no_pocket"));
             return;
         }
-        player.openMenu(new ExtendedMenuProvider<BlockPos>()
+        var opening = new Opening(source, works);
+        player.openMenu(new ExtendedMenuProvider<Opening>()
         {
             @Override
-            public BlockPos getScreenOpeningData(ServerPlayer player)
+            public Opening getScreenOpeningData(ServerPlayer player)
             {
-                return source;
+                return opening;
             }
 
             @Override
             public Component getDisplayName()
             {
-                return Component.translatable(MODID + ".hoard");
+                return Component.translatable(MODID + (works ? ".reckoning" : ".hoard"));
             }
 
             @Override
             public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player)
             {
-                return new HoardMenu(containerId, inventory, source, owner);
+                return new HoardMenu(containerId, inventory, opening, owner);
             }
         });
     }
@@ -110,10 +156,52 @@ public class HoardMenu extends AbstractContainerMenu
         return PocketHoard.get(serverPlayer.level().getServer()).of(owner);
     }
 
+    public @Nullable WorksSession session()
+    {
+        return session;
+    }
+
+    public void receive(WorksPayloads.Makeable page)
+    {
+        if (page.page() == 0)
+            pendingMakeable.clear();
+        pendingMakeable.addAll(page.items());
+        if (page.page() == page.pages() - 1)
+        {
+            makeable = List.copyOf(pendingMakeable);
+            makeableListing++;
+            pendingMakeable.clear();
+        }
+    }
+
+    public void receive(WorksPayloads.Plan plan)
+    {
+        this.plan = plan;
+    }
+
+    public void receive(WorksPayloads.Jobs jobs)
+    {
+        this.jobs = List.copyOf(jobs.jobs());
+        this.keeps = List.copyOf(jobs.keeps());
+    }
+
+    /**
+     * Forgets the plan shown, client side, going back to choosing what to make.
+     */
+    public void clearPlan()
+    {
+        plan = null;
+    }
+
     @Override
     public void broadcastChanges()
     {
         super.broadcastChanges();
+        if (session != null)
+        {
+            session.broadcast(!sessionStarted);
+            sessionStarted = true;
+        }
         var hoard = hoard();
         if (hoard == null || hoard.version() == sentVersion || !(player instanceof ServerPlayer serverPlayer))
             return;

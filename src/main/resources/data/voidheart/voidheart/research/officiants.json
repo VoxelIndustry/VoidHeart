@@ -9,9 +9,11 @@
     "voidheart:pocket_hoard"
   ],
   "unlocks": [
-    "voidheart:officiant"
+    "voidheart:officiant",
+    "voidheart:memoriam_lens"
   ],
   "recipes": [
-    "voidheart:altar/officiant"
+    "voidheart:altar/officiant",
+    "voidheart:altar/memoriam_lens"
   ]
 }

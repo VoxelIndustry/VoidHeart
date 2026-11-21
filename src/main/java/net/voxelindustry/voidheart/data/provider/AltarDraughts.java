@@ -25,7 +25,7 @@ final class AltarDraughts
         fiery(1_500, "armor_battery_cell");
         fiery(3_000, "armor_exoskeleton_power");
 
-        stillness(2_000, "sin_cleansing", "greater_shielding_apparatus", "armor_spectral_lens", "officiant");
+        stillness(2_000, "sin_cleansing", "greater_shielding_apparatus", "armor_spectral_lens", "officiant", "memoriam_lens");
         stillness(6_000, "supreme_shielding_apparatus");
         stillness(1_000, "apparatus_ember_ward", "apparatus_arrow_ward", "apparatus_blast_ward", "apparatus_arcane_ward", "apparatus_grudge_ward",
                 "armor_night_vision");

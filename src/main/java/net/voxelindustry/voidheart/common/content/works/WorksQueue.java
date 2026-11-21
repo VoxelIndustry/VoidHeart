@@ -11,7 +11,8 @@ import java.util.function.Predicate;
 /**
  * One owner's orders, each a list of crafts in the order the plan made them. An Officiant claims one craft at a time from the first task it can serve
  * whose ingredients are there, so a craft waits on the crafts making its ingredients without the queue tracking them. A claimed craft is the
- * Officiant's to finish; one it gives back, broken before laying anything, is counted again.
+ * Officiant's to finish; one it gives back, broken before laying anything, is counted again. An order stays until its last claimed craft is finished,
+ * so its progress shows to the end.
  */
 public final class WorksQueue
 {
@@ -19,14 +20,26 @@ public final class WorksQueue
 
     /**
      * @param remaining crafts not yet claimed
+     * @param working   crafts claimed and not yet finished
      */
-    public record Task(String recipe, StationKind station, long remaining)
+    public record Task(String recipe, StationKind station, long remaining, long working)
     {
         static final Codec<Task> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("recipe").forGetter(Task::recipe),
                 Codec.STRING.xmap(StationKind::valueOf, StationKind::name).fieldOf("station").forGetter(Task::station),
-                Codec.LONG.fieldOf("remaining").forGetter(Task::remaining)
+                Codec.LONG.fieldOf("remaining").forGetter(Task::remaining),
+                Codec.LONG.optionalFieldOf("working", 0L).forGetter(Task::working)
         ).apply(instance, Task::new));
+
+        public Task(String recipe, StationKind station, long remaining)
+        {
+            this(recipe, station, remaining, 0);
+        }
+
+        private Task plus(long claimed)
+        {
+            return new Task(recipe, station, remaining - claimed, Math.max(0, working + claimed));
+        }
     }
 
     /**
@@ -48,7 +61,7 @@ public final class WorksQueue
 
         public boolean isDone()
         {
-            return tasks.stream().allMatch(task -> task.remaining() <= 0);
+            return tasks.stream().allMatch(task -> task.remaining() <= 0 && task.working() <= 0);
         }
     }
 
@@ -91,7 +104,8 @@ public final class WorksQueue
         for (var task : tasks)
         {
             if (!merged.isEmpty() && merged.getLast().recipe().equals(task.recipe()))
-                merged.set(merged.size() - 1, new Task(task.recipe(), task.station(), merged.getLast().remaining() + task.remaining()));
+                merged.set(merged.size() - 1, new Task(task.recipe(), task.station(), merged.getLast().remaining() + task.remaining(),
+                        merged.getLast().working() + task.working()));
             else
                 merged.add(task);
         }
@@ -114,10 +128,8 @@ public final class WorksQueue
                 var task = job.tasks().get(index);
                 if (task.station() != station || task.remaining() <= 0 || !canStart.test(task))
                     continue;
-                job.tasks().set(index, new Task(task.recipe(), task.station(), task.remaining() - 1));
-                var claim = new Claim(job.id(), task.recipe(), station);
-                jobs.removeIf(Job::isDone);
-                return claim;
+                job.tasks().set(index, task.plus(1));
+                return new Claim(job.id(), task.recipe(), station);
             }
         }
         return null;
@@ -128,6 +140,22 @@ public final class WorksQueue
      */
     public void giveBack(Claim claim)
     {
+        settle(claim, -1);
+    }
+
+    /**
+     * Counts a claimed craft as done: its order goes once nothing of it is left or being worked.
+     */
+    public void finish(Claim claim)
+    {
+        settle(claim, 0);
+    }
+
+    /**
+     * @param back how many of the claim's crafts to count again, -1 to give it back or 0 when it is done
+     */
+    private void settle(Claim claim, int back)
+    {
         for (var job : jobs)
         {
             if (job.id() != claim.job())
@@ -135,13 +163,14 @@ public final class WorksQueue
             for (int index = 0; index < job.tasks().size(); index++)
             {
                 var task = job.tasks().get(index);
-                if (task.recipe().equals(claim.recipe()))
+                if (task.recipe().equals(claim.recipe()) && task.working() > 0)
                 {
-                    job.tasks().set(index, new Task(task.recipe(), task.station(), task.remaining() + 1));
-                    return;
+                    job.tasks().set(index, new Task(task.recipe(), task.station(), task.remaining() - back, task.working() - 1));
+                    break;
                 }
             }
         }
+        jobs.removeIf(Job::isDone);
     }
 
     /**

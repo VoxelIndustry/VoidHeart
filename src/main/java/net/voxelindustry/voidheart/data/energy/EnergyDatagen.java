@@ -74,6 +74,7 @@ public final class EnergyDatagen
         DeepSiphonDatagen.itemModels(generators);
         TwinVentricleDatagen.itemModels(generators);
         VoidArmorDatagen.itemModels(generators);
+        WorksDatagen.itemModels(generators);
         GnawerDatagen.itemModels(generators);
         PearlDatagen.itemModels(generators);
     }

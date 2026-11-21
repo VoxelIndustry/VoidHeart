@@ -84,7 +84,7 @@ public final class OculusControls
         var collector = context.submitNodeCollector();
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep())
+            if (projector.view().dormant())
                 continue;
             var panel = PANELS.get(projector.anchor);
             if (panel == null || panel.center().distanceTo(eye) > SHOW_DISTANCE)
@@ -125,7 +125,7 @@ public final class OculusControls
         Target best = null;
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep())
+            if (projector.view().dormant())
                 continue;
             var panel = PANELS.get(projector.anchor);
             var hit = panel == null ? null : panel.hit(eye, look, REACH);

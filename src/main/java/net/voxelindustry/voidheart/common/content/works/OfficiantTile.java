@@ -115,6 +115,8 @@ public class OfficiantTile extends TileBase
             held.addAll(outcome.items());
             if (outcome.failed())
                 WorksState.get(level.getServer()).edit(owner).giveBack(claim);
+            else
+                WorksState.get(level.getServer()).edit(owner).finish(claim);
             claim = null;
             waited = 0;
             setChanged();
@@ -201,6 +203,10 @@ public class OfficiantTile extends TileBase
                     Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
             }
             held.clear();
+            // What the station still works on is no longer watched, so its order does not wait on it
+            if (claim != null)
+                WorksState.get(serverLevel.getServer()).edit(owner).finish(claim);
+            claim = null;
         }
         super.preRemoveSideEffects(pos, state);
     }

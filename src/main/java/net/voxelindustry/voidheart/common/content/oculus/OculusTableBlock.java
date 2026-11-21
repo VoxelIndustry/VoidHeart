@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.content.oculus;
 
+import net.voxelindustry.voidheart.common.content.hoard.HoardMenu;
+import net.voxelindustry.voidheart.common.content.works.WorksContent;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -135,6 +138,8 @@ public class OculusTableBlock extends Block implements EntityBlock
     {
         if (stack.isEmpty())
             return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (stack.is(WorksContent.MEMORIAM_LENS))
+            return setLens(stack, level, pos, player);
         var memory = OculusMemory.of(stack);
         if (memory == null)
         {
@@ -163,12 +168,48 @@ public class OculusTableBlock extends Block implements EntityBlock
     }
 
     /**
-     * An empty hand takes the memory back, and the table shows its own land again.
+     * A Memoriam Lens set in the table turns it to planning works, once no memory is set in it.
+     */
+    private static InteractionResult setLens(ItemStack stack, Level level, BlockPos pos, Player player)
+    {
+        if (level.isClientSide())
+            return InteractionResult.SUCCESS;
+        var tile = OculusTableStructure.getTile(level, pos);
+        if (tile == null)
+            return InteractionResult.PASS;
+        if (tile.getView().reckoning() || tile.getView().memory().isPresent())
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".oculus_table.lens.full"));
+            return InteractionResult.FAIL;
+        }
+        OculusTableStructure.updateView(level, pos, view -> view.withReckoning(true));
+        stack.consume(1, player);
+        level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 1, 1.2F);
+        return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * With a lens set in, an empty hand opens the Reckoning on the user's own hoard, and sneaking takes the lens back. Otherwise it takes the memory
+     * back, and the table shows its own land again.
      */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit)
     {
         var tile = OculusTableStructure.getTile(level, pos);
+        if (tile != null && tile.getView().reckoning())
+        {
+            if (level.isClientSide())
+                return InteractionResult.SUCCESS;
+            if (player.isShiftKeyDown())
+            {
+                OculusTableStructure.updateView(level, pos, view -> view.withReckoning(false));
+                player.getInventory().placeItemBackInInventory(new ItemStack(WorksContent.MEMORIAM_LENS), Prediction.SERVER_ONLY);
+                level.playSound(null, pos, SoundEvents.MEDIUM_AMETHYST_BUD_BREAK, SoundSource.BLOCKS, 1, 1.2F);
+            }
+            else if (player instanceof ServerPlayer serverPlayer)
+                HoardMenu.open(serverPlayer, serverPlayer.getUUID(), pos, true);
+            return InteractionResult.SUCCESS;
+        }
         if (tile == null || tile.getView().memory().isEmpty())
             return InteractionResult.PASS;
         if (level.isClientSide())
