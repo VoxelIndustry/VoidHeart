@@ -4,29 +4,32 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
 import net.minecraft.world.item.ItemStack;
-import net.voxelindustry.voidheart.common.content.armor.ArmorBalance;
 import net.voxelindustry.voidheart.common.content.armor.ArmorHotbar;
 import net.voxelindustry.voidheart.common.content.armor.ArmorWear;
-import net.voxelindustry.voidheart.common.content.armor.LoadShedding;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorItem;
 import net.voxelindustry.voidheart.common.content.armor.WornArmor;
 
-import java.util.ArrayList;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The Void Armor's hotbar, in place of the player's while they wear it. Its racks are dark plates on the slots of the first four keys, with the selected
  * one rimmed in gold. Its sights follow on the next keys, rimmed teal while they can be switched on, gold while on and rose once the frame has cut them.
- * Keys with no sight fitted yet are bare sockets. Its charge is a row of rubrum cells beside the bar, one for the frame and one for each battery,
- * emptying in turn and flickering once the frame runs low.
- * No numbers anywhere.
+ * Keys with no sight fitted yet are bare sockets.
  * <p>
- * Per frame: up to nine plates of a few fills each, the racks' items and sights' icons, and up to a dozen cells. It takes the vanilla hotbar's footprint,
- * so the rows above it stay where they are.
+ * Its charge is a row of rubrum cell icons over the hunger bar, the way armor and the apparatus's shield sit over health: ten cells for the whole charge,
+ * in halves, emptying from the left. They flicker once the frame runs low, and the empty sockets turn a dead red when it goes limp. No numbers anywhere.
+ * <p>
+ * Per frame: up to nine plates of a few fills each, the racks' items and sights' icons, and up to twenty 9x9 sprites for the charge. The hotbar takes the
+ * vanilla hotbar's footprint, so the rows above it stay where they are.
  */
 public final class ArmorHud
 {
@@ -35,10 +38,17 @@ public final class ArmorHud
     private static final int BAR_W     = 182;
     private static final int BAR_H     = 22;
 
-    private static final int CELL_W    = 5;
-    private static final int CELL_H    = 11;
-    private static final int CELL_GAP  = 2;
-    private static final int CELLS_GAP = 6;
+    private static final Identifier CHARGE_FULL  = Identifier.fromNamespaceAndPath(MODID, "hud/armor_charge_full");
+    private static final Identifier CHARGE_HALF  = Identifier.fromNamespaceAndPath(MODID, "hud/armor_charge_half");
+    private static final Identifier CHARGE_EMPTY = Identifier.fromNamespaceAndPath(MODID, "hud/armor_charge_empty");
+    private static final int   CHARGE_ICONS     = 10;
+    private static final int   ICON_SIZE        = 9;
+    private static final int   ICON_STEP        = 8;
+    /** The hunger row's place from the bottom, as vanilla works it out, and the row above it. */
+    private static final int   FOOD_FROM_BOTTOM = 39;
+    private static final int   ROW_ABOVE        = 10;
+    private static final float FULL_ALPHA       = 0.9F;
+    private static final float EMPTY_ALPHA      = 0.55F;
 
     private static final int PLATE_BACK    = 0xE00B0810;
     private static final int PLATE_LINE    = 0xFF2A2038;
@@ -54,10 +64,9 @@ public final class ArmorHud
     private static final int SOCKET_BACK   = 0x700B0810;
     private static final int SOCKET_LINE   = 0x902A2038;
 
-    private static final int   CELL_EMPTY   = 0xFF1A0E16;
-    private static final int   CELL_FULL    = 0xFFD4415E;
-    private static final int   CELL_RIM     = 0xFF4A1E2C;
-    private static final int   CELL_DEAD    = 0xFF6E2234;
+    private static final int   CELL_FULL    = 0xD4415E;
+    private static final int   CELL_SOCKET  = 0x8A5A68;
+    private static final int   CELL_DEAD    = 0x6E2234;
     private static final float FLICKER_LOW  = 0.35F;
     private static final float FLICKER_RATE = 0.018F;
 
@@ -126,7 +135,6 @@ public final class ArmorHud
                 graphics.fill(x + 2, top + 3, x + PLATE - 2, top + PLATE, SHED_VEIL);
         }
 
-        cells(graphics, left + BAR_W + CELLS_GAP, top + (BAR_H - CELL_H) / 2, worn, stage);
     }
 
     /** The menpō's edge in first person: dark wedges at the corners of the view, faint so they frame it without closing it in. */
@@ -169,28 +177,35 @@ public final class ArmorHud
     }
 
     /**
-     * One rubrum cell for the frame's own battery, then one for each battery cell, filled in that order from the charge left, as on the base's screen.
+     * The frame's charge over the hunger bar, a row above it when the air bubbles show there.
      */
-    private static void cells(GuiGraphicsExtractor graphics, int x, int y, WornArmor worn, LoadShedding.Stage stage)
+    public static void charge(GuiGraphicsExtractor graphics, DeltaTracker delta)
     {
-        var stats = VoidArmorItem.stats(worn.frame());
-        var shares = new ArrayList<Long>();
-        shares.add(ArmorBalance.FRAME_CAPACITY);
-        for (int i = 0; i < stats.batteries(); i++)
-            shares.add(ArmorBalance.BATTERY_CAPACITY);
+        var minecraft = Minecraft.getInstance();
+        var player = minecraft.player;
+        var worn = player == null || player.isSpectator() ? null : ArmorWear.worn(player);
+        if (worn == null || minecraft.gameMode == null || !minecraft.gameMode.canHurtPlayer())
+            return;
 
+        long capacity = VoidArmorItem.stats(worn.frame()).capacity();
+        var stage = ArmorWear.stage(player);
+        int halves = capacity <= 0 ? 0 : Mth.ceil(CHARGE_ICONS * 2 * Math.min(1, ArmorWear.charge(player) / (double) capacity));
         float flicker = stage.low() ? Mth.lerp(0.5F + 0.5F * Mth.sin(Util.getMillis() * FLICKER_RATE), FLICKER_LOW, 1) : 1;
-        long left = ArmorWear.charge(Minecraft.getInstance().player);
-        for (long share : shares)
+
+        int right = graphics.guiWidth() / 2 + 91;
+        int y = graphics.guiHeight() - FOOD_FROM_BOTTOM - ROW_ABOVE;
+        if (player.isEyeInFluid(FluidTags.WATER) || player.getAirSupply() < player.getMaxAirSupply())
+            y -= ROW_ABOVE;
+        int socket = stage.limp() ? CELL_DEAD : CELL_SOCKET;
+        for (int icon = 0; icon < CHARGE_ICONS; icon++)
         {
-            float fill = Math.clamp(left / (float) share, 0, 1);
-            left = Math.max(0, left - share);
-            graphics.fill(x, y, x + CELL_W, y + CELL_H, stage.limp() ? CELL_DEAD : CELL_RIM);
-            graphics.fill(x + 1, y + 1, x + CELL_W - 1, y + CELL_H - 1, CELL_EMPTY);
-            int height = Math.round((CELL_H - 2) * fill);
-            if (height > 0)
-                graphics.fill(x + 1, y + CELL_H - 1 - height, x + CELL_W - 1, y + CELL_H - 1, ARGB.multiplyAlpha(CELL_FULL, flicker));
-            x += CELL_W + CELL_GAP;
+            // Filled from the right, as the hunger row is, so the cells empty from the left
+            int x = right - ICON_SIZE - icon * ICON_STEP;
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, CHARGE_EMPTY, x, y, ICON_SIZE, ICON_SIZE, ARGB.color(EMPTY_ALPHA, socket));
+            int filled = halves - icon * 2;
+            if (filled > 0)
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, filled >= 2 ? CHARGE_FULL : CHARGE_HALF, x, y, ICON_SIZE, ICON_SIZE,
+                        ARGB.color(FULL_ALPHA * flicker, CELL_FULL));
         }
     }
 }

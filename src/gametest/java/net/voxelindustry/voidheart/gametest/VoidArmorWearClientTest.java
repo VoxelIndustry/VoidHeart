@@ -5,8 +5,10 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.client.CameraType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.common.content.armor.ArmorBalance;
@@ -52,16 +54,20 @@ public class VoidArmorWearClientTest implements FabricClientGameTest
             server.runCommand("gamerule immediate_respawn true");
             server.runCommand("gamemode survival @a");
             server.runCommand("clear @a");
-            server.runCommand("setblock " + at(BASE) + " voidheart:void_armor_base");
+            // Arches facing the player, who stands north of them
+            server.runOnServer(minecraft ->
+            {
+                VoidArmorBaseBlock.build(minecraft.overworld(), BASE, Direction.NORTH);
+                VoidArmorBaseBlock.build(minecraft.overworld(), FAR_BASE, Direction.NORTH);
+            });
             server.runCommand("setblock " + at(WELL) + " voidheart:creative_void_well");
-            server.runCommand("setblock " + at(FAR_BASE) + " voidheart:void_armor_base");
             context.waitTicks(10);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
             charge(context, server);
             stepInAndOut(context, server);
             dockOnStepOut(context, server);
-            refuseLowCeiling(context, server);
+            archNeedsRoom(context, server);
             deathSendsHome(context, server);
             homelessParksBesideRespawn(context, server);
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
@@ -89,12 +95,12 @@ public class VoidArmorWearClientTest implements FabricClientGameTest
 
     private static void stepInAndOut(ClientGameTestContext context, TestServerContext server)
     {
-        lookAtBase(server, 0.5, 0.5, BASE);
+        lookAtFrame(server, 0.5, 0.5, BASE);
         context.waitTicks(5);
         context.getInput().pressKey(options -> options.keyUse);
         context.waitTicks(5);
         var phase = phase(server);
-        expect(phase == WornArmor.Phase.STEPPING_IN, "Expected a use on the docked base to start stepping in, got " + phase);
+        expect(phase == WornArmor.Phase.STEPPING_IN, "Expected a use on the docked frame to start stepping in, got " + phase);
         boolean taken = server.computeOnServer(minecraft -> !base(minecraft, BASE).hasFrame()
                 && !minecraft.overworld().getBlockState(BASE).getValue(VoidArmorBaseBlock.DOCKED));
         expect(taken, "Expected the frame gone from its base once stepped into");
@@ -155,30 +161,60 @@ public class VoidArmorWearClientTest implements FabricClientGameTest
     }
 
     /**
-     * Two blocks of room over the base is too low for a wearer 2.7 tall; three, as in the void's corridors, is enough.
+     * The arch is three blocks wide and four high, and isn't placed where it doesn't fit: under a ceiling three blocks up, or against a wall beside it.
      */
-    private static void refuseLowCeiling(ClientGameTestContext context, TestServerContext server)
+    private static void archNeedsRoom(ClientGameTestContext context, TestServerContext server)
     {
-        server.runCommand("setblock " + at(BASE.above(2)) + " minecraft:stone");
-        lookAtBase(server, 0.5, 0.5, BASE);
-        context.waitTicks(5);
-        context.getInput().pressKey(options -> options.keyUse);
-        context.waitTicks(5);
-        boolean kept = server.computeOnServer(minecraft -> base(minecraft, BASE).hasFrame());
-        expect(kept && phase(server) == null, "Expected a ceiling two blocks over the base to refuse stepping in");
-        server.runCommand("setblock " + at(BASE.above(2)) + " minecraft:air");
-        server.runCommand("setblock " + at(BASE.above(3)) + " minecraft:stone");
+        var low = new BlockPos(12, GROUND_Y, 2);
+        server.runCommand("setblock " + at(low.above(3)) + " minecraft:stone");
+        boolean refused = server.computeOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidArmorContent.VOID_ARMOR_BASE));
+            GameTestKit.useOn(player, low.below());
+            boolean placed = minecraft.overworld().getBlockState(low).is(VoidArmorContent.VOID_ARMOR_BASE);
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            return !placed;
+        });
+        expect(refused, "Expected no arch placed under a ceiling three blocks up");
+        server.runCommand("setblock " + at(low.above(3)) + " minecraft:air");
+
+        // With room, the base raises its whole arch: two pillars, the lintel, and the frame's space between them
+        boolean raised = server.computeOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidArmorContent.VOID_ARMOR_BASE));
+            GameTestKit.useOn(player, low.below());
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            var level = minecraft.overworld();
+            var state = level.getBlockState(low);
+            return state.is(VoidArmorContent.VOID_ARMOR_BASE) && VoidArmorBaseBlock.parts(low, state.getValue(VoidArmorBaseBlock.FACING)).stream()
+                    .allMatch(part -> level.getBlockState(part.pos()).is(VoidArmorContent.VOID_ARMOR_BASE)
+                                      && level.getBlockState(part.pos()).getValue(VoidArmorBaseBlock.PART) == part.part());
+        });
+        expect(raised, "Expected the base placed with room to raise its whole arch");
+
+        // Breaking a pillar takes the whole arch down and drops the base
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var facing = level.getBlockState(low).getValue(VoidArmorBaseBlock.FACING);
+            var pillar = VoidArmorBaseBlock.parts(low, facing).stream().filter(part -> part.part() == VoidArmorBaseBlock.Part.SHAFT).findFirst().orElseThrow();
+            player(minecraft).gameMode.destroyBlock(pillar.pos());
+            boolean gone = VoidArmorBaseBlock.parts(low, facing).stream().noneMatch(part -> level.getBlockState(part.pos()).is(VoidArmorContent.VOID_ARMOR_BASE));
+            expect(gone, "Expected breaking a pillar to take the whole arch down");
+        });
         context.waitTicks(3);
+        server.runCommand("kill @e[type=item]");
     }
 
     private static void deathSendsHome(ClientGameTestContext context, TestServerContext server)
     {
-        lookAtBase(server, 0.5, 0.5, BASE);
+        lookAtFrame(server, 0.5, 0.5, BASE);
         context.waitTicks(5);
         context.getInput().pressKey(options -> options.keyUse);
         context.waitTicks(ArmorBalance.STEP_IN_TICKS + 5);
-        expect(phase(server) == WornArmor.Phase.WORN, "Expected to step in under a ceiling three blocks over the base, and wear the frame before dying");
-        server.runCommand("setblock " + at(BASE.above(3)) + " minecraft:air");
+        expect(phase(server) == WornArmor.Phase.WORN, "Expected to step into the frame under its lintel, and wear it before dying");
         server.runCommand("tp @a 0.5 " + GROUND_Y + " -10.5");
         context.waitTicks(3);
         server.runCommand("kill @a");
@@ -223,9 +259,9 @@ public class VoidArmorWearClientTest implements FabricClientGameTest
         context.waitTicks(ArmorBalance.STEP_OUT_TICKS + 3);
     }
 
-    private static void lookAtBase(TestServerContext server, double feetX, double feetZ, BlockPos base)
+    private static void lookAtFrame(TestServerContext server, double feetX, double feetZ, BlockPos base)
     {
-        lookAt(server, feetX, feetZ, base.getX() + 0.5, base.getY() + 0.15, base.getZ() + 0.5);
+        lookAt(server, feetX, feetZ, base.getX() + 0.5, base.getY() + 1.3, base.getZ() + 0.5);
     }
 
     private static void lookAt(TestServerContext server, double feetX, double feetZ, double x, double y, double z)

@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.armor;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
+import net.minecraft.client.data.models.blockstates.PropertyDispatch;
 import net.minecraft.client.data.models.model.ItemModelUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.data.loot.BlockLootSubProvider;
@@ -28,8 +29,34 @@ public final class VoidArmorDatagen
 
     public static void blockModels(BlockModelGenerators generators)
     {
-        // The plinth is round about, so whether a frame is docked and the way it faces leave it as it is
-        generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidArmorContent.VOID_ARMOR_BASE, plainVariant(model("block/void_armor_base"))));
+        // The plinth is round about, the frame's space is drawn by VoidArmorBaseRender, and the arch's parts turn with the way it faces, the right
+        // pillar half round again so it faces the middle
+        generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidArmorContent.VOID_ARMOR_BASE).with(
+                PropertyDispatch.initial(VoidArmorBaseBlock.PART, VoidArmorBaseBlock.FACING, VoidArmorBaseBlock.RIGHT).generate((part, facing, right) ->
+                {
+                    var variant = plainVariant(model(switch (part)
+                    {
+                        case BASE -> "block/void_armor_base";
+                        case FRAME -> "block/void_armor_arch_space";
+                        default -> "block/void_armor_arch_" + part.getSerializedName();
+                    }));
+                    if (part == VoidArmorBaseBlock.Part.BASE || part == VoidArmorBaseBlock.Part.FRAME)
+                        return variant;
+                    int quarters = (switch (facing)
+                    {
+                        case EAST -> 1;
+                        case SOUTH -> 2;
+                        case WEST -> 3;
+                        default -> 0;
+                    } + (right ? 2 : 0)) % 4;
+                    return switch (quarters)
+                    {
+                        case 1 -> variant.with(BlockModelGenerators.Y_ROT_90);
+                        case 2 -> variant.with(BlockModelGenerators.Y_ROT_180);
+                        case 3 -> variant.with(BlockModelGenerators.Y_ROT_270);
+                        default -> variant;
+                    };
+                })));
     }
 
     public static void itemModels(ItemModelGenerators generators)

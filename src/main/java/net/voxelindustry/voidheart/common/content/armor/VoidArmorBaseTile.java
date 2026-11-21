@@ -254,6 +254,8 @@ public class VoidArmorBaseTile extends TileBase
                 Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, frame);
             if (!cell.getItem(0).isEmpty())
                 Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, cell.getItem(0));
+            // The arch comes down with its plinth
+            VoidArmorBaseBlock.removeArch(level, pos, state.getValue(VoidArmorBaseBlock.FACING));
         }
         super.preRemoveSideEffects(pos, state);
     }

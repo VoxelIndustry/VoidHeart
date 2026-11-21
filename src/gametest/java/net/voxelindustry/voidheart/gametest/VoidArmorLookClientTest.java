@@ -220,7 +220,7 @@ public class VoidArmorLookClientTest implements FabricClientGameTest
         {
             var level = minecraft.overworld();
             // Placed by someone standing north of it, so the frame faces them
-            level.setBlockAndUpdate(BASE, VoidArmorContent.VOID_ARMOR_BASE.defaultBlockState().setValue(VoidArmorBaseBlock.FACING, Direction.NORTH));
+            VoidArmorBaseBlock.build(level, BASE, Direction.NORTH);
             var frame = frame();
             frame.set(RubrumContent.VOID_CHARGE, VoidArmorItem.stats(frame).capacity() / 2);
             ((VoidArmorBaseTile) level.getBlockEntity(BASE)).dock(frame);

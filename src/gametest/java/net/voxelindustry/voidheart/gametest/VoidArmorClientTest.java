@@ -8,6 +8,7 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -59,7 +60,8 @@ public class VoidArmorClientTest implements FabricClientGameTest
             server.runCommand("gamerule spawn_mobs false");
             server.runCommand("gamemode survival @a");
             server.runCommand("clear @a");
-            server.runCommand("setblock " + BASE.getX() + " " + BASE.getY() + " " + BASE.getZ() + " voidheart:void_armor_base");
+            // An arch facing the player, who stands north of it
+            server.runOnServer(minecraft -> VoidArmorBaseBlock.build(minecraft.overworld(), BASE, Direction.NORTH));
             // Looking down at the top of the base two blocks ahead, from the eyes 1.62 above the feet
             double pitch = -Math.toDegrees(Math.atan2(GROUND_Y + 0.25 - (GROUND_Y + 1.62), 2));
             server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 0 " + pitch);
@@ -101,23 +103,16 @@ public class VoidArmorClientTest implements FabricClientGameTest
         expect(docked, "Expected the frame used on the empty base to dock there and leave the hand");
         context.takeScreenshot("void-armor-base-docked");
 
-        // A plain use would step into the frame; sneaking opens its grids
+        // A use on the frame steps into it; a use on the plinth opens its grids
         server.runOnServer(minecraft -> player(minecraft).getInventory().setSelectedSlot(1));
         context.waitTicks(3);
-        context.getInput().holdKey(options -> options.keyShift);
-        context.waitFor(minecraft -> minecraft.player != null && minecraft.player.isShiftKeyDown(), 40);
-        context.waitTicks(3);
-        boolean sneaking = server.computeOnServer(minecraft -> player(minecraft).isShiftKeyDown());
-        expect(sneaking, "Expected the server to see the player sneaking before the use");
         context.getInput().pressKey(options -> options.keyUse);
-        context.waitTicks(3);
-        context.getInput().releaseKey(options -> options.keyShift);
-        context.waitTicks(7);
+        context.waitTicks(10);
         boolean open = context.computeOnClient(minecraft -> minecraft.gui.screen() instanceof VoidArmorScreen);
         String state = server.computeOnServer(minecraft -> "wearing " + net.voxelindustry.voidheart.common.content.armor.ArmorWear.wearing(player(minecraft))
                 + ", docked " + (minecraft.overworld().getBlockEntity(BASE) instanceof VoidArmorBaseTile base && base.hasFrame())
-                + ", sneaking " + player(minecraft).isShiftKeyDown() + ", screen " + player(minecraft).containerMenu);
-        expect(open, "Expected a sneaking use on the docked base to open the frame's grids: " + state);
+                + ", screen " + player(minecraft).containerMenu);
+        expect(open, "Expected a use on the docked arch's plinth to open the frame's grids: " + state);
         context.getInput().setCursorPos(10, 10);
         context.waitTicks(2);
         context.takeScreenshot("void-armor-screen-empty");

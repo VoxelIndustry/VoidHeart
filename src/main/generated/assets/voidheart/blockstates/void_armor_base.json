@@ -1,7 +1,172 @@
 {
   "variants": {
-    "": {
+    "facing=east,part=base,right=false": {
       "model": "voidheart:block/void_armor_base"
+    },
+    "facing=east,part=base,right=true": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "facing=east,part=crown,right=false": {
+      "model": "voidheart:block/void_armor_arch_crown",
+      "y": 90
+    },
+    "facing=east,part=crown,right=true": {
+      "model": "voidheart:block/void_armor_arch_crown",
+      "y": 270
+    },
+    "facing=east,part=foot,right=false": {
+      "model": "voidheart:block/void_armor_arch_foot",
+      "y": 90
+    },
+    "facing=east,part=foot,right=true": {
+      "model": "voidheart:block/void_armor_arch_foot",
+      "y": 270
+    },
+    "facing=east,part=frame,right=false": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=east,part=frame,right=true": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=east,part=lintel,right=false": {
+      "model": "voidheart:block/void_armor_arch_lintel",
+      "y": 90
+    },
+    "facing=east,part=lintel,right=true": {
+      "model": "voidheart:block/void_armor_arch_lintel",
+      "y": 270
+    },
+    "facing=east,part=shaft,right=false": {
+      "model": "voidheart:block/void_armor_arch_shaft",
+      "y": 90
+    },
+    "facing=east,part=shaft,right=true": {
+      "model": "voidheart:block/void_armor_arch_shaft",
+      "y": 270
+    },
+    "facing=north,part=base,right=false": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "facing=north,part=base,right=true": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "facing=north,part=crown,right=false": {
+      "model": "voidheart:block/void_armor_arch_crown"
+    },
+    "facing=north,part=crown,right=true": {
+      "model": "voidheart:block/void_armor_arch_crown",
+      "y": 180
+    },
+    "facing=north,part=foot,right=false": {
+      "model": "voidheart:block/void_armor_arch_foot"
+    },
+    "facing=north,part=foot,right=true": {
+      "model": "voidheart:block/void_armor_arch_foot",
+      "y": 180
+    },
+    "facing=north,part=frame,right=false": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=north,part=frame,right=true": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=north,part=lintel,right=false": {
+      "model": "voidheart:block/void_armor_arch_lintel"
+    },
+    "facing=north,part=lintel,right=true": {
+      "model": "voidheart:block/void_armor_arch_lintel",
+      "y": 180
+    },
+    "facing=north,part=shaft,right=false": {
+      "model": "voidheart:block/void_armor_arch_shaft"
+    },
+    "facing=north,part=shaft,right=true": {
+      "model": "voidheart:block/void_armor_arch_shaft",
+      "y": 180
+    },
+    "facing=south,part=base,right=false": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "facing=south,part=base,right=true": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "facing=south,part=crown,right=false": {
+      "model": "voidheart:block/void_armor_arch_crown",
+      "y": 180
+    },
+    "facing=south,part=crown,right=true": {
+      "model": "voidheart:block/void_armor_arch_crown"
+    },
+    "facing=south,part=foot,right=false": {
+      "model": "voidheart:block/void_armor_arch_foot",
+      "y": 180
+    },
+    "facing=south,part=foot,right=true": {
+      "model": "voidheart:block/void_armor_arch_foot"
+    },
+    "facing=south,part=frame,right=false": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=south,part=frame,right=true": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=south,part=lintel,right=false": {
+      "model": "voidheart:block/void_armor_arch_lintel",
+      "y": 180
+    },
+    "facing=south,part=lintel,right=true": {
+      "model": "voidheart:block/void_armor_arch_lintel"
+    },
+    "facing=south,part=shaft,right=false": {
+      "model": "voidheart:block/void_armor_arch_shaft",
+      "y": 180
+    },
+    "facing=south,part=shaft,right=true": {
+      "model": "voidheart:block/void_armor_arch_shaft"
+    },
+    "facing=west,part=base,right=false": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "facing=west,part=base,right=true": {
+      "model": "voidheart:block/void_armor_base"
+    },
+    "facing=west,part=crown,right=false": {
+      "model": "voidheart:block/void_armor_arch_crown",
+      "y": 270
+    },
+    "facing=west,part=crown,right=true": {
+      "model": "voidheart:block/void_armor_arch_crown",
+      "y": 90
+    },
+    "facing=west,part=foot,right=false": {
+      "model": "voidheart:block/void_armor_arch_foot",
+      "y": 270
+    },
+    "facing=west,part=foot,right=true": {
+      "model": "voidheart:block/void_armor_arch_foot",
+      "y": 90
+    },
+    "facing=west,part=frame,right=false": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=west,part=frame,right=true": {
+      "model": "voidheart:block/void_armor_arch_space"
+    },
+    "facing=west,part=lintel,right=false": {
+      "model": "voidheart:block/void_armor_arch_lintel",
+      "y": 270
+    },
+    "facing=west,part=lintel,right=true": {
+      "model": "voidheart:block/void_armor_arch_lintel",
+      "y": 90
+    },
+    "facing=west,part=shaft,right=false": {
+      "model": "voidheart:block/void_armor_arch_shaft",
+      "y": 270
+    },
+    "facing=west,part=shaft,right=true": {
+      "model": "voidheart:block/void_armor_arch_shaft",
+      "y": 90
     }
   }
 }

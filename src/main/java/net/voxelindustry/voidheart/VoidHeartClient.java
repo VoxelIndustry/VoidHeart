@@ -226,6 +226,7 @@ public class VoidHeartClient implements ClientModInitializer
         LevelRenderEvents.COLLECT_SUBMITS.register(ShieldRuneRender::collectSubmits);
         HudElementRegistry.attachElementAfter(VanillaHudElements.ARMOR_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "shield"), ShieldHud::extract);
         HudElementRegistry.replaceElement(VanillaHudElements.HOTBAR, ArmorHud::replacing);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.FOOD_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "void_armor_charge"), ArmorHud::charge);
         HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "void_armor_mask"), ArmorHud::maskEdge);
         HudElementRegistry.attachElementAfter(VanillaHudElements.HEALTH_BAR, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart"), SecondHeartHud::extractIcon);
         HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS, Identifier.fromNamespaceAndPath(VoidHeart.MODID, "second_heart_view"), SecondHeartHud::extractView);

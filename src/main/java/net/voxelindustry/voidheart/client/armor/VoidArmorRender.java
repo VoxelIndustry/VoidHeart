@@ -44,6 +44,7 @@ public final class VoidArmorRender
     private static final float BREATH_MILLIS = 3200;
     /** A living thing's renderer stands its model this far down from its pivot, so its feet meet the ground. */
     private static final float MODEL_DROP    = 1.501F;
+    private static final float PLAYER_SCALE  = 0.9375F;
 
     private static @Nullable VoidArmorModel firstPerson;
 
@@ -121,6 +122,8 @@ public final class VoidArmorRender
         poseStack.pushPose();
         poseStack.rotate(Axis.YP.rotationDegrees(180 - yaw));
         poseStack.scale(ArmorBalance.SCALE, ArmorBalance.SCALE, ArmorBalance.SCALE);
+        // As the player renderer draws its model, so a frame no one wears stands the size it is worn
+        poseStack.scale(PLAYER_SCALE, PLAYER_SCALE, PLAYER_SCALE);
         poseStack.scale(-1, -1, 1);
         poseStack.translate(0, -MODEL_DROP, 0);
         submit(model, glow, state, poseStack, collector, lightCoords, OverlayTexture.NO_OVERLAY, 0);

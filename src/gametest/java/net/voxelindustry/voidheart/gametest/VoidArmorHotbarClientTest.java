@@ -81,9 +81,15 @@ public class VoidArmorHotbarClientTest implements FabricClientGameTest
             keysAndWheel(context, server);
             nothingComesOrGoes(context, server);
             weaponsWorkFromRacks(context, server);
+            // Nothing in the chat over the charge row
+            context.runOnClient(minecraft -> minecraft.gui.hud.getChat().clearMessages(false));
+            server.runCommand("execute as @a run voidheart armor charge 0.65");
+            context.waitTicks(5);
             context.takeScreenshot("void-armor-hotbar");
             server.runCommand("execute as @a run voidheart armor charge 0.12");
             context.waitTicks(3);
+            context.runOnClient(minecraft -> minecraft.gui.hud.getChat().clearMessages(false));
+            context.waitTicks(2);
             context.takeScreenshot("void-armor-hotbar-low");
             stepOutGivesHotbarBack(context, server);
             deathKeepsRacks(context, server);
