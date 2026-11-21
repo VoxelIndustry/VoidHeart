@@ -94,13 +94,10 @@ public final class RubrumContent
         WRUNG_MOTE = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MODID, "wrung_mote"),
                 FabricParticleTypes.simple(false));
 
-        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damage, blocked) -> CellSocketTile.onHarm(entity, damage));
-        // A killing blow never reaches AFTER_DAMAGE, so it is counted here instead, no more than the creature could lose
-        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, damage) ->
-        {
-            CellSocketTile.onHarm(entity, Math.min(damage, entity.getMaxHealth()));
-            return true;
-        });
+        // A killing blow never reaches AFTER_DAMAGE, so ALLOW_DEATH counts it, from the health the creature had before it
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, damage) -> CellSocketTile.beforeHarm(entity));
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damage, blocked) -> CellSocketTile.afterHarm(entity, damage));
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, damage) -> CellSocketTile.killingBlow(entity, damage));
     }
 
     /**

@@ -118,10 +118,13 @@ public final class OculusMemoryPayloads
     private static void handle(Request request, ServerPlayNetworking.Context context)
     {
         var player = context.player();
-        // Only a table this player stands near, and that shows this recording, gets it sent
+        // Only a table this player stands near, and that shows this recording, gets it sent. The distance comes first, so a far position never loads
+        if (player.position().distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(request.table())) > VIEW_REACH * VIEW_REACH
+            || !player.level().isLoaded(request.table()))
+            return;
         var tile = OculusTableStructure.getTile(player.level(), request.table());
         boolean shown = tile != null && tile.getView().memory().map(memory -> memory.recording().id().equals(request.recording())).orElse(false);
-        if (!shown || player.position().distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(request.table())) > VIEW_REACH * VIEW_REACH)
+        if (!shown)
             return;
         var recording = CrystalRecordings.find(player.level().getServer(), request.recording());
         if (recording == null)

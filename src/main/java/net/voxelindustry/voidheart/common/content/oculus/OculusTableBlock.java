@@ -156,7 +156,7 @@ public class OculusTableBlock extends Block implements EntityBlock
             player.sendOverlayMessage(Component.translatable(MODID + ".oculus_table.memory.full"));
             return InteractionResult.FAIL;
         }
-        OculusTableStructure.updateView(level, pos, view -> view.remembering(Optional.of(memory)));
+        OculusTableStructure.remember(level, pos, Optional.of(memory));
         stack.consume(1, player);
         level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 1, 0.7F);
         return InteractionResult.SUCCESS;
@@ -174,7 +174,7 @@ public class OculusTableBlock extends Block implements EntityBlock
         if (level.isClientSide())
             return InteractionResult.SUCCESS;
         var memory = tile.getView().memory().get();
-        OculusTableStructure.updateView(level, pos, view -> view.remembering(Optional.empty()));
+        OculusTableStructure.remember(level, pos, Optional.empty());
         player.getInventory().placeItemBackInInventory(memory.toStack(), Prediction.SERVER_ONLY);
         level.playSound(null, pos, SoundEvents.MEDIUM_AMETHYST_BUD_BREAK, SoundSource.BLOCKS, 1, 0.9F);
         return InteractionResult.SUCCESS;

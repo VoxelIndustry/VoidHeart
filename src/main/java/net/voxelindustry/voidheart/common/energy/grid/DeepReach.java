@@ -141,10 +141,10 @@ public final class DeepReach
     {
         long available = 0;
         // Reaches out of one core share that core's pool, so it counts once
-        var counted = new java.util.HashSet<BlockPos>();
+        var counted = new java.util.HashSet<java.util.Map.Entry<ResourceKey<Level>, BlockPos>>();
         for (var reach : into(level))
         {
-            if (!reach.covers(pos) || !counted.add(reach.nearCore()))
+            if (!reach.covers(pos) || !counted.add(java.util.Map.entry(reach.nearLevel(), reach.nearCore())))
                 continue;
             var near = level.getServer().getLevel(reach.nearLevel());
             if (near == null)

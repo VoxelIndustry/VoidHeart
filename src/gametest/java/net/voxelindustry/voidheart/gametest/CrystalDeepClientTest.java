@@ -96,6 +96,7 @@ public class CrystalDeepClientTest implements FabricClientGameTest
             checkVoidGrowthAtHome(context, server);
             var memory = checkDeepRecording(context, server);
             checkTableMemory(context, server, memory);
+            checkTableMerges(context, server, memory);
             checkDeepReach(context, server);
         }
     }
@@ -275,6 +276,71 @@ public class CrystalDeepClientTest implements FabricClientGameTest
     }
 
     /**
+     * A memory is never left in a block beside the bundle it came back out as: not past the size a table projects at, and not when a block joins two
+     * tables that each hold one, even copies of one recording.
+     */
+    private static void checkTableMerges(ClientGameTestContext context, TestServerContext server, ItemStack memory)
+    {
+        var big = new BlockPos(20, Y, 40);
+        server.runCommand("fill " + at(big) + " " + (big.getX() + 9) + " " + Y + " " + (big.getZ() + 9) + " voidheart:oculus_table");
+        var left = new BlockPos(40, Y, 40);
+        var right = new BlockPos(44, Y, 40);
+        for (var corner : new BlockPos[] { left, right })
+            server.runCommand("fill " + at(corner) + " " + (corner.getX() + 2) + " " + Y + " " + (corner.getZ() + 2) + " voidheart:oculus_table");
+        server.runCommand("kill @e[type=minecraft:item]");
+        context.waitTicks(5);
+
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var player = player(minecraft);
+            for (var at : new BlockPos[] { big, left, right })
+            {
+                player.setItemInHand(InteractionHand.MAIN_HAND, memory.copy());
+                useOn(player, at);
+            }
+            var farCorner = big.offset(9, 0, 9);
+            expect(OculusTableStructure.getTile(level, farCorner).getView().memory().isPresent(),
+                    "A memory set on a table past the size it projects at should still reach its far corner");
+
+            // The oversized table loses an end block: its memory falls once, and none of what remains keeps it
+            level.removeBlock(big, false);
+            expect(remembering(level, big, big.offset(9, 0, 9)) == 0, "No block of what remains should keep the memory that fell");
+            expect(droppedMemories(level, big) == 1, "The memory should fall once, got " + droppedMemories(level, big));
+
+            // A bridge between two tables each holding a copy: one stays shown, the other comes back out
+            var bridge = new BlockPos(43, Y, 40);
+            var state = VoidHeartBlocks.OCULUS_TABLE.defaultBlockState();
+            level.setBlockAndUpdate(bridge, state);
+            VoidHeartBlocks.OCULUS_TABLE.setPlacedBy(level, bridge, state, player, new ItemStack(VoidHeartBlocks.OCULUS_TABLE));
+            expect(droppedMemories(level, bridge) == 1, "Joining two tables with a memory each should hand one back, got " + droppedMemories(level, bridge));
+            expect(remembering(level, left, right.offset(2, 0, 2)) == 19, "Every block of the joined table should show the memory kept");
+        });
+        server.runCommand("kill @e[type=minecraft:item]");
+    }
+
+    /**
+     * How many table blocks between the two corners still show a memory.
+     */
+    private static int remembering(ServerLevel level, BlockPos from, BlockPos to)
+    {
+        int count = 0;
+        for (var pos : BlockPos.betweenClosed(from, to))
+        {
+            var tile = OculusTableStructure.getTile(level, pos);
+            if (tile != null && tile.getView().memory().isPresent())
+                count++;
+        }
+        return count;
+    }
+
+    private static int droppedMemories(ServerLevel level, BlockPos near)
+    {
+        return level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(near).inflate(4),
+                item -> item.getItem().has(VoidHeartDataComponents.CRYSTAL_RECORDING)).size();
+    }
+
+    /**
      * A Deep pylon's field reaches on through an open portal pair inside it: a socket past the far portal charges from it, where a plain pylon's never
      * reaches.
      */
@@ -322,8 +388,9 @@ public class CrystalDeepClientTest implements FabricClientGameTest
         server.runCommand("setblock " + at(PYLON.above()) + " voidheart:large_azurium_bundle[facing=up,habit=deep]");
         waitFor(context, server, 200, "A Deep pylon's field should reach through the portal and charge the socket beyond",
                 minecraft -> RubrumCellItem.charge(((CellSocketTile) minecraft.overworld().getBlockEntity(FAR_SOCKET)).getCell()) >= 1_000);
-        expect(server.computeOnServer(minecraft -> ((PortalFrameCoreTile) minecraft.overworld().getBlockEntity(CORE_B)).getDeepReach()) > 0,
-                "The far portal should know the reach coming out of it");
+        // The far portal looks for reaches coming out of it once a second
+        waitFor(context, server, 60, "The far portal should know the reach coming out of it",
+                minecraft -> ((PortalFrameCoreTile) minecraft.overworld().getBlockEntity(CORE_B)).getDeepReach() > 0);
 
         context.getInput().pressKey(InputConstants.KEY_F1);
         aimFrom(context, server, PYLON.getX() + 4.5, Y + 1.5, PYLON.getZ() - 3.5, CORE_A.getX() + 0.5, Y + 1.5, CORE_A.getZ() + 0.5, 30);

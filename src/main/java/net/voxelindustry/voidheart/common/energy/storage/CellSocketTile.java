@@ -138,6 +138,48 @@ public class CellSocketTile extends TileBase
         }
     }
 
+    /** Health a creature had before the hit being taken, so a killing blow is counted no deeper than it could go. */
+    private static final java.util.Map<LivingEntity, Float> HEALTH_BEFORE = new WeakHashMap<>();
+    /** Creatures whose killing blow was counted this tick, so a totem that saves them doesn't count the same hit again. */
+    private static final java.util.Map<LivingEntity, Long>  KILL_COUNTED  = new WeakHashMap<>();
+
+    /**
+     * Before a hit lands: notes the health it may take, while any Wrung cell is there to drink it.
+     */
+    public static boolean beforeHarm(LivingEntity entity)
+    {
+        if (!DRINKERS.isEmpty())
+            HEALTH_BEFORE.put(entity, entity.getHealth());
+        return true;
+    }
+
+    /**
+     * A hit the creature survived. One whose killing blow was already counted, as when a totem saves it, isn't counted again.
+     */
+    public static void afterHarm(LivingEntity entity, float damage)
+    {
+        HEALTH_BEFORE.remove(entity);
+        var counted = KILL_COUNTED.remove(entity);
+        if (counted != null && counted == entity.level().getGameTime())
+            return;
+        onHarm(entity, damage);
+    }
+
+    /**
+     * A hit that would kill: counted up to the health the creature had, since AFTER_DAMAGE never hears of it.
+     *
+     * @return always true, never keeping anything alive
+     */
+    public static boolean killingBlow(LivingEntity entity, float damage)
+    {
+        var before = HEALTH_BEFORE.remove(entity);
+        if (DRINKERS.isEmpty())
+            return true;
+        KILL_COUNTED.put(entity, entity.level().getGameTime());
+        onHarm(entity, Math.min(damage, before != null ? before : entity.getMaxHealth()));
+        return true;
+    }
+
     /**
      * Offers harm done to a living thing to the Wrung cells around it. Each banks it and shows crimson wisps rising from the hurt into the cell.
      */

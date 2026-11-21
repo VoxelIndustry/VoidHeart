@@ -8,6 +8,8 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -104,37 +106,118 @@ public class OculusTableStructure
      */
     public static void onBlockAdded(Level level, BlockPos pos)
     {
+        Predicate<BlockPos> isTable = member -> level.getBlockState(member).is(VoidHeartBlocks.OCULUS_TABLE);
         var view = OculusView.DEFAULT;
         boolean found = false;
-        // A block joining tables that each show a memory keeps the first, and every other one comes back out as its bundle
-        java.util.Optional<OculusMemory> kept = java.util.Optional.empty();
-        var met = new java.util.HashSet<java.util.UUID>();
-        var displaced = new java.util.ArrayList<OculusMemory>();
-        for (var direction : Direction.Plane.HORIZONTAL)
+        // One memory per table the block joins, even copies of one recording: the first is kept, and every other comes back out as its bundle
+        var held = new ArrayList<Optional<OculusMemory>>();
+        for (var table : joinedTables(pos, isTable))
         {
-            var neighbor = getTile(level, pos.relative(direction));
-            if (neighbor == null)
+            var side = getTile(level, table.iterator().next());
+            if (side == null)
                 continue;
             if (!found)
             {
-                view = neighbor.getView();
+                view = side.getView();
                 found = true;
             }
-            var memory = neighbor.getView().memory();
-            if (memory.isEmpty() || !met.add(memory.get().recording().id()))
+            held.add(side.getView().memory());
+        }
+        var reconciled = reconcile(held);
+
+        var adopted = view.remembering(reconciled.kept());
+        updateView(level, pos, current -> adopted);
+        remember(level, pos, reconciled.kept());
+        for (var memory : reconciled.returned())
+            net.minecraft.world.Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, memory.toStack());
+        updatePower(level, pos);
+    }
+
+    /**
+     * What a block joining tables does with their memories, one per table it joins in the order met.
+     *
+     * @param kept     what the joined table shows
+     * @param returned the bundles that come back out, one per other table that held a memory
+     */
+    record Reconciled(Optional<OculusMemory> kept, List<OculusMemory> returned)
+    {
+    }
+
+    static Reconciled reconcile(List<Optional<OculusMemory>> held)
+    {
+        Optional<OculusMemory> kept = Optional.empty();
+        var returned = new ArrayList<OculusMemory>();
+        for (var memory : held)
+        {
+            if (memory.isEmpty())
                 continue;
             if (kept.isEmpty())
                 kept = memory;
             else
-                displaced.add(memory.get());
+                returned.add(memory.get());
         }
-
-        var adopted = view.remembering(kept);
-        updateView(level, pos, current -> adopted);
-        for (var memory : displaced)
-            net.minecraft.world.Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, memory.toStack());
-        updatePower(level, pos);
+        return new Reconciled(kept, List.copyOf(returned));
     }
+
+    /**
+     * The separate tables a block at joined touches, each as every block of it, in the order its sides are met. Two sides of one table are one table.
+     */
+    static List<Set<BlockPos>> joinedTables(BlockPos joined, Predicate<BlockPos> isTable)
+    {
+        Predicate<BlockPos> without = member -> !member.equals(joined) && isTable.test(member);
+        var tables = new ArrayList<Set<BlockPos>>();
+        for (var direction : Direction.Plane.HORIZONTAL)
+        {
+            var side = joined.relative(direction);
+            if (!without.test(side) || tables.stream().anyMatch(table -> table.contains(side)))
+                continue;
+            tables.add(connected(side, without, MEMORY_WALK));
+        }
+        return tables;
+    }
+
+    /**
+     * Every table block connected to start, the first being start, up to the limit given.
+     */
+    static Set<BlockPos> connected(BlockPos start, Predicate<BlockPos> isTable, int limit)
+    {
+        var members = new LinkedHashSet<BlockPos>();
+        if (!isTable.test(start))
+            return members;
+        var frontier = new ArrayDeque<BlockPos>();
+        members.add(start);
+        frontier.add(start);
+        while (!frontier.isEmpty() && members.size() < limit)
+        {
+            var current = frontier.poll();
+            for (var direction : Direction.Plane.HORIZONTAL)
+            {
+                var adjacent = current.relative(direction);
+                if (members.size() < limit && !members.contains(adjacent) && isTable.test(adjacent))
+                {
+                    members.add(adjacent);
+                    frontier.add(adjacent);
+                }
+            }
+        }
+        return members;
+    }
+
+    /**
+     * Sets the memory on every table block connected to start, past the size a table projects at, so no block keeps a memory that went elsewhere.
+     */
+    public static void remember(Level level, BlockPos start, Optional<OculusMemory> memory)
+    {
+        for (var member : connected(start, pos -> level.getBlockState(pos).is(VoidHeartBlocks.OCULUS_TABLE), MEMORY_WALK))
+        {
+            var tile = getTile(level, member);
+            if (tile != null && !tile.getView().memory().equals(memory))
+                tile.setView(tile.getView().remembering(memory));
+        }
+    }
+
+    /** How many connected table blocks a memory is settled across, well past any table that projects. */
+    static final int MEMORY_WALK = 4096;
 
     /**
      * A table sleeps while any of its blocks is powered.
