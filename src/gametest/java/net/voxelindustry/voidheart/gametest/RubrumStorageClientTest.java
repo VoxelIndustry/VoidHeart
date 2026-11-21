@@ -514,8 +514,13 @@ public class RubrumStorageClientTest implements FabricClientGameTest
             return new long[]{tile.wrungBank(1), tile.wrungBank(0) + tile.wrungBank(2) + tile.wrungBank(3)};
         });
         expect(banked[0] > 0 && banked[1] == 0, "Only the Wrung cell in a wall should bank harm done beside it, banked " + banked[0] + " and " + banked[1] + " elsewhere");
+        // The wisps rising from the pig to the niche, from a fixed camera
+        context.waitTicks(2);
+        context.takeScreenshot("socket-wall-wrung-wisps-start");
         context.waitTicks(8);
-        context.takeScreenshot("socket-wall-wrung-wisps");
+        context.takeScreenshot("socket-wall-wrung-wisps-middle");
+        context.waitTicks(12);
+        context.takeScreenshot("socket-wall-wrung-wisps-end");
         context.getInput().pressKey(InputConstants.KEY_F1);
         waitFor(context, server, 60, "A Wrung cell in a wall should take in what it banked",
                 minecraft -> wall(minecraft, WALL_2).wrungBank(1) < banked[0]);

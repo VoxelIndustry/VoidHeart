@@ -71,6 +71,8 @@ public class SocketWallTile extends TileBase implements HarmDrinker
                 {
                     wrungBanks[slot] -= drunk;
                     RubrumCellItem.setCharge(cells[slot], charge + drunk);
+                    // The bank shrinks even when discharge leaves the charge where it was synced, so save it either way
+                    setChanged();
                 }
             }
             else
