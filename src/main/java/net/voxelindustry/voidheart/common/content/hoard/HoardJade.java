@@ -28,6 +28,7 @@ public final class HoardJade
     public static void register(IWailaCommonRegistration registration)
     {
         registration.registerBlockDataProvider(new AspectFoldServer(), AspectFoldTile.class);
+        registration.registerBlockDataProvider(new FoldServer(), FoldTile.class);
     }
 
     public static void registerClient(IWailaClientRegistration registration)
@@ -46,6 +47,8 @@ public final class HoardJade
         {
             if (!(accessor.getBlockEntity() instanceof FoldTile fold))
                 return;
+            accessor.getServerData().getString("owner").ifPresent(name ->
+                    tooltip.add(Component.translatable(MODID + ".jade.fold.owner", name).withStyle(ChatFormatting.GRAY)));
             var attuned = fold.getAttuned();
             if (attuned == null)
                 tooltip.add(Component.translatable(MODID + ".jade.fold.only_takes").withStyle(ChatFormatting.GRAY));
@@ -62,6 +65,26 @@ public final class HoardJade
 
     private static final Identifier ASPECT_FOLD_UID = Identifier.fromNamespaceAndPath(MODID, "aspect_fold");
 
+    /**
+     * Whose hoard a Fold opens onto, by name when the server knows it.
+     */
+    private static final class FoldServer implements IServerDataProvider<BlockAccessor>
+    {
+        @Override
+        public void appendServerData(CompoundTag tag, BlockAccessor accessor)
+        {
+            if (accessor.getBlockEntity() instanceof FoldTile fold && fold.getOwner() != null && accessor.getLevel().getServer() != null)
+                net.voxelindustry.voidheart.common.util.ProfileUtil.cachedName(accessor.getLevel().getServer(), fold.getOwner())
+                        .ifPresent(name -> tag.putString("owner", name));
+        }
+
+        @Override
+        public Identifier getUid()
+        {
+            return Identifier.fromNamespaceAndPath(MODID, "fold");
+        }
+    }
+
     private static final class AspectFoldServer implements IServerDataProvider<BlockAccessor>
     {
         @Override
@@ -69,6 +92,9 @@ public final class HoardJade
         {
             if (!(accessor.getBlockEntity() instanceof AspectFoldTile fold))
                 return;
+            if (fold.getOwner() != null && accessor.getLevel().getServer() != null)
+                net.voxelindustry.voidheart.common.util.ProfileUtil.cachedName(accessor.getLevel().getServer(), fold.getOwner())
+                        .ifPresent(name -> tag.putString("owner", name));
             var hoard = fold.hoard();
             if (hoard == null)
                 return;
@@ -101,6 +127,7 @@ public final class HoardJade
             var data = accessor.getServerData();
             if (!data.contains("open"))
                 return;
+            data.getString("owner").ifPresent(name -> tooltip.add(Component.translatable(MODID + ".jade.aspect_fold.owner", name).withStyle(ChatFormatting.GRAY)));
             if (!data.getBooleanOr("open", false))
                 tooltip.add(Component.translatable(MODID + ".jade.aspect_fold.closed").withStyle(ChatFormatting.YELLOW));
             var aspects = data.getListOrEmpty("aspects");

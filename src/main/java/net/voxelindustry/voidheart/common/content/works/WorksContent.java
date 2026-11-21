@@ -62,6 +62,7 @@ public final class WorksContent
                 .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".officiant.lore"));
         MEMORIAM_LENS = VoidHeartItems.registerItem("memoriam_lens", properties -> new LoreItem(properties, MODID + ".memoriam_lens.lore"));
         WorksPayloads.register();
+        OfficiantFolds.register();
         ServerTickEvents.END_SERVER_TICK.register(WorksContent::keepLevels);
         ReckoningSync.register();
         VoidHeartTiles.registerTile(OFFICIANT_TILE = FabricBlockEntityTypeBuilder.create(OfficiantTile::new, OFFICIANT).build(), "officiant");

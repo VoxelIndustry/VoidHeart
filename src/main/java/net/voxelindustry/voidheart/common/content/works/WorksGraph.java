@@ -14,15 +14,45 @@ import java.util.Map;
 
 /**
  * A plan as the works view draws it, kept with an order so its progress can be shown: each kind with how many it needs and crafts and the recipe
- * making it, and what goes into what.
+ * making it, what goes into what, and the essence each kind's crafts drink.
  *
- * @param recipe  the recipe making it, empty for a kind taken from the hoard
- * @param station the station kind's ordinal, -1 for a kind taken from the hoard
+ * @param drinks the essence each made kind's crafts drink, by node
  */
-public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> essence)
+public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> essence, List<Drink> drinks)
 {
-    public static final WorksGraph EMPTY = new WorksGraph(List.of(), List.of(), Map.of());
+    public static final WorksGraph EMPTY = new WorksGraph(List.of(), List.of(), Map.of(), List.of());
 
+    /**
+     * @param aspect the aspect's id
+     */
+    public record Drink(int node, String aspect, long amount)
+    {
+        static final Codec<Drink> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.INT.fieldOf("node").forGetter(Drink::node),
+                Codec.STRING.fieldOf("aspect").forGetter(Drink::aspect),
+                Codec.LONG.fieldOf("amount").forGetter(Drink::amount)
+        ).apply(instance, Drink::new));
+
+        static final StreamCodec<RegistryFriendlyByteBuf, Drink> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, Drink::node,
+                ByteBufCodecs.STRING_UTF8, Drink::aspect,
+                ByteBufCodecs.VAR_LONG, Drink::amount,
+                Drink::new);
+    }
+
+    /**
+     * The graph with each drink as a leaf of its own after the kinds, feeding the kind that drinks it, for the works view to lay out.
+     *
+     * @param plan the nodes and the drink leaves, the drinks numbered from {@code nodes().size()}
+     */
+    public record Display(WorksPlan<Integer> plan, List<Drink> leaves)
+    {
+    }
+
+    /**
+     * @param recipe  the recipe making it, empty for a kind taken from the hoard
+     * @param station the station kind's ordinal, -1 for a kind taken from the hoard
+     */
     public record Node(ItemVariant item, long needed, long fromStock, long crafts, String recipe, int station, long lacking)
     {
         static final Codec<Node> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -69,13 +99,15 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
     public static final Codec<WorksGraph> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Node.CODEC.listOf().fieldOf("nodes").forGetter(WorksGraph::nodes),
             Edge.CODEC.listOf().fieldOf("edges").forGetter(WorksGraph::edges),
-            Codec.unboundedMap(Codec.STRING, Codec.LONG).optionalFieldOf("essence", Map.of()).forGetter(WorksGraph::essence)
+            Codec.unboundedMap(Codec.STRING, Codec.LONG).optionalFieldOf("essence", Map.of()).forGetter(WorksGraph::essence),
+            Drink.CODEC.listOf().optionalFieldOf("drinks", List.of()).forGetter(WorksGraph::drinks)
     ).apply(instance, WorksGraph::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, WorksGraph> STREAM_CODEC = StreamCodec.composite(
             Node.STREAM_CODEC.apply(ByteBufCodecs.list()), WorksGraph::nodes,
             Edge.STREAM_CODEC.apply(ByteBufCodecs.list()), WorksGraph::edges,
             ByteBufCodecs.map(LinkedHashMap::new, ByteBufCodecs.STRING_UTF8, ByteBufCodecs.VAR_LONG), graph -> new LinkedHashMap<>(graph.essence()),
+            Drink.STREAM_CODEC.apply(ByteBufCodecs.list()), WorksGraph::drinks,
             WorksGraph::new);
 
     public WorksGraph
@@ -83,6 +115,7 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
         nodes = List.copyOf(nodes);
         edges = List.copyOf(edges);
         essence = Map.copyOf(essence);
+        drinks = List.copyOf(drinks);
     }
 
     public static WorksGraph of(WorksPlan<ItemVariant> plan)
@@ -96,7 +129,31 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
                     node.isMade() ? node.recipe().station().ordinal() : -1, plan.lacking().getOrDefault(item, 0L)));
         });
         var edges = plan.edges().stream().map(edge -> new Edge(index.get(edge.product()), index.get(edge.ingredient()), edge.count())).toList();
-        return new WorksGraph(nodes, edges, plan.essence());
+        var drinks = new ArrayList<Drink>();
+        plan.nodes().forEach((item, node) ->
+        {
+            if (node.isMade())
+                node.recipe().essence().forEach((aspect, perCraft) -> drinks.add(new Drink(index.get(item), aspect, (long) perCraft * node.crafts())));
+        });
+        return new WorksGraph(nodes, edges, plan.essence(), drinks);
+    }
+
+    /**
+     * @return the graph with its drinks as leaves, for the works view
+     */
+    public Display display()
+    {
+        var plan = asPlan();
+        var planNodes = new LinkedHashMap<>(plan.nodes());
+        var planEdges = new ArrayList<>(plan.edges());
+        for (int leaf = 0; leaf < drinks.size(); leaf++)
+        {
+            var drink = drinks.get(leaf);
+            int id = nodes.size() + leaf;
+            planNodes.put(id, new WorksPlan.Node<>(id, drink.amount(), 0, 0, 0, null));
+            planEdges.add(new WorksPlan.Edge<>(drink.node(), id, drink.amount()));
+        }
+        return new Display(new WorksPlan<>(0, plan.count(), planNodes, planEdges, Map.of(), Map.of(), List.of()), drinks);
     }
 
     /**

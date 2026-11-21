@@ -22,6 +22,7 @@ public final class WorksSession
     private final int containerId;
     private int sentMakeable;
     private int sentJobs;
+    private int sentRoster;
 
     public WorksSession(ServerPlayer player, UUID owner, int containerId)
     {
@@ -63,6 +64,43 @@ public final class WorksSession
             sentJobs = jobs.hashCode();
             ServerPlayNetworking.send(player, jobs);
         }
+
+        var roster = roster();
+        if (first || roster.hashCode() != sentRoster)
+        {
+            sentRoster = roster.hashCode();
+            ServerPlayNetworking.send(player, roster);
+        }
+    }
+
+    /**
+     * Each of the owner's loaded Officiants, nearest first: its station, what it is doing, and for a forge what that build makes.
+     */
+    private WorksPayloads.Roster roster()
+    {
+        var server = player.level().getServer();
+        var catalogue = WorksCatalogues.of(server, owner, hoard());
+        var stations = new ArrayList<WorksPayloads.Station>();
+        var officiants = new ArrayList<>(OfficiantTile.loadedOf(owner));
+        officiants.sort(java.util.Comparator.comparing((OfficiantTile officiant) -> officiant.getLevel() != player.level())
+                .thenComparingDouble(officiant -> officiant.getBlockPos().distSqr(player.blockPosition())));
+        for (var officiant : officiants)
+        {
+            var kind = officiant.stationKind();
+            var claim = officiant.getClaim();
+            var making = "";
+            if (claim != null)
+            {
+                var recipes = catalogue.byId(claim.recipe());
+                making = recipes.isEmpty() ? claim.recipe() : recipes.getFirst().outputs().getFirst().item().toStack().getHoverName().getString();
+            }
+            int status = claim == null ? WorksPayloads.Station.IDLE : officiant.isLaying() ? WorksPayloads.Station.LAYING : WorksPayloads.Station.WORKING;
+            var makes = kind == StationKind.FORGE ? officiant.forgeRecipes().stream()
+                    .map(recipe -> ItemVariant.of(recipe.getRecipeOutputs(net.minecraft.world.item.ItemStack.class).getFirst().getRaw())).distinct().toList()
+                    : List.<ItemVariant>of();
+            stations.add(new WorksPayloads.Station(officiant.getBlockPos(), kind == null ? -1 : kind.ordinal(), status, making, makes));
+        }
+        return new WorksPayloads.Roster(containerId, stations);
     }
 
     private WorksPayloads.Jobs jobs()

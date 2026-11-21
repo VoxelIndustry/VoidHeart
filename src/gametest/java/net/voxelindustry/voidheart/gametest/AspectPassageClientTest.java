@@ -85,6 +85,7 @@ public class AspectPassageClientTest implements FabricClientGameTest
             checkContravoidAndClosed(server);
             checkRite(context, server);
             checkTwinFolds(context, server);
+            checkNetherForge(context, server);
             checkBreaking(context, server);
         }
     }
@@ -260,7 +261,111 @@ public class AspectPassageClientTest implements FabricClientGameTest
             expect(!closed.isOpen(), "a Fold far from any field is open");
             expect(closed.spaceFor(EssenceRegistry.FIERY) == 0 && closed.amountOf(EssenceRegistry.FIERY) == 0 && closed.extract(EssenceRegistry.FIERY, 10) == 0,
                     "a closed Fold still passes essence");
+
+            // Under a field holding 1,000, the toll is drawn: 1 for each 5 essence, 2 for each Contravoid, and no more is let in than it can pay
+            var original = net.voxelindustry.voidheart.common.energy.VoidEnergy.provider();
+            long[] pool = { 1_000 };
+            net.voxelindustry.voidheart.common.energy.VoidEnergy.install(new net.voxelindustry.voidheart.common.energy.VoidNetworkProvider()
+            {
+                @Override
+                public long available(ServerLevel level, BlockPos pos)
+                {
+                    return pos.equals(CLOSED_FOLD) ? pool[0] : original.available(level, pos);
+                }
+
+                @Override
+                public long draw(ServerLevel level, BlockPos pos, long amount)
+                {
+                    if (!pos.equals(CLOSED_FOLD))
+                        return original.draw(level, pos, amount);
+                    var taken = Math.min(amount, pool[0]);
+                    pool[0] -= taken;
+                    return taken;
+                }
+
+                @Override
+                public long offer(ServerLevel level, BlockPos pos, long amount)
+                {
+                    return original.offer(level, pos, amount);
+                }
+            });
+            try
+            {
+                expect(closed.isOpen(), "a Fold under a field is closed");
+                var fiery = closed.receive(EssenceRegistry.FIERY, 250);
+                expect(fiery == 250 && pool[0] == 950, "250 Fiery let in " + fiery + " and left " + pool[0] + " of 1,000");
+                var contravoid = closed.receive(EssenceRegistry.CONTRAVOID, 100);
+                expect(contravoid == 100 && pool[0] == 750, "100 Contravoid let in " + contravoid + " and left " + pool[0] + " of 950");
+                var more = closed.receive(EssenceRegistry.CONTRAVOID, 1_000);
+                expect(more == 375 && pool[0] == 0, "1,000 Contravoid on 750 energy let in " + more + " and left " + pool[0]);
+                expect(closed.receive(EssenceRegistry.FIERY, 10) == 0, "a Fold with nothing left to pay let essence in");
+            }
+            finally
+            {
+                net.voxelindustry.voidheart.common.energy.VoidEnergy.install(original);
+            }
         });
+    }
+
+    private static final BlockPos NETHER_FORGE = new BlockPos(0, 71, 0);
+    private static final net.minecraft.core.Direction NETHER_TRACK = net.minecraft.core.Direction.NORTH;
+    private static final int NETHER_PAIRS = 2;
+
+    /**
+     * In the Nether, a forge whose collectors are empty makes Seething Steel for its Officiant, its Fiery drawn from the reserve through a Fold.
+     */
+    private static void checkNetherForge(ClientGameTestContext context, TestServerContext server)
+    {
+        var source = net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeLayout.endSlot(NETHER_FORGE, NETHER_TRACK, NETHER_PAIRS);
+        var relay = NETHER_FORGE.above(4);
+        var netherFold = relay.east(2);
+        var before = server.computeOnServer(minecraft -> reserve(minecraft, EssenceRegistry.FIERY));
+        server.runOnServer(minecraft ->
+        {
+            var nether = minecraft.getLevel(net.minecraft.world.level.Level.NETHER);
+            for (int chunkX = -2; chunkX <= 1; chunkX++)
+                for (int chunkZ = -2; chunkZ <= 1; chunkZ++)
+                    nether.setChunkForced(chunkX, chunkZ, true);
+            for (var pos : BlockPos.betweenClosed(-14, 70, -14, 14, 82, 14))
+                nether.setBlock(pos, pos.getY() == 70 ? net.minecraft.world.level.block.Blocks.OBSIDIAN.defaultBlockState()
+                        : net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 2);
+            nether.setBlockAndUpdate(new BlockPos(0, 67, 0), CreativeEnergyContent.CREATIVE_VOID_WELL.defaultBlockState());
+
+            nether.setBlockAndUpdate(NETHER_FORGE, VoidHeartBlocks.SHATTER_FORGE.defaultBlockState()
+                    .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_AXIS, net.minecraft.core.Direction.Axis.Z));
+            for (var expected : net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeLayout.expected(NETHER_FORGE, NETHER_TRACK, NETHER_PAIRS))
+            {
+                var block = switch (expected.part())
+                {
+                    case CONDUIT -> VoidHeartBlocks.VOID_CONDUIT;
+                    case PILLAR -> VoidHeartBlocks.VOID_PILLAR;
+                    default -> VoidHeartBlocks.VOID_MONOLITH;
+                };
+                nether.setBlockAndUpdate(expected.pos(), block.defaultBlockState());
+            }
+            // Attuned but empty: whatever the forge drinks must come through the Fold
+            for (var spot : net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeLayout.optionalCollectors(NETHER_FORGE, NETHER_TRACK, NETHER_PAIRS))
+            {
+                nether.setBlockAndUpdate(spot, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
+                ((RavenousCollectorTile) nether.getBlockEntity(spot)).storage().attune(EssenceRegistry.FIERY);
+            }
+            nether.setBlockAndUpdate(relay, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
+            fold(nether, netherFold, minecraft);
+            nether.setBlockAndUpdate(source.below(), WorksContent.OFFICIANT.defaultBlockState());
+            ((OfficiantTile) nether.getBlockEntity(source.below())).setOwner(player(minecraft).getUUID());
+            hoard(minecraft).insert(ItemVariant.of(Items.IRON_INGOT), 1);
+        });
+        context.waitTicks(60);
+        server.runOnServer(minecraft ->
+        {
+            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), 1).plan();
+            expect(plan.isComplete() && plan.tasks().size() == 1, "the Nether forge's steel planned " + plan.tasks() + ", lacking " + plan.lacking());
+        });
+        waitFor(context, server, 1500, () -> "no Seething Steel came from the Nether forge; Fiery in the reserve "
+                        + server.computeOnServer(minecraft -> reserve(minecraft, EssenceRegistry.FIERY)) + " of " + before,
+                minecraft -> hoard(minecraft).count(ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT)) == 1);
+        server.runOnServer(minecraft -> expect(reserve(minecraft, EssenceRegistry.FIERY) < before,
+                "the forge drank nothing from the reserve: " + reserve(minecraft, EssenceRegistry.FIERY) + " of " + before));
     }
 
     /**

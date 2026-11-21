@@ -80,6 +80,7 @@ public class HoardClientTest implements FabricClientGameTest
             context.takeScreenshot("hoard-fold-and-coffer");
             context.getInput().pressKey(InputConstants.KEY_F1);
             checkHoardView(context, server);
+            checkCofferPool(context, server);
             kept = server.computeOnServer(minecraft -> hoard(minecraft).count(COBBLE));
             checkOverCapacity(server);
         }
@@ -101,6 +102,33 @@ public class HoardClientTest implements FabricClientGameTest
     private static PocketHoard.Hoard hoard(MinecraftServer minecraft)
     {
         return PocketHoard.get(minecraft).of(player(minecraft).getUUID());
+    }
+
+    /**
+     * The pocket's coffer, its hoard half full, shows a pool of rubrum in its lid's socket.
+     */
+    private static void checkCofferPool(ClientGameTestContext context, TestServerContext server)
+    {
+        var added = server.computeOnServer(minecraft ->
+        {
+            var hoard = hoard(minecraft);
+            return hoard.insert(DIRT, hoard.capacity() / 2 - hoard.total());
+        });
+        var coffer = server.computeOnServer(HoardClientTest::pocketCoffer);
+        server.runCommand("gamemode spectator @a");
+        server.runCommand("execute in voidheart:void run tp @a " + (coffer.getX() + 0.5) + " " + (coffer.getY() + 1.6) + " " + (coffer.getZ() - 0.9)
+                + " 0 60");
+        context.waitTicks(30);
+        var fill = context.computeOnClient(minecraft -> minecraft.level.getBlockEntity(coffer) instanceof net.voxelindustry.voidheart.common.content.hoard.HoardCofferTile tile
+                ? tile.getFill() : -1F);
+        expect(fill > 0.4F && fill < 0.6F, "the coffer shows a fill of " + fill + " with its hoard half full");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        context.takeScreenshot("hoard-coffer-pool");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        server.runOnServer(minecraft -> hoard(minecraft).extract(DIRT, added));
+        server.runCommand("gamemode creative @a");
+        server.runCommand("execute in minecraft:overworld run tp @a " + (FOLD.getX() + 0.5) + " " + FLAT_FEET + " " + (FOLD.getZ() - 2.5));
+        context.waitTicks(20);
     }
 
     private static BlockPos pocketCoffer(MinecraftServer minecraft)

@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.content.works;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -31,6 +32,13 @@ interface OfficiantStation
         }
     }
 
+    /**
+     * Where a fold opens for a step: the block it lies on, and the height above that block the item floats at.
+     */
+    record Fold(BlockPos pos, float rest)
+    {
+    }
+
     StationKind kind();
 
     /**
@@ -49,11 +57,34 @@ interface OfficiantStation
     boolean canSupply(Object source);
 
     /**
-     * Lays the ingredients out, in the order of the recipe's inputs, and starts the craft.
+     * Clears the station before a craft is laid out.
      *
-     * @return what was on the station before and must go back to the hoard
+     * @return what was on it before and must go back to the hoard
      */
-    List<ItemStack> begin(UUID owner, String recipeId, Object source, List<ItemStack> ingredients);
+    List<ItemStack> clear();
+
+    /**
+     * @return how many steps laying these ingredients out takes, one item each where the station shows them
+     */
+    int steps(List<ItemStack> ingredients);
+
+    /**
+     * Lays one step out; the last starts the craft.
+     *
+     * @param ingredients all of the craft's ingredients, in the order of the recipe's inputs
+     * @return what comes straight back to the hoard, such as a table's result
+     */
+    List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients);
+
+    /**
+     * @return where the fold of a step opens
+     */
+    Fold foldOf(int step, int steps);
+
+    /**
+     * @return where the fold taking the result back opens
+     */
+    Fold resultFold();
 
     /**
      * @param waited ticks since the craft was laid out, after which one that never started is taken back

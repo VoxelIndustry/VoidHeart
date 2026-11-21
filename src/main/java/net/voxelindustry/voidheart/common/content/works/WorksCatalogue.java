@@ -136,7 +136,9 @@ public final class WorksCatalogue
                 continue;
             }
 
-            // A rite changing the item it is given is offered for each such item held
+            // A rite changing the item it is given is offered for each such item held. Its source is known whatever is held, so a craft already
+            // begun still finds it once its item has left the hoard
+            sources.putIfAbsent(id, recipe);
             for (var held : hoard.keySet())
             {
                 var stack = held.toStack();

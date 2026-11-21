@@ -86,6 +86,8 @@ public class HoardMenu extends AbstractContainerMenu
     private List<WorksPayloads.Job> jobs = List.of();
     @Getter
     private List<WorksPayloads.Kept> keeps = List.of();
+    @Getter
+    private List<WorksPayloads.Station> roster = List.of();
 
     public HoardMenu(int containerId, Inventory inventory, Opening opening)
     {
@@ -177,6 +179,11 @@ public class HoardMenu extends AbstractContainerMenu
     public void receive(WorksPayloads.Plan plan)
     {
         this.plan = plan;
+    }
+
+    public void receive(WorksPayloads.Roster roster)
+    {
+        this.roster = List.copyOf(roster.stations());
     }
 
     public void receive(WorksPayloads.Jobs jobs)

@@ -15,6 +15,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.client.render.OfficiantFoldRender;
+import net.voxelindustry.voidheart.common.content.works.OfficiantFolds;
 import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
@@ -34,12 +36,14 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
 import java.util.List;
+import java.util.UUID;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
  * Officiants work stations from the hoard for what is ordered: a crafting table cuts ender pearls into shards, a Void Pearl ordered from raw
- * obsidian and an ender pearl is made through the table and the altar, and a forge pinned by its Officiant makes Seething Steel.
+ * obsidian and an ender pearl is made through the table and the altar, and a forge pinned by its Officiant makes Seething Steel. Each item comes up
+ * through a small fold opened over its pillar, one at a time, the catalyst last, and the result sinks back through one.
  */
 public class OfficiantClientTest implements FabricClientGameTest
 {
@@ -53,6 +57,10 @@ public class OfficiantClientTest implements FabricClientGameTest
     private static final Direction TRACK = Direction.NORTH;
     private static final int TRACK_PAIRS = 2;
     private static final BlockPos SOURCE = ShatterForgeLayout.endSlot(FORGE, TRACK, TRACK_PAIRS);
+    private static final BlockPos ABSENT_TABLE = new BlockPos(8, FLAT_FEET, -10);
+    private static final BlockPos ESSENCE_RELAY = new BlockPos(0, FLAT_FEET, 3);
+    private static final BlockPos ESSENCE_FOLD  = new BlockPos(2, FLAT_FEET, 3);
+    private static final UUID ABSENT_OWNER = UUID.fromString("5a1d0c3e-0000-4000-8000-0000000000f1");
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -72,6 +80,10 @@ public class OfficiantClientTest implements FabricClientGameTest
             checkTable(context, server);
             checkAltarChain(context, server);
             checkForge(context, server);
+            checkFullHoard(context, server);
+            checkBrokenMidLaying(context, server);
+            checkOfflineOwner(context, server);
+            checkTransform(context, server);
         }
     }
 
@@ -147,6 +159,10 @@ public class OfficiantClientTest implements FabricClientGameTest
             var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.ENDER_SHARD), 4).plan();
             expect(plan.isComplete() && plan.tasks().size() == 1, "the ender shards planned " + plan.tasks() + ", lacking " + plan.lacking());
         });
+        aimFrom(context, server, TABLE.getX() + 0.5, FLAT_FEET + 1.2, TABLE.getZ() - 2.2, TABLE.getX() + 0.5, FLAT_FEET + 1, TABLE.getZ() + 0.5, 1);
+        waitForFold(context, OfficiantFolds.PASS, 200, "the table's Officiant opened no fold");
+        context.waitTicks(7);
+        shot(context, "officiant-table-pass");
         waitFor(context, server, 200, "the table's Officiant made no ender shards", minecraft -> held(minecraft, VoidHeartItems.ENDER_SHARD) >= 4);
         // The order goes once the Officiant sees its craft finished
         waitFor(context, server, 40, "the order is still queued", minecraft -> WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty());
@@ -172,13 +188,32 @@ public class OfficiantClientTest implements FabricClientGameTest
             expect(plan.isComplete(), "the Void Pearl plan lacks " + plan.lacking());
         });
 
-        aimFrom(context, server, ALTAR.getX() + 0.5, FLAT_FEET + 2, ALTAR.getZ() - 6.5, ALTAR.getX() + 0.5, FLAT_FEET + 0.5, ALTAR.getZ() + 0.5, 5);
+        aimFrom(context, server, ALTAR.getX() + 0.5, FLAT_FEET + 2.2, ALTAR.getZ() - 5.5, ALTAR.getX() + 0.5, FLAT_FEET + 0.8, ALTAR.getZ() + 0.5, 5);
+
+        // The pillars fill one at a time, the catalyst last
+        waitForFold(context, OfficiantFolds.LAY, 900, "the altar's Officiant opened no fold");
+        context.waitTicks(4);
+        shot(context, "officiant-fold-first");
+        server.runOnServer(minecraft ->
+        {
+            var filled = pillarsFilled(minecraft);
+            expect(filled >= 1 && filled < 8, filled + " pillars filled as the first folds opened");
+            expect(altar(minecraft).getStack().isEmpty(), "the catalyst was laid before the pillars");
+        });
+        context.waitTicks(12);
+        shot(context, "officiant-folds-laying");
+        waitFor(context, server, 80, "the catalyst never reached the altar", minecraft -> !altar(minecraft).getStack().isEmpty());
+        server.runOnServer(minecraft -> expect(pillarsFilled(minecraft) == 8, "the catalyst came before the last pillar"));
+        context.waitTicks(6);
+        shot(context, "officiant-catalyst-rising");
+
         waitFor(context, server, 600, "the altar never started the Void Pearl", minecraft -> altar(minecraft).isCrafting());
-        context.getInput().pressKey(InputConstants.KEY_F1);
-        context.takeScreenshot("officiant-altar-rite");
-        context.getInput().pressKey(InputConstants.KEY_F1);
+        shot(context, "officiant-altar-rite");
 
         waitFor(context, server, 2000, "no Void Pearl reached the hoard", minecraft -> held(minecraft, VoidHeartItems.VOID_PEARL) == 1);
+        waitForFold(context, OfficiantFolds.TAKE, 40, "no fold took the Void Pearl back");
+        context.waitTicks(7);
+        shot(context, "officiant-fold-take");
         server.runOnServer(minecraft ->
         {
             expect(held(minecraft, Items.OBSIDIAN) == 0 && held(minecraft, Items.ENDER_PEARL) == 0, "raw materials left in the hoard: " + hoard(minecraft).view());
@@ -199,6 +234,180 @@ public class OfficiantClientTest implements FabricClientGameTest
         });
         waitFor(context, server, 900, "no Seething Steel reached the hoard", minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);
         server.runOnServer(minecraft -> expect(held(minecraft, Items.IRON_INGOT) == 0, "the iron is still in the hoard"));
+    }
+
+    /**
+     * With the hoard full, the table's Officiant holds the shards that do not fit and puts them in once there is room.
+     */
+    private static void checkFullHoard(ClientGameTestContext context, TestServerContext server)
+    {
+        var cobble = ItemVariant.of(Items.COBBLESTONE);
+        // The Void Pearl before left some shards behind
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), held(minecraft, VoidHeartItems.ENDER_SHARD));
+            hoard(minecraft).insert(ItemVariant.of(Items.ENDER_PEARL), 1);
+            hoard(minecraft).insert(cobble, hoard(minecraft).room());
+            expect(hoard(minecraft).room() == 0, "the hoard still has room for " + hoard(minecraft).room());
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.ENDER_SHARD), 4);
+        });
+        waitFor(context, server, 200, "the table's Officiant never held what did not fit", minecraft -> heldBy(minecraft, TABLE.below()) == 3);
+        server.runOnServer(minecraft -> expect(held(minecraft, VoidHeartItems.ENDER_SHARD) == 1, "the hoard took " + held(minecraft, VoidHeartItems.ENDER_SHARD) + " shards"));
+        server.runOnServer(minecraft -> hoard(minecraft).extract(cobble, 10));
+        waitFor(context, server, 200, "the held shards never went in once there was room", minecraft -> held(minecraft, VoidHeartItems.ENDER_SHARD) == 4);
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).extract(cobble, held(minecraft, Items.COBBLESTONE));
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), 4);
+        });
+    }
+
+    private static int heldBy(MinecraftServer minecraft, BlockPos officiant)
+    {
+        return minecraft.overworld().getBlockEntity(officiant) instanceof OfficiantTile tile
+                ? tile.heldItems().stream().mapToInt(ItemStack::getCount).sum() : -1;
+    }
+
+    /**
+     * Broken while laying a Void Pearl out, the altar's Officiant gives back what it had not laid yet, and the craft counts again.
+     */
+    private static void checkBrokenMidLaying(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.ENDER_SHARD), 1);
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.OBSIDIAN_SHARD), 8);
+            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.VOID_PEARL), 1).plan();
+            expect(plan.tasks().size() == 1, "the Void Pearl from shards planned " + plan.tasks());
+        });
+        waitFor(context, server, 600, "the altar's Officiant never got three pillars in",
+                minecraft -> minecraft.overworld().getBlockEntity(ALTAR.below()) instanceof OfficiantTile tile && tile.isLaying() && tile.layingStep() >= 3);
+        server.runOnServer(minecraft ->
+        {
+            minecraft.overworld().destroyBlock(ALTAR.below(), false);
+            var onPillars = pillarsFilled(minecraft);
+            expect(onPillars >= 3 && onPillars < 8, onPillars + " pillars were filled when the Officiant broke");
+            expect(held(minecraft, VoidHeartItems.OBSIDIAN_SHARD) == 8 - onPillars, "the hoard got back " + held(minecraft, VoidHeartItems.OBSIDIAN_SHARD)
+                    + " obsidian shards with " + onPillars + " on the pillars");
+            expect(held(minecraft, VoidHeartItems.ENDER_SHARD) == 1, "the unlaid catalyst did not come back");
+            var jobs = WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs();
+            expect(jobs.size() == 1 && jobs.getFirst().tasks().getFirst().remaining() == 1 && jobs.getFirst().tasks().getFirst().working() == 0,
+                    "the broken craft was not counted again: " + jobs);
+
+            // Put things back for what follows
+            WorksState.get(minecraft).edit(player(minecraft).getUUID()).cancel(jobs.getFirst().id());
+            for (var offset : PILLARS)
+                if (minecraft.overworld().getBlockEntity(ALTAR.offset(offset)) instanceof net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile pillar)
+                    pillar.setStack(ItemStack.EMPTY);
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.OBSIDIAN_SHARD), 8);
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), 1);
+            officiant(minecraft.overworld(), ALTAR.below(), minecraft);
+        });
+        context.waitTicks(25);
+    }
+
+    /**
+     * An Officiant works for its owner while they are not in the game: its own pocket, hoard and orders.
+     */
+    private static void checkOfflineOwner(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var pockets = VoidPocketState.getVoidPocketState(minecraft.overworld());
+            var voidLevel = minecraft.getLevel(VoidHeart.VOID_WORLD_KEY);
+            pockets.createPocket(voidLevel, ABSENT_OWNER);
+            var coffer = pockets.getHeartData(ABSENT_OWNER).pocketPos().offset(3, 0, 3);
+            voidLevel.setBlockAndUpdate(coffer, HoardContent.HOARD_COFFER.defaultBlockState());
+            ((HoardCofferTile) voidLevel.getBlockEntity(coffer)).setBundle(new ItemStack(CrystalBundles.bundle(CrystalKind.RUBRUM, BundleSize.SMALL)));
+
+            var level = minecraft.overworld();
+            level.setBlockAndUpdate(ABSENT_TABLE, Blocks.CRAFTING_TABLE.defaultBlockState());
+            level.setBlockAndUpdate(ABSENT_TABLE.below(), WorksContent.OFFICIANT.defaultBlockState());
+            ((OfficiantTile) level.getBlockEntity(ABSENT_TABLE.below())).setOwner(ABSENT_OWNER);
+            PocketHoard.get(minecraft).of(ABSENT_OWNER).insert(ItemVariant.of(Items.ENDER_PEARL), 1);
+        });
+        context.waitTicks(25);
+        server.runOnServer(minecraft ->
+        {
+            expect(minecraft.getPlayerList().getPlayer(ABSENT_OWNER) == null, "the absent owner is in the game");
+            var plan = WorksContent.order(minecraft, ABSENT_OWNER, ItemVariant.of(VoidHeartItems.ENDER_SHARD), 4).plan();
+            expect(plan.isComplete(), "the absent owner's shards plan lacks " + plan.lacking());
+        });
+        waitFor(context, server, 200, "the absent owner's Officiant made no shards",
+                minecraft -> PocketHoard.get(minecraft).of(ABSENT_OWNER).count(ItemVariant.of(VoidHeartItems.ENDER_SHARD)) == 4);
+    }
+
+    /**
+     * A transform ordered from the hoard: the lesser apparatus held is laid as the catalyst, the rite drinks its Stillness through an Aspect Fold, and
+     * the greater apparatus comes back.
+     */
+    private static void checkTransform(ClientGameTestContext context, TestServerContext server)
+    {
+        var greater = new ItemVariant[1];
+        server.runOnServer(minecraft ->
+        {
+            Knowledge.lockOf(minecraft.registryAccess(), id("altar/greater_shielding_apparatus")).ifPresent(knowledge(minecraft)::grant);
+            var hoard = hoard(minecraft);
+            hoard.insert(ItemVariant.of(VoidHeartItems.LESSER_SHIELDING_APPARATUS), 1);
+            hoard.insert(ItemVariant.of(VoidHeartItems.RAVENOUS_GOLD_INGOT), 3);
+            hoard.insert(ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), 2);
+            hoard.insert(ItemVariant.of(VoidHeartItems.VOID_PEARL), 2);
+            hoard.insert(ItemVariant.of(CrystalBundles.shard(CrystalKind.AZURIUM)), 1);
+            // Stillness for the rite, in the reserve, through a Fold beside the altar's relay
+            hoard.addVessel(new net.voxelindustry.voidheart.common.content.hoard.PocketReserve.SlotId(0, 0), EssenceRegistry.STILLNESS, 32_000, 4_000);
+            var level = minecraft.overworld();
+            level.setBlockAndUpdate(ESSENCE_RELAY, VoidHeartBlocks.RAVENOUS_RELAY.defaultBlockState());
+            level.setBlockAndUpdate(ESSENCE_FOLD, HoardContent.ASPECT_FOLD.defaultBlockState());
+            ((net.voxelindustry.voidheart.common.content.hoard.AspectFoldTile) level.getBlockEntity(ESSENCE_FOLD)).setOwner(player(minecraft).getUUID());
+
+            var catalogue = net.voxelindustry.voidheart.common.content.works.WorksCatalogues.of(minecraft, player(minecraft).getUUID(), hoard);
+            greater[0] = catalogue.outputs().stream().filter(variant -> variant.getItem() == VoidHeartItems.GREATER_SHIELDING_APPARATUS).findFirst().orElse(null);
+            expect(greater[0] != null, "the greater apparatus is not makeable from the lesser one held");
+        });
+        context.waitTicks(45);
+        server.runOnServer(minecraft ->
+        {
+            var plan = WorksContent.order(minecraft, player(minecraft).getUUID(), greater[0], 1).plan();
+            expect(plan.isComplete() && plan.tasks().size() == 1, "the greater apparatus planned " + plan.tasks() + ", lacking " + plan.lacking());
+        });
+        waitFor(context, server, 2500, () -> "no greater apparatus came back; " + server.computeOnServer(minecraft ->
+                        "Stillness left " + hoard(minecraft).reserve().amountOf(EssenceRegistry.STILLNESS)
+                        + ", jobs " + WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs()
+                        + ", officiant claim " + ((OfficiantTile) minecraft.overworld().getBlockEntity(ALTAR.below())).getClaim()
+                        + ", altar crafting " + altar(minecraft).isCrafting() + " vacant " + altar(minecraft).isVacant() + " stack " + altar(minecraft).getStack()
+                        + ", suppliers " + net.voxelindustry.voidheart.common.content.essence.RelayNetwork.suppliersOfReceiver(minecraft.overworld(), ALTAR, EssenceRegistry.STILLNESS).size()
+                        + ", pillars " + pillarsFilled(minecraft) + ", hoard " + hoard(minecraft).view()),
+                minecraft -> hoard(minecraft).view().keySet().stream().anyMatch(variant -> variant.getItem() == VoidHeartItems.GREATER_SHIELDING_APPARATUS));
+        server.runOnServer(minecraft ->
+        {
+            expect(held(minecraft, VoidHeartItems.LESSER_SHIELDING_APPARATUS) == 0, "the lesser apparatus is still in the hoard");
+            expect(hoard(minecraft).reserve().amountOf(EssenceRegistry.STILLNESS) == 2_000, "the rite drank "
+                    + (4_000 - hoard(minecraft).reserve().amountOf(EssenceRegistry.STILLNESS)) + " Stillness");
+        });
+    }
+
+    private static int pillarsFilled(MinecraftServer minecraft)
+    {
+        return (int) PILLARS.stream().filter(offset -> minecraft.overworld().getBlockEntity(ALTAR.offset(offset))
+                instanceof net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile pillar && !pillar.getStack().isEmpty()).count();
+    }
+
+    private static void waitForFold(ClientGameTestContext context, int kind, int maxTicks, String message)
+    {
+        for (int tick = 0; tick < maxTicks; tick++)
+        {
+            if (context.computeOnClient(minecraft -> OfficiantFoldRender.open(kind)) > 0)
+                return;
+            context.waitTick();
+        }
+        throw new AssertionError(message);
+    }
+
+    private static void shot(ClientGameTestContext context, String name)
+    {
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        context.takeScreenshot(name);
+        context.getInput().pressKey(InputConstants.KEY_F1);
     }
 
     private static net.voxelindustry.voidheart.common.content.altar.VoidAltarTile altar(MinecraftServer minecraft)

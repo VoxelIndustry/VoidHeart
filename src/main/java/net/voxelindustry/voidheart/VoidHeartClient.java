@@ -191,6 +191,8 @@ public class VoidHeartClient implements ClientModInitializer
                 pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
         BlockEntityRenderers.register(VoidHeartTiles.BLESSED_CRADLE, ctx -> new FloatingItemRender<BlessedCradleTile>(ctx, BlessedCradleTile::getContents, 0.85));
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
+        BlockEntityRenderers.register(net.voxelindustry.voidheart.common.content.hoard.HoardContent.HOARD_COFFER_TILE,
+                net.voxelindustry.voidheart.client.render.HoardCofferRender::new);
         // The tool floats where the void altar's item does, the mending altar being its shape in amber
         BlockEntityRenderers.register(VoidHeartTiles.MENDING_ALTAR, ctx -> new FloatingItemRender<MendingAltarTile>(ctx, MendingAltarTile::getTool, 1 + 2 / 16D));
         BlockEntityRenderers.register(VoidHeartTiles.DORMANT_TREANT, DormantTreantRender::new);
@@ -275,6 +277,11 @@ public class VoidHeartClient implements ClientModInitializer
             if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())
                 menu.receive(payload);
         });
+        ClientPlayNetworking.registerGlobalReceiver(WorksPayloads.Roster.TYPE, (payload, context) ->
+        {
+            if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())
+                menu.receive(payload);
+        });
         ShieldingApparatusItem.openFromSlot = holder -> ClientPlayNetworking.send(new ShieldPayloads.Open(holder));
         ClientTooltipComponentCallback.EVENT.register(data -> data instanceof ApparatusTooltip tooltip ? new ClientApparatusTooltip(tooltip) : null);
         ModelLayerRegistry.registerModelLayer(ApparatusWornRender.LAYER, ApparatusWornRender::createLayer);
@@ -351,6 +358,11 @@ public class VoidHeartClient implements ClientModInitializer
         ClientPlayNetworking.registerGlobalReceiver(WorksPayloads.Shown.TYPE, net.voxelindustry.voidheart.client.render.oculus.ReckoningHologram::receive);
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register(
                 (handler, client) -> net.voxelindustry.voidheart.client.render.oculus.ReckoningHologram.clear());
+        LevelRenderEvents.COLLECT_SUBMITS.register(net.voxelindustry.voidheart.client.render.OfficiantFoldRender::collectSubmits);
+        ClientPlayNetworking.registerGlobalReceiver(net.voxelindustry.voidheart.common.content.works.OfficiantFolds.Payload.TYPE,
+                net.voxelindustry.voidheart.client.render.OfficiantFoldRender::receive);
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register(
+                (handler, client) -> net.voxelindustry.voidheart.client.render.OfficiantFoldRender.clear());
         ClientPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Markers.TYPE, OculusMarkers::receive);
 
         ClientPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Sections.TYPE, OculusRenderer::receiveSections);

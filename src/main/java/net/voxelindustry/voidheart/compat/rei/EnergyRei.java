@@ -68,6 +68,20 @@ public final class EnergyRei
 
         page(CreativeEnergyContent.CREATIVE_VOID_WELL, null, line("creative_void_well", FoundationBalance.CREATIVE_WELL_RADIUS));
         page(CreativeEnergyContent.CREATIVE_LEY_STONE, null, line("creative_ley_stone", FoundationBalance.CREATIVE_LEY_STONE_RADIUS));
+
+        // The Hoard and its works
+        page(net.voxelindustry.voidheart.common.content.hoard.HoardContent.HOARD_COFFER, "pocket_hoard", line("hoard_coffer",
+                amount(net.voxelindustry.voidheart.common.content.hoard.HoardBalance.cofferCapacity(net.voxelindustry.voidheart.common.content.crystal.BundleSize.SMALL)),
+                amount(net.voxelindustry.voidheart.common.content.hoard.HoardBalance.cofferCapacity(net.voxelindustry.voidheart.common.content.crystal.BundleSize.MEDIUM)),
+                amount(net.voxelindustry.voidheart.common.content.hoard.HoardBalance.cofferCapacity(net.voxelindustry.voidheart.common.content.crystal.BundleSize.LARGE))));
+        page(net.voxelindustry.voidheart.common.content.hoard.HoardContent.FOLD, "pocket_hoard",
+                line("fold", net.voxelindustry.voidheart.common.content.hoard.HoardBalance.FOLD_COST_PER_ITEM));
+        page(net.voxelindustry.voidheart.common.content.works.WorksContent.OFFICIANT, "officiants",
+                line("officiant", amount(net.voxelindustry.voidheart.common.content.works.WorksBalance.ITEM_COST)));
+        page(net.voxelindustry.voidheart.common.content.works.WorksContent.MEMORIAM_LENS, "officiants", line("memoriam_lens"));
+        page(net.voxelindustry.voidheart.common.content.hoard.HoardContent.ASPECT_FOLD, "aspect_passage",
+                line("aspect_fold", net.voxelindustry.voidheart.common.content.hoard.HoardBalance.ESSENCE_PER_ENERGY,
+                        net.voxelindustry.voidheart.common.content.hoard.HoardBalance.CONTRAVOID_ENERGY_PER_ESSENCE));
     }
 
     /**

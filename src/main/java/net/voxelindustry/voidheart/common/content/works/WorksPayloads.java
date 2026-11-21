@@ -206,6 +206,44 @@ public final class WorksPayloads
                 Kept::new);
     }
 
+    /**
+     * One Officiant of the owner's that is loaded.
+     *
+     * @param station the station kind's ordinal, -1 when it stands under nothing it serves
+     * @param status  {@link #IDLE}, {@link #LAYING} or {@link #WORKING}
+     * @param making  what its craft makes, empty while idle
+     * @param makes   what the forge it serves can make with its build, empty for other stations
+     */
+    public record Station(net.minecraft.core.BlockPos pos, int station, int status, String making, List<ItemVariant> makes)
+    {
+        public static final int IDLE    = 0;
+        public static final int LAYING  = 1;
+        public static final int WORKING = 2;
+
+        static final StreamCodec<RegistryFriendlyByteBuf, Station> STREAM_CODEC = StreamCodec.composite(
+                net.minecraft.core.BlockPos.STREAM_CODEC, Station::pos,
+                ByteBufCodecs.VAR_INT, Station::station,
+                ByteBufCodecs.VAR_INT, Station::status,
+                ByteBufCodecs.STRING_UTF8, Station::making,
+                ItemVariant.PACKET_CODEC.apply(ByteBufCodecs.list()), Station::makes,
+                Station::new);
+    }
+
+    public record Roster(int containerId, List<Station> stations) implements CustomPacketPayload
+    {
+        public static final Type<Roster> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "works_roster"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, Roster> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, Roster::containerId,
+                Station.STREAM_CODEC.apply(ByteBufCodecs.list()), Roster::stations,
+                Roster::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type()
+        {
+            return TYPE;
+        }
+    }
+
     public record Jobs(int containerId, List<Job> jobs, List<Kept> keeps) implements CustomPacketPayload
     {
         public static final Type<Jobs> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "works_jobs"));
@@ -238,6 +276,7 @@ public final class WorksPayloads
         PayloadTypeRegistry.clientboundPlay().register(Plan.TYPE, Plan.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Jobs.TYPE, Jobs.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Shown.TYPE, Shown.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Roster.TYPE, Roster.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(AskPlan.TYPE, AskPlan.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Begin.TYPE, Begin.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Cancel.TYPE, Cancel.STREAM_CODEC);

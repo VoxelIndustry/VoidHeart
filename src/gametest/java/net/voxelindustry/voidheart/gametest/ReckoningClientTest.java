@@ -77,6 +77,8 @@ public class ReckoningClientTest implements FabricClientGameTest
             checkPlan(context, server);
             checkOrder(context, server);
             checkKeep(context, server);
+            checkEssencePlan(context, server);
+            checkRoster(context, server);
             checkHoardTab(context, server);
             takeLensBack(context, server);
             server.runCommand("gamemode creative @a");
@@ -232,12 +234,40 @@ public class ReckoningClientTest implements FabricClientGameTest
         hover(context, onScreen(context, screen -> screen.nodeCenter(shard)));
         shot(context, "reckoning-plan");
 
+        // The wheel zooms the graph and dragging pans it, and the plates are still aimed at where they are drawn
+        var center = onScreen(context, HoardScreen::worksRegionCenter);
+        hover(context, center);
+        context.getInput().scroll(1);
+        context.getInput().scroll(1);
+        context.waitTicks(2);
+        var zoom = onScreen(context, HoardScreen::worksZoom);
+        expect(zoom > 1.3F, "two notches zoomed the graph to " + zoom);
+        double scale = context.computeOnClient(minecraft -> minecraft.getWindow().getGuiScale());
+        context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(1);
+        context.getInput().moveCursor(-24 * scale, -12 * scale);
+        context.waitTicks(2);
+        context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
+        var pan = onScreen(context, HoardScreen::worksPan);
+        expect(pan[0] < -10 && pan[1] < -4, "dragging panned the graph to " + pan[0] + ", " + pan[1]);
+        hover(context, onScreen(context, screen -> screen.nodeCenter(shard)));
+        shot(context, "reckoning-plan-zoomed");
+        expect(onScreen(context, screen -> screen.getMenu().getPlan() != null), "panning lost the plan");
+        hover(context, center);
+        context.getInput().scroll(-1);
+        context.getInput().scroll(-1);
+        context.waitTicks(2);
+
         clickControl(context, "more");
         waitOnScreen(context, 40, "no plan came for two Void Pearls", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().count() == 2);
         var lacking = onScreen(context, screen -> screen.getMenu().getPlan().graph().nodes().stream().filter(node -> node.lacking() > 0).count());
         expect(lacking > 0, "two Void Pearls lack nothing from one ender pearl");
         hover(context, new int[] { 2, 2 });
         shot(context, "reckoning-plan-lacking");
+        // Hovered, the whisper lists everything the plan lacks
+        hover(context, onScreen(context, HoardScreen::whisperCenter));
+        shot(context, "reckoning-lacking-list");
         clickControl(context, "less");
         waitOnScreen(context, 40, "the plan did not go back to one", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().count() == 1);
     }
@@ -323,6 +353,46 @@ public class ReckoningClientTest implements FabricClientGameTest
         waitOnScreen(context, 40, "the keep was not lifted", screen -> screen.getMenu().getKeeps().isEmpty());
         server.runOnServer(minecraft -> expect(WorksState.get(minecraft).owner(player(minecraft).getUUID()).keeps().isEmpty(), "the server still keeps a level"));
         clickControl(context, "back");
+    }
+
+    /**
+     * A Fold planned from the hoard drinks Stillness, drawn as a leaf of the graph in the aspect's colour.
+     */
+    private static void checkEssencePlan(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            Knowledge.lockOf(minecraft.registryAccess(), id("altar/fold")).ifPresent(knowledge(minecraft)::grant);
+            hoard(minecraft).insert(ItemVariant.of(Items.HOPPER), 1);
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.COVETOUS_COPPER_INGOT), 4);
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.VOID_PEARL), 1);
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.ENDER_SHARD), 2);
+            hoard(minecraft).insert(ItemVariant.of(net.voxelindustry.voidheart.common.content.crystal.CrystalBundles.shard(CrystalKind.AZURIUM)), 1);
+        });
+        var fold = ItemVariant.of(net.voxelindustry.voidheart.common.content.hoard.HoardContent.FOLD);
+        waitOnScreen(context, 60, "the Fold never became makeable", screen -> screen.getMenu().getMakeable().contains(fold));
+        click(context, onScreen(context, screen -> screen.makeableCenter(fold)));
+        waitOnScreen(context, 40, "no plan came for the Fold", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().item().equals(fold));
+        var graph = onScreen(context, screen -> screen.getMenu().getPlan().graph());
+        var count = onScreen(context, screen -> screen.getMenu().getPlan().count());
+        expect(graph.drinks().size() == 1 && graph.drinks().getFirst().aspect().equals("voidheart:stillness") && graph.drinks().getFirst().amount() == 1_500 * count,
+                "the plan for " + count + " Folds drinks " + graph.drinks());
+        hover(context, onScreen(context, screen -> screen.nodeCenter(graph.nodes().size())));
+        shot(context, "reckoning-plan-essence");
+        clickControl(context, "back");
+    }
+
+    /**
+     * The roster lists both Officiants: the table's and the altar's.
+     */
+    private static void checkRoster(ClientGameTestContext context, TestServerContext server)
+    {
+        clickControl(context, "stations");
+        waitOnScreen(context, 60, "the roster never listed both Officiants", screen -> screen.getMenu().getRoster().size() == 2);
+        hover(context, new int[] { 2, 2 });
+        shot(context, "reckoning-roster");
+        clickControl(context, "back");
+        expect(onScreen(context, screen -> screen.makeableCenter(PEARL) != null), "going back from the roster did not list what can be made");
     }
 
     /**

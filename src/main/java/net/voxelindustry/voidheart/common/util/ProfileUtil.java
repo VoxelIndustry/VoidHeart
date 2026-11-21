@@ -39,6 +39,17 @@ public class ProfileUtil
                 .orElse(profile);
     }
 
+    /**
+     * @return a player's name if the server knows it without asking Mojang: online, or in its user cache
+     */
+    public static java.util.Optional<String> cachedName(MinecraftServer server, UUID playerID)
+    {
+        var player = server.getPlayerList().getPlayer(playerID);
+        if (player != null)
+            return java.util.Optional.of(player.getGameProfile().name());
+        return server.services().nameToIdCache().get(playerID).map(cached -> cached.name());
+    }
+
     public static String getName(ResolvableProfile profile)
     {
         return profile.name().orElse("");

@@ -24,6 +24,14 @@ final class Stations
 {
     /** How long a laid out craft may wait to start before it is taken back. */
     static final int START_TIMEOUT_TICKS = 200;
+    /** How long a crafting table rests after a craft, about as long as the fold showing it. */
+    static final int TABLE_REST_TICKS = 20;
+
+    /** Heights above their block that items float at: a pillar's, a forge source pillar's, the altar's catalyst, a table's result. */
+    static final float PILLAR_REST       = 1.1F;
+    static final float FORGE_SOURCE_REST = 1.2F;
+    static final float ALTAR_REST        = 1 + 2 / 16F;
+    static final float TABLE_REST        = 1.25F;
 
     private Stations()
     {
@@ -52,7 +60,7 @@ final class Stations
                 && level.getBlockEntity(pillar.getSourceOfForge()) instanceof ShatterForgeTile forge)
             return new Forge(forge, pillar);
         if (level.getBlockState(top).is(Blocks.CRAFTING_TABLE))
-            return new Table(level);
+            return new Table(level, top);
         return null;
     }
 
@@ -83,11 +91,10 @@ final class Stations
         }
 
         @Override
-        public List<ItemStack> begin(UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public List<ItemStack> clear()
         {
             var strays = new ArrayList<ItemStack>();
-            var pillars = altar.pillarsAround();
-            for (var pillar : pillars)
+            for (var pillar : altar.pillarsAround())
             {
                 if (!pillar.getStack().isEmpty())
                 {
@@ -95,11 +102,40 @@ final class Stations
                     pillar.setStack(ItemStack.EMPTY);
                 }
             }
-            // Ingredients first, catalyst last, so a rite never starts as a smaller recipe sharing its catalyst
-            for (int index = 1; index < ingredients.size(); index++)
-                pillars.get(index - 1).setStack(ingredients.get(index));
-            altar.layCatalyst(owner, ingredients.getFirst(), net.minecraft.resources.Identifier.parse(recipeId));
             return strays;
+        }
+
+        @Override
+        public int steps(List<ItemStack> ingredients)
+        {
+            return ingredients.size();
+        }
+
+        /**
+         * One pillar each step, the catalyst last, so a rite never starts as a smaller recipe sharing its catalyst.
+         */
+        @Override
+        public List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        {
+            if (step < ingredients.size() - 1)
+                altar.pillarsAround().get(step).setStack(ingredients.get(step + 1));
+            else
+                altar.layCatalyst(owner, ingredients.getFirst(), net.minecraft.resources.Identifier.parse(recipeId));
+            return List.of();
+        }
+
+        @Override
+        public Fold foldOf(int step, int steps)
+        {
+            if (step < steps - 1)
+                return new Fold(altar.pillarsAround().get(step).getBlockPos(), PILLAR_REST);
+            return resultFold();
+        }
+
+        @Override
+        public Fold resultFold()
+        {
+            return new Fold(altar.getBlockPos(), ALTAR_REST);
         }
 
         @Override
@@ -159,11 +195,35 @@ final class Stations
         }
 
         @Override
-        public List<ItemStack> begin(UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public List<ItemStack> clear()
+        {
+            return List.of();
+        }
+
+        @Override
+        public int steps(List<ItemStack> ingredients)
+        {
+            return 1;
+        }
+
+        @Override
+        public List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
         {
             forge.pin(net.minecraft.resources.Identifier.parse(recipeId));
             forge.placeInput(ingredients.getFirst());
             return List.of();
+        }
+
+        @Override
+        public Fold foldOf(int step, int steps)
+        {
+            return resultFold();
+        }
+
+        @Override
+        public Fold resultFold()
+        {
+            return new Fold(pillar.getBlockPos(), FORGE_SOURCE_REST);
         }
 
         @Override
@@ -180,9 +240,10 @@ final class Stations
     }
 
     /**
-     * A crafting table crafts at once: the ingredients are set in its grid and the result and remainders go straight back.
+     * A crafting table crafts at once: the ingredients are set in its grid and the result and remainders go straight back. It then rests a moment, so
+     * the fold showing the result can close.
      */
-    private record Table(Level level) implements OfficiantStation
+    private record Table(Level level, BlockPos pos) implements OfficiantStation
     {
         @Override
         public StationKind kind()
@@ -209,7 +270,31 @@ final class Stations
         }
 
         @Override
-        public List<ItemStack> begin(UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public List<ItemStack> clear()
+        {
+            return List.of();
+        }
+
+        @Override
+        public int steps(List<ItemStack> ingredients)
+        {
+            return 1;
+        }
+
+        @Override
+        public Fold foldOf(int step, int steps)
+        {
+            return resultFold();
+        }
+
+        @Override
+        public Fold resultFold()
+        {
+            return new Fold(pos, TABLE_REST);
+        }
+
+        @Override
+        public List<ItemStack> lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
         {
             var recipe = (CraftingRecipe) ((RecipeHolder<?>) source).value();
             var slots = WorksCatalogue.slotsOf(recipe);
@@ -237,7 +322,25 @@ final class Stations
         @Override
         public Outcome poll(Object source, int waited)
         {
-            return Outcome.done(List.of());
+            return waited < TABLE_REST_TICKS ? Outcome.RUNNING : Outcome.done(List.of());
         }
+    }
+
+    /**
+     * @return the ingredients a craft interrupted at a step has not laid out yet, which go back to the hoard
+     */
+    static List<ItemStack> unlaid(StationKind kind, int step, List<ItemStack> ingredients)
+    {
+        if (ingredients.isEmpty())
+            return List.of();
+        if (kind != StationKind.ALTAR)
+            return step == 0 ? List.copyOf(ingredients) : List.of();
+        // The altar lays its pillars first, the catalyst last
+        var unlaid = new ArrayList<ItemStack>();
+        if (step < ingredients.size())
+            unlaid.add(ingredients.getFirst());
+        for (int index = step + 1; index < ingredients.size(); index++)
+            unlaid.add(ingredients.get(index));
+        return unlaid;
     }
 }

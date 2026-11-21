@@ -55,6 +55,7 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
         var level = altar.getLevel();
         int seed = (int) altar.getBlockPos().asLong();
         state.worldTime = level.getGameTime() + partialTicks;
+        state.rise = OfficiantFoldRender.rise(altar.getBlockPos());
         state.cameraDistanceSqr = altar.getBlockPos().distToCenterSqr(cameraPosition);
         itemModelResolver.updateForTopItem(state.item, altar.getStack(), ItemDisplayContext.GROUND, level, null, seed);
 
@@ -114,7 +115,7 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
                     (pose, buffer) -> RavenousStorageRender.essence(pose, buffer, DRINK_BOTTOM, Mth.lerp(state.drinkFill, DRINK_EMPTY_TOP, DRINK_FULL_TOP),
                             DRINK_FULL_TOP, state.drinkFill, state.drinkColor, state.worldTime, state.seed, 0.5F, DRINK_WIDTH));
 
-        if (state.item.isEmpty())
+        if (state.item.isEmpty() || state.rise <= 0)
             return;
 
         poseStack.pushPose();
@@ -122,6 +123,8 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
         double offset = Math.abs(Math.sin(state.worldTime / 8.0) / 24.0) + 2 / 16D;
 
         poseStack.translate(0.5, 1 + offset, 0.5);
+        if (state.rise < 1)
+            OfficiantFoldRender.applyRise(poseStack, state.rise);
         poseStack.rotate(MathUtil.quatFromAngleDegrees(state.worldTime, MathUtil.NEGATIVE_Y));
 
         state.item.submit(poseStack, collector, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);

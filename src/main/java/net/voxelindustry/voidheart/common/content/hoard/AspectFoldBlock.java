@@ -21,6 +21,18 @@ public class AspectFoldBlock extends Block implements EntityBlock
         super(properties);
     }
 
+    /**
+     * A player with no pocket has nothing for it to open onto, so it is not placed.
+     */
+    @Nullable
+    @Override
+    public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context)
+    {
+        if (!HoardPlacing.mayPlace(context))
+            return null;
+        return super.getStateForPlacement(context);
+    }
+
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack)
     {

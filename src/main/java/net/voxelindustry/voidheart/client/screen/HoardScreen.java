@@ -88,6 +88,9 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     private ResearchButton beginButton;
     private ResearchButton keepButton;
     private ResearchButton cancelButton;
+    private ResearchButton stationsButton;
+    /** Whether the left button went down on a graph, so moving it pans the graph. */
+    private boolean panning;
 
     private EditBox search;
     private List<HoardPayloads.Entry> shown = List.of();
@@ -177,6 +180,7 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         beginButton = worksButton(x + 66, y, 48, BUTTON_H, false, "begin", button -> works.begin());
         keepButton = worksButton(x + 118, y, 50, BUTTON_H, true, "keep", button -> works.keep());
         cancelButton = worksButton(x + 66, y, 48, BUTTON_H, true, "cancel", button -> works.cancelShown());
+        stationsButton = worksButton(x, y, 56, BUTTON_H, true, "stations", button -> works.roster = true);
         updateWorksButtons();
     }
 
@@ -186,7 +190,9 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
             return;
         boolean graph = worksTab && works.shownGraph() != null;
         boolean job = worksTab && works.shownJob() != null;
-        backButton.visible = graph;
+        boolean roster = worksTab && !graph && works.roster;
+        backButton.visible = graph || roster;
+        stationsButton.visible = worksTab && !graph && !roster;
         lessButton.visible = moreButton.visible = beginButton.visible = keepButton.visible = graph && !job;
         cancelButton.visible = job;
         keepButton.setMessage(Component.translatable(MODID + ".works.button." + (works.isKept() ? "kept" : "keep")));
@@ -233,10 +239,31 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
             case "begin" -> beginButton;
             case "keep" -> keepButton;
             case "cancel" -> cancelButton;
+            case "stations" -> stationsButton;
             case "hoard" -> hoardTabButton;
             default -> worksTabButton;
         };
         return new int[] { button.getX() + button.getWidth() / 2, button.getY() + button.getHeight() / 2 };
+    }
+
+    public int[] whisperCenter()
+    {
+        return new int[] { leftPos + PANEL_W / 2, topPos + WorksView.JOBS_Y + 15 + font.lineHeight / 2 };
+    }
+
+    public int[] worksRegionCenter()
+    {
+        return new int[] { leftPos + WorksView.REGION_X + WorksView.REGION_W / 2, topPos + WorksView.REGION_Y + WorksView.REGION_H / 2 };
+    }
+
+    public float worksZoom()
+    {
+        return works == null ? 1 : works.zoom;
+    }
+
+    public float[] worksPan()
+    {
+        return works == null ? new float[2] : new float[] { works.panX, works.panY };
     }
 
     public int[] jobCenter(int index)
@@ -327,8 +354,11 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     {
         // The container screen takes every click, so the works view's plates go first: they lie clear of every button
         if (worksTab)
+        {
+            panning = event.button() == InputConstants.MOUSE_BUTTON_LEFT && works.graphAt(leftPos, topPos, event.x(), event.y());
             return event.button() == InputConstants.MOUSE_BUTTON_LEFT && works.clicked(query(), leftPos, topPos, event.x(), event.y())
                     || super.mouseClicked(event, doubleClick);
+        }
         if (!overWell(event.x(), event.y()))
             return super.mouseClicked(event, doubleClick);
         if (event.button() != InputConstants.MOUSE_BUTTON_LEFT && event.button() != InputConstants.MOUSE_BUTTON_RIGHT)
@@ -348,6 +378,24 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         if (entry != null)
             ClientPlayNetworking.send(new HoardPayloads.Take(menu.containerId, entry.variant(), event.hasShiftDown()));
         return true;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY)
+    {
+        if (worksTab && panning)
+        {
+            works.dragged(dragX, dragY);
+            return true;
+        }
+        return super.mouseDragged(event, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event)
+    {
+        panning = false;
+        return super.mouseReleased(event);
     }
 
     @Override
@@ -412,7 +460,13 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
             var whisper = works.whisper(query());
             var line = font.plainSubstrByWidth(whisper.getString(), PANEL_W - 2 * PAD);
             var color = whisper.getStyle().getColor() == null ? MUTED_COLOR : whisper.getStyle().getColor().getValue() | 0xFF000000;
-            graphics.text(font, line, leftPos + (PANEL_W - font.width(line)) / 2, topPos + WorksView.JOBS_Y + 15, color, false);
+            int lineX = leftPos + (PANEL_W - font.width(line)) / 2;
+            int lineY = topPos + WorksView.JOBS_Y + 15;
+            graphics.text(font, line, lineX, lineY, color, false);
+            // Everything a plan lacks shows over its whisper
+            var lacking = works.lackingLines();
+            if (!lacking.isEmpty() && mouseX >= lineX && mouseX < lineX + font.width(line) && mouseY >= lineY - 1 && mouseY < lineY + font.lineHeight)
+                graphics.setComponentTooltipForNextFrame(font, lacking, mouseX, mouseY);
             return;
         }
         extractPlates(graphics, mouseX, mouseY);

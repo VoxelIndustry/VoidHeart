@@ -29,6 +29,7 @@ public final class EnergyJade
     public static void register(IWailaCommonRegistration registration)
     {
         HoardJade.register(registration);
+        net.voxelindustry.voidheart.common.content.works.WorksJade.register(registration);
         VoidGridJade.register(registration);
         RubrumJade.register(registration);
         LeyStoneJade.register(registration);
@@ -59,5 +60,6 @@ public final class EnergyJade
         PearlJade.registerClient(registration);
         CrystalJade.registerClient(registration);
         HoardJade.registerClient(registration);
+        net.voxelindustry.voidheart.common.content.works.WorksJade.registerClient(registration);
     }
 }

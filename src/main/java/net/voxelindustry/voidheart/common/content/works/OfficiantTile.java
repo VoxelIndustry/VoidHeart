@@ -4,7 +4,6 @@ import lombok.Getter;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -29,13 +28,15 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 /**
- * Serves the station above it for its placer: takes one craft at a time from the placer's orders once the hoard holds its ingredients, lays them out,
- * and puts what comes back in the hoard. Each item it lays out or takes back costs void energy from the field around it. What it holds is saved, so
- * an unloaded Officiant picks up where it was, and a broken one gives it back to the hoard.
+ * Serves the station above it for its placer: takes one craft at a time from the placer's orders once the hoard holds its ingredients, lays them out
+ * one by one through small folds, the catalyst last, and puts what comes back in the hoard. Each item it lays out or takes back costs void energy from
+ * the field around it. What it holds is saved, so an unloaded Officiant picks up where it was, and a broken one gives it back to the hoard.
  */
 public class OfficiantTile extends TileBase
 {
     static final int TICK_PERIOD = 10;
+    /** Ticks between two items laid out. */
+    static final int LAY_TICKS = 4;
 
     /** Officiants loaded on the server, which the catalogue asks what stations an owner has. */
     private static final Set<OfficiantTile> LOADED = Collections.newSetFromMap(new WeakHashMap<>());
@@ -50,6 +51,13 @@ public class OfficiantTile extends TileBase
     private final List<ItemStack> held = new ArrayList<>();
     private int waited;
 
+    /** The ingredients of the craft being laid out, in the order of the recipe's inputs, and how far it has got. */
+    private final List<ItemStack> laying = new ArrayList<>();
+    private int step;
+    private int steps;
+    @Nullable
+    private StationKind layingAt;
+
     public OfficiantTile(BlockPos pos, BlockState state)
     {
         super(WorksContent.OFFICIANT_TILE, pos, state);
@@ -57,7 +65,8 @@ public class OfficiantTile extends TileBase
 
     public static void tick(Level level, BlockPos pos, BlockState state, OfficiantTile officiant)
     {
-        if (level instanceof ServerLevel serverLevel && level.getGameTime() % TICK_PERIOD == Math.floorMod(pos.asLong(), TICK_PERIOD))
+        var period = officiant.isLaying() ? LAY_TICKS : TICK_PERIOD;
+        if (level instanceof ServerLevel serverLevel && level.getGameTime() % period == Math.floorMod(pos.asLong(), period))
             officiant.serverTick(serverLevel);
     }
 
@@ -102,10 +111,20 @@ public class OfficiantTile extends TileBase
             return;
 
         var station = Stations.above(level, worldPosition);
-        if (station == null)
+        if (station == null || isLaying() && station.kind() != layingAt)
+        {
+            // The station went away mid-laying: what was not laid out goes back, and the craft counts again
+            if (isLaying())
+                abortLaying(level, hoard);
             return;
+        }
 
         var catalogue = WorksCatalogues.of(level.getServer(), owner, hoard);
+        if (isLaying())
+        {
+            layStep(level, hoard, station, catalogue);
+            return;
+        }
         if (claim != null)
         {
             waited += TICK_PERIOD;
@@ -113,6 +132,8 @@ public class OfficiantTile extends TileBase
             if (!outcome.finished())
                 return;
             held.addAll(outcome.items());
+            if (!outcome.failed() && !outcome.items().isEmpty())
+                fold(level, station.resultFold(), outcome.items().getFirst(), OfficiantFolds.TAKE);
             if (outcome.failed())
                 WorksState.get(level.getServer()).edit(owner).giveBack(claim);
             else
@@ -156,11 +177,96 @@ public class OfficiantTile extends TileBase
         VoidEnergy.draw(level, worldPosition, Ingredients.items(ingredients) * WorksBalance.ITEM_COST);
         claim = claimed;
         waited = 0;
-        held.addAll(station.begin(owner, claimed.recipe(), catalogue.source(claimed.recipe()), ingredients));
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, worldPosition.getX() + 0.5, worldPosition.getY() + 1.5, worldPosition.getZ() + 0.5, 24, 0.4, 0.3, 0.4, 0.05);
-        level.playSound(null, worldPosition, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 0.3F, 1.4F);
+        held.addAll(station.clear());
+        laying.clear();
+        laying.addAll(ingredients);
+        step = 0;
+        steps = station.steps(ingredients);
+        layingAt = station.kind();
+        layStep(level, hoard, station, catalogue);
+    }
+
+    public boolean isLaying()
+    {
+        return step < steps;
+    }
+
+    /**
+     * @return what it holds for the hoard, for tests
+     */
+    public List<ItemStack> heldItems()
+    {
+        return held.stream().map(ItemStack::copy).toList();
+    }
+
+    public int layingStep()
+    {
+        return step;
+    }
+
+    public int layingSteps()
+    {
+        return steps;
+    }
+
+    /**
+     * Lays the next item out through a fold; the last step starts the craft.
+     */
+    private void layStep(ServerLevel level, PocketHoard.Hoard hoard, OfficiantStation station, WorksCatalogue catalogue)
+    {
+        var source = claim == null ? null : catalogue.source(claim.recipe());
+        if (source == null)
+        {
+            // What it laid lies on a station still there and was cleared for it, so it takes that back too
+            held.addAll(station.clear());
+            abortLaying(level, hoard);
+            return;
+        }
+        var fold = station.foldOf(step, steps);
+        var back = station.lay(step, owner, claim.recipe(), source, laying);
+        if (station.kind() == StationKind.TABLE)
+            fold(level, fold, back.isEmpty() ? ItemStack.EMPTY : back.getFirst(), OfficiantFolds.PASS);
+        else
+            fold(level, fold, ItemStack.EMPTY, OfficiantFolds.LAY);
+        held.addAll(back);
+        step++;
+        if (!isLaying())
+            finishLaying();
         setChanged();
         store(level, hoard);
+    }
+
+    private void finishLaying()
+    {
+        laying.clear();
+        step = 0;
+        steps = 0;
+        layingAt = null;
+        waited = 0;
+    }
+
+    private void abortLaying(ServerLevel level, PocketHoard.Hoard hoard)
+    {
+        if (layingAt != null)
+            Stations.unlaid(layingAt, step, laying).forEach(stack -> held.add(stack.copy()));
+        if (claim != null)
+            WorksState.get(level.getServer()).edit(owner).giveBack(claim);
+        claim = null;
+        finishLaying();
+        setChanged();
+        store(level, hoard);
+    }
+
+    /**
+     * Shows a fold opening over a station to everyone near, with a soft sound.
+     */
+    private void fold(ServerLevel level, OfficiantStation.Fold fold, ItemStack item, int kind)
+    {
+        var payload = new OfficiantFolds.Payload(fold.pos(), fold.rest(), item.copy(), kind);
+        for (var player : net.fabricmc.fabric.api.networking.v1.PlayerLookup.tracking(level, fold.pos()))
+            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, payload);
+        var sound = kind == OfficiantFolds.TAKE ? SoundEvents.BUNDLE_INSERT : SoundEvents.BUNDLE_REMOVE_ONE;
+        level.playSound(null, fold.pos(), sound, SoundSource.BLOCKS, 0.4F, 0.85F + level.getRandom().nextFloat() * 0.2F);
     }
 
     /**
@@ -196,6 +302,15 @@ public class OfficiantTile extends TileBase
         if (level instanceof ServerLevel serverLevel && owner != null)
         {
             var hoard = PocketHoard.get(serverLevel.getServer()).of(owner);
+            // What was still to be laid out goes back too, and its craft counts again
+            if (isLaying() && layingAt != null)
+            {
+                Stations.unlaid(layingAt, step, laying).forEach(stack -> held.add(stack.copy()));
+                if (claim != null)
+                    WorksState.get(serverLevel.getServer()).edit(owner).giveBack(claim);
+                claim = null;
+                finishLaying();
+            }
             for (var stack : held)
             {
                 stack.shrink((int) hoard.insert(ItemVariant.of(stack), stack.getCount()));
@@ -220,6 +335,13 @@ public class OfficiantTile extends TileBase
         held.clear();
         held.addAll(tag.read("held", ItemStack.OPTIONAL_CODEC.listOf()).orElse(List.of()).stream().filter(stack -> !stack.isEmpty()).toList());
         waited = tag.getIntOr("waited", 0);
+        laying.clear();
+        laying.addAll(tag.read("laying", ItemStack.OPTIONAL_CODEC.listOf()).orElse(List.of()));
+        step = tag.getIntOr("step", 0);
+        steps = tag.getIntOr("steps", 0);
+        layingAt = tag.getString("laying_at").map(StationKind::valueOf).orElse(null);
+        if (layingAt == null || laying.isEmpty())
+            finishLaying();
     }
 
     @Override
@@ -232,6 +354,13 @@ public class OfficiantTile extends TileBase
         if (!held.isEmpty())
             tag.store("held", ItemStack.OPTIONAL_CODEC.listOf(), List.copyOf(held));
         tag.putInt("waited", waited);
+        if (isLaying() && layingAt != null)
+        {
+            tag.store("laying", ItemStack.OPTIONAL_CODEC.listOf(), List.copyOf(laying));
+            tag.putInt("step", step);
+            tag.putInt("steps", steps);
+            tag.putString("laying_at", layingAt.name());
+        }
         super.saveAdditional(tag);
     }
 }
