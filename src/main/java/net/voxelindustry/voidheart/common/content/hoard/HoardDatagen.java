@@ -42,7 +42,7 @@ public final class HoardDatagen
         var coffer = ModelTemplates.CUBE_BOTTOM_TOP.create(HoardContent.HOARD_COFFER, new TextureMapping()
                 .put(TextureSlot.SIDE, blockTexture("hoard_coffer_side"))
                 .put(TextureSlot.TOP, blockTexture("hoard_coffer_top"))
-                .put(TextureSlot.BOTTOM, blockTexture("covetous_copper_block")), generators.modelOutput);
+                .put(TextureSlot.BOTTOM, blockTexture("voidstone_polished")), generators.modelOutput);
         generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(HoardContent.HOARD_COFFER, plainVariant(coffer)));
     }
 
