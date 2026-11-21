@@ -30,6 +30,9 @@ import net.voxelindustry.voidheart.common.energy.ley.WardStrength;
 import net.voxelindustry.voidheart.common.ley.Ley;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
@@ -288,6 +291,7 @@ public class LeyStoneClientTest implements FabricClientGameTest
         aimFrom(context, server, view.getX() + 0.5, FLAT_FEET + 14, view.getZ() + 0.5, target.getX() + 0.5, FLAT_FEET, target.getZ() + 0.5, 10);
         context.takeScreenshot("ley-spur-tainted-night");
         server.runOnServer(minecraft -> Ley.addTaint(minecraft.overworld(), scene.upstream(), -65));
+        swirls(context, server, scene);
 
         server.runCommand("time set noon");
         context.getInput().pressKey(InputConstants.KEY_F1);
@@ -303,6 +307,90 @@ public class LeyStoneClientTest implements FabricClientGameTest
         context.takeScreenshot("ley-stone-held");
         server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
         context.waitTicks(15);
+    }
+
+    /**
+     * The swirl where a spur leaves its line: around the foot of a stone raised on the line itself, and at the tap of one a few blocks off it, each beside
+     * a step and a slab, where its arms should fade rather than be cut.
+     */
+    private static void swirls(ClientGameTestContext context, TestServerContext server, Scene scene)
+    {
+        var onLine = blockAtDistance(scene, 12, 0);
+        var offLine = blockAtDistance(scene, 19, 3);
+        var facing = scene.facing().getSerializedName();
+        var changed = new ArrayList<BlockPos>();
+        for (var pos : new BlockPos[] { onLine, offLine })
+        {
+            setblock(server, pos, "voidheart:ley_stone[half=lower,facing=" + facing + "]");
+            setblock(server, pos.above(), "voidheart:ley_stone[half=upper,facing=" + facing + "]");
+            changed.add(pos);
+            changed.add(pos.above());
+        }
+        // A step and a slab beside the stone on the line, and beside the other's tap across the line
+        var offTap = BlockPos.containing(scene.tapPoint().add(scene.along().scale(19)).x, FLAT_FEET, scene.tapPoint().add(scene.along().scale(19)).z);
+        var steps = new BlockPos[] { onLine.relative(scene.facing().getClockWise()), offTap.relative(scene.facing()) };
+        var slabs = new BlockPos[] { onLine.relative(scene.facing().getCounterClockWise()), offTap.relative(scene.facing().getClockWise()) };
+        for (var pos : steps)
+            setblock(server, pos, "grass_block");
+        for (var pos : slabs)
+            setblock(server, pos, "stone_slab[type=bottom]");
+        changed.addAll(List.of(steps));
+        changed.addAll(List.of(slabs));
+        // Holding a stone shows the reach rings, which would cross the swirls
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
+        context.waitTicks(60);
+
+        for (var pos : new BlockPos[] { onLine, offLine })
+        {
+            server.runOnServer(minecraft ->
+            {
+                expect(minecraft.overworld().getBlockEntity(pos) instanceof LeyStoneTile stone && stone.isConnected() && stone.isRoot(),
+                        "A stone raised at " + pos + " should tap the line itself");
+            });
+        }
+
+        server.runCommand("tick freeze");
+        for (int i = 0; i < 2; i++)
+        {
+            var pos = i == 0 ? onLine : offTap;
+            String name = i == 0 ? "ley-swirl-foot" : "ley-swirl-tap";
+            var eye = Vec3.atBottomCenterOf(pos).add(scene.out().scale(-2.4)).add(scene.along().scale(1.2));
+            aimFrom(context, server, eye.x, FLAT_FEET + 1.3, eye.z, pos.getX() + 0.5, FLAT_FEET, pos.getZ() + 0.5, 5);
+            context.takeScreenshot(name + "-low-night");
+            var above = Vec3.atBottomCenterOf(pos).add(scene.out().scale(0.8));
+            aimFrom(context, server, above.x, FLAT_FEET + 3.2, above.z, pos.getX() + 0.5, FLAT_FEET, pos.getZ() + 0.5, 5);
+            context.takeScreenshot(name + "-above-night");
+        }
+        server.runCommand("tick unfreeze");
+        context.waitTicks(50);
+        server.runCommand("tick freeze");
+        context.takeScreenshot("ley-swirl-tap-above-turned-night");
+        server.runCommand("tick unfreeze");
+
+        for (var pos : changed)
+            setblock(server, pos, "air");
+    }
+
+    /**
+     * The block a stone stands in whose centre lies nearest the given distance off the line, a given way along it from the first stone's tap.
+     */
+    private static BlockPos blockAtDistance(Scene scene, double along, double distance)
+    {
+        BlockPos best = null;
+        double bestError = Double.MAX_VALUE;
+        for (double out = distance - 1; out <= distance + 1; out += 0.125)
+        {
+            var spot = scene.tapPoint().add(scene.along().scale(along)).add(scene.out().scale(out));
+            var pos = BlockPos.containing(spot.x, FLAT_FEET, spot.z);
+            var offset = Vec3.atBottomCenterOf(pos).subtract(scene.tapPoint());
+            double error = Math.abs(Math.abs(offset.x * scene.out().x + offset.z * scene.out().z) - distance);
+            if (error < bestError)
+            {
+                best = pos;
+                bestError = error;
+            }
+        }
+        return best;
     }
 
     /**
