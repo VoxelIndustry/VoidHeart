@@ -147,8 +147,11 @@ public final class WorksSession
         var works = state.owner(owner);
         if (level <= 0)
         {
+            // The order the level placed goes with it, so keeping the item again never orders the same shortfall twice
             works.keeps().remove(item);
-            works.keepJobs().remove(item);
+            var job = works.keepJobs().remove(item);
+            if (job != null)
+                works.queue().cancel(job);
         }
         else
             works.keeps().put(item, Math.min(level, WorksBalance.MAX_ORDER));

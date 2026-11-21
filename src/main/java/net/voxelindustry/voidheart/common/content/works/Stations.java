@@ -90,9 +90,14 @@ final class Stations
             return source instanceof AltarRecipe recipe && altar.canSupply(recipe);
         }
 
+        /**
+         * Takes what lies on the pillars, unless a rite runs: a player may have started one on what was laid, and it still needs its pillars.
+         */
         @Override
         public List<ItemStack> clear()
         {
+            if (altar.isCrafting())
+                return List.of();
             var strays = new ArrayList<ItemStack>();
             for (var pillar : altar.pillarsAround())
             {

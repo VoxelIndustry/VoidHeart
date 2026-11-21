@@ -123,6 +123,40 @@ class WorksQueueTest
         assertThat(loaded.order("b", 1, List.of(task("b", StationKind.TABLE, 1)))).isEqualTo(2);
     }
 
+    private static WorksQueue roundTrip(WorksQueue queue)
+    {
+        var saved = WorksQueue.CODEC.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, queue).getOrThrow();
+        return WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, saved).getOrThrow();
+    }
+
+    @Test
+    void codec_givenTheLastOrderCancelled_thenTheNextIdStillComesAfterItOnceLoaded()
+    {
+        var queue = new WorksQueue();
+        queue.order("a", 1, List.of(task("a", StationKind.TABLE, 1)));
+        var cancelled = queue.order("b", 1, List.of(task("b", StationKind.TABLE, 1)));
+        queue.cancel(cancelled);
+
+        var next = roundTrip(queue).order("c", 1, List.of(task("c", StationKind.TABLE, 1)));
+
+        assertThat(next).isGreaterThan(cancelled);
+    }
+
+    @Test
+    void codec_givenEveryOrderCancelled_thenTheIdsDoNotStartOverOnceLoaded()
+    {
+        var queue = new WorksQueue();
+        var first = queue.order("a", 1, List.of(task("a", StationKind.TABLE, 1)));
+        var second = queue.order("b", 1, List.of(task("b", StationKind.TABLE, 1)));
+        queue.cancel(first);
+        queue.cancel(second);
+
+        var loaded = roundTrip(queue);
+
+        assertThat(loaded.jobs()).isEmpty();
+        assertThat(loaded.order("c", 1, List.of(task("c", StationKind.TABLE, 1)))).isGreaterThan(second);
+    }
+
     @Test
     void cancel_givenAnOrderId_thenRemovesOnlyThatOrder()
     {
