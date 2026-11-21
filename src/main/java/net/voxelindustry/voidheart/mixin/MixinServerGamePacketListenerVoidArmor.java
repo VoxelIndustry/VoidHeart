@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.mixin;
 
+import net.minecraft.network.protocol.game.ServerboundPlaceRecipePacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,7 +14,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// A Void Armor wearer can't drop a rack's weapon, swap it to the off hand, pick a block into the hotbar or set a hotbar slot from the creative screen
+// A Void Armor wearer can't drop a rack's weapon, swap it to the off hand, pick a block into the hotbar, set a hotbar slot from the creative screen or
+// fill a recipe from the racks
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class MixinServerGamePacketListenerVoidArmor
 {
@@ -43,6 +45,17 @@ public abstract class MixinServerGamePacketListenerVoidArmor
         if (frames && ArmorWear.wearing(player))
         {
             player.inventoryMenu.sendAllDataToRemote();
+            info.cancel();
+        }
+    }
+
+    // The recipe book takes ingredients straight from the inventory, racks included, past every slot guard, so a wearer can't use it
+    @Inject(method = "handlePlaceRecipe", at = @At(value = "INVOKE", target = ON_THREAD, shift = At.Shift.AFTER), cancellable = true)
+    private void voidheart$noRecipeBook(ServerboundPlaceRecipePacket packet, CallbackInfo info)
+    {
+        if (ArmorWear.wearing(player))
+        {
+            player.containerMenu.sendAllDataToRemote();
             info.cancel();
         }
     }

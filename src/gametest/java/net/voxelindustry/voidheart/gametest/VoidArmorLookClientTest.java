@@ -47,34 +47,45 @@ public class VoidArmorLookClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        try (var world = context.worldBuilder().create())
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
         {
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
-            server.runCommand("gamerule spawn_mobs false");
-            server.runCommand("gamemode survival @a");
-            server.runCommand("clear @a");
-            server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 180 10");
-            context.waitTicks(10);
-            context.getInput().pressKey(InputConstants.KEY_F1);
-
-            // The wearer's own armor, which the frame hides
-            server.runOnServer(minecraft ->
+            try (var world = context.worldBuilder().create())
             {
-                var player = player(minecraft);
-                player.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
-                player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.GOLDEN_HELMET));
-            });
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                server.runCommand("time set noon");
+                server.runCommand("gamerule advance_time false");
+                server.runCommand("gamerule spawn_mobs false");
+                server.runCommand("gamemode survival @a");
+                server.runCommand("clear @a");
+                server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 180 10");
+                context.waitTicks(10);
+                context.getInput().pressKey(InputConstants.KEY_F1);
 
-            closing(context, server);
-            worn(context, server);
-            limp(context, server);
-            parkedAndDocked(context, server);
+                // The wearer's own armor, which the frame hides
+                server.runOnServer(minecraft ->
+                {
+                    var player = player(minecraft);
+                    player.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+                    player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.GOLDEN_HELMET));
+                });
 
-            context.getInput().pressKey(InputConstants.KEY_F1);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                closing(context, server);
+                worn(context, server);
+                limp(context, server);
+                parkedAndDocked(context, server);
+
+                context.getInput().pressKey(InputConstants.KEY_F1);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            }
+        }
+        finally
+        {
+            // All tests share one client, so it gets back the camera it came with
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
+            if (context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()))
+                context.getInput().pressKey(InputConstants.KEY_F1);
         }
     }
 
@@ -231,6 +242,22 @@ public class VoidArmorLookClientTest implements FabricClientGameTest
         server.runCommand("time set midnight");
         context.waitTicks(5);
         context.takeScreenshot("void-armor-docked-night");
+
+        // The glow is an added pass over the plates: with the frame fully charged and time held still, the camera steps across it close up, so a pass
+        // fighting the plates or flickering shows as uneven changes between frames
+        server.runOnServer(minecraft -> ((VoidArmorBaseTile) minecraft.overworld().getBlockEntity(BASE)).frame()
+                .set(RubrumContent.VOID_CHARGE, VoidArmorItem.stats(((VoidArmorBaseTile) minecraft.overworld().getBlockEntity(BASE)).frame()).capacity()));
+        server.runOnServer(minecraft -> ((VoidArmorBaseTile) minecraft.overworld().getBlockEntity(BASE)).sync());
+        server.runCommand("tick freeze");
+        context.waitTicks(5);
+        for (int step = 0; step < 8; step++)
+        {
+            GameTestKit.aimCamera(server, BASE.getX() + 0.3 + step * 0.06, FLAT_FEET, BASE.getZ() - 2.2 + step * 0.03,
+                    BASE.getX() + 0.5, FLAT_FEET + 2.2, BASE.getZ() + 0.5);
+            context.waitTicks(2);
+            context.takeScreenshot("void-armor-glow-sweep-" + step);
+        }
+        server.runCommand("tick unfreeze");
         server.runCommand("time set noon");
     }
 }

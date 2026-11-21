@@ -51,29 +51,38 @@ public class VoidArmorClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        try (var world = context.worldBuilder().create())
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
         {
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
-            server.runCommand("gamerule spawn_mobs false");
-            server.runCommand("gamemode survival @a");
-            server.runCommand("clear @a");
-            // An arch facing the player, who stands north of it
-            server.runOnServer(minecraft -> VoidArmorBaseBlock.build(minecraft.overworld(), BASE, Direction.NORTH));
-            // Looking down at the top of the base two blocks ahead, from the eyes 1.62 above the feet
-            double pitch = -Math.toDegrees(Math.atan2(GROUND_Y + 0.25 - (GROUND_Y + 1.62), 2));
-            server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 0 " + pitch);
-            context.waitTicks(10);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            try (var world = context.worldBuilder().create())
+            {
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                server.runCommand("time set noon");
+                server.runCommand("gamerule advance_time false");
+                server.runCommand("gamerule spawn_mobs false");
+                server.runCommand("gamemode survival @a");
+                server.runCommand("clear @a");
+                // An arch facing the player, who stands north of it
+                server.runOnServer(minecraft -> VoidArmorBaseBlock.build(minecraft.overworld(), BASE, Direction.NORTH));
+                // Looking down at the top of the base two blocks ahead, from the eyes 1.62 above the feet
+                double pitch = -Math.toDegrees(Math.atan2(GROUND_Y + 0.25 - (GROUND_Y + 1.62), 2));
+                server.runCommand("tp @a 0.5 " + GROUND_Y + " 0.5 0 " + pitch);
+                context.waitTicks(10);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            dock(context, server);
-            setModules(context, server);
-            fillRacks(context, server);
-            context.getInput().pressKey(InputConstants.KEY_ESCAPE);
-            context.waitTicks(5);
-            cantMineWhileDocked(context, server);
+                dock(context, server);
+                setModules(context, server);
+                fillRacks(context, server);
+                context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+                context.waitTicks(5);
+                cantMineWhileDocked(context, server);
+            }
+        }
+        finally
+        {
+            // All tests share one client, so it gets back the camera it came with
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 

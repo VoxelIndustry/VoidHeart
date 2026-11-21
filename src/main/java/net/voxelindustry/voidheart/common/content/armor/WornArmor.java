@@ -48,7 +48,18 @@ public record WornArmor(ItemStack frame, Phase phase, long since, Set<ArmorModul
             ArmorModule.CODEC.listOf().optionalFieldOf("on", List.of()).forGetter(worn -> List.copyOf(worn.on()))
     ).apply(instance, (frame, phase, since, on) -> new WornArmor(frame, phase, since, Set.copyOf(on))));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, WornArmor> STREAM_CODEC = ByteBufCodecs.fromCodecWithRegistries(CODEC);
+    /** What every player tracking the wearer is sent: the frame without the base it goes home to, which only the server needs. */
+    public static final StreamCodec<RegistryFriendlyByteBuf, WornArmor> STREAM_CODEC = ByteBufCodecs.fromCodecWithRegistries(CODEC)
+            .map(worn -> worn, WornArmor::forClients);
+
+    private WornArmor forClients()
+    {
+        if (!frame.has(VoidArmorContent.ARMOR_HOME))
+            return this;
+        var shown = frame.copy();
+        shown.remove(VoidArmorContent.ARMOR_HOME);
+        return withFrame(shown);
+    }
 
     public WornArmor
     {

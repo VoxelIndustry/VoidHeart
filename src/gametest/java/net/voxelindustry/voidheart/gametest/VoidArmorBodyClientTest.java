@@ -52,41 +52,50 @@ public class VoidArmorBodyClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        try (var world = context.worldBuilder().create())
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
         {
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
-            server.runCommand("gamerule spawn_mobs false");
-            server.runCommand("gamemode survival @a");
-            server.runCommand("clear @a");
-            server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
-            context.waitTicks(10);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
-
-            server.runOnServer(minecraft ->
+            try (var world = context.worldBuilder().create())
             {
-                var player = player(minecraft);
-                var frame = everything();
-                expect(VoidArmorItem.stats(frame).exoskeleton() && VoidArmorItem.stats(frame).spectralLens(), "Expected the test frame to have every module working");
-                ArmorWear.stepIn(player, frame, player.position());
-            });
-            context.waitTicks(ArmorBalance.STEP_IN_TICKS + 5);
-            expect(phase(server) == WornArmor.Phase.WORN, "Expected the frame worn, got " + phase(server));
-            double speed = attribute(server, minecraft -> player(minecraft).getAttributeValue(Attributes.MOVEMENT_SPEED));
-            double jump = attribute(server, minecraft -> player(minecraft).getAttributeValue(Attributes.JUMP_STRENGTH));
-            double expectedSpeed = 0.1 * (1 + ArmorBalance.FRAME_SPEED + ArmorBalance.EXOSKELETON_SPEED);
-            expect(Math.abs(speed - expectedSpeed) < 1.0E-6 && jump > 0.42, "Expected the wearer free to move once stepped in, speed " + speed + ", jump " + jump);
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                server.runCommand("time set noon");
+                server.runCommand("gamerule advance_time false");
+                server.runCommand("gamerule spawn_mobs false");
+                server.runCommand("gamemode survival @a");
+                server.runCommand("clear @a");
+                server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+                context.waitTicks(10);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            drains(context, server);
-            sneakNeitherCrouchesNorHolds(context, server);
-            movingFeedsOnCharge(context, server);
-            sinksInWater(context, server);
-            ridesAndSleepsNowhere(context, server);
-            fallsComeOutOfTheBattery(context, server);
-            shedsThenGoesLimp(context, server);
-            stepsOutLimp(context, server);
+                server.runOnServer(minecraft ->
+                {
+                    var player = player(minecraft);
+                    var frame = everything();
+                    expect(VoidArmorItem.stats(frame).exoskeleton() && VoidArmorItem.stats(frame).spectralLens(), "Expected the test frame to have every module working");
+                    ArmorWear.stepIn(player, frame, player.position());
+                });
+                context.waitTicks(ArmorBalance.STEP_IN_TICKS + 5);
+                expect(phase(server) == WornArmor.Phase.WORN, "Expected the frame worn, got " + phase(server));
+                double speed = attribute(server, minecraft -> player(minecraft).getAttributeValue(Attributes.MOVEMENT_SPEED));
+                double jump = attribute(server, minecraft -> player(minecraft).getAttributeValue(Attributes.JUMP_STRENGTH));
+                double expectedSpeed = 0.1 * (1 + ArmorBalance.FRAME_SPEED + ArmorBalance.EXOSKELETON_SPEED);
+                expect(Math.abs(speed - expectedSpeed) < 1.0E-6 && jump > 0.42, "Expected the wearer free to move once stepped in, speed " + speed + ", jump " + jump);
+
+                drains(context, server);
+                sneakNeitherCrouchesNorHolds(context, server);
+                movingFeedsOnCharge(context, server);
+                sinksInWater(context, server);
+                ridesAndSleepsNowhere(context, server);
+                fallsComeOutOfTheBattery(context, server);
+                shedsThenGoesLimp(context, server);
+                stepsOutLimp(context, server);
+            }
+        }
+        finally
+        {
+            // All tests share one client, so it gets back the camera it came with
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 

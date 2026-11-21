@@ -249,9 +249,11 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
         var cell = cellAt(event.x(), event.y());
         if (cell == null)
         {
-            var slot = hoveredSlot;
-            pressedOnSlot = event.button() == InputConstants.MOUSE_BUTTON_LEFT && slot != null && slot.hasItem() && menu.getCarried().isEmpty();
-            return super.mouseClicked(event, doubleClick);
+            // Whether the press picked something up is read from the cursor after it, since the hovered slot can be a frame behind the press
+            boolean emptyHanded = menu.getCarried().isEmpty();
+            boolean handled = super.mouseClicked(event, doubleClick);
+            pressedOnSlot = event.button() == InputConstants.MOUSE_BUTTON_LEFT && emptyHanded && !menu.getCarried().isEmpty();
+            return handled;
         }
 
         if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT)
@@ -265,9 +267,9 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
         var held = held();
         if (held != null)
             press(VoidArmorMenu.placeButton(cell.kind(), originX(held, cell), originY(held, cell), rotation));
-        else if (menu.getCarried().isEmpty() && menu.grids().at(cell.kind(), cell.x(), cell.y()) != null)
+        else if (menu.getCarried().isEmpty() && menu.grids().at(cell.kind(), cell.x(), cell.y()) instanceof ArmorGrids.Placement under)
         {
-            press(VoidArmorMenu.takeButton(cell.kind(), cell.x(), cell.y(), event.hasShiftDown()));
+            press(VoidArmorMenu.takeButton(cell.kind(), cell.x(), cell.y(), event.hasShiftDown(), under.module()));
             if (!event.hasShiftDown())
                 pressedCell = cell;
         }
@@ -438,6 +440,15 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
     {
         int gridX = screenGridX(kind);
         int gridY = screenGridY(kind);
+        // A ghost hanging over the edge is cut at the grid, so only where it would land shows
+        graphics.enableScissor(gridX, gridY, gridX + kind.width() * CELL, gridY + kind.height() * CELL);
+        extractPieceInGrid(graphics, kind, shape, originX, originY, fill, edge, icon, gridX, gridY);
+        graphics.disableScissor();
+    }
+
+    private void extractPieceInGrid(GuiGraphicsExtractor graphics, ArmorGridKind kind, ComponentShape shape, int originX, int originY, int fill, int edge,
+                                    ItemStack icon, int gridX, int gridY)
+    {
         for (var cell : shape.cells())
         {
             int x = gridX + (originX + cell.x()) * CELL;

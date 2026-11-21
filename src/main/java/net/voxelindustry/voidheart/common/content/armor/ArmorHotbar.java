@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.content.armor;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.core.NonNullList;
@@ -41,8 +42,20 @@ public final class ArmorHotbar
             builder -> builder.persistent(Codec.INT));
 
     /** The rack a thrown weapon left, so it comes back there. */
-    public static final AttachmentType<Integer> THROWN_FROM = AttachmentRegistry.create(Identifier.fromNamespaceAndPath(MODID, "void_armor_thrown_from"),
-            builder -> builder.persistent(Codec.INT));
+    public static final AttachmentType<Thrown> THROWN_FROM = AttachmentRegistry.create(Identifier.fromNamespaceAndPath(MODID, "void_armor_thrown_from"),
+            builder -> builder.persistent(Thrown.CODEC));
+
+    /**
+     * @param rack  the rack a weapon was thrown from
+     * @param worn  when the frame it was thrown from was stepped into, so it goes back to that frame's rack and no other
+     */
+    public record Thrown(int rack, long worn)
+    {
+        public static final Codec<Thrown> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.INT.fieldOf("rack").forGetter(Thrown::rack),
+                Codec.LONG.fieldOf("worn").forGetter(Thrown::worn)
+        ).apply(instance, Thrown::new));
+    }
 
     private ArmorHotbar()
     {
@@ -175,20 +188,23 @@ public final class ArmorHotbar
      */
     public static void thrown(Entity projectile, Player thrower)
     {
-        if (ArmorWear.wearing(thrower))
-            projectile.setAttached(THROWN_FROM, thrower.getInventory().getSelectedSlot());
+        var worn = ArmorWear.worn(thrower);
+        if (worn != null)
+            projectile.setAttached(THROWN_FROM, new Thrown(thrower.getInventory().getSelectedSlot(), worn.since()));
     }
 
     /**
-     * Puts a thrown weapon a wearer picks back up in the rack it left, or the first empty one.
+     * Puts a thrown weapon a wearer picks back up in the rack it left, or the first empty one, as long as they still wear the frame it was thrown from.
      *
      * @return whether it went in a rack; when not, it goes where it would have
      */
     public static boolean pickUp(Entity projectile, Player player, ItemStack stack)
     {
-        var rack = projectile.getAttached(THROWN_FROM);
-        if (rack == null || stack.isEmpty() || !ArmorWear.wearing(player))
+        var thrown = projectile.getAttached(THROWN_FROM);
+        var worn = ArmorWear.worn(player);
+        if (thrown == null || stack.isEmpty() || worn == null || worn.since() != thrown.worn())
             return false;
+        int rack = thrown.rack();
         var inventory = player.getInventory();
         int slot = rack >= 0 && rack < RACKS && inventory.getItem(rack).isEmpty() ? rack : -1;
         for (int i = 0; slot < 0 && i < RACKS; i++)

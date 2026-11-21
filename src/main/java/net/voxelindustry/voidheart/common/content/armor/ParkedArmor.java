@@ -97,7 +97,20 @@ public class ParkedArmor extends Entity
     }
 
     /**
-     * Fallen out of the world, it goes home to its base, or with none to go to, stands at the overworld's spawn.
+     * A kill by command leaves the frame as an item, as one by damage does, rather than losing it.
+     */
+    @Override
+    public void kill(ServerLevel level)
+    {
+        if (!frame().isEmpty())
+            spawnAtLocation(level, frame());
+        setFrame(ItemStack.EMPTY);
+        super.kill(level);
+    }
+
+    /**
+     * Fallen out of the world, it goes home to its base, or with none to go to, stands near the overworld's spawn where there is room to step in. With
+     * no such room it stands on the spawn itself rather than being lost.
      */
     @Override
     protected void onBelowWorld()
@@ -105,7 +118,9 @@ public class ParkedArmor extends Entity
         if (level() instanceof ServerLevel level && !frame().isEmpty() && !ArmorWear.sendHome(level.getServer(), frame()))
         {
             var overworld = level.getServer().overworld();
-            ArmorWear.park(overworld, Vec3.atBottomCenterOf(overworld.getRespawnData().pos()), getYRot(), frame());
+            var spawn = Vec3.atBottomCenterOf(overworld.getRespawnData().pos());
+            var spot = ArmorWear.roomNear(overworld, spawn, getYRot());
+            ArmorWear.park(overworld, spot != null ? spot : spawn, getYRot(), frame());
         }
         setFrame(ItemStack.EMPTY);
         discard();

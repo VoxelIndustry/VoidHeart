@@ -48,21 +48,30 @@ public class VoidArmorResearchClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        try (var world = context.worldBuilder().create())
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
         {
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
-            server.runCommand("gamemode survival @a");
-            server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 -60");
-            server.runCommand("execute as @a run voidheart research grant voidheart:warding_lattice");
-            context.waitTicks(10);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            try (var world = context.worldBuilder().create())
+            {
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                server.runCommand("time set noon");
+                server.runCommand("gamerule advance_time false");
+                server.runCommand("gamemode survival @a");
+                server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 -60");
+                server.runCommand("execute as @a run voidheart research grant voidheart:warding_lattice");
+                context.waitTicks(10);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            studyTheCore(context, server);
-            buildTheFrame(context, server);
-            spectralLensWaitsForTheBeholder(context, server);
+                studyTheCore(context, server);
+                buildTheFrame(context, server);
+                spectralLensWaitsForTheBeholder(context, server);
+            }
+        }
+        finally
+        {
+            // All tests share one client, so it gets back the camera it came with
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 

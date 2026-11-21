@@ -127,10 +127,16 @@ public class VoidArmorMenu extends AbstractContainerMenu
         return button(PLACE, kind, x, y, rotation);
     }
 
-    public static int takeButton(ArmorGridKind kind, int x, int y, boolean toInventory)
+    /**
+     * @param module the piece the player sees there, so a take raced by another player's edit of the same cell is refused rather than handing over
+     *               another piece
+     */
+    public static int takeButton(ArmorGridKind kind, int x, int y, boolean toInventory, ArmorModule module)
     {
-        return button(toInventory ? TAKE_TO_INVENTORY : TAKE_TO_CURSOR, kind, x, y, 0);
+        return button(toInventory ? TAKE_TO_INVENTORY : TAKE_TO_CURSOR, kind, x, y, 0) | (module.ordinal() + 1) << MODULE_SHIFT;
     }
+
+    private static final int MODULE_SHIFT = 16;
 
     private static int button(int action, ArmorGridKind kind, int x, int y, int rotation)
     {
@@ -144,14 +150,16 @@ public class VoidArmorMenu extends AbstractContainerMenu
         int rotation = id >> 2 & 3;
         int x = id >> 4 & 15;
         int y = id >> 8 & 15;
-        int grid = id >> 12;
-        if (grid >= ArmorGridKind.values().length)
+        int grid = id >> 12 & 15;
+        // Anything a client sends is checked, a negative id included
+        if (id < 0 || grid >= ArmorGridKind.values().length)
             return false;
+        int expected = (id >> MODULE_SHIFT) - 1;
         var kind = ArmorGridKind.values()[grid];
         boolean accepted = switch (action)
         {
             case PLACE -> place(player, kind, x, y, rotation);
-            case TAKE_TO_CURSOR, TAKE_TO_INVENTORY -> take(player, kind, x, y, action == TAKE_TO_INVENTORY);
+            case TAKE_TO_CURSOR, TAKE_TO_INVENTORY -> take(player, kind, x, y, action == TAKE_TO_INVENTORY, expected);
             default -> false;
         };
         // The client already made the edit it asked for. Refused here, nothing changed to sync, so it would keep it: send back the cursor, the slots and
@@ -188,13 +196,13 @@ public class VoidArmorMenu extends AbstractContainerMenu
     /**
      * Takes back the piece covering the cell, onto the cursor when it is free or holds the same module, otherwise into the inventory.
      */
-    private boolean take(Player player, ArmorGridKind kind, int x, int y, boolean toInventory)
+    private boolean take(Player player, ArmorGridKind kind, int x, int y, boolean toInventory, int expected)
     {
         if (base == null || !base.hasFrame())
             return false;
         var grids = base.grids();
         var placement = grids.at(kind, x, y);
-        if (placement == null)
+        if (placement == null || placement.module().ordinal() != expected)
             return false;
 
         var returned = new ItemStack(VoidArmorContent.MODULES.get(placement.module()));

@@ -9,7 +9,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.voxelindustry.voidheart.common.content.armor.ArmorBalance;
 import net.voxelindustry.voidheart.common.content.armor.ArmorWear;
@@ -29,10 +31,11 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.expect;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.player;
 
 /**
- * A docked frame charges from a creative well's field, and far from any field from the rubrum cell in its base. A use on the base steps the player into it
- * after a moment in which they can't move, at the frame's size, and holding sneak lets them out: away from a base the frame stays parked where they stood
- * until a use steps them back in, and standing on an empty base it docks there. A ceiling two blocks up refuses stepping in, three is room enough. On a real death the frame goes back
- * to its base, emptied, and with that base gone it stands beside the respawned player.
+ * A docked frame charges from a creative well's field, and far from any field from the rubrum cell in its base. A use on the frame in its arch steps the
+ * player into it after a moment in which they can't move, at the frame's size, and holding sneak lets them out: away from a base the frame stays parked
+ * where they stood until a use steps them back in, and standing on an empty base it docks there. The arch isn't placed without room for it, and breaking
+ * any part takes it all down and drops the base once. On a real death the frame goes back to its base, emptied, and with that base gone it stands beside
+ * the respawned player.
  */
 public class VoidArmorWearClientTest implements FabricClientGameTest
 {
@@ -44,33 +47,42 @@ public class VoidArmorWearClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        try (var world = context.worldBuilder().create())
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
         {
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
-            server.runCommand("gamerule spawn_mobs false");
-            server.runCommand("gamerule immediate_respawn true");
-            server.runCommand("gamemode survival @a");
-            server.runCommand("clear @a");
-            // Arches facing the player, who stands north of them
-            server.runOnServer(minecraft ->
+            try (var world = context.worldBuilder().create())
             {
-                VoidArmorBaseBlock.build(minecraft.overworld(), BASE, Direction.NORTH);
-                VoidArmorBaseBlock.build(minecraft.overworld(), FAR_BASE, Direction.NORTH);
-            });
-            server.runCommand("setblock " + at(WELL) + " voidheart:creative_void_well");
-            context.waitTicks(10);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                server.runCommand("time set noon");
+                server.runCommand("gamerule advance_time false");
+                server.runCommand("gamerule spawn_mobs false");
+                server.runCommand("gamerule immediate_respawn true");
+                server.runCommand("gamemode survival @a");
+                server.runCommand("clear @a");
+                // Arches facing the player, who stands north of them
+                server.runOnServer(minecraft ->
+                {
+                    VoidArmorBaseBlock.build(minecraft.overworld(), BASE, Direction.NORTH);
+                    VoidArmorBaseBlock.build(minecraft.overworld(), FAR_BASE, Direction.NORTH);
+                });
+                server.runCommand("setblock " + at(WELL) + " voidheart:creative_void_well");
+                context.waitTicks(10);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            charge(context, server);
-            stepInAndOut(context, server);
-            dockOnStepOut(context, server);
-            archNeedsRoom(context, server);
-            deathSendsHome(context, server);
-            homelessParksBesideRespawn(context, server);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                charge(context, server);
+                stepInAndOut(context, server);
+                dockOnStepOut(context, server);
+                archNeedsRoom(context, server);
+                deathSendsHome(context, server);
+                homelessParksBesideRespawn(context, server);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            }
+        }
+        finally
+        {
+            // All tests share one client, so it gets back the camera it came with
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 
@@ -200,11 +212,18 @@ public class VoidArmorWearClientTest implements FabricClientGameTest
             var level = minecraft.overworld();
             var facing = level.getBlockState(low).getValue(VoidArmorBaseBlock.FACING);
             var pillar = VoidArmorBaseBlock.parts(low, facing).stream().filter(part -> part.part() == VoidArmorBaseBlock.Part.SHAFT).findFirst().orElseThrow();
-            player(minecraft).gameMode.destroyBlock(pillar.pos());
+            var player = player(minecraft);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.NETHERITE_PICKAXE));
+            player.gameMode.destroyBlock(pillar.pos());
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             boolean gone = VoidArmorBaseBlock.parts(low, facing).stream().noneMatch(part -> level.getBlockState(part.pos()).is(VoidArmorContent.VOID_ARMOR_BASE));
             expect(gone, "Expected breaking a pillar to take the whole arch down");
         });
         context.waitTicks(3);
+        // The plinth drops the base once, and no other part drops anything
+        int bases = server.computeOnServer(minecraft -> minecraft.overworld().getEntitiesOfClass(ItemEntity.class, new AABB(low).inflate(4)).stream()
+                .filter(item -> item.getItem().is(VoidArmorContent.VOID_ARMOR_BASE.asItem())).mapToInt(item -> item.getItem().getCount()).sum());
+        expect(bases == 1, "Expected breaking the arch to drop one base, dropped " + bases);
         server.runCommand("kill @e[type=item]");
     }
 

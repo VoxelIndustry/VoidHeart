@@ -54,21 +54,30 @@ public class VoidArmorModulesClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
-        try (var world = context.worldBuilder().create())
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
         {
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            server.runCommand("time set noon");
-            server.runCommand("gamerule advance_time false");
-            server.runCommand("gamerule spawn_mobs false");
-            server.runCommand("gamemode survival @a");
-            server.runCommand("clear @a");
-            server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
-            context.waitTicks(10);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            try (var world = context.worldBuilder().create())
+            {
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                server.runCommand("time set noon");
+                server.runCommand("gamerule advance_time false");
+                server.runCommand("gamerule spawn_mobs false");
+                server.runCommand("gamemode survival @a");
+                server.runCommand("clear @a");
+                server.runCommand("tp @a 0.5 " + FLAT_FEET + " 0.5 0 0");
+                context.waitTicks(10);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            socketHoldsTheShield(context, server);
-            sightsShowWhatTheyShould(context, server);
+                socketHoldsTheShield(context, server);
+                sightsShowWhatTheyShould(context, server);
+            }
+        }
+        finally
+        {
+            // All tests share one client, so it gets back the camera it came with
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 

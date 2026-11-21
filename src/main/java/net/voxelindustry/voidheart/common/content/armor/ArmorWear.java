@@ -140,6 +140,8 @@ public final class ArmorWear
         {
             if (moving(player))
                 return InteractionResult.FAIL;
+            // A fall can take the charge below the cutoff since the last refresh, so the hit's bonus is brought in line with what the frame runs now
+            applyModifiers(player, player.getAttached(WORN));
             if (player instanceof ServerPlayer serverPlayer && load(player).exoskeleton())
                 draw(serverPlayer, ArmorBalance.POWERED_HIT_DRAIN);
             return InteractionResult.PASS;
@@ -283,6 +285,10 @@ public final class ArmorWear
      */
     public static ShieldStats shieldStats(Player player, ShieldStats stats)
     {
+        // Only a frame that is fully on refills it: while stepping in or out it spends nothing, so it pays for nothing either
+        var worn = worn(player);
+        if (worn == null || worn.phase() != WornArmor.Phase.WORN)
+            return stats.withRegen(0);
         return stats.withRegen(ArmorDrain.shieldRegen(stats.regenPerTick(), stage(player)));
     }
 
@@ -384,10 +390,15 @@ public final class ArmorWear
         {
             case HOMELESS ->
             {
-                if (player.isAlive())
+                // It waits with its wearer until there is room near them to stand where they can step back in
+                if (player.isAlive() && (time - worn.since()) % PARK_RETRY == 0)
                 {
-                    player.removeAttached(WORN);
-                    park(player.level(), besideRespawn(player), player.getYRot(), worn.frame());
+                    var spot = roomNear(player.level(), player.position(), player.getYRot());
+                    if (spot != null)
+                    {
+                        player.removeAttached(WORN);
+                        park(player.level(), spot, player.getYRot(), worn.frame());
+                    }
                 }
             }
             case STEPPING_IN ->
@@ -653,16 +664,48 @@ public final class ArmorWear
     /**
      * A free spot a step from the respawned player, ahead of them first, then to either side, then behind, so the frame doesn't stand inside them.
      */
-    private static Vec3 besideRespawn(ServerPlayer player)
+    /** How far out, in blocks, a frame looks for room to stand when the spots beside the player are shut. */
+    private static final int PARK_SEARCH  = 6;
+    /** How far up and down it looks, for respawns on stairs and slopes. */
+    private static final int PARK_RISE    = 2;
+    /** Ticks between looks for room while a homeless frame waits for its wearer to reach some. */
+    private static final int PARK_RETRY   = 20;
+
+    /**
+     * A spot near there with room for a wearer to step into the frame and ground under it: a step ahead, to either side or behind, then the nearest
+     * further out. Null when there is none within reach.
+     */
+    public static @Nullable Vec3 roomNear(ServerLevel level, Vec3 around, float yaw)
     {
         for (float turn : new float[] { 0, 90, -90, 180 })
         {
-            var look = Vec3.directionFromRotation(0, player.getYRot() + turn);
-            var spot = player.position().add(look.x * ArmorBalance.PARK_BESIDE, 0, look.z * ArmorBalance.PARK_BESIDE);
-            if (player.level().noCollision(wearerBox(spot)))
+            var look = Vec3.directionFromRotation(0, yaw + turn);
+            var spot = around.add(look.x * ArmorBalance.PARK_BESIDE, 0, look.z * ArmorBalance.PARK_BESIDE);
+            if (standable(level, spot))
                 return spot;
         }
-        return player.position();
+        var centre = BlockPos.containing(around);
+        for (int radius = 1; radius <= PARK_SEARCH; radius++)
+            for (int dy : new int[] { 0, 1, -1, 2, -2 })
+            {
+                if (Math.abs(dy) > PARK_RISE)
+                    continue;
+                for (int dx = -radius; dx <= radius; dx++)
+                    for (int dz = -radius; dz <= radius; dz++)
+                    {
+                        if (Math.max(Math.abs(dx), Math.abs(dz)) != radius)
+                            continue;
+                        var spot = Vec3.atBottomCenterOf(centre.offset(dx, dy, dz));
+                        if (standable(level, spot))
+                            return spot;
+                    }
+            }
+        return null;
+    }
+
+    private static boolean standable(ServerLevel level, Vec3 feet)
+    {
+        return level.noCollision(wearerBox(feet)) && !level.noCollision(wearerBox(feet).move(0, -0.5, 0).setMaxY(feet.y));
     }
 
     public static void park(ServerLevel level, Vec3 feet, float yaw, ItemStack frame)
