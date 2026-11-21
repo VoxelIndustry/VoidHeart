@@ -9,11 +9,14 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -40,11 +43,31 @@ public class PocketHoard extends SavedData
         ).apply(instance, Coffer::new));
     }
 
-    private record Saved(List<Item> items, List<Coffer> coffers)
+    private record Vessel(long pos, int index, Optional<EssenceType> aspect, long capacity)
+    {
+        static final Codec<Vessel> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.LONG.fieldOf("pos").forGetter(Vessel::pos),
+                Codec.INT.optionalFieldOf("index", 0).forGetter(Vessel::index),
+                EssenceRegistry.ASPECT_CODEC.optionalFieldOf("aspect").forGetter(Vessel::aspect),
+                Codec.LONG.fieldOf("capacity").forGetter(Vessel::capacity)
+        ).apply(instance, Vessel::new));
+    }
+
+    private record Essence(EssenceType aspect, long amount)
+    {
+        static final Codec<Essence> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                EssenceRegistry.ASPECT_CODEC.fieldOf("aspect").forGetter(Essence::aspect),
+                Codec.LONG.fieldOf("amount").forGetter(Essence::amount)
+        ).apply(instance, Essence::new));
+    }
+
+    private record Saved(List<Item> items, List<Coffer> coffers, List<Vessel> vessels, List<Essence> essence)
     {
         static final Codec<Saved> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Item.CODEC.listOf().optionalFieldOf("items", List.of()).forGetter(Saved::items),
-                Coffer.CODEC.listOf().optionalFieldOf("coffers", List.of()).forGetter(Saved::coffers)
+                Coffer.CODEC.listOf().optionalFieldOf("coffers", List.of()).forGetter(Saved::coffers),
+                Vessel.CODEC.listOf().optionalFieldOf("vessels", List.of()).forGetter(Saved::vessels),
+                Essence.CODEC.listOf().optionalFieldOf("essence", List.of()).forGetter(Saved::essence)
         ).apply(instance, Saved::new));
     }
 
@@ -74,6 +97,13 @@ public class PocketHoard extends SavedData
             var items = new LinkedHashMap<ItemVariant, Long>();
             data.items().forEach(item -> items.merge(item.variant(), item.count(), Long::sum));
             hoard.counts.load(items, hoard.cofferCapacity());
+
+            var vessels = new LinkedHashMap<PocketReserve.SlotId, PocketReserve.Slot<EssenceType>>();
+            data.vessels().forEach(vessel -> vessels.put(new PocketReserve.SlotId(vessel.pos(), vessel.index()),
+                    new PocketReserve.Slot<>(vessel.aspect().orElse(null), vessel.capacity())));
+            var essence = new LinkedHashMap<EssenceType, Long>();
+            data.essence().forEach(held -> essence.merge(held.aspect(), held.amount(), Long::sum));
+            hoard.reserve.load(vessels, essence);
         });
     }
 
@@ -84,7 +114,10 @@ public class PocketHoard extends SavedData
         {
             var items = hoard.counts.view().entrySet().stream().map(entry -> new Item(entry.getKey(), entry.getValue())).toList();
             var coffers = hoard.coffers.entrySet().stream().map(entry -> new Coffer(entry.getKey(), entry.getValue())).toList();
-            saved.put(owner, new Saved(items, coffers));
+            var vessels = hoard.reserve.slots().entrySet().stream().map(entry -> new Vessel(entry.getKey().pos(), entry.getKey().index(),
+                    Optional.ofNullable(entry.getValue().aspect()), entry.getValue().capacity())).toList();
+            var essence = hoard.reserve.amounts().entrySet().stream().map(entry -> new Essence(entry.getKey(), entry.getValue())).toList();
+            saved.put(owner, new Saved(items, coffers, vessels, essence));
         });
         return saved;
     }
@@ -100,12 +133,13 @@ public class PocketHoard extends SavedData
     }
 
     /**
-     * One pocket's hoard. Each change counts up its version, so a screen showing it knows when to send it again.
+     * One pocket's hoard and its essence reserve. Each change counts up its version, so a screen showing it knows when to send it again.
      */
     public class Hoard
     {
         private final HoardCounts<ItemVariant> counts = new HoardCounts<>();
         private final Map<BlockPos, Long> coffers = new HashMap<>();
+        private final PocketReserve<EssenceType> reserve = new PocketReserve<>();
         private long version;
 
         private long cofferCapacity()
@@ -192,6 +226,43 @@ public class PocketHoard extends SavedData
                 coffers.put(pos.immutable(), capacity);
             counts.setCapacity(cofferCapacity());
             changed();
+        }
+
+        /**
+         * The essence reserve, read only: change it through the methods below so it is saved.
+         */
+        public PocketReserve<EssenceType> reserve()
+        {
+            return reserve;
+        }
+
+        public long insertEssence(EssenceType aspect, long amount)
+        {
+            var taken = reserve.insert(aspect, amount);
+            if (taken > 0)
+                changed();
+            return taken;
+        }
+
+        public long extractEssence(EssenceType aspect, long amount)
+        {
+            var taken = reserve.extract(aspect, amount);
+            if (taken > 0)
+                changed();
+            return taken;
+        }
+
+        public void addVessel(PocketReserve.SlotId id, EssenceType aspect, long capacity, long amount)
+        {
+            reserve.addSlot(id, aspect == EssenceRegistry.EMPTY ? null : aspect, capacity, amount);
+            changed();
+        }
+
+        public PocketReserve.Share<EssenceType> removeVessel(PocketReserve.SlotId id)
+        {
+            var share = reserve.removeSlot(id);
+            changed();
+            return share;
         }
 
         /**

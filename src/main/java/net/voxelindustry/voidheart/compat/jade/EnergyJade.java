@@ -28,6 +28,7 @@ public final class EnergyJade
 
     public static void register(IWailaCommonRegistration registration)
     {
+        HoardJade.register(registration);
         VoidGridJade.register(registration);
         RubrumJade.register(registration);
         LeyStoneJade.register(registration);

@@ -122,6 +122,9 @@ public class RavenousStorageBlock extends TwoHighBlock<RavenousStorageBlock.Rave
     protected List<ItemStack> lowerDrops(BlockState state, LootParams.Builder builder)
     {
         var stack = new ItemStack(this);
+        // A storage in a pocket takes its share of the reserve back first, whether it is broken or blown apart
+        if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof RavenousStorageTile vessel)
+            vessel.leaveReserve();
         if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof RavenousStorageTile storage
                 && !storage.storage().isUnattuned() && storage.storage().amount() > 0)
             stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, storage.storage().copy());

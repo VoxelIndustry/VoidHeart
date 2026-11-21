@@ -61,7 +61,10 @@ public final class WorksPayloads
         }
     }
 
-    public record Plan(int containerId, ItemVariant item, long count, WorksGraph graph) implements CustomPacketPayload
+    /**
+     * @param reserve what the owner's essence reserve holds of each aspect the plan drinks, by aspect id
+     */
+    public record Plan(int containerId, ItemVariant item, long count, WorksGraph graph, Map<String, Long> reserve) implements CustomPacketPayload
     {
         public static final Type<Plan> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "works_plan"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Plan> STREAM_CODEC = StreamCodec.composite(
@@ -69,6 +72,8 @@ public final class WorksPayloads
                 ItemVariant.PACKET_CODEC, Plan::item,
                 ByteBufCodecs.VAR_LONG, Plan::count,
                 WorksGraph.STREAM_CODEC, Plan::graph,
+                ByteBufCodecs.<RegistryFriendlyByteBuf, String, Long, Map<String, Long>>map(LinkedHashMap::new, ByteBufCodecs.STRING_UTF8, ByteBufCodecs.VAR_LONG),
+                plan -> new LinkedHashMap<>(plan.reserve()),
                 Plan::new);
 
         @Override

@@ -261,10 +261,14 @@ public final class RelayNetwork
             sources.add(new Source(pos, collector.storage().type(), priority(collector, flowing.contains(pos)), collector, null,
                     relay -> relay.linkedCollectors().contains(pos)));
         }
+        // Two stores opening onto one pool, such as two Aspect Folds of one pocket, are one source
+        var pools = new java.util.HashSet<Object>();
         for (var entry : stores(level, relays).entrySet())
         {
             var pos = entry.getKey();
             var store = entry.getValue();
+            if (!pools.add(store.essencePool()))
+                continue;
             for (var aspect : (Iterable<EssenceType>) EssenceRegistry.ESSENCE_REGISTRY.stream()::iterator)
             {
                 var amount = store.amountOf(aspect);
@@ -444,6 +448,21 @@ public final class RelayNetwork
     /**
      * Visits the block entities of loaded chunks within range of a block center.
      */
+    /**
+     * @return how much of an aspect some suppliers hold together, each pool counted once however many of them open onto it
+     */
+    public static int heldBy(java.util.Collection<IEssenceReceiver> suppliers, EssenceType aspect)
+    {
+        var pools = new java.util.HashSet<Object>();
+        long held = 0;
+        for (var supplier : suppliers)
+        {
+            if (pools.add(supplier.essencePool()))
+                held += supplier.amountOf(aspect);
+        }
+        return (int) Math.min(Integer.MAX_VALUE, held);
+    }
+
     public static void forEachTileInRange(Level level, BlockPos origin, int range, Consumer<BlockEntity> action)
     {
         var center = Vec3.atCenterOf(origin);

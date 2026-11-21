@@ -545,9 +545,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         var already = recipe == currentRecipe ? drunk : Map.<EssenceType, Integer>of();
         for (var need : AthanorMath.missing(recipe.getAspects(), already).entrySet())
         {
-            var held = RelayNetwork.suppliersOfReceiver(getLevel(), getBlockPos(), need.getKey()).values().stream()
-                    .mapToInt(store -> store.amountOf(need.getKey()))
-                    .sum();
+            var held = RelayNetwork.heldBy(RelayNetwork.suppliersOfReceiver(getLevel(), getBlockPos(), need.getKey()).values(), need.getKey());
             if (held < need.getValue())
                 return false;
         }

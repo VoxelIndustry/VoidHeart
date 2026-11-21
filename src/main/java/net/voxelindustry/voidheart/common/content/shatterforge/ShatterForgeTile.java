@@ -505,7 +505,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     {
     }
 
-    private record Reservation(IEssenceReceiver storage, EssenceType type)
+    /**
+     * @param pool what the storage holds its essence in, shared by every store opening onto it
+     */
+    private record Reservation(Object pool, EssenceType type)
     {
     }
 
@@ -669,7 +672,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
             for (var storage : RelayNetwork.suppliers(level, drain.collector().getBlockPos(), drain.type()).values())
             {
-                var reservation = new Reservation(storage, drain.type());
+                var reservation = new Reservation(storage.essencePool(), drain.type());
                 var taken = Math.min(missing, storage.amountOf(drain.type()) - reserved.getOrDefault(reservation, 0));
                 if (taken <= 0)
                     continue;

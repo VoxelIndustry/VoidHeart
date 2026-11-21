@@ -308,6 +308,10 @@ final class WorksView
             if (!graph.essence().isEmpty())
             {
                 var drink = graph.essence().entrySet().iterator().next();
+                var plan = menu.getPlan();
+                var reserve = plan == null || shownJob() != null ? null : plan.reserve().get(drink.getKey());
+                if (reserve != null && reserve > 0)
+                    return Component.translatable(MODID + ".works.whisper.drinks_reserve", drink.getValue(), aspectName(drink.getKey()), HoardScreen.countText(reserve));
                 return Component.translatable(MODID + ".works.whisper.drinks", drink.getValue(), aspectName(drink.getKey()));
             }
             return Component.translatable(MODID + ".works.whisper.ready");

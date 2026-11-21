@@ -36,6 +36,9 @@ public final class HoardDatagen
         var fold = ModelTemplates.CUBE_ALL.create(HoardContent.FOLD, TextureMapping.cube(blockTexture("fold")), generators.modelOutput);
         generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(HoardContent.FOLD, plainVariant(fold)));
 
+        var aspectFold = ModelTemplates.CUBE_ALL.create(HoardContent.ASPECT_FOLD, TextureMapping.cube(blockTexture("aspect_fold")), generators.modelOutput);
+        generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(HoardContent.ASPECT_FOLD, plainVariant(aspectFold)));
+
         var coffer = ModelTemplates.CUBE_BOTTOM_TOP.create(HoardContent.HOARD_COFFER, new TextureMapping()
                 .put(TextureSlot.SIDE, blockTexture("hoard_coffer_side"))
                 .put(TextureSlot.TOP, blockTexture("hoard_coffer_top"))
@@ -54,11 +57,16 @@ public final class HoardDatagen
         recipes.altar("fold", HoardContent.FOLD, Blocks.HOPPER,
                 VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT, VoidHeartItems.COVETOUS_COPPER_INGOT,
                 VoidHeartItems.VOID_PEARL, VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD, CrystalBundles.shard(CrystalKind.AZURIUM));
+        // Essence is gluttony's, so the Fold is recast in Ravenous Gold
+        recipes.altar("aspect_fold", HoardContent.ASPECT_FOLD, HoardContent.FOLD,
+                VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
+                VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL, CrystalBundles.shard(CrystalKind.AZURIUM), CrystalBundles.shard(CrystalKind.AZURIUM));
     }
 
     public static void loot(BlockLootSubProvider loot)
     {
         loot.dropSelf(HoardContent.HOARD_COFFER);
         loot.dropSelf(HoardContent.FOLD);
+        loot.dropSelf(HoardContent.ASPECT_FOLD);
     }
 }

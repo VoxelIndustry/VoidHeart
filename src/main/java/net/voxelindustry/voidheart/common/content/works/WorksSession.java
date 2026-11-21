@@ -80,7 +80,15 @@ public final class WorksSession
         var server = player.level().getServer();
         var hoard = hoard();
         var plan = WorksPlan.plan(WorksCatalogues.of(server, owner, hoard).lookup(), hoard.view(), item, Math.max(1, count));
-        ServerPlayNetworking.send(player, new WorksPayloads.Plan(containerId, item, count, WorksGraph.of(plan)));
+        var graph = WorksGraph.of(plan);
+        var reserve = new java.util.LinkedHashMap<String, Long>();
+        for (var aspect : graph.essence().keySet())
+        {
+            var key = net.minecraft.resources.Identifier.tryParse(aspect);
+            var type = key == null ? null : net.voxelindustry.voidheart.common.content.essence.EssenceRegistry.ESSENCE_REGISTRY.getValue(key);
+            reserve.put(aspect, type == null ? 0 : hoard.reserve().amountOf(type));
+        }
+        ServerPlayNetworking.send(player, new WorksPayloads.Plan(containerId, item, count, graph, reserve));
     }
 
     void begin(ItemVariant item, long count)

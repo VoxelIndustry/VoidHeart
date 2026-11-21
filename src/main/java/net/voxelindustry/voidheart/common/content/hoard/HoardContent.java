@@ -38,9 +38,11 @@ public final class HoardContent
 {
     public static Block HOARD_COFFER;
     public static Block FOLD;
+    public static Block ASPECT_FOLD;
 
     public static BlockEntityType<HoardCofferTile> HOARD_COFFER_TILE;
     public static BlockEntityType<FoldTile>        FOLD_TILE;
+    public static BlockEntityType<AspectFoldTile>  ASPECT_FOLD_TILE;
 
     public static ExtendedMenuType<HoardMenu, HoardMenu.Opening> HOARD_MENU;
 
@@ -65,19 +67,29 @@ public final class HoardContent
                 .lightLevel(state -> 4)
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.COPPER), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".fold.lore"));
+        ASPECT_FOLD = VoidHeartBlocks.registerBlock("aspect_fold", AspectFoldBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.GOLD)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(3F, 6F)
+                .lightLevel(state -> 6)
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.METAL), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".aspect_fold.lore"));
 
         VoidHeartTiles.registerTile(HOARD_COFFER_TILE = FabricBlockEntityTypeBuilder.create(HoardCofferTile::new, HOARD_COFFER).build(), "hoard_coffer");
         VoidHeartTiles.registerTile(FOLD_TILE = FabricBlockEntityTypeBuilder.create(FoldTile::new, FOLD).build(), "fold");
+        VoidHeartTiles.registerTile(ASPECT_FOLD_TILE = FabricBlockEntityTypeBuilder.create(AspectFoldTile::new, ASPECT_FOLD).build(), "aspect_fold");
 
         ItemStorage.SIDED.registerForBlockEntity((fold, direction) -> fold.storage(), FOLD_TILE);
 
         HOARD_MENU = Registry.register(BuiltInRegistries.MENU, Identifier.fromNamespaceAndPath(MODID, "hoard"),
                 new ExtendedMenuType<>(HoardMenu::new, HoardMenu.Opening.STREAM_CODEC));
         HoardPayloads.register();
+        ReserveVessels.register();
     }
 
     /**
-     * Adds /voidheart hoard, on the caller's own pocket: list, fill an item, capacity and clear.
+     * Adds /voidheart hoard, on the caller's own pocket: list, fill an item, capacity, clear, and the essence reserve.
      */
     public static void registerCommands(LiteralArgumentBuilder<CommandSourceStack> builder, CommandBuildContext registries)
     {
@@ -85,6 +97,9 @@ public final class HoardContent
                 .then(literal("list").executes(HoardContent::list))
                 .then(literal("capacity").executes(HoardContent::capacity))
                 .then(literal("clear").executes(HoardContent::clear))
+                .then(literal("reserve").executes(HoardContent::reserve)
+                        .then(argument("aspect", net.minecraft.commands.arguments.IdentifierArgument.id())
+                                .then(argument("amount", IntegerArgumentType.integer(1)).executes(HoardContent::pour))))
                 .then(literal("fill").then(argument("item", ItemArgument.item(registries))
                         .then(argument("count", IntegerArgumentType.integer(1))
                                 .executes(HoardContent::fill)))));
@@ -117,6 +132,28 @@ public final class HoardContent
         callerHoard(context).clear();
         context.getSource().sendSuccess(() -> Component.literal("Hoard emptied"), false);
         return 1;
+    }
+
+    private static int reserve(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var reserve = callerHoard(context).reserve();
+        var source = context.getSource();
+        source.sendSuccess(() -> Component.literal("Reserve: " + reserve.slots().size() + " vessel slot(s), " + reserve.freeCapacity() + " free room"), false);
+        reserve.amounts().forEach((aspect, amount) -> source.sendSuccess(() -> Component.translatable(aspect.translatableName())
+                .append(" " + amount + "/" + reserve.capacityOf(aspect)), false));
+        return reserve.amounts().size();
+    }
+
+    /**
+     * Pours essence straight into the reserve, for review.
+     */
+    private static int pour(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var id = net.minecraft.commands.arguments.IdentifierArgument.getId(context, "aspect");
+        var aspect = net.voxelindustry.voidheart.common.content.essence.EssenceRegistry.ESSENCE_REGISTRY.getValue(id);
+        var put = callerHoard(context).insertEssence(aspect, IntegerArgumentType.getInteger(context, "amount"));
+        context.getSource().sendSuccess(() -> Component.literal("Poured " + put + " ").append(Component.translatable(aspect.translatableName())), false);
+        return (int) put;
     }
 
     private static int fill(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
