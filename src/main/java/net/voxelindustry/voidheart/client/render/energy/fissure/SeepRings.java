@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureContent;
 import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureTile;
@@ -144,7 +145,7 @@ final class SeepRings
             double drift = (time / TURN_TICKS) * perimeter;
             int dashes = Math.max(1, (int) Math.round(perimeter / (DASH + GAP)));
             double period = perimeter / dashes;
-            int color = FissureLook.color(FissureLook.FISSURE_VIOLET, ALPHA * ring.alpha);
+            int color = GlowDraw.color(FissureLook.FISSURE_VIOLET, ALPHA * ring.alpha);
             double cx = pos.getX() + 0.5, cz = pos.getZ() + 0.5;
 
             for (int dash = 0; dash < dashes; dash++)
@@ -156,32 +157,13 @@ final class SeepRings
                 {
                     double along = start + length * step / DASH_STEPS;
                     double angle = along / radius;
-                    var here = FissureLook.relative(cx + Math.cos(angle) * radius, height(ring.heights, along / perimeter) + LIFT, cz + Math.sin(angle) * radius, camera);
+                    var here = GlowDraw.relative(cx + Math.cos(angle) * radius, GlowDraw.ringHeight(ring.heights, along / perimeter) + LIFT, cz + Math.sin(angle) * radius, camera);
                     if (previous != null)
-                        segment(pose, buffer, previous, here, color);
+                        GlowDraw.flatSegment(pose, buffer, previous, here, HALF_WIDTH, color);
                     previous = here;
                 }
             }
         });
     }
 
-    private static double height(double[] heights, double fraction)
-    {
-        double index = ((fraction % 1) + 1) % 1 * heights.length;
-        int i = (int) index % heights.length;
-        return Mth.lerp(index - Math.floor(index), heights[i], heights[(i + 1) % heights.length]);
-    }
-
-    private static void segment(PoseStack.Pose pose, VertexConsumer buffer, Vector3f a, Vector3f b, int color)
-    {
-        float dx = b.x - a.x, dz = b.z - a.z;
-        float length = Mth.sqrt(dx * dx + dz * dz);
-        if (length < 1.0E-5F)
-            return;
-        float sx = -dz / length * HALF_WIDTH, sz = dx / length * HALF_WIDTH;
-        FissureLook.vertex(buffer, pose, a.x - sx, a.y, a.z - sz, color);
-        FissureLook.vertex(buffer, pose, a.x + sx, a.y, a.z + sz, color);
-        FissureLook.vertex(buffer, pose, b.x + sx, b.y, b.z + sz, color);
-        FissureLook.vertex(buffer, pose, b.x - sx, b.y, b.z - sz, color);
-    }
 }

@@ -4,9 +4,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.IVoidHolder;
 import net.voxelindustry.voidheart.common.energy.VoidNetworkProvider;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
+import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import org.jspecify.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
@@ -15,6 +17,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.WeakHashMap;
 
 /**
@@ -120,6 +123,32 @@ public final class VoidGrid
         for (int index : layout.covering(pos))
             covering.add(layout.pylons().get(index));
         return covering;
+    }
+
+    /**
+     * Creative wells whose fields cover the position.
+     */
+    public static List<BlockPos> creativeWellsCovering(ServerLevel level, BlockPos pos)
+    {
+        var reach = (double) FoundationBalance.CREATIVE_WELL_RADIUS * FoundationBalance.CREATIVE_WELL_RADIUS;
+        return CreativeSources.wells(level).centers().stream()
+                .filter(candidate -> candidate.distSqr(pos) <= reach)
+                .map(BlockPos::immutable)
+                .toList();
+    }
+
+    /**
+     * Where a machine's output arc lands: the nearest creative well covering it, since those answer first, or else the bundle of the nearest pylon
+     * covering it, which is where the grid takes what it accepts.
+     */
+    public static Optional<BlockPos> arcTarget(ServerLevel level, BlockPos pos)
+    {
+        var center = Vec3.atCenterOf(pos);
+        Comparator<BlockPos> nearest = Comparator.comparingDouble(target -> target.distToCenterSqr(center));
+        var well = creativeWellsCovering(level, pos).stream().min(nearest);
+        if (well.isPresent())
+            return well;
+        return pylonsCovering(level, pos).stream().map(GridLayout.Pylon::bundle).min(nearest);
     }
 
     public VoidGridLedger ledger()

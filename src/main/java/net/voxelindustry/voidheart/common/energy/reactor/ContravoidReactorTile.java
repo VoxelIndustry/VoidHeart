@@ -21,11 +21,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.VoidHeart;
-import net.voxelindustry.voidheart.common.energy.FoundationBalance;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.VoidWounds;
 import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureBalance;
-import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.grid.GridLayout;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlBalance;
@@ -554,10 +552,7 @@ public class ContravoidReactorTile extends TileBase
     static List<BlockPos> findTargets(ServerLevel level, BlockPos pos)
     {
         var center = Vec3.atCenterOf(pos);
-        var out = new ArrayList<BlockPos>();
-        CreativeSources.wells(level).centers().stream()
-                .filter(candidate -> candidate.distSqr(pos) <= (double) FoundationBalance.CREATIVE_WELL_RADIUS * FoundationBalance.CREATIVE_WELL_RADIUS)
-                .forEach(well -> out.add(well.immutable()));
+        var out = new ArrayList<>(VoidGrid.creativeWellsCovering(level, pos));
         VoidGrid.pylonsCovering(level, pos).stream().map(GridLayout.Pylon::bundle).forEach(out::add);
         out.sort(Comparator.comparingDouble(target -> target.distToCenterSqr(center)));
         return out.size() > MAX_ARC_TARGETS ? List.copyOf(out.subList(0, MAX_ARC_TARGETS)) : List.copyOf(out);

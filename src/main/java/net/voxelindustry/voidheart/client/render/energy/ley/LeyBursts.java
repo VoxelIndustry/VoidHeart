@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStonePayloads;
 import org.joml.Vector3f;
 
@@ -127,7 +128,7 @@ final class LeyBursts
                 double x = feet.x + from.x * (1 - eased);
                 double y = feet.y + Mth.lerp(eased, startHeight, endHeight);
                 double z = feet.z + from.z * (1 - eased);
-                LeyLook.softDot(buffer, pose, LeyLook.relative(x, y, z, camera), SETTLE_RADIUS, LeyLook.TEAL_LIGHT, alpha);
+                GlowDraw.softDot(buffer, pose, GlowDraw.relative(x, y, z, camera), SETTLE_RADIUS, LeyLook.TEAL_LIGHT, alpha);
             }
         }
 
@@ -137,7 +138,7 @@ final class LeyBursts
             if (t < 0 || t > 1)
                 continue;
             float alpha = GLINT_ALPHA * Mth.sin(Mth.PI * t) * (0.7F + 0.3F * Mth.sin(glint.phase() + time * 0.9F));
-            var at = LeyLook.relative(glint.x(), glint.y() + GLINT_RISE * t, glint.z(), camera);
+            var at = GlowDraw.relative(glint.x(), glint.y() + GLINT_RISE * t, glint.z(), camera);
             star(pose, buffer, at, alpha);
         }
     }
@@ -147,7 +148,7 @@ final class LeyBursts
      */
     private static void star(PoseStack.Pose pose, VertexConsumer buffer, Vector3f at, float alpha)
     {
-        LeyLook.softDot(buffer, pose, at, GLINT_ARM * 0.6F, LeyLook.TEAL_LIGHT, alpha);
+        GlowDraw.softDot(buffer, pose, at, GLINT_ARM * 0.6F, LeyLook.TEAL_LIGHT, alpha);
         var toCamera = new Vector3f(at).negate().normalize();
         var right = new Vector3f(0, 1, 0).cross(toCamera);
         if (right.lengthSquared() < 1.0E-6F)
@@ -160,14 +161,14 @@ final class LeyBursts
 
     private static void ray(PoseStack.Pose pose, VertexConsumer buffer, Vector3f at, Vector3f along, Vector3f across, float alpha)
     {
-        int bright = LeyLook.color(LeyLook.TEAL_LIGHT, alpha);
-        int none = LeyLook.color(LeyLook.TEAL_LIGHT, 0);
+        int bright = GlowDraw.color(LeyLook.TEAL_LIGHT, alpha);
+        int none = GlowDraw.color(LeyLook.TEAL_LIGHT, 0);
         var a = new Vector3f(at).sub(new Vector3f(along).mul(GLINT_ARM));
         var b = new Vector3f(at).add(new Vector3f(along).mul(GLINT_ARM));
         var w = new Vector3f(across).mul(GLINT_WIDTH);
-        LeyLook.vertex(buffer, pose, new Vector3f(a), none);
-        LeyLook.vertex(buffer, pose, new Vector3f(at).add(w), bright);
-        LeyLook.vertex(buffer, pose, new Vector3f(b), none);
-        LeyLook.vertex(buffer, pose, new Vector3f(at).sub(w), bright);
+        GlowDraw.vertex(buffer, pose, new Vector3f(a), none);
+        GlowDraw.vertex(buffer, pose, new Vector3f(at).add(w), bright);
+        GlowDraw.vertex(buffer, pose, new Vector3f(b), none);
+        GlowDraw.vertex(buffer, pose, new Vector3f(at).sub(w), bright);
     }
 }

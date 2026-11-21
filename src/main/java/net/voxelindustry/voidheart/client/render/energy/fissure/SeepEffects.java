@@ -15,13 +15,13 @@ import net.voxelindustry.voidheart.common.energy.fissure.FissureScars;
 import net.voxelindustry.voidheart.common.energy.fissure.SeepMath;
 import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureBlock;
 import net.voxelindustry.voidheart.common.energy.fissure.VoidFissureTile;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static net.voxelindustry.voidheart.client.render.energy.GlowDraw.*;
 import static net.voxelindustry.voidheart.client.render.energy.fissure.FissureLook.*;
 
 /**

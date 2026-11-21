@@ -22,7 +22,6 @@ import net.voxelindustry.voidheart.common.content.armor.ArmorModuleItem;
 import net.voxelindustry.voidheart.common.content.armor.ArmorStats;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorMenu;
-import net.voxelindustry.voidheart.common.content.armor.VoidArmorLayout;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.KNOWN_COLOR;
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.LACK_COLOR;
 import static net.voxelindustry.voidheart.client.screen.ResearchScreen.MUTED_COLOR;
-import static net.voxelindustry.voidheart.client.screen.ResearchScreen.RULE_COLOR;
 import static net.voxelindustry.voidheart.common.content.armor.VoidArmorLayout.*;
 
 /**
@@ -149,20 +147,7 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
      */
     private static int holeDepth(ArmorGridKind kind, int x, int y, long seed)
     {
-        int left = wellX(kind) + tear(y, seed);
-        int right = wellX(kind) + wellW(kind) - tear(y, seed + 91);
-        int top = WELL_Y + tear(x, seed + 17);
-        int bottom = WELL_Y + wellH(kind) - tear(x, seed + 29);
-        int inX = Math.min(x - left, right - 1 - x);
-        int inY = Math.min(y - top, bottom - 1 - y);
-        if (inX >= 0 && inY >= 0)
-            return Math.min(inX, inY);
-        return -Math.max(Math.max(-inX, 0), Math.max(-inY, 0));
-    }
-
-    private static int tear(int along, long seed)
-    {
-        return Math.round(ResearchVoid.smooth(along * 0.13F, 3.1F, seed) * TEAR);
+        return ResearchVoid.tornHoleDepth(x, y, wellX(kind), WELL_Y, wellW(kind), wellH(kind), TEAR, seed);
     }
 
     // Input

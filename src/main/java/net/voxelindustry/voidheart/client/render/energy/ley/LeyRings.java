@@ -9,6 +9,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.ley.LeyGrowerTile;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneBalance;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneContent;
@@ -186,7 +187,7 @@ final class LeyRings
             double drift = (time / TURN_TICKS) * perimeter;
             int dashes = Math.max(1, (int) Math.round(perimeter / (DASH + GAP)));
             double period = perimeter / dashes;
-            int color = LeyLook.color(LeyLook.TEAL, ALPHA * ring.alpha);
+            int color = GlowDraw.color(LeyLook.TEAL, ALPHA * ring.alpha);
             var point = new double[2];
             double cx = key.pos().getX() + 0.5, cz = key.pos().getZ() + 0.5;
 
@@ -199,32 +200,13 @@ final class LeyRings
                 {
                     double along = start + length * step / DASH_STEPS;
                     edge(key.kind(), along, point);
-                    var here = LeyLook.relative(cx + point[0], height(ring.heights, along / perimeter) + LIFT, cz + point[1], camera);
+                    var here = GlowDraw.relative(cx + point[0], GlowDraw.ringHeight(ring.heights, along / perimeter) + LIFT, cz + point[1], camera);
                     if (previous != null)
-                        segment(pose, buffer, previous, here, color);
+                        GlowDraw.flatSegment(pose, buffer, previous, here, HALF_WIDTH, color);
                     previous = here;
                 }
             }
         });
     }
 
-    private static double height(double[] heights, double fraction)
-    {
-        double index = ((fraction % 1) + 1) % 1 * heights.length;
-        int i = (int) index % heights.length;
-        return Mth.lerp(index - Math.floor(index), heights[i], heights[(i + 1) % heights.length]);
-    }
-
-    private static void segment(PoseStack.Pose pose, VertexConsumer buffer, Vector3f a, Vector3f b, int color)
-    {
-        float dx = b.x - a.x, dz = b.z - a.z;
-        float length = Mth.sqrt(dx * dx + dz * dz);
-        if (length < 1.0E-5F)
-            return;
-        float sx = -dz / length * HALF_WIDTH, sz = dx / length * HALF_WIDTH;
-        LeyLook.vertex(buffer, pose, a.x - sx, a.y, a.z - sz, color);
-        LeyLook.vertex(buffer, pose, a.x + sx, a.y, a.z + sz, color);
-        LeyLook.vertex(buffer, pose, b.x + sx, b.y, b.z + sz, color);
-        LeyLook.vertex(buffer, pose, b.x - sx, b.y, b.z - sz, color);
-    }
 }

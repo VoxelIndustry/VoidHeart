@@ -6,6 +6,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneBalance;
 import net.voxelindustry.voidheart.common.energy.ley.LeyWardTile;
 
@@ -103,7 +104,7 @@ final class LeyWardMotes
         {
             if (motes.isEmpty() || Vec3.atCenterOf(ward.getBlockPos()).distanceToSqr(camera) > DRAW_DISTANCE * DRAW_DISTANCE)
                 return;
-            int rgb = LeyLook.lerp(LeyLook.TEAL, LeyLook.MAUVE_GREY, 1 - ward.health());
+            int rgb = GlowDraw.lerp(LeyLook.TEAL, LeyLook.MAUVE_GREY, 1 - ward.health());
             for (var mote : motes)
             {
                 float age = time - mote.born;
@@ -114,8 +115,8 @@ final class LeyWardMotes
                     if (left < FLICKER_TICKS)
                         envelope *= ((int) left % 2 == 0) ? 1 : 0.15F;
                 }
-                var at = LeyLook.relative(mote.x, mote.y + age * RISE_PER_TICK, mote.z, camera);
-                LeyLook.softDot(buffer, pose, at, RADIUS, rgb, ALPHA * envelope);
+                var at = GlowDraw.relative(mote.x, mote.y + age * RISE_PER_TICK, mote.z, camera);
+                GlowDraw.softDot(buffer, pose, at, RADIUS, rgb, ALPHA * envelope);
             }
         });
     }

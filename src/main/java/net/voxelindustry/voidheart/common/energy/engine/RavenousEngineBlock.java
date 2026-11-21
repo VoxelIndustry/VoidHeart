@@ -1,31 +1,20 @@
 package net.voxelindustry.voidheart.common.energy.engine;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.voxelindustry.voidheart.common.block.TwoHighBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +25,7 @@ import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper
 /**
  * Two blocks high: a maw holding the essence and burning it, and an open chamber above where the burning essence is pulled down into it.
  */
-public class RavenousEngineBlock extends Block implements EntityBlock
+public class RavenousEngineBlock extends TwoHighBlock<RavenousEngineBlock.Part>
 {
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
 
@@ -77,73 +66,29 @@ public class RavenousEngineBlock extends Block implements EntityBlock
 
     public RavenousEngineBlock(Properties properties)
     {
-        super(properties);
-
-        registerDefaultState(getStateDefinition().any().setValue(PART, Part.MAW));
+        super(properties, Part.MAW, Part.CHAMBER);
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
+    protected EnumProperty<Part> partProperty()
     {
-        builder.add(PART);
+        return PART;
     }
 
     @Override
-    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context)
+    protected void placed(Level level, BlockPos pos, BlockState state, ItemStack stack)
     {
-        var above = context.getClickedPos().above();
-        var level = context.getLevel();
-        if (above.getY() > level.getMaxY() || !level.getBlockState(above).canBeReplaced(context))
-            return null;
-        return defaultBlockState();
-    }
-
-    @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack)
-    {
-        super.setPlacedBy(level, pos, state, placer, stack);
-
-        level.setBlock(pos.above(), state.setValue(PART, Part.CHAMBER), Block.UPDATE_ALL);
-
         var tank = stack.get(VoidHeartDataComponents.MULTI_ESSENCE_STORAGE);
         if (tank != null && level.getBlockEntity(pos) instanceof RavenousEngineTile engine)
             engine.restoreTank(tank);
     }
 
     /**
-     * The chamber falls with the maw. A maw left without its chamber still burns.
-     */
-    @Override
-    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos, Direction direction,
-                                     BlockPos neighbourPos, BlockState neighbourState, RandomSource random)
-    {
-        if (state.getValue(PART) == Part.CHAMBER && direction == Direction.DOWN && !isMaw(neighbourState))
-            return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, level, ticks, pos, direction, neighbourPos, neighbourState, random);
-    }
-
-    /**
-     * Breaking the chamber breaks the maw, which drops the engine with the essence it held.
-     */
-    @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player)
-    {
-        var below = pos.below();
-        var mawState = level.getBlockState(below);
-        if (!level.isClientSide() && state.getValue(PART) == Part.CHAMBER && isMaw(mawState))
-            level.destroyBlock(below, !player.preventsBlockDrops() && player.hasCorrectToolForDrops(mawState), player);
-        return super.playerWillDestroy(level, pos, state, player);
-    }
-
-    /**
      * Keeps the essence on the dropped item. An empty engine drops a plain item so it stacks.
      */
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder)
+    protected List<ItemStack> lowerDrops(BlockState state, LootParams.Builder builder)
     {
-        if (state.getValue(PART) == Part.CHAMBER)
-            return List.of();
-
         var stack = new ItemStack(this);
         if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof RavenousEngineTile engine && !engine.tank().isEmpty())
             stack.set(VoidHeartDataComponents.MULTI_ESSENCE_STORAGE, engine.tank().copy());
@@ -151,41 +96,28 @@ public class RavenousEngineBlock extends Block implements EntityBlock
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
+    protected VoxelShape halfShape(BlockState state, boolean upper)
     {
-        if (state.getValue(PART) == Part.CHAMBER)
-            return CHAMBER_OUTLINE;
-        return isChamber(level.getBlockState(pos.above())) ? MAW_OUTLINE : MAW_SHAPE;
+        return upper ? CHAMBER_SHAPE : MAW_SHAPE;
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)
+    protected VoxelShape outline(BlockState state, boolean upper)
     {
-        return state.getValue(PART) == Part.CHAMBER ? CHAMBER_SHAPE : MAW_SHAPE;
+        return upper ? CHAMBER_OUTLINE : MAW_OUTLINE;
     }
 
-    private boolean isMaw(BlockState state)
-    {
-        return state.is(this) && state.getValue(PART) == Part.MAW;
-    }
-
-    private boolean isChamber(BlockState state)
-    {
-        return state.is(this) && state.getValue(PART) == Part.CHAMBER;
-    }
-
-    @Nullable
     @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state)
+    protected BlockEntity newLowerEntity(BlockPos pos, BlockState state)
     {
-        return state.getValue(PART) == Part.MAW ? new RavenousEngineTile(pos, state) : null;
+        return new RavenousEngineTile(pos, state);
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type)
     {
-        return state.getValue(PART) == Part.MAW ? createTickerHelper(type, RavenousEngineContent.RAVENOUS_ENGINE_TILE, RavenousEngineTile::tick) : null;
+        return isLower(state) ? createTickerHelper(type, RavenousEngineContent.RAVENOUS_ENGINE_TILE, RavenousEngineTile::tick) : null;
     }
 
     public enum Part implements StringRepresentable

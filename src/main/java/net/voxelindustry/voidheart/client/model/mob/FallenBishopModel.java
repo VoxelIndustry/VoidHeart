@@ -89,13 +89,7 @@ public class FallenBishopModel extends EntityModel<FallenBishopRenderState>
         var root = mesh.getRoot();
 
         // The Elder's hood and skull, with the hood drawn up into a peak and a plate set on its front
-        root.addOrReplaceChild("head", CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-3.5F, -7, -3.5F, 7, 7, 7)
-                        .texOffs(28, 0).addBox(-5, -10, -7, 10, 1, 11)
-                        .texOffs(70, 0).addBox(-5, -9, -7, 1, 9, 11, ModelBoxes.PROUD)
-                        .texOffs(70, 0).mirror().addBox(4, -9, -7, 1, 9, 11, ModelBoxes.PROUD).mirror(false)
-                        .texOffs(94, 0).addBox(-5, -9, 3, 10, 9, 1)
-                        .texOffs(94, 10).addBox(-4, -3, 4, 8, 8, 1)
+        root.addOrReplaceChild("head", FallenElderModel.hood()
                         .texOffs(0, 106).addBox(-4, -12, -6.5F, 8, 2, 9)
                         .texOffs(34, 106).addBox(-3, -14, -6, 6, 2, 7)
                         .texOffs(60, 106).addBox(-1.5F, -15.5F, -5, 3, 2, 5)

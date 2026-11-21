@@ -13,6 +13,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.energy.FacingStrips;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
@@ -262,18 +264,6 @@ public class RelayLinkPreviewRender
      */
     private static void ribbon(PoseStack.Pose pose, VertexConsumer buffer, Vec3 from, Vec3 to, Vec3 camera, float halfWidth, int color)
     {
-        var start = new Vector3f((float) (from.x - camera.x), (float) (from.y - camera.y), (float) (from.z - camera.z));
-        var end = new Vector3f((float) (to.x - camera.x), (float) (to.y - camera.y), (float) (to.z - camera.z));
-        var direction = new Vector3f(end).sub(start);
-        var toCamera = new Vector3f(start).add(end).mul(-0.5F);
-        var side = direction.cross(toCamera);
-        if (side.lengthSquared() < 1.0E-8F)
-            return;
-        side.normalize(halfWidth);
-
-        buffer.addVertex(pose, start.x - side.x, start.y - side.y, start.z - side.z).setColor(color);
-        buffer.addVertex(pose, start.x + side.x, start.y + side.y, start.z + side.z).setColor(color);
-        buffer.addVertex(pose, end.x + side.x, end.y + side.y, end.z + side.z).setColor(color);
-        buffer.addVertex(pose, end.x - side.x, end.y - side.y, end.z - side.z).setColor(color);
+        FacingStrips.ribbon(pose, buffer, GlowDraw.relative(from.x, from.y, from.z, camera), GlowDraw.relative(to.x, to.y, to.z, camera), halfWidth, color);
     }
 }

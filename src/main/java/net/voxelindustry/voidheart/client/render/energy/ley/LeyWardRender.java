@@ -13,6 +13,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.GlowDraw;
 import net.voxelindustry.voidheart.common.energy.ley.LeyWardTile;
 import org.jspecify.annotations.Nullable;
 
@@ -74,7 +75,7 @@ public class LeyWardRender implements BlockEntityRenderer<LeyWardTile, LeyWardRe
         if (lost <= 0.5F)
             return false;
         float chance = (lost - 0.5F) * 0.5F;
-        return LeyLook.hash(seed, time / STUTTER_TICKS, 7) < chance;
+        return GlowDraw.hash(seed, time / STUTTER_TICKS, 7) < chance;
     }
 
     @Override
@@ -89,8 +90,8 @@ public class LeyWardRender implements BlockEntityRenderer<LeyWardTile, LeyWardRe
         poseStack.rotate(Axis.YP.rotationDegrees(180 - state.facing.toYRot()));
         poseStack.translate(-0.5, 0, -0.5);
 
-        int rgb = LeyLook.lerp(LeyLook.TEAL, LeyLook.MAUVE_GREY, state.lost);
-        int light = LeyLook.lerp(LeyLook.TEAL_LIGHT, LeyLook.MAUVE_GREY, state.lost);
+        int rgb = GlowDraw.lerp(LeyLook.TEAL, LeyLook.MAUVE_GREY, state.lost);
+        int light = GlowDraw.lerp(LeyLook.TEAL_LIGHT, LeyLook.MAUVE_GREY, state.lost);
         collector.submitCustomGeometry(poseStack, VoidHeartRenderTypes.GLOW, (pose, buffer) ->
         {
             ring(pose, buffer, (NORTH_FACE_Z - LIFT) / 16, rgb, light, level);
@@ -102,10 +103,10 @@ public class LeyWardRender implements BlockEntityRenderer<LeyWardTile, LeyWardRe
     private static void ring(PoseStack.Pose pose, VertexConsumer buffer, float z, int rgb, int light, float level)
     {
         float middle = (INNER + OUTER) / 2;
-        int core = LeyLook.color(light, CORE_ALPHA * level);
-        int edge = LeyLook.color(rgb, CORE_ALPHA * 0.7F * level);
-        int halo = LeyLook.color(rgb, HALO_ALPHA * level);
-        int none = LeyLook.color(rgb, 0);
+        int core = GlowDraw.color(light, CORE_ALPHA * level);
+        int edge = GlowDraw.color(rgb, CORE_ALPHA * 0.7F * level);
+        int halo = GlowDraw.color(rgb, HALO_ALPHA * level);
+        int none = GlowDraw.color(rgb, 0);
 
         for (int i = 0; i < SEGMENTS; i++)
         {
@@ -120,10 +121,10 @@ public class LeyWardRender implements BlockEntityRenderer<LeyWardTile, LeyWardRe
 
     private static void band(PoseStack.Pose pose, VertexConsumer buffer, float z, float a0, float a1, float from, float to, int fromColor, int toColor)
     {
-        LeyLook.vertex(buffer, pose, x(a0, from), y(a0, from), z, fromColor);
-        LeyLook.vertex(buffer, pose, x(a0, to), y(a0, to), z, toColor);
-        LeyLook.vertex(buffer, pose, x(a1, to), y(a1, to), z, toColor);
-        LeyLook.vertex(buffer, pose, x(a1, from), y(a1, from), z, fromColor);
+        GlowDraw.vertex(buffer, pose, x(a0, from), y(a0, from), z, fromColor);
+        GlowDraw.vertex(buffer, pose, x(a0, to), y(a0, to), z, toColor);
+        GlowDraw.vertex(buffer, pose, x(a1, to), y(a1, to), z, toColor);
+        GlowDraw.vertex(buffer, pose, x(a1, from), y(a1, from), z, fromColor);
     }
 
     private static float x(float angle, float radius)
