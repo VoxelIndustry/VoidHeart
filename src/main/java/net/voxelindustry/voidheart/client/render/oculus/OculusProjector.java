@@ -213,7 +213,7 @@ final class OculusProjector implements AutoCloseable
                 VoidHeartConfig.get().oculusTableMixedSeconds * 20);
 
         int bottom = memoryId != null ? memoryWindowBottom(memory, view.scale(), caving.goal(tick) > 0) : windowBottom(level, view.scale(), caving.goal(tick) > 0);
-        if (view.scale() != scale || Math.abs(bottom - windowBottom) >= view.scale() * WINDOW_HYSTERESIS)
+        if (view.scale() != scale || windowBottom == Integer.MIN_VALUE || Math.abs(bottom - windowBottom) >= view.scale() * WINDOW_HYSTERESIS)
         {
             scale = view.scale();
             windowBottom = bottom;
@@ -276,7 +276,7 @@ final class OculusProjector implements AutoCloseable
      */
     OculusMemories.@Nullable Memory memory()
     {
-        return memoryId == null ? null : OculusMemories.get(memoryId, OculusRenderer.ticks());
+        return memoryId == null ? null : OculusMemories.get(memoryId, anchor, OculusRenderer.ticks());
     }
 
     boolean showsMemory()

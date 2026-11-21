@@ -98,6 +98,7 @@ public class CellSocketTile extends TileBase
                 wrungBank -= drunk;
                 charge += drunk;
                 RubrumCellItem.setCharge(cell, charge);
+                setChanged();
             }
             switch (CellHabits.way(habit, level.hasNeighborSignal(worldPosition), charge))
             {

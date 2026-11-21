@@ -230,7 +230,8 @@ public final class VoidGridRender
                 ring.ring = buildRing(level, pos, radius);
             }
         }
-        FAR_RINGS.entrySet().removeIf(entry -> !entry.getValue().shown && entry.getValue().fade <= 0);
+        FAR_RINGS.entrySet().removeIf(entry -> !entry.getValue().shown && entry.getValue().fade <= 0
+                || PortalFrameCoreTile.CLIENT_CORES.stream().noneMatch(core -> core.getBlockPos().equals(entry.getKey())));
     }
 
     private static boolean showsFields(ItemStack stack)

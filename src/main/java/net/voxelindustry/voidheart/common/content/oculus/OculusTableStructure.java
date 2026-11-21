@@ -105,18 +105,34 @@ public class OculusTableStructure
     public static void onBlockAdded(Level level, BlockPos pos)
     {
         var view = OculusView.DEFAULT;
+        boolean found = false;
+        // A block joining tables that each show a memory keeps the first, and every other one comes back out as its bundle
+        java.util.Optional<OculusMemory> kept = java.util.Optional.empty();
+        var met = new java.util.HashSet<java.util.UUID>();
+        var displaced = new java.util.ArrayList<OculusMemory>();
         for (var direction : Direction.Plane.HORIZONTAL)
         {
             var neighbor = getTile(level, pos.relative(direction));
-            if (neighbor != null)
+            if (neighbor == null)
+                continue;
+            if (!found)
             {
                 view = neighbor.getView();
-                break;
+                found = true;
             }
+            var memory = neighbor.getView().memory();
+            if (memory.isEmpty() || !met.add(memory.get().recording().id()))
+                continue;
+            if (kept.isEmpty())
+                kept = memory;
+            else
+                displaced.add(memory.get());
         }
 
-        var adopted = view;
+        var adopted = view.remembering(kept);
         updateView(level, pos, current -> adopted);
+        for (var memory : displaced)
+            net.minecraft.world.Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, memory.toStack());
         updatePower(level, pos);
     }
 

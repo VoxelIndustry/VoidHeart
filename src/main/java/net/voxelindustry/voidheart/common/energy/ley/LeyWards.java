@@ -148,6 +148,28 @@ public final class LeyWards
         return false;
     }
 
+    /**
+     * Whether going from one spot to another crosses into a holding ward that keeps that kind out, judged ward by ward, so standing in one ward
+     * never lets it into the next.
+     */
+    public static boolean entersKept(ServerLevel level, EntityType<?> type, Vec3 from, Vec3 to)
+    {
+        var wards = BY_LEVEL.get(level);
+        if (wards == null || wards.isEmpty())
+            return false;
+        double radiusSq = (double) LeyStoneBalance.WARD_RADIUS * LeyStoneBalance.WARD_RADIUS;
+        for (var entry : wards.entrySet())
+        {
+            var ward = entry.getValue();
+            if (ward.keepsOut() != type || ward.strength() <= 0)
+                continue;
+            var center = Vec3.atCenterOf(entry.getKey());
+            if (center.distanceToSqr(to) <= radiusSq && center.distanceToSqr(from) > radiusSq)
+                return true;
+        }
+        return false;
+    }
+
     static void remove(ServerLevel level, BlockPos ward)
     {
         var wards = BY_LEVEL.get(level);

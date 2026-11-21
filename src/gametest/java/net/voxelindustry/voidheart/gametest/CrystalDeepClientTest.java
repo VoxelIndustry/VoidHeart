@@ -239,6 +239,11 @@ public class CrystalDeepClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
+            // A recorded place can't be kept by a placed bundle, so it isn't placed
+            var ground = TABLE.offset(4, -1, 0);
+            player.setItemInHand(InteractionHand.MAIN_HAND, memory.copy());
+            useOn(player, ground);
+            expect(minecraft.overworld().getBlockState(ground.above()).isAir(), "A recorded Deep memoriam should not be placed as a block");
             player.setItemInHand(InteractionHand.MAIN_HAND, CrystalBundles.bundleItem(CrystalKind.MEMORIAM, BundleSize.SMALL, CrystalHabit.DEEP));
             useOn(player, TABLE);
             expect(OculusTableStructure.getTile(minecraft.overworld(), TABLE).getView().memory().isEmpty(),

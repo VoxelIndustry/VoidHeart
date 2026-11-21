@@ -10,6 +10,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.voxelindustry.voidheart.common.content.crystal.CradleBalance;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalRecordings;
 
 import java.util.ArrayDeque;
@@ -28,12 +29,21 @@ public final class OculusMemoryPayloads
 {
     private static final int CHUNKS_PER_TICK = 6;
     private static final int MAX_QUEUED      = 512;
+    /** How far a player may stand from the table whose recording they ask for. */
+    private static final double VIEW_REACH   = 64;
 
-    public record Request(UUID recording) implements CustomPacketPayload
+    /** The most sections a recording keeps per chunk: its radius every way, plus the sections it starts and ends partway into. */
+    public static final int MAX_SECTIONS = CradleBalance.RECORD_RADIUS * 2 / 16 + 2;
+
+    /**
+     * @param table the table showing the recording, which the asker must stand near
+     */
+    public record Request(UUID recording, BlockPos table) implements CustomPacketPayload
     {
         public static final Type<Request> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "oculus_memory_request"));
 
-        public static final StreamCodec<RegistryFriendlyByteBuf, Request> CODEC = StreamCodec.composite(UUIDUtil.STREAM_CODEC, Request::recording, Request::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, Request> CODEC = StreamCodec.composite(UUIDUtil.STREAM_CODEC, Request::recording,
+                BlockPos.STREAM_CODEC, Request::table, Request::new);
 
         @Override
         public Type<Request> type()
@@ -108,6 +118,11 @@ public final class OculusMemoryPayloads
     private static void handle(Request request, ServerPlayNetworking.Context context)
     {
         var player = context.player();
+        // Only a table this player stands near, and that shows this recording, gets it sent
+        var tile = OculusTableStructure.getTile(player.level(), request.table());
+        boolean shown = tile != null && tile.getView().memory().map(memory -> memory.recording().id().equals(request.recording())).orElse(false);
+        if (!shown || player.position().distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(request.table())) > VIEW_REACH * VIEW_REACH)
+            return;
         var recording = CrystalRecordings.find(player.level().getServer(), request.recording());
         if (recording == null)
         {
@@ -119,11 +134,11 @@ public final class OculusMemoryPayloads
         var queue = QUEUES.computeIfAbsent(player.getUUID(), id -> new ArrayDeque<>());
         // Asked again, it starts over rather than sending the same land twice
         queue.removeIf(pending -> pending.recording().equals(request.recording()));
+        // Older recordings give way to this one whole, rather than it arriving cut short
+        while (!queue.isEmpty() && queue.size() + recording.chunks().size() > MAX_QUEUED)
+            queue.poll();
         for (var chunk : recording.chunks())
-        {
-            if (queue.size() < MAX_QUEUED)
-                queue.add(new Pending(request.recording(), chunk));
-        }
+            queue.add(new Pending(request.recording(), chunk));
     }
 
     private static void tick(MinecraftServer server)

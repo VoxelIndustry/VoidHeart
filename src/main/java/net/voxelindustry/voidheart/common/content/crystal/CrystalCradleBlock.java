@@ -65,11 +65,10 @@ public class CrystalCradleBlock extends Block implements EntityBlock
         var shardKind = CrystalBundles.kindOfShard(stack);
         var bundle = CrystalBundles.bundleOf(stack);
         if (shardKind == null && bundle == null)
-            return InteractionResult.TRY_WITH_EMPTY_HAND;
+            return stack.isEmpty() ? InteractionResult.TRY_WITH_EMPTY_HAND : InteractionResult.PASS;
         if (level.isClientSide() || !(level.getBlockEntity(pos) instanceof CrystalCradleTile cradle))
             return InteractionResult.SUCCESS;
 
-        cradle.claim(player.getUUID());
         // Regrowing would let a bundle that drew taint in start over empty
         if (CrystalBundles.soakOf(stack) > 0)
         {
@@ -96,6 +95,7 @@ public class CrystalCradleBlock extends Block implements EntityBlock
             player.sendOverlayMessage(Component.translatable(MODID + ".crystal_cradle.refused." + refusal.name().toLowerCase(Locale.ROOT)));
             return InteractionResult.FAIL;
         }
+        cradle.claim(player.getUUID());
         stack.consume(shardKind != null ? worth : 1, player);
         level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1F, 0.8F + level.getRandom().nextFloat() * 0.4F);
         return InteractionResult.SUCCESS;

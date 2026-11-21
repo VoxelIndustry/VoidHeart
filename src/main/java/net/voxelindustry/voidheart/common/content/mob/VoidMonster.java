@@ -163,8 +163,13 @@ public abstract class VoidMonster extends Monster
             delta = new Vec3(DaedalusFence.clipX(getX(), getZ(), box.minX, box.maxX, delta.x), DaedalusFence.clipY(box.minY, delta.y), DaedalusFence.clipZ(getX(), getZ(), box.minZ, box.maxZ, delta.z));
         }
         // A ward remembering its kind is a wall it can't step through, though it may always step out of one
-        if (type == MoverType.SELF && (delta.x != 0 || delta.z != 0) && level() instanceof ServerLevel server && keptOutOf(server, delta))
+        if (type == MoverType.SELF && delta.lengthSqr() > 0 && level() instanceof ServerLevel server && keptOutOf(server, delta))
+        {
             delta = new Vec3(0, delta.y, 0);
+            // What doesn't fall can't sink or rise into one either
+            if (isNoGravity() && keptOutOf(server, delta))
+                delta = Vec3.ZERO;
+        }
         super.move(type, delta);
     }
 
@@ -183,9 +188,7 @@ public abstract class VoidMonster extends Monster
      */
     private boolean keptOutOf(ServerLevel level, Vec3 delta)
     {
-        if (!LeyWards.keepsOut(level, getType(), getX() + delta.x, getY() + delta.y, getZ() + delta.z))
-            return false;
-        return !LeyWards.keepsOut(level, getType(), getX(), getY(), getZ());
+        return LeyWards.entersKept(level, getType(), position(), position().add(delta));
     }
 
     @Override

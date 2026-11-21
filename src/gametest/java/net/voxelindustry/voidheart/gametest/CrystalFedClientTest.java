@@ -354,6 +354,18 @@ public class CrystalFedClientTest implements FabricClientGameTest
         context.getInput().pressKey(com.mojang.blaze3d.platform.InputConstants.KEY_F1);
         waitFor(context, server, 120, "A Wrung cell should take in what it banked",
                 minecraft -> RubrumCellItem.charge(socket(minecraft, WRUNG_SOCKET).getCell()) >= 5 * RubrumBalance.WRUNG_PER_DAMAGE * 9 / 10);
+
+        // A killing blow is harm too, counted no deeper than the creature could be hurt
+        server.runOnServer(minecraft ->
+        {
+            var banked = socket(minecraft, WRUNG_SOCKET).wrungBank();
+            var pig = first(minecraft, EntityTypes.PIG);
+            pig.hurtServer(minecraft.overworld(), pig.damageSources().generic(), 1_000);
+            expect(pig.isDeadOrDying(), "The blow should kill the pig");
+            long gained = socket(minecraft, WRUNG_SOCKET).wrungBank() - banked;
+            expect(gained > 0 && gained <= (long) (pig.getMaxHealth() * RubrumBalance.WRUNG_PER_DAMAGE),
+                    "A Wrung cell should bank a killing blow, up to the pig's health, banked " + gained);
+        });
         server.runCommand("kill @e[type=minecraft:pig]");
     }
 

@@ -70,6 +70,8 @@ public class OculusTableTile extends TileBase
         {
             var memory = view.memory().get();
             OculusTableStructure.updateView(server, pos, changed -> changed.remembering(java.util.Optional.empty()));
+            for (var direction : net.minecraft.core.Direction.Plane.HORIZONTAL)
+                OculusTableStructure.updateView(server, pos.relative(direction), changed -> changed.remembering(java.util.Optional.empty()));
             net.minecraft.world.Containers.dropItemStack(server, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, memory.toStack());
         }
         super.preRemoveSideEffects(pos, state);

@@ -140,13 +140,17 @@ public final class DeepReach
     public static long available(ServerLevel level, BlockPos pos)
     {
         long available = 0;
+        // Reaches out of one core share that core's pool, so it counts once
+        var counted = new java.util.HashSet<BlockPos>();
         for (var reach : into(level))
         {
-            if (!reach.covers(pos))
+            if (!reach.covers(pos) || !counted.add(reach.nearCore()))
                 continue;
             var near = level.getServer().getLevel(reach.nearLevel());
-            if (near != null)
-                available = Math.min(Long.MAX_VALUE / 2, available + VoidEnergy.availableHere(near, reach.nearCore()));
+            if (near == null)
+                continue;
+            long here = VoidEnergy.availableHere(near, reach.nearCore());
+            available = here >= Long.MAX_VALUE / 2 - available ? Long.MAX_VALUE / 2 : available + here;
         }
         return available;
     }

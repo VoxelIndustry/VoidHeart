@@ -42,6 +42,13 @@ public class CrystalBundleBlock extends AmethystClusterBlock
         if (state == null)
             return null;
         var item = context.getItemInHand();
+        // A placed bundle has nowhere to keep a recorded place, so a Deep memoriam holding one stays an item, for an Oculus Table
+        if (item.has(net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents.CRYSTAL_RECORDING))
+        {
+            if (context.getPlayer() != null && !context.getLevel().isClientSide())
+                context.getPlayer().sendOverlayMessage(net.minecraft.network.chat.Component.translatable(net.voxelindustry.voidheart.VoidHeart.MODID + ".crystal.recorded.unplaceable"));
+            return null;
+        }
         return state.setValue(HABIT, CrystalBundles.habitOf(item)).setValue(SOAKED, CrystalBundles.soakOf(item));
     }
 

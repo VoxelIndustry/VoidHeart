@@ -173,6 +173,9 @@ public final class ShieldingApparatus
         if (!(player instanceof ServerPlayer serverPlayer))
             return;
         var broken = BROKEN.remove(serverPlayer.getUUID());
+        // What broke the shield is remembered even when it went on to kill: a Second Heart may bring the wearer back
+        if (broken != null && broken.stats().grudge())
+            holdGrudge(serverPlayer, broken.source());
         if (broken != null && !serverPlayer.isDeadOrDying())
             onBreak(serverPlayer, broken.source(), broken.stats());
     }
@@ -249,8 +252,6 @@ public final class ShieldingApparatus
         var level = player.level();
         var center = center(player);
         level.playSound(null, center.x, center.y, center.z, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 1, 0.6F);
-        if (stats.grudge())
-            holdGrudge(player, source);
 
         if (stats.breakEffect().isEmpty())
             return;

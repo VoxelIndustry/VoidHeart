@@ -77,7 +77,7 @@ final class OculusMemories
      *
      * @return nothing until its header arrives
      */
-    static @Nullable Memory get(UUID id, long tick)
+    static @Nullable Memory get(UUID id, BlockPos table, long tick)
     {
         WANTED_AT.put(id, tick);
         var memory = MEMORIES.get(id);
@@ -87,13 +87,16 @@ final class OculusMemories
         if (asked == null || tick - asked > ANSWER_TIMEOUT)
         {
             REQUESTED_AT.put(id, tick);
-            ClientPlayNetworking.send(new OculusMemoryPayloads.Request(id));
+            ClientPlayNetworking.send(new OculusMemoryPayloads.Request(id, table));
         }
         return null;
     }
 
     static void receiveHeader(OculusMemoryPayloads.Header payload, ClientPlayNetworking.Context context)
     {
+        // A recording never spans more sections than its radius reaches, so anything else is malformed and allocates nothing
+        if (payload.sectionCount() < 0 || payload.sectionCount() > OculusMemoryPayloads.MAX_SECTIONS)
+            return;
         REQUESTED_AT.remove(payload.recording());
         MEMORIES.put(payload.recording(), new Memory(payload.recording(), payload.found(), payload.center(), payload.minSection(), payload.sectionCount(),
                 payload.surface(), payload.creatures(), new Long2ObjectOpenHashMap<>(), new Long2ObjectOpenHashMap<>()));

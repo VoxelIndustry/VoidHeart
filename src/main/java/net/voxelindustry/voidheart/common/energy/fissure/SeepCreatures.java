@@ -76,7 +76,7 @@ public final class SeepCreatures
                 continue;
             // A Scoured field holds the seep back, so creatures come through there half as often
             if (VoidGrid.inScouredField(level, feet) && random.nextFloat() >= VoidFissureBalance.SCOURED_SEEP)
-                continue;
+                return null;
 
             var types = types();
             var mob = types.get(random.nextInt(types.size())).create(level, EntitySpawnReason.EVENT);

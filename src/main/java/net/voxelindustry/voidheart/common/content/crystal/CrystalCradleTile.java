@@ -404,9 +404,11 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         var refusal = growth.refusal(kind, worth, habit);
         if (refusal == CradleGrowth.Refusal.NONE)
         {
+            var target = growth.target();
             growth.seed(kind, worth, habit);
-            // More to grow: what it records is the place as it is when it finishes again
-            dropRecording();
+            // A larger bundle to grow: what it records is the place as it is when it finishes again
+            if (growth.target() != target)
+                dropRecording();
             publish();
         }
         return refusal;

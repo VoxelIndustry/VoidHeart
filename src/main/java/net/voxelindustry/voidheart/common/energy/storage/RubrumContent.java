@@ -95,6 +95,12 @@ public final class RubrumContent
                 FabricParticleTypes.simple(false));
 
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damage, blocked) -> CellSocketTile.onHarm(entity, damage));
+        // A killing blow never reaches AFTER_DAMAGE, so it is counted here instead, no more than the creature could lose
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, damage) ->
+        {
+            CellSocketTile.onHarm(entity, Math.min(damage, entity.getMaxHealth()));
+            return true;
+        });
     }
 
     /**
