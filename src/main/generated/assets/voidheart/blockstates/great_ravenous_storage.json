@@ -1,0 +1,334 @@
+{
+  "variants": {
+    "fill=0,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=0,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_0",
+      "y": 90
+    },
+    "fill=0,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_0"
+    },
+    "fill=0,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_0",
+      "y": 180
+    },
+    "fill=0,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_0",
+      "y": 270
+    },
+    "fill=0,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_0",
+      "y": 90
+    },
+    "fill=0,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_0"
+    },
+    "fill=0,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_0",
+      "y": 180
+    },
+    "fill=0,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_0",
+      "y": 270
+    },
+    "fill=1,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=1,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_1",
+      "y": 90
+    },
+    "fill=1,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_1"
+    },
+    "fill=1,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_1",
+      "y": 180
+    },
+    "fill=1,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_1",
+      "y": 270
+    },
+    "fill=1,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_1",
+      "y": 90
+    },
+    "fill=1,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_1"
+    },
+    "fill=1,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_1",
+      "y": 180
+    },
+    "fill=1,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_1",
+      "y": 270
+    },
+    "fill=2,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=2,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_2",
+      "y": 90
+    },
+    "fill=2,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_2"
+    },
+    "fill=2,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_2",
+      "y": 180
+    },
+    "fill=2,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_2",
+      "y": 270
+    },
+    "fill=2,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_2",
+      "y": 90
+    },
+    "fill=2,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_2"
+    },
+    "fill=2,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_2",
+      "y": 180
+    },
+    "fill=2,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_2",
+      "y": 270
+    },
+    "fill=3,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=3,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_3",
+      "y": 90
+    },
+    "fill=3,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_3"
+    },
+    "fill=3,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_3",
+      "y": 180
+    },
+    "fill=3,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_3",
+      "y": 270
+    },
+    "fill=3,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_3",
+      "y": 90
+    },
+    "fill=3,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_3"
+    },
+    "fill=3,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_3",
+      "y": 180
+    },
+    "fill=3,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_3",
+      "y": 270
+    },
+    "fill=4,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=4,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_4",
+      "y": 90
+    },
+    "fill=4,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_4"
+    },
+    "fill=4,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_4",
+      "y": 180
+    },
+    "fill=4,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_4",
+      "y": 270
+    },
+    "fill=4,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_4",
+      "y": 90
+    },
+    "fill=4,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_4"
+    },
+    "fill=4,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_4",
+      "y": 180
+    },
+    "fill=4,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_4",
+      "y": 270
+    },
+    "fill=5,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=5,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_5",
+      "y": 90
+    },
+    "fill=5,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_5"
+    },
+    "fill=5,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_5",
+      "y": 180
+    },
+    "fill=5,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_5",
+      "y": 270
+    },
+    "fill=5,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_5",
+      "y": 90
+    },
+    "fill=5,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_5"
+    },
+    "fill=5,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_5",
+      "y": 180
+    },
+    "fill=5,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_5",
+      "y": 270
+    },
+    "fill=6,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=6,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_6",
+      "y": 90
+    },
+    "fill=6,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_6"
+    },
+    "fill=6,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_6",
+      "y": 180
+    },
+    "fill=6,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_6",
+      "y": 270
+    },
+    "fill=6,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_6",
+      "y": 90
+    },
+    "fill=6,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_6"
+    },
+    "fill=6,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_6",
+      "y": 180
+    },
+    "fill=6,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_6",
+      "y": 270
+    },
+    "fill=7,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=7,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_7",
+      "y": 90
+    },
+    "fill=7,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_7"
+    },
+    "fill=7,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_7",
+      "y": 180
+    },
+    "fill=7,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_7",
+      "y": 270
+    },
+    "fill=7,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_7",
+      "y": 90
+    },
+    "fill=7,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_7"
+    },
+    "fill=7,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_7",
+      "y": 180
+    },
+    "fill=7,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_7",
+      "y": 270
+    },
+    "fill=8,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=8,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_8",
+      "y": 90
+    },
+    "fill=8,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_8"
+    },
+    "fill=8,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_8",
+      "y": 180
+    },
+    "fill=8,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_8",
+      "y": 270
+    },
+    "fill=8,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_8",
+      "y": 90
+    },
+    "fill=8,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_8"
+    },
+    "fill=8,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_8",
+      "y": 180
+    },
+    "fill=8,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_8",
+      "y": 270
+    },
+    "fill=9,part=loose": {
+      "model": "voidheart:block/great_ravenous_storage"
+    },
+    "fill=9,part=lower_ne": {
+      "model": "voidheart:block/great_ravenous_storage_lower_9",
+      "y": 90
+    },
+    "fill=9,part=lower_nw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_9"
+    },
+    "fill=9,part=lower_se": {
+      "model": "voidheart:block/great_ravenous_storage_lower_9",
+      "y": 180
+    },
+    "fill=9,part=lower_sw": {
+      "model": "voidheart:block/great_ravenous_storage_lower_9",
+      "y": 270
+    },
+    "fill=9,part=upper_ne": {
+      "model": "voidheart:block/great_ravenous_storage_upper_9",
+      "y": 90
+    },
+    "fill=9,part=upper_nw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_9"
+    },
+    "fill=9,part=upper_se": {
+      "model": "voidheart:block/great_ravenous_storage_upper_9",
+      "y": 180
+    },
+    "fill=9,part=upper_sw": {
+      "model": "voidheart:block/great_ravenous_storage_upper_9",
+      "y": 270
+    }
+  }
+}

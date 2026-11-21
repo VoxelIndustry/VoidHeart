@@ -44,6 +44,7 @@
       "net.voxelindustry.voidheart.gametest.BeamFocusClientTest",
       "net.voxelindustry.voidheart.gametest.AthanorClientTest",
       "net.voxelindustry.voidheart.gametest.EssenceNetworkClientTest",
+      "net.voxelindustry.voidheart.gametest.GreatRavenousStorageClientTest",
       "net.voxelindustry.voidheart.gametest.FlaskClientTest",
       "net.voxelindustry.voidheart.gametest.OilClientTest",
       "net.voxelindustry.voidheart.gametest.ElixirClientTest",

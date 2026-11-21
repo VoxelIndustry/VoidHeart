@@ -131,6 +131,7 @@ public class ModelsProvider extends FabricModelProvider
         registerRepairAndDoor();
         EnergyDatagen.blockModels(generator);
         UnderwayPropModels.generate(generator);
+        GreatStorageModels.generate(generator);
     }
 
     /**

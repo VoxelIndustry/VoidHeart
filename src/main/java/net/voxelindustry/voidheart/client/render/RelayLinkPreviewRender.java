@@ -18,6 +18,8 @@ import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageTile;
+import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageBlock;
+import net.voxelindustry.voidheart.common.content.essence.GreatStorageLayout;
 import net.voxelindustry.voidheart.common.content.essence.StorageParts;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import org.joml.Vector3f;
@@ -208,7 +210,7 @@ public class RelayLinkPreviewRender
     }
 
     /**
-     * A storage outlined with its pillars.
+     * A storage outlined with its pillars, a great storage as its whole cube.
      */
     private static AABB bounds(BlockPos pos)
     {
@@ -216,6 +218,8 @@ public class RelayLinkPreviewRender
         var state = level.getBlockState(pos);
         if (state.is(VoidHeartBlocks.RAVENOUS_STORAGE) && level.getBlockState(pos.above()).is(VoidHeartBlocks.RAVENOUS_STORAGE))
             return new AABB(pos).expandTowards(0, 1, 0);
+        if (state.is(VoidHeartBlocks.GREAT_RAVENOUS_STORAGE) && state.getValue(GreatRavenousStorageBlock.PART) != GreatStorageLayout.Part.LOOSE)
+            return new AABB(pos).expandTowards(1, 1, 1);
         return new AABB(pos);
     }
 

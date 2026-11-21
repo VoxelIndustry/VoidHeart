@@ -31,4 +31,12 @@ public interface IEssenceReceiver
     {
         return false;
     }
+
+    /**
+     * @return whether relays link to it, false for a block that only takes part in a receiver standing elsewhere
+     */
+    default boolean linkable()
+    {
+        return true;
+    }
 }
