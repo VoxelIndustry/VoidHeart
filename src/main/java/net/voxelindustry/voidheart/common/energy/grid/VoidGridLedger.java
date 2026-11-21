@@ -327,7 +327,7 @@ public final class VoidGridLedger
     private long rateLeft(BlockPos pos, IVoidHolder holder, int way)
     {
         var use = holderUse.get(pos);
-        return Math.max(0, Math.min(LIMIT, holder.maxRate()) - (use == null ? 0 : use[way]));
+        return Math.max(0, Math.min(LIMIT, way == 0 ? holder.maxRateOut() : holder.maxRateIn()) - (use == null ? 0 : use[way]));
     }
 
     private void insert(BlockPos pos, long amount)

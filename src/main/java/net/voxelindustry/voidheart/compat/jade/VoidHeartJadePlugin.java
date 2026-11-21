@@ -9,6 +9,8 @@ import net.voxelindustry.voidheart.common.content.beholder.BeholderBlock;
 import net.voxelindustry.voidheart.common.content.beholder.BeholderTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
+import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageBlock;
+import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
@@ -38,6 +40,8 @@ public class VoidHeartJadePlugin implements IWailaPlugin
             tile -> tile instanceof RavenousCollectorTile collector ? collector.storage() : null);
     private final EssenceStorageProvider ravenousStorageProvider = new EssenceStorageProvider("ravenous_storage",
             tile -> tile instanceof RavenousStorageTile storage ? storage.storage() : null);
+    private final EssenceStorageProvider greatRavenousStorageProvider = new EssenceStorageProvider("great_ravenous_storage",
+            tile -> tile instanceof GreatRavenousStorageTile storage ? storage.held() : null);
     private final RavenousStorageMatrixProvider ravenousStorageMatrixProvider = new RavenousStorageMatrixProvider();
     private final RavenousRelayProvider ravenousRelayProvider = new RavenousRelayProvider();
     private final KnowledgeColumnProvider knowledgeColumnProvider = new KnowledgeColumnProvider();
@@ -56,6 +60,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
 
         registration.registerBlockDataProvider(ravenousStorageProvider, RavenousStorageTile.class);
         registration.registerBlockDataProvider(ravenousStorageMatrixProvider, RavenousStorageMatrixTile.class);
+        registration.registerBlockDataProvider(greatRavenousStorageProvider, GreatRavenousStorageTile.class);
         registration.registerBlockDataProvider(ravenousRelayProvider, RavenousRelayTile.class);
         registration.registerBlockDataProvider(knowledgeColumnProvider, KnowledgeColumnTile.class);
         registration.registerBlockDataProvider(repositoryUpgradeProvider, CogitantTile.class);
@@ -77,6 +82,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
 
         registration.registerBlockComponent(ravenousStorageProvider.client(), RavenousStorageBlock.class);
         registration.registerBlockComponent(new RavenousStorageMatrixProvider.Client(), RavenousStorageMatrixBlock.class);
+        registration.registerBlockComponent(greatRavenousStorageProvider.client(), GreatRavenousStorageBlock.class);
         registration.registerBlockComponent(new RavenousRelayProvider.Client(), RavenousRelayBlock.class);
         registration.registerBlockComponent(new KnowledgeColumnProvider.Client(), KnowledgeColumnBlock.class);
         registration.registerBlockComponent(new RepositoryUpgradeProvider.Client(), RepositoryUpgradeBlock.class);

@@ -45,6 +45,8 @@ public class AzuriumPylonTile extends TileBase
     private long       throughput;
     private List<Flow> arcs = List.of();
     private List<Flow> fed  = List.of();
+    // The middles of the portals a Deep field reaches on through
+    private List<Vec3> deepReaches = List.of();
 
     // Client only: load eased toward the synced one, current then previous tick
     private float glow;
@@ -159,6 +161,19 @@ public class AzuriumPylonTile extends TileBase
         return fed;
     }
 
+    public List<Vec3> deepReaches()
+    {
+        return deepReaches;
+    }
+
+    void setDeepReaches(List<Vec3> reaches)
+    {
+        if (reaches.equals(deepReaches))
+            return;
+        deepReaches = List.copyOf(reaches);
+        sync();
+    }
+
     void setDisplay(VoidGridLedger.PylonDisplay display)
     {
         var newArcs = sorted(display.arcs());
@@ -187,6 +202,7 @@ public class AzuriumPylonTile extends TileBase
         throughput = input.getLongOr("throughput", 0);
         arcs = input.read("arcs", Flow.CODEC.listOf()).orElse(List.of());
         fed = input.read("fed", Flow.CODEC.listOf()).orElse(List.of());
+        deepReaches = input.read("deep_reaches", Vec3.CODEC.listOf()).orElse(List.of());
     }
 
     @Override
@@ -196,5 +212,6 @@ public class AzuriumPylonTile extends TileBase
         output.putLong("throughput", throughput);
         output.store("arcs", Flow.CODEC.listOf(), arcs);
         output.store("fed", Flow.CODEC.listOf(), fed);
+        output.store("deep_reaches", Vec3.CODEC.listOf(), deepReaches);
     }
 }

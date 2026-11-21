@@ -11,6 +11,7 @@ import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalDatagen;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorDatagen;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleDatagen;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
@@ -54,6 +55,7 @@ public final class EnergyDatagen
         VoidArmorDatagen.blockModels(generators);
         GnawerDatagen.blockModels(generators);
         PearlDatagen.blockModels(generators);
+        CrystalDatagen.blockModels(generators);
     }
 
     public static void itemModels(ItemModelGenerators generators)
@@ -85,6 +87,7 @@ public final class EnergyDatagen
         TwinVentricleDatagen.recipes(recipes);
         GnawerDatagen.recipes(recipes);
         PearlDatagen.recipes(recipes);
+        CrystalDatagen.recipes(recipes);
     }
 
     /**
@@ -104,6 +107,7 @@ public final class EnergyDatagen
         VoidArmorDatagen.loot(loot);
         GnawerDatagen.loot(loot);
         PearlDatagen.loot(loot);
+        CrystalDatagen.loot(loot);
     }
 
     public static void tags(EnergyTags tags)

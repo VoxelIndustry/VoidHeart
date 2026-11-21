@@ -78,7 +78,11 @@ public final class VoidGrid
     {
         var grid = GRIDS.get(level);
         if (grid != null && grid.pylons.remove(pylon.getBlockPos(), pylon))
+        {
             grid.dirty = true;
+            if (grid.pylons.isEmpty())
+                DeepReach.set(level, List.of());
+        }
     }
 
     public static void markDirty(ServerLevel level)
@@ -91,6 +95,7 @@ public final class VoidGrid
     public static void clear()
     {
         GRIDS.clear();
+        DeepReach.clear();
     }
 
     /**
@@ -151,6 +156,22 @@ public final class VoidGrid
         return pylonsCovering(level, pos).stream().map(GridLayout.Pylon::bundle).min(nearest);
     }
 
+    /**
+     * Whether a Scoured bundle's field covers the position, where the seep is held back. Reads the last layout, so it never waits on a rebuild.
+     */
+    public static boolean inScouredField(ServerLevel level, BlockPos pos)
+    {
+        var grid = GRIDS.get(level);
+        if (grid == null)
+            return false;
+        for (var pylon : grid.ledger.layout().pylons())
+        {
+            if (pylon.scoured() && pylon.covers(pos))
+                return true;
+        }
+        return false;
+    }
+
     public VoidGridLedger ledger()
     {
         return ledger;
@@ -172,10 +193,27 @@ public final class VoidGrid
         for (var pos : sorted)
         {
             var bundle = PylonBundle.held(level, pos);
-            if (bundle != PylonBundle.NONE)
-                found.add(new GridLayout.Pylon(pos, AzuriumPylonBlock.bundlePos(level.getBlockState(pos), pos), bundle.radius(), bundle.cap()));
+            if (bundle == PylonBundle.NONE)
+                continue;
+            var bundlePos = AzuriumPylonBlock.bundlePos(level.getBlockState(pos), pos);
+            boolean clear = PylonBundle.isClear(level, bundlePos);
+            if (clear && PylonBundle.isDarkInSeep(level, bundlePos))
+                continue;
+            found.add(new GridLayout.Pylon(pos, bundlePos, bundle.radius(), bundle.cap(), clear, PylonBundle.isScoured(level, bundlePos)));
         }
         var layout = GridLayout.link(found, (a, b) -> inSight(level, a, b));
+
+        // Deep fields reach on through the open portals they hold
+        var reaches = new ArrayList<DeepReach.Reach>();
+        for (var pylon : found)
+        {
+            var through = PylonBundle.isDeep(level, pylon.bundle()) ? DeepReach.through(level, pylon.bundle(), pylon.radius()) : List.<DeepReach.Reach>of();
+            reaches.addAll(through);
+            var tile = pylons.get(pylon.pos());
+            if (tile != null)
+                tile.setDeepReaches(through.stream().map(DeepReach.Reach::nearMiddle).toList());
+        }
+        DeepReach.set(level, reaches);
 
         var holders = new HashMap<BlockPos, int[]>();
         for (var pylon : found)

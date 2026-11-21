@@ -26,10 +26,18 @@ public class RubrumMoteParticle extends SingleQuadParticle
     private static final int   MAX_LIFETIME = 30;
     private static final float BOW          = 0.18F;
 
+    // Wrung harm: deep crimson, from the cell's Wrung shard texture
+    private static final float WRUNG_RED          = 1F;
+    private static final float WRUNG_GREEN        = 0.16F;
+    private static final float WRUNG_BLUE         = 0.2F;
+    private static final float WRUNG_SCALE        = 1.8F;
+    private static final int   WRUNG_MIN_LIFETIME = 28;
+    private static final int   WRUNG_MAX_LIFETIME = 40;
+
     private final Vec3  start;
     private final Vec3  bend;
     private final Vec3  end;
-    private final float size;
+    private float size;
 
     public RubrumMoteParticle(ClientLevel level, double x, double y, double z, double toX, double toY, double toZ, TextureAtlasSprite sprite)
     {
@@ -52,6 +60,19 @@ public class RubrumMoteParticle extends SingleQuadParticle
         quadSize = size;
         alpha = 0;
         setColor(RED, GREEN, BLUE);
+    }
+
+    /**
+     * A crimson wisp of harm rising from something hurt into a Wrung cell, slower and darker than the cell's own motes.
+     */
+    public static RubrumMoteParticle wrung(ClientLevel level, double x, double y, double z, double toX, double toY, double toZ, TextureAtlasSprite sprite)
+    {
+        var mote = new RubrumMoteParticle(level, x, y, z, toX, toY, toZ, sprite);
+        mote.setColor(WRUNG_RED, WRUNG_GREEN, WRUNG_BLUE);
+        mote.size *= WRUNG_SCALE;
+        mote.quadSize = mote.size;
+        mote.lifetime = WRUNG_MIN_LIFETIME + mote.random.nextInt(WRUNG_MAX_LIFETIME - WRUNG_MIN_LIFETIME + 1);
+        return mote;
     }
 
     @Override

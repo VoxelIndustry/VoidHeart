@@ -18,6 +18,8 @@ import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponentIt
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusGrid;
 import net.voxelindustry.voidheart.common.content.apparatus.ApparatusMenu;
 import net.voxelindustry.voidheart.common.content.apparatus.ComponentShape;
+import net.voxelindustry.voidheart.common.content.apparatus.GrudgeWard;
+import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatus;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldStats;
 import net.voxelindustry.voidheart.common.content.apparatus.ShieldingApparatusItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -469,10 +471,17 @@ public class ApparatusScreen extends AbstractContainerScreen<ApparatusMenu>
         y += 2;
         for (var ward : stats.wards())
             y = row(graphics, tablet, y, "ward", Component.translatable("voidheart.apparatus_screen.ward." + ward.name().toLowerCase(Locale.ROOT)).getString(), WARD_COLOR);
+        if (stats.grudge())
+        {
+            // What the Grudge Ward holds against now, or that nothing has broken the shield yet
+            var held = ShieldingApparatus.grudge(menu.apparatus());
+            y = row(graphics, tablet, y, "grudge", Component.translatable(held == null ? "voidheart.apparatus_screen.grudge.none"
+                    : "voidheart.grudge.kind." + GrudgeWard.name(held)).getString(), 0xFF000000 | ApparatusComponent.GRUDGE_WARD.rgb());
+        }
         if (stats.breakEffect().isPresent())
             row(graphics, tablet, y, "core",
                     Component.translatable("voidheart.apparatus_screen.core." + stats.breakEffect().get().name().toLowerCase(Locale.ROOT)).getString(), CORE_COLOR);
-        else if (stats.wards().isEmpty())
+        else if (stats.wards().isEmpty() && !stats.grudge())
             graphics.text(font, Component.translatable("voidheart.apparatus_screen.no_extras"), tablet.x() + 7, y, MUTED_COLOR, false);
     }
 

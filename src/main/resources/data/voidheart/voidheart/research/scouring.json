@@ -1,0 +1,13 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:crystal_cradle",
+  "insight_cost": 16,
+  "knowledge_cost": 2500,
+  "knowledge_per_second": 2.5,
+  "requires": [
+    "voidheart:seep_growth"
+  ],
+  "unlocks": [],
+  "recipes": []
+}

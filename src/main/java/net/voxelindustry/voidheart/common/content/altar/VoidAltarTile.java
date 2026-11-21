@@ -559,12 +559,15 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     /**
      * Several recipes can take the same catalyst, so the one whose ingredients all wait on the pillars is chosen. Without one, a recipe for that exact catalyst
      * starts and waits for its ingredients, while a recipe taking a whole tag of catalysts, such as a sin for any weapon, waits until its ingredients are laid.
-     * A recipe that would give back its catalyst unchanged never starts.
+     * A recipe that would give back its catalyst unchanged never starts. A recipe asking for a catalyst with exact components, such as a Fouled bundle, is
+     * tried before one taking that item however it is, so the bundle's habit isn't lost to the plain recipe.
      */
     public static AltarRecipe chooseRecipe(List<AltarRecipe> candidates, ItemStack catalyst, List<ItemStack> pillarStacks)
     {
+        var ordered = new java.util.ArrayList<>(candidates);
+        ordered.sort(java.util.Comparator.comparing(recipe -> !recipe.hasComponentCatalyst()));
         AltarRecipe waiting = null;
-        for (var recipe : candidates)
+        for (var recipe : ordered)
         {
             if (!recipe.changes(catalyst))
                 continue;

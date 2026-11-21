@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.energy.grid;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -123,7 +124,7 @@ public class AzuriumPylonBlock extends Block implements EntityBlock
         if (PylonBundle.of(bundle, facing) == PylonBundle.NONE)
             return false;
         level.destroyBlock(bundlePos, false);
-        Block.popResource(level, bundlePos, new ItemStack(bundle.getBlock()));
+        Block.popResource(level, bundlePos, CrystalBundles.itemOf(bundle));
         return true;
     }
 

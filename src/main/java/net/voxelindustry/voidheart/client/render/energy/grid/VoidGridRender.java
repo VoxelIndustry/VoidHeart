@@ -17,6 +17,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.energy.grid.AzuriumPylonTile;
 import net.voxelindustry.voidheart.common.energy.grid.PylonBundle;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
@@ -41,6 +42,13 @@ public final class VoidGridRender
     // Tones sampled from the azurium bundle textures: their lightest, and their middle blue
     private static final int AZURIUM_LIGHT = 0xCCFFF2;
     private static final int AZURIUM_MID   = 0x3D7ED9;
+    // A Deep field reaching through a portal: a violet thread into the near portal, and a fainter ring around the far one
+    private static final int   DEEP_LIGHT          = 0xBFA9E8;
+    private static final int   DEEP_MID            = 0x7A4FD0;
+    private static final int   DEEP_THREAD_ALPHA   = 90;
+    private static final int   DEEP_PULSE_ALPHA    = 200;
+    private static final float DEEP_PULSE_SPACING  = 1.6F;
+    private static final float DEEP_RING_SHARE     = 0.7F;
 
     private static final double DRAW_DISTANCE       = 128;
     private static final double FIELD_SHOW_DISTANCE = 48;
@@ -95,6 +103,7 @@ public final class VoidGridRender
     private static final Map<Long, PylonArc>        ARCS   = new HashMap<>();
     private static final Map<BlockPos, FieldState>  FIELDS = new HashMap<>();
     private static final Map<Long, Long>            SOUND_COOLDOWNS = new HashMap<>();
+    private static final Map<BlockPos, FieldState>  FAR_RINGS = new HashMap<>();
 
     private static final class FieldState
     {
@@ -137,8 +146,10 @@ public final class VoidGridRender
         {
             ARCS.clear();
             FIELDS.clear();
+            FAR_RINGS.clear();
             SOUND_COOLDOWNS.clear();
             AzuriumPylonTile.CLIENT_PYLONS.clear();
+            PortalFrameCoreTile.CLIENT_CORES.clear();
             return;
         }
 
@@ -192,9 +203,38 @@ public final class VoidGridRender
             }
         }
 
+        tickFarRings(level, player, time);
         ARCS.values().removeIf(arc -> arc.seenAt != time);
         FIELDS.values().removeIf(field -> !field.shown && field.fade <= 0);
         SOUND_COOLDOWNS.values().removeIf(until -> until < time);
+    }
+
+    /**
+     * Rings around the portals a Deep field reaches out of, shown to anyone near enough to stand in them.
+     */
+    private static void tickFarRings(Level level, net.minecraft.world.entity.player.Player player, long time)
+    {
+        PortalFrameCoreTile.CLIENT_CORES.removeIf(core -> core.isRemoved() || core.getLevel() != level);
+        for (var core : PortalFrameCoreTile.CLIENT_CORES)
+        {
+            var pos = core.getBlockPos();
+            int radius = (int) core.getDeepReach();
+            boolean shown = radius > 0 && player.position().distanceToSqr(Vec3.atCenterOf(pos)) < Math.pow(radius + FIELD_SHOW_DISTANCE, 2);
+            var ring = shown ? FAR_RINGS.computeIfAbsent(pos.immutable(), key -> new FieldState()) : FAR_RINGS.get(pos);
+            if (ring == null)
+                continue;
+            ring.shown = shown;
+            ring.previousFade = ring.fade;
+            ring.fade = shown ? Math.min(1, ring.fade + 1F / FADE_IN_TICKS) : Math.max(0, ring.fade - 1F / FADE_OUT_TICKS);
+            if (ring.fade > 0 && radius > 0 && (ring.radius != radius || time - ring.builtAt >= RING_REBUILD_TICKS))
+            {
+                ring.radius = radius;
+                ring.builtAt = time;
+                ring.ring = buildRing(level, pos, radius);
+            }
+        }
+        FAR_RINGS.entrySet().removeIf(entry -> !entry.getValue().shown && entry.getValue().fade <= 0
+                || PortalFrameCoreTile.CLIENT_CORES.stream().noneMatch(core -> core.getBlockPos().equals(entry.getKey())));
     }
 
     private static boolean showsFields(ItemStack stack)
@@ -236,7 +276,7 @@ public final class VoidGridRender
     {
         var minecraft = Minecraft.getInstance();
         var level = minecraft.level;
-        if (level == null || AzuriumPylonTile.CLIENT_PYLONS.isEmpty())
+        if (level == null || AzuriumPylonTile.CLIENT_PYLONS.isEmpty() && FAR_RINGS.isEmpty())
             return;
 
         var levelState = context.levelState();
@@ -254,7 +294,7 @@ public final class VoidGridRender
             if (Vec3.atCenterOf(pylon.getBlockPos()).distanceToSqr(camera) < DRAW_DISTANCE * DRAW_DISTANCE)
                 visible.add(pylon);
         }
-        if (visible.isEmpty())
+        if (visible.isEmpty() && FAR_RINGS.isEmpty())
             return;
 
         context.submitNodeCollector().submitCustomGeometry(context.poseStack(), VoidHeartRenderTypes.GLOW, (pose, buffer) ->
@@ -270,6 +310,7 @@ public final class VoidGridRender
                 var field = FIELDS.get(pylon.getBlockPos());
                 if (field != null && field.fade(partialTicks) > 0)
                     drawThreads(pose, buffer, pylon, bundle, field.fade(partialTicks), camera, time);
+                drawDeepThreads(pose, buffer, pylon, camera, time);
             }
         });
 
@@ -279,8 +320,13 @@ public final class VoidGridRender
             {
                 var field = FIELDS.get(pylon.getBlockPos());
                 if (field != null && field.fade(partialTicks) > 0 && !field.ring.isEmpty())
-                    drawRing(pose, buffer, pylon.bundlePos(), field, field.fade(partialTicks), camera, time);
+                    drawRing(pose, buffer, pylon.bundlePos(), field, field.fade(partialTicks), camera, time, AZURIUM_MID);
             }
+            FAR_RINGS.forEach((core, ring) ->
+            {
+                if (ring.fade(partialTicks) > 0 && !ring.ring.isEmpty())
+                    drawRing(pose, buffer, core, ring, ring.fade(partialTicks) * DEEP_RING_SHARE, camera, time, DEEP_MID);
+            });
         });
     }
 
@@ -456,7 +502,34 @@ public final class VoidGridRender
     /**
      * Dashes lying on the ground where the field's edge meets it, drifting slowly around.
      */
-    private static void drawRing(PoseStack.Pose pose, VertexConsumer buffer, BlockPos bundle, FieldState field, float fade, Vec3 camera, float time)
+    /**
+     * A Deep field's violet thread from its bundle into each portal it reaches through, with pulses running into the portal.
+     */
+    private static void drawDeepThreads(PoseStack.Pose pose, VertexConsumer buffer, AzuriumPylonTile pylon, Vec3 camera, float time)
+    {
+        if (pylon.deepReaches().isEmpty())
+            return;
+        var from = relative(pylon.bundleCenter(), camera);
+        for (var middle : pylon.deepReaches())
+        {
+            var to = relative(middle, camera);
+            float length = from.distance(to);
+            if (length < 0.1F)
+                continue;
+            ribbon(pose, buffer, from, to, THREAD_HALF_WIDTH, ARGB.color(DEEP_THREAD_ALPHA, DEEP_LIGHT));
+            float phase = (time * PULSE_SPEED) % DEEP_PULSE_SPACING;
+            for (float head = phase; head < length + PULSE_LENGTH; head += DEEP_PULSE_SPACING)
+            {
+                float start = Math.max(0, head - PULSE_LENGTH) / length;
+                float end = Math.min(length, head) / length;
+                if (end > start)
+                    ribbon(pose, buffer, new Vector3f(from).lerp(to, start), new Vector3f(from).lerp(to, end), PULSE_HALF_WIDTH,
+                            ARGB.color(DEEP_PULSE_ALPHA, DEEP_MID));
+            }
+        }
+    }
+
+    private static void drawRing(PoseStack.Pose pose, VertexConsumer buffer, BlockPos bundle, FieldState field, float fade, Vec3 camera, float time, int rgb)
     {
         var ring = field.ring;
         int count = ring.size();
@@ -464,7 +537,7 @@ public final class VoidGridRender
         double cz = bundle.getZ() + 0.5;
         float circumference = (float) (Math.PI * 2 * field.radius);
         float drift = time / RING_TURN_TICKS * circumference;
-        int color = ARGB.color((int) (RING_ALPHA * fade), AZURIUM_MID);
+        int color = ARGB.color((int) (RING_ALPHA * fade), rgb);
 
         for (int i = 0; i < count; i++)
         {

@@ -27,6 +27,7 @@ final class LeyFieldRender
         LeyWardMotes.tick(level, time);
         LeyBursts.tick(time);
         LeyRings.tick(minecraft, time);
+        LeyInk.tick(level, time);
     }
 
     static void clear()
@@ -35,6 +36,7 @@ final class LeyFieldRender
         LeyWardMotes.clear();
         LeyBursts.clear();
         LeyRings.clear();
+        LeyInk.clear();
     }
 
     static void collectSubmits(LevelRenderContext context)
@@ -54,6 +56,9 @@ final class LeyFieldRender
             LeyBursts.draw(pose, buffer, camera, time, partialTicks);
         });
         context.submitNodeCollector().submitCustomGeometry(context.poseStack(), VoidHeartRenderTypes.MARKER, (pose, buffer) ->
-                LeyRings.draw(pose, buffer, camera, time));
+        {
+            LeyRings.draw(pose, buffer, camera, time);
+            LeyInk.draw(pose, buffer, camera, time);
+        });
     }
 }

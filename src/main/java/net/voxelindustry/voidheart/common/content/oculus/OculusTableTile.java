@@ -60,6 +60,24 @@ public class OculusTableTile extends TileBase
         return value * value;
     }
 
+    /**
+     * Breaking any block of a table lets the memory set on it fall, and the rest of the table shows its own land again.
+     */
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        if (level instanceof net.minecraft.server.level.ServerLevel server && view.memory().isPresent())
+        {
+            var memory = view.memory().get();
+            // Through every neighbor and past the size a table projects at, so no block of what remains keeps a copy beside the dropped bundle
+            OculusTableStructure.remember(server, pos, java.util.Optional.empty());
+            for (var direction : net.minecraft.core.Direction.Plane.HORIZONTAL)
+                OculusTableStructure.remember(server, pos.relative(direction), java.util.Optional.empty());
+            net.minecraft.world.Containers.dropItemStack(server, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, memory.toStack());
+        }
+        super.preRemoveSideEffects(pos, state);
+    }
+
     public void setView(OculusView view)
     {
         if (this.view.equals(view))

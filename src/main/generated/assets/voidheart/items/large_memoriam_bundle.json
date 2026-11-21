@@ -1,6 +1,41 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "voidheart:item/large_memoriam_bundle"
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/large_memoriam_bundle_deep"
+        },
+        "when": "deep"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/large_memoriam_bundle_fouled"
+        },
+        "when": "fouled"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/large_memoriam_bundle_scoured"
+        },
+        "when": "scoured"
+      },
+      {
+        "model": {
+          "type": "minecraft:model",
+          "model": "voidheart:item/large_memoriam_bundle_wrung"
+        },
+        "when": "wrung"
+      }
+    ],
+    "component": "voidheart:crystal_habit",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "voidheart:item/large_memoriam_bundle"
+    },
+    "property": "minecraft:component"
   }
 }

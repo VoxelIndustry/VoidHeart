@@ -45,6 +45,7 @@ import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.content.avengingreach.AvengingReach;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarBurstPayload;
 import net.voxelindustry.voidheart.common.content.secondheart.SecondHeart;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalContent;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleContent;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.common.content.sin.SinCombat;
@@ -169,6 +170,7 @@ public class VoidHeart implements ModInitializer
         VoidHeartMenus.registerMenus();
         EnergySetup.register();
         TwinVentricleContent.register();
+        CrystalContent.register();
         VoidArmorContent.register();
 
         ITEMGROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(MODID, "item_group"), FabricCreativeModeTab.builder()
@@ -250,6 +252,7 @@ public class VoidHeart implements ModInitializer
         OculusChunkPayloads.register();
         ServerPlayNetworking.registerGlobalReceiver(OculusChunkPayloads.Request.TYPE, OculusChunkServer::handle);
         ServerTickEvents.END_SERVER_TICK.register(OculusChunkServer::tick);
+        net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.register();
         OculusEntityPayloads.register();
         ServerPlayNetworking.registerGlobalReceiver(OculusEntityPayloads.Request.TYPE, OculusEntityPayloads::handle);
         OculusLeyPayloads.register();
@@ -273,6 +276,7 @@ public class VoidHeart implements ModInitializer
             AnchorWaypoints.clear();
             AnchorTravel.clear();
             OculusChunkServer.clear();
+            net.voxelindustry.voidheart.common.content.oculus.OculusMemoryPayloads.clear();
             OculusEntityPayloads.clear();
             OculusLeyPayloads.clear();
             OculusSightPayloads.clear();

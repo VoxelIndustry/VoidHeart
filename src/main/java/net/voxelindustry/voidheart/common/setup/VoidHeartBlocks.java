@@ -1,6 +1,7 @@
 package net.voxelindustry.voidheart.common.setup;
 
 import net.fabricmc.fabric.api.registry.LandPathTypeRegistry;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalBundleBlock;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleBlock;
 import net.voxelindustry.voidheart.common.content.salt.SaltWardBlock;
@@ -65,6 +66,8 @@ import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceStorage;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageBlock;
+import net.voxelindustry.voidheart.common.content.essence.GreatRavenousStorageTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousRelayBlock;
 import net.voxelindustry.voidheart.common.content.essence.RavenousStorageBlockItem;
@@ -278,6 +281,7 @@ public class VoidHeartBlocks
     public static Block RAVENOUS_COLLECTOR;
     public static Block RAVENOUS_STORAGE;
     public static Block RAVENOUS_STORAGE_MATRIX;
+    public static Block GREAT_RAVENOUS_STORAGE;
     public static Block RAVENOUS_RELAY;
 
     public static Block ABYSSAL_ROCK;
@@ -674,6 +678,19 @@ public class VoidHeartBlocks
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), RavenousStorageMatrixBlockItem::new);
+        GREAT_RAVENOUS_STORAGE = registerBlock("great_ravenous_storage", GreatRavenousStorageBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(1.5F, 6.0F)
+                .noOcclusion()
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.STONE), (block, properties) -> new RavenousStorageBlockItem(block, properties, MODID + ".great_ravenous_storage.lore"));
+        // Full shares of each essence, eight of which make a full cube
+        VoidHeartItems.addCreativeVariant(GREAT_RAVENOUS_STORAGE.asItem(), () -> filledShare(EssenceRegistry.STILLNESS));
+        VoidHeartItems.addCreativeVariant(GREAT_RAVENOUS_STORAGE.asItem(), () -> filledShare(EssenceRegistry.FIERY));
+        VoidHeartItems.addCreativeVariant(GREAT_RAVENOUS_STORAGE.asItem(), () -> filledShare(EssenceRegistry.SUFFERING));
+        VoidHeartItems.addCreativeVariant(GREAT_RAVENOUS_STORAGE.asItem(), () -> filledShare(EssenceRegistry.CONTRAVOID));
         RAVENOUS_RELAY = registerBlock("ravenous_relay", RavenousRelayBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
                 .instrument(NoteBlockInstrument.BASEDRUM)
@@ -1202,7 +1219,7 @@ public class VoidHeartBlocks
 
     private static Block registerBundle(String name, MapColor color, SoundType sound, int light, float height, float inset)
     {
-        return registerBlock(name, properties -> new AmethystClusterBlock(height, inset, properties), BlockBehaviour.Properties.of()
+        return registerBlock(name, properties -> new CrystalBundleBlock(height, inset, properties), BlockBehaviour.Properties.of()
                 .mapColor(color)
                 .forceSolidOn()
                 .noOcclusion()
@@ -1231,6 +1248,15 @@ public class VoidHeartBlocks
     public static Boolean never(BlockState state, BlockGetter world, BlockPos pos, EntityType<?> type)
     {
         return false;
+    }
+
+    private static ItemStack filledShare(EssenceType type)
+    {
+        var share = new EssenceStorage(type, GreatRavenousStorageTile.SHARE_CAPACITY);
+        share.fill(type, GreatRavenousStorageTile.SHARE_CAPACITY);
+        var stack = new ItemStack(GREAT_RAVENOUS_STORAGE);
+        stack.set(VoidHeartDataComponents.ESSENCE_STORAGE, share);
+        return stack;
     }
 
     private static ItemStack filledStorage(EssenceType type)

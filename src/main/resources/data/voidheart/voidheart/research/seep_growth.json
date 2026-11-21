@@ -1,0 +1,17 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:large_azurium_bundle",
+  "insight_cost": 12,
+  "knowledge_cost": 1500,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:crystal_cradle"
+  ],
+  "unlocks": [
+    "voidheart:azurium_spike"
+  ],
+  "recipes": [
+    "voidheart:altar/fouled_azurium_spike"
+  ]
+}

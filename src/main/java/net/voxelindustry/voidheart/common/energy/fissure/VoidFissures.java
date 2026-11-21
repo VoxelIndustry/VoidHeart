@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.energy.VoidSeep;
 import net.voxelindustry.voidheart.common.energy.VoidWounds;
+import net.voxelindustry.voidheart.common.energy.grid.VoidGrid;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -82,15 +83,19 @@ public final class VoidFissures
     public static float strengthAt(ServerLevel level, double x, double y, double z)
     {
         var tiles = LOADED.get(level);
-        if (tiles == null || tiles.isEmpty())
-            return 0;
         long now = level.getGameTime();
-        float strength = 0;
-        for (var tile : tiles)
+        float strength = VoidSeep.leaksAt(level, x, y, z, SeepMath::combine);
+        if (tiles != null)
         {
-            if (!tile.isRemoved())
-                strength = SeepMath.combine(strength, tile.seepStrength(x, y, z, now));
+            for (var tile : tiles)
+            {
+                if (!tile.isRemoved())
+                    strength = SeepMath.combine(strength, tile.seepStrength(x, y, z, now));
+            }
         }
+        // A Scoured bundle's field holds the seep back, once however many overlap; the fissure's own output is untouched
+        if (strength > 0 && VoidGrid.inScouredField(level, BlockPos.containing(x, y, z)))
+            strength *= VoidFissureBalance.SCOURED_SEEP;
         return strength;
     }
 

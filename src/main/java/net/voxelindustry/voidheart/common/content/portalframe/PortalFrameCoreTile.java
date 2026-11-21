@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.common.block.StateProperties;
 import net.voxelindustry.voidheart.common.content.portalinterior.PortalInteriorTile;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.grid.DeepReach;
 import net.voxelindustry.voidheart.common.energy.machine.MachineEnergyBalance;
 import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
@@ -69,12 +70,31 @@ public class PortalFrameCoreTile extends PortalFrameTile
      */
     @Getter
     private boolean      dark;
+    /**
+     * What is left of a Deep field reaching out of this portal from its partner's side, for the ring drawn around it.
+     */
+    @Getter
+    private float        deepReach;
+    private static final int DEEP_REACH_POLL = 20;
     private int          starvedTicks;
     /**
      * How well the pair's draw was met on the last tick this core paid it. IDLE while the other core pays.
      */
     @Getter
     private MachinePower power = MachinePower.IDLE;
+
+    /**
+     * Cores loaded on this client, for the ring of a Deep field reaching out of them.
+     */
+    public static final java.util.Set<PortalFrameCoreTile> CLIENT_CORES = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+
+    @Override
+    public void setLevel(Level level)
+    {
+        super.setLevel(level);
+        if (level.isClientSide())
+            CLIENT_CORES.add(this);
+    }
 
     public PortalFrameCoreTile(BlockPos pos, BlockState state)
     {
@@ -110,6 +130,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
 
         ownerPlayerUUID = tag.read("ownerPlayerUUID", UUIDUtil.CODEC).orElse(null);
         dark = tag.getBooleanOr("dark", false);
+        deepReach = tag.getFloatOr("deep_reach", 0);
         starvedTicks = tag.getIntOr("starvedTicks", 0);
     }
 
@@ -148,6 +169,7 @@ public class PortalFrameCoreTile extends PortalFrameTile
         if (ownerPlayerUUID != null)
             tag.store("ownerPlayerUUID", UUIDUtil.CODEC, ownerPlayerUUID);
         tag.putBoolean("dark", dark);
+        tag.putFloat("deep_reach", deepReach);
         tag.putInt("starvedTicks", starvedTicks);
 
         super.saveAdditional(tag);
@@ -317,6 +339,15 @@ public class PortalFrameCoreTile extends PortalFrameTile
      */
     private void tickServer(ServerLevel level)
     {
+        if (level.getGameTime() % DEEP_REACH_POLL == 0)
+        {
+            float reach = DeepReach.reachAt(level, worldPosition);
+            if (reach != deepReach)
+            {
+                deepReach = reach;
+                sync();
+            }
+        }
         if (link == null || isBroken())
         {
             power = MachinePower.IDLE;

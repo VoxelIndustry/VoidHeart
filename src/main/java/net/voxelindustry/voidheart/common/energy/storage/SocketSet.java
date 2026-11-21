@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.energy.storage;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.energy.storage.ConstructLayout.Size;
 import org.jspecify.annotations.Nullable;
 
@@ -16,15 +17,25 @@ import java.util.function.IntPredicate;
  */
 public class SocketSet
 {
-    public record Entry(int socket, SocketBundle bundle)
+    /**
+     * @param habit how the bundle grew, kept so it comes back out as it went in
+     */
+    public record Entry(int socket, SocketBundle bundle, CrystalHabit habit)
     {
         public static final Codec<Entry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.INT.fieldOf("socket").forGetter(Entry::socket),
-                SocketBundle.CODEC.fieldOf("bundle").forGetter(Entry::bundle)
+                SocketBundle.CODEC.fieldOf("bundle").forGetter(Entry::bundle),
+                CrystalHabit.CODEC.optionalFieldOf("habit", CrystalHabit.NONE).forGetter(Entry::habit)
         ).apply(instance, Entry::new));
+
+        public Entry(int socket, SocketBundle bundle)
+        {
+            this(socket, bundle, CrystalHabit.NONE);
+        }
     }
 
     private final SocketBundle[] bundles = new SocketBundle[ConstructLayout.MAX_SOCKETS];
+    private final CrystalHabit[] habits  = new CrystalHabit[ConstructLayout.MAX_SOCKETS];
 
     public @Nullable SocketBundle get(int socket)
     {
@@ -33,8 +44,22 @@ public class SocketSet
 
     public void set(int socket, @Nullable SocketBundle bundle)
     {
+        set(socket, bundle, CrystalHabit.NONE);
+    }
+
+    public void set(int socket, @Nullable SocketBundle bundle, CrystalHabit habit)
+    {
         if (socket >= 0 && socket < bundles.length)
+        {
             bundles[socket] = bundle;
+            habits[socket] = bundle == null ? null : habit;
+        }
+    }
+
+    public CrystalHabit habit(int socket)
+    {
+        var habit = socket >= 0 && socket < habits.length ? habits[socket] : null;
+        return habit == null ? CrystalHabit.NONE : habit;
     }
 
     public int count()
@@ -66,12 +91,53 @@ public class SocketSet
 
     public long capacity()
     {
-        return SocketBundle.capacityOf(Arrays.asList(bundles));
+        long capacity = 0;
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null)
+                capacity += bundles[socket].capacity(habits[socket]);
+        }
+        return capacity;
+    }
+
+    /**
+     * Whether any socket holds Fouled rubrum, which leaks a seep while the construct is over half full.
+     */
+    public boolean holdsFouledRubrum()
+    {
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null && bundles[socket].isFouledRubrum(habits[socket]))
+                return true;
+        }
+        return false;
     }
 
     public long rate()
     {
         return SocketBundle.rateOf(Arrays.asList(bundles));
+    }
+
+    public long rateIn()
+    {
+        long rate = 0;
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null)
+                rate += bundles[socket].rateIn(habits[socket]);
+        }
+        return rate;
+    }
+
+    public long rateOut()
+    {
+        long rate = 0;
+        for (int socket = 0; socket < bundles.length; socket++)
+        {
+            if (bundles[socket] != null)
+                rate += bundles[socket].rateOut(habits[socket]);
+        }
+        return rate;
     }
 
     public boolean fits(Size size)
@@ -96,7 +162,9 @@ public class SocketSet
                 if (bundles[free] == null)
                 {
                     bundles[free] = bundles[index];
+                    habits[free] = habits[index];
                     bundles[index] = null;
+                    habits[index] = null;
                     break;
                 }
             }
@@ -135,7 +203,7 @@ public class SocketSet
         for (var index = 0; index < bundles.length; index++)
         {
             if (bundles[index] != null)
-                out.add(new Entry(index, bundles[index]));
+                out.add(new Entry(index, bundles[index], habit(index)));
         }
         return out;
     }
@@ -143,7 +211,8 @@ public class SocketSet
     public void load(List<Entry> entries)
     {
         Arrays.fill(bundles, null);
+        Arrays.fill(habits, null);
         for (var entry : entries)
-            set(entry.socket(), entry.bundle());
+            set(entry.socket(), entry.bundle(), entry.habit());
     }
 }

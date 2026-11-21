@@ -1,0 +1,71 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "east": {
+          "texture": "#pillar"
+        },
+        "north": {
+          "texture": "#pillar"
+        },
+        "south": {
+          "texture": "#pillar"
+        },
+        "west": {
+          "texture": "#pillar"
+        }
+      },
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        6,
+        9,
+        6
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#cap"
+        },
+        "east": {
+          "texture": "#cap"
+        },
+        "north": {
+          "texture": "#cap"
+        },
+        "south": {
+          "texture": "#cap"
+        },
+        "up": {
+          "texture": "#cap"
+        },
+        "west": {
+          "texture": "#cap"
+        }
+      },
+      "from": [
+        0.5,
+        9,
+        0.5
+      ],
+      "to": [
+        6.5,
+        10,
+        6.5
+      ]
+    }
+  ],
+  "textures": {
+    "body": "voidheart:block/voidstone_polished",
+    "cap": "voidheart:block/ravenous_gold_block",
+    "frame": "voidheart:block/voidstone_tile_small_carved",
+    "particle": "voidheart:block/voidstone_tile_small_carved",
+    "pillar": "voidheart:block/voidstone_pillar_side",
+    "trim": "voidheart:block/cut_ravenous_gold"
+  }
+}

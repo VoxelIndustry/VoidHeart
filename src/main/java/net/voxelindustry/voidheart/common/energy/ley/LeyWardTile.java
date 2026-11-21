@@ -3,6 +3,9 @@ package net.voxelindustry.voidheart.common.energy.ley;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.Containers;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -10,6 +13,8 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.energy.LeyPower;
 import net.voxelindustry.voidheart.common.energy.VoidSeep;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Set;
@@ -38,6 +43,9 @@ public class LeyWardTile extends TileBase
     private float ring;
     private float previousRing;
 
+    /** An imprinted Scoured memoriam bundle set in the ward, which keeps the creature it remembers out of the ward's reach. */
+    private ItemStack memory = ItemStack.EMPTY;
+
     public LeyWardTile(BlockPos pos, BlockState state)
     {
         super(LeyStoneContent.LEY_WARD_TILE, pos, state);
@@ -54,7 +62,7 @@ public class LeyWardTile extends TileBase
             ward.health = WardStrength.health(ward.taint, ward.seep);
         }
         ward.strength = WardStrength.of(ward.supply, ward.taint, ward.seep);
-        LeyWards.update(server, pos, ward.strength);
+        LeyWards.update(server, pos, ward.strength, ward.keepsOut());
 
         if (Math.abs(ward.strength - ward.syncedStrength) > SYNC_STEP || Math.abs(ward.health - ward.syncedHealth) > SYNC_STEP
                 || (ward.strength == 0) != (ward.syncedStrength == 0))
@@ -105,6 +113,8 @@ public class LeyWardTile extends TileBase
         output.putFloat("supply", supply);
         output.putFloat("health", health);
         output.putFloat("strength", strength);
+        if (!memory.isEmpty())
+            output.store("memory", ItemStack.CODEC, memory);
     }
 
     @Override
@@ -114,6 +124,41 @@ public class LeyWardTile extends TileBase
         supply = unit(input.getFloatOr("supply", 0));
         health = unit(input.getFloatOr("health", 1));
         strength = unit(input.getFloatOr("strength", 0));
+        memory = input.read("memory", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+    }
+
+    /**
+     * The creature kind the memory set in the ward remembers, or null.
+     */
+    public @Nullable EntityType<?> keepsOut()
+    {
+        return memory.isEmpty() ? null : memory.get(VoidHeartDataComponents.CRYSTAL_IMPRINT);
+    }
+
+    public ItemStack memory()
+    {
+        return memory;
+    }
+
+    /**
+     * Sets a memory in, one only, or takes it out with EMPTY.
+     */
+    public void setMemory(ItemStack memory)
+    {
+        this.memory = memory.isEmpty() ? ItemStack.EMPTY : memory.copyWithCount(1);
+        if (level instanceof ServerLevel server)
+            LeyWards.update(server, getBlockPos(), strength, keepsOut());
+        setChanged();
+        sync();
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state)
+    {
+        if (level != null && !level.isClientSide() && !memory.isEmpty())
+            Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, memory);
+        memory = ItemStack.EMPTY;
+        super.preRemoveSideEffects(pos, state);
     }
 
     private static float unit(float value)

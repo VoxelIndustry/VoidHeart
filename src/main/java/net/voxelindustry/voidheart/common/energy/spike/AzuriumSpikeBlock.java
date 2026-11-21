@@ -14,12 +14,17 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.voxelindustry.voidheart.common.block.TwoHighBlock;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 
 import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -70,6 +75,24 @@ public class AzuriumSpikeBlock extends TwoHighBlock<AzuriumSpikeBlock.Part>
             player.sendOverlayMessage(Component.translatable(MODID + ".spike.setting", Math.round(LeySpikeMath.share(spike.setting()) * 100)));
         }
         return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * A Fouled spike stays Fouled when taken up.
+     */
+    @Override
+    protected List<ItemStack> lowerDrops(BlockState state, LootParams.Builder builder)
+    {
+        var drops = super.lowerDrops(state, builder);
+        if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof AzuriumSpikeTile spike && spike.isFouled())
+        {
+            for (var drop : drops)
+            {
+                if (drop.is(asItem()))
+                    drop.set(VoidHeartDataComponents.CRYSTAL_HABIT, CrystalHabit.FOULED);
+            }
+        }
+        return drops;
     }
 
     @Override

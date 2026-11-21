@@ -80,7 +80,7 @@ public final class OculusLeyLayer
         {
             if (projector.view().asleep())
                 continue;
-            if (!projector.view().leyLines())
+            if (!projector.view().leyLines() || projector.showsMemory())
             {
                 LAYERS.remove(projector.anchor);
                 continue;
@@ -119,7 +119,7 @@ public final class OculusLeyLayer
             if (projector.view().asleep())
                 continue;
             var received = LAYERS.get(projector.anchor);
-            if (received == null || !projector.view().leyLines())
+            if (received == null || !projector.view().leyLines() || projector.showsMemory())
                 continue;
 
             var layer = received.layer();

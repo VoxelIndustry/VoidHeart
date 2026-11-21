@@ -281,6 +281,23 @@ public final class ArmorWear
     }
 
     /**
+     * Puts the socketed apparatus back into the worn frame once something it holds changed, such as a Grudge Ward taking up a new grudge: what
+     * {@link #socketed} gives is a copy.
+     */
+    public static void setSocketed(Player player, ItemStack apparatus)
+    {
+        var worn = worn(player);
+        if (worn == null)
+            return;
+        var frame = worn.frame().copy();
+        var slots = net.minecraft.core.NonNullList.withSize(ArmorBalance.FRAME_SLOTS, ItemStack.EMPTY);
+        frame.getOrDefault(VoidArmorContent.ARMOR_SLOTS, net.minecraft.world.item.component.ItemContainerContents.EMPTY).copyInto(slots);
+        slots.set(ArmorBalance.SOCKET_SLOT, apparatus);
+        frame.set(VoidArmorContent.ARMOR_SLOTS, net.minecraft.world.item.component.ItemContainerContents.fromItems(slots));
+        player.setAttached(WORN, worn.withFrame(frame));
+    }
+
+    /**
      * The socketed apparatus's stats as the frame runs it: refilling faster while the frame can spare the charge, not at all once it can't.
      */
     public static ShieldStats shieldStats(Player player, ShieldStats stats)

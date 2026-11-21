@@ -16,9 +16,21 @@ public final class GridLayout
 {
     /**
      * @param bundle the azurium bundle's block, the center of the field and the end of every arc
+     * @param clear  whether the bundle grew Clear, so its arcs to other Clear bundles pass through blocks
+     * @param scoured whether the bundle was scoured, so its field holds back the seep
      */
-    public record Pylon(BlockPos pos, BlockPos bundle, int radius, long cap)
+    public record Pylon(BlockPos pos, BlockPos bundle, int radius, long cap, boolean clear, boolean scoured)
     {
+        public Pylon(BlockPos pos, BlockPos bundle, int radius, long cap)
+        {
+            this(pos, bundle, radius, cap, false, false);
+        }
+
+        public Pylon(BlockPos pos, BlockPos bundle, int radius, long cap, boolean clear)
+        {
+            this(pos, bundle, radius, cap, clear, false);
+        }
+
         public boolean covers(BlockPos target)
         {
             return bundle.distSqr(target) <= (double) radius * radius;
@@ -49,7 +61,7 @@ public final class GridLayout
     }
 
     /**
-     * Two pylons arc when their bundles are within {@link VoidGridBalance#linkReach} of each other and in sight.
+     * Two pylons arc when their bundles are within {@link VoidGridBalance#linkReach} of each other and in sight. Two Clear bundles need no sight.
      */
     public static GridLayout link(List<Pylon> pylons, BiPredicate<Pylon, Pylon> inSight)
     {
@@ -61,7 +73,7 @@ public final class GridLayout
                 var first = pylons.get(a);
                 var second = pylons.get(b);
                 int reach = VoidGridBalance.linkReach(first.radius(), second.radius());
-                if (first.bundle().distSqr(second.bundle()) <= (double) reach * reach && inSight.test(first, second))
+                if (first.bundle().distSqr(second.bundle()) <= (double) reach * reach && ((first.clear() && second.clear()) || inSight.test(first, second)))
                     arcs.add(new int[] { a, b });
             }
         }

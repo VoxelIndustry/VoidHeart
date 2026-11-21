@@ -22,6 +22,7 @@ import net.minecraft.client.data.models.model.TextureSlot;
 import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.client.data.models.model.TexturedModel;
 import net.minecraft.client.renderer.item.properties.select.ComponentContents;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalDatagen;
 import net.minecraft.client.renderer.item.properties.select.DisplayContext;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -108,15 +109,7 @@ public class ModelsProvider extends FabricModelProvider
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
 
-        registerBundle(VoidHeartBlocks.SMALL_AZURIUM_BUNDLE);
-        registerBundle(VoidHeartBlocks.MEDIUM_AZURIUM_BUNDLE);
-        registerBundle(VoidHeartBlocks.LARGE_AZURIUM_BUNDLE);
-        registerBundle(VoidHeartBlocks.SMALL_RUBRUM_BUNDLE);
-        registerBundle(VoidHeartBlocks.MEDIUM_RUBRUM_BUNDLE);
-        registerBundle(VoidHeartBlocks.LARGE_RUBRUM_BUNDLE);
-        registerBundle(VoidHeartBlocks.SMALL_MEMORIAM_BUNDLE);
-        registerBundle(VoidHeartBlocks.MEDIUM_MEMORIAM_BUNDLE);
-        registerBundle(VoidHeartBlocks.LARGE_MEMORIAM_BUNDLE);
+        CrystalDatagen.bundleModels(generator);
 
         registerArmillaryCore();
         generator.createTrivialCube(VoidHeartBlocks.VOIDSTONE_CHISELED);
@@ -131,6 +124,7 @@ public class ModelsProvider extends FabricModelProvider
         registerRepairAndDoor();
         EnergyDatagen.blockModels(generator);
         UnderwayPropModels.generate(generator);
+        GreatStorageModels.generate(generator);
     }
 
     /**
@@ -328,9 +322,7 @@ public class ModelsProvider extends FabricModelProvider
         SinInlayModels.generate(generator);
         generator.generateFlatItem(VoidHeartItems.RAVENOUS_GOLD_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.ARROGANT_IRON_INGOT, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.AZURIUM_SHARD, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.RUBRUM_SHARD, ModelTemplates.FLAT_ITEM);
-        generator.generateFlatItem(VoidHeartItems.MEMORIAM_SHARD, ModelTemplates.FLAT_ITEM);
+        CrystalDatagen.shardModels(generator);
         generator.generateFlatItem(VoidHeartItems.KERNACIAN_CORE, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SEETHING_STEEL_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.COVETOUS_COPPER_INGOT, ModelTemplates.FLAT_ITEM);

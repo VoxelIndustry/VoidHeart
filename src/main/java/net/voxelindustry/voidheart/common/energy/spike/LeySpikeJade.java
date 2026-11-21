@@ -1,5 +1,8 @@
 package net.voxelindustry.voidheart.common.energy.spike;
 
+import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
+import net.voxelindustry.voidheart.common.content.crystal.HabitEffects;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -54,6 +57,7 @@ public final class LeySpikeJade
             tag.putLong("output", Math.round(spike.averageOutput()));
             tag.putBoolean("idle", spike.isIdle());
             tag.putDouble("contravoid", spike.averageContravoid() * 20);
+            tag.putBoolean("fouled", spike.isFouled());
             var node = spike.node(level);
             if (node.isPresent())
             {
@@ -78,6 +82,11 @@ public final class LeySpikeJade
             if (!data.contains("setting"))
                 return;
 
+            if (data.getBooleanOr("fouled", false))
+            {
+                tooltip.add(HabitEffects.name(CrystalHabit.FOULED));
+                HabitEffects.of(CrystalHabit.FOULED, CrystalKind.AZURIUM).forEach(effect -> tooltip.add(effect.onBlock()));
+            }
             var onLattice = data.contains("stage");
             if (!onLattice)
                 tooltip.add(Component.translatable(MODID + ".jade.spike.off_lattice"));

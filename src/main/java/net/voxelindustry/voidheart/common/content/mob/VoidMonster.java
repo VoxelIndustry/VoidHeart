@@ -19,7 +19,10 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.Level;
+import net.voxelindustry.voidheart.common.energy.ley.LeyStoneBalance;
+import net.voxelindustry.voidheart.common.energy.ley.LeyWards;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -45,6 +48,11 @@ public abstract class VoidMonster extends Monster
     private static final int REST_CHECK_TICKS = 20;
 
     private boolean resting;
+
+    private static final int    WARD_CHECK_TICKS  = 10;
+    private static final double WARD_LEAVE_MARGIN = 2;
+    private static final double WARD_LEAVE_SPEED  = 1.2;
+    private static final double WARD_PUSH         = 0.3;
 
     protected VoidMonster(EntityType<? extends VoidMonster> type, Level level)
     {
@@ -92,6 +100,8 @@ public abstract class VoidMonster extends Monster
         if (!level().isClientSide())
         {
             updateDormancy();
+            if ((tickCount + getId()) % WARD_CHECK_TICKS == 0)
+                leaveWard();
             if ((tickCount + getId()) % REST_CHECK_TICKS == 0)
                 resting = isInDaedalus() && level().getNearestPlayer(this, REST_RANGE) == null;
             if (isResting())
@@ -152,6 +162,14 @@ public abstract class VoidMonster extends Monster
             var box = getBoundingBox();
             delta = new Vec3(DaedalusFence.clipX(getX(), getZ(), box.minX, box.maxX, delta.x), DaedalusFence.clipY(box.minY, delta.y), DaedalusFence.clipZ(getX(), getZ(), box.minZ, box.maxZ, delta.z));
         }
+        // A ward remembering its kind is a wall it can't step through, though it may always step out of one
+        if (type == MoverType.SELF && delta.lengthSqr() > 0 && level() instanceof ServerLevel server && keptOutOf(server, delta))
+        {
+            delta = new Vec3(0, delta.y, 0);
+            // What doesn't fall can't sink or rise into one either
+            if (isNoGravity() && keptOutOf(server, delta))
+                delta = Vec3.ZERO;
+        }
         super.move(type, delta);
     }
 
@@ -160,7 +178,41 @@ public abstract class VoidMonster extends Monster
      */
     public boolean mayGoTo(Vec3 spot)
     {
+        if (level() instanceof ServerLevel server && LeyWards.keepsOut(server, getType(), spot.x, spot.y, spot.z))
+            return false;
         return !isInDaedalus() || DaedalusFence.allows(getX(), getZ(), spot.x, spot.y, spot.z);
+    }
+
+    /**
+     * Whether this step would take it from outside a ward keeping its kind out to inside one.
+     */
+    private boolean keptOutOf(ServerLevel level, Vec3 delta)
+    {
+        return LeyWards.entersKept(level, getType(), position(), position().add(delta));
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level)
+    {
+        return WardedPaths.ground(this, level);
+    }
+
+    /**
+     * One that finds itself inside a ward keeping its kind out, set there or caught as the ward woke, walks back out of its reach.
+     */
+    private void leaveWard()
+    {
+        var ward = LeyWards.keptOutOf(this);
+        if (ward == null)
+            return;
+        var away = position().subtract(ward).multiply(1, 0, 1);
+        if (away.lengthSqr() < 1.0E-4)
+            away = new Vec3(1, 0, 0);
+        var target = ward.add(away.normalize().scale(LeyStoneBalance.WARD_RADIUS + WARD_LEAVE_MARGIN));
+        setTarget(null);
+        getNavigation().moveTo(target.x, getY(), target.z, WARD_LEAVE_SPEED);
+        // Pressed outward too, so a goal steering it back in can't keep it there
+        addDeltaMovement(away.normalize().scale(WARD_PUSH));
     }
 
     /** Whoever goes down into the Underway is out of the void's reach: nothing of the Daedalus follows, hunts or strikes at them from above. */
