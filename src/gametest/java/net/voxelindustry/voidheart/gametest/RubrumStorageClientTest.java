@@ -493,6 +493,34 @@ public class RubrumStorageClientTest implements FabricClientGameTest
         expect(seared[1] == 1 && seared[0] < RubrumBalance.CELL_CAPACITY - RubrumBalance.SOCKET_WALL_RATE * 20 * 4,
                 "A Searing cell in a wall should burst its charge out, holds " + seared[0]);
 
+        // A Wrung cell in a wall drinks harm done beside it, and only that cell banks it
+        server.runOnServer(minecraft -> wall(minecraft, WALL_2).setCell(1,
+                net.voxelindustry.voidheart.common.content.crystal.CrystalBundles.withHabit(cellOf(0),
+                        net.voxelindustry.voidheart.common.content.crystal.CrystalHabit.WRUNG)));
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            var pig = spawn(minecraft, net.minecraft.world.entity.EntityTypes.PIG, WALL_2.getX() + 2.5, FLAT_FEET, WALL_2.getZ() + 0.5);
+            pig.setNoAi(true);
+        });
+        context.waitTicks(5);
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        aimFrom(context, server, WALL_2.getX() + 3.5, FLAT_FEET, WALL_2.getZ() - 2.5, WALL_2.getX() + 1.5, WALL_2.getY() + 0.5, WALL_2.getZ() + 0.5, 5);
+        var banked = server.computeOnServer(minecraft ->
+        {
+            var pig = first(minecraft, net.minecraft.world.entity.EntityTypes.PIG);
+            pig.hurtServer(minecraft.overworld(), pig.damageSources().generic(), 5);
+            var tile = wall(minecraft, WALL_2);
+            return new long[]{tile.wrungBank(1), tile.wrungBank(0) + tile.wrungBank(2) + tile.wrungBank(3)};
+        });
+        expect(banked[0] > 0 && banked[1] == 0, "Only the Wrung cell in a wall should bank harm done beside it, banked " + banked[0] + " and " + banked[1] + " elsewhere");
+        context.waitTicks(8);
+        context.takeScreenshot("socket-wall-wrung-wisps");
+        context.getInput().pressKey(InputConstants.KEY_F1);
+        waitFor(context, server, 60, "A Wrung cell in a wall should take in what it banked",
+                minecraft -> wall(minecraft, WALL_2).wrungBank(1) < banked[0]);
+        server.runCommand("kill @e[type=pig]");
+
         server.runCommand("setblock " + WALL_2.getX() + " " + WALL_2.getY() + " " + WALL_2.getZ() + " air destroy");
         context.waitTicks(5);
         var drops = server.computeOnServer(minecraft -> minecraft.overworld().getEntitiesOfClass(ItemEntity.class, new AABB(WALL_2).inflate(2)).stream()
