@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_ravenous_storage": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:ravenous_storage"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/ravenous_storage_matrix"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_ravenous_storage"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/ravenous_storage_matrix"
+    ]
+  }
+}
