@@ -75,6 +75,14 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
         super.saveAdditional(tag);
     }
 
+    /**
+     * @return the Shatter Forge this pillar feeds, or null
+     */
+    public BlockPos getSourceOfForge()
+    {
+        return sourceOfForge;
+    }
+
     public boolean isForgeSource()
     {
         return sourceOfForge != null;

@@ -15,15 +15,15 @@ public final class HoardBalance
     }
 
     /**
-     * @return how many items a coffer holding a rubrum bundle of that size adds to its pocket's hoard
+     * @return how many items a coffer holding a rubrum bundle of that size adds to its pocket's hoard: a medium bundle holds a chest of full stacks
      */
     public static long cofferCapacity(BundleSize size)
     {
         return switch (size)
         {
-            case SMALL -> 4_096;
-            case MEDIUM -> 16_384;
-            case LARGE -> 65_536;
+            case SMALL -> 576;
+            case MEDIUM -> 1_728;
+            case LARGE -> 3_456;
         };
     }
 }

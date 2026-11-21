@@ -830,6 +830,15 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         return pillars.size();
     }
 
+    /**
+     * @return the pillars standing around the altar now, looked for afresh
+     */
+    public List<VoidPillarTile> pillarsAround()
+    {
+        searchPillars();
+        return List.copyOf(pillars);
+    }
+
     public void searchPillars()
     {
         pillars.clear();

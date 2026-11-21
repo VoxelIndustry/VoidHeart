@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.Block;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalDatagen;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorDatagen;
 import net.voxelindustry.voidheart.common.content.hoard.HoardDatagen;
+import net.voxelindustry.voidheart.common.content.works.WorksDatagen;
 import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVentricleDatagen;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineDatagen;
@@ -58,6 +59,7 @@ public final class EnergyDatagen
         PearlDatagen.blockModels(generators);
         CrystalDatagen.blockModels(generators);
         HoardDatagen.blockModels(generators);
+        WorksDatagen.blockModels(generators);
     }
 
     public static void itemModels(ItemModelGenerators generators)
@@ -91,6 +93,7 @@ public final class EnergyDatagen
         PearlDatagen.recipes(recipes);
         CrystalDatagen.recipes(recipes);
         HoardDatagen.recipes(recipes);
+        WorksDatagen.recipes(recipes);
     }
 
     /**
@@ -112,6 +115,7 @@ public final class EnergyDatagen
         PearlDatagen.loot(loot);
         CrystalDatagen.loot(loot);
         HoardDatagen.loot(loot);
+        WorksDatagen.loot(loot);
     }
 
     public static void tags(EnergyTags tags)

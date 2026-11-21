@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/officiant"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_void_pearl": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:void_pearl"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_void_pearl"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/officiant"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "voidheart:block/voidstone_polished",
+    "side": "voidheart:block/voidstone_engraved_eye",
+    "top": "voidheart:block/voidstone_chiseled"
+  }
+}

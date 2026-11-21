@@ -1,0 +1,84 @@
+package net.voxelindustry.voidheart.common.content.works;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class WorksQueueTest
+{
+    private static WorksQueue.Task task(String recipe, StationKind station, long crafts)
+    {
+        return new WorksQueue.Task(recipe, station, crafts);
+    }
+
+    @Test
+    void order_givenTheSameRecipeTwiceInARow_thenMergesThem()
+    {
+        var queue = new WorksQueue();
+
+        queue.order("pearls", 2, List.of(task("shard", StationKind.TABLE, 2), task("shard", StationKind.TABLE, 1), task("pearl", StationKind.ALTAR, 2)));
+
+        assertThat(queue.jobs().getFirst().tasks()).containsExactly(task("shard", StationKind.TABLE, 3), task("pearl", StationKind.ALTAR, 2));
+    }
+
+    @Test
+    void claim_givenAStationOfAnotherKind_thenSkipsTheTask()
+    {
+        var queue = new WorksQueue();
+        queue.order("pearls", 1, List.of(task("shard", StationKind.TABLE, 1), task("pearl", StationKind.ALTAR, 1)));
+
+        var claim = queue.claim(StationKind.ALTAR, any -> true);
+
+        assertThat(claim).isEqualTo(new WorksQueue.Claim(1, "pearl", StationKind.ALTAR));
+    }
+
+    @Test
+    void claim_givenATaskThatCannotStart_thenTakesTheNextOne()
+    {
+        var queue = new WorksQueue();
+        queue.order("first", 1, List.of(task("waiting", StationKind.ALTAR, 1)));
+        queue.order("second", 1, List.of(task("ready", StationKind.ALTAR, 1)));
+
+        var claim = queue.claim(StationKind.ALTAR, candidate -> candidate.recipe().equals("ready"));
+
+        assertThat(claim.recipe()).isEqualTo("ready");
+        assertThat(queue.jobs()).extracting(WorksQueue.Job::what).containsExactly("first");
+    }
+
+    @Test
+    void claim_givenTheLastCraftOfAnOrder_thenTheOrderIsGone()
+    {
+        var queue = new WorksQueue();
+        queue.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+
+        queue.claim(StationKind.ALTAR, any -> true);
+
+        assertThat(queue.jobs()).isEmpty();
+        assertThat(queue.claim(StationKind.ALTAR, any -> true)).isNull();
+    }
+
+    @Test
+    void giveBack_givenTheOrderStillThere_thenTheCraftCountsAgain()
+    {
+        var queue = new WorksQueue();
+        queue.order("pearls", 2, List.of(task("pearl", StationKind.ALTAR, 2)));
+        var claim = queue.claim(StationKind.ALTAR, any -> true);
+
+        queue.giveBack(claim);
+
+        assertThat(queue.jobs().getFirst().tasks().getFirst().remaining()).isEqualTo(2);
+    }
+
+    @Test
+    void cancel_givenAnOrderId_thenRemovesOnlyThatOrder()
+    {
+        var queue = new WorksQueue();
+        var first = queue.order("a", 1, List.of(task("a", StationKind.TABLE, 1)));
+        queue.order("b", 1, List.of(task("b", StationKind.TABLE, 1)));
+
+        assertThat(queue.cancel(first)).isTrue();
+        assertThat(queue.jobs()).extracting(WorksQueue.Job::what).containsExactly("b");
+    }
+}
