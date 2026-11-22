@@ -544,7 +544,8 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         if (worksTab)
         {
             // Enter begins the plan shown, Escape goes back a step before it closes the screen
-            if (enter && beginButton.visible && beginButton.active)
+            // Checked against the field as it is now, since the button's state is only refreshed once a frame
+            if (enter && beginButton.visible && !amountBox.getValue().isEmpty() && works.planCurrent())
             {
                 amountBox.setFocused(false);
                 works.begin();
