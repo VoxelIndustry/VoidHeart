@@ -78,8 +78,8 @@ public class LargeRubrumCellClientTest implements FabricClientGameTest
             world.getConnection().waitForChunksRender();
             context.waitTicks(5);
             var after = server.computeOnServer(minecraft -> cell(minecraft, LONE).charge());
-            // The reload itself passes a few ticks, each losing about one
-            expect(after <= kept && after >= kept - 200, "A large cell should keep its charge through a reload, had " + kept + " and holds " + after);
+            // The reload itself passes a few ticks, each losing about four
+            expect(after <= kept && after >= kept - 1_000, "A large cell should keep its charge through a reload, had " + kept + " and holds " + after);
         }
     }
 
@@ -161,14 +161,14 @@ public class LargeRubrumCellClientTest implements FabricClientGameTest
 
     private static void decay(ClientGameTestContext context, TestServerContext server)
     {
-        // Out of any field, it loses its capacity's 1% an hour, about 1.1 a tick
+        // Out of any field, it loses its capacity's 1% an hour, about 4.4 a tick
         server.runOnServer(minecraft -> cell(minecraft, LONE).setCharge(CAPACITY / 2));
         var before = server.computeOnServer(minecraft -> new long[]{minecraft.overworld().getGameTime(), cell(minecraft, LONE).charge()});
         context.waitTicks(200);
         var after = server.computeOnServer(minecraft -> new long[]{minecraft.overworld().getGameTime(), cell(minecraft, LONE).charge()});
         var expected = (after[0] - before[0]) * CAPACITY / 100 / LargeCellCharge.TICKS_PER_HOUR;
         var lost = before[1] - after[1];
-        expect(Math.abs(lost - expected) <= 3, "An idle large cell should lose about " + expected + ", lost " + lost);
+        expect(Math.abs(lost - expected) <= 10, "An idle large cell should lose about " + expected + ", lost " + lost);
 
         // An hour passed while unloaded counts as an hour idle
         var charge = server.computeOnServer(minecraft ->
@@ -180,14 +180,14 @@ public class LargeRubrumCellClientTest implements FabricClientGameTest
         });
         context.waitTicks(2);
         lost = charge - read(server, LONE, LargeRubrumCellTile::charge);
-        expect(lost >= CAPACITY / 100 && lost <= CAPACITY / 100 + 10,
+        expect(lost >= CAPACITY / 100 && lost <= CAPACITY / 100 + 50,
                 "A large cell should lose 1% of its capacity for an hour spent unloaded, lost " + lost);
 
         // The age command does the same
         charge = read(server, LONE, LargeRubrumCellTile::charge);
         server.runCommand("execute positioned " + LONE.getX() + " " + LONE.getY() + " " + LONE.getZ() + " run voidheart energy large_cell age 10");
         lost = charge - read(server, LONE, LargeRubrumCellTile::charge);
-        expect(lost >= CAPACITY / 10 && lost <= CAPACITY / 10 + 10, "Ten hours aged should lose 10% of its capacity, lost " + lost);
+        expect(lost >= CAPACITY / 10 && lost <= CAPACITY / 10 + 50, "Ten hours aged should lose 10% of its capacity, lost " + lost);
     }
 
     private static void looks(ClientGameTestContext context, TestServerContext server)

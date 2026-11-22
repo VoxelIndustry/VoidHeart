@@ -33,10 +33,10 @@ class LargeCellChargeTest
     @Test
     void aFractionOfAnEnergyIsCarriedOver()
     {
-        // 8,000,000 a 7,200,000-part energy: one tick loses one energy and carries the rest
+        // 32,000,000 parts of a 7,200,000-part energy: one tick loses four energy and carries the rest
         var decay = LargeCellCharge.decay(0, 1, CAPACITY);
-        assertThat(decay.loss()).isEqualTo(1);
-        assertThat(decay.carry()).isEqualTo(800_000);
+        assertThat(decay.loss()).isEqualTo(4);
+        assertThat(decay.carry()).isEqualTo(3_200_000);
     }
 
     @Test

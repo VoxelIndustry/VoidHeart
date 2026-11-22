@@ -36,8 +36,8 @@ public final class RubrumBalance
     /** Guess: how fast a socket wall charges or discharges each of its four cells. */
     public static final long SOCKET_WALL_RATE = CELL_SOCKET_RATE;
 
-    /** A Large Rubrum Cell holds twice a large construct's worth. */
-    public static final long LARGE_CELL_CAPACITY      = 8_000_000;
+    /** A Large Rubrum Cell holds twice what its four large rubrum bundles would in a construct, for its pearl and its fading. */
+    public static final long LARGE_CELL_CAPACITY      = 32_000_000;
     /** Guess: how fast a Large Rubrum Cell charges from or discharges into the field, a large azurium's rate. */
     public static final long LARGE_CELL_RATE          = LARGE_AZURIUM_RATE;
     /** A Large Rubrum Cell loses this share of its capacity every hour it isn't being charged, loaded or not. */
