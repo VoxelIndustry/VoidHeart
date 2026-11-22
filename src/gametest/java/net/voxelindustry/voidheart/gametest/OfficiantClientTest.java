@@ -82,6 +82,9 @@ public class OfficiantClientTest implements FabricClientGameTest
             checkForge(context, server);
             checkFullHoard(context, server);
             checkBrokenMidLaying(context, server);
+            checkItemOnPillarMidLaying(context, server);
+            checkRiteStartedMidLaying(context, server);
+            checkAltarReplaced(context, server);
             checkOfflineOwner(context, server);
             checkTransform(context, server);
         }
@@ -302,6 +305,126 @@ public class OfficiantClientTest implements FabricClientGameTest
             hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.OBSIDIAN_SHARD), 8);
             hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), 1);
             officiant(minecraft.overworld(), ALTAR.below(), minecraft);
+        });
+        context.waitTicks(25);
+    }
+
+    private static void orderPearlFromShards(TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            // Pearls made before would answer the wait for this one
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.VOID_PEARL), held(minecraft, VoidHeartItems.VOID_PEARL));
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.ENDER_SHARD), 1);
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.OBSIDIAN_SHARD), 8);
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.VOID_PEARL), 1);
+        });
+    }
+
+    private static void waitForStep(ClientGameTestContext context, TestServerContext server, int step)
+    {
+        waitFor(context, server, 600, "the altar's Officiant never reached step " + step,
+                minecraft -> minecraft.overworld().getBlockEntity(ALTAR.below()) instanceof OfficiantTile tile && tile.isLaying() && tile.layingStep() >= step);
+    }
+
+    private static net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile pillar(MinecraftServer minecraft, int index)
+    {
+        return altar(minecraft).pillarsAround().get(index);
+    }
+
+    /**
+     * A player's item set on a pillar not laid yet goes to the hoard when the Officiant gets there, and the rite still gets its ingredient.
+     */
+    private static void checkItemOnPillarMidLaying(ClientGameTestContext context, TestServerContext server)
+    {
+        orderPearlFromShards(server);
+        waitForStep(context, server, 2);
+        server.runOnServer(minecraft ->
+        {
+            expect(pillar(minecraft, 6).getStack().isEmpty(), "pillar 6 was laid before the apple went on it");
+            pillar(minecraft, 6).setStack(new ItemStack(Items.APPLE));
+        });
+        waitFor(context, server, 2000, "no Void Pearl came of the rite with an apple in the way", minecraft -> held(minecraft, VoidHeartItems.VOID_PEARL) >= 1);
+        server.runOnServer(minecraft ->
+        {
+            expect(held(minecraft, Items.APPLE) == 1, "the apple did not reach the hoard: hoard " + hoard(minecraft).view() + ", officiant holds "
+                    + heldBy(minecraft, ALTAR.below()) + ", pillars " + altar(minecraft).pillarsAround().stream().map(p -> p.getStack().toString()).toList()
+                    + ", altar " + altar(minecraft).getStack() + ", drops " + minecraft.overworld().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    new net.minecraft.world.phys.AABB(ALTAR).inflate(6)).stream().map(e -> e.getItem().toString()).toList());
+            hoard(minecraft).extract(ItemVariant.of(Items.APPLE), 1);
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.VOID_PEARL), held(minecraft, VoidHeartItems.VOID_PEARL));
+        });
+    }
+
+    /**
+     * A rite a player starts on what was laid so far stops the laying. Three shards in, the player adds a fourth on a pillar not laid yet and sets a
+     * redstone lamp on the altar, starting a Void Lamp: the Officiant leaves the pillars to that rite, gives back what it had not laid, and the craft
+     * counts again.
+     */
+    private static void checkRiteStartedMidLaying(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft -> Knowledge.lockOf(minecraft.registryAccess(), id("altar/void_lamp_from_redstone_lamp")).ifPresent(knowledge(minecraft)::grant));
+        orderPearlFromShards(server);
+        waitForStep(context, server, 3);
+        var laid = server.computeOnServer(minecraft ->
+        {
+            var filled = pillarsFilled(minecraft);
+            pillar(minecraft, 5).setStack(new ItemStack(VoidHeartItems.OBSIDIAN_SHARD));
+            altar(minecraft).setStack(player(minecraft), new ItemStack(net.minecraft.world.item.Items.REDSTONE_LAMP));
+            expect(altar(minecraft).isCrafting(), "the Void Lamp did not start on " + filled + " laid shards and the player's");
+            return filled;
+        });
+        waitFor(context, server, 40, "the Officiant kept laying under the player's rite",
+                minecraft -> minecraft.overworld().getBlockEntity(ALTAR.below()) instanceof OfficiantTile tile && !tile.isLaying() && tile.getClaim() == null);
+        server.runOnServer(minecraft ->
+        {
+            expect(pillar(minecraft, 5).getStack().is(VoidHeartItems.OBSIDIAN_SHARD) && pillarsFilled(minecraft) == laid + 1,
+                    "the pillars the player's rite uses were changed: " + altar(minecraft).pillarsAround().stream().map(p -> p.getStack().toString()).toList());
+            expect(held(minecraft, VoidHeartItems.OBSIDIAN_SHARD) == 8 - laid && held(minecraft, VoidHeartItems.ENDER_SHARD) == 1,
+                    "the unlaid ingredients did not come back: " + hoard(minecraft).view());
+            var jobs = WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs();
+            expect(jobs.size() == 1 && jobs.getFirst().tasks().getFirst().remaining() == 1 && jobs.getFirst().tasks().getFirst().working() == 0,
+                    "the craft was not counted again: " + jobs);
+            WorksState.get(minecraft).edit(player(minecraft).getUUID()).cancel(jobs.getFirst().id());
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.OBSIDIAN_SHARD), 8);
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), 1);
+        });
+        // The lamp is the player's, made from what lay on the pillars
+        waitFor(context, server, 600, "the player's Void Lamp never finished", minecraft -> !altar(minecraft).isCrafting());
+        server.runOnServer(minecraft ->
+        {
+            expect(altar(minecraft).getStack().is(VoidHeartBlocks.VOID_LAMP.asItem()), "the player's rite made " + altar(minecraft).getStack());
+            altar(minecraft).takeResult();
+            for (int index = 0; index < 8; index++)
+                pillar(minecraft, index).setStack(ItemStack.EMPTY);
+        });
+    }
+
+    /**
+     * An altar replaced by an empty one while its rite runs leaves no result: the craft counts again instead of finishing with nothing.
+     */
+    private static void checkAltarReplaced(ClientGameTestContext context, TestServerContext server)
+    {
+        orderPearlFromShards(server);
+        waitFor(context, server, 900, "the altar never started the Void Pearl", minecraft -> altar(minecraft).isCrafting());
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            level.removeBlock(ALTAR, false);
+            level.setBlockAndUpdate(ALTAR, VoidHeartBlocks.VOID_ALTAR.defaultBlockState());
+        });
+        waitFor(context, server, 80, "the Officiant never let go of the replaced altar's craft",
+                minecraft -> minecraft.overworld().getBlockEntity(ALTAR.below()) instanceof OfficiantTile tile && tile.getClaim() == null);
+        server.runOnServer(minecraft ->
+        {
+            var jobs = WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs();
+            expect(jobs.size() == 1 && jobs.getFirst().tasks().getFirst().remaining() == 1 && jobs.getFirst().tasks().getFirst().working() == 0,
+                    "the replaced altar's craft finished without a result: " + jobs);
+            expect(held(minecraft, VoidHeartItems.VOID_PEARL) == 0, "a Void Pearl came from the replaced altar");
+            WorksState.get(minecraft).edit(player(minecraft).getUUID()).cancel(jobs.getFirst().id());
+            for (var entity : minecraft.overworld().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    new net.minecraft.world.phys.AABB(ALTAR).inflate(4)))
+                entity.discard();
         });
         context.waitTicks(25);
     }

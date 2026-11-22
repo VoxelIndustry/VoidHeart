@@ -120,7 +120,26 @@ class WorksQueueTest
 
         var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
 
-        assertThat(loaded.order("b", 1, List.of(task("b", StationKind.TABLE, 1)))).isEqualTo(2);
+        assertThat(loaded.order("b", 1, List.of(task("b", StationKind.TABLE, 1)))).isGreaterThan(1 + WorksBalance.LEGACY_ID_GAP);
+    }
+
+    @Test
+    void codec_givenAnEmptyOldQueueAndAClaimOnACancelledOrder_thenTheClaimNeverSettlesANewOrder()
+    {
+        // Before the counter was saved: order 1 claimed, then cancelled, leaving an empty list and the Officiant's claim
+        var queue = new WorksQueue();
+        var cancelled = queue.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        var stale = queue.claim(StationKind.ALTAR, any -> true);
+        queue.cancel(cancelled);
+        var old = WorksQueue.Job.CODEC.listOf().encodeStart(com.mojang.serialization.JsonOps.INSTANCE, queue.jobs()).getOrThrow();
+
+        var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
+        var fresh = loaded.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        loaded.claim(StationKind.ALTAR, any -> true);
+        loaded.finish(stale);
+
+        assertThat(fresh).isNotEqualTo(stale.job());
+        assertThat(loaded.jobs()).singleElement().extracting(job -> job.tasks().getFirst().working()).isEqualTo(1L);
     }
 
     private static WorksQueue roundTrip(WorksQueue queue)

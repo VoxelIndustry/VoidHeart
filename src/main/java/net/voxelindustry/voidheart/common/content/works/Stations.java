@@ -132,9 +132,12 @@ final class Stations
         }
 
         @Override
+        /**
+         * A rite a player started on what was laid so far stops the laying, so no later step replaces what that rite needs.
+         */
         public boolean ready(int step, int steps)
         {
-            return altar.pillarsAround().size() == 8 && (step < steps - 1 || altar.isVacant());
+            return !altar.isCrafting() && altar.pillarsAround().size() == 8 && (step < steps - 1 || altar.isVacant());
         }
 
         @Override
@@ -158,8 +161,9 @@ final class Stations
                 return Outcome.RUNNING;
             if (altar.getPinned() == null)
             {
+                // A rite always leaves its result; an empty altar is one put in place of the one the craft was laid on, so the craft counts again
                 var result = altar.takeResult();
-                return Outcome.done(result.isEmpty() ? List.of() : List.of(result));
+                return result.isEmpty() ? Outcome.failed(List.of()) : Outcome.done(List.of(result));
             }
             if (waited < START_TIMEOUT_TICKS)
                 return Outcome.RUNNING;

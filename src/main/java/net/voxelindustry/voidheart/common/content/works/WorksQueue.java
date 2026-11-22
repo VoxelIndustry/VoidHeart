@@ -29,7 +29,8 @@ public final class WorksQueue
      */
     public static final Codec<WorksQueue> CODEC = Codec.withAlternative(
             Saved.CODEC.xmap(saved -> new WorksQueue(saved.jobs(), saved.nextId()), queue -> new Saved(queue.jobs, queue.nextId)),
-            Job.CODEC.listOf().xmap(jobs -> new WorksQueue(jobs, 1), queue -> queue.jobs));
+            Job.CODEC.listOf().xmap(jobs -> new WorksQueue(jobs, jobs.stream().mapToInt(Job::id).max().orElse(0) + 1 + WorksBalance.LEGACY_ID_GAP),
+                    queue -> queue.jobs));
 
     /**
      * @param remaining crafts not yet claimed
