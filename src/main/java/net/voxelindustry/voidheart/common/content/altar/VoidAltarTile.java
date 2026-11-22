@@ -288,6 +288,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     public void setStack(Player player, ItemStack stack)
     {
+        // A rite stopped by taking its catalyst off settles while the altar still knows whose it was
+        if (stack.isEmpty() && isCrafting)
+            stopCrafting();
         this.stack = stack;
         owner = stack.isEmpty() ? null : player.getUUID();
         pinned = null;
@@ -300,11 +303,17 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             else
                 player.sendOverlayMessage(Component.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()));
         }
-        else if (isCrafting)
-            stopCrafting();
 
         setChanged();
         sync();
+    }
+
+    /**
+     * @return the essence a stopped rite drank that no store has taken back yet, for tests
+     */
+    public Map<EssenceType, Integer> pendingRefund()
+    {
+        return Map.copyOf(refund);
     }
 
     /**

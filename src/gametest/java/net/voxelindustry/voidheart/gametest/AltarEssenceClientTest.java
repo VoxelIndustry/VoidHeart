@@ -76,6 +76,7 @@ public class AltarEssenceClientTest implements FabricClientGameTest
             checkShortNetworkWaits(context, server);
             checkStoppedRiteGivesBack(context, server);
             checkFullNetworkFinishes(context, server);
+            checkRefundsKeepTheirOwners(context, server);
 
             context.getInput().pressKey(InputConstants.KEY_F1);
         }
@@ -159,6 +160,65 @@ public class AltarEssenceClientTest implements FabricClientGameTest
             var left = storage(minecraft).storage().amount();
             expect(left == RavenousStorageTile.CAPACITY - DRAUGHT, "the store holds " + left + ", expected " + (RavenousStorageTile.CAPACITY - DRAUGHT));
         });
+    }
+
+    private static final java.util.UUID SECOND_OWNER = java.util.UUID.fromString("5a1d0c3e-0000-4000-8000-0000000000b2");
+
+    /**
+     * With no store to give back to, each owner's undrunk essence goes to their own reserve: one player's rite is stopped by taking its catalyst off,
+     * another's then drinks from a collector, and the altar is broken.
+     */
+    private static void checkRefundsKeepTheirOwners(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            altar(minecraft).takeResult();
+            startFrame(minecraft);
+        });
+        waitFor(context, server, 2000, "the first rite never began drinking", minecraft -> altar(minecraft).drinkFill() > 0.15F);
+        var first = server.computeOnServer(minecraft ->
+        {
+            minecraft.overworld().removeBlock(STORAGE, false);
+            altar(minecraft).setStack(player(minecraft), ItemStack.EMPTY);
+            var pending = altar(minecraft).pendingRefund().getOrDefault(EssenceRegistry.FIERY, 0);
+            expect(pending > 0, "taking the catalyst off left no refund with no store to take it");
+            return pending;
+        });
+        server.runCommand("kill @e[type=item]");
+
+        // A collector, which feeds machines but takes no refund back
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            level.setBlockAndUpdate(STORAGE, VoidHeartBlocks.RAVENOUS_COLLECTOR.defaultBlockState());
+            var collector = (net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile) level.getBlockEntity(STORAGE);
+            collector.storage().attune(EssenceRegistry.FIERY);
+            collector.storage().fill(EssenceRegistry.FIERY, net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile.CAPACITY);
+            Knowledge.lockOf(minecraft.registryAccess(), id("altar/void_armor")).ifPresent(Knowledge.of(minecraft, SECOND_OWNER)::grant);
+        });
+        context.waitTicks(50);
+        server.runOnServer(minecraft ->
+        {
+            lay(minecraft.overworld(), Items.NETHERITE_INGOT, Items.NETHERITE_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.RUBRUM_SHARD);
+            altar(minecraft).layCatalyst(SECOND_OWNER, new ItemStack(VoidHeartItems.KERNACIAN_CORE), id("altar/void_armor"));
+            expect(altar(minecraft).isCrafting(), "the second owner's frame did not start");
+        });
+        waitFor(context, server, 2000, "the second rite never began drinking", minecraft -> altar(minecraft).getDrunk().getOrDefault(EssenceRegistry.FIERY, 0) > 500);
+        server.runOnServer(minecraft ->
+        {
+            expect(altar(minecraft).pendingRefund().getOrDefault(EssenceRegistry.FIERY, 0).intValue() == first.intValue(), "the first owner's refund changed while the second rite drank: " + altar(minecraft).pendingRefund() + " from " + first + ", drunk " + altar(minecraft).getDrunk() + ", crafting " + altar(minecraft).isCrafting());
+            minecraft.overworld().removeBlock(STORAGE, false);
+            var second = altar(minecraft).getDrunk().getOrDefault(EssenceRegistry.FIERY, 0);
+            minecraft.overworld().removeBlock(ALTAR, false);
+
+            var hoards = net.voxelindustry.voidheart.common.content.hoard.PocketHoard.get(minecraft);
+            var toFirst = hoards.of(player(minecraft).getUUID()).reserve().amountOf(EssenceRegistry.FIERY);
+            var toSecond = hoards.of(SECOND_OWNER).reserve().amountOf(EssenceRegistry.FIERY);
+            expect(toFirst == first && toSecond == second, "the refunds went " + toFirst + " to the first owner and " + toSecond
+                    + " to the second, expected " + first + " and " + second);
+        });
+        server.runCommand("kill @e[type=item]");
     }
 
     private static void startFrame(MinecraftServer minecraft)
