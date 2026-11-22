@@ -171,7 +171,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
                 if (loops)
                     continue;
                 var crafts = (shortfall + recipe.makes(item) - 1) / recipe.makes(item);
-                if (recipe.inputs().stream().allMatch(ingredient -> heldBest(ingredient) >= ingredient.count() * crafts))
+                if (feeds(recipe, crafts))
                     return recipe;
                 if (first == null)
                     first = recipe;
@@ -179,6 +179,32 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
                     partly = recipe;
             }
             return partly != null ? partly : first;
+        }
+
+        /**
+         * @return whether the stock and what crafts left over hold every ingredient of that many crafts at once, an item two ingredients could both
+         * take counted once
+         */
+        private boolean feeds(WorksRecipe<K> recipe, long crafts)
+        {
+            var taken = new HashMap<K, Long>();
+            for (var ingredient : recipe.inputs())
+            {
+                var wanted = ingredient.count() * crafts;
+                K found = null;
+                for (var option : ingredient.options())
+                {
+                    if (available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L) - taken.getOrDefault(option, 0L) >= wanted)
+                    {
+                        found = option;
+                        break;
+                    }
+                }
+                if (found == null)
+                    return false;
+                taken.merge(found, wanted, Long::sum);
+            }
+            return true;
         }
 
         /**

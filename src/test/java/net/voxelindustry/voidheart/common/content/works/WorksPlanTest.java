@@ -59,6 +59,18 @@ class WorksPlanTest
     }
 
     @Test
+    void plan_givenTwoIngredientsSharingOneItem_thenCountsItOnce()
+    {
+        recipe("plank", 1, StationKind.TABLE, "oak", 1, List.of("oak", "spruce"), 1);
+        var fed = recipe("plank", 1, StationKind.TABLE, "stone", 1);
+
+        var plan = plan(Map.of("oak", 1L, "stone", 1L), "plank", 1);
+
+        assertThat(plan.isComplete()).isTrue();
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(fed);
+    }
+
+    @Test
     void plan_givenNoRecipeTheStockFeedsWhole_thenTakesOneItFeedsInPart()
     {
         recipe("ingot", 1, StationKind.FURNACE, "deepslate_ore", 1);

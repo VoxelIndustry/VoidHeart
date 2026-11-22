@@ -272,15 +272,20 @@ public final class WorksQueue
             // A claim saved before eras only knew the orders loaded with it, so it can't settle a later order given a cancelled order's id
             if (job.id() != claim.job() || claim.era() < ERA && job.id() >= legacyBelow)
                 continue;
-            for (int index = 0; index < job.tasks().size(); index++)
+            // A batch may have been claimed from a later task of the recipe than a single craft claimed earlier, so its crafts are settled across every
+            // task of the recipe still worked, the first first, until all are counted
+            int left = claim.count();
+            int returned = back;
+            for (int index = 0; index < job.tasks().size() && left > 0; index++)
             {
                 var task = job.tasks().get(index);
-                if (task.recipe().equals(claim.recipe()) && task.working() > 0)
-                {
-                    var settled = Math.min(claim.count(), task.working());
-                    job.tasks().set(index, new Task(task.recipe(), task.station(), task.remaining() + Math.min(back, settled), task.working() - settled));
-                    break;
-                }
+                if (!task.recipe().equals(claim.recipe()) || task.working() <= 0)
+                    continue;
+                var settled = (int) Math.min(left, task.working());
+                var again = Math.min(returned, settled);
+                job.tasks().set(index, new Task(task.recipe(), task.station(), task.remaining() + again, task.working() - settled));
+                left -= settled;
+                returned -= again;
             }
         }
         jobs.removeIf(Job::isDone);

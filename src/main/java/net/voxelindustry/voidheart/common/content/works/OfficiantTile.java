@@ -467,9 +467,22 @@ public class OfficiantTile extends TileBase
                     Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
             }
             held.clear();
-            // What the station still works on is no longer watched, so its order does not wait on it
+            // What the station still works on is no longer watched, so its order does not wait on it. A furnace's batch is taken back, what it made
+            // counting as done and the rest again, so the furnace is free for the next Officiant
             if (claim != null)
-                WorksState.get(serverLevel.getServer()).edit(owner).finish(claim);
+            {
+                var left = Stations.leftAt(level, workedAt, ticket);
+                for (var stack : left.items())
+                {
+                    stack.shrink((int) hoard.insert(ItemVariant.of(stack), stack.getCount()));
+                    if (!stack.isEmpty())
+                        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, stack);
+                }
+                if (left.items().isEmpty())
+                    WorksState.get(serverLevel.getServer()).edit(owner).finish(claim);
+                else
+                    WorksState.get(serverLevel.getServer()).edit(owner).finish(claim, left.done());
+            }
             release();
         }
         super.preRemoveSideEffects(pos, state);

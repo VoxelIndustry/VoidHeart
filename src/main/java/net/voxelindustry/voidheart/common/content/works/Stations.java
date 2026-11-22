@@ -384,10 +384,16 @@ final class Stations
             return 1;
         }
 
+        /**
+         * Lays the batch only when the furnace would run the very recipe ordered on it, so an input two recipes share never makes the other's result.
+         */
         @Override
         public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients, @Nullable UUID ticket)
         {
-            return new Laid(ticket != null && !ingredients.isEmpty() && furnace.lay(ingredients.getFirst(), ticket), List.of());
+            if (ticket == null || ingredients.isEmpty() || !(source instanceof RecipeHolder<?> holder)
+                    || !holder.id().equals(furnace.recipeFor(level, ingredients.getFirst())))
+                return new Laid(false, List.of());
+            return new Laid(furnace.lay(ingredients.getFirst(), ticket), List.of());
         }
 
         @Override

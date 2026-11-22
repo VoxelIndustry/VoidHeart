@@ -97,6 +97,8 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
 
     // Server only
     private final DrawCredit credit = new DrawCredit();
+    /** Void energy owed below a whole point, carried to the next tick so an item costs exactly what its cooking is worth. */
+    private       double     owed;
     private final PowerMeter meter  = new PowerMeter();
     private       MachinePower power = MachinePower.IDLE;
 
@@ -163,7 +165,8 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
         }
 
         var pace = VoidFurnaceBalance.pace(heat, fast);
-        var need = VoidFurnaceBalance.draw(pace, fast);
+        var cost = owed + VoidFurnaceBalance.tickEnergy(progress, recipe.value().cookingTime(), pace, fast);
+        var need = (long) Math.floor(cost + 1e-9);
         var paid = credit.pay(need, amount -> VoidEnergy.draw(level, worldPosition, amount));
         record(level, state, need, paid ? need : credit.lastDrawn());
         if (!paid)
@@ -172,10 +175,14 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
             return;
         }
 
+        owed = Math.max(0, cost - need);
         progress += VoidFurnaceBalance.progressPerTick(recipe.value().cookingTime(), pace);
         heat = VoidFurnaceBalance.warm(heat);
-        if (progress >= 1)
+        if (progress >= 1 - 1e-9)
             smeltOne(recipe, input, result);
+        // Saved now and then, so an unloaded furnace loses at most a second of what it was paid for
+        else if (level.getGameTime() % 20 == 0)
+            setChanged();
     }
 
     /**
@@ -282,6 +289,14 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
     public boolean smelts(ServerLevel level, ItemStack stack)
     {
         return !stack.isEmpty() && CHECK.getRecipeFor(new SingleRecipeInput(stack), level).isPresent();
+    }
+
+    /**
+     * @return the id of the smelting recipe it would run on that stack, or null
+     */
+    public @Nullable ResourceKey<Recipe<?>> recipeFor(ServerLevel level, ItemStack stack)
+    {
+        return stack.isEmpty() ? null : CHECK.getRecipeFor(new SingleRecipeInput(stack), level).<ResourceKey<Recipe<?>>>map(RecipeHolder::id).orElse(null);
     }
 
     // Officiants
@@ -442,10 +457,13 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
         resetCook();
     }
 
+    /**
+     * Refuses anything while an Officiant's batch lies in the input, since a hopper merging into it would grow the batch without the furnace knowing.
+     */
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack)
     {
-        if (slot != INPUT)
+        if (slot != INPUT || ticket != null)
             return false;
         return !(level instanceof ServerLevel serverLevel) || smelts(serverLevel, stack);
     }
@@ -506,10 +524,14 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
 
     // Fiery, through relays
 
+    /**
+     * Room left for Fiery, keeping back what the item cooking burned until it finishes, so its Fiery can still go back should it never finish.
+     */
     @Override
     public int spaceFor(EssenceType type)
     {
-        return type == EssenceRegistry.FIERY ? Math.max(0, VoidFurnaceBalance.FIERY_TANK - fiery) : 0;
+        var reserved = started && fast ? VoidFurnaceBalance.FIERY_PER_ITEM : 0;
+        return type == EssenceRegistry.FIERY ? Math.max(0, VoidFurnaceBalance.FIERY_TANK - fiery - reserved) : 0;
     }
 
     @Override

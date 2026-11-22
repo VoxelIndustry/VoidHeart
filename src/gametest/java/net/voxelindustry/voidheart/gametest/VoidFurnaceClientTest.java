@@ -63,27 +63,37 @@ public class VoidFurnaceClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        // Every test shares one client, so the camera and HUD go back as they were, pass or fail
+        var saved = context.computeOnClient(minecraft -> new ClientSettings(minecraft.options.getCameraType(), minecraft.gui.hud.isHidden()));
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            freezeTime(server, "noon");
-            server.runCommand("gamemode creative @a");
-            context.waitTicks(20);
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+            try
+            {
+                world.getConnection().waitForChunksRender();
+                freezeTime(server, "noon");
+                server.runCommand("gamemode creative @a");
+                context.waitTicks(20);
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
 
-            server.runOnServer(VoidFurnaceClientTest::buildScene);
-            context.waitTicks(5);
+                server.runOnServer(VoidFurnaceClientTest::buildScene);
+                context.waitTicks(5);
 
-            checkPlainPace(context, server);
-            checkFieryPace(context, server);
-            checkHoppers(context, server);
-            checkCold(context, server);
-            checkScreen(context, server);
-            checkBreakDrops(context, server);
-            checkOfficiant(context, server);
-            checkOfficiantFurnaceBroken(context, server);
-            checkItem(context, server);
+                checkPlainPace(context, server);
+                checkFieryPace(context, server);
+                checkHoppers(context, server);
+                checkCold(context, server);
+                checkScreen(context, server);
+                checkBreakDrops(context, server);
+                checkOfficiant(context, server);
+                checkOfficiantFurnaceBroken(context, server);
+                checkOfficiantBroken(context, server);
+                checkItem(context, server);
+            }
+            finally
+            {
+                restoreClient(context, server, saved);
+            }
         }
     }
 
@@ -404,6 +414,40 @@ public class VoidFurnaceClientTest implements FabricClientGameTest
         });
         waitFor(context, server, 900, "a new furnace did not finish the order", minecraft -> held(minecraft, Items.IRON_INGOT) == 8);
         waitFor(context, server, 60, "the order is still queued", minecraft -> WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty());
+    }
+
+    /**
+     * The Officiant broken halfway through a batch takes the batch back from the furnace, which is free again, and a new Officiant finishes the order.
+     */
+    private static void checkOfficiantBroken(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).extract(ItemVariant.of(Items.IRON_INGOT), held(minecraft, Items.IRON_INGOT));
+            hoard(minecraft).insert(ItemVariant.of(Items.RAW_IRON), 8);
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(Items.IRON_INGOT), 8);
+        });
+        waitFor(context, server, 600, "the furnace never smelted part of the batch", minecraft ->
+        {
+            var furnace = tile(minecraft, SERVED);
+            return furnace.smelted() >= 2 && !furnace.getItem(VoidFurnaceTile.INPUT).isEmpty();
+        });
+        server.runOnServer(minecraft ->
+        {
+            minecraft.overworld().destroyBlock(OFFICIANT, false);
+            var furnace = tile(minecraft, SERVED);
+            expect(furnace.getTicket() == null && furnace.isEmptied(), "the furnace still holds the batch of a broken Officiant");
+            expect(held(minecraft, Items.IRON_INGOT) + held(minecraft, Items.RAW_IRON) == 8, "the batch did not go back to the hoard: "
+                    + held(minecraft, Items.IRON_INGOT) + " ingots, " + held(minecraft, Items.RAW_IRON) + " raw");
+            var made = held(minecraft, Items.IRON_INGOT);
+            var task = WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().getFirst().tasks().getLast();
+            expect(task.remaining() == 8 - made && task.working() == 0, "the order counts " + task + " after " + made + " of 8 were made");
+            minecraft.overworld().setBlockAndUpdate(OFFICIANT, WorksContent.OFFICIANT.defaultBlockState());
+            ((OfficiantTile) minecraft.overworld().getBlockEntity(OFFICIANT)).setOwner(player(minecraft).getUUID());
+        });
+        waitFor(context, server, 900, "a new Officiant did not finish the order", minecraft -> held(minecraft, Items.IRON_INGOT) == 8);
+        waitFor(context, server, 60, "the order is still queued", minecraft -> WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty());
+        server.runOnServer(minecraft -> hoard(minecraft).extract(ItemVariant.of(Items.IRON_INGOT), 8));
     }
 
     /**

@@ -208,6 +208,21 @@ class WorksQueueTest
     }
 
     @Test
+    void finish_givenABatchFinishedBeforeAnEarlierCraftOfItsRecipe_thenEveryCraftIsSettled()
+    {
+        var queue = new WorksQueue();
+        queue.order("ingots", 10, List.of(task("ingot", StationKind.FURNACE, 1), task("block", StationKind.TABLE, 1), task("ingot", StationKind.FURNACE, 8)));
+        var single = queue.claimBatch(StationKind.FURNACE, any -> 1);
+        var batch = queue.claimBatch(StationKind.FURNACE, any -> 8);
+
+        queue.finish(batch);
+        queue.finish(single);
+
+        // Its last task has nothing left or being worked, so the order is over rather than stuck on crafts no Officiant holds
+        assertThat(queue.jobs()).isEmpty();
+    }
+
+    @Test
     void codec_givenAClaimSavedBeforeBatches_thenCountsOne()
     {
         var saved = WorksQueue.Claim.CODEC.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, new WorksQueue.Claim(1, "pearl", StationKind.ALTAR))

@@ -29,9 +29,9 @@ public final class VoidFurnaceRei
                 line("void_furnace.smelts", VoidFurnaceBalance.paceText(VoidFurnaceBalance.COLD_SPEED), VoidFurnaceBalance.paceText(VoidFurnaceBalance.HOT_SPEED),
                         VoidFurnaceBalance.HEAT_UP_TICKS / 20, VoidFurnaceBalance.COOL_TICKS / 20),
                 line("void_furnace.energy", VoidFurnaceBalance.paceText(VoidFurnaceBalance.DRAW_PER_PACE),
-                        Math.round(VoidFurnaceBalance.DRAW_PER_PACE * 200)),
+                        VoidFurnaceBalance.paceText(VoidFurnaceBalance.DRAW_PER_PACE), Math.round(VoidFurnaceBalance.itemEnergy(200, false))),
                 line("void_furnace.fiery", VoidFurnaceBalance.FIERY_PER_ITEM, VoidFurnaceBalance.paceText(VoidFurnaceBalance.FIERY_FACTOR),
-                        VoidFurnaceBalance.paceText(VoidFurnaceBalance.pace(1, true)), Math.round(VoidFurnaceBalance.FIERY_DRAW_PER_PACE * 200)),
+                        VoidFurnaceBalance.paceText(VoidFurnaceBalance.pace(1, true)), VoidFurnaceBalance.paceText(VoidFurnaceBalance.FIERY_DRAW_PER_PACE)),
                 line("void_furnace.hoppers"),
                 line("void_furnace.officiant"));
     }

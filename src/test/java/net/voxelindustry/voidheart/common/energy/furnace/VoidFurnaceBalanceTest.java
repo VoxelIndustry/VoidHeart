@@ -69,14 +69,40 @@ class VoidFurnaceBalanceTest
         assertThat(cold.heat()).isGreaterThan(0.5);
     }
 
-    @Test
-    void draw_givenAnyPace_thenAnItemCostsTheSame()
+    /**
+     * Charges items as the furnace does, whole points a tick with what is below a point carried on.
+     */
+    private static long charge(int items, int vanillaTicks, double heat, boolean fiery)
     {
-        // 600 VE for a 200-tick item on void energy, 800 on Fiery
-        assertThat(VoidFurnaceBalance.draw(4, false) * 50).isEqualTo(600);
-        assertThat(VoidFurnaceBalance.draw(8, false) * 25).isEqualTo(600);
-        assertThat(VoidFurnaceBalance.draw(8, true) * 25).isEqualTo(800);
-        assertThat(VoidFurnaceBalance.draw(16, true) * 12.5).isEqualTo(800);
+        double owed = 0;
+        long total = 0;
+        for (int item = 0; item < items; item++)
+        {
+            double progress = 0;
+            while (progress < 1 - 1e-9)
+            {
+                var pace = VoidFurnaceBalance.pace(heat, fiery);
+                var cost = owed + VoidFurnaceBalance.tickEnergy(progress, vanillaTicks, pace, fiery);
+                var need = (long) Math.floor(cost + 1e-9);
+                total += need;
+                owed = cost - need;
+                progress += VoidFurnaceBalance.progressPerTick(vanillaTicks, pace);
+                heat = VoidFurnaceBalance.warm(heat);
+            }
+        }
+        return total;
+    }
+
+    @Test
+    void charge_givenAnyHeat_thenAnItemCostsWhatItsCookingIsWorth()
+    {
+        // 600 VE for a 200-tick item on void energy, 800 on Fiery, even when its last tick only needs part of the work
+        assertThat(charge(1, 200, 0, false)).isBetween(599L, 600L);
+        assertThat(charge(1, 200, 0.37, false)).isBetween(599L, 600L);
+        assertThat(charge(1, 200, 1, true)).isBetween(799L, 800L);
+        assertThat(charge(1, 100, 0, true)).isBetween(399L, 400L);
+        assertThat(charge(64, 200, 0, false)).isBetween(64 * 600L - 1, 64 * 600L);
+        assertThat(VoidFurnaceBalance.itemEnergy(200, true)).isEqualTo(800);
     }
 
     @Test

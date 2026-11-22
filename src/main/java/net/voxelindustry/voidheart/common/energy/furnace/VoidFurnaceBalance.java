@@ -56,11 +56,32 @@ public final class VoidFurnaceBalance
     }
 
     /**
-     * @return the void energy a tick of cooking draws, never none
+     * @return the void energy a tick of cooking draws at full work
      */
-    public static long draw(double pace, boolean fiery)
+    public static double draw(double pace, boolean fiery)
     {
-        return Math.max(1, Math.round(pace * (fiery ? FIERY_DRAW_PER_PACE : DRAW_PER_PACE)));
+        return pace * (fiery ? FIERY_DRAW_PER_PACE : DRAW_PER_PACE);
+    }
+
+    /**
+     * The void energy one tick of cooking is worth, only the share of the tick the item still needs on its last one, so an item costs
+     * {@link #DRAW_PER_PACE} (or {@link #FIERY_DRAW_PER_PACE}) VE for each tick of its vanilla cooking time, whatever the pace.
+     *
+     * @param progress how far the item has cooked, from 0 to 1
+     */
+    public static double tickEnergy(double progress, int vanillaTicks, double pace, boolean fiery)
+    {
+        var step = progressPerTick(vanillaTicks, pace);
+        var share = Math.clamp((1 - progress) / step, 0, 1);
+        return draw(pace, fiery) * share;
+    }
+
+    /**
+     * @return the void energy an item costs: what each tick of its vanilla cooking time is worth
+     */
+    public static double itemEnergy(int vanillaTicks, boolean fiery)
+    {
+        return Math.max(1, vanillaTicks) * (fiery ? FIERY_DRAW_PER_PACE : DRAW_PER_PACE);
     }
 
     public static double warm(double heat)
@@ -93,7 +114,7 @@ public final class VoidFurnaceBalance
         for (int item = 0; item < items; item++)
         {
             double progress = 0;
-            while (progress < 1)
+            while (progress < 1 - 1e-9)
             {
                 progress += progressPerTick(vanillaTicks, pace(heat, fiery));
                 heat = warm(heat);

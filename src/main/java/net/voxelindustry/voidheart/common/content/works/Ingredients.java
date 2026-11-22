@@ -66,7 +66,10 @@ final class Ingredients
         }
         if (best == null)
             return null;
-        var perStack = Math.max(1, best.item().toStack().getMaxStackSize() / each);
+        // As many crafts as one stack of the input holds, and as one stack of each result takes, since the furnace holds one of each
+        var perStack = (long) Math.max(1, best.item().toStack().getMaxStackSize() / each);
+        for (var output : recipe.outputs())
+            perStack = Math.min(perStack, Math.max(1, output.item().toStack().getMaxStackSize() / Math.max(1, output.count())));
         return new WorksRecipe.Stack<>(best.item(), Math.min(Math.min(best.count(), most), perStack));
     }
 
