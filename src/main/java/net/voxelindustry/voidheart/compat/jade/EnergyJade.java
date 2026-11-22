@@ -40,6 +40,7 @@ public final class EnergyJade
         DeepSiphonJade.register(registration);
         TwinVentricleJade.register(registration);
         GnawerJade.register(registration);
+        net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceJade.register(registration);
         PearlJade.register(registration);
         CrystalJade.register(registration);
     }
@@ -57,6 +58,7 @@ public final class EnergyJade
         TwinVentricleJade.registerClient(registration);
         VoidArmorJade.registerClient(registration);
         GnawerJade.registerClient(registration);
+        net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceJade.registerClient(registration);
         PearlJade.registerClient(registration);
         CrystalJade.registerClient(registration);
         HoardJade.registerClient(registration);

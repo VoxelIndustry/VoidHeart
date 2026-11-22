@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=east,flame=fiery": {
+      "model": "voidheart:block/void_furnace_fiery",
+      "y": 90
+    },
+    "facing=east,flame=none": {
+      "model": "voidheart:block/void_furnace",
+      "y": 90
+    },
+    "facing=east,flame=void": {
+      "model": "voidheart:block/void_furnace_void",
+      "y": 90
+    },
+    "facing=north,flame=fiery": {
+      "model": "voidheart:block/void_furnace_fiery"
+    },
+    "facing=north,flame=none": {
+      "model": "voidheart:block/void_furnace"
+    },
+    "facing=north,flame=void": {
+      "model": "voidheart:block/void_furnace_void"
+    },
+    "facing=south,flame=fiery": {
+      "model": "voidheart:block/void_furnace_fiery",
+      "y": 180
+    },
+    "facing=south,flame=none": {
+      "model": "voidheart:block/void_furnace",
+      "y": 180
+    },
+    "facing=south,flame=void": {
+      "model": "voidheart:block/void_furnace_void",
+      "y": 180
+    },
+    "facing=west,flame=fiery": {
+      "model": "voidheart:block/void_furnace_fiery",
+      "y": 270
+    },
+    "facing=west,flame=none": {
+      "model": "voidheart:block/void_furnace",
+      "y": 270
+    },
+    "facing=west,flame=void": {
+      "model": "voidheart:block/void_furnace_void",
+      "y": 270
+    }
+  }
+}

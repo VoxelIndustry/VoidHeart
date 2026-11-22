@@ -1,14 +1,18 @@
 package net.voxelindustry.voidheart.common.content.works;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceTile;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * The stations an Officiant can stand under: a Void Altar, the source pillar of a Shatter Forge, or a crafting table.
+ * The stations an Officiant can stand under: a Void Altar, the source pillar of a Shatter Forge, a crafting table, or a Void Furnace.
  */
 final class Stations
 {
@@ -32,6 +36,7 @@ final class Stations
     static final float FORGE_SOURCE_REST = 1.2F;
     static final float ALTAR_REST        = 1 + 2 / 16F;
     static final float TABLE_REST        = 1.25F;
+    static final float FURNACE_REST      = 1.2F;
 
     private Stations()
     {
@@ -61,14 +66,34 @@ final class Stations
             return new Forge(forge, pillar);
         if (level.getBlockState(top).is(Blocks.CRAFTING_TABLE))
             return new Table(level, top);
+        if (level.getBlockEntity(top) instanceof VoidFurnaceTile furnace && level instanceof ServerLevel serverLevel)
+            return new Furnace(serverLevel, furnace);
         return null;
     }
 
     /**
-     * @return the finished result of the craft with that ticket still at a station's block the Officiant no longer stands under, such as a forge whose
-     * source pillar was taken away, now taken off; empty when there is none
+     * @return what is left of the craft with that ticket at a station's block the Officiant no longer stands under, taken off: the finished result of a
+     * forge whose source pillar was taken away, or a furnace's whole batch, its results first; empty when there is none
      */
-    static ItemStack resultLeft(Level level, @Nullable BlockPos at, @Nullable UUID ticket)
+    static Left leftAt(Level level, @Nullable BlockPos at, @Nullable UUID ticket)
+    {
+        if (at != null && ticket != null && level.getBlockEntity(at) instanceof VoidFurnaceTile furnace && ticket.equals(furnace.getTicket()))
+        {
+            var done = furnace.smelted();
+            return new Left(furnace.takeBatch(), done);
+        }
+        var result = forgeLeft(level, at, ticket);
+        return result.isEmpty() ? new Left(List.of(), 0) : new Left(List.of(result), 1);
+    }
+
+    /**
+     * @param done how many of the claim's crafts were made
+     */
+    record Left(List<ItemStack> items, int done)
+    {
+    }
+
+    private static ItemStack forgeLeft(Level level, @Nullable BlockPos at, @Nullable UUID ticket)
     {
         if (at != null && ticket != null && level.getBlockEntity(at) instanceof ShatterForgeTile forge && ticket.equals(forge.getTicket()) && !forge.isCrafting())
         {
@@ -305,6 +330,102 @@ final class Stations
             forge.setTicket(null);
             forge.pin(null);
             return Outcome.failed(input.isEmpty() ? List.of() : List.of(input));
+        }
+    }
+
+    /**
+     * A Void Furnace smelts a batch of one item laid in its input in one step, and its results come back once the input is empty. It must hold nothing
+     * when the batch is laid, so a player's or a hopper's items are never mixed in.
+     */
+    private record Furnace(ServerLevel level, VoidFurnaceTile furnace) implements OfficiantStation
+    {
+        @Override
+        public StationKind kind()
+        {
+            return StationKind.FURNACE;
+        }
+
+        @Override
+        public BlockPos pos()
+        {
+            return furnace.getBlockPos();
+        }
+
+        @Override
+        public boolean canRun(Object source)
+        {
+            return source instanceof RecipeHolder<?> holder && holder.value() instanceof SmeltingRecipe;
+        }
+
+        @Override
+        public boolean isFree()
+        {
+            return furnace.isEmptied() && furnace.getTicket() == null;
+        }
+
+        /**
+         * A furnace no field reaches would never start; its batch waits in the hoard instead.
+         */
+        @Override
+        public boolean canSupply(Object source)
+        {
+            return VoidEnergy.available(level, furnace.getBlockPos()) > 0;
+        }
+
+        @Override
+        public List<ItemStack> clear()
+        {
+            return List.of();
+        }
+
+        @Override
+        public int steps(List<ItemStack> ingredients)
+        {
+            return 1;
+        }
+
+        /**
+         * Lays the batch only when the furnace would run the very recipe ordered on it, so an input two recipes share never makes the other's result.
+         */
+        @Override
+        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients, @Nullable UUID ticket)
+        {
+            if (ticket == null || ingredients.isEmpty() || !(source instanceof RecipeHolder<?> holder)
+                    || !holder.id().equals(furnace.recipeFor(level, ingredients.getFirst())))
+                return new Laid(false, List.of());
+            return new Laid(furnace.lay(ingredients.getFirst(), ticket), List.of());
+        }
+
+        @Override
+        public boolean ready(int step, int steps)
+        {
+            return furnace.isEmptied();
+        }
+
+        @Override
+        public Fold foldOf(int step, int steps)
+        {
+            return resultFold();
+        }
+
+        @Override
+        public Fold resultFold()
+        {
+            return new Fold(furnace.getBlockPos(), FURNACE_REST);
+        }
+
+        @Override
+        public Outcome poll(Object source, int waited, @Nullable UUID ticket)
+        {
+            // A furnace put in place of the one the batch was laid in, or whose slots a hand or a hopper touched, holds nothing of the batch
+            if (ticket == null || !ticket.equals(furnace.getTicket()))
+                return Outcome.failed(List.of());
+            if (furnace.batchDone())
+                return Outcome.done(furnace.takeBatch());
+            // Nothing smelted long after it was laid: no field reaches it any more, so the batch goes back and counts again
+            if (!furnace.hasProgressed() && waited >= START_TIMEOUT_TICKS)
+                return Outcome.failed(furnace.takeBatch());
+            return Outcome.RUNNING;
         }
     }
 

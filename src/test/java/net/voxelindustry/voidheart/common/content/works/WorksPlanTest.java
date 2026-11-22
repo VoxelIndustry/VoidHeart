@@ -47,6 +47,69 @@ class WorksPlanTest
     }
 
     @Test
+    void plan_givenManyRecipes_thenTakesTheOneTheStockFeeds()
+    {
+        recipe("ingot", 1, StationKind.FURNACE, "deepslate_ore", 1);
+        var fed = recipe("ingot", 1, StationKind.FURNACE, "raw_iron", 1);
+
+        var plan = plan(Map.of("raw_iron", 20L), "ingot", 20);
+
+        assertThat(plan.isComplete()).isTrue();
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(fed);
+    }
+
+    @Test
+    void plan_givenTwoIngredientsSharingOneItem_thenCountsItOnce()
+    {
+        recipe("plank", 1, StationKind.TABLE, "oak", 1, List.of("oak", "spruce"), 1);
+        var fed = recipe("plank", 1, StationKind.TABLE, "stone", 1);
+
+        var plan = plan(Map.of("oak", 1L, "stone", 1L), "plank", 1);
+
+        assertThat(plan.isComplete()).isTrue();
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(fed);
+    }
+
+    @Test
+    void plan_givenARecipeOnlyAnotherAssignmentWouldFeed_thenTakesOneItsCraftsAreFedBy()
+    {
+        // Crafts run one at a time since a bucket comes back, and the flexible input takes A while A covers it, leaving the A input short
+        var bucket = new WorksRecipe<>("ink", StationKind.TABLE, List.of(new WorksRecipe.Stack<>("ink", 1L)),
+                List.of(new WorksRecipe.Ingredient<>(List.of("A", "B"), 2), new WorksRecipe.Ingredient<>(List.of("A"), 1)),
+                List.of(new WorksRecipe.Stack<>("bucket", 1L)), Map.of());
+        recipes.computeIfAbsent("ink", item -> new ArrayList<>()).add(bucket);
+        var fed = recipe("ink", 1, StationKind.TABLE, "C", 1);
+
+        var plan = plan(Map.of("A", 2L, "B", 4L, "C", 2L), "ink", 2);
+
+        assertThat(plan.isComplete()).isTrue();
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(fed);
+    }
+
+    @Test
+    void plan_givenNoRecipeTheStockFeedsWhole_thenTakesOneItFeedsInPart()
+    {
+        recipe("ingot", 1, StationKind.FURNACE, "deepslate_ore", 1);
+        var partly = recipe("ingot", 1, StationKind.FURNACE, "raw_iron", 1);
+
+        var plan = plan(Map.of("raw_iron", 5L), "ingot", 20);
+
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(partly);
+        assertThat(plan.lacking()).containsExactly(Map.entry("raw_iron", 15L));
+    }
+
+    @Test
+    void plan_givenNothingInStock_thenKeepsThePreferredRecipe()
+    {
+        var preferred = recipe("ingot", 1, StationKind.TABLE, "nugget", 9);
+        recipe("ingot", 1, StationKind.FURNACE, "raw_iron", 1);
+
+        var plan = plan(Map.of(), "ingot", 1);
+
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(preferred);
+    }
+
+    @Test
     void plan_givenTheTargetInStock_thenStillCraftsTheWholeCount()
     {
         recipe("pearl", 1, StationKind.ALTAR, "shard", 8);

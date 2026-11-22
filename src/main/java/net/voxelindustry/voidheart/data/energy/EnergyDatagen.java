@@ -19,6 +19,7 @@ import net.voxelindustry.voidheart.common.content.secondheart.ventricle.TwinVent
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineDatagen;
 import net.voxelindustry.voidheart.common.energy.gnawer.GnawerDatagen;
+import net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceDatagen;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlDatagen;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridDatagen;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneDatagen;
@@ -56,6 +57,7 @@ public final class EnergyDatagen
         TwinVentricleDatagen.blockModels(generators);
         VoidArmorDatagen.blockModels(generators);
         GnawerDatagen.blockModels(generators);
+        VoidFurnaceDatagen.blockModels(generators);
         PearlDatagen.blockModels(generators);
         CrystalDatagen.blockModels(generators);
         HoardDatagen.blockModels(generators);
@@ -76,6 +78,7 @@ public final class EnergyDatagen
         VoidArmorDatagen.itemModels(generators);
         WorksDatagen.itemModels(generators);
         GnawerDatagen.itemModels(generators);
+        VoidFurnaceDatagen.itemModels(generators);
         PearlDatagen.itemModels(generators);
     }
 
@@ -91,6 +94,7 @@ public final class EnergyDatagen
         DeepSiphonDatagen.recipes(recipes);
         TwinVentricleDatagen.recipes(recipes);
         GnawerDatagen.recipes(recipes);
+        VoidFurnaceDatagen.recipes(recipes);
         PearlDatagen.recipes(recipes);
         CrystalDatagen.recipes(recipes);
         HoardDatagen.recipes(recipes);
@@ -113,6 +117,7 @@ public final class EnergyDatagen
         TwinVentricleDatagen.loot(loot);
         VoidArmorDatagen.loot(loot);
         GnawerDatagen.loot(loot);
+        VoidFurnaceDatagen.loot(loot);
         PearlDatagen.loot(loot);
         CrystalDatagen.loot(loot);
         HoardDatagen.loot(loot);

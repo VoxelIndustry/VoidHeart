@@ -209,21 +209,33 @@ public class OfficiantTile extends TileBase
         var affordable = charge / WorksBalance.ITEM_COST;
         var picked = new WorksRecipe[1];
         var queue = WorksState.get(level.getServer()).of(owner);
-        var claimed = queue.claim(station.kind(), task ->
+        var batched = station.kind() == StationKind.FURNACE;
+        var claimed = queue.claimBatch(station.kind(), task ->
         {
             var source = catalogue.source(task.recipe());
             if (source == null || !station.canRun(source) || !station.canSupply(source))
-                return false;
+                return 0;
             for (var recipe : catalogue.byId(task.recipe()))
             {
+                if (batched)
+                {
+                    // As many of one item as the hoard holds, up to a batch and what the charge pays to lay out
+                    var batch = Ingredients.batch(recipe, hoard, Math.min(Math.min(WorksBalance.MAX_BATCH, task.remaining()), affordable));
+                    if (batch != null)
+                    {
+                        picked[0] = recipe;
+                        return batch.count();
+                    }
+                    continue;
+                }
                 var taken = Ingredients.plan(recipe, hoard);
                 if (taken != null && Ingredients.count(taken) <= affordable)
                 {
                     picked[0] = recipe;
-                    return true;
+                    return 1;
                 }
             }
-            return false;
+            return 0;
         });
         if (claimed == null)
             return;
@@ -231,7 +243,7 @@ public class OfficiantTile extends TileBase
         WorksState.get(level.getServer()).setDirty();
         @SuppressWarnings("unchecked")
         var recipe = (WorksRecipe<ItemVariant>) picked[0];
-        var ingredients = Ingredients.take(recipe, hoard);
+        var ingredients = batched ? Ingredients.takeBatch(recipe, hoard, claimed.count()) : Ingredients.take(recipe, hoard);
         charge -= Ingredients.items(ingredients) * WorksBalance.ITEM_COST;
         claim = claimed;
         ticket = UUID.randomUUID();
@@ -266,11 +278,22 @@ public class OfficiantTile extends TileBase
      */
     public static boolean handOver(@Nullable Level level, BlockPos pos, @Nullable UUID ticket, ItemStack result)
     {
-        if (result.isEmpty() || !(level instanceof ServerLevel serverLevel) || !(level.getBlockEntity(pos) instanceof OfficiantTile officiant)
+        return !result.isEmpty() && handOver(level, pos, ticket, List.of(result), Integer.MAX_VALUE);
+    }
+
+    /**
+     * Takes what is left of its batch from a station being broken, results and what never smelted alike, so it reaches the hoard rather than the ground.
+     *
+     * @param done how many of the batch's crafts were made; the rest count again
+     * @return whether the Officiant at pos took it
+     */
+    public static boolean handOver(@Nullable Level level, BlockPos pos, @Nullable UUID ticket, List<ItemStack> items, int done)
+    {
+        if (!(level instanceof ServerLevel serverLevel) || !(level.getBlockEntity(pos) instanceof OfficiantTile officiant)
                 || !officiant.holds(ticket) || officiant.owner == null)
             return false;
-        officiant.held.add(result.copy());
-        WorksState.get(serverLevel.getServer()).edit(officiant.owner).finish(officiant.claim);
+        items.stream().filter(stack -> !stack.isEmpty()).forEach(stack -> officiant.held.add(stack.copy()));
+        WorksState.get(serverLevel.getServer()).edit(officiant.owner).finish(officiant.claim, done);
         officiant.release();
         officiant.setChanged();
         return true;
@@ -360,20 +383,19 @@ public class OfficiantTile extends TileBase
     }
 
     /**
-     * Lets go of a craft whose station went away or was replaced once it was laid out. A table's craft was over when laid, and one whose result still
-     * waits where the station's block stands, such as a forge's whose source pillar was taken, is taken back: both count as done. Any other is lost
-     * with its station and counts again.
+     * Lets go of a craft whose station went away or was replaced once it was laid out. A table's craft was over when laid, and what still waits where
+     * the station's block stands is taken back, such as a forge's result whose source pillar was taken or a furnace's batch, the crafts it made counting
+     * as done. Any other is lost with its station and counts again.
      */
     private void abandonClaim(ServerLevel level, PocketHoard.Hoard hoard)
     {
         var works = WorksState.get(level.getServer()).edit(owner);
-        var left = Stations.resultLeft(level, workedAt, ticket);
-        if (!left.isEmpty())
-            held.add(left);
-        if (claim.station() == StationKind.TABLE || !left.isEmpty())
+        var left = Stations.leftAt(level, workedAt, ticket);
+        held.addAll(left.items());
+        if (claim.station() == StationKind.TABLE)
             works.finish(claim);
         else
-            works.giveBack(claim);
+            works.finish(claim, left.done());
         release();
         setChanged();
         store(level, hoard);
@@ -445,9 +467,22 @@ public class OfficiantTile extends TileBase
                     Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
             }
             held.clear();
-            // What the station still works on is no longer watched, so its order does not wait on it
+            // What the station still works on is no longer watched, so its order does not wait on it. A furnace's batch is taken back, what it made
+            // counting as done and the rest again, so the furnace is free for the next Officiant
             if (claim != null)
-                WorksState.get(serverLevel.getServer()).edit(owner).finish(claim);
+            {
+                var left = Stations.leftAt(level, workedAt, ticket);
+                for (var stack : left.items())
+                {
+                    stack.shrink((int) hoard.insert(ItemVariant.of(stack), stack.getCount()));
+                    if (!stack.isEmpty())
+                        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, stack);
+                }
+                if (left.items().isEmpty())
+                    WorksState.get(serverLevel.getServer()).edit(owner).finish(claim);
+                else
+                    WorksState.get(serverLevel.getServer()).edit(owner).finish(claim, left.done());
+            }
             release();
         }
         super.preRemoveSideEffects(pos, state);

@@ -110,7 +110,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
             if (shortfall <= 0)
                 return;
 
-            var recipe = depth < MAX_DEPTH && !path.contains(item) ? choose(item) : null;
+            var recipe = depth < MAX_DEPTH && !path.contains(item) ? choose(item, shortfall) : null;
             if (recipe == null)
             {
                 lacking.merge(item, shortfall, Long::sum);
@@ -154,20 +154,72 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
         }
 
         /**
-         * The first recipe whose ingredients don't loop back to a kind being made further up.
+         * Among the recipes whose ingredients don't loop back to a kind being made further up, in the order preferred: the first the stock feeds
+         * whole, else the first the stock holds some of every ingredient for, else the first. An item many recipes make, such as an ingot smelted
+         * from any of its ores, is so made from what the hoard holds rather than from an ore it lacks.
          */
-        private @Nullable WorksRecipe<K> choose(K item)
+        private @Nullable WorksRecipe<K> choose(K item, long shortfall)
         {
+            WorksRecipe<K> first = null;
+            WorksRecipe<K> partly = null;
             for (var recipe : recipesFor.apply(item))
             {
                 if (recipe.makes(item) <= 0)
                     continue;
                 var loops = recipe.inputs().stream()
                         .anyMatch(ingredient -> ingredient.options().stream().allMatch(option -> option.equals(item) || path.contains(option)));
-                if (!loops)
+                if (loops)
+                    continue;
+                var crafts = (shortfall + recipe.makes(item) - 1) / recipe.makes(item);
+                if (feeds(recipe, crafts))
                     return recipe;
+                if (first == null)
+                    first = recipe;
+                if (partly == null && recipe.inputs().stream().allMatch(ingredient -> heldBest(ingredient) > 0))
+                    partly = recipe;
             }
-            return null;
+            return partly != null ? partly : first;
+        }
+
+        /**
+         * Whether the stock and what crafts left over hold every ingredient of that many crafts, running them as {@link #need} would: in one go, or one
+         * at a time for a recipe giving something back, each ingredient taking the option {@link #pick} takes from what is left, and what a craft gives
+         * back serving the next.
+         */
+        private boolean feeds(WorksRecipe<K> recipe, long crafts)
+        {
+            var taken = new HashMap<K, Long>();
+            var batch = recipe.remainders().isEmpty() ? crafts : 1;
+            for (var done = 0L; done < crafts; done += batch)
+            {
+                for (var ingredient : recipe.inputs())
+                {
+                    var wanted = ingredient.count() * batch;
+                    var option = pick(ingredient, wanted, taken);
+                    if (held(option, taken) < wanted)
+                        return false;
+                    taken.merge(option, wanted, Long::sum);
+                }
+                for (var remainder : recipe.remainders())
+                    taken.merge(remainder.item(), -remainder.count() * batch, Long::sum);
+            }
+            return true;
+        }
+
+        /**
+         * @return what the stock and what crafts left over hold of a kind, less what a check has set aside
+         */
+        private long held(K option, Map<K, Long> taken)
+        {
+            return available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L) - taken.getOrDefault(option, 0L);
+        }
+
+        /**
+         * @return the most the stock and what crafts left over hold of any one of an ingredient's options
+         */
+        private long heldBest(WorksRecipe.Ingredient<K> ingredient)
+        {
+            return ingredient.options().stream().mapToLong(option -> available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L)).max().orElse(0);
         }
 
         /**
@@ -175,11 +227,19 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
          */
         private K pick(WorksRecipe.Ingredient<K> ingredient, long wanted)
         {
+            return pick(ingredient, wanted, Map.of());
+        }
+
+        /**
+         * @param taken what a check has set aside, as though already used
+         */
+        private K pick(WorksRecipe.Ingredient<K> ingredient, long wanted, Map<K, Long> taken)
+        {
             K best = null;
             long bestHeld = -1;
             for (var option : ingredient.options())
             {
-                var held = available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L);
+                var held = held(option, taken);
                 if (held >= wanted)
                     return option;
                 if (held > bestHeld)

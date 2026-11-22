@@ -7,5 +7,7 @@ public enum StationKind
 {
     ALTAR,
     FORGE,
-    TABLE
+    TABLE,
+    /** A Void Furnace, worked a batch at a time. */
+    FURNACE
 }
