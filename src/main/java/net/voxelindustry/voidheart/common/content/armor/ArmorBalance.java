@@ -6,7 +6,7 @@ package net.voxelindustry.voidheart.common.content.armor;
 public final class ArmorBalance
 {
     public static final long FRAME_CAPACITY   = 150_000;
-    public static final long BATTERY_CAPACITY = 250_000;
+    public static final long BATTERY_CAPACITY = 500_000;
 
     /** Guess: what a fight costs a tick on average with the bare frame, walking and sprinting included. */
     public static final long FIGHT_DRAIN             = 40;
