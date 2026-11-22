@@ -4,15 +4,22 @@ import com.mojang.renderpearl.api.commands.RenderPass;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.client.curse.sky.SkyFrame;
 import net.voxelindustry.voidheart.common.curse.CurseKind;
 import net.voxelindustry.voidheart.common.curse.CursePayloads;
 import net.voxelindustry.voidheart.common.curse.CurseTimings;
 import org.jspecify.annotations.Nullable;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Runs the curse the server struck this player with.
@@ -33,6 +40,7 @@ public final class CurseDirector
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clear());
         ClientTickEvents.END_CLIENT_TICK.register(CurseDirector::tick);
         LevelRenderEvents.COLLECT_SUBMITS.register(CurseDirector::collectSubmits);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.TITLE_AND_SUBTITLE, Identifier.fromNamespaceAndPath(MODID, "curse"), CurseDirector::extractHud);
     }
 
     private static void begin(CurseKind kind, long seed)
@@ -45,6 +53,7 @@ public final class CurseDirector
             case OMEN -> new OmenCurse(seed, duration);
             case RAPTURE -> new RaptureCurse(seed, duration);
             case VIGIL -> new VigilCurse(seed, duration);
+            case HYMN -> new HymnCurse(seed, duration);
         };
     }
 
@@ -75,6 +84,12 @@ public final class CurseDirector
     {
         if (active != null)
             active.collectSubmits(context);
+    }
+
+    private static void extractHud(GuiGraphicsExtractor graphics, DeltaTracker delta)
+    {
+        if (active != null)
+            active.extractHud(graphics, delta.getGameTimeDeltaPartialTick(false));
     }
 
     public static boolean hidesStars()

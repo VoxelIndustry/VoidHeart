@@ -31,6 +31,7 @@ Keep sizes, colors, alphas and timings in named constants at the top of the clas
 | Geometry that ignores world light | `RenderTypes.entityTranslucentEmissive(...)` | `GeometryParticle`, `BarrierMosaicRender` |
 | Glowing parts of a model | `RenderTypes.eyes(...)` | `BeholderRender`, `ShoulderEyeRender` |
 | Large, mostly static geometry | Cached GPU meshes built off-thread | `client/render/oculus/OculusRenderer` |
+| Flesh, teeth or eyes on a screen or the HUD | Two-unit blocks in `MawFlesh`'s palette and dither, outlined dark, never smooth gradients | `MawFlesh`, `HymnMesh` |
 | Expensive, unchanging GUI content | Bake once into a texture and blit it | `TravelMapScreen` |
 | A block item that shows its GeckoLib block model | Special item model and `GeoItemRenderer` | `RavenousCollectorItemRender` |
 | An item that is 3D in the world but flat in screens | Item model `select` on `display_context` with only `gui` flat, as `ModelsProvider.generateFlask` does. The `FIXED` context then draws the 3D model in block entity renderers | `PlacedFlasksRender`, `AthanorRender` |
@@ -71,6 +72,7 @@ If nothing in the table fits, copy the closest vanilla pipeline as `VoidHeartRen
 | An effect timed from a server game time starts late, or not at all in a capture | The client's game time can trail the server's by a few ticks, so `now - serverTick` is still negative when the synced change arrives | Time what follows a synced change from when the client sees it change (`PunctureRender` snaps) | |
 | Water or other translucent blocks vanish behind an entity hidden from the camera | Returning false from `isBodyVisible` makes `LivingEntityRenderer` draw a 15% ghost that writes depth, so water drawn later is culled behind it | Skip submitting the body yourself when it should be hidden (`ShoulderEyeRender.submit`) | |
 | A mob darkened by its model tint flashes bright red when hurt | The hurt overlay is mixed in after the tint, so it isn't darkened with the rest | Clear `hasRedOverlay` on the render state while it is dark (`MixinLivingEntityRendererSwallow`) | |
+| Half the shapes of a hand-built GUI element are missing, on some screen edges or sides only | The GUI pipelines cull back faces, so quads mirrored into place (bottom or left edge, flipped frames) wind the wrong way | Emit every quad counter-clockwise on screen, or check its signed area and reverse it (`HymnMesh.rect`) | |
 | A worn model or mob reads as plastic | Flat colour fills on its skin, lit evenly by the entity shader | Speckle every face a shade up or down, light its top edge and darken its bottom one, as `automaton.png` does (see `aseprite-texture`) | |
 
 Run `git show <commit>` when you need the full change. If a fix teaches something new, add a row here in the same change, so the next renderer benefits from it.
