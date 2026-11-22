@@ -82,6 +82,7 @@ public class OfficiantClientTest implements FabricClientGameTest
             checkForge(context, server);
             checkForgeSourceOccupied(context, server);
             checkForgeResultKeptAndSourceTaken(context, server);
+            checkForgeResultKeptFromInserter(context, server);
             checkFullHoard(context, server);
             checkBrokenMidLaying(context, server);
             checkItemOnPillarMidLaying(context, server);
@@ -323,6 +324,63 @@ public class OfficiantClientTest implements FabricClientGameTest
             minecraft.overworld().setBlockAndUpdate(SOURCE, VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
         });
         waitFor(context, server, 400, "the forge never took the new source pillar back", minecraft -> source(minecraft).isForgeSource());
+    }
+
+    private static final BlockPos INSERTER = FORGE.south();
+    private static final BlockPos INSERTER_CHEST = FORGE.south(2);
+
+    /**
+     * An inserter pulling from the forge leaves a finished output its Officiant has yet to take back: the steel reaches the hoard, not the chest, and is
+     * not made again. Once the Officiant is done, the inserter still empties the forge of a player's own craft.
+     */
+    private static void checkForgeResultKeptFromInserter(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            expect(level.getBlockState(INSERTER).isAir() && level.getBlockState(INSERTER_CHEST).isAir(), "the spots behind the forge are taken");
+            level.setBlockAndUpdate(INSERTER, VoidHeartBlocks.INVENTORY_INSERTER.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
+            level.setBlockAndUpdate(INSERTER_CHEST, Blocks.CHEST.defaultBlockState());
+        });
+        orderSteel(server);
+        var tried = false;
+        for (int tick = 0; tick < 2000 && !tried; tick++)
+        {
+            // The inserter is run in the same server step the steel is seen, so the Officiant can't take it first
+            tried = server.computeOnServer(minecraft ->
+            {
+                var level = minecraft.overworld();
+                var forge = forge(minecraft);
+                if (forge.isCrafting() || !forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT))
+                    return false;
+                net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile.transfer(level, INSERTER, level.getBlockState(INSERTER),
+                        (net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile) level.getBlockEntity(INSERTER));
+                expect(forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT), "the inserter took the Officiant's steel off the forge");
+                return true;
+            });
+            if (!tried)
+                context.waitTick();
+        }
+        expect(tried, "the steel was never seen finished in the forge");
+        waitFor(context, server, 100, "the Officiant never took its steel back", minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var chest = (net.minecraft.world.Container) level.getBlockEntity(INSERTER_CHEST);
+            expect(chest.countItem(VoidHeartItems.SEETHING_STEEL_INGOT) == 0, "the inserter put the Officiant's steel in the chest");
+            expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(),
+                    "the steel's order is still queued: " + WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs());
+
+            // A player's own output is still the inserter's to take
+            forge(minecraft).setStack(new ItemStack(VoidHeartItems.SEETHING_STEEL_INGOT));
+            net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile.transfer(level, INSERTER, level.getBlockState(INSERTER),
+                    (net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile) level.getBlockEntity(INSERTER));
+            expect(chest.countItem(VoidHeartItems.SEETHING_STEEL_INGOT) == 1 && forge(minecraft).getStack().isEmpty(),
+                    "the inserter left a player's own steel in the forge");
+            chest.clearContent();
+            level.removeBlock(INSERTER_CHEST, false);
+            level.removeBlock(INSERTER, false);
+        });
     }
 
     /**

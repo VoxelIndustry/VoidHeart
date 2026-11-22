@@ -77,18 +77,24 @@ public final class VoidEnergy
     }
 
     /**
-     * Names what a draw at pos takes from, so callers can tell whether two draws compete: those whose names don't meet never do. A creative well takes
-     * from no one.
+     * Names what a draw at pos takes from, so callers can tell whether two draws compete: those whose names don't meet never do. A draw through a Deep
+     * field is named by what a draw at the near portal takes from at home, so it meets the draws made there. A creative well takes from no one.
      */
     public static Set<Object> drawsFrom(ServerLevel level, BlockPos pos)
     {
+        var names = new HashSet<>(drawsFromHere(level, pos));
+        names.addAll(DeepReach.drawsFrom(level, pos));
+        return names;
+    }
+
+    /**
+     * Names what a draw at pos takes from in its own level, leaving aside Deep fields reaching in through portals.
+     */
+    public static Set<Object> drawsFromHere(ServerLevel level, BlockPos pos)
+    {
         if (CreativeSources.wells(level).covers(pos))
             return Set.of();
-        var names = new HashSet<>(provider.drawsFrom(level, pos));
-        // Deep fields reached through portals are counted as one, which any two such draws may share
-        if (DeepReach.available(level, pos) > 0)
-            names.add(DeepReach.class);
-        return names;
+        return provider.drawsFrom(level, pos);
     }
 
     public static void install(VoidNetworkProvider provider)

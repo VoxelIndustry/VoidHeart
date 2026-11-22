@@ -164,6 +164,14 @@ public class InventoryInserterTile extends BlockEntity
         if (world.getGameTime() % 20 != 0)
             return;
 
+        transfer(world, pos, state, inserter);
+    }
+
+    /**
+     * Moves what one tick of the inserter moves, whatever the tick; public for tests.
+     */
+    public static void transfer(Level world, BlockPos pos, BlockState state, InventoryInserterTile inserter)
+    {
         var direction = state.getValue(BlockStateProperties.FACING);
 
         var insertInventory = inserter.tryGetInventory(direction);
@@ -201,7 +209,7 @@ public class InventoryInserterTile extends BlockEntity
             var extractable = inserter.tryGetExtractable(direction.getOpposite());
             if (insertInventory != null && extractable != null)
             {
-                if (extractable.getStack().isEmpty())
+                if (extractable.getStack().isEmpty() || !extractable.canExtract())
                     return;
 
                 var extractionCandidate = extractable.getStack().copyWithCount(1);

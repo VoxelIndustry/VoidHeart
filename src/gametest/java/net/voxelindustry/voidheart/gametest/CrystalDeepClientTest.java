@@ -18,6 +18,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.Blocks;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
 import net.voxelindustry.voidheart.common.content.crystal.CradleResearch;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
@@ -25,11 +28,17 @@ import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleTile;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalKind;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalRecordings;
+import net.voxelindustry.voidheart.common.content.hoard.FoldTile;
+import net.voxelindustry.voidheart.common.content.hoard.HoardBalance;
+import net.voxelindustry.voidheart.common.content.hoard.HoardCofferTile;
+import net.voxelindustry.voidheart.common.content.hoard.HoardContent;
 import net.voxelindustry.voidheart.common.content.oculus.OculusTableStructure;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameCoreTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalLinker;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
+import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.VoidNetworkProvider;
 import net.voxelindustry.voidheart.common.energy.storage.CellSocketTile;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumCellItem;
 import net.voxelindustry.voidheart.common.energy.storage.RubrumContent;
@@ -68,7 +77,10 @@ public class CrystalDeepClientTest implements FabricClientGameTest
     private static final BlockPos CORE_A   = PORTAL_A.offset(2, 0, 0);
     private static final BlockPos CORE_B   = PORTAL_B.offset(2, 0, 0);
     private static final BlockPos PYLON    = PORTAL_A.offset(2, 0, -5);
-    private static final BlockPos REACH_WELL = PORTAL_A.offset(2, -2, -8);
+    // Inside the Deep field but out of reach of the near core, so draws through the portal go through the grid
+    private static final BlockPos REACH_WELL = PORTAL_A.offset(2, -2, -19);
+    private static final BlockPos NEAR_FOLD  = PORTAL_A.offset(6, 0, -2);
+    private static final BlockPos FAR_FOLD   = CORE_B.offset(2, 0, 4);
     private static final BlockPos FAR_SOCKET = CORE_B.offset(0, 0, 4);
 
     @Override
@@ -98,6 +110,7 @@ public class CrystalDeepClientTest implements FabricClientGameTest
             checkTableMemory(context, server, memory);
             checkTableMerges(context, server, memory);
             checkDeepReach(context, server);
+            checkFoldsShareThroughDeepReach(context, server);
         }
     }
 
@@ -338,6 +351,96 @@ public class CrystalDeepClientTest implements FabricClientGameTest
     {
         return level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(near).inflate(4),
                 item -> item.getItem().has(VoidHeartDataComponents.CRYSTAL_RECORDING)).size();
+    }
+
+    /**
+     * A Fold by the Deep pylon and a Fold past the far portal draw on the same grid, so in one transaction the far one can't promise energy the near one
+     * already did.
+     */
+    private static void checkFoldsShareThroughDeepReach(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var owner = player(minecraft).getUUID();
+            var pockets = net.voxelindustry.voidheart.common.world.VoidPocketState.getVoidPocketState(minecraft.overworld());
+            var voidLevel = minecraft.getLevel(net.voxelindustry.voidheart.VoidHeart.VOID_WORLD_KEY);
+            if (!pockets.hasPocket(owner))
+                pockets.createPocket(voidLevel, owner);
+            var coffer = pockets.getHeartData(owner).pocketPos().offset(3, 0, 3);
+            voidLevel.setBlockAndUpdate(coffer, HoardContent.HOARD_COFFER.defaultBlockState());
+            ((HoardCofferTile) voidLevel.getBlockEntity(coffer)).setBundle(new ItemStack(CrystalBundles.bundle(CrystalKind.RUBRUM, BundleSize.LARGE)));
+            for (var pos : List.of(NEAR_FOLD, FAR_FOLD))
+            {
+                minecraft.overworld().setBlockAndUpdate(pos, HoardContent.FOLD.defaultBlockState());
+                ((FoldTile) minecraft.overworld().getBlockEntity(pos)).setOwner(owner);
+            }
+        });
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var near = VoidEnergy.drawsFrom(level, NEAR_FOLD);
+            var far = VoidEnergy.drawsFrom(level, FAR_FOLD);
+            expect(!near.isEmpty() && !java.util.Collections.disjoint(near, far), "the Folds on either side of the portal draw on " + near + " and " + far);
+
+            // The grid as both Folds really draw on it, through the near Fold and the near core, holding enough for a single item
+            var original = VoidEnergy.provider();
+            long[] pool = { HoardBalance.FOLD_COST_PER_ITEM };
+            VoidEnergy.install(new VoidNetworkProvider()
+            {
+                private boolean pooled(BlockPos pos)
+                {
+                    return pos.equals(NEAR_FOLD) || pos.equals(CORE_A);
+                }
+
+                @Override
+                public long available(ServerLevel at, BlockPos pos)
+                {
+                    return pooled(pos) ? pool[0] : original.available(at, pos);
+                }
+
+                @Override
+                public long draw(ServerLevel at, BlockPos pos, long amount)
+                {
+                    if (!pooled(pos))
+                        return original.draw(at, pos, amount);
+                    var taken = Math.min(amount, pool[0]);
+                    pool[0] -= taken;
+                    return taken;
+                }
+
+                @Override
+                public long offer(ServerLevel at, BlockPos pos, long amount)
+                {
+                    return original.offer(at, pos, amount);
+                }
+
+                @Override
+                public java.util.Set<Object> drawsFrom(ServerLevel at, BlockPos pos)
+                {
+                    return original.drawsFrom(at, pos);
+                }
+            });
+            try
+            {
+                try (var transaction = Transaction.openOuter())
+                {
+                    var dirt = ItemVariant.of(net.minecraft.world.item.Items.DIRT);
+                    var nearTaken = ItemStorage.SIDED.find(level, NEAR_FOLD, Direction.UP).insert(dirt, 1, transaction);
+                    var farTaken = ItemStorage.SIDED.find(level, FAR_FOLD, Direction.UP).insert(dirt, 1, transaction);
+                    expect(nearTaken == 1, "the Fold by the pylon took " + nearTaken + " dirt");
+                    expect(farTaken == 0, "the Fold past the portal took " + farTaken + " dirt the grid had already promised");
+                    transaction.commit();
+                }
+                expect(pool[0] == 0, "the grid was left with " + pool[0] + " after paying one item");
+            }
+            finally
+            {
+                VoidEnergy.install(original);
+            }
+            level.removeBlock(NEAR_FOLD, false);
+            level.removeBlock(FAR_FOLD, false);
+        });
     }
 
     /**

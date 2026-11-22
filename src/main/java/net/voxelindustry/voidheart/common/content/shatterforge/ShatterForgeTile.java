@@ -844,6 +844,15 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     /**
+     * An Officiant's finished output is its to take back, not an inserter's.
+     */
+    @Override
+    public boolean canExtract()
+    {
+        return !isOfficiantsResult();
+    }
+
+    /**
      * @return whether the output is an Officiant's finished craft that the Officiant under the source pillar still has to take back
      */
     public boolean isOfficiantsResult()
