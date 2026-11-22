@@ -115,6 +115,9 @@ public class PylonModelClientTest implements FabricClientGameTest
         server.runCommand("tp @a 3 " + GROUND + " -3 facing 3 " + GROUND + " 3");
         setHudHidden(context, false);
         context.waitTicks(10);
+        expectClient(context, "The client should hold the pylon in its selected first slot", minecraft ->
+                minecraft.player.getInventory().getItem(0).is(VoidGridContent.AZURIUM_PYLON.asItem())
+                        && minecraft.player.getMainHandItem().is(VoidGridContent.AZURIUM_PYLON.asItem()));
         context.takeScreenshot("pylon-in-hand");
         context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
         context.waitTicks(5);
