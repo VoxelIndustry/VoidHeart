@@ -57,18 +57,29 @@ public class LevitationBeltClientTest implements FabricClientGameTest
             tp(server, 60.5, Y, 40.5);
             context.waitTicks(5);
 
-            equip(context, server);
-            jumps(context, server);
-            noFlightWithoutField(context, server);
+            // Every test shares the client, so the camera goes back to what it was, even when an assertion fails
+            var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+            try
+            {
+                equip(context, server);
+                jumps(context, server);
+                noFlightWithoutField(context, server);
 
-            buildChain(context, server);
-            fliesInField(context, server);
-            looks(context, server);
-            fadesOutOfField(context, server, Y + 24, true);
-            fadesOutOfField(context, server, Y + 4, false);
-            caughtAgain(context, server);
-
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                buildChain(context, server);
+                fliesInField(context, server);
+                looks(context, server);
+                fadesOutOfField(context, server, Y + 24, true);
+                fadesOutOfField(context, server, Y + 4, false);
+                caughtAgain(context, server);
+            }
+            finally
+            {
+                context.getInput().releaseKey(options -> options.keyUp);
+                context.getInput().releaseKey(options -> options.keyDown);
+                context.getInput().releaseKey(options -> options.keyJump);
+                server.runCommand("tick unfreeze");
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
+            }
         }
     }
 
@@ -151,6 +162,13 @@ public class LevitationBeltClientTest implements FabricClientGameTest
         context.waitTicks(30);
         expect(throughput(server) == 0, "Standing in the field should draw nothing, the pylon passes " + throughput(server));
 
+        // Taking off as a player does: jump twice quickly
+        tapJump(context);
+        context.waitTicks(2);
+        tapJump(context);
+        waitFor(context, server, 10, "A double jump in the field should take off", minecraft -> player(minecraft).getAbilities().flying);
+        expectClient(context, "The client should fly after a double jump", minecraft -> minecraft.player.getAbilities().flying);
+
         fly(context, server, FIELD_X, Y + 2, FIELD_Z);
         context.waitTicks(40);
         server.runOnServer(minecraft ->
@@ -173,6 +191,30 @@ public class LevitationBeltClientTest implements FabricClientGameTest
         context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK));
         context.waitTicks(5);
         context.takeScreenshot("levitation-belt-flying-back");
+
+        // The bead is drawn twice, cut out and then glowing: frozen, the camera circles the front of the belt a few degrees at a time, so flicker between
+        // the passes would show between frames. Turning the view swings the third person camera while the frozen body keeps still
+        server.runCommand("tick freeze");
+        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        float yaw = context.computeOnClient(minecraft -> minecraft.player.getYRot());
+        context.waitTicks(3);
+        for (int step = 0; step < 8; step++)
+        {
+            float turned = yaw - 12 + step * 3;
+            context.runOnClient(minecraft ->
+            {
+                minecraft.player.setYRot(turned);
+                minecraft.player.setXRot(25);
+            });
+            context.waitTick();
+            context.takeScreenshot("levitation-belt-glow-sweep-" + step);
+        }
+        context.runOnClient(minecraft ->
+        {
+            minecraft.player.setYRot(yaw);
+            minecraft.player.setXRot(10);
+        });
+        server.runCommand("tick unfreeze");
 
         // Over armor, the band shows outside the chestplate and leggings
         server.runCommand("item replace entity @a armor.chest with iron_chestplate");
@@ -260,8 +302,11 @@ public class LevitationBeltClientTest implements FabricClientGameTest
      */
     private static void fly(ClientGameTestContext context, TestServerContext server, double x, double y, double z)
     {
-        server.runCommand("tp @a " + x + " " + y + " " + z + " -90 10");
+        // The belt looks for a field every few ticks, so wait for flight on the ground first: put in the air straight away, the player could land
+        // before it is allowed, and landing keeps ending the flight asked for
+        server.runCommand("tp @a " + FIELD_X + " " + Y + " " + FIELD_Z + " -90 10");
         waitFor(context, server, 30, "Inside the field the belt should allow flight", minecraft -> player(minecraft).getAbilities().mayfly);
+        server.runCommand("tp @a " + x + " " + y + " " + z + " -90 10");
         // The client can still drop flight in the ticks after a teleport, so keep asking until it has flown steadily for a few ticks
         int steady = 0;
         for (int tick = 0; tick < 40 && steady < 5; tick++)
@@ -278,7 +323,20 @@ public class LevitationBeltClientTest implements FabricClientGameTest
             context.waitTick();
             steady = context.computeOnClient(minecraft -> minecraft.player.getAbilities().flying) ? steady + 1 : 0;
         }
-        expect(steady >= 5, "The wearer should fly steadily in the field");
+        if (steady < 5)
+            throw new AssertionError(server.computeOnServer(minecraft ->
+            {
+                var player = player(minecraft);
+                return "The wearer should fly steadily in the field at " + (y - Y) + ", is at " + player.position() + " on ground " + player.onGround()
+                       + ", flying " + player.getAbilities().flying + ", may fly " + player.getAbilities().mayfly + ", belt " + LevitationBelts.state(player);
+            }) + ", client flying " + context.computeOnClient(minecraft -> minecraft.player.getAbilities().flying + " at " + minecraft.player.position()));
+    }
+
+    private static void tapJump(ClientGameTestContext context)
+    {
+        context.getInput().holdKey(options -> options.keyJump);
+        context.waitTicks(2);
+        context.getInput().releaseKey(options -> options.keyJump);
     }
 
     private static long throughput(TestServerContext server)
