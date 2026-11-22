@@ -354,6 +354,11 @@ public class RecipesProvider extends FabricRecipeProvider
                     Items.SPIDER_EYE, VoidHeartItems.VOID_PEARL, Items.SLIME_BALL,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD);
 
+            // Leather strapped around a membrane that remembers flight, with azurium to drink from a pylon's field
+            offerAltarRecipe("levitation_belt", new ItemStack(VoidHeartItems.LEVITATION_BELT), Items.PHANTOM_MEMBRANE,
+                    Items.LEATHER, Items.LEATHER, Items.FEATHER, Items.FEATHER,
+                    VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.OBSIDIAN_SHARD);
+
             // The membrane again, soaked in what lets a wraith pass through stone
             offerAltarRecipe("wraith_veil", new ItemStack(VoidHeartItems.WRAITH_VEIL), Items.PHANTOM_MEMBRANE,
                     VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,

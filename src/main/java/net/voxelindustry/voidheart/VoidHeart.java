@@ -89,6 +89,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 import net.voxelindustry.voidheart.common.content.mob.BarnacleInfection;
+import net.voxelindustry.voidheart.common.content.levitation.LevitationBelts;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEffects;
 import net.voxelindustry.voidheart.common.setup.VoidHeartSounds;
@@ -157,6 +158,7 @@ public class VoidHeart implements ModInitializer
         ShoulderEyes.register();
         AvengingReach.register();
         ShieldingApparatus.register();
+        LevitationBelts.register();
         ShieldPayloads.register();
         BlueprintPayloads.register();
         RapierStrikes.register();
@@ -199,6 +201,7 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShieldingApparatus::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(LevitationBelts::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(BarnacleInfection::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(Knowledge::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(RapierStrikes::tickServer);
