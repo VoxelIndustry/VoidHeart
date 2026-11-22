@@ -6,6 +6,7 @@ import net.voxelindustry.voidheart.common.content.altar.VoidAltarBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
 import net.voxelindustry.voidheart.common.content.beam.BeamFocusBlock;
+import net.voxelindustry.voidheart.common.ley.anchor.WroughtAnchorBlock;
 import net.voxelindustry.voidheart.common.content.beholder.BeholderBlock;
 import net.voxelindustry.voidheart.common.content.beholder.BeholderTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFrameBlock;
@@ -101,6 +102,7 @@ public class VoidHeartJadePlugin implements IWailaPlugin
         registration.addRayTraceCallback(new ArmillaryBaseRedirect(registration));
         registration.addRayTraceCallback(JadeRedirects.upperHalves(registration));
         registration.registerBlockComponent(new BeamFocusProvider(), BeamFocusBlock.class);
+        registration.registerBlockComponent(new WroughtAnchorProvider(), WroughtAnchorBlock.class);
         EnergyJade.registerClient(registration);
     }
 }

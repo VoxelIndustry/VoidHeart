@@ -30,6 +30,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.BlockItem;
+import net.voxelindustry.voidheart.common.ley.anchor.WroughtAnchorBlock;
+import net.voxelindustry.voidheart.common.ley.anchor.WroughtAnchorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.AmethystClusterBlock;
@@ -208,6 +210,7 @@ public class VoidHeartBlocks
 
     public static Block VOID_DOOR;
     public static Block OLD_ANCHOR;
+    public static Block WROUGHT_ANCHOR;
     public static Block PERMEABLE_BARRIER;
     public static Block OCULUS_TABLE;
     public static Block BEHOLDER;
@@ -516,6 +519,14 @@ public class VoidHeartBlocks
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), false);
+        WROUGHT_ANCHOR = registerBlock("wrought_anchor", WroughtAnchorBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(3F, 6F)
+                .noOcclusion()
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.STONE), WroughtAnchorItem::new);
 
         PERMEABLE_BARRIER = registerBlock("permeable_barrier", PermeableBarrierBlock::new, BlockBehaviour.Properties.of(), true);
 

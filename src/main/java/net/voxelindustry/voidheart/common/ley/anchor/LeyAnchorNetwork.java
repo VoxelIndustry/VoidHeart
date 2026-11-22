@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.common.ley.anchor;
 
+import net.voxelindustry.voidheart.common.ley.LeyEdge;
 import net.voxelindustry.voidheart.common.ley.LeyHash;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
 import net.voxelindustry.voidheart.common.ley.LeyLatticeGenerator;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 import static net.voxelindustry.voidheart.common.ley.LeyLatticeGenerator.REGION_SIZE;
 
@@ -27,9 +29,15 @@ public class LeyAnchorNetwork
     public static final float DEFAULT_INACTIVE_CHANCE = 0.5F;
     public static final double MAX_DOMAIN_REACH = 1200;
     private static final double MAX_LINE_LENGTH = 3 * LeyLatticeGenerator.CELL_SIZE;
+    /**
+     * A node bordering a domain is within reach plus one line of it, and its owner within reach of that node: anchors farther apart are never linked.
+     */
+    public static final int SEED_RADIUS = (int) (2 * MAX_DOMAIN_REACH + MAX_LINE_LENGTH);
 
     private static final long SALT_ANCHOR = 21;
     private static final long SALT_INACTIVE = 22;
+    // Higher than any node id, so an Old Anchor keeps a node a point ties it for, its own above all
+    private static final long POINT_OWNER = Long.MAX_VALUE;
 
     private final long seed;
     private final LeyLattice lattice;
@@ -116,43 +124,114 @@ public class LeyAnchorNetwork
     {
         return linkedByNode.computeIfAbsent(origin.nodeId(), key ->
         {
-            // A node bordering the origin's domain is within reach plus one line of it, and its owner within reach of that node
-            int seedRadius = (int) (2 * MAX_DOMAIN_REACH + MAX_LINE_LENGTH);
-            var seeds = anchorsWithin(origin.x() - seedRadius, origin.z() - seedRadius, origin.x() + seedRadius, origin.z() + seedRadius);
+            var seeds = seedsAround(origin.x(), origin.z());
             var owners = domains(seeds);
 
-            var linked = new LinkedHashSet<OldAnchor>();
+            var linked = new LinkedHashSet<Long>();
             for (var entry : owners.entrySet())
             {
-                if (entry.getValue().anchor().nodeId() != origin.nodeId())
-                    continue;
-                for (var edge : lattice.edgesOf(entry.getKey()))
-                {
-                    var neighbor = owners.get(edge.other(entry.getKey()));
-                    if (neighbor != null && neighbor.anchor().nodeId() != origin.nodeId())
-                        linked.add(neighbor.anchor());
-                }
+                if (entry.getValue().owner() == origin.nodeId())
+                    addNeighborOwners(entry.getKey(), origin.nodeId(), owners, linked);
             }
-
-            var sorted = new ArrayList<>(linked);
-            sorted.sort(Comparator.comparingDouble(anchor -> Math.hypot(anchor.x() - origin.x(), anchor.z() - origin.z())));
-            return sorted;
+            return sortedAnchors(linked, origin.x(), origin.z());
         });
     }
 
     /**
-     * Multi-source shortest paths from every seed anchor; ties go to the lowest node id so every caller agrees.
+     * The Old Anchors an anchor standing at x, z beside its nearest line would be linked to. It enters the line between the line's two nodes and
+     * claims them at their distance along it; it always reaches the anchors whose domains hold those two nodes. No other point takes part, so
+     * placing one never changes the links between Old Anchors.
      */
-    private Map<Long, Claim> domains(List<OldAnchor> seeds)
+    public List<OldAnchor> linkedAt(int x, int z)
+    {
+        var edge = lattice.nearestEdge(x, z);
+        if (edge.isEmpty())
+            return List.of();
+
+        var line = edge.get();
+        double along = alongLine(line, x, z);
+        var seeds = new ArrayList<>(seedsAround(x, z));
+        seeds.add(new Seed(POINT_OWNER, line.from(), along));
+        seeds.add(new Seed(POINT_OWNER, line.to(), line.length() - along));
+        var owners = domains(seeds);
+
+        var linked = new LinkedHashSet<Long>();
+        for (long end : new long[] { line.from(), line.to() })
+        {
+            var claim = owners.get(end);
+            if (claim != null && claim.owner() != POINT_OWNER)
+                linked.add(claim.owner());
+        }
+        for (var entry : owners.entrySet())
+        {
+            if (entry.getValue().owner() == POINT_OWNER)
+                addNeighborOwners(entry.getKey(), POINT_OWNER, owners, linked);
+        }
+        return sortedAnchors(linked, x, z);
+    }
+
+    /**
+     * Whether x, z lies within reach blocks of a ley line, measured flat.
+     */
+    public boolean nearLine(int x, int z, int reach)
+    {
+        return lattice.nearestEdge(x, z).filter(edge -> edge.distanceSq(x + 0.5, z + 0.5) <= (double) reach * reach).isPresent();
+    }
+
+    private static double alongLine(LeyEdge line, double x, double z)
+    {
+        double dx = line.toX() - line.fromX();
+        double dz = line.toZ() - line.fromZ();
+        double lengthSq = dx * dx + dz * dz;
+        if (lengthSq == 0)
+            return 0;
+        double t = Math.clamp(((x - line.fromX()) * dx + (z - line.fromZ()) * dz) / lengthSq, 0, 1);
+        return t * Math.sqrt(lengthSq);
+    }
+
+    private List<Seed> seedsAround(int x, int z)
+    {
+        return anchorsWithin(x - SEED_RADIUS, z - SEED_RADIUS, x + SEED_RADIUS, z + SEED_RADIUS).stream()
+                .map(anchor -> new Seed(anchor.nodeId(), anchor.nodeId(), 0))
+                .toList();
+    }
+
+    private void addNeighborOwners(long nodeId, long self, Map<Long, Claim> owners, Set<Long> linked)
+    {
+        for (var edge : lattice.edgesOf(nodeId))
+        {
+            var neighbor = owners.get(edge.other(nodeId));
+            if (neighbor != null && neighbor.owner() != self)
+                linked.add(neighbor.owner());
+        }
+    }
+
+    private List<OldAnchor> sortedAnchors(Set<Long> nodeIds, int x, int z)
+    {
+        var sorted = new ArrayList<OldAnchor>();
+        for (long nodeId : nodeIds)
+            anchor(nodeId).ifPresent(sorted::add);
+        sorted.sort(Comparator.comparingDouble(anchor -> Math.hypot(anchor.x() - x, anchor.z() - z)));
+        return sorted;
+    }
+
+    /**
+     * Multi-source shortest paths from every seed; ties go to the lowest owner so every caller agrees.
+     */
+    private Map<Long, Claim> domains(List<Seed> seeds)
     {
         var owners = new HashMap<Long, Claim>();
-        var queue = new PriorityQueue<Claim>(Comparator.comparingDouble(Claim::distance).thenComparingLong(claim -> claim.anchor().nodeId()));
+        var queue = new PriorityQueue<Claim>(Comparator.comparingDouble(Claim::distance).thenComparingLong(Claim::owner));
         var reached = new HashMap<Long, Claim>();
-        for (var anchor : seeds)
+        for (var seed : seeds)
         {
-            var claim = new Claim(anchor.nodeId(), anchor, 0);
-            reached.put(anchor.nodeId(), claim);
-            queue.add(claim);
+            var claim = new Claim(seed.nodeId(), seed.owner(), seed.distance());
+            var previous = reached.get(seed.nodeId());
+            if (previous == null || isBetter(claim, previous))
+            {
+                reached.put(seed.nodeId(), claim);
+                queue.add(claim);
+            }
         }
 
         while (!queue.isEmpty())
@@ -169,11 +248,10 @@ public class LeyAnchorNetwork
                 if (distance > MAX_DOMAIN_REACH || owners.containsKey(next))
                     continue;
 
+                var nextClaim = new Claim(next, claim.owner(), distance);
                 var previous = reached.get(next);
-                if (previous == null || distance < previous.distance()
-                        || distance == previous.distance() && claim.anchor().nodeId() < previous.anchor().nodeId())
+                if (previous == null || isBetter(nextClaim, previous))
                 {
-                    var nextClaim = new Claim(next, claim.anchor(), distance);
                     reached.put(next, nextClaim);
                     queue.add(nextClaim);
                 }
@@ -182,7 +260,16 @@ public class LeyAnchorNetwork
         return owners;
     }
 
-    private record Claim(long nodeId, OldAnchor anchor, double distance)
+    private static boolean isBetter(Claim claim, Claim than)
+    {
+        return claim.distance() < than.distance() || claim.distance() == than.distance() && claim.owner() < than.owner();
+    }
+
+    private record Seed(long owner, long nodeId, double distance)
+    {
+    }
+
+    private record Claim(long nodeId, long owner, double distance)
     {
     }
 }

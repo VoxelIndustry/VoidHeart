@@ -55,6 +55,8 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
         this.dropSelf(VoidHeartBlocks.COGITANT);
         this.dropSelf(VoidHeartBlocks.VOID_LOOM);
         this.dropSelf(VoidHeartBlocks.MENDING_ALTAR);
+        // Keeps its name, so a moved anchor is still found under it
+        this.add(VoidHeartBlocks.WROUGHT_ANCHOR, this::createNameableBlockEntityTable);
         this.add(VoidHeartBlocks.VOID_DOOR, this::createDoorTable);
         for (var prop : DaedalusProp.values())
             this.dropSelf(VoidHeartBlocks.daedalusProp(prop));

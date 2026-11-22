@@ -42,6 +42,11 @@ public class AnchorTerrain
         this.level = level;
     }
 
+    public void forget()
+    {
+        cache.clear();
+    }
+
     public void send(ServerPlayer player, AnchorPayloads.TravelMap map)
     {
         long source = map.source().id();

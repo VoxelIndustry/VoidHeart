@@ -251,6 +251,12 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
                     VoidHeartItems.OBSIDIAN_SHARD);
+            // A lodestone taught to hold to a ley line instead of to north
+            offerAltarRecipe("wrought_anchor", VoidHeartBlocks.WROUGHT_ANCHOR, Items.LODESTONE,
+                    VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED,
+                    VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
             offerAltarRecipe("cogitant", VoidHeartBlocks.COGITANT, VoidHeartItems.WRIGGLING_BRAIN,
                     VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,

@@ -24,6 +24,7 @@ public final class AnchorPayloads
         PayloadTypeRegistry.clientboundPlay().register(TravelMap.TYPE, TravelMap.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Terrain.TYPE, Terrain.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(TravelRequest.TYPE, TravelRequest.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RenameRequest.TYPE, RenameRequest.CODEC);
     }
 
     /**
@@ -57,15 +58,17 @@ public final class AnchorPayloads
     }
 
     /**
-     * Opens the travel map at an active anchor, with the ley lines around it for context.
+     * Opens the travel map at an active anchor, with the ley lines around it for context. The map is framed on the linked anchors; far ones are
+     * the wrought anchors a wrought source reaches anywhere in the level, listed beside the map.
      */
-    public record TravelMap(AnchorView source, List<AnchorView> linked, List<Segment> lines) implements CustomPacketPayload
+    public record TravelMap(AnchorView source, List<AnchorView> linked, List<AnchorView> far, List<Segment> lines) implements CustomPacketPayload
     {
         public static final Type<TravelMap> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "anchor_travel_map"));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, TravelMap> CODEC = StreamCodec.composite(
                 AnchorView.CODEC, TravelMap::source,
                 AnchorView.CODEC.apply(ByteBufCodecs.list()), TravelMap::linked,
+                AnchorView.CODEC.apply(ByteBufCodecs.list()), TravelMap::far,
                 Segment.CODEC.apply(ByteBufCodecs.list()), TravelMap::lines,
                 TravelMap::new);
 
@@ -126,6 +129,25 @@ public final class AnchorPayloads
 
         @Override
         public Type<TravelRequest> type()
+        {
+            return TYPE;
+        }
+    }
+
+    /**
+     * Renames the wrought anchor the player stands by.
+     */
+    public record RenameRequest(long anchor, String name) implements CustomPacketPayload
+    {
+        public static final Type<RenameRequest> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "anchor_rename_request"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, RenameRequest> CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_LONG, RenameRequest::anchor,
+                ByteBufCodecs.stringUtf8(WroughtAnchorBalance.NAME_MAX_LENGTH * 4), RenameRequest::name,
+                RenameRequest::new);
+
+        @Override
+        public Type<RenameRequest> type()
         {
             return TYPE;
         }

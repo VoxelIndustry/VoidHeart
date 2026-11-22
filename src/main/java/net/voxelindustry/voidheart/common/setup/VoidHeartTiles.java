@@ -41,6 +41,7 @@ import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.repair.MendingAltarTile;
 import net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile;
 import net.voxelindustry.voidheart.common.content.tormenter.MalignantTormenterTile;
+import net.voxelindustry.voidheart.common.ley.anchor.WroughtAnchorTile;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -70,6 +71,7 @@ public class VoidHeartTiles
     public static BlockEntityType<BarnacleNestTile> BARNACLE_NEST;
     public static BlockEntityType<DormantTreantTile> DORMANT_TREANT;
     public static BlockEntityType<MendingAltarTile> MENDING_ALTAR;
+    public static BlockEntityType<WroughtAnchorTile> WROUGHT_ANCHOR;
 
     public static BlockEntityType<InventoryInserterTile> INVENTORY_INSERTER;
 
@@ -165,6 +167,9 @@ public class VoidHeartTiles
         registerTile(MENDING_ALTAR =
                         FabricBlockEntityTypeBuilder.create(MendingAltarTile::new, VoidHeartBlocks.MENDING_ALTAR).build(),
                 "mending_altar");
+        registerTile(WROUGHT_ANCHOR =
+                        FabricBlockEntityTypeBuilder.create(WroughtAnchorTile::new, VoidHeartBlocks.WROUGHT_ANCHOR).build(),
+                "wrought_anchor");
 
         registerTile(INVENTORY_INSERTER =
                         FabricBlockEntityTypeBuilder.create(InventoryInserterTile::new, VoidHeartBlocks.INVENTORY_INSERTER).build(),
