@@ -844,16 +844,19 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     }
 
     /**
-     * Called when a hand or an inserter takes the item off the source pillar. An Officiant's input taken before the forge used it ends that craft: its
-     * ticket and pin go, so whatever is crafted next is the player's own.
+     * Called when a hand or an inserter takes the item off the source pillar. An Officiant's input taken before the forge used it ends that craft: it
+     * stops, and its ticket and pin go, so whatever is crafted next is chosen afresh and is the player's own. Once the input is used, or the output is
+     * done and waiting, what is taken off the pillar is not the craft's.
      */
     public void sourceTaken()
     {
         if (ticket == null)
             return;
         var used = isCrafting && recipeState != null && !recipeState.getIngredientConsumed(ItemStack.class, 0).isEmpty();
-        if (used)
+        if (used || !isCrafting && !stack.isEmpty())
             return;
+        if (isCrafting)
+            stopCrafting();
         ticket = null;
         pinned = null;
         setChanged();

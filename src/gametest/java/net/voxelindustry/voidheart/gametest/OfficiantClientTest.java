@@ -261,11 +261,18 @@ public class OfficiantClientTest implements FabricClientGameTest
 
     private static void orderSteel(TestServerContext server)
     {
+        orderFromIron(server, VoidHeartItems.SEETHING_STEEL_INGOT);
+    }
+
+    private static void orderFromIron(TestServerContext server, net.minecraft.world.item.Item made)
+    {
         server.runOnServer(minecraft ->
         {
-            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT));
+            // What earlier crafts from iron left would answer the waits for this one
+            for (var product : List.of(VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.ARROGANT_IRON_INGOT, made))
+                hoard(minecraft).extract(ItemVariant.of(product), held(minecraft, product));
             hoard(minecraft).insert(ItemVariant.of(Items.IRON_INGOT), 1);
-            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), 1);
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(made), 1);
         });
     }
 
@@ -375,21 +382,25 @@ public class OfficiantClientTest implements FabricClientGameTest
     }
 
     /**
-     * A player taking the Officiant's iron off the source pillar before the forge used it ends the craft: the craft counts again, and what the forge then
-     * makes from the player's own iron stays theirs rather than going to the hoard.
+     * A player taking the Officiant's iron off the source pillar while the forge crafts Arrogant Iron from it, before it is used, ends that craft: the
+     * craft counts again, and the forge chooses afresh for the player's own iron, making Seething Steel on its Fiery build, which stays in the forge
+     * rather than going to the hoard.
      */
     private static void checkForgeInputTakenByHand(ClientGameTestContext context, TestServerContext server)
     {
-        orderSteel(server);
+        orderFromIron(server, VoidHeartItems.ARROGANT_IRON_INGOT);
         var swapped = false;
         for (int tick = 0; tick < 2000 && !swapped; tick++)
         {
-            // Taken in the server step the iron is seen laid, before the forge can use it
+            // Taken in the server step the Arrogant Iron craft is seen running on the iron, before the forge can use it
             swapped = server.computeOnServer(minecraft ->
             {
                 var officiant = (OfficiantTile) minecraft.overworld().getBlockEntity(SOURCE.below());
-                if (officiant.getClaim() == null || officiant.isLaying() || !source(minecraft).getStack().is(Items.IRON_INGOT))
+                var forge = forge(minecraft);
+                if (officiant.getClaim() == null || officiant.isLaying() || !forge.isCrafting() || !source(minecraft).getStack().is(Items.IRON_INGOT))
                     return false;
+                expect(forge.getPinned() != null && forge.getPinned().getPath().contains("arrogant_iron"), "the forge runs " + forge.getPinned()
+                        + " rather than the Officiant's Arrogant Iron");
                 var player = player(minecraft);
                 player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                 useOn(player, SOURCE);
@@ -403,21 +414,27 @@ public class OfficiantClientTest implements FabricClientGameTest
             if (!swapped)
                 context.waitTick();
         }
-        expect(swapped, "the Officiant never laid its iron on the source pillar");
+        expect(swapped, "the forge never crafted Arrogant Iron from the Officiant's iron");
         waitFor(context, server, 60, "the Officiant never let go of the craft whose iron was taken",
                 minecraft -> ((OfficiantTile) minecraft.overworld().getBlockEntity(SOURCE.below())).getClaim() == null);
         waitFor(context, server, 900, "the forge never made anything from the player's iron", minecraft -> !forge(minecraft).getStack().isEmpty());
         context.waitTicks(30);
         server.runOnServer(minecraft ->
         {
-            expect(held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 0, "what the forge made from the player's iron went to the hoard");
-            expect(!forge(minecraft).getStack().isEmpty(), "the Officiant took the player's output off the forge");
+            expect(forge(minecraft).getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT),
+                    "the forge kept to the abandoned craft and made " + forge(minecraft).getStack() + " from the player's iron");
+            expect(held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 0 && held(minecraft, VoidHeartItems.ARROGANT_IRON_INGOT) == 0,
+                    "what the forge made from the player's iron went to the hoard");
             var jobs = WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs();
             expect(jobs.size() == 1 && jobs.getFirst().tasks().getFirst().remaining() == 1 && jobs.getFirst().tasks().getFirst().working() == 0,
                     "the craft whose iron was taken was not counted again: " + jobs);
             WorksState.get(minecraft).edit(player(minecraft).getUUID()).cancel(jobs.getFirst().id());
             forge(minecraft).takeOutput();
             dropSteelAndIron(minecraft);
+            var inventory = player(minecraft).getInventory();
+            for (int slot = 0; slot < inventory.getContainerSize(); slot++)
+                if (inventory.getItem(slot).is(Items.APPLE))
+                    inventory.setItem(slot, ItemStack.EMPTY);
         });
     }
 
@@ -448,6 +465,14 @@ public class OfficiantClientTest implements FabricClientGameTest
                 var forge = forge(minecraft);
                 if (forge.isCrafting() || !forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT))
                     return false;
+                // An apple set on the source pillar and taken back once the steel is done is not the craft's input, so the steel stays the Officiant's
+                var player = player(minecraft);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.APPLE));
+                useOn(player, SOURCE);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                useOn(player, SOURCE);
+                expect(source(minecraft).getStack().isEmpty() && carried(minecraft, Items.APPLE) >= 1, "the apple was not set on the source pillar and taken back");
+                expect(forge.isOfficiantsResult(), "taking the apple off the source pillar let the Officiant's steel go");
                 net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile.transfer(level, INSERTER, level.getBlockState(INSERTER),
                         (net.voxelindustry.voidheart.common.content.inventorymover.InventoryInserterTile) level.getBlockEntity(INSERTER));
                 expect(forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT), "the inserter took the Officiant's steel off the forge");

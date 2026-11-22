@@ -155,11 +155,60 @@ public final class DeepReach
         return names;
     }
 
+    /**
+     * What one near core could give a draw through it.
+     *
+     * @param names     what a draw at the core takes from, as {@link VoidEnergy#drawsFromHere} names it
+     * @param exclusive what waits at the core alone
+     * @param total     all it could give, what waits there included
+     */
+    record CoreSupply(java.util.Set<Object> names, long exclusive, long total)
+    {
+    }
+
+    /**
+     * What several near cores give together. Cores drawing on the same energy share what is routed to them, so of that only the most any one of them
+     * could get counts; what waits at each core alone adds up.
+     */
+    static long combine(List<CoreSupply> cores)
+    {
+        var groups = new ArrayList<long[]>();
+        var names = new ArrayList<java.util.Set<Object>>();
+        for (var core : cores)
+        {
+            long own = Math.clamp(core.exclusive(), 0, Math.max(0, core.total()));
+            long shared = Math.max(0, core.total() - own);
+            var joined = new long[] { own, shared };
+            var joinedNames = new java.util.HashSet<>(core.names());
+            for (int i = groups.size() - 1; i >= 0; i--)
+            {
+                if (core.names().isEmpty() || java.util.Collections.disjoint(names.get(i), core.names()))
+                    continue;
+                joined[0] = saturated(joined[0], groups.get(i)[0]);
+                joined[1] = Math.max(joined[1], groups.get(i)[1]);
+                joinedNames.addAll(names.get(i));
+                groups.remove(i);
+                names.remove(i);
+            }
+            groups.add(joined);
+            names.add(joinedNames);
+        }
+        long available = 0;
+        for (var group : groups)
+            available = saturated(available, saturated(group[0], group[1]));
+        return available;
+    }
+
+    private static long saturated(long a, long b)
+    {
+        return b >= Long.MAX_VALUE / 2 - a ? Long.MAX_VALUE / 2 : a + b;
+    }
+
     public static long available(ServerLevel level, BlockPos pos)
     {
-        long available = 0;
         // Reaches out of one core share that core's pool, so it counts once
         var counted = new java.util.HashSet<java.util.Map.Entry<ResourceKey<Level>, BlockPos>>();
+        var cores = new ArrayList<CoreSupply>();
         for (var reach : into(level))
         {
             if (!reach.covers(pos) || !counted.add(java.util.Map.entry(reach.nearLevel(), reach.nearCore())))
@@ -167,10 +216,10 @@ public final class DeepReach
             var near = level.getServer().getLevel(reach.nearLevel());
             if (near == null)
                 continue;
-            long here = VoidEnergy.availableHere(near, reach.nearCore());
-            available = here >= Long.MAX_VALUE / 2 - available ? Long.MAX_VALUE / 2 : available + here;
+            cores.add(new CoreSupply(VoidEnergy.drawsFromHere(near, reach.nearCore()), VoidEnergy.exclusive(near, reach.nearCore()),
+                    VoidEnergy.availableHere(near, reach.nearCore())));
         }
-        return available;
+        return combine(cores);
     }
 
     public static void clear()
