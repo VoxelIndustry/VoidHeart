@@ -166,37 +166,72 @@ public final class DeepReach
     {
     }
 
+    /** Past this many cores, those drawing on nothing in common are picked greedily rather than every way. */
+    private static final int MOST_APART_EXACT = 12;
+
     /**
-     * What several near cores give together. Cores drawing on the same energy share what is routed to them, so of that only the most any one of them
-     * could get counts; what waits at each core alone adds up.
+     * What several near cores give together. What waits at each core alone adds up. Of what is routed to them, cores whose names don't meet draw on
+     * energy that never competes, so theirs adds up too, while cores sharing a name share that energy: the most a set of cores drawing on nothing in
+     * common could get counts, which never overstates what they give together.
      */
     static long combine(List<CoreSupply> cores)
     {
-        var groups = new ArrayList<long[]>();
-        var names = new ArrayList<java.util.Set<Object>>();
-        for (var core : cores)
+        long own = 0;
+        var shared = new long[cores.size()];
+        for (int i = 0; i < cores.size(); i++)
         {
-            long own = Math.clamp(core.exclusive(), 0, Math.max(0, core.total()));
-            long shared = Math.max(0, core.total() - own);
-            var joined = new long[] { own, shared };
-            var joinedNames = new java.util.HashSet<>(core.names());
-            for (int i = groups.size() - 1; i >= 0; i--)
-            {
-                if (core.names().isEmpty() || java.util.Collections.disjoint(names.get(i), core.names()))
-                    continue;
-                joined[0] = saturated(joined[0], groups.get(i)[0]);
-                joined[1] = Math.max(joined[1], groups.get(i)[1]);
-                joinedNames.addAll(names.get(i));
-                groups.remove(i);
-                names.remove(i);
-            }
-            groups.add(joined);
-            names.add(joinedNames);
+            var core = cores.get(i);
+            long exclusive = Math.clamp(core.exclusive(), 0, Math.max(0, core.total()));
+            own = saturated(own, exclusive);
+            shared[i] = Math.max(0, core.total() - exclusive);
         }
-        long available = 0;
-        for (var group : groups)
-            available = saturated(available, saturated(group[0], group[1]));
-        return available;
+        return saturated(own, mostApart(cores, shared));
+    }
+
+    /**
+     * @return the most the shared parts of a set of cores whose names never meet give together
+     */
+    private static long mostApart(List<CoreSupply> cores, long[] shared)
+    {
+        int count = cores.size();
+        var meets = new boolean[count][count];
+        for (int a = 0; a < count; a++)
+            for (int b = a + 1; b < count; b++)
+                meets[a][b] = meets[b][a] = !java.util.Collections.disjoint(cores.get(a).names(), cores.get(b).names());
+
+        if (count > MOST_APART_EXACT)
+        {
+            var order = java.util.stream.IntStream.range(0, count).boxed().sorted((a, b) -> Long.compare(shared[b], shared[a])).toList();
+            var picked = new ArrayList<Integer>();
+            long total = 0;
+            for (int core : order)
+            {
+                if (picked.stream().noneMatch(other -> meets[core][other]))
+                {
+                    picked.add(core);
+                    total = saturated(total, shared[core]);
+                }
+            }
+            return total;
+        }
+
+        long best = 0;
+        for (int set = 1; set < 1 << count; set++)
+        {
+            long total = 0;
+            var apart = true;
+            for (int a = 0; a < count && apart; a++)
+            {
+                if ((set & 1 << a) == 0)
+                    continue;
+                for (int b = a + 1; b < count && apart; b++)
+                    apart = (set & 1 << b) == 0 || !meets[a][b];
+                total = saturated(total, shared[a]);
+            }
+            if (apart)
+                best = Math.max(best, total);
+        }
+        return best;
     }
 
     private static long saturated(long a, long b)

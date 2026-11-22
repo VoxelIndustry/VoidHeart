@@ -38,9 +38,16 @@ class DeepReachTest
     }
 
     @Test
-    void combine_givenACoreOnBothOfTwoGrids_thenJoinsThem()
+    void combine_givenACoreOnBothOfTwoGrids_thenStillAddsTheGridsApart()
     {
-        assertThat(DeepReach.combine(List.of(core(Set.of("a"), 0, 2), core(Set.of("b"), 0, 3), core(Set.of("a", "b"), 0, 1)))).isEqualTo(3);
+        // The core on both shares with each, so the two that draw on nothing in common count
+        assertThat(DeepReach.combine(List.of(core(Set.of("a"), 0, 2), core(Set.of("b"), 0, 3), core(Set.of("a", "b"), 0, 1)))).isEqualTo(5);
+    }
+
+    @Test
+    void combine_givenACoreOnBothOfTwoGridsGettingMore_thenCountsIt()
+    {
+        assertThat(DeepReach.combine(List.of(core(Set.of("a"), 0, 2), core(Set.of("b"), 0, 3), core(Set.of("a", "b"), 0, 7)))).isEqualTo(7);
     }
 
     @Test

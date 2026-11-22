@@ -39,6 +39,7 @@ final class AltarDraughts
         contravoid(4_000, "klein_star");
         contravoid(3_000, "void_blight_crossbow", "void_blight_rapier", "void_blight_scythe", "void_blight_spear");
         contravoid(2_000, "contravoid_reactor_core");
+        contravoid(3_000, "large_rubrum_cell");
     }
 
     private void fiery(int amount, String... recipes)
