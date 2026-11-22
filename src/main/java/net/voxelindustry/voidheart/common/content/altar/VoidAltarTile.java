@@ -539,7 +539,12 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     {
         drinking = false;
         if (!drunk.isEmpty() && owner != null)
+        {
+            // Another player's pending refund is settled to their reserve first, so each gets back what their own rite drank
+            if (!refund.isEmpty() && refundOwner != null && !refundOwner.equals(owner))
+                refundToReserve();
             refundOwner = owner;
+        }
         drunk.forEach((aspect, amount) -> refund.merge(aspect, amount, Integer::sum));
         drunk.clear();
         returnRefund();
