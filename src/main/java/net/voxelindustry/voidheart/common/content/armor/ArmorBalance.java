@@ -23,6 +23,8 @@ public final class ArmorBalance
     /** Guess: by the block, about 8 a tick walking and 20 sprinting at the frame's pace. */
     public static final double WALK_DRAIN_PER_BLOCK   = 32;
     public static final double SPRINT_DRAIN_PER_BLOCK = 60;
+    /** Guess: what the wings cost a tick in the air, on top of standing; about a minute and a half of flight on a bare frame. */
+    public static final long   LEVITATION_DRAIN       = 80;
     public static final long   POWERED_JUMP_DRAIN     = 300;
     public static final long   POWERED_HIT_DRAIN      = 200;
     /** Guess: what each shield point the frame refills in its socketed apparatus costs. */
@@ -32,8 +34,9 @@ public final class ArmorBalance
     /** Guess: 500 a heart of fall damage taken by the legs instead of the wearer. */
     public static final long   FALL_DRAIN_PER_POINT   = 250;
 
-    /** Shares of the capacity below which the frame warns, then cuts its spectral lens, night vision, exoskeleton power and apparatus regen in turn. */
-    public static final double LOW               = 0.20;
+    /** Shares of the capacity below which the frame warns, then cuts its wings, spectral lens, night vision, exoskeleton power and apparatus regen in turn. */
+    public static final double LOW               = 0.25;
+    public static final double SHED_LEVITATION   = 0.20;
     public static final double SHED_SPECTRAL     = 0.15;
     public static final double SHED_NIGHT_VISION = 0.10;
     public static final double SHED_EXOSKELETON  = 0.05;

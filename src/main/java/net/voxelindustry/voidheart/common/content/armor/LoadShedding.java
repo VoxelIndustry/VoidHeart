@@ -11,6 +11,8 @@ public final class LoadShedding
         FULL,
         /** Everything still runs, but the frame lets its wearer know. */
         LOW,
+        /** The wings go first, since flying drinks the most; a wearer in the air sinks as their lift fades. */
+        NO_LEVITATION,
         NO_SPECTRAL,
         NO_NIGHT_VISION,
         NO_EXOSKELETON,
@@ -26,6 +28,7 @@ public final class LoadShedding
                 case SPECTRAL_LENS -> compareTo(NO_SPECTRAL) < 0;
                 case NIGHT_VISION -> compareTo(NO_NIGHT_VISION) < 0;
                 case EXOSKELETON_POWER -> compareTo(NO_EXOSKELETON) < 0;
+                case LEVITATION -> compareTo(NO_LEVITATION) < 0;
                 case BATTERY_CELL -> true;
             };
         }
@@ -68,6 +71,8 @@ public final class LoadShedding
             return Stage.NO_NIGHT_VISION;
         if (fill < ArmorBalance.SHED_SPECTRAL)
             return Stage.NO_SPECTRAL;
+        if (fill < ArmorBalance.SHED_LEVITATION)
+            return Stage.NO_LEVITATION;
         if (fill < ArmorBalance.LOW)
             return Stage.LOW;
         return Stage.FULL;

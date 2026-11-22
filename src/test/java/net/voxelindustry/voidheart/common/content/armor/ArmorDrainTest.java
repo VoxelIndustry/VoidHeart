@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ArmorDrainTest
 {
-    private static final ArmorStats EVERYTHING = new ArmorStats(1, true, true, 1);
+    private static final ArmorStats EVERYTHING = new ArmorStats(1, true, true, 1, true);
     private static final long       CAPACITY   = EVERYTHING.capacity();
 
     private static long at(double fill)
@@ -22,7 +22,8 @@ class ArmorDrainTest
     void shedsInOrderThenGoesLimp()
     {
         assertThat(LoadShedding.stage(CAPACITY, CAPACITY)).isEqualTo(Stage.FULL);
-        assertThat(LoadShedding.stage(at(0.19), CAPACITY)).isEqualTo(Stage.LOW);
+        assertThat(LoadShedding.stage(at(0.24), CAPACITY)).isEqualTo(Stage.LOW);
+        assertThat(LoadShedding.stage(at(0.19), CAPACITY)).isEqualTo(Stage.NO_LEVITATION);
         assertThat(LoadShedding.stage(at(0.14), CAPACITY)).isEqualTo(Stage.NO_SPECTRAL);
         assertThat(LoadShedding.stage(at(0.09), CAPACITY)).isEqualTo(Stage.NO_NIGHT_VISION);
         assertThat(LoadShedding.stage(at(0.04), CAPACITY)).isEqualTo(Stage.NO_EXOSKELETON);
@@ -40,6 +41,9 @@ class ArmorDrainTest
                 if (!stages[i - 1].keeps(module))
                     assertThat(stages[i].keeps(module)).as("%s once cut stays cut at %s", module, stages[i]).isFalse();
 
+        assertThat(Stage.LOW.keeps(LEVITATION)).isTrue();
+        assertThat(Stage.NO_LEVITATION.keeps(LEVITATION)).isFalse();
+        assertThat(Stage.NO_LEVITATION.keeps(SPECTRAL_LENS)).isTrue();
         assertThat(Stage.NO_SPECTRAL.keeps(NIGHT_VISION)).isTrue();
         assertThat(Stage.NO_NIGHT_VISION.keeps(EXOSKELETON_POWER)).isTrue();
         assertThat(Stage.NO_EXOSKELETON.regen()).isTrue();
@@ -64,7 +68,7 @@ class ArmorDrainTest
         assertThat(shed.nightVision()).isTrue();
         assertThat(shed.spectral()).isFalse();
 
-        var unfitted = ArmorLoad.of(new ArmorStats(0, false, false, 0), Set.of(NIGHT_VISION), Stage.FULL);
+        var unfitted = ArmorLoad.of(new ArmorStats(0, false, false, 0, false), Set.of(NIGHT_VISION), Stage.FULL);
         assertThat(unfitted).isEqualTo(ArmorLoad.NONE);
     }
 
@@ -76,6 +80,25 @@ class ArmorDrainTest
         assertThat(ArmorDrain.perTick(everything)).isEqualTo(ArmorBalance.STANDING_DRAIN + ArmorBalance.EXOSKELETON_DRAIN
                 + ArmorBalance.NIGHT_VISION_DRAIN + ArmorBalance.SPECTRAL_DRAIN);
         assertThat(ArmorDrain.perTick(ArmorLoad.of(EVERYTHING, Set.of(), Stage.LIMP))).isZero();
+    }
+
+    @Test
+    void wingsLiftUntilTheFrameCutsThem()
+    {
+        assertThat(ArmorLoad.of(EVERYTHING, Set.of(), Stage.LOW).levitation()).as("the wings need no switch").isTrue();
+        assertThat(ArmorLoad.of(EVERYTHING, Set.of(), Stage.NO_LEVITATION).levitation()).isFalse();
+        assertThat(ArmorLoad.of(new ArmorStats(1, true, true, 1, false), Set.of(), Stage.FULL).levitation()).isFalse();
+    }
+
+    @Test
+    void flightLastsWhatTheChargeAboveTheCutPaysFor()
+    {
+        var bare = new ArmorStats(0, false, false, 0, true);
+        long drain = ArmorBalance.STANDING_DRAIN + ArmorBalance.LEVITATION_DRAIN;
+        float minutes = ArmorBalance.FRAME_CAPACITY * (1 - (float) ArmorBalance.SHED_LEVITATION) / drain / 1200F;
+        assertThat(bare.flightMinutes()).isEqualTo((float) Math.floor(minutes * 2) / 2);
+        assertThat(new ArmorStats(1, false, false, 0, true).flightMinutes()).isGreaterThan(bare.flightMinutes());
+        assertThat(new ArmorStats(1, false, false, 0, false).flightMinutes()).isZero();
     }
 
     @Test

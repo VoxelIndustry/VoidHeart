@@ -3,7 +3,7 @@ package net.voxelindustry.voidheart.common.content.armor;
 /**
  * What a frame gives with its working modules in place.
  */
-public record ArmorStats(int batteries, boolean nightVision, boolean spectralLens, int exoskeletons)
+public record ArmorStats(int batteries, boolean nightVision, boolean spectralLens, int exoskeletons, boolean levitation)
 {
     public boolean exoskeleton()
     {
@@ -35,6 +35,18 @@ public record ArmorStats(int batteries, boolean nightVision, boolean spectralLen
     public float sortieMinutes()
     {
         float minutes = capacity() / (float) fightDrain() / 1200F;
+        return (float) Math.floor(minutes * 2) / 2;
+    }
+
+    /**
+     * How many minutes a full charge keeps the wearer in the air before the frame cuts its wings, rounded down to the half minute. Zero without wings.
+     */
+    public float flightMinutes()
+    {
+        if (!levitation)
+            return 0;
+        long drain = ArmorBalance.STANDING_DRAIN + exoskeletons * ArmorBalance.EXOSKELETON_DRAIN + ArmorBalance.LEVITATION_DRAIN;
+        float minutes = capacity() * (1 - (float) ArmorBalance.SHED_LEVITATION) / drain / 1200F;
         return (float) Math.floor(minutes * 2) / 2;
     }
 

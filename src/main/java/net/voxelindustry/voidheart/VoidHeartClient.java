@@ -34,6 +34,7 @@ import net.voxelindustry.voidheart.client.apparatus.ApparatusWornRender;
 import net.voxelindustry.voidheart.client.apparatus.ClientApparatusTooltip;
 import net.voxelindustry.voidheart.client.armor.ArmorHud;
 import net.voxelindustry.voidheart.client.armor.ArmorSight;
+import net.voxelindustry.voidheart.client.armor.ArmorWings;
 import net.voxelindustry.voidheart.client.render.mob.DormantTreantRender;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHud;
 import net.voxelindustry.voidheart.client.secondheart.HeartBurstRender;
@@ -237,6 +238,7 @@ public class VoidHeartClient implements ClientModInitializer
         ClientTickEvents.END_CLIENT_TICK.register(ClarityFog::tick);
         ClientTickEvents.END_CLIENT_TICK.register(InsightMemory::tick);
         ClientTickEvents.END_CLIENT_TICK.register(ArmorSight::tick);
+        ArmorWings.register();
 
         ClientPlayNetworking.registerGlobalReceiver(ShieldPayloads.Hit.TYPE, (payload, context) -> ShieldHits.receive(payload));
         ClientPlayNetworking.registerGlobalReceiver(BlueprintPayloads.Offer.TYPE, (payload, context) -> BlueprintScreen.receive(payload));

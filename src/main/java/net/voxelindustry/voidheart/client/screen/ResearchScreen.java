@@ -565,6 +565,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "construct_percent" -> wholeNumber(Math.round(OilCoating.CONSTRUCT_BONUS * 100));
             case "arrows_per_flask" -> wholeNumber(OilCoating.ARROWS_PER_FLASK);
             case "belt_flight_cost" -> wholeNumber(LevitationBalance.FLIGHT_COST);
+            case "wing_flight_cost" -> wholeNumber(net.voxelindustry.voidheart.common.content.armor.ArmorBalance.LEVITATION_DRAIN);
             case "belt_fall_percent" -> wholeNumber(Math.round((1 - LevitationBalance.FALL_DAMAGE_KEPT) * 100));
             case "rubrum_percent" -> wholeNumber(Math.round((Brew.PROLONGED_SCALE - 1) * 100));
             case "memory_seconds" -> wholeNumber(InsightMemory.MEMORY_MILLIS / 1000D);

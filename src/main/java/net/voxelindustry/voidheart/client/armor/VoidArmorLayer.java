@@ -42,5 +42,6 @@ public class VoidArmorLayer extends RenderLayer<AvatarRenderState, PlayerModel>
             collector.order(2).submitModel(model, state, poseStack, VoidHeartRenderTypes.SILHOUETTE, LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
                     spectral, null, 0);
         VoidArmorRender.submit(model, glow, state, poseStack, collector, lightCoords, LivingEntityRenderer.getOverlayCoords(state, 0), state.outlineColor);
+        ArmorWingsRender.submit(((FabricRenderState) state).getDataOrDefault(ArmorWings.KEY, ArmorWings.Wings.NONE), poseStack, collector);
     }
 }

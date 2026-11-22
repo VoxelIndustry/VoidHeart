@@ -581,6 +581,10 @@ public class RecipesProvider extends FabricRecipeProvider
             armorModule(ArmorModule.EXOSKELETON_POWER, Items.PISTON,
                     VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     Items.REDSTONE, Items.REDSTONE, VoidHeartItems.RUBRUM_SHARD);
+            // The belt's membrane, unpicked into the frame's lacing so the frame can carry itself
+            armorModule(ArmorModule.LEVITATION, VoidHeartItems.LEVITATION_BELT,
+                    Items.PHANTOM_MEMBRANE, Items.PHANTOM_MEMBRANE, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+                    VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.VOID_PEARL);
         }
 
         private void armorModule(ArmorModule module, ItemLike catalyst, ItemLike... ingredients)

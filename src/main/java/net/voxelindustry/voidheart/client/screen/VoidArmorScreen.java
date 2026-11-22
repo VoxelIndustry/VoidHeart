@@ -517,6 +517,9 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
         y = row(graphics, tablet, y, "jump", Component.translatable(MODID + ".void_armor_screen.blocks", number(stats.jumpBlocks())).getString(), VALUE_COLOR);
         y = row(graphics, tablet, y, "reach", "+" + number(ArmorBalance.ENTITY_REACH), VALUE_COLOR);
         y = row(graphics, tablet, y, "hit", stats.hitBonus() > 0 ? "+" + number(stats.hitBonus()) : "-", stats.hitBonus() > 0 ? VALUE_COLOR : MUTED_COLOR);
+        if (stats.levitation())
+            y = row(graphics, tablet, y, "flight", Component.translatable(MODID + ".void_armor_screen.minutes", number(stats.flightMinutes())).getString(),
+                    0xFF000000 | ArmorModule.LEVITATION.rgb());
         String sight = stats.spectralLens() ? "spectral" : stats.nightVision() ? "night" : "none";
         row(graphics, tablet, y, "sight", Component.translatable(MODID + ".void_armor_screen.sight." + sight).getString(),
                 0xFF000000 | (stats.spectralLens() ? ArmorModule.SPECTRAL_LENS.rgb() : stats.nightVision() ? ArmorModule.NIGHT_VISION.rgb() : 0xA899BC));
