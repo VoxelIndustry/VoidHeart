@@ -6,8 +6,8 @@
   "knowledge_cost": 3000,
   "knowledge_per_second": 2,
   "requires": [
-    "voidheart:levitation_belt",
-    "voidheart:void_armor"
+    "voidheart:void_armor",
+    "voidheart:levitation_belt"
   ],
   "unlocks": [
     "voidheart:armor_levitation"
