@@ -126,6 +126,12 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     @Getter
     @Nullable
     private Identifier pinned;
+    /**
+     * Marks an Officiant's craft laid out here, so its result is told from an item a player set down. Cleared when a hand takes or sets the item.
+     */
+    @Getter
+    @Nullable
+    private UUID ticket;
 
     private final List<VoidPillarTile> pillars = new ArrayList<>();
 
@@ -198,6 +204,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         experienceConsumed = tag.getIntOr("experienceConsumed", 0);
         owner = tag.read("owner", UUIDUtil.CODEC).orElse(null);
         pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
+        ticket = tag.read("works_ticket", UUIDUtil.CODEC).orElse(null);
         drunk.clear();
         drunk.putAll(tag.read("drunk", ASPECTS_CODEC).orElse(Map.of()));
         refund.clear();
@@ -257,6 +264,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             tag.store("owner", UUIDUtil.CODEC, owner);
         if (pinned != null)
             tag.store("pinned", Identifier.CODEC, pinned);
+        if (ticket != null)
+            tag.store("works_ticket", UUIDUtil.CODEC, ticket);
         if (!drunk.isEmpty())
             tag.store("drunk", ASPECTS_CODEC, Map.copyOf(drunk));
         if (!refund.isEmpty())
@@ -294,6 +303,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         this.stack = stack;
         owner = stack.isEmpty() ? null : player.getUUID();
         pinned = null;
+        ticket = null;
 
         if (!stack.isEmpty())
         {
@@ -332,12 +342,21 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      */
     public boolean layCatalyst(UUID owner, ItemStack catalyst, Identifier recipe)
     {
+        return layCatalyst(owner, catalyst, recipe, null);
+    }
+
+    /**
+     * @param ticket marks an Officiant's craft, kept with its result until taken
+     */
+    public boolean layCatalyst(UUID owner, ItemStack catalyst, Identifier recipe, @Nullable UUID ticket)
+    {
         if (!isVacant() || catalyst.isEmpty())
             return false;
 
         stack = catalyst.copyWithCount(1);
         this.owner = owner;
         pinned = recipe;
+        this.ticket = ticket;
 
         searchPillars();
         if (pillars.size() == 8)
@@ -360,6 +379,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         stack = ItemStack.EMPTY;
         owner = null;
         pinned = null;
+        ticket = null;
         setChanged();
         sync();
         return taken;
@@ -1160,6 +1180,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
         removeItself();
+        // The finished result of an Officiant's craft goes back to it rather than to the ground, so the craft isn't made again
+        if (!isCrafting && pinned == null && net.voxelindustry.voidheart.common.content.works.OfficiantTile.handOver(level, pos.below(), ticket, stack))
+            stack = ItemStack.EMPTY;
         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
         dropAteItems();
         refundExperience();

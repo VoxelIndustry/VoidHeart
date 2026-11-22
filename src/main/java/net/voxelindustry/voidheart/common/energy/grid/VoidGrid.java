@@ -50,6 +50,13 @@ public final class VoidGrid
             var grid = GRIDS.get(level);
             return grid == null ? 0 : grid.ledger.offer(pos, amount);
         }
+
+        @Override
+        public java.util.Set<Object> drawsFrom(ServerLevel level, BlockPos pos)
+        {
+            var grid = GRIDS.get(level);
+            return grid == null ? java.util.Set.of() : grid.ledger.poolsOf(pos);
+        }
     };
 
     private final Map<BlockPos, AzuriumPylonTile> pylons = new HashMap<>();

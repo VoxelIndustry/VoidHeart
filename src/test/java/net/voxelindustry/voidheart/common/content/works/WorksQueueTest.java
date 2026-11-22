@@ -120,7 +120,75 @@ class WorksQueueTest
 
         var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
 
-        assertThat(loaded.order("b", 1, List.of(task("b", StationKind.TABLE, 1)))).isGreaterThan(1 + WorksBalance.LEGACY_ID_GAP);
+        assertThat(loaded.order("b", 1, List.of(task("b", StationKind.TABLE, 1)))).isGreaterThan(1);
+    }
+
+    private static WorksQueue.Claim oldClaim(int job, String recipe, StationKind station)
+    {
+        // Claims saved before they had an era carry none
+        var saved = WorksQueue.Claim.CODEC.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, new WorksQueue.Claim(job, recipe, station)).getOrThrow()
+                .getAsJsonObject();
+        saved.remove("era");
+        return WorksQueue.Claim.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, saved).getOrThrow();
+    }
+
+    @Test
+    void codec_givenAnOldClaimOnAnOrderLoadedWithIt_thenItStillSettlesIt()
+    {
+        var queue = new WorksQueue();
+        queue.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        queue.claim(StationKind.ALTAR, any -> true);
+        var old = WorksQueue.Job.CODEC.listOf().encodeStart(com.mojang.serialization.JsonOps.INSTANCE, queue.jobs()).getOrThrow();
+        var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
+
+        loaded.finish(oldClaim(1, "pearl", StationKind.ALTAR));
+
+        assertThat(loaded.jobs()).isEmpty();
+    }
+
+    @Test
+    void codec_givenAnOldClaimWithTheIdOfANewOrder_thenItNeverSettlesIt()
+    {
+        // An empty old queue next to a claim saved for a cancelled order 1001, the id the old gap would have given the next order
+        var old = WorksQueue.Job.CODEC.listOf().encodeStart(com.mojang.serialization.JsonOps.INSTANCE, List.of()).getOrThrow();
+        var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
+        var fresh = 0;
+        while (fresh < 1001)
+        {
+            fresh = loaded.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+            if (fresh < 1001)
+                loaded.cancel(fresh);
+        }
+        loaded.claim(StationKind.ALTAR, any -> true);
+
+        loaded.giveBack(oldClaim(1001, "pearl", StationKind.ALTAR));
+        loaded.finish(oldClaim(1001, "pearl", StationKind.ALTAR));
+
+        assertThat(roundTrip(loaded).jobs()).singleElement().satisfies(job ->
+        {
+            assertThat(job.id()).isEqualTo(1001);
+            assertThat(job.tasks().getFirst().remaining()).isZero();
+            assertThat(job.tasks().getFirst().working()).isEqualTo(1L);
+        });
+    }
+
+    @Test
+    void codec_givenAQueueSavedBeforeEras_thenOnlyItsOrdersTakeOldClaimsOnceLoadedAgain()
+    {
+        var queue = new WorksQueue();
+        queue.order("a", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        queue.claim(StationKind.ALTAR, any -> true);
+        var saved = WorksQueue.CODEC.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, queue).getOrThrow().getAsJsonObject();
+        saved.remove("legacy_below");
+        var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, saved).getOrThrow();
+        var later = loaded.order("b", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        loaded.claim(StationKind.ALTAR, task -> true);
+
+        var again = roundTrip(loaded);
+        again.finish(oldClaim(later, "pearl", StationKind.ALTAR));
+        again.finish(oldClaim(1, "pearl", StationKind.ALTAR));
+
+        assertThat(again.jobs()).singleElement().extracting(WorksQueue.Job::id).isEqualTo(later);
     }
 
     @Test
@@ -134,11 +202,10 @@ class WorksQueueTest
         var old = WorksQueue.Job.CODEC.listOf().encodeStart(com.mojang.serialization.JsonOps.INSTANCE, queue.jobs()).getOrThrow();
 
         var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
-        var fresh = loaded.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
+        loaded.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
         loaded.claim(StationKind.ALTAR, any -> true);
-        loaded.finish(stale);
+        loaded.finish(oldClaim(stale.job(), stale.recipe(), stale.station()));
 
-        assertThat(fresh).isNotEqualTo(stale.job());
         assertThat(loaded.jobs()).singleElement().extracting(job -> job.tasks().getFirst().working()).isEqualTo(1L);
     }
 

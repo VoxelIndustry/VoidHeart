@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -16,21 +17,32 @@ import java.util.function.Predicate;
  */
 public final class WorksQueue
 {
-    private record Saved(List<Job> jobs, int nextId)
+    /**
+     * The era of claims made since claims began saving one. Claims saved before it read as era 0, and only settle orders loaded with them.
+     */
+    static final int ERA = 1;
+
+    private record Saved(List<Job> jobs, int nextId, Optional<Integer> legacyBelow)
     {
         static final Codec<Saved> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Job.CODEC.listOf().fieldOf("jobs").forGetter(Saved::jobs),
-                Codec.INT.optionalFieldOf("next_id", 1).forGetter(Saved::nextId)
+                Codec.INT.optionalFieldOf("next_id", 1).forGetter(Saved::nextId),
+                Codec.INT.optionalFieldOf("legacy_below").forGetter(Saved::legacyBelow)
         ).apply(instance, Saved::new));
     }
 
     /**
-     * Saved with the next order's id, so an id is never given twice; queues saved as a bare list of jobs still load.
+     * Saved with the next order's id, so an id is never given twice; queues saved as a bare list of jobs still load. Every order in a queue saved before
+     * claims had an era is one an old claim may settle, and none made after.
      */
     public static final Codec<WorksQueue> CODEC = Codec.withAlternative(
-            Saved.CODEC.xmap(saved -> new WorksQueue(saved.jobs(), saved.nextId()), queue -> new Saved(queue.jobs, queue.nextId)),
-            Job.CODEC.listOf().xmap(jobs -> new WorksQueue(jobs, jobs.stream().mapToInt(Job::id).max().orElse(0) + 1 + WorksBalance.LEGACY_ID_GAP),
-                    queue -> queue.jobs));
+            Saved.CODEC.xmap(saved -> new WorksQueue(saved.jobs(), saved.nextId(), saved.legacyBelow().orElse(saved.nextId())),
+                    queue -> new Saved(queue.jobs, queue.nextId, Optional.of(queue.legacyBelow))),
+            Job.CODEC.listOf().xmap(jobs ->
+            {
+                var next = jobs.stream().mapToInt(Job::id).max().orElse(0) + 1;
+                return new WorksQueue(jobs, next, next);
+            }, queue -> queue.jobs));
 
     /**
      * @param remaining crafts not yet claimed
@@ -81,28 +93,39 @@ public final class WorksQueue
 
     /**
      * A craft an Officiant took.
+     *
+     * @param era {@link #ERA} for a claim made now, 0 for one saved before claims had an era
      */
-    public record Claim(int job, String recipe, StationKind station)
+    public record Claim(int job, String recipe, StationKind station, int era)
     {
         public static final Codec<Claim> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.INT.fieldOf("job").forGetter(Claim::job),
                 Codec.STRING.fieldOf("recipe").forGetter(Claim::recipe),
-                Codec.STRING.xmap(StationKind::valueOf, StationKind::name).fieldOf("station").forGetter(Claim::station)
+                Codec.STRING.xmap(StationKind::valueOf, StationKind::name).fieldOf("station").forGetter(Claim::station),
+                Codec.INT.optionalFieldOf("era", 0).forGetter(Claim::era)
         ).apply(instance, Claim::new));
+
+        public Claim(int job, String recipe, StationKind station)
+        {
+            this(job, recipe, station, ERA);
+        }
     }
 
     private final List<Job> jobs = new ArrayList<>();
     /** The id the next order gets, past every id given so far, so a claim on a cancelled order never settles a later one. */
     private int nextId = 1;
+    /** Orders below this id were loaded from a save older than claim eras, so a claim saved with them may settle them; no later order. */
+    private int legacyBelow = 1;
 
     public WorksQueue()
     {
     }
 
-    private WorksQueue(List<Job> jobs, int nextId)
+    private WorksQueue(List<Job> jobs, int nextId, int legacyBelow)
     {
         jobs.forEach(job -> this.jobs.add(new Job(job.id(), job.what(), job.count(), job.tasks())));
         this.nextId = Math.max(nextId, jobs.stream().mapToInt(Job::id).max().orElse(0) + 1);
+        this.legacyBelow = Math.clamp(legacyBelow, 1, this.nextId);
     }
 
     public List<Job> jobs()
@@ -175,7 +198,8 @@ public final class WorksQueue
     {
         for (var job : jobs)
         {
-            if (job.id() != claim.job())
+            // A claim saved before eras only knew the orders loaded with it, so it can't settle a later order given a cancelled order's id
+            if (job.id() != claim.job() || claim.era() < ERA && job.id() >= legacyBelow)
                 continue;
             for (int index = 0; index < job.tasks().size(); index++)
             {

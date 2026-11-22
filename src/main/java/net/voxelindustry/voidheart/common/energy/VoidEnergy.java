@@ -5,7 +5,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.grid.DeepReach;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * The one way machines and sources touch void energy. Amounts are void energy, rates are per tick.
@@ -72,6 +74,21 @@ public final class VoidEnergy
         if (CreativeSources.wells(level).covers(pos))
             return amount;
         return Math.clamp(provider.offer(level, pos, amount), 0, amount);
+    }
+
+    /**
+     * Names what a draw at pos takes from, so callers can tell whether two draws compete: those whose names don't meet never do. A creative well takes
+     * from no one.
+     */
+    public static Set<Object> drawsFrom(ServerLevel level, BlockPos pos)
+    {
+        if (CreativeSources.wells(level).covers(pos))
+            return Set.of();
+        var names = new HashSet<>(provider.drawsFrom(level, pos));
+        // Deep fields reached through portals are counted as one, which any two such draws may share
+        if (DeepReach.available(level, pos) > 0)
+            names.add(DeepReach.class);
+        return names;
     }
 
     public static void install(VoidNetworkProvider provider)

@@ -65,7 +65,7 @@ public class VoidAltarBlock extends Block implements EntityBlock
     {
         return !altar.isCrafting() && altar.getPinned() == null
                 && world.getBlockEntity(pos.below()) instanceof net.voxelindustry.voidheart.common.content.works.OfficiantTile officiant
-                && officiant.getClaim() != null && !officiant.isLaying();
+                && officiant.holds(altar.getTicket());
     }
 
     @Override
@@ -93,7 +93,11 @@ public class VoidAltarBlock extends Block implements EntityBlock
         {
             // The finished result of a craft an Officiant laid is its to take back to the hoard
             if (!world.isClientSide())
+            {
                 player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("voidheart.altar.officiant_result"));
+                // The client may have taken it off already, not knowing
+                altar.sync();
+            }
         }
         else
         {

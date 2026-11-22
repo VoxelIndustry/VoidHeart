@@ -64,12 +64,29 @@ final class Stations
         return null;
     }
 
+    /**
+     * @return the finished result of the craft with that ticket still at a station's block the Officiant no longer stands under, such as a forge whose
+     * source pillar was taken away, now taken off; empty when there is none
+     */
+    static ItemStack resultLeft(Level level, @Nullable BlockPos at, @Nullable UUID ticket)
+    {
+        if (at != null && ticket != null && level.getBlockEntity(at) instanceof ShatterForgeTile forge && ticket.equals(forge.getTicket()) && !forge.isCrafting())
+            return forge.takeOutput();
+        return ItemStack.EMPTY;
+    }
+
     private record Altar(VoidAltarTile altar) implements OfficiantStation
     {
         @Override
         public StationKind kind()
         {
             return StationKind.ALTAR;
+        }
+
+        @Override
+        public BlockPos pos()
+        {
+            return altar.getBlockPos();
         }
 
         @Override
@@ -120,10 +137,10 @@ final class Stations
          * One pillar each step, the catalyst last, so a rite never starts as a smaller recipe sharing its catalyst.
          */
         @Override
-        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients, @Nullable UUID ticket)
         {
             if (step >= ingredients.size() - 1)
-                return new Laid(altar.layCatalyst(owner, ingredients.getFirst(), net.minecraft.resources.Identifier.parse(recipeId)), List.of());
+                return new Laid(altar.layCatalyst(owner, ingredients.getFirst(), net.minecraft.resources.Identifier.parse(recipeId), ticket), List.of());
             // Something a player set on the pillar since it was cleared goes to the hoard rather than under the ingredient
             var pillar = altar.pillarsAround().get(step);
             var found = pillar.getStack();
@@ -155,8 +172,11 @@ final class Stations
         }
 
         @Override
-        public Outcome poll(Object source, int waited)
+        public Outcome poll(Object source, int waited, @Nullable UUID ticket)
         {
+            // An altar put in place of the one the craft was laid on, or an item a player set down since, is never the craft's result
+            if (ticket != null && !ticket.equals(altar.getTicket()))
+                return Outcome.failed(List.of());
             if (altar.isCrafting())
                 return Outcome.RUNNING;
             if (altar.getPinned() == null)
@@ -194,6 +214,12 @@ final class Stations
         }
 
         @Override
+        public BlockPos pos()
+        {
+            return forge.getBlockPos();
+        }
+
+        @Override
         public boolean canRun(Object source)
         {
             return source instanceof ShatterForgeRecipe recipe && forge.runnableRecipes().stream().anyMatch(runnable -> runnable.getId().equals(recipe.getId()));
@@ -224,13 +250,16 @@ final class Stations
         }
 
         @Override
-        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients, @Nullable UUID ticket)
         {
             var found = pillar.getStack();
             if (!found.isEmpty())
                 pillar.setStack(ItemStack.EMPTY);
             forge.pin(net.minecraft.resources.Identifier.parse(recipeId));
-            return new Laid(forge.placeInput(ingredients.getFirst()), found.isEmpty() ? List.of() : List.of(found));
+            var placed = forge.placeInput(ingredients.getFirst());
+            if (placed)
+                forge.setTicket(ticket);
+            return new Laid(placed, found.isEmpty() ? List.of() : List.of(found));
         }
 
         @Override
@@ -252,14 +281,18 @@ final class Stations
         }
 
         @Override
-        public Outcome poll(Object source, int waited)
+        public Outcome poll(Object source, int waited, @Nullable UUID ticket)
         {
+            // A forge put in place of the one the craft was laid on, or an output taken off it by hand, is never the craft's result
+            if (ticket != null && !ticket.equals(forge.getTicket()))
+                return Outcome.failed(List.of());
             if (!forge.isCrafting() && !forge.getStack().isEmpty())
                 return Outcome.done(List.of(forge.takeOutput()));
             if (forge.isCrafting() || waited < START_TIMEOUT_TICKS)
                 return Outcome.RUNNING;
             var input = pillar.getStack();
             pillar.setStack(ItemStack.EMPTY);
+            forge.setTicket(null);
             return Outcome.failed(input.isEmpty() ? List.of() : List.of(input));
         }
     }
@@ -329,7 +362,7 @@ final class Stations
          * the Officiant's.
          */
         @Override
-        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients)
+        public Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients, @Nullable UUID ticket)
         {
             var recipe = (CraftingRecipe) ((RecipeHolder<?>) source).value();
             var slots = WorksCatalogue.slotsOf(recipe);
@@ -359,7 +392,7 @@ final class Stations
         }
 
         @Override
-        public Outcome poll(Object source, int waited)
+        public Outcome poll(Object source, int waited, @Nullable UUID ticket)
         {
             return waited < TABLE_REST_TICKS ? Outcome.RUNNING : Outcome.done(List.of());
         }

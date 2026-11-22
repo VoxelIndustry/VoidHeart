@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A Fold seen by hoppers, pipes and inserters: it takes anything into its owner's hoard, and gives back only the item it was shown. Moves go into the
@@ -24,14 +25,16 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
     }
 
     /**
-     * Folds with moves still open. What they will pay counts against every Fold's field until their transaction ends, so two Folds moving items in
-     * one transaction can't both promise the same energy.
+     * Folds with moves still open. What they will pay counts against the field of every Fold drawing on the same energy until their transaction ends,
+     * so two Folds moving items in one transaction can't both promise it.
      */
-    private static final java.util.Set<FoldStorage> OPEN = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+    private static final Set<FoldStorage> OPEN = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
     private final FoldTile fold;
     /** Moves made in the transactions still open, in order, negative when taken out. */
     private final List<Move> journal = new ArrayList<>();
+    /** What pays for the open moves, as {@link FoldTile#drawsFrom} named it. */
+    private Set<Object> drawsFrom = Set.of();
 
     FoldStorage(FoldTile fold)
     {
@@ -43,17 +46,22 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
         return journal.stream().mapToLong(move -> Math.abs(move.amount())).sum();
     }
 
-    private static long pending()
+    /**
+     * @return what Folds drawing on any of that energy, this one included, have moved in transactions still open
+     */
+    private long pending(Set<Object> drawsFrom)
     {
-        return OPEN.stream().mapToLong(FoldStorage::moved).sum();
+        return OPEN.stream().filter(other -> other == this || !Collections.disjoint(other.drawsFrom, drawsFrom)).mapToLong(FoldStorage::moved).sum();
     }
 
     /**
-     * @return how many more items the energy around the Fold pays for this tick, less what every Fold has moved in transactions still open
+     * @return how many more items the energy around the Fold pays for this tick, less what Folds sharing that energy have moved in transactions still
+     * open
      */
     private long affordable(long wanted)
     {
-        return Math.min(wanted, Math.max(0, fold.affordableItems() - pending()));
+        drawsFrom = fold.drawsFrom();
+        return Math.min(wanted, Math.max(0, fold.affordableItems() - pending(drawsFrom)));
     }
 
     @Override

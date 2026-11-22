@@ -58,6 +58,13 @@ public class OfficiantTile extends TileBase
     @Nullable
     private StationKind layingAt;
 
+    /** Marks the craft on its station, so a station put in its place or an item a player set there is never taken for its result. */
+    @Nullable
+    private UUID ticket;
+    /** The station's own block when the craft was claimed, where its result is still found should the Officiant lose sight of the station. */
+    @Nullable
+    private BlockPos workedAt;
+
     public OfficiantTile(BlockPos pos, BlockState state)
     {
         super(WorksContent.OFFICIANT_TILE, pos, state);
@@ -131,7 +138,7 @@ public class OfficiantTile extends TileBase
         if (claim != null)
         {
             waited += TICK_PERIOD;
-            var outcome = station.poll(catalogue.source(claim.recipe()), waited);
+            var outcome = station.poll(catalogue.source(claim.recipe()), waited, ticket);
             if (!outcome.finished())
                 return;
             held.addAll(outcome.items());
@@ -141,8 +148,7 @@ public class OfficiantTile extends TileBase
                 WorksState.get(level.getServer()).edit(owner).giveBack(claim);
             else
                 WorksState.get(level.getServer()).edit(owner).finish(claim);
-            claim = null;
-            waited = 0;
+            release();
             setChanged();
             store(level, hoard);
             return;
@@ -179,6 +185,8 @@ public class OfficiantTile extends TileBase
         var ingredients = Ingredients.take(recipe, hoard);
         VoidEnergy.draw(level, worldPosition, Ingredients.items(ingredients) * WorksBalance.ITEM_COST);
         claim = claimed;
+        ticket = UUID.randomUUID();
+        workedAt = station.pos().immutable();
         waited = 0;
         held.addAll(station.clear());
         laying.clear();
@@ -192,6 +200,39 @@ public class OfficiantTile extends TileBase
     public boolean isLaying()
     {
         return step < steps;
+    }
+
+    /**
+     * @return whether the craft with that ticket is laid out and still waited on by this Officiant
+     */
+    public boolean holds(@Nullable UUID ticket)
+    {
+        return ticket != null && claim != null && !isLaying() && ticket.equals(this.ticket);
+    }
+
+    /**
+     * Takes the finished result of its craft from a station being broken, so it reaches the hoard rather than the ground and is not made again.
+     *
+     * @return whether the Officiant at pos took it
+     */
+    public static boolean handOver(@Nullable Level level, BlockPos pos, @Nullable UUID ticket, ItemStack result)
+    {
+        if (result.isEmpty() || !(level instanceof ServerLevel serverLevel) || !(level.getBlockEntity(pos) instanceof OfficiantTile officiant)
+                || !officiant.holds(ticket) || officiant.owner == null)
+            return false;
+        officiant.held.add(result.copy());
+        WorksState.get(serverLevel.getServer()).edit(officiant.owner).finish(officiant.claim);
+        officiant.release();
+        officiant.setChanged();
+        return true;
+    }
+
+    private void release()
+    {
+        claim = null;
+        ticket = null;
+        workedAt = null;
+        waited = 0;
     }
 
     /**
@@ -224,7 +265,7 @@ public class OfficiantTile extends TileBase
             return;
         }
         var fold = station.foldOf(step, steps);
-        var laid = station.lay(step, owner, claim.recipe(), source, laying);
+        var laid = station.lay(step, owner, claim.recipe(), source, laying, ticket);
         held.addAll(laid.back());
         if (!laid.placed())
         {
@@ -263,25 +304,28 @@ public class OfficiantTile extends TileBase
             Stations.unlaid(layingAt, step, laying).forEach(stack -> held.add(stack.copy()));
         if (claim != null)
             WorksState.get(level.getServer()).edit(owner).giveBack(claim);
-        claim = null;
+        release();
         finishLaying();
         setChanged();
         store(level, hoard);
     }
 
     /**
-     * Lets go of a craft whose station went away or was replaced once it was laid out. A table's craft was over when laid, so it counts as done;
-     * any other is lost with its station and counts again.
+     * Lets go of a craft whose station went away or was replaced once it was laid out. A table's craft was over when laid, and one whose result still
+     * waits where the station's block stands, such as a forge's whose source pillar was taken, is taken back: both count as done. Any other is lost
+     * with its station and counts again.
      */
     private void abandonClaim(ServerLevel level, PocketHoard.Hoard hoard)
     {
         var works = WorksState.get(level.getServer()).edit(owner);
-        if (claim.station() == StationKind.TABLE)
+        var left = Stations.resultLeft(level, workedAt, ticket);
+        if (!left.isEmpty())
+            held.add(left);
+        if (claim.station() == StationKind.TABLE || !left.isEmpty())
             works.finish(claim);
         else
             works.giveBack(claim);
-        claim = null;
-        waited = 0;
+        release();
         setChanged();
         store(level, hoard);
     }
@@ -337,7 +381,7 @@ public class OfficiantTile extends TileBase
                 Stations.unlaid(layingAt, step, laying).forEach(stack -> held.add(stack.copy()));
                 if (claim != null)
                     WorksState.get(serverLevel.getServer()).edit(owner).giveBack(claim);
-                claim = null;
+                release();
                 finishLaying();
             }
             for (var stack : held)
@@ -350,7 +394,7 @@ public class OfficiantTile extends TileBase
             // What the station still works on is no longer watched, so its order does not wait on it
             if (claim != null)
                 WorksState.get(serverLevel.getServer()).edit(owner).finish(claim);
-            claim = null;
+            release();
         }
         super.preRemoveSideEffects(pos, state);
     }
@@ -361,6 +405,8 @@ public class OfficiantTile extends TileBase
         super.loadAdditional(tag);
         owner = tag.read("owner", UUIDUtil.CODEC).orElse(null);
         claim = tag.read("claim", WorksQueue.Claim.CODEC).orElse(null);
+        ticket = claim == null ? null : tag.read("ticket", UUIDUtil.CODEC).orElse(null);
+        workedAt = claim == null ? null : tag.read("worked_at", BlockPos.CODEC).orElse(null);
         held.clear();
         held.addAll(tag.read("held", ItemStack.OPTIONAL_CODEC.listOf()).orElse(List.of()).stream().filter(stack -> !stack.isEmpty()).toList());
         waited = tag.getIntOr("waited", 0);
@@ -380,6 +426,10 @@ public class OfficiantTile extends TileBase
             tag.store("owner", UUIDUtil.CODEC, owner);
         if (claim != null)
             tag.store("claim", WorksQueue.Claim.CODEC, claim);
+        if (claim != null && ticket != null)
+            tag.store("ticket", UUIDUtil.CODEC, ticket);
+        if (claim != null && workedAt != null)
+            tag.store("worked_at", BlockPos.CODEC, workedAt);
         if (!held.isEmpty())
             tag.store("held", ItemStack.OPTIONAL_CODEC.listOf(), List.copyOf(held));
         tag.putInt("waited", waited);

@@ -16,6 +16,7 @@ import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import static java.util.Collections.singletonList;
 
@@ -67,6 +69,12 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     @Getter
     @Nullable
     private Identifier pinned;
+    /**
+     * Marks an Officiant's craft laid out here, kept with its output until taken, so another forge's or a hand's output is never taken for it.
+     */
+    @Getter
+    @Nullable
+    private UUID ticket;
     @Getter
     private RecipeState recipeState;
     private boolean hasOutputtedResult;
@@ -804,6 +812,8 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     public void setStack(ItemStack stack)
     {
         this.stack = stack;
+        if (stack.isEmpty())
+            ticket = null;
 
         setChanged();
         sync();
@@ -825,6 +835,22 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     {
         pinned = recipe;
         setChanged();
+    }
+
+    public void setTicket(@Nullable UUID ticket)
+    {
+        this.ticket = ticket;
+        setChanged();
+    }
+
+    /**
+     * @return whether the output is an Officiant's finished craft that the Officiant under the source pillar still has to take back
+     */
+    public boolean isOfficiantsResult()
+    {
+        return !isCrafting && !stack.isEmpty() && sourcePillarPos != null
+                && level.getBlockEntity(sourcePillarPos.below()) instanceof net.voxelindustry.voidheart.common.content.works.OfficiantTile officiant
+                && officiant.holds(ticket);
     }
 
     /**
@@ -1066,6 +1092,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         previewDirection = Direction.from3DDataValue(tag.getByteOr("previewDirection", (byte) Direction.NORTH.get3DDataValue()));
         previewUntil = tag.getLongOr("previewUntil", 0L);
         pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
+        ticket = tag.read("works_ticket", UUIDUtil.CODEC).orElse(null);
 
         if (isServer())
         {
@@ -1113,6 +1140,8 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.putLong("previewUntil", previewUntil);
         if (pinned != null)
             tag.store("pinned", Identifier.CODEC, pinned);
+        if (ticket != null)
+            tag.store("works_ticket", UUIDUtil.CODEC, ticket);
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
@@ -1182,6 +1211,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
+        // The finished output of an Officiant's craft goes back to it rather than to the ground, so the craft isn't made again
+        if (!isCrafting && sourcePillarPos != null
+                && net.voxelindustry.voidheart.common.content.works.OfficiantTile.handOver(level, sourcePillarPos.below(), ticket, stack))
+            stack = ItemStack.EMPTY;
         removeItself();
         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
         super.preRemoveSideEffects(pos, state);

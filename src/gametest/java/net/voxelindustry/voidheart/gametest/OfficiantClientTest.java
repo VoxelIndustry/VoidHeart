@@ -80,12 +80,15 @@ public class OfficiantClientTest implements FabricClientGameTest
             checkTable(context, server);
             checkAltarChain(context, server);
             checkForge(context, server);
+            checkForgeSourceOccupied(context, server);
+            checkForgeResultKeptAndSourceTaken(context, server);
             checkFullHoard(context, server);
             checkBrokenMidLaying(context, server);
             checkItemOnPillarMidLaying(context, server);
             checkRiteStartedMidLaying(context, server);
             checkAltarReplaced(context, server);
             checkResultKeptForOfficiant(context, server);
+            checkAltarBrokenOnResult(context, server);
             checkOfflineOwner(context, server);
             checkTransform(context, server);
         }
@@ -238,6 +241,88 @@ public class OfficiantClientTest implements FabricClientGameTest
         });
         waitFor(context, server, 900, "no Seething Steel reached the hoard", minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);
         server.runOnServer(minecraft -> expect(held(minecraft, Items.IRON_INGOT) == 0, "the iron is still in the hoard"));
+    }
+
+    private static net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile source(MinecraftServer minecraft)
+    {
+        return (net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile) minecraft.overworld().getBlockEntity(SOURCE);
+    }
+
+    private static net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile forge(MinecraftServer minecraft)
+    {
+        return (net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile) minecraft.overworld().getBlockEntity(FORGE);
+    }
+
+    private static void orderSteel(TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT));
+            hoard(minecraft).insert(ItemVariant.of(Items.IRON_INGOT), 1);
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.SEETHING_STEEL_INGOT), 1);
+        });
+    }
+
+    /**
+     * With a player's item on the forge's source pillar, its Officiant lays nothing: the item and the iron stay where they are until the item is taken
+     * off, and the steel is then made.
+     */
+    private static void checkForgeSourceOccupied(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft -> source(minecraft).setStack(new ItemStack(Items.APPLE)));
+        orderSteel(server);
+        context.waitTicks(80);
+        server.runOnServer(minecraft ->
+        {
+            expect(source(minecraft).getStack().is(Items.APPLE), "the apple on the source pillar became " + source(minecraft).getStack());
+            expect(held(minecraft, Items.IRON_INGOT) == 1, "the iron left the hoard while the source pillar was taken: " + held(minecraft, Items.IRON_INGOT));
+            expect(held(minecraft, Items.APPLE) == 0, "the apple went into the hoard");
+            expect(((OfficiantTile) minecraft.overworld().getBlockEntity(SOURCE.below())).getClaim() == null, "the Officiant claimed a craft on a taken pillar");
+            expect(!forge(minecraft).isCrafting(), "the forge started on the apple");
+            source(minecraft).setStack(ItemStack.EMPTY);
+        });
+        waitFor(context, server, 900, "no Seething Steel was made once the apple was taken off", minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);
+        server.runOnServer(minecraft -> expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(), "the steel's order is still queued"));
+    }
+
+    /**
+     * A finished forge output its Officiant has yet to take back can't be taken by hand, and stays the Officiant's when the source pillar is taken away
+     * before it looks: the steel reaches the hoard and is not made again.
+     */
+    private static void checkForgeResultKeptAndSourceTaken(ClientGameTestContext context, TestServerContext server)
+    {
+        orderSteel(server);
+        var tried = false;
+        for (int tick = 0; tick < 2000 && !tried; tick++)
+        {
+            // Checked and done within one server step, so the Officiant can't take the steel in between
+            tried = server.computeOnServer(minecraft ->
+            {
+                var forge = forge(minecraft);
+                if (forge.isCrafting() || !forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT))
+                    return false;
+                var player = player(minecraft);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                useOn(player, FORGE);
+                expect(forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT), "the player took the Officiant's steel off the forge");
+                expect(player.getInventory().countItem(VoidHeartItems.SEETHING_STEEL_INGOT) == 0, "the player got the Officiant's steel");
+                minecraft.overworld().removeBlock(SOURCE, false);
+                return true;
+            });
+            if (!tried)
+                context.waitTick();
+        }
+        expect(tried, "the steel was never seen finished in the forge");
+        waitFor(context, server, 100, "the Officiant never took its steel back once the source pillar was gone",
+                minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);
+        server.runOnServer(minecraft ->
+        {
+            expect(forge(minecraft).getStack().isEmpty(), "the steel is still in the forge: " + forge(minecraft).getStack());
+            expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(),
+                    "the steel's order is still queued: " + WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs());
+            minecraft.overworld().setBlockAndUpdate(SOURCE, VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
+        });
+        waitFor(context, server, 400, "the forge never took the new source pillar back", minecraft -> source(minecraft).isForgeSource());
     }
 
     /**
@@ -434,7 +519,43 @@ public class OfficiantClientTest implements FabricClientGameTest
     }
 
     /**
-     * An altar replaced by an empty one while its rite runs leaves no result: the craft counts again instead of finishing with nothing.
+     * An altar broken with a finished Void Pearl on it before its Officiant takes it gives the pearl to the Officiant rather than the ground, and the
+     * craft is not made again.
+     */
+    private static void checkAltarBrokenOnResult(ClientGameTestContext context, TestServerContext server)
+    {
+        orderPearlFromShards(server);
+        var broken = false;
+        for (int tick = 0; tick < 2000 && !broken; tick++)
+        {
+            broken = server.computeOnServer(minecraft ->
+            {
+                var altar = altar(minecraft);
+                if (altar.isCrafting() || !altar.getStack().is(VoidHeartItems.VOID_PEARL))
+                    return false;
+                minecraft.overworld().destroyBlock(ALTAR, false);
+                return true;
+            });
+            if (!broken)
+                context.waitTick();
+        }
+        expect(broken, "the pearl was never seen finished on the altar");
+        waitFor(context, server, 100, "the Officiant never got the pearl from the broken altar", minecraft -> held(minecraft, VoidHeartItems.VOID_PEARL) == 1);
+        server.runOnServer(minecraft ->
+        {
+            var dropped = minecraft.overworld().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(ALTAR).inflate(4),
+                    entity -> entity.getItem().is(VoidHeartItems.VOID_PEARL));
+            expect(dropped.isEmpty(), "the broken altar dropped its pearl as well");
+            expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(),
+                    "the pearl's order is still queued: " + WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs());
+            minecraft.overworld().setBlockAndUpdate(ALTAR, VoidHeartBlocks.VOID_ALTAR.defaultBlockState());
+        });
+        context.waitTicks(25);
+    }
+
+    /**
+     * An altar replaced while its rite runs, with a player's apple set on the new one before the Officiant looks, leaves no result: the craft counts
+     * again, and the apple is not taken for its result.
      */
     private static void checkAltarReplaced(ClientGameTestContext context, TestServerContext server)
     {
@@ -445,6 +566,7 @@ public class OfficiantClientTest implements FabricClientGameTest
             var level = minecraft.overworld();
             level.removeBlock(ALTAR, false);
             level.setBlockAndUpdate(ALTAR, VoidHeartBlocks.VOID_ALTAR.defaultBlockState());
+            altar(minecraft).setStack(player(minecraft), new ItemStack(Items.APPLE));
         });
         waitFor(context, server, 80, "the Officiant never let go of the replaced altar's craft",
                 minecraft -> minecraft.overworld().getBlockEntity(ALTAR.below()) instanceof OfficiantTile tile && tile.getClaim() == null);
@@ -454,6 +576,9 @@ public class OfficiantClientTest implements FabricClientGameTest
             expect(jobs.size() == 1 && jobs.getFirst().tasks().getFirst().remaining() == 1 && jobs.getFirst().tasks().getFirst().working() == 0,
                     "the replaced altar's craft finished without a result: " + jobs);
             expect(held(minecraft, VoidHeartItems.VOID_PEARL) == 0, "a Void Pearl came from the replaced altar");
+            expect(held(minecraft, Items.APPLE) == 0 && altar(minecraft).getStack().is(Items.APPLE),
+                    "the apple on the new altar was taken for the craft's result: " + held(minecraft, Items.APPLE) + " in the hoard");
+            altar(minecraft).takeResult();
             WorksState.get(minecraft).edit(player(minecraft).getUUID()).cancel(jobs.getFirst().id());
             for (var entity : minecraft.overworld().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
                     new net.minecraft.world.phys.AABB(ALTAR).inflate(4)))

@@ -83,6 +83,16 @@ public class FoldTile extends TileBase
         return VoidEnergy.available(serverLevel, worldPosition) / HoardBalance.FOLD_COST_PER_ITEM;
     }
 
+    /**
+     * @return names for what pays the Fold's tolls, which Folds whose names don't meet never share
+     */
+    java.util.Set<Object> drawsFrom()
+    {
+        if (!(level instanceof ServerLevel serverLevel))
+            return java.util.Set.of();
+        return VoidEnergy.drawsFrom(serverLevel, worldPosition);
+    }
+
     void pay(long items)
     {
         if (items > 0 && level instanceof ServerLevel serverLevel)

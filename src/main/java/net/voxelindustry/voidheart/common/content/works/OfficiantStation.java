@@ -2,6 +2,7 @@ package net.voxelindustry.voidheart.common.content.works;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +51,11 @@ interface OfficiantStation
     StationKind kind();
 
     /**
+     * @return the station's own block, where its result is found
+     */
+    BlockPos pos();
+
+    /**
      * @param source the station's own recipe, from {@link WorksCatalogue#source}
      */
     boolean canRun(Object source);
@@ -80,8 +86,9 @@ interface OfficiantStation
      * Lays one step out; the last starts the craft.
      *
      * @param ingredients all of the craft's ingredients, in the order of the recipe's inputs
+     * @param ticket      marks the craft on the station, so its result is told from anything else set there
      */
-    Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients);
+    Laid lay(int step, UUID owner, String recipeId, Object source, List<ItemStack> ingredients, @Nullable UUID ticket);
 
     /**
      * @return whether the station is still whole enough for a step to be laid, such as an altar still standing among eight pillars
@@ -100,6 +107,7 @@ interface OfficiantStation
 
     /**
      * @param waited ticks since the craft was laid out, after which one that never started is taken back
+     * @param ticket the craft's mark, null for one laid before crafts were marked
      */
-    Outcome poll(Object source, int waited);
+    Outcome poll(Object source, int waited, @Nullable UUID ticket);
 }

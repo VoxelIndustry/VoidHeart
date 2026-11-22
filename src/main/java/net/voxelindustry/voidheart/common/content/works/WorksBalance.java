@@ -11,12 +11,6 @@ public final class WorksBalance
     /** The most of an item one order or keep level asks for, so a plan stays quick to work out. */
     public static final long MAX_ORDER = 4096;
 
-    /**
-     * How far past its highest order a queue saved before its counter was kept starts counting, so a claim an Officiant saved for an order since
-     * cancelled never matches a new one.
-     */
-    public static final int LEGACY_ID_GAP = 1_000;
-
     private WorksBalance()
     {
     }

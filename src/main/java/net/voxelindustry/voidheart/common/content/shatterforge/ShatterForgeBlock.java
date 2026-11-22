@@ -87,6 +87,14 @@ public class ShatterForgeBlock extends Block implements EntityBlock
         if (!(world.getBlockEntity(pos) instanceof ShatterForgeTile forge) || forge.getStack().isEmpty())
             return InteractionResult.PASS;
 
+        // The finished output of a craft an Officiant laid is its to take back to the hoard
+        if (forge.isOfficiantsResult())
+        {
+            if (!world.isClientSide())
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("voidheart.shatter_forge.officiant_result"));
+            return InteractionResult.SUCCESS;
+        }
+
         if (!world.isClientSide())
         {
             player.getInventory().placeItemBackInInventory(forge.getStack(), Prediction.SERVER_ONLY);

@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.core.Direction;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
+import net.voxelindustry.voidheart.common.energy.VoidNetworkProvider;
 import net.minecraft.client.CameraType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -34,6 +35,9 @@ import net.voxelindustry.voidheart.common.content.hoard.HoardMenu;
 import net.voxelindustry.voidheart.common.content.hoard.PocketHoard;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
+
+import java.util.List;
+import java.util.Set;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
@@ -74,6 +78,7 @@ public class HoardClientTest implements FabricClientGameTest
             checkCofferRoom(server);
             checkHoppersThroughFold(context, server);
             checkUnpoweredFoldRefuses(context, server);
+            checkFoldsShareOnlyTheirField(context, server);
             checkInserterThroughFold(context, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
             aimFrom(context, server, FOLD.getX() + 3.5, FLAT_FEET + 1, FOLD.getZ() - 3.5, FOLD.getX() - 0.5, FLAT_FEET + 0.8, FOLD.getZ() + 0.5, 5);
@@ -320,6 +325,91 @@ public class HoardClientTest implements FabricClientGameTest
             expect(hoard.capacity() == 0, "a broken coffer left " + hoard.capacity() + " room");
             expect(hoard.total() == before, "breaking the coffer lost " + (before - hoard.total()) + " items");
             expect(hoard.insert(DIRT, 1) == 0, "a hoard over its room took more");
+        });
+    }
+
+    private static final BlockPos WEST_FOLD  = FOLD.offset(-8, 0, 4);
+    private static final BlockPos WEST_FOLD2 = FOLD.offset(-8, 0, 6);
+    private static final BlockPos EAST_FOLD  = FOLD.offset(8, 0, 4);
+
+    /**
+     * In one transaction, a Fold can't take what another Fold on the same field already promised, while a Fold on a field of its own still moves.
+     */
+    private static void checkFoldsShareOnlyTheirField(ClientGameTestContext context, TestServerContext server)
+    {
+        var folds = List.of(WEST_FOLD, WEST_FOLD2, EAST_FOLD);
+        server.runOnServer(minecraft ->
+        {
+            for (var pos : folds)
+            {
+                minecraft.overworld().setBlockAndUpdate(pos, HoardContent.FOLD.defaultBlockState());
+                ((FoldTile) minecraft.overworld().getBlockEntity(pos)).setOwner(player(minecraft).getUUID());
+            }
+        });
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var before = hoard(minecraft).count(DIRT);
+            var original = VoidEnergy.provider();
+            // Two fields, each paying for a single item
+            long[] fields = { HoardBalance.FOLD_COST_PER_ITEM, HoardBalance.FOLD_COST_PER_ITEM };
+            VoidEnergy.install(new VoidNetworkProvider()
+            {
+                private int field(BlockPos pos)
+                {
+                    return pos.equals(WEST_FOLD) || pos.equals(WEST_FOLD2) ? 0 : pos.equals(EAST_FOLD) ? 1 : -1;
+                }
+
+                @Override
+                public long available(ServerLevel at, BlockPos pos)
+                {
+                    return field(pos) < 0 ? original.available(at, pos) : fields[field(pos)];
+                }
+
+                @Override
+                public long draw(ServerLevel at, BlockPos pos, long amount)
+                {
+                    if (field(pos) < 0)
+                        return original.draw(at, pos, amount);
+                    var taken = Math.min(amount, fields[field(pos)]);
+                    fields[field(pos)] -= taken;
+                    return taken;
+                }
+
+                @Override
+                public long offer(ServerLevel at, BlockPos pos, long amount)
+                {
+                    return original.offer(at, pos, amount);
+                }
+
+                @Override
+                public Set<Object> drawsFrom(ServerLevel at, BlockPos pos)
+                {
+                    return field(pos) < 0 ? original.drawsFrom(at, pos) : Set.of("field " + field(pos));
+                }
+            });
+            try
+            {
+                try (var transaction = Transaction.openOuter())
+                {
+                    var west = ItemStorage.SIDED.find(level, WEST_FOLD, Direction.UP).insert(DIRT, 1, transaction);
+                    var west2 = ItemStorage.SIDED.find(level, WEST_FOLD2, Direction.UP).insert(DIRT, 1, transaction);
+                    var east = ItemStorage.SIDED.find(level, EAST_FOLD, Direction.UP).insert(DIRT, 1, transaction);
+                    expect(west == 1, "the first Fold on the west field took " + west + " dirt");
+                    expect(west2 == 0, "a second Fold on the west field took " + west2 + " dirt its field had already promised");
+                    expect(east == 1, "the Fold on the east field took " + east + " dirt, refused for what the west field promised");
+                    transaction.commit();
+                }
+                expect(fields[0] == 0 && fields[1] == 0, "the fields were left with " + fields[0] + " and " + fields[1] + " after paying one item each");
+                expect(hoard(minecraft).count(DIRT) == before + 2, "the hoard gained " + (hoard(minecraft).count(DIRT) - before) + " dirt, expected 2");
+            }
+            finally
+            {
+                VoidEnergy.install(original);
+            }
+            for (var pos : folds)
+                level.removeBlock(pos, false);
         });
     }
 
