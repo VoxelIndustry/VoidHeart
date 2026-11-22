@@ -189,7 +189,8 @@ public class VoidFurnaceMenu extends AbstractContainerMenu
             if (!moveItemStackTo(stack, FURNACE_SLOTS, FURNACE_SLOTS + PLAYER_SLOTS, false))
                 return ItemStack.EMPTY;
         }
-        else if (smeltable(stack))
+        // Shift-clicking never merges into an Officiant's batch, whose input it would grow unseen
+        else if (smeltable(stack) && !batchHeld())
         {
             if (!moveItemStackTo(stack, VoidFurnaceTile.INPUT, VoidFurnaceTile.INPUT + 1, false))
                 return ItemStack.EMPTY;
@@ -210,6 +211,14 @@ public class VoidFurnaceMenu extends AbstractContainerMenu
             return ItemStack.EMPTY;
         slot.onTake(player, stack);
         return copy;
+    }
+
+    /**
+     * @return whether an Officiant's batch lies in the input; only known on the server, which refuses what the client guessed
+     */
+    private boolean batchHeld()
+    {
+        return furnace instanceof VoidFurnaceTile tile && tile.getTicket() != null;
     }
 
     @Override

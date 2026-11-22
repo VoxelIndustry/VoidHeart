@@ -94,6 +94,7 @@ public class VoidFurnaceClientTest implements FabricClientGameTest
                 checkOfficiant(context, server);
                 checkOfficiantFurnaceBroken(context, server);
                 checkOfficiantBroken(context, server);
+                checkBatchKept(context, server);
                 checkItem(context, server);
             }
             finally
@@ -454,6 +455,58 @@ public class VoidFurnaceClientTest implements FabricClientGameTest
         waitFor(context, server, 900, "a new Officiant did not finish the order", minecraft -> held(minecraft, Items.IRON_INGOT) == 8);
         waitFor(context, server, 60, "the order is still queued", minecraft -> WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty());
         server.runOnServer(minecraft -> hoard(minecraft).extract(ItemVariant.of(Items.IRON_INGOT), 8));
+    }
+
+    /**
+     * Shift-clicking raw iron into a furnace working an Officiant's batch leaves the batch as laid. Anything that still grows the batch unseen tears its
+     * ticket up, so the Officiant never takes it for its own; the order then counts that craft again and finishes from the hoard.
+     */
+    private static void checkBatchKept(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).insert(ItemVariant.of(Items.RAW_IRON), 8);
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(Items.IRON_INGOT), 8);
+        });
+        waitFor(context, server, 300, "the Officiant laid no batch", minecraft -> tile(minecraft, SERVED).getTicket() != null);
+        server.runOnServer(minecraft ->
+        {
+            var player = player(minecraft);
+            var furnace = tile(minecraft, SERVED);
+            var ticket = furnace.getTicket();
+            var laid = furnace.getItem(VoidFurnaceTile.INPUT).getCount();
+            player.getInventory().setItem(9, new ItemStack(Items.RAW_IRON, 5));
+            var menu = new net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceMenu(0, player.getInventory(), SERVED);
+            // The inventory's first row comes after the furnace's two slots
+            menu.quickMoveStack(player, 2);
+            expect(ticket.equals(furnace.getTicket()) && furnace.getItem(VoidFurnaceTile.INPUT).getCount() <= laid,
+                    "shift-clicking merged into the Officiant's batch: " + furnace.getItem(VoidFurnaceTile.INPUT));
+            // It goes to the hotbar instead, as shift-clicking does with nowhere else to go
+            expect(player.getInventory().countItem(Items.RAW_IRON) == 5, "the raw iron left the inventory");
+            for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++)
+                if (player.getInventory().getItem(slot).is(Items.RAW_IRON))
+                    player.getInventory().setItem(slot, ItemStack.EMPTY);
+
+            // Grown behind its back, the batch is no longer the Officiant's
+            furnace.getItem(VoidFurnaceTile.INPUT).grow(1);
+        });
+        waitFor(context, server, 5, "a batch grown unseen kept its ticket", minecraft -> tile(minecraft, SERVED).getTicket() == null);
+        server.runOnServer(minecraft ->
+        {
+            // What lies in the furnace is a player's now; give the order its raw iron back so it can finish
+            var furnace = tile(minecraft, SERVED);
+            var smelted = furnace.getItem(VoidFurnaceTile.OUTPUT).getCount();
+            var raw = furnace.getItem(VoidFurnaceTile.INPUT).getCount() - 1;
+            furnace.clearContent();
+            hoard(minecraft).insert(ItemVariant.of(Items.RAW_IRON), raw + smelted);
+        });
+        waitFor(context, server, 900, "the order did not finish after its batch was taken from it", minecraft -> held(minecraft, Items.IRON_INGOT) >= 8);
+        waitFor(context, server, 60, "the order is still queued", minecraft -> WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty());
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).extract(ItemVariant.of(Items.IRON_INGOT), held(minecraft, Items.IRON_INGOT));
+            hoard(minecraft).extract(ItemVariant.of(Items.RAW_IRON), held(minecraft, Items.RAW_IRON));
+        });
     }
 
     /**

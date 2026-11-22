@@ -94,6 +94,8 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
     @Nullable
     private UUID ticket;
     private int  smelted;
+    /** How many of the batch should still lie in the input, so anything that grows or shrinks it unseen, such as a merge, tears the ticket up. */
+    private int  batchLeft;
 
     // Server only
     private final DrawCredit credit = new DrawCredit();
@@ -144,6 +146,8 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
     private void serverTick(ServerLevel level, BlockState state)
     {
         var input = items.get(INPUT);
+        if (ticket != null && input.getCount() != batchLeft)
+            touched();
         var recipe = input.isEmpty() ? null : CHECK.getRecipeFor(new SingleRecipeInput(input), level).orElse(null);
         var result = recipe == null ? ItemStack.EMPTY : recipe.value().assemble(new SingleRecipeInput(input));
         if (recipe == null || result.isEmpty() || !fits(result))
@@ -216,7 +220,10 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
         input.shrink(1);
         // Only a player's own smelting gives experience, not an Officiant's batch
         if (ticket != null)
+        {
             smelted++;
+            batchLeft--;
+        }
         else
             recipesUsed.addTo(recipe.id(), 1);
         started = false;
@@ -322,6 +329,7 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
         items.set(INPUT, batch.copy());
         this.ticket = ticket;
         smelted = 0;
+        batchLeft = batch.getCount();
         setChanged();
         return true;
     }
@@ -384,6 +392,7 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
         {
             ticket = null;
             smelted = 0;
+            batchLeft = 0;
         }
     }
 
@@ -596,6 +605,8 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
         fiery = Math.clamp(tag.getIntOr("fiery", 0), 0, VoidFurnaceBalance.FIERY_TANK);
         ticket = tag.read("ticket", UUIDUtil.CODEC).orElse(null);
         smelted = ticket == null ? 0 : Math.max(0, tag.getIntOr("smelted", 0));
+        // A save from before the count was kept takes the input as it lies
+        batchLeft = ticket == null ? 0 : tag.getIntOr("batch_left", items.get(INPUT).getCount());
         recipesUsed.clear();
         recipesUsed.putAll(tag.read("recipes_used", RECIPES_USED_CODEC).orElse(Map.of()));
         power = MachinePower.byOrdinal(tag.getIntOr("power", 0));
@@ -616,6 +627,7 @@ public class VoidFurnaceTile extends TileBase implements WorldlyContainer, IEsse
         {
             tag.store("ticket", UUIDUtil.CODEC, ticket);
             tag.putInt("smelted", smelted);
+            tag.putInt("batch_left", batchLeft);
         }
         tag.store("recipes_used", RECIPES_USED_CODEC, recipesUsed);
         tag.putInt("power", power.ordinal());
