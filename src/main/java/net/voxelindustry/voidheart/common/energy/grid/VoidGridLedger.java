@@ -195,6 +195,69 @@ public final class VoidGridLedger
         return waiting + result.delivered()[0];
     }
 
+    /**
+     * A pylon of a group energy can pass between: joined by arcs, or by a source or store standing in fields of both.
+     */
+    private record Pool(VoidGridLedger ledger, int pylon)
+    {
+    }
+
+    /**
+     * Every pylon of the groups a draw at pos is routed from. Draws whose pylons don't meet never take from each other, past what waits at their own
+     * position. Naming each pylon rather than the group keeps two draws on one group meeting even when a source joining it to another is drained or
+     * offers between them.
+     */
+    public java.util.Set<Object> poolsOf(BlockPos pos)
+    {
+        int[] covering = layout.covering(pos);
+        if (covering.length == 0)
+            return java.util.Set.of();
+
+        var roots = new int[layout.pylons().size()];
+        for (int i = 0; i < roots.length; i++)
+            roots[i] = i;
+        for (int[] arc : layout.arcs())
+            join(roots, arc[0], arc[1]);
+        for (int[] pylons : holderPylons.values())
+            for (int pylon : pylons)
+                join(roots, pylons[0], pylon);
+        for (var source : transit.keySet())
+        {
+            int[] pylons = layout.covering(source);
+            for (int pylon : pylons)
+                join(roots, pylons[0], pylon);
+        }
+
+        var groups = new java.util.HashSet<Integer>();
+        for (int pylon : covering)
+            groups.add(rootOf(roots, pylon));
+        var pools = new java.util.HashSet<Object>();
+        for (int pylon = 0; pylon < roots.length; pylon++)
+            if (groups.contains(rootOf(roots, pylon)))
+                pools.add(new Pool(this, pylon));
+        return pools;
+    }
+
+    private static int rootOf(int[] roots, int pylon)
+    {
+        while (roots[pylon] != pylon)
+        {
+            roots[pylon] = roots[roots[pylon]];
+            pylon = roots[pylon];
+        }
+        return pylon;
+    }
+
+    /**
+     * Joins two groups under the lower of their roots, so a group is always named by its lowest pylon whatever order it was joined in.
+     */
+    private static void join(int[] roots, int first, int second)
+    {
+        int a = rootOf(roots, first);
+        int b = rootOf(roots, second);
+        roots[Math.max(a, b)] = Math.min(a, b);
+    }
+
     public long draw(BlockPos pos, long amount)
     {
         if (amount <= 0)

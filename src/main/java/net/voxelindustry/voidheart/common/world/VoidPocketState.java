@@ -19,6 +19,7 @@ import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -134,5 +135,17 @@ public class VoidPocketState extends SavedData
     public boolean hasPocket(UUID player)
     {
         return heartDataByUUID.containsKey(player);
+    }
+
+    /**
+     * @param pos a position in the void dimension
+     * @return the owner of the pocket holding it, if any
+     */
+    public Optional<UUID> ownerAt(BlockPos pos)
+    {
+        return heartDataByUUID.entrySet().stream()
+                .filter(entry -> entry.getValue().contains(pos))
+                .map(Map.Entry::getKey)
+                .findFirst();
     }
 }

@@ -1,0 +1,17 @@
+{
+  "tier": 3,
+  "constellation": "travel",
+  "icon": "voidheart:aspect_fold",
+  "insight_cost": 11,
+  "knowledge_cost": 1800,
+  "knowledge_per_second": 1.5,
+  "requires": [
+    "voidheart:officiants"
+  ],
+  "unlocks": [
+    "voidheart:aspect_fold"
+  ],
+  "recipes": [
+    "voidheart:altar/aspect_fold"
+  ]
+}

@@ -37,6 +37,13 @@ public class EssenceRegistry
             id -> ResourceKey.create(ESSENCE_REGISTRY_TYPE, LEGACY_IDS.getOrDefault(id, id)),
             ResourceKey::identifier);
 
+    /**
+     * Codec for essence types themselves, read once the registry is filled.
+     */
+    public static final Codec<EssenceType> ASPECT_CODEC = Identifier.CODEC.xmap(
+            id -> ESSENCE_REGISTRY.getValue(LEGACY_IDS.getOrDefault(id, id)),
+            EssenceType::identifier);
+
     public static ResourceKey<EssenceType> KEY_EMPTY;
     public static ResourceKey<EssenceType> KEY_STILLNESS;
     public static ResourceKey<EssenceType> KEY_FIERY;

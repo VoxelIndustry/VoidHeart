@@ -137,11 +137,141 @@ public final class DeepReach
         return got;
     }
 
+    /**
+     * Names what a draw at pos takes through the Deep fields reaching it: each near core it is taken at, and what a draw there takes from at home.
+     */
+    public static java.util.Set<Object> drawsFrom(ServerLevel level, BlockPos pos)
+    {
+        var names = new java.util.HashSet<Object>();
+        for (var reach : into(level))
+        {
+            if (!reach.covers(pos))
+                continue;
+            names.add(java.util.Map.entry(reach.nearLevel(), reach.nearCore()));
+            var near = level.getServer().getLevel(reach.nearLevel());
+            if (near != null)
+                names.addAll(VoidEnergy.drawsFromHere(near, reach.nearCore()));
+        }
+        return names;
+    }
+
+    /**
+     * What one near core could give a draw through it.
+     *
+     * @param names     what a draw at the core takes from, as {@link VoidEnergy#drawsFromHere} names it
+     * @param exclusive what waits at the core alone
+     * @param total     all it could give, what waits there included
+     */
+    record CoreSupply(java.util.Set<Object> names, long exclusive, long total)
+    {
+    }
+
+    /** Past this many cores sharing energy with each other, those drawing on nothing in common are picked greedily rather than every way. */
+    private static final int MOST_APART_EXACT = 12;
+
+    /**
+     * What several near cores give together. What waits at each core alone adds up. Of what is routed to them, cores whose names don't meet draw on
+     * energy that never competes, so theirs adds up too, while cores sharing a name share that energy: the most a set of cores drawing on nothing in
+     * common could get counts, which never overstates what they give together.
+     */
+    static long combine(List<CoreSupply> cores)
+    {
+        long own = 0;
+        var shared = new long[cores.size()];
+        for (int i = 0; i < cores.size(); i++)
+        {
+            var core = cores.get(i);
+            long exclusive = Math.clamp(core.exclusive(), 0, Math.max(0, core.total()));
+            own = saturated(own, exclusive);
+            shared[i] = Math.max(0, core.total() - exclusive);
+        }
+
+        int count = cores.size();
+        var meets = new boolean[count][count];
+        for (int a = 0; a < count; a++)
+            for (int b = a + 1; b < count; b++)
+                meets[a][b] = meets[b][a] = !java.util.Collections.disjoint(cores.get(a).names(), cores.get(b).names());
+
+        // Cores linked by shared names are weighed together; separate links never compete, so each adds what it gives
+        var seen = new boolean[count];
+        long routed = 0;
+        for (int first = 0; first < count; first++)
+        {
+            if (seen[first])
+                continue;
+            var linked = new ArrayList<Integer>();
+            var open = new java.util.ArrayDeque<Integer>();
+            open.add(first);
+            seen[first] = true;
+            while (!open.isEmpty())
+            {
+                int core = open.poll();
+                linked.add(core);
+                for (int other = 0; other < count; other++)
+                {
+                    if (!seen[other] && meets[core][other])
+                    {
+                        seen[other] = true;
+                        open.add(other);
+                    }
+                }
+            }
+            routed = saturated(routed, mostApart(linked, meets, shared));
+        }
+        return saturated(own, routed);
+    }
+
+    /**
+     * @return the most the shared parts of a set of linked cores whose names never meet give together
+     */
+    private static long mostApart(List<Integer> linked, boolean[][] meets, long[] shared)
+    {
+        int count = linked.size();
+        if (count > MOST_APART_EXACT)
+        {
+            var order = linked.stream().sorted((a, b) -> Long.compare(shared[b], shared[a])).toList();
+            var picked = new ArrayList<Integer>();
+            long total = 0;
+            for (int core : order)
+            {
+                if (picked.stream().noneMatch(other -> meets[core][other]))
+                {
+                    picked.add(core);
+                    total = saturated(total, shared[core]);
+                }
+            }
+            return total;
+        }
+
+        long best = 0;
+        for (int set = 1; set < 1 << count; set++)
+        {
+            long total = 0;
+            var apart = true;
+            for (int a = 0; a < count && apart; a++)
+            {
+                if ((set & 1 << a) == 0)
+                    continue;
+                for (int b = a + 1; b < count && apart; b++)
+                    apart = (set & 1 << b) == 0 || !meets[linked.get(a)][linked.get(b)];
+                total = saturated(total, shared[linked.get(a)]);
+            }
+            if (apart)
+                best = Math.max(best, total);
+        }
+        return best;
+    }
+
+    private static long saturated(long a, long b)
+    {
+        return b >= Long.MAX_VALUE / 2 - a ? Long.MAX_VALUE / 2 : a + b;
+    }
+
     public static long available(ServerLevel level, BlockPos pos)
     {
-        long available = 0;
         // Reaches out of one core share that core's pool, so it counts once
         var counted = new java.util.HashSet<java.util.Map.Entry<ResourceKey<Level>, BlockPos>>();
+        var cores = new ArrayList<CoreSupply>();
         for (var reach : into(level))
         {
             if (!reach.covers(pos) || !counted.add(java.util.Map.entry(reach.nearLevel(), reach.nearCore())))
@@ -149,10 +279,10 @@ public final class DeepReach
             var near = level.getServer().getLevel(reach.nearLevel());
             if (near == null)
                 continue;
-            long here = VoidEnergy.availableHere(near, reach.nearCore());
-            available = here >= Long.MAX_VALUE / 2 - available ? Long.MAX_VALUE / 2 : available + here;
+            cores.add(new CoreSupply(VoidEnergy.drawsFromHere(near, reach.nearCore()), VoidEnergy.exclusive(near, reach.nearCore()),
+                    VoidEnergy.availableHere(near, reach.nearCore())));
         }
-        return available;
+        return combine(cores);
     }
 
     public static void clear()

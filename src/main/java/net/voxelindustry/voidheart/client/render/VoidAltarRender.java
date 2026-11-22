@@ -7,6 +7,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.item.ItemModelResolver;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
@@ -24,6 +26,12 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
 {
     public static        long lastTouchedMillis;
     private static final long HINT_DURATION_MILLIS = 10_000;
+
+    // The rite's essence rises from the altar's top into the catalyst as it is drunk, like the column of a Ravenous Storage
+    private static final float DRINK_BOTTOM    = 1;
+    private static final float DRINK_EMPTY_TOP = 1.04F;
+    private static final float DRINK_FULL_TOP  = 1.42F;
+    private static final float DRINK_WIDTH     = 0.8F;
 
     private final ItemModelResolver itemModelResolver;
     private final RandomSource      pillarRandom = RandomSource.create();
@@ -47,6 +55,7 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
         var level = altar.getLevel();
         int seed = (int) altar.getBlockPos().asLong();
         state.worldTime = level.getGameTime() + partialTicks;
+        state.rise = OfficiantFoldRender.rise(altar.getBlockPos());
         state.cameraDistanceSqr = altar.getBlockPos().distToCenterSqr(cameraPosition);
         itemModelResolver.updateForTopItem(state.item, altar.getStack(), ItemDisplayContext.GROUND, level, null, seed);
 
@@ -63,6 +72,12 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
                         .collectParts(pillarRandom, state.pillarParts);
             }
         }
+
+        var aspect = altar.drinkAspect();
+        state.drinking = altar.isCrafting() && aspect != null;
+        state.drinkFill = state.drinking ? altar.drinkFill() : 0;
+        state.drinkColor = aspect == null ? 0 : VoidBeamRender.aspectColor(aspect);
+        state.seed = seed;
 
         state.warmProgress = altar.getWarmProgress();
         state.coolProgress = altar.getCoolProgress();
@@ -95,7 +110,12 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
         if (state.renderVoidCube)
             CraftingVoidRender.submitVoidCube(state, poseStack, collector);
 
-        if (state.item.isEmpty())
+        if (state.drinking && state.drinkFill > 0)
+            collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(VoidBeamRender.VEIL_TEXTURE, true),
+                    (pose, buffer) -> RavenousStorageRender.essence(pose, buffer, DRINK_BOTTOM, Mth.lerp(state.drinkFill, DRINK_EMPTY_TOP, DRINK_FULL_TOP),
+                            DRINK_FULL_TOP, state.drinkFill, state.drinkColor, state.worldTime, state.seed, 0.5F, DRINK_WIDTH));
+
+        if (state.item.isEmpty() || state.rise <= 0)
             return;
 
         poseStack.pushPose();
@@ -103,6 +123,8 @@ public class VoidAltarRender implements BlockEntityRenderer<VoidAltarTile, VoidA
         double offset = Math.abs(Math.sin(state.worldTime / 8.0) / 24.0) + 2 / 16D;
 
         poseStack.translate(0.5, 1 + offset, 0.5);
+        if (state.rise < 1)
+            OfficiantFoldRender.applyRise(poseStack, state.rise);
         poseStack.rotate(MathUtil.quatFromAngleDegrees(state.worldTime, MathUtil.NEGATIVE_Y));
 
         state.item.submit(poseStack, collector, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);

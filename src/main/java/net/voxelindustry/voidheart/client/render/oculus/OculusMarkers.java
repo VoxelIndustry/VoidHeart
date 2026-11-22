@@ -91,7 +91,7 @@ public final class OculusMarkers
 
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep() || projector.showsMemory())
+            if (projector.view().dormant() || projector.showsMemory())
             {
                 FROM_SERVER.remove(projector.anchor);
                 continue;
@@ -129,7 +129,7 @@ public final class OculusMarkers
         double gazedDistance = Double.MAX_VALUE;
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep())
+            if (projector.view().dormant())
                 continue;
             var pins = pins(level, projector, partialTick);
             if (pins.isEmpty())

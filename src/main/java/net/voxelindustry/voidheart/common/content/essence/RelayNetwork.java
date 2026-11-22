@@ -261,6 +261,8 @@ public final class RelayNetwork
             sources.add(new Source(pos, collector.storage().type(), priority(collector, flowing.contains(pos)), collector, null,
                     relay -> relay.linkedCollectors().contains(pos)));
         }
+        // Two stores opening onto one pool, such as two Aspect Folds of one pocket, are one source of each aspect: the first that can give it
+        var pools = new java.util.HashSet<java.util.List<Object>>();
         for (var entry : stores(level, relays).entrySet())
         {
             var pos = entry.getKey();
@@ -268,7 +270,7 @@ public final class RelayNetwork
             for (var aspect : (Iterable<EssenceType>) EssenceRegistry.ESSENCE_REGISTRY.stream()::iterator)
             {
                 var amount = store.amountOf(aspect);
-                if (aspect == EssenceRegistry.EMPTY || amount <= 0)
+                if (aspect == EssenceRegistry.EMPTY || amount <= 0 || !pools.add(java.util.List.of(store.essencePool(), aspect)))
                     continue;
                 var fill = amount / (float) (amount + Math.max(0, store.spaceFor(aspect)));
                 sources.add(new Source(pos, aspect, fill + (flowing.contains(pos) ? FLOWING_BONUS : 0), null, store,
@@ -388,7 +390,7 @@ public final class RelayNetwork
      */
     public static Map<BlockPos, IEssenceReceiver> suppliers(Level level, BlockPos collectorPos, EssenceType aspect)
     {
-        return suppliersFrom(level, collectorPos, relay -> relay.linkedCollectors().contains(collectorPos), aspect);
+        return reachable(level, collectorPos, relay -> relay.linkedCollectors().contains(collectorPos), receiver -> receiver.amountOf(aspect) > 0);
     }
 
     /**
@@ -396,12 +398,23 @@ public final class RelayNetwork
      */
     public static Map<BlockPos, IEssenceReceiver> suppliersOfReceiver(Level level, BlockPos receiverPos, EssenceType aspect)
     {
-        var suppliers = suppliersFrom(level, receiverPos, relay -> relay.linkedReceivers().contains(receiverPos), aspect);
+        var suppliers = reachable(level, receiverPos, relay -> relay.linkedReceivers().contains(receiverPos), receiver -> receiver.amountOf(aspect) > 0);
         suppliers.remove(receiverPos);
         return suppliers;
     }
 
-    private static Map<BlockPos, IEssenceReceiver> suppliersFrom(Level level, BlockPos origin, Predicate<RavenousRelayTile> linkedToOrigin, EssenceType aspect)
+    /**
+     * Stores with room for the aspect, reachable through the relays linked to a receiver, for essence it gives back. Nearer stores come first.
+     */
+    public static Map<BlockPos, IEssenceReceiver> storesWithRoomOfReceiver(Level level, BlockPos receiverPos, EssenceType aspect)
+    {
+        var stores = reachable(level, receiverPos, relay -> relay.linkedReceivers().contains(receiverPos),
+                receiver -> receiver.isStore() && receiver.spaceFor(aspect) > 0);
+        stores.remove(receiverPos);
+        return stores;
+    }
+
+    private static Map<BlockPos, IEssenceReceiver> reachable(Level level, BlockPos origin, Predicate<RavenousRelayTile> linkedToOrigin, Predicate<IEssenceReceiver> wanted)
     {
         var suppliers = new LinkedHashMap<BlockPos, IEssenceReceiver>();
         var visited = new HashSet<BlockPos>();
@@ -418,7 +431,7 @@ public final class RelayNetwork
             for (var pos : relay.linkedReceivers())
             {
                 if (!suppliers.containsKey(pos) && level.isLoaded(pos) && level.getBlockEntity(pos) instanceof IEssenceReceiver receiver
-                        && receiver.amountOf(aspect) > 0)
+                        && wanted.test(receiver))
                     suppliers.put(pos, receiver);
             }
             for (var pos : relay.linkedRelays())
@@ -433,6 +446,21 @@ public final class RelayNetwork
     /**
      * Visits the block entities of loaded chunks within range of a block center.
      */
+    /**
+     * @return how much of an aspect some suppliers hold together, each pool counted once however many of them open onto it
+     */
+    public static int heldBy(java.util.Collection<IEssenceReceiver> suppliers, EssenceType aspect)
+    {
+        var pools = new java.util.HashSet<Object>();
+        long held = 0;
+        for (var supplier : suppliers)
+        {
+            if (pools.add(supplier.essencePool()))
+                held += supplier.amountOf(aspect);
+        }
+        return (int) Math.min(Integer.MAX_VALUE, held);
+    }
+
     public static void forEachTileInRange(Level level, BlockPos origin, int range, Consumer<BlockEntity> action)
     {
         var center = Vec3.atCenterOf(origin);

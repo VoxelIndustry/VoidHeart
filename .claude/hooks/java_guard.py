@@ -21,6 +21,9 @@ KNOWN_BUGS = [
      "AttributeInstance.addOrUpdateTransientModifier keeps the old modifier counted under its old operation when the "
      "operation changes, so the attribute stays wrong though getModifiers() looks right. If one id ever changes "
      "operation, removeModifier(id) first, as ArmorWear.set does."),
+    (re.compile(r"(\w+)\.getStack\(\)\.copyWithCount\(1\)[\s\S]{0,300}?\b\1\.setStack\(ItemStack\.EMPTY\)"),
+     "one item moved, then the whole source emptied. A Shatter Forge output can hold two items, and the Inventory "
+     "Inserter lost one of every pair this way. Shrink the source by what was moved instead."),
 ]
 
 

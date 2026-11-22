@@ -206,6 +206,9 @@ public class RavenousStorageMatrixBlock extends Block implements EntityBlock
             return List.of();
 
         var stack = new ItemStack(this);
+        // A matrix in a pocket takes its share of the reserve back first, whether it is broken or blown apart
+        if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof RavenousStorageMatrixTile vessel)
+            vessel.leaveReserve();
         if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof RavenousStorageMatrixTile matrix && !matrix.storage().isEmpty())
             stack.set(VoidHeartDataComponents.MULTI_ESSENCE_STORAGE, matrix.storage().copy());
         return List.of(stack);

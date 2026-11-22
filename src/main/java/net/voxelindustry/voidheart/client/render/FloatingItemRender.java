@@ -53,13 +53,14 @@ public class FloatingItemRender<T extends BlockEntity> implements BlockEntityRen
 
         state.worldTime = tile.getLevel().getGameTime() + partialTicks;
         state.height = heightGetter.applyAsDouble(tile);
+        state.rise = OfficiantFoldRender.rise(tile.getBlockPos());
         itemModelResolver.updateForTopItem(state.item, stackGetter.apply(tile), ItemDisplayContext.GROUND, tile.getLevel(), null, (int) tile.getBlockPos().asLong());
     }
 
     @Override
     public void submit(FloatingItemRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
-        if (state.item.isEmpty())
+        if (state.item.isEmpty() || state.rise <= 0)
             return;
 
         poseStack.pushPose();
@@ -67,6 +68,8 @@ public class FloatingItemRender<T extends BlockEntity> implements BlockEntityRen
         double offset = Math.abs(Math.sin(state.worldTime / 8.0) / 24.0);
 
         poseStack.translate(0.5, state.height + offset, 0.5);
+        if (state.rise < 1)
+            OfficiantFoldRender.applyRise(poseStack, state.rise);
         poseStack.rotate(MathUtil.quatFromAngleDegrees(state.worldTime, MathUtil.NEGATIVE_Y));
 
         state.item.submit(poseStack, collector, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);

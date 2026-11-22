@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.energy.pearl.HangingPearlRender;
+import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleBlock;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleTile;
 import net.voxelindustry.voidheart.common.content.essence.RavenousCollectorTile;
@@ -38,6 +39,10 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
     private static final double CRADLE_FLOOR   = (CrystalCradleBlock.FLOOR + 0.5) / 16;
     /** Threads the beam splits into to sink into a hung pearl. */
     private static final int   PEARL_THREADS   = 5;
+    // Where the catalyst floats over an altar, and how far around it the threads sink in
+    private static final double CATALYST_HEIGHT  = 1.25;
+    private static final float  CATALYST_REACH   = 0.22F;
+    private static final int    CATALYST_THREADS = 4;
 
     public static class State extends BlockEntityRenderState
     {
@@ -72,6 +77,8 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
         {
             if (level.getBlockEntity(target) instanceof HangingPearlTile pearl)
                 state.beams.add(intoPearl(pearl, origin, link, color));
+            else if (level.getBlockEntity(target) instanceof VoidAltarTile)
+                state.beams.add(intoCatalyst(target, origin, link, color));
             // A cradle is a low basin, so the beam sinks into its floor rather than stopping in the air above it
             else if (level.getBlockEntity(target) instanceof CrystalCradleTile)
                 state.beams.add(beam(CENTER, RELAY_INSET, relative(target, origin).add(0, CRADLE_FLOOR - 0.5, 0), 0, link, color));
@@ -92,6 +99,17 @@ public class RavenousRelayRender implements BlockEntityRenderer<RavenousRelayTil
         var source = CENTER.add(center.subtract(CENTER).normalize().scale(RELAY_INSET));
         return new RelayBeamRender.Beam(source, center, link.growth(), link.active(), color,
                 new RelayBeamRender.Intake(HangingPearlRender.reach(share), PEARL_THREADS, pearl.seed() ^ origin.asLong()));
+    }
+
+    /**
+     * An altar drinks a rite's essence through the item floating over it, so the beam splits into threads that sink into the catalyst.
+     */
+    private static RelayBeamRender.Beam intoCatalyst(BlockPos altar, BlockPos origin, RavenousRelayTile.Link link, int color)
+    {
+        var center = new Vec3(altar.getX() - origin.getX() + 0.5, altar.getY() - origin.getY() + CATALYST_HEIGHT, altar.getZ() - origin.getZ() + 0.5);
+        var source = CENTER.add(center.subtract(CENTER).normalize().scale(RELAY_INSET));
+        return new RelayBeamRender.Beam(source, center, link.growth(), link.active(), color,
+                new RelayBeamRender.Intake(CATALYST_REACH, CATALYST_THREADS, altar.asLong() ^ origin.asLong()));
     }
 
     private static RelayBeamRender.Beam beam(Vec3 source, float sourceInset, Vec3 target, float targetInset, RavenousRelayTile.Link link, int color)

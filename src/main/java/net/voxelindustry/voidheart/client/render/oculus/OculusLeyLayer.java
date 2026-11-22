@@ -78,7 +78,7 @@ public final class OculusLeyLayer
 
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep())
+            if (projector.view().dormant())
                 continue;
             if (!projector.view().leyLines() || projector.showsMemory())
             {
@@ -116,7 +116,7 @@ public final class OculusLeyLayer
         float time = (levelState.gameTime % 24000L) + levelState.worldPartialTicks;
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep())
+            if (projector.view().dormant())
                 continue;
             var received = LAYERS.get(projector.anchor);
             if (received == null || !projector.view().leyLines() || projector.showsMemory())

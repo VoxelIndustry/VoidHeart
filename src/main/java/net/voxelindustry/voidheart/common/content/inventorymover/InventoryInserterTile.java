@@ -1,5 +1,7 @@
 package net.voxelindustry.voidheart.common.content.inventorymover;
 
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
@@ -162,10 +164,30 @@ public class InventoryInserterTile extends BlockEntity
         if (world.getGameTime() % 20 != 0)
             return;
 
+        transfer(world, pos, state, inserter);
+    }
+
+    /**
+     * Moves what one tick of the inserter moves, whatever the tick; public for tests.
+     */
+    public static void transfer(Level world, BlockPos pos, BlockState state, InventoryInserterTile inserter)
+    {
         var direction = state.getValue(BlockStateProperties.FACING);
 
         var insertInventory = inserter.tryGetInventory(direction);
         var extractInventory = inserter.tryGetInventory(direction.getOpposite());
+
+        // A side that is neither an inventory nor a pillar, such as a Fold, is reached through the transfer API
+        var insertsSomewhere = insertInventory != null || inserter.tryGetInsertable(direction) != null;
+        var extractsSomewhere = extractInventory != null || inserter.tryGetExtractable(direction.getOpposite()) != null;
+        if (!insertsSomewhere || !extractsSomewhere)
+        {
+            var from = ItemStorage.SIDED.find(world, pos.relative(direction.getOpposite()), direction);
+            var to = ItemStorage.SIDED.find(world, pos.relative(direction), direction.getOpposite());
+            if (from != null && to != null)
+                StorageUtil.move(from, to, variant -> true, 1, null);
+            return;
+        }
 
         if (insertInventory == null || extractInventory == null)
         {
@@ -187,15 +209,18 @@ public class InventoryInserterTile extends BlockEntity
             var extractable = inserter.tryGetExtractable(direction.getOpposite());
             if (insertInventory != null && extractable != null)
             {
-                if (extractable.getStack().isEmpty())
+                if (extractable.getStack().isEmpty() || !extractable.canExtract())
                     return;
 
                 var extractionCandidate = extractable.getStack().copyWithCount(1);
 
-                if (!extractionCandidate.isEmpty())
+                // A forge output can hold two items, so only the one moved is taken off
+                if (inserter.tryInsert(insertInventory, extractionCandidate, direction.getOpposite()))
                 {
-                    if (inserter.tryInsert(insertInventory, extractionCandidate.copy(), direction.getOpposite()))
-                        extractable.setStack(ItemStack.EMPTY);
+                    var remaining = extractable.getStack().copy();
+                    remaining.shrink(1);
+                    extractable.setStack(remaining.isEmpty() ? ItemStack.EMPTY : remaining);
+                    extractable.onExtracted();
                 }
             }
             return;

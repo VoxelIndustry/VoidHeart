@@ -249,4 +249,65 @@ class VoidGridLedgerTest
         assertThat(display.get(2).fed()).containsEntry(near(2), 40L);
         assertThat(display.get(0).fed()).isEmpty();
     }
+
+    /**
+     * Pylons 10 apart with no arc between them; the point halfway lies in both fields.
+     */
+    private static GridLayout apart(int count)
+    {
+        var pylons = new java.util.ArrayList<GridLayout.Pylon>();
+        for (int i = 0; i < count; i++)
+            pylons.add(new GridLayout.Pylon(new BlockPos(i * 10, Y, 0), new BlockPos(i * 10, Y + 1, 0), VoidGridBalance.SMALL_RADIUS, VoidGridBalance.SMALL_CAP));
+        return GridLayout.link(pylons, (a, b) -> false);
+    }
+
+    private static final BlockPos BETWEEN = new BlockPos(5, Y, 0);
+
+    @Test
+    void poolsOf_givenLinkedPylons_thenDrawsNearEitherShareAPool()
+    {
+        var ledger = ledger(chain(2), Map.of());
+
+        assertThat(ledger.poolsOf(near(0))).isNotEmpty().isEqualTo(ledger.poolsOf(near(1)));
+    }
+
+    @Test
+    void poolsOf_givenPylonsWithoutAnArc_thenDrawsNearEachNeverMeet()
+    {
+        var ledger = ledger(apart(2), Map.of());
+
+        assertThat(ledger.poolsOf(near(0))).isNotEmpty().doesNotContainAnyElementsOf(ledger.poolsOf(near(1)));
+    }
+
+    @Test
+    void poolsOf_givenAStoreInBothFields_thenJoinsThem()
+    {
+        assertThat(apart(2).covering(BETWEEN)).hasSize(2);
+        var ledger = ledger(apart(2), Map.of(BETWEEN, new VoidBuffer(1_000, 100)));
+
+        assertThat(ledger.poolsOf(near(0))).isEqualTo(ledger.poolsOf(near(1)));
+    }
+
+    @Test
+    void poolsOf_givenASourceOfferingIntoBothFields_thenJoinsThem()
+    {
+        var ledger = ledger(apart(2), Map.of());
+        ledger.startTick(1);
+        ledger.offer(BETWEEN, 30);
+
+        assertThat(ledger.poolsOf(near(0))).isEqualTo(ledger.poolsOf(near(1)));
+    }
+
+    @Test
+    void poolsOf_givenTheSourceJoiningTwoGroupsDrained_thenADrawNamedBeforeStillMeetsBoth()
+    {
+        var ledger = ledger(apart(2), Map.of());
+        ledger.startTick(1);
+        ledger.offer(BETWEEN, 30);
+        var before = ledger.poolsOf(near(0));
+
+        assertThat(ledger.draw(near(1), 30)).isEqualTo(30);
+
+        assertThat(before).containsAnyElementsOf(ledger.poolsOf(near(0))).containsAnyElementsOf(ledger.poolsOf(near(1)));
+    }
 }

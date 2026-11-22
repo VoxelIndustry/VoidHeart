@@ -360,7 +360,7 @@ final class OculusProjector implements AutoCloseable
         float seconds = lastFrameNanos == 0 ? 0 : Math.min((now - lastFrameNanos) / 1E9F, 0.25F);
         lastFrameNanos = now;
 
-        presence = Mth.clamp(presence + (view.asleep() ? -1 : 1) * seconds * PRESENCE_RATE, 0, 1);
+        presence = Mth.clamp(presence + (view.dormant() ? -1 : 1) * seconds * PRESENCE_RATE, 0, 1);
         caving.advance(OculusRenderer.ticks(), seconds);
 
         // Zooming glides on a logarithmic scale, so each step takes as long whatever the scales involved

@@ -1,5 +1,8 @@
 {
   "type": "voidheart:altar",
+  "aspects": {
+    "voidheart:fiery": 3000
+  },
   "inputs": {
     "minecraft:itemstack": [
       {

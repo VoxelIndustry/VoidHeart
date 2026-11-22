@@ -1,7 +1,6 @@
 package net.voxelindustry.voidheart.common.recipe;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import lombok.Getter;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
@@ -9,12 +8,9 @@ import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
-import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -74,32 +70,14 @@ public class AthanorRecipe extends RecipeBase
 
         this.time = json.get("time").getAsInt();
 
-        var parsed = new LinkedHashMap<EssenceType, Integer>();
-        if (json.has("aspects"))
-        {
-            for (var entry : json.getAsJsonObject("aspects").entrySet())
-            {
-                var id = Identifier.tryParse(entry.getKey());
-                if (id == null || !EssenceRegistry.ESSENCE_REGISTRY.containsKey(id) || id.equals(EssenceRegistry.EMPTY.identifier()))
-                    throw new JsonParseException("Unknown aspect '" + entry.getKey() + "' in athanor recipe");
-                parsed.put(EssenceRegistry.ESSENCE_REGISTRY.getValue(id), entry.getValue().getAsInt());
-            }
-        }
-        this.aspects = Map.copyOf(parsed);
+        this.aspects = RecipeAspects.fromJson(json, "athanor");
     }
 
     @Override
     public void toJson(JsonObject json)
     {
         json.addProperty("time", time);
-        if (!aspects.isEmpty())
-        {
-            var aspectsJson = new JsonObject();
-            aspects.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey(Comparator.comparing(type -> type.identifier().toString())))
-                    .forEach(entry -> aspectsJson.addProperty(entry.getKey().identifier().toString(), entry.getValue()));
-            json.add("aspects", aspectsJson);
-        }
+        RecipeAspects.toJson(json, aspects);
 
         super.toJson(json);
     }
@@ -111,14 +89,7 @@ public class AthanorRecipe extends RecipeBase
 
         this.time = buffer.readInt();
 
-        int size = buffer.readInt();
-        var parsed = new LinkedHashMap<EssenceType, Integer>();
-        for (int i = 0; i < size; i++)
-        {
-            var type = EssenceRegistry.ESSENCE_REGISTRY.getValue(Identifier.parse(buffer.readUtf()));
-            parsed.put(type, buffer.readInt());
-        }
-        this.aspects = Map.copyOf(parsed);
+        this.aspects = RecipeAspects.fromByteBuf(buffer);
     }
 
     @Override
@@ -127,11 +98,6 @@ public class AthanorRecipe extends RecipeBase
         super.toByteBuf(buffer);
 
         buffer.writeInt(time);
-        buffer.writeInt(aspects.size());
-        aspects.forEach((type, amount) ->
-        {
-            buffer.writeUtf(type.identifier().toString());
-            buffer.writeInt(amount);
-        });
+        RecipeAspects.toByteBuf(buffer, aspects);
     }
 }

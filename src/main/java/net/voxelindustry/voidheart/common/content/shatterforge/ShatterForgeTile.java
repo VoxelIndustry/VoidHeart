@@ -16,6 +16,7 @@ import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import static java.util.Collections.singletonList;
 
@@ -61,6 +63,18 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     private VoidPillarTile candidatePillar;
 
     private ShatterForgeRecipe currentRecipe;
+    /**
+     * The only recipe the forge may run while set, so a build short of essence waits rather than making something else.
+     */
+    @Getter
+    @Nullable
+    private Identifier pinned;
+    /**
+     * Marks an Officiant's craft laid out here, kept with its output until taken, so another forge's or a hand's output is never taken for it.
+     */
+    @Getter
+    @Nullable
+    private UUID ticket;
     @Getter
     private RecipeState recipeState;
     private boolean hasOutputtedResult;
@@ -400,45 +414,16 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         if (matching.isEmpty())
             return false;
 
-        var aspectMatching = matching.stream()
-                .filter(recipe -> resolution.result().satisfies(recipe.getAspects()))
-                .toList();
-        var passing = aspectMatching.stream()
-                .filter(recipe -> resolution.totalPairs() + 1 >= recipe.getMonolithCount())
-                .sorted(Comparator.comparingInt(ShatterForgeRecipe::totalAspectRequirement)
-                        .thenComparingInt(ShatterForgeRecipe::getMonolithCount)
-                        .reversed()
-                        .thenComparing(recipe -> recipe.getId().toString()))
-                .toList();
-
-        if (passing.isEmpty())
-        {
-            updateBeamState(resolution.segments(), resolution.result(),
-                    aspectMatching.isEmpty() ? FormationError.MISSING_ASPECTS : FormationError.TOO_FEW_MONOLITH);
-            return false;
-        }
-
         availableExperience = totalExperience(resolution.experienceSources());
+        var choice = ForgeSelection.choose(matching, resolution.result(), resolution.totalPairs(), pinned,
+                recipe -> hasEnoughEssence(recipe, resolution.collectorContributions()),
+                recipe -> planExperience(recipe, resolution.experienceSources()) != null);
 
-        ShatterForgeRecipe selected = null;
-        var lackingExperience = false;
-        for (var recipe : passing)
-        {
-            if (!hasEnoughEssence(recipe, resolution.collectorContributions()))
-                continue;
-            if (planExperience(recipe, resolution.experienceSources()) == null)
-            {
-                lackingExperience = true;
-                continue;
-            }
-            selected = recipe;
-            break;
-        }
-
+        var selected = choice.recipe();
         if (selected == null)
         {
-            updateBeamState(resolution.segments(), resolution.result(),
-                    lackingExperience ? FormationError.NOT_ENOUGH_EXPERIENCE : FormationError.NOT_ENOUGH_ESSENCE);
+            if (choice.error() != null)
+                updateBeamState(resolution.segments(), resolution.result(), choice.error());
             return false;
         }
 
@@ -528,7 +513,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     {
     }
 
-    private record Reservation(IEssenceReceiver storage, EssenceType type)
+    /**
+     * @param pool what the storage holds its essence in, shared by every store opening onto it
+     */
+    private record Reservation(Object pool, EssenceType type)
     {
     }
 
@@ -692,7 +680,7 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
 
             for (var storage : RelayNetwork.suppliers(level, drain.collector().getBlockPos(), drain.type()).values())
             {
-                var reservation = new Reservation(storage, drain.type());
+                var reservation = new Reservation(storage.essencePool(), drain.type());
                 var taken = Math.min(missing, storage.amountOf(drain.type()) - reserved.getOrDefault(reservation, 0));
                 if (taken <= 0)
                     continue;
@@ -824,6 +812,8 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     public void setStack(ItemStack stack)
     {
         this.stack = stack;
+        if (stack.isEmpty())
+            ticket = null;
 
         setChanged();
         sync();
@@ -836,6 +826,112 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     {
         unlinkPillar();
         setSourcePillar(null);
+    }
+
+    /**
+     * @param recipe the only recipe to run from now on, or null to let the beam choose again
+     */
+    public void pin(@Nullable Identifier recipe)
+    {
+        pinned = recipe;
+        setChanged();
+    }
+
+    public void setTicket(@Nullable UUID ticket)
+    {
+        this.ticket = ticket;
+        setChanged();
+    }
+
+    /**
+     * Called when a hand or an inserter takes the item off the source pillar. An Officiant's input taken before the forge used it ends that craft: it
+     * stops, and its ticket and pin go, so whatever is crafted next is chosen afresh and is the player's own. Once the input is used, or the output is
+     * done and waiting, what is taken off the pillar is not the craft's.
+     */
+    public void sourceTaken()
+    {
+        if (ticket == null)
+            return;
+        var used = isCrafting && recipeState != null && !recipeState.getIngredientConsumed(ItemStack.class, 0).isEmpty();
+        if (used || !isCrafting && !stack.isEmpty())
+            return;
+        if (isCrafting)
+            stopCrafting();
+        ticket = null;
+        pinned = null;
+        setChanged();
+    }
+
+    /**
+     * An Officiant's finished output is its to take back, not an inserter's.
+     */
+    @Override
+    public boolean canExtract()
+    {
+        return !isOfficiantsResult();
+    }
+
+    /**
+     * @return whether the output is an Officiant's finished craft that the Officiant under the source pillar still has to take back
+     */
+    public boolean isOfficiantsResult()
+    {
+        return !isCrafting && !stack.isEmpty() && sourcePillarPos != null
+                && level.getBlockEntity(sourcePillarPos.below()) instanceof net.voxelindustry.voidheart.common.content.works.OfficiantTile officiant
+                && officiant.holds(ticket);
+    }
+
+    /**
+     * @return every recipe the build as it stands can run, whatever its input, most demanding first
+     */
+    public List<ShatterForgeRecipe> runnableRecipes()
+    {
+        var resolution = BeamResolver.resolve(level, worldPosition);
+        if (!resolution.isValid())
+            return List.of();
+
+        var all = new ArrayList<ShatterForgeRecipe>(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getRecipes());
+        all.addAll(VoidHeartRecipes.SHATTER_FORGE_CATEGORY.getVanillaRecipes());
+        return ForgeSelection.runnable(all, resolution.result(), resolution.totalPairs());
+    }
+
+    /**
+     * Whether the build can run the recipe and pay its essence and experience right now, so its input is never laid for a craft that would wait.
+     */
+    public boolean canSupply(ShatterForgeRecipe recipe)
+    {
+        var resolution = BeamResolver.resolve(level, worldPosition);
+        return resolution.isValid()
+                && ForgeSelection.fits(recipe, resolution.result(), resolution.totalPairs())
+                && hasEnoughEssence(recipe, resolution.collectorContributions())
+                && planExperience(recipe, resolution.experienceSources()) != null;
+    }
+
+    /**
+     * Sets an input on the source pillar as a hand would.
+     *
+     * @return false when the forge is busy, holds an output, or has no empty source pillar
+     */
+    public boolean placeInput(ItemStack input)
+    {
+        if (isCrafting || !stack.isEmpty() || input.isEmpty() || sourcePillarPos == null)
+            return false;
+        if (!(level.getBlockEntity(sourcePillarPos) instanceof VoidPillarTile source) || !source.getStack().isEmpty())
+            return false;
+
+        source.setStack(input.copyWithCount(1));
+        return true;
+    }
+
+    /**
+     * @return the output, now taken off the forge, which lets the next craft start
+     */
+    public ItemStack takeOutput()
+    {
+        var output = stack;
+        if (!output.isEmpty())
+            setStack(ItemStack.EMPTY);
+        return output;
     }
 
     public void startCrafting()
@@ -1023,6 +1119,8 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         previewPairs = tag.getIntOr("previewPairs", -1);
         previewDirection = Direction.from3DDataValue(tag.getByteOr("previewDirection", (byte) Direction.NORTH.get3DDataValue()));
         previewUntil = tag.getLongOr("previewUntil", 0L);
+        pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
+        ticket = tag.read("works_ticket", UUIDUtil.CODEC).orElse(null);
 
         if (isServer())
         {
@@ -1068,6 +1166,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
         tag.putInt("previewPairs", previewPairs);
         tag.putByte("previewDirection", (byte) previewDirection.get3DDataValue());
         tag.putLong("previewUntil", previewUntil);
+        if (pinned != null)
+            tag.store("pinned", Identifier.CODEC, pinned);
+        if (ticket != null)
+            tag.store("works_ticket", UUIDUtil.CODEC, ticket);
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
@@ -1137,6 +1239,10 @@ public class ShatterForgeTile extends TileBase implements PillarLinkedTile, Part
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
+        // The finished output of an Officiant's craft goes back to it rather than to the ground, so the craft isn't made again
+        if (!isCrafting && sourcePillarPos != null
+                && net.voxelindustry.voidheart.common.content.works.OfficiantTile.handOver(level, sourcePillarPos.below(), ticket, stack))
+            stack = ItemStack.EMPTY;
         removeItself();
         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
         super.preRemoveSideEffects(pos, state);

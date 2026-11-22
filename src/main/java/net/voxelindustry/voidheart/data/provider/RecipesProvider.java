@@ -172,6 +172,8 @@ public class RecipesProvider extends FabricRecipeProvider
                     .save(output);
         }
 
+        private final AltarDraughts draughts = new AltarDraughts();
+
         @Override
         public void buildRecipes()
         {
@@ -432,6 +434,7 @@ public class RecipesProvider extends FabricRecipeProvider
             saveAltarRecipe(new AltarRecipe(altarRecipeId("voidheart"), ingredient(VoidHeartItems.VOID_HEART), ALTAR_TIME), VoidHeartItems.VOID_HEART);
 
             EnergyDatagen.recipes(energyRecipes());
+            draughts.checkAllUsed();
         }
 
         private EnergyRecipes energyRecipes()
@@ -706,6 +709,7 @@ public class RecipesProvider extends FabricRecipeProvider
 
         private void saveAltarRecipe(AltarRecipe recipe, ItemLike unlockedBy)
         {
+            recipe.withAspects(draughts.of(recipe.getId().getPath().substring("altar/".length())));
             new RecipeBaseBuilder(recipe, RecipeCategory.MISC)
                     .unlockedBy(getHasName(unlockedBy), has(unlockedBy))
                     .save(this.output, recipe.getId().toString());

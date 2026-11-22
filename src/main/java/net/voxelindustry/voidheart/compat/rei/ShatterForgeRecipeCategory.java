@@ -93,12 +93,7 @@ public class ShatterForgeRecipeCategory implements DisplayCategory<ShatterForgeR
 
     private static int aspectColor(EssenceType type)
     {
-        return switch (type.identifier().getPath())
-        {
-            case "stillness" -> 0xFF7FB8FF;
-            case "fiery" -> 0xFFFF8A3D;
-            default -> 0xFF999999;
-        };
+        return ReiAspects.color(type);
     }
 
     @Override

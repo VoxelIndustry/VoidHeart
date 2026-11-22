@@ -33,6 +33,14 @@ public interface IEssenceReceiver
     }
 
     /**
+     * @return what it holds its essence in, so stores opening onto one pool, such as two Aspect Folds of one pocket, are counted once
+     */
+    default Object essencePool()
+    {
+        return this;
+    }
+
+    /**
      * @return whether relays link to it, false for a block that only takes part in a receiver standing elsewhere
      */
     default boolean linkable()

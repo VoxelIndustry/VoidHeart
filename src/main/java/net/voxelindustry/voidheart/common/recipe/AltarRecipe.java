@@ -9,9 +9,11 @@ import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeCallback;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemTagRecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 
 import java.util.List;
+import java.util.Map;
 
 public class AltarRecipe extends RecipeBase
 {
@@ -22,6 +24,11 @@ public class AltarRecipe extends RecipeBase
      */
     @Getter
     private int experience;
+    /**
+     * Essence drunk through the relays reaching the altar once every ingredient is eaten, before any experience.
+     */
+    @Getter
+    private Map<EssenceType, Integer> aspects = Map.of();
 
     public AltarRecipe(Identifier identifier)
     {
@@ -120,6 +127,12 @@ public class AltarRecipe extends RecipeBase
         return this;
     }
 
+    public AltarRecipe withAspects(Map<EssenceType, Integer> aspects)
+    {
+        this.aspects = Map.copyOf(aspects);
+        return this;
+    }
+
     public RecipeBase onCraft(RecipeCallback onCraft)
     {
         super.onCraft = onCraft;
@@ -133,6 +146,7 @@ public class AltarRecipe extends RecipeBase
 
         this.time = json.get("time").getAsInt();
         this.experience = json.has("experience") ? json.get("experience").getAsInt() : 0;
+        this.aspects = RecipeAspects.fromJson(json, "altar");
     }
 
     @Override
@@ -141,6 +155,7 @@ public class AltarRecipe extends RecipeBase
         json.addProperty("time", time);
         if (experience != 0)
             json.addProperty("experience", experience);
+        RecipeAspects.toJson(json, aspects);
 
         super.toJson(json);
     }
@@ -152,6 +167,7 @@ public class AltarRecipe extends RecipeBase
 
         this.time = buffer.readInt();
         this.experience = buffer.readInt();
+        this.aspects = RecipeAspects.fromByteBuf(buffer);
     }
 
     @Override
@@ -161,5 +177,6 @@ public class AltarRecipe extends RecipeBase
 
         buffer.writeInt(time);
         buffer.writeInt(experience);
+        RecipeAspects.toByteBuf(buffer, aspects);
     }
 }

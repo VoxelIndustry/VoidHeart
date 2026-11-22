@@ -75,6 +75,15 @@ public class OculusTableTile extends TileBase
                 OculusTableStructure.remember(server, pos.relative(direction), java.util.Optional.empty());
             net.minecraft.world.Containers.dropItemStack(server, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, memory.toStack());
         }
+        // The lens falls the same way, and the rest of the table goes back to its land
+        if (level instanceof net.minecraft.server.level.ServerLevel server && view.reckoning())
+        {
+            OculusTableStructure.updateView(server, pos, current -> current.withReckoning(false));
+            for (var direction : net.minecraft.core.Direction.Plane.HORIZONTAL)
+                OculusTableStructure.updateView(server, pos.relative(direction), current -> current.withReckoning(false));
+            net.minecraft.world.Containers.dropItemStack(server, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5,
+                    new net.minecraft.world.item.ItemStack(net.voxelindustry.voidheart.common.content.works.WorksContent.MEMORIAM_LENS));
+        }
         super.preRemoveSideEffects(pos, state);
     }
 

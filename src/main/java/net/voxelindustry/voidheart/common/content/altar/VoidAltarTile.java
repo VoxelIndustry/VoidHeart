@@ -5,6 +5,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import com.mojang.serialization.Codec;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
@@ -25,6 +26,11 @@ import net.voxelindustry.steamlayer.tile.TileBase;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.common.content.athanor.AthanorMath;
+import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
+import net.voxelindustry.voidheart.common.content.essence.EssenceType;
+import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
+import net.voxelindustry.voidheart.common.content.essence.RelayNetwork;
 import net.voxelindustry.voidheart.common.content.pillar.PillarLinkedTile;
 import net.voxelindustry.voidheart.common.content.repair.ExperienceSkullTile;
 import net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile;
@@ -34,11 +40,14 @@ import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartRecipes;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -47,8 +56,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
-public class VoidAltarTile extends TileBase implements PartialSyncedTile, PillarLinkedTile
+public class VoidAltarTile extends TileBase implements PartialSyncedTile, PillarLinkedTile, IEssenceReceiver
 {
+    private static final Codec<Map<EssenceType, Integer>> ASPECTS_CODEC = Codec.unboundedMap(EssenceRegistry.ASPECT_CODEC, Codec.INT);
+
     public static final int WARMING_TIME = 80;
     public static final int COOLING_TIME = 60;
     public static final int ITEM_EATING_TIME = 60;
@@ -81,12 +92,46 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private BlockPos consumingSkullPos = BlockPos.ZERO;
     private int skullConsumeProgress;
 
+    /**
+     * Essence the rite has drunk so far, given back to the stores it can reach if the rite stops.
+     */
+    private final Map<EssenceType, Integer> drunk = new HashMap<>();
+    /**
+     * Essence a stopped rite drank that no store could take back yet. It is offered to the stores again every second and no later rite drinks it;
+     * should the altar be broken first, it goes to its owner's pocket reserve if that has room.
+     */
+    private final Map<EssenceType, Integer> refund = new HashMap<>();
+    /** Whose rite the refund was drunk for, kept apart from the altar's owner, which taking the catalyst off clears. */
+    private UUID refundOwner;
+    /**
+     * Whether every ingredient is eaten and the rite waits on its essence, the only time relays may feed the altar.
+     */
+    private boolean drinking;
+    /**
+     * The essence the rite drinks, kept on the client, which doesn't know the recipe.
+     */
+    private Map<EssenceType, Integer> clientDraught = Map.of();
+
     @Getter
     private ItemStack stack = ItemStack.EMPTY;
     /**
-     * Who set the item down, whose research decides whether a recipe laid afterwards can start. Not saved: after a reload the item must be set down again.
+     * Who set the item down, whose research decides whether a recipe can start, online or not.
      */
-    private UUID placer;
+    @Getter
+    @Nullable
+    private UUID owner;
+    /**
+     * The only recipe the altar may run on the item set down, so a rite laid out for one recipe never becomes another sharing its catalyst.
+     */
+    @Getter
+    @Nullable
+    private Identifier pinned;
+    /**
+     * Marks an Officiant's craft laid out here, so its result is told from an item a player set down. Cleared when a hand takes or sets the item.
+     */
+    @Getter
+    @Nullable
+    private UUID ticket;
 
     private final List<VoidPillarTile> pillars = new ArrayList<>();
 
@@ -157,6 +202,15 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         }
 
         experienceConsumed = tag.getIntOr("experienceConsumed", 0);
+        owner = tag.read("owner", UUIDUtil.CODEC).orElse(null);
+        pinned = tag.read("pinned", Identifier.CODEC).orElse(null);
+        ticket = tag.read("works_ticket", UUIDUtil.CODEC).orElse(null);
+        drunk.clear();
+        drunk.putAll(tag.read("drunk", ASPECTS_CODEC).orElse(Map.of()));
+        refund.clear();
+        refund.putAll(tag.read("refund", ASPECTS_CODEC).orElse(Map.of()));
+        refundOwner = tag.read("refund_owner", UUIDUtil.CODEC).orElse(null);
+        clientDraught = tag.read("draught", ASPECTS_CODEC).orElse(Map.of());
 
         if (isServer())
         {
@@ -206,6 +260,20 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             tag.putLong("consumingSkullPos", consumingSkullPos.asLong());
         }
         tag.putInt("experienceConsumed", experienceConsumed);
+        if (owner != null)
+            tag.store("owner", UUIDUtil.CODEC, owner);
+        if (pinned != null)
+            tag.store("pinned", Identifier.CODEC, pinned);
+        if (ticket != null)
+            tag.store("works_ticket", UUIDUtil.CODEC, ticket);
+        if (!drunk.isEmpty())
+            tag.store("drunk", ASPECTS_CODEC, Map.copyOf(drunk));
+        if (!refund.isEmpty())
+            tag.store("refund", ASPECTS_CODEC, Map.copyOf(refund));
+        if (!refund.isEmpty() && refundOwner != null)
+            tag.store("refund_owner", UUIDUtil.CODEC, refundOwner);
+        if (isServer() && currentRecipe != null && !currentRecipe.getAspects().isEmpty())
+            tag.store("draught", ASPECTS_CODEC, currentRecipe.getAspects());
 
         if (isCrafting && recipeState != null)
             recipeState.save(tag.child("recipeState"));
@@ -215,18 +283,27 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
     /**
      * The client doesn't know what its player researched, so on locked recipes it waits for the server to start the craft rather than predict it.
+     *
+     * @param player the hand setting the item down, told what research is missing, or null for a quiet check of the owner's research
      */
-    private boolean canStart(Player player, AltarRecipe recipe)
+    private boolean canStart(@Nullable Player player, AltarRecipe recipe)
     {
         if (player instanceof ServerPlayer serverPlayer)
             return Knowledge.canUse(serverPlayer, recipe.getId());
+        if (getLevel() instanceof ServerLevel serverLevel)
+            return owner != null && Knowledge.canUse(serverLevel.getServer(), owner, recipe.getId());
         return Knowledge.lockOf(getLevel().registryAccess(), recipe.getId()).isEmpty();
     }
 
     public void setStack(Player player, ItemStack stack)
     {
+        // A rite stopped by taking its catalyst off settles while the altar still knows whose it was
+        if (stack.isEmpty() && isCrafting)
+            stopCrafting();
         this.stack = stack;
-        placer = stack.isEmpty() ? null : player.getUUID();
+        owner = stack.isEmpty() ? null : player.getUUID();
+        pinned = null;
+        ticket = null;
 
         if (!stack.isEmpty())
         {
@@ -236,14 +313,79 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             else
                 player.sendOverlayMessage(Component.translatable(MODID + ".altar.missing_pillars", 8 - pillars.size()));
         }
-        else if (isCrafting)
-            stopCrafting();
 
         setChanged();
         sync();
     }
 
-    private boolean tryStart(Player player)
+    /**
+     * @return the essence a stopped rite drank that no store has taken back yet, for tests
+     */
+    public Map<EssenceType, Integer> pendingRefund()
+    {
+        return Map.copyOf(refund);
+    }
+
+    /**
+     * Whether nothing is set on the altar, so a rite can be laid out on it.
+     */
+    public boolean isVacant()
+    {
+        return stack.isEmpty() && !isCrafting;
+    }
+
+    /**
+     * Sets an item down in someone's name with no hand involved, for one recipe only. Its ingredients should already wait on the pillars, since a rite
+     * pinned to a recipe whose catalyst is a whole tag only starts once they are laid.
+     *
+     * @return false when the altar already holds something
+     */
+    public boolean layCatalyst(UUID owner, ItemStack catalyst, Identifier recipe)
+    {
+        return layCatalyst(owner, catalyst, recipe, null);
+    }
+
+    /**
+     * @param ticket marks an Officiant's craft, kept with its result until taken
+     */
+    public boolean layCatalyst(UUID owner, ItemStack catalyst, Identifier recipe, @Nullable UUID ticket)
+    {
+        if (!isVacant() || catalyst.isEmpty())
+            return false;
+
+        stack = catalyst.copyWithCount(1);
+        this.owner = owner;
+        pinned = recipe;
+        this.ticket = ticket;
+
+        searchPillars();
+        if (pillars.size() == 8)
+            tryStart(null);
+
+        setChanged();
+        sync();
+        return true;
+    }
+
+    /**
+     * @return what the altar holds once no rite runs on it, its result or an item that never started, now taken off
+     */
+    public ItemStack takeResult()
+    {
+        if (isCrafting || stack.isEmpty())
+            return ItemStack.EMPTY;
+
+        var taken = stack;
+        stack = ItemStack.EMPTY;
+        owner = null;
+        pinned = null;
+        ticket = null;
+        setChanged();
+        sync();
+        return taken;
+    }
+
+    private boolean tryStart(@Nullable Player player)
     {
         retrieveCurrentRecipe();
         if (currentRecipe != null && !canStart(player, currentRecipe))
@@ -266,7 +408,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      */
     private void yieldToLaidRecipe()
     {
-        if (placer == null || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0 || consumingPillarIndex != -1 || !cachedToConsume.isEmpty() || experienceConsumed > 0)
+        if (owner == null || pinned != null || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0 || consumingPillarIndex != -1 || !cachedToConsume.isEmpty() || experienceConsumed > 0)
             return;
         if (recipeState == null || !recipeState.getIngredientsConsumed(ItemStack.class).isEmpty())
             return;
@@ -274,11 +416,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         var pillarStacks = pillars.stream().map(VoidPillarTile::getStack).toList();
         if (ingredientsLaid(currentRecipe, pillarStacks))
             return;
-        if (!(getLevel().getPlayerByUUID(placer) instanceof ServerPlayer player))
-            return;
 
         var laid = VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack)
-                .filter(recipe -> recipe != currentRecipe && recipe.changes(stack) && ingredientsLaid(recipe, pillarStacks) && canStart(player, recipe))
+                .filter(recipe -> recipe != currentRecipe && recipe.changes(stack) && ingredientsLaid(recipe, pillarStacks) && canStart(null, recipe))
                 .findFirst();
         if (laid.isEmpty())
             return;
@@ -294,9 +434,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      */
     private void retryIdleStart()
     {
-        if (placer == null || stack.isEmpty() || coolProgress > 0 || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0)
-            return;
-        if (!(getLevel().getPlayerByUUID(placer) instanceof ServerPlayer player))
+        if (owner == null || stack.isEmpty() || coolProgress > 0 || getLevel().getGameTime() % IDLE_RETRY_TICKS != 0)
             return;
 
         searchPillars();
@@ -304,10 +442,10 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             return;
 
         var pillarStacks = pillars.stream().map(VoidPillarTile::getStack).toList();
-        var laid = VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack)
+        var laid = pinnedTo(VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack).toList(), pinned).stream()
                 .filter(recipe -> recipe.changes(stack) && ingredientsLaid(recipe, pillarStacks))
                 .findFirst();
-        if (laid.isEmpty() || !tryStart(player))
+        if (laid.isEmpty() || !tryStart(null))
             return;
 
         setChanged();
@@ -331,6 +469,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
         if (altar.coolProgress > 0)
             altar.coolProgress--;
+
+        if (!altar.refund.isEmpty() && world.getGameTime() % 20 == 0)
+            altar.returnRefund();
 
         if (!altar.isCrafting)
         {
@@ -371,7 +512,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
 
         if (toConsume.isEmpty())
         {
-            if (!computeExperienceConsumption())
+            if (!computeDrink() || !computeExperienceConsumption())
                 return;
 
             finishCrafting();
@@ -406,6 +547,163 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             consumingPillarPos = BlockPos.ZERO;
             cachedToConsume = ItemStack.EMPTY;
         }
+    }
+
+    /**
+     * Once every ingredient is eaten, the relays reaching the altar feed it the rite's essence. Relays route only to a receiver with room, so the altar
+     * has room only now.
+     *
+     * @return true once the recipe's essence is all drunk
+     */
+    private boolean computeDrink()
+    {
+        drinking = !AthanorMath.missing(currentRecipe.getAspects(), drunk).isEmpty();
+        return !drinking;
+    }
+
+    /**
+     * Essence drunk for a rite that did not complete goes back to the stores the altar's relays reach, as far as they have room.
+     */
+    private void giveBackDrink()
+    {
+        drinking = false;
+        if (!drunk.isEmpty() && owner != null)
+        {
+            // Another player's pending refund is settled to their reserve first, so each gets back what their own rite drank
+            if (!refund.isEmpty() && refundOwner != null && !refundOwner.equals(owner))
+                refundToReserve();
+            refundOwner = owner;
+        }
+        drunk.forEach((aspect, amount) -> refund.merge(aspect, amount, Integer::sum));
+        drunk.clear();
+        returnRefund();
+    }
+
+    /**
+     * Gives what a stopped rite drank back to the stores the altar's relays reach, keeping what none of them can take for later.
+     */
+    private void returnRefund()
+    {
+        if (refund.isEmpty() || !(getLevel() instanceof ServerLevel))
+            return;
+        var entries = refund.entrySet().iterator();
+        while (entries.hasNext())
+        {
+            var entry = entries.next();
+            var aspect = entry.getKey();
+            int left = entry.getValue();
+            for (var store : RelayNetwork.storesWithRoomOfReceiver(getLevel(), getBlockPos(), aspect).values())
+            {
+                left -= store.receive(aspect, Math.min(left, store.spaceFor(aspect)));
+                if (left <= 0)
+                    break;
+            }
+            if (left <= 0)
+                entries.remove();
+            else
+                entry.setValue(left);
+        }
+        setChanged();
+    }
+
+    /**
+     * The altar is going: what is still owed goes to the pocket reserve of whoever's rite drank it, all of it.
+     */
+    private void refundToReserve()
+    {
+        var to = refundOwner != null ? refundOwner : owner;
+        if (!refund.isEmpty() && to != null && getLevel() instanceof ServerLevel server)
+        {
+            // All of it, past the reserve's room if need be: the reserve keeps it and only refuses more until there is room
+            var hoard = net.voxelindustry.voidheart.common.content.hoard.PocketHoard.get(server.getServer()).of(to);
+            refund.forEach((aspect, amount) -> hoard.restoreEssence(aspect, amount));
+        }
+        refund.clear();
+        refundOwner = null;
+    }
+
+    /**
+     * Whether the stores the altar's relays reach hold the essence a rite still needs, so its ingredients are never laid for a rite that would wait.
+     */
+    public boolean canSupply(AltarRecipe recipe)
+    {
+        var already = recipe == currentRecipe ? drunk : Map.<EssenceType, Integer>of();
+        for (var need : AthanorMath.missing(recipe.getAspects(), already).entrySet())
+        {
+            var held = RelayNetwork.heldBy(RelayNetwork.suppliersOfReceiver(getLevel(), getBlockPos(), need.getKey()).values(), need.getKey());
+            if (held < need.getValue())
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * @return the essence the rite drinks, on either side
+     */
+    public Map<EssenceType, Integer> getDraught()
+    {
+        if (isClient())
+            return clientDraught;
+        return currentRecipe == null ? Map.of() : currentRecipe.getAspects();
+    }
+
+    public Map<EssenceType, Integer> getDrunk()
+    {
+        return Map.copyOf(drunk);
+    }
+
+    /**
+     * @return how much of the rite's essence is drunk, from 0 to 1
+     */
+    public float drinkFill()
+    {
+        var draught = getDraught();
+        var needed = draught.values().stream().mapToInt(Integer::intValue).sum();
+        if (needed == 0)
+            return 0;
+        var had = draught.entrySet().stream().mapToInt(entry -> Math.min(entry.getValue(), drunk.getOrDefault(entry.getKey(), 0))).sum();
+        return had / (float) needed;
+    }
+
+    /**
+     * @return the aspect the rite drinks most of, or null when it drinks none
+     */
+    @Nullable
+    public EssenceType drinkAspect()
+    {
+        return getDraught().entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
+    }
+
+    @Override
+    public int spaceFor(EssenceType type)
+    {
+        if (!drinking || currentRecipe == null)
+            return 0;
+        return AthanorMath.missing(currentRecipe.getAspects(), drunk).getOrDefault(type, 0);
+    }
+
+    @Override
+    public int receive(EssenceType type, int amount)
+    {
+        var taken = Math.min(amount, spaceFor(type));
+        if (taken <= 0)
+            return 0;
+
+        drunk.merge(type, taken, Integer::sum);
+        setChanged();
+        return taken;
+    }
+
+    @Override
+    public int amountOf(EssenceType type)
+    {
+        return 0;
+    }
+
+    @Override
+    public int extract(EssenceType type, int amount)
+    {
+        return 0;
     }
 
     /**
@@ -552,7 +850,17 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private void retrieveCurrentRecipe()
     {
         var pillarStacks = pillars.stream().map(VoidPillarTile::getStack).toList();
-        currentRecipe = chooseRecipe(VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack).toList(), stack, pillarStacks);
+        currentRecipe = chooseRecipe(pinnedTo(VoidHeartRecipes.ALTAR_CATEGORY.findRecipes(stack).toList(), pinned), stack, pillarStacks);
+    }
+
+    /**
+     * @return only the pinned recipe among the candidates, or all of them when nothing is pinned
+     */
+    public static List<AltarRecipe> pinnedTo(List<AltarRecipe> candidates, @Nullable Identifier pinned)
+    {
+        if (pinned == null)
+            return candidates;
+        return candidates.stream().filter(recipe -> recipe.getId().equals(pinned)).toList();
     }
 
     /**
@@ -603,6 +911,15 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     public int foundPillars()
     {
         return pillars.size();
+    }
+
+    /**
+     * @return the pillars standing around the altar now, looked for afresh
+     */
+    public List<VoidPillarTile> pillarsAround()
+    {
+        searchPillars();
+        return List.copyOf(pillars);
     }
 
     public void searchPillars()
@@ -679,6 +996,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     {
         dropAteItems();
         refundExperience();
+        giveBackDrink();
         recipeState = null;
         recipeProgress = 0;
         isCrafting = false;
@@ -701,6 +1019,9 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         recipeProgress = 0;
         coolProgress = COOLING_TIME;
         currentRecipe = null;
+        pinned = null;
+        drunk.clear();
+        drinking = false;
         experienceConsumed = 0;
         consumingSkullPos = BlockPos.ZERO;
         skullConsumeProgress = 0;
@@ -859,9 +1180,14 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
         removeItself();
+        // The finished result of an Officiant's craft goes back to it rather than to the ground, so the craft isn't made again
+        if (!isCrafting && pinned == null && net.voxelindustry.voidheart.common.content.works.OfficiantTile.handOver(level, pos.below(), ticket, stack))
+            stack = ItemStack.EMPTY;
         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, getStack());
         dropAteItems();
         refundExperience();
+        giveBackDrink();
+        refundToReserve();
         super.preRemoveSideEffects(pos, state);
     }
 }

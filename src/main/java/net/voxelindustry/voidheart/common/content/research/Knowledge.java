@@ -299,12 +299,21 @@ public class Knowledge
     public static boolean canUse(ServerPlayer player, Identifier recipe)
     {
         var server = player.level().getServer();
-        var lock = lockOf(server.registryAccess(), recipe);
-        if (lock.isEmpty() || of(server, player.getUUID()).getCompleted().contains(lock.get()))
+        if (canUse(server, player.getUUID(), recipe))
             return true;
 
-        player.sendOverlayMessage(Component.translatable(MODID + ".research.locked", Component.translatable(Research.nameKey(lock.get()))));
+        lockOf(server.registryAccess(), recipe).ifPresent(lock ->
+                player.sendOverlayMessage(Component.translatable(MODID + ".research.locked", Component.translatable(Research.nameKey(lock)))));
         return false;
+    }
+
+    /**
+     * Whether work done in a player's name, such as a rite they set out, may use a recipe, whether or not they are online.
+     */
+    public static boolean canUse(MinecraftServer server, UUID player, Identifier recipe)
+    {
+        var lock = lockOf(server.registryAccess(), recipe);
+        return lock.isEmpty() || of(server, player).getCompleted().contains(lock.get());
     }
 
     /**

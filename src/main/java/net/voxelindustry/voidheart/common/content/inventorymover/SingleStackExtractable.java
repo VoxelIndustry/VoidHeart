@@ -7,4 +7,19 @@ public interface SingleStackExtractable
     ItemStack getStack();
 
     void setStack(ItemStack stack);
+
+    /**
+     * @return whether what it holds may be taken by an inserter now
+     */
+    default boolean canExtract()
+    {
+        return true;
+    }
+
+    /**
+     * Called once an inserter has taken from it.
+     */
+    default void onExtracted()
+    {
+    }
 }

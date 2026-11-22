@@ -364,6 +364,10 @@
     "voidheart:azurium_veined_voidstone",
     "voidheart:ravenous_gold_valve",
     "voidheart:crystal_cradle",
-    "voidheart:void_armor_base"
+    "voidheart:void_armor_base",
+    "voidheart:hoard_coffer",
+    "voidheart:fold",
+    "voidheart:aspect_fold",
+    "voidheart:officiant"
   ]
 }

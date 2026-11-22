@@ -58,6 +58,16 @@ public class VoidAltarBlock extends Block implements EntityBlock
         return SHAPE;
     }
 
+    /**
+     * @return whether what the altar holds is the finished result of a craft the Officiant under it still has to take back
+     */
+    private static boolean isOfficiantsResult(Level world, BlockPos pos, VoidAltarTile altar)
+    {
+        return !altar.isCrafting() && altar.getPinned() == null
+                && world.getBlockEntity(pos.below()) instanceof net.voxelindustry.voidheart.common.content.works.OfficiantTile officiant
+                && officiant.holds(altar.getTicket());
+    }
+
     @Override
     protected InteractionResult useItemOn(ItemStack heldStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
     {
@@ -78,6 +88,16 @@ public class VoidAltarBlock extends Block implements EntityBlock
             }
             else if(world.isClientSide())
                 VoidAltarRender.lastTouchedMillis = Util.getMillis();
+        }
+        else if (isOfficiantsResult(world, pos, altar))
+        {
+            // The finished result of a craft an Officiant laid is its to take back to the hoard
+            if (!world.isClientSide())
+            {
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable("voidheart.altar.officiant_result"));
+                // The client may have taken it off already, not knowing
+                altar.sync();
+            }
         }
         else
         {

@@ -53,7 +53,7 @@ public final class OculusSky
 
         for (var projector : OculusRenderer.projectors())
         {
-            if (projector.view().asleep())
+            if (projector.view().dormant())
                 continue;
             var footprint = projector.footprint();
             float radius = Mth.clamp(Math.max(footprint.width(), footprint.depth()) / 2F + 0.25F, MIN_RADIUS, MAX_RADIUS);

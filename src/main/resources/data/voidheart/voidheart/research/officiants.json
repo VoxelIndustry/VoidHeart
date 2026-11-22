@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "travel",
+  "icon": "voidheart:officiant",
+  "insight_cost": 10,
+  "knowledge_cost": 1500,
+  "knowledge_per_second": 1.5,
+  "requires": [
+    "voidheart:pocket_hoard"
+  ],
+  "unlocks": [
+    "voidheart:officiant",
+    "voidheart:memoriam_lens"
+  ],
+  "recipes": [
+    "voidheart:altar/officiant",
+    "voidheart:altar/memoriam_lens"
+  ]
+}

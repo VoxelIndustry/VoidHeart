@@ -5,7 +5,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.grid.DeepReach;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * The one way machines and sources touch void energy. Amounts are void energy, rates are per tick.
@@ -72,6 +74,37 @@ public final class VoidEnergy
         if (CreativeSources.wells(level).covers(pos))
             return amount;
         return Math.clamp(provider.offer(level, pos, amount), 0, amount);
+    }
+
+    /**
+     * Names what a draw at pos takes from, so callers can tell whether two draws compete: those whose names don't meet never do. A draw through a Deep
+     * field is named by what a draw at the near portal takes from at home, so it meets the draws made there. A creative well takes from no one.
+     */
+    public static Set<Object> drawsFrom(ServerLevel level, BlockPos pos)
+    {
+        var names = new HashSet<>(drawsFromHere(level, pos));
+        names.addAll(DeepReach.drawsFrom(level, pos));
+        return names;
+    }
+
+    /**
+     * What of {@link #available} only a draw at pos can take, which no other draw competes for. Draws through portals are shared with the near side.
+     */
+    public static long exclusive(ServerLevel level, BlockPos pos)
+    {
+        if (CreativeSources.wells(level).covers(pos))
+            return 0;
+        return Math.clamp(provider.exclusive(level, pos), 0, Math.max(0, provider.available(level, pos)));
+    }
+
+    /**
+     * Names what a draw at pos takes from in its own level, leaving aside Deep fields reaching in through portals.
+     */
+    public static Set<Object> drawsFromHere(ServerLevel level, BlockPos pos)
+    {
+        if (CreativeSources.wells(level).covers(pos))
+            return Set.of();
+        return provider.drawsFrom(level, pos);
     }
 
     public static void install(VoidNetworkProvider provider)

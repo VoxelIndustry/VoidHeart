@@ -1,5 +1,8 @@
 {
   "type": "voidheart:altar",
+  "aspects": {
+    "voidheart:fiery": 2000
+  },
   "experience": 315,
   "inputs": {
     "minecraft:itemstack": [
