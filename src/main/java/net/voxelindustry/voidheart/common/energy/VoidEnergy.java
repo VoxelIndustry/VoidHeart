@@ -88,6 +88,16 @@ public final class VoidEnergy
     }
 
     /**
+     * What of {@link #available} only a draw at pos can take, which no other draw competes for. Draws through portals are shared with the near side.
+     */
+    public static long exclusive(ServerLevel level, BlockPos pos)
+    {
+        if (CreativeSources.wells(level).covers(pos))
+            return 0;
+        return Math.clamp(provider.exclusive(level, pos), 0, Math.max(0, provider.available(level, pos)));
+    }
+
+    /**
      * Names what a draw at pos takes from in its own level, leaving aside Deep fields reaching in through portals.
      */
     public static Set<Object> drawsFromHere(ServerLevel level, BlockPos pos)

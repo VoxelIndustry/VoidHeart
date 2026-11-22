@@ -153,12 +153,13 @@ class WorksQueueTest
         var old = WorksQueue.Job.CODEC.listOf().encodeStart(com.mojang.serialization.JsonOps.INSTANCE, List.of()).getOrThrow();
         var loaded = WorksQueue.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, old).getOrThrow();
         var fresh = 0;
-        while (fresh < 1001)
+        for (int made = 1; made <= 1001; made++)
         {
             fresh = loaded.order("pearl", 1, List.of(task("pearl", StationKind.ALTAR, 1)));
-            if (fresh < 1001)
+            if (made < 1001)
                 loaded.cancel(fresh);
         }
+        assertThat(fresh).isEqualTo(1001);
         loaded.claim(StationKind.ALTAR, any -> true);
 
         loaded.giveBack(oldClaim(1001, "pearl", StationKind.ALTAR));

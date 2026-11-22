@@ -83,6 +83,21 @@ public class VoidPillarTile extends TileBase implements SingleStackInsertable, S
         return sourceOfForge;
     }
 
+    /**
+     * Tells the forge this pillar feeds that a hand or an inserter took its item.
+     */
+    public void taken()
+    {
+        if (sourceOfForge != null && level != null && level.getBlockEntity(sourceOfForge) instanceof net.voxelindustry.voidheart.common.content.shatterforge.ShatterForgeTile forge)
+            forge.sourceTaken();
+    }
+
+    @Override
+    public void onExtracted()
+    {
+        taken();
+    }
+
     public boolean isForgeSource()
     {
         return sourceOfForge != null;

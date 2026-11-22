@@ -220,6 +220,7 @@ public class InventoryInserterTile extends BlockEntity
                     var remaining = extractable.getStack().copy();
                     remaining.shrink(1);
                     extractable.setStack(remaining.isEmpty() ? ItemStack.EMPTY : remaining);
+                    extractable.onExtracted();
                 }
             }
             return;

@@ -35,6 +35,8 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
     private final List<Move> journal = new ArrayList<>();
     /** What pays for the open moves, as {@link FoldTile#drawsFrom} named it. */
     private Set<Object> drawsFrom = Set.of();
+    /** The energy only this Fold could draw when it last looked, which its tolls are paid from first. */
+    private long exclusive;
 
     FoldStorage(FoldTile fold)
     {
@@ -46,22 +48,32 @@ final class FoldStorage extends SnapshotParticipant<Integer> implements Storage<
         return journal.stream().mapToLong(move -> Math.abs(move.amount())).sum();
     }
 
-    /**
-     * @return what Folds drawing on any of that energy, this one included, have moved in transactions still open
-     */
-    private long pending(Set<Object> drawsFrom)
+    private long tolls()
     {
-        return OPEN.stream().filter(other -> other == this || !Collections.disjoint(other.drawsFrom, drawsFrom)).mapToLong(FoldStorage::moved).sum();
+        return moved() * HoardBalance.FOLD_COST_PER_ITEM;
     }
 
     /**
-     * @return how many more items the energy around the Fold pays for this tick, less what Folds sharing that energy have moved in transactions still
-     * open
+     * @return the energy other Folds drawing on any of the same shared energy have promised from it in transactions still open, past what only they
+     * could draw
+     */
+    private long promisedByOthers()
+    {
+        return OPEN.stream().filter(other -> other != this && !Collections.disjoint(other.drawsFrom, drawsFrom))
+                .mapToLong(other -> Math.max(0, other.tolls() - other.exclusive)).sum();
+    }
+
+    /**
+     * @return how many more items the energy around the Fold pays for this tick: what only it can draw, and the shared rest less what other Folds
+     * drawing on it have promised, less its own open moves
      */
     private long affordable(long wanted)
     {
         drawsFrom = fold.drawsFrom();
-        return Math.min(wanted, Math.max(0, fold.affordableItems() - pending(drawsFrom)));
+        exclusive = fold.exclusiveEnergy();
+        var shared = Math.max(0, fold.availableEnergy() - exclusive);
+        var left = exclusive + Math.max(0, shared - promisedByOthers()) - tolls();
+        return Math.min(wanted, Math.max(0, left / HoardBalance.FOLD_COST_PER_ITEM));
     }
 
     @Override

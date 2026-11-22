@@ -15,4 +15,11 @@ public interface SingleStackExtractable
     {
         return true;
     }
+
+    /**
+     * Called once an inserter has taken from it.
+     */
+    default void onExtracted()
+    {
+    }
 }

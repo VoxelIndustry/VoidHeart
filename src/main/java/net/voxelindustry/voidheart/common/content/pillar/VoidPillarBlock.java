@@ -87,6 +87,8 @@ public class VoidPillarBlock extends Block implements EntityBlock
         {
             player.getInventory().placeItemBackInInventory(pillar.getStack(), Prediction.SERVER_ONLY);
             pillar.setStack(ItemStack.EMPTY);
+            if (!world.isClientSide())
+                pillar.taken();
         }
 
         return InteractionResult.SUCCESS;

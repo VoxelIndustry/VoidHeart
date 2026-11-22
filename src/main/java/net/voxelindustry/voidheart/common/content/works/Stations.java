@@ -71,7 +71,11 @@ final class Stations
     static ItemStack resultLeft(Level level, @Nullable BlockPos at, @Nullable UUID ticket)
     {
         if (at != null && ticket != null && level.getBlockEntity(at) instanceof ShatterForgeTile forge && ticket.equals(forge.getTicket()) && !forge.isCrafting())
+        {
+            // Unpinned before the output is taken, which lets the forge try to start again
+            forge.pin(null);
             return forge.takeOutput();
+        }
         return ItemStack.EMPTY;
     }
 
@@ -259,6 +263,8 @@ final class Stations
             var placed = forge.placeInput(ingredients.getFirst());
             if (placed)
                 forge.setTicket(ticket);
+            else
+                forge.pin(null);
             return new Laid(placed, found.isEmpty() ? List.of() : List.of(found));
         }
 
@@ -283,16 +289,21 @@ final class Stations
         @Override
         public Outcome poll(Object source, int waited, @Nullable UUID ticket)
         {
-            // A forge put in place of the one the craft was laid on, or an output taken off it by hand, is never the craft's result
+            // A forge put in place of the one the craft was laid on, or whose input or output a hand took, is never the craft's result
             if (ticket != null && !ticket.equals(forge.getTicket()))
                 return Outcome.failed(List.of());
+            // Unpinned before the output is taken, which lets the forge try to start again, so a player's own input is never held to this recipe
             if (!forge.isCrafting() && !forge.getStack().isEmpty())
+            {
+                forge.pin(null);
                 return Outcome.done(List.of(forge.takeOutput()));
+            }
             if (forge.isCrafting() || waited < START_TIMEOUT_TICKS)
                 return Outcome.RUNNING;
             var input = pillar.getStack();
             pillar.setStack(ItemStack.EMPTY);
             forge.setTicket(null);
+            forge.pin(null);
             return Outcome.failed(input.isEmpty() ? List.of() : List.of(input));
         }
     }

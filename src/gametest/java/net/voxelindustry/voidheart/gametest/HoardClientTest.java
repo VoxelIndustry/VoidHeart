@@ -333,7 +333,8 @@ public class HoardClientTest implements FabricClientGameTest
     private static final BlockPos EAST_FOLD  = FOLD.offset(8, 0, 4);
 
     /**
-     * In one transaction, a Fold can't take what another Fold on the same field already promised, while a Fold on a field of its own still moves.
+     * In one transaction, a Fold can't take what another Fold on the same field already promised, while a Fold on a field of its own still moves. Energy
+     * delivered ahead to one Fold alone is never reserved by another: two Folds on one field, each with its own, both move.
      */
     private static void checkFoldsShareOnlyTheirField(ClientGameTestContext context, TestServerContext server)
     {
@@ -352,8 +353,9 @@ public class HoardClientTest implements FabricClientGameTest
             var level = minecraft.overworld();
             var before = hoard(minecraft).count(DIRT);
             var original = VoidEnergy.provider();
-            // Two fields, each paying for a single item
+            // Two fields, each paying for a single item, and energy waiting for each west Fold alone
             long[] fields = { HoardBalance.FOLD_COST_PER_ITEM, HoardBalance.FOLD_COST_PER_ITEM };
+            long[] ready = { 0, 0 };
             VoidEnergy.install(new VoidNetworkProvider()
             {
                 private int field(BlockPos pos)
@@ -361,10 +363,21 @@ public class HoardClientTest implements FabricClientGameTest
                     return pos.equals(WEST_FOLD) || pos.equals(WEST_FOLD2) ? 0 : pos.equals(EAST_FOLD) ? 1 : -1;
                 }
 
+                private int own(BlockPos pos)
+                {
+                    return pos.equals(WEST_FOLD) ? 0 : pos.equals(WEST_FOLD2) ? 1 : -1;
+                }
+
                 @Override
                 public long available(ServerLevel at, BlockPos pos)
                 {
-                    return field(pos) < 0 ? original.available(at, pos) : fields[field(pos)];
+                    return field(pos) < 0 ? original.available(at, pos) : exclusive(at, pos) + fields[field(pos)];
+                }
+
+                @Override
+                public long exclusive(ServerLevel at, BlockPos pos)
+                {
+                    return field(pos) < 0 ? original.exclusive(at, pos) : own(pos) < 0 ? 0 : ready[own(pos)];
                 }
 
                 @Override
@@ -372,9 +385,15 @@ public class HoardClientTest implements FabricClientGameTest
                 {
                     if (field(pos) < 0)
                         return original.draw(at, pos, amount);
-                    var taken = Math.min(amount, fields[field(pos)]);
-                    fields[field(pos)] -= taken;
-                    return taken;
+                    var taken = 0L;
+                    if (own(pos) >= 0)
+                    {
+                        taken = Math.min(amount, ready[own(pos)]);
+                        ready[own(pos)] -= taken;
+                    }
+                    var shared = Math.min(amount - taken, fields[field(pos)]);
+                    fields[field(pos)] -= shared;
+                    return taken + shared;
                 }
 
                 @Override
@@ -403,6 +422,19 @@ public class HoardClientTest implements FabricClientGameTest
                 }
                 expect(fields[0] == 0 && fields[1] == 0, "the fields were left with " + fields[0] + " and " + fields[1] + " after paying one item each");
                 expect(hoard(minecraft).count(DIRT) == before + 2, "the hoard gained " + (hoard(minecraft).count(DIRT) - before) + " dirt, expected 2");
+
+                // Nothing left to route on the west field, but a toll waiting for each west Fold alone
+                ready[0] = HoardBalance.FOLD_COST_PER_ITEM;
+                ready[1] = HoardBalance.FOLD_COST_PER_ITEM;
+                try (var transaction = Transaction.openOuter())
+                {
+                    var west = ItemStorage.SIDED.find(level, WEST_FOLD, Direction.UP).insert(DIRT, 1, transaction);
+                    var west2 = ItemStorage.SIDED.find(level, WEST_FOLD2, Direction.UP).insert(DIRT, 1, transaction);
+                    expect(west == 1 && west2 == 1, "with a toll waiting for each, the west Folds took " + west + " and " + west2 + " dirt");
+                    transaction.commit();
+                }
+                expect(ready[0] == 0 && ready[1] == 0, "the west Folds left " + ready[0] + " and " + ready[1] + " of their own tolls");
+                expect(hoard(minecraft).count(DIRT) == before + 4, "the hoard gained " + (hoard(minecraft).count(DIRT) - before) + " dirt, expected 4");
             }
             finally
             {

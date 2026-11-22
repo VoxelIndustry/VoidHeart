@@ -74,13 +74,23 @@ public class FoldTile extends TileBase
     }
 
     /**
-     * @return how many items the field around the Fold can pay to move this tick
+     * @return the energy the field around the Fold can give this tick
      */
-    long affordableItems()
+    long availableEnergy()
     {
         if (!(level instanceof ServerLevel serverLevel))
             return 0;
-        return VoidEnergy.available(serverLevel, worldPosition) / HoardBalance.FOLD_COST_PER_ITEM;
+        return VoidEnergy.available(serverLevel, worldPosition);
+    }
+
+    /**
+     * @return the part of {@link #availableEnergy} no other draw competes for
+     */
+    long exclusiveEnergy()
+    {
+        if (!(level instanceof ServerLevel serverLevel))
+            return 0;
+        return VoidEnergy.exclusive(serverLevel, worldPosition);
     }
 
     /**

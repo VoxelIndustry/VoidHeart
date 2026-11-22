@@ -83,6 +83,7 @@ public class OfficiantClientTest implements FabricClientGameTest
             checkForgeSourceOccupied(context, server);
             checkForgeResultKeptAndSourceTaken(context, server);
             checkForgeResultKeptFromInserter(context, server);
+            checkForgeInputTakenByHand(context, server);
             checkFullHoard(context, server);
             checkBrokenMidLaying(context, server);
             checkItemOnPillarMidLaying(context, server);
@@ -241,7 +242,11 @@ public class OfficiantClientTest implements FabricClientGameTest
             expect(plan.isComplete(), "the Seething Steel plan lacks " + plan.lacking() + ", tasks " + plan.tasks());
         });
         waitFor(context, server, 900, "no Seething Steel reached the hoard", minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);
-        server.runOnServer(minecraft -> expect(held(minecraft, Items.IRON_INGOT) == 0, "the iron is still in the hoard"));
+        server.runOnServer(minecraft ->
+        {
+            expect(held(minecraft, Items.IRON_INGOT) == 0, "the iron is still in the hoard");
+            expect(forge(minecraft).getPinned() == null, "the forge is still pinned to " + forge(minecraft).getPinned() + " once its steel was taken");
+        });
     }
 
     private static net.voxelindustry.voidheart.common.content.pillar.VoidPillarTile source(MinecraftServer minecraft)
@@ -286,44 +291,134 @@ public class OfficiantClientTest implements FabricClientGameTest
         server.runOnServer(minecraft -> expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(), "the steel's order is still queued"));
     }
 
+    private static void dropSteelAndIron(MinecraftServer minecraft)
+    {
+        var inventory = player(minecraft).getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++)
+            if (inventory.getItem(slot).is(VoidHeartItems.SEETHING_STEEL_INGOT) || inventory.getItem(slot).is(Items.IRON_INGOT))
+                inventory.setItem(slot, ItemStack.EMPTY);
+    }
+
+    private static int carried(MinecraftServer minecraft, net.minecraft.world.level.ItemLike item)
+    {
+        return player(minecraft).getInventory().countItem(item.asItem());
+    }
+
+    private static void aimAtForge(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var inventory = player(minecraft).getInventory();
+            inventory.setSelectedSlot(0);
+            inventory.setItem(0, ItemStack.EMPTY);
+        });
+        aimFrom(context, server, FORGE.getX() + 0.5, FLAT_FEET, FORGE.getZ() + 3.5, FORGE.getX() + 0.5, FLAT_FEET + 0.5, FORGE.getZ() + 0.5, 5);
+    }
+
     /**
-     * A finished forge output its Officiant has yet to take back can't be taken by hand, and stays the Officiant's when the source pillar is taken away
-     * before it looks: the steel reaches the hoard and is not made again.
+     * A right-click can't take a finished forge output its Officiant has yet to take back, and the output stays the Officiant's when the source pillar is
+     * taken away before it looks: the steel reaches the hoard, is not made again, and leaves the forge unpinned. The same click takes a player's own
+     * output.
      */
     private static void checkForgeResultKeptAndSourceTaken(ClientGameTestContext context, TestServerContext server)
     {
+        aimAtForge(context, server);
         orderSteel(server);
-        var tried = false;
-        for (int tick = 0; tick < 2000 && !tried; tick++)
+        var frozen = false;
+        for (int tick = 0; tick < 2000 && !frozen; tick++)
         {
-            // Checked and done within one server step, so the Officiant can't take the steel in between
-            tried = server.computeOnServer(minecraft ->
+            // Frozen in the server step the steel is seen, so the Officiant can't take it before the click lands
+            frozen = server.computeOnServer(minecraft ->
             {
                 var forge = forge(minecraft);
                 if (forge.isCrafting() || !forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT))
                     return false;
-                var player = player(minecraft);
-                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                useOn(player, FORGE);
-                expect(forge.getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT), "the player took the Officiant's steel off the forge");
-                expect(player.getInventory().countItem(VoidHeartItems.SEETHING_STEEL_INGOT) == 0, "the player got the Officiant's steel");
-                minecraft.overworld().removeBlock(SOURCE, false);
+                minecraft.tickRateManager().setFrozen(true);
                 return true;
             });
-            if (!tried)
+            if (!frozen)
                 context.waitTick();
         }
-        expect(tried, "the steel was never seen finished in the forge");
+        expect(frozen, "the steel was never seen finished in the forge");
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            expect(forge(minecraft).getStack().is(VoidHeartItems.SEETHING_STEEL_INGOT), "a click took the Officiant's steel off the forge");
+            expect(carried(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 0, "a click gave the player the Officiant's steel");
+            minecraft.overworld().removeBlock(SOURCE, false);
+            minecraft.tickRateManager().setFrozen(false);
+        });
         waitFor(context, server, 100, "the Officiant never took its steel back once the source pillar was gone",
                 minecraft -> held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1);
         server.runOnServer(minecraft ->
         {
             expect(forge(minecraft).getStack().isEmpty(), "the steel is still in the forge: " + forge(minecraft).getStack());
+            expect(forge(minecraft).getPinned() == null, "the forge is still pinned to " + forge(minecraft).getPinned());
             expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(),
                     "the steel's order is still queued: " + WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs());
             minecraft.overworld().setBlockAndUpdate(SOURCE, VoidHeartBlocks.VOID_PILLAR.defaultBlockState());
         });
         waitFor(context, server, 400, "the forge never took the new source pillar back", minecraft -> source(minecraft).isForgeSource());
+
+        // The same click takes an output no Officiant waits on
+        server.runOnServer(minecraft -> forge(minecraft).setStack(new ItemStack(VoidHeartItems.SEETHING_STEEL_INGOT)));
+        aimAtForge(context, server);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            expect(carried(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 1 && forge(minecraft).getStack().isEmpty(),
+                    "a click did not take a player's own steel off the forge");
+            dropSteelAndIron(minecraft);
+        });
+    }
+
+    /**
+     * A player taking the Officiant's iron off the source pillar before the forge used it ends the craft: the craft counts again, and what the forge then
+     * makes from the player's own iron stays theirs rather than going to the hoard.
+     */
+    private static void checkForgeInputTakenByHand(ClientGameTestContext context, TestServerContext server)
+    {
+        orderSteel(server);
+        var swapped = false;
+        for (int tick = 0; tick < 2000 && !swapped; tick++)
+        {
+            // Taken in the server step the iron is seen laid, before the forge can use it
+            swapped = server.computeOnServer(minecraft ->
+            {
+                var officiant = (OfficiantTile) minecraft.overworld().getBlockEntity(SOURCE.below());
+                if (officiant.getClaim() == null || officiant.isLaying() || !source(minecraft).getStack().is(Items.IRON_INGOT))
+                    return false;
+                var player = player(minecraft);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                useOn(player, SOURCE);
+                expect(carried(minecraft, Items.IRON_INGOT) == 1, "the player did not get the iron off the source pillar");
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_INGOT));
+                useOn(player, SOURCE);
+                expect(source(minecraft).getStack().is(Items.IRON_INGOT), "the player's own iron was not set on the source pillar");
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                return true;
+            });
+            if (!swapped)
+                context.waitTick();
+        }
+        expect(swapped, "the Officiant never laid its iron on the source pillar");
+        waitFor(context, server, 60, "the Officiant never let go of the craft whose iron was taken",
+                minecraft -> ((OfficiantTile) minecraft.overworld().getBlockEntity(SOURCE.below())).getClaim() == null);
+        waitFor(context, server, 900, "the forge never made anything from the player's iron", minecraft -> !forge(minecraft).getStack().isEmpty());
+        context.waitTicks(30);
+        server.runOnServer(minecraft ->
+        {
+            expect(held(minecraft, VoidHeartItems.SEETHING_STEEL_INGOT) == 0, "what the forge made from the player's iron went to the hoard");
+            expect(!forge(minecraft).getStack().isEmpty(), "the Officiant took the player's output off the forge");
+            var jobs = WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs();
+            expect(jobs.size() == 1 && jobs.getFirst().tasks().getFirst().remaining() == 1 && jobs.getFirst().tasks().getFirst().working() == 0,
+                    "the craft whose iron was taken was not counted again: " + jobs);
+            WorksState.get(minecraft).edit(player(minecraft).getUUID()).cancel(jobs.getFirst().id());
+            forge(minecraft).takeOutput();
+            dropSteelAndIron(minecraft);
+        });
     }
 
     private static final BlockPos INSERTER = FORGE.south();

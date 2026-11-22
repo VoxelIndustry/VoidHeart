@@ -58,4 +58,12 @@ public interface VoidNetworkProvider
     {
         return Set.of(level);
     }
+
+    /**
+     * What of {@link #available} only a draw at pos can take, such as energy already delivered ahead for it. None by default.
+     */
+    default long exclusive(ServerLevel level, BlockPos pos)
+    {
+        return 0;
+    }
 }
