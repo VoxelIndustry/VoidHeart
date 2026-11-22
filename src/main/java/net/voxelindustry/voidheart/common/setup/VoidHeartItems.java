@@ -30,6 +30,7 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeTabletItem;
+import net.voxelindustry.voidheart.common.content.levitation.LevitationBeltItem;
 import net.voxelindustry.voidheart.common.content.shouldereye.ShoulderEyeItem;
 import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarItem;
 import net.voxelindustry.voidheart.common.content.underway.UnderwayKeyItem;
@@ -65,6 +66,7 @@ public class VoidHeartItems
     public static PermeableBarrierItem PERMEABLE_BARRIER;
     public static ShoulderEyeItem SHOULDER_EYE;
     public static WraithVeilItem WRAITH_VEIL;
+    public static LevitationBeltItem LEVITATION_BELT;
     public static LeyDiviningRodItem LEY_DIVINING_ROD;
     public static KleinStarItem KLEIN_STAR;
     public static BlessedContraptionItem BLESSED_CONTRAPTION;
@@ -140,6 +142,7 @@ public class VoidHeartItems
         PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
         SHOULDER_EYE = registerItem("shoulder_eye", ShoulderEyeItem::new);
         WRAITH_VEIL = registerItem("wraith_veil", WraithVeilItem::new);
+        LEVITATION_BELT = registerItem("levitation_belt", LevitationBeltItem::new);
         LEY_DIVINING_ROD = registerItem("ley_divining_rod", LeyDiviningRodItem::new);
         KLEIN_STAR = registerItem("klein_star", KleinStarItem::new);
         KNOWLEDGE_TABLET = registerItem("knowledge_tablet", KnowledgeTabletItem::new);

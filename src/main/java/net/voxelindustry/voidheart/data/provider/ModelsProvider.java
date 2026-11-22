@@ -334,6 +334,7 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.WRAITH_INK, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.UNDERWAY_KEY, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRAITH_VEIL, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.LEVITATION_BELT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.LEY_DIVINING_ROD, ModelTemplates.FLAT_HANDHELD_ITEM);
         generator.generateFlatItem(VoidHeartItems.BLESSED_CONTRAPTION, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.DARK_AMALGAM, ModelTemplates.FLAT_ITEM);

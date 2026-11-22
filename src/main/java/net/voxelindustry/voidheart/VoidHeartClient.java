@@ -24,6 +24,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.voxelindustry.voidheart.client.render.BarrierWaveTracker;
 import net.voxelindustry.voidheart.client.ClarityFog;
 import net.voxelindustry.voidheart.client.OilEmbers;
+import net.voxelindustry.voidheart.client.levitation.LevitationClient;
 import net.voxelindustry.voidheart.client.BrewTooltip;
 import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.client.apparatus.ShieldHits;
@@ -225,6 +226,7 @@ public class VoidHeartClient implements ClientModInitializer
         ItemTooltipCallback.EVENT.register(OilTooltip::append);
         ItemTooltipCallback.EVENT.register(BrewTooltip::append);
         ClientTickEvents.END_CLIENT_TICK.register(OilEmbers::tick);
+        LevitationClient.register();
         ClientTickEvents.END_CLIENT_TICK.register(ClarityFog::tick);
         ClientTickEvents.END_CLIENT_TICK.register(InsightMemory::tick);
         ClientTickEvents.END_CLIENT_TICK.register(ArmorSight::tick);

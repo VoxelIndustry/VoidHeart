@@ -1,0 +1,5 @@
+{
+  "icon": "voidheart:container/slots/belt",
+  "order": -256,
+  "validator_predicates": ["trinkets:default"]
+}
