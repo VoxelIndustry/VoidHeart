@@ -9,9 +9,11 @@
     "voidheart:contravoid_reactor"
   ],
   "unlocks": [
-    "voidheart:kindled_fractal_seed"
+    "voidheart:kindled_fractal_seed",
+    "voidheart:large_rubrum_cell"
   ],
   "recipes": [
-    "voidheart:shatterforge/kindled_fractal_seed_from_fractal_rubrum_seed"
+    "voidheart:shatterforge/kindled_fractal_seed_from_fractal_rubrum_seed",
+    "voidheart:altar/large_rubrum_cell"
   ]
 }

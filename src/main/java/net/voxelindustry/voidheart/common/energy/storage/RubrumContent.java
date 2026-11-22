@@ -13,6 +13,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -28,7 +29,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Startup registrar for W2 Rubrum storage, called once by EnergySetup: the construct, its frame, the cell, the cell socket and the socket wall.
+ * Startup registrar for W2 Rubrum storage, called once by EnergySetup: the construct, its frame, the cell, the cell socket, the socket wall and the large cell.
  */
 public final class RubrumContent
 {
@@ -37,10 +38,12 @@ public final class RubrumContent
     public static Item  RUBRUM_CELL;
     public static Block CELL_SOCKET;
     public static Block SOCKET_WALL;
+    public static Block LARGE_RUBRUM_CELL;
 
     public static BlockEntityType<RubrumConstructTile> RUBRUM_CONSTRUCT;
     public static BlockEntityType<CellSocketTile>      CELL_SOCKET_TILE;
     public static BlockEntityType<SocketWallTile>      SOCKET_WALL_TILE;
+    public static BlockEntityType<LargeRubrumCellTile> LARGE_RUBRUM_CELL_TILE;
 
     /** Energy and bundles a broken construct core carries. */
     public static DataComponentType<ConstructContents> CONSTRUCT_CONTENTS;
@@ -92,6 +95,15 @@ public final class RubrumContent
                 .noOcclusion()
                 .pushReaction(PushReaction.IMMOVEABLE)
                 .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties, MODID + ".socket_wall.lore"));
+        LARGE_RUBRUM_CELL = VoidHeartBlocks.registerBlock("large_rubrum_cell", LargeRubrumCellBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_RED)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(4F, 9F)
+                .noOcclusion()
+                .lightLevel(state -> 2 * state.getValue(LargeRubrumCellBlock.CHARGE))
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.STONE), (block, properties) -> new LoreBlockItem(block, properties.rarity(Rarity.EPIC), MODID + ".large_rubrum_cell.lore"));
         RUBRUM_CELL = VoidHeartItems.registerItem("rubrum_cell", properties -> new RubrumCellItem(properties.stacksTo(1)));
         VoidHeartItems.addCreativeVariant(RUBRUM_CELL, RubrumCellItem::full);
 
@@ -99,6 +111,8 @@ public final class RubrumContent
                 "rubrum_construct");
         VoidHeartTiles.registerTile(CELL_SOCKET_TILE = FabricBlockEntityTypeBuilder.create(CellSocketTile::new, CELL_SOCKET).build(), "cell_socket");
         VoidHeartTiles.registerTile(SOCKET_WALL_TILE = FabricBlockEntityTypeBuilder.create(SocketWallTile::new, SOCKET_WALL).build(), "socket_wall");
+        VoidHeartTiles.registerTile(LARGE_RUBRUM_CELL_TILE = FabricBlockEntityTypeBuilder.create(LargeRubrumCellTile::new, LARGE_RUBRUM_CELL).build(),
+                "large_rubrum_cell");
 
         RUBRUM_MOTE = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MODID, "rubrum_mote"),
                 FabricParticleTypes.simple(false));

@@ -1,0 +1,52 @@
+{
+  "type": "voidheart:altar",
+  "inputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:collapsing_rubrum_pearl"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:large_rubrum_bundle"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:large_rubrum_bundle"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:large_rubrum_bundle"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:large_rubrum_bundle"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ravenous_gold_block"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:ravenous_gold_block"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:voidstone_polished"
+      },
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:voidstone_polished"
+      }
+    ]
+  },
+  "outputs": {
+    "minecraft:itemstack": [
+      {
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:large_rubrum_cell"
+      }
+    ]
+  },
+  "time": 20
+}

@@ -1,0 +1,234 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "east": {
+          "texture": "#pillar"
+        },
+        "north": {
+          "texture": "#pillar"
+        },
+        "south": {
+          "texture": "#pillar"
+        },
+        "west": {
+          "texture": "#pillar"
+        }
+      },
+      "from": [
+        2,
+        0,
+        2
+      ],
+      "to": [
+        4,
+        12,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "east": {
+          "texture": "#pillar"
+        },
+        "north": {
+          "texture": "#pillar"
+        },
+        "south": {
+          "texture": "#pillar"
+        },
+        "west": {
+          "texture": "#pillar"
+        }
+      },
+      "from": [
+        12,
+        0,
+        2
+      ],
+      "to": [
+        14,
+        12,
+        4
+      ]
+    },
+    {
+      "faces": {
+        "east": {
+          "texture": "#pillar"
+        },
+        "north": {
+          "texture": "#pillar"
+        },
+        "south": {
+          "texture": "#pillar"
+        },
+        "west": {
+          "texture": "#pillar"
+        }
+      },
+      "from": [
+        2,
+        0,
+        12
+      ],
+      "to": [
+        4,
+        12,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "east": {
+          "texture": "#pillar"
+        },
+        "north": {
+          "texture": "#pillar"
+        },
+        "south": {
+          "texture": "#pillar"
+        },
+        "west": {
+          "texture": "#pillar"
+        }
+      },
+      "from": [
+        12,
+        0,
+        12
+      ],
+      "to": [
+        14,
+        12,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "east": {
+          "texture": "#lit"
+        },
+        "north": {
+          "texture": "#lit"
+        },
+        "south": {
+          "texture": "#lit"
+        },
+        "west": {
+          "texture": "#lit"
+        }
+      },
+      "from": [
+        4,
+        0,
+        4
+      ],
+      "light_emission": 12,
+      "to": [
+        12,
+        6,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "east": {
+          "texture": "#lit"
+        },
+        "north": {
+          "texture": "#lit"
+        },
+        "south": {
+          "texture": "#lit"
+        },
+        "west": {
+          "texture": "#lit"
+        }
+      },
+      "from": [
+        4,
+        6,
+        4
+      ],
+      "light_emission": 12,
+      "to": [
+        12,
+        12,
+        12
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#gold"
+        },
+        "east": {
+          "texture": "#gold"
+        },
+        "north": {
+          "texture": "#gold"
+        },
+        "south": {
+          "texture": "#gold"
+        },
+        "west": {
+          "texture": "#gold"
+        }
+      },
+      "from": [
+        2,
+        12,
+        2
+      ],
+      "to": [
+        14,
+        13,
+        14
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#frame"
+        },
+        "north": {
+          "texture": "#frame"
+        },
+        "south": {
+          "texture": "#frame"
+        },
+        "up": {
+          "cullface": "up",
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#frame"
+        }
+      },
+      "from": [
+        1,
+        13,
+        1
+      ],
+      "to": [
+        15,
+        16,
+        15
+      ]
+    }
+  ],
+  "textures": {
+    "body": "voidheart:block/voidstone_polished",
+    "dim": "voidheart:block/large_rubrum_cell_core_dim",
+    "frame": "voidheart:block/voidstone_tile_small_carved",
+    "gold": "voidheart:block/cut_ravenous_gold",
+    "lit": "voidheart:block/large_rubrum_cell_core_lit",
+    "particle": "voidheart:block/large_rubrum_cell_core_lit",
+    "pillar": "voidheart:block/rubrum_construct_pillar"
+  }
+}

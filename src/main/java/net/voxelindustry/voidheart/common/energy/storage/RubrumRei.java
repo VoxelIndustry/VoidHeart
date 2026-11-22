@@ -39,5 +39,9 @@ public final class RubrumRei
                 line("socket_wall.comparator"));
         page(RubrumContent.RUBRUM_CELL, "void_energy",
                 line("rubrum_cell.use", amount(RubrumBalance.CELL_CAPACITY)));
+        page(RubrumContent.LARGE_RUBRUM_CELL, "rubrum_pearls",
+                line("large_rubrum_cell.use", amount(RubrumBalance.LARGE_CELL_CAPACITY), RubrumBalance.LARGE_CELL_RATE),
+                line("large_rubrum_cell.fade", RubrumBalance.LARGE_CELL_DECAY_PERCENT),
+                line("large_rubrum_cell.fixed"));
     }
 }

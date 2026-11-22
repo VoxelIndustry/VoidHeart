@@ -28,6 +28,9 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.data.energy.EnergyRecipes;
 import net.voxelindustry.voidheart.data.energy.EnergyTags;
 
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
+
 import java.util.ArrayList;
 
 import static net.minecraft.client.data.models.BlockModelGenerators.plainVariant;
@@ -77,6 +80,142 @@ public final class RubrumDatagen
         generators.modelOutput.accept(wall, RubrumDatagen::socketWallModel);
         generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(RubrumContent.SOCKET_WALL, plainVariant(wall))
                 .with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+
+        var large = RubrumContent.LARGE_RUBRUM_CELL;
+        var largeDispatch = PropertyDispatch.initial(LargeRubrumCellBlock.HALF, LargeRubrumCellBlock.CHARGE);
+        for (var half : DoubleBlockHalf.values())
+        {
+            for (var lit = 0; lit <= LargeCellCharge.SEGMENTS; lit++)
+            {
+                var model = ModelLocationUtils.getModelLocation(large, "_" + half.getSerializedName() + "_" + lit);
+                var elements = largeCellHalf(half, lit, 0);
+                generators.modelOutput.accept(model, () -> largeCellModel(elements, false));
+                largeDispatch.select(half, lit, plainVariant(model));
+            }
+        }
+        generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(large).with(largeDispatch));
+        // The item shows both halves at once, fully lit
+        var whole = largeCellHalf(DoubleBlockHalf.LOWER, LargeCellCharge.SEGMENTS, 0);
+        whole.addAll(largeCellHalf(DoubleBlockHalf.UPPER, LargeCellCharge.SEGMENTS, 16));
+        generators.modelOutput.accept(ModelLocationUtils.getModelLocation(large), () -> largeCellModel(whole, true));
+    }
+
+    /** Light the lit segments of a large cell's column give off in its model. */
+    private static final int LARGE_CELL_EMISSION = 12;
+
+    /**
+     * One half of the Large Rubrum Cell, the same from every side: a carved plinth or cap behind a gold band, rubrum
+     * pillars at the corners and two of the four segments of a crystal column between them, lit from the bottom up.
+     *
+     * @param lit    segments lit over the whole column
+     * @param offset raises every box, to stack both halves in the item model
+     */
+    private static JsonArray largeCellHalf(DoubleBlockHalf half, int lit, int offset)
+    {
+        var elements = new JsonArray();
+        var lower = half == DoubleBlockHalf.LOWER;
+        // Faces where the halves meet are left out
+        java.util.function.Predicate<Direction> sides = face -> face.getAxis() != Direction.Axis.Y;
+        int pillarFrom = lower ? 4 : 0, pillarTo = lower ? 16 : 12;
+        int[][] corners = {{2, 2}, {12, 2}, {2, 12}, {12, 12}};
+        for (var corner : corners)
+            elements.add(cellBox(corner[0], pillarFrom, corner[1], corner[0] + 2, pillarTo, corner[1] + 2, offset, face -> "pillar", sides, -1));
+
+        var firstSegment = lower ? 0 : 2;
+        for (var i = 0; i < 2; i++)
+        {
+            var y0 = lower ? 4 + i * 6 : i * 6;
+            var on = firstSegment + i < lit;
+            elements.add(cellBox(4, y0, 4, 12, y0 + 6, 12, offset, face -> on ? "lit" : "dim", sides, on ? LARGE_CELL_EMISSION : -1));
+        }
+
+        if (lower)
+        {
+            elements.add(cellBox(2, 3, 2, 14, 4, 14, offset, face -> "gold", face -> face != Direction.DOWN, -1));
+            elements.add(cellBox(1, 0, 1, 15, 3, 15, offset, face -> face.getAxis() == Direction.Axis.Y ? "body" : "frame", face -> true, -1));
+        }
+        else
+        {
+            elements.add(cellBox(2, 12, 2, 14, 13, 14, offset, face -> "gold", face -> face != Direction.UP, -1));
+            elements.add(cellBox(1, 13, 1, 15, 16, 15, offset, face -> face.getAxis() == Direction.Axis.Y ? "body" : "frame", face -> true, -1));
+        }
+        return elements;
+    }
+
+    private static JsonObject cellBox(int x0, int y0, int z0, int x1, int y1, int z1, int offset,
+                                      java.util.function.Function<Direction, String> texture, java.util.function.Predicate<Direction> drawn, int emission)
+    {
+        var element = new JsonObject();
+        element.add("from", vector(x0, y0 + offset, z0));
+        element.add("to", vector(x1, y1 + offset, z1));
+        if (emission >= 0)
+            element.addProperty("light_emission", emission);
+        var faces = new JsonObject();
+        for (var face : Direction.values())
+        {
+            if (!drawn.test(face))
+                continue;
+            var json = new JsonObject();
+            json.addProperty("texture", "#" + texture.apply(face));
+            // Only the plinth's bottom and the cap's top lie on the block's outside
+            if (offset == 0 && (face == Direction.DOWN && y0 == 0 || face == Direction.UP && y1 == 16))
+                json.addProperty("cullface", face.getSerializedName());
+            faces.add(face.getSerializedName(), json);
+        }
+        element.add("faces", faces);
+        return element;
+    }
+
+    private static JsonObject largeCellModel(JsonArray elements, boolean item)
+    {
+        var textures = new JsonObject();
+        textures.addProperty("particle", MODID + ":block/large_rubrum_cell_core_lit");
+        textures.addProperty("body", MODID + ":block/voidstone_polished");
+        textures.addProperty("frame", MODID + ":block/voidstone_tile_small_carved");
+        textures.addProperty("pillar", MODID + ":block/rubrum_construct_pillar");
+        textures.addProperty("gold", MODID + ":block/cut_ravenous_gold");
+        textures.addProperty("lit", MODID + ":block/large_rubrum_cell_core_lit");
+        textures.addProperty("dim", MODID + ":block/large_rubrum_cell_core_dim");
+
+        var model = new JsonObject();
+        model.addProperty("parent", "minecraft:block/block");
+        model.add("textures", textures);
+        model.add("elements", elements);
+        if (item)
+            model.add("display", largeCellDisplay());
+        return model;
+    }
+
+    /**
+     * The two-block column shrunk to fit a slot and a hand.
+     */
+    private static JsonObject largeCellDisplay()
+    {
+        var display = new JsonObject();
+        display.add("gui", transform(vector(30, 225, 0), vector(0, -3.5F, 0), 0.36F));
+        display.add("ground", transform(vector(0, 0, 0), vector(0, 2, 0), 0.2F));
+        display.add("fixed", transform(vector(0, 0, 0), vector(0, -3.5F, 0), 0.4F));
+        display.add("thirdperson_righthand", transform(vector(75, 45, 0), vector(0, 1.5F, 0), 0.25F));
+        display.add("firstperson_righthand", transform(vector(0, 45, 0), vector(0, 2, 0), 0.2F));
+        display.add("firstperson_lefthand", transform(vector(0, 225, 0), vector(0, 2, 0), 0.2F));
+        return display;
+    }
+
+    private static JsonObject transform(JsonArray rotation, JsonArray translation, float scale)
+    {
+        var json = new JsonObject();
+        json.add("rotation", rotation);
+        json.add("translation", translation);
+        json.add("scale", vector(scale, scale, scale));
+        return json;
+    }
+
+    private static JsonArray vector(float... values)
+    {
+        var array = new JsonArray();
+        for (var value : values)
+            array.add(value);
+        return array;
     }
 
     /**
@@ -251,6 +390,9 @@ public final class RubrumDatagen
         for (var habit : HabitShapedRecipe.CARRIED.stream().sorted().toList())
             cases.add(ItemModelUtils.when(habit, cellModel(generators, "_" + habit.getSerializedName())));
         generators.itemModelOutput.accept(cell, ItemModelUtils.select(new ComponentContents<>(VoidHeartDataComponents.CRYSTAL_HABIT), plain, cases));
+
+        generators.itemModelOutput.accept(RubrumContent.LARGE_RUBRUM_CELL.asItem(),
+                ItemModelUtils.plainModel(ModelLocationUtils.getModelLocation(RubrumContent.LARGE_RUBRUM_CELL)));
     }
 
     private static ItemModel.Unbaked cellModel(ItemModelGenerators generators, String habit)
@@ -310,6 +452,13 @@ public final class RubrumDatagen
                 voidstone, voidstone, voidstone, voidstone,
                 gold, gold,
                 VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.AZURIUM_SHARD);
+
+        // The large cell grows around a collapsing pearl, sealed in large rubrum and gold
+        var bundle = VoidHeartBlocks.LARGE_RUBRUM_BUNDLE;
+        recipes.altar("large_rubrum_cell", RubrumContent.LARGE_RUBRUM_CELL, PearlContent.COLLAPSING_RUBRUM_PEARL,
+                bundle, bundle, bundle, bundle,
+                VoidHeartBlocks.RAVENOUS_GOLD_BLOCK, VoidHeartBlocks.RAVENOUS_GOLD_BLOCK,
+                voidstone, voidstone);
     }
 
     /**
@@ -321,6 +470,8 @@ public final class RubrumDatagen
         loot.dropSelf(RubrumContent.RUBRUM_CONSTRUCT_FRAME);
         loot.dropSelf(RubrumContent.CELL_SOCKET);
         loot.dropSelf(RubrumContent.SOCKET_WALL);
+        // Only the lower half drops the cell, and never its charge
+        loot.add(RubrumContent.LARGE_RUBRUM_CELL, loot::createDoorTable);
     }
 
     public static void tags(EnergyTags tags)
