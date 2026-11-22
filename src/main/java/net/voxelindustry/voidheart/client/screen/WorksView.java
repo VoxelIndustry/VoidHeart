@@ -31,10 +31,11 @@ import static net.voxelindustry.voidheart.client.screen.ResearchScreen.RULE_COLO
 /**
  * The works tab of a Reckoning: what the owner's stations can make as plates, then the plan for a chosen item drawn as a graph flowing to the right,
  * raw kinds on the left and the item alone on the right. An order begun shows the same graph with its progress: teal waits, gold is being worked,
- * lilac is done or taken from the hoard, rose is lacking, and motes run along the arcs into what is being worked.
+ * lilac is done or taken from the hoard, rose is lacking or waits on a station no Officiant serves, and motes run along the arcs into what is being
+ * worked. The orders running stand in a panel left of the slab, each with what it makes, how far it has got and what it waits on.
  * <p>
- * Per frame: up to 72 plates in the list, or a graph of a few dozen plates and arcs sampled every few pixels; the layout is worked out only when the
- * plan or order shown changes.
+ * Per frame: up to 72 plates in the list, or a graph of a few dozen plates and arcs sampled every few pixels, and a few order rows; the layout is
+ * worked out only when the plan or order shown changes.
  */
 final class WorksView
 {
@@ -43,7 +44,31 @@ final class WorksView
     static final int REGION_W = HoardScreen.COLUMNS * HoardScreen.CELL + 6;
     static final int REGION_H = 146;
     static final int CONTROLS_Y = REGION_Y + REGION_H + 3;
-    static final int JOBS_Y     = CONTROLS_Y + 15;
+    static final int WHISPER_Y  = CONTROLS_Y + 18;
+
+    // The slab of orders left of the main one: the same stone, its own torn hole level with the main hole, the orders as plates in it
+    static final int SIDE_PAD    = 6;
+    static final int SIDE_W      = 106;
+    static final int SIDE_SLAB_W = SIDE_W + 2 * SIDE_PAD + 4;
+    static final int SIDE_GAP    = 3;
+    static final int JOB_ROW     = 36;
+    // An order is drawn as a research node: a disc for its state, filling as its crafts are done, glowing while it is made
+    private static final int  DISC          = ResearchMapView.NODE_SIZE;
+    private static final int  DISC_DONE     = 0;
+    private static final int  DISC_WAITING  = 1;
+    private static final int  DISC_RUNNING  = 2;
+    private static final int  DISC_BLOCKED  = 3;
+    private static final int  DISC_FILL     = 5;
+    private static final int  DISC_GLOW     = 6;
+    private static final long GLOW_MILLIS   = 2600;
+    private static final int  THREAD_COLOR  = 0x704A3860;
+    /** Laid over the icon of a blocked order, the closed disc's own dark, so the icon sinks into it. */
+    private static final int  DIM_COLOR     = 0xB0221E28;
+    private static final int  TEXT_X        = DISC + 6;
+    static final int JOB_ROWS    = REGION_H / JOB_ROW;
+    private static final int BAR_BACK   = 0xFF08050C;
+    private static final int BAR_H      = 3;
+    private static final int SCROLL_COLOR = 0xFF4A3860;
 
     private static final int CELL         = HoardScreen.CELL;
     private static final int LIST_ROWS    = REGION_H / CELL;
@@ -51,14 +76,13 @@ final class WorksView
     private static final int MAX_ROW      = 22;
     private static final int ARC_SAMPLES  = 18;
     private static final long MOTE_MILLIS = 1400;
-    static final int JOB_PLATE_W  = 26;
 
     private static final int PLATE_BACK = 0xB00B0810;
     private static final int LEAF_BACK  = 0xD0070509;
     private static final float MIN_ZOOM  = 0.5F;
     private static final float MAX_ZOOM  = 2.5F;
     private static final float ZOOM_STEP = 1.2F;
-    private static final int ROSTER_ROW = 20;
+    private static final int ROSTER_ROW = 22;
     private static final int ROSTER_ROWS = REGION_H / ROSTER_ROW;
     private static final int ROSTER_ICONS = 4;
     private static final int ALTAR_PIP  = 0xFF8E6BE8;
@@ -66,6 +90,9 @@ final class WorksView
     private static final int TABLE_PIP  = 0xFF36C5B0;
 
     private final HoardMenu menu;
+    /** Lays the slab's torn edge over what was drawn in the hole, set by the screen that baked it. */
+    @Nullable
+    java.util.function.Consumer<GuiGraphicsExtractor> rimOverlay;
     @Nullable
     ItemVariant chosen;
     long amount = 1;
@@ -75,8 +102,13 @@ final class WorksView
     /** Whether the roster of Officiants is shown instead of what they can make. */
     boolean roster;
     private int rosterScroll;
-    /** The first order shown on the strip of order plates. */
+    /** The first order shown in the panel of orders. */
     private int jobScroll;
+    // The graph shown as trimmed for display, kept while the graph it came from is the same
+    @Nullable
+    private WorksGraph trimmedFrom;
+    @Nullable
+    private WorksGraph trimmed;
 
     // The layout of the graph shown, worked out again when it changes, and how it is zoomed and panned
     @Nullable
@@ -120,9 +152,56 @@ final class WorksView
     {
         var shown = shownJob();
         if (shown != null)
-            return shown.graph();
+            return trim(shown.graph());
         var plan = menu.getPlan();
-        return chosen != null && plan != null && plan.item().equals(chosen) ? plan.graph() : null;
+        return chosen != null && plan != null && plan.item().equals(chosen) ? trim(plan.graph()) : null;
+    }
+
+    private WorksGraph trim(WorksGraph graph)
+    {
+        if (graph != trimmedFrom)
+        {
+            trimmedFrom = graph;
+            trimmed = graph.trimmed();
+        }
+        return trimmed;
+    }
+
+    /**
+     * @return whether some loaded Officiant serves that kind of station, true for a kind taken from the hoard
+     */
+    private boolean served(int station)
+    {
+        return station < 0 || menu.getRoster().stream().anyMatch(officiant -> officiant.station() == station);
+    }
+
+    /**
+     * @return the kinds of station a graph still needs that no Officiant serves; for an order only those with crafts left
+     */
+    private List<StationKind> unserved(WorksGraph graph, @Nullable WorksPayloads.Job shown)
+    {
+        return graph.nodes().stream().filter(node -> node.isMade() && !served(node.station()) && (shown == null || shown.left(node.recipe()) > 0))
+                .map(node -> StationKind.values()[node.station()]).distinct().toList();
+    }
+
+    private static Component unservedLine(StationKind kind)
+    {
+        return Component.translatable(MODID + ".works.unserved." + kind.name().toLowerCase(Locale.ROOT)).withColor(LACK_COLOR);
+    }
+
+    /**
+     * @return the block a kind of station is, as its icon
+     */
+    static net.minecraft.world.item.ItemStack stationIcon(int station)
+    {
+        if (station < 0)
+            return new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BARRIER);
+        return switch (StationKind.values()[station])
+        {
+            case ALTAR -> new net.minecraft.world.item.ItemStack(net.voxelindustry.voidheart.common.setup.VoidHeartBlocks.VOID_ALTAR);
+            case FORGE -> new net.minecraft.world.item.ItemStack(net.voxelindustry.voidheart.common.setup.VoidHeartBlocks.SHATTER_FORGE);
+            case TABLE -> new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CRAFTING_TABLE);
+        };
     }
 
     private WorksLayout<Integer> layoutOf(WorksGraph graph)
@@ -186,7 +265,7 @@ final class WorksView
 
     private int stateColor(WorksGraph.Node node, @Nullable WorksPayloads.Job shown)
     {
-        if (node.lacking() > 0)
+        if (node.lacking() > 0 || !served(node.station()))
             return LACK_COLOR;
         if (!node.isMade())
             return KNOWN_COLOR;
@@ -237,39 +316,46 @@ final class WorksView
             int x = left + REGION_X + 2;
             int y = top + REGION_Y + 2 + row * ROSTER_ROW;
             graphics.fill(x, y, x + REGION_W - 4, y + ROSTER_ROW - 2, PLATE_BACK);
-            var pip = stationPip(station.station());
-            graphics.fill(x + 2, y + 2, x + 5, y + ROSTER_ROW - 4, pip == 0 ? LACK_COLOR : pip);
+            graphics.outline(x, y, REGION_W - 4, ROSTER_ROW - 2, RULE_COLOR);
+            var stationIcon = stationIcon(station.station());
+            graphics.item(stationIcon, x + 2, y + 2);
 
-            var name = station.station() < 0 ? Component.translatable(MODID + ".works.roster.none")
-                    : Component.translatable(MODID + ".works.roster.station." + StationKind.values()[station.station()].name().toLowerCase(Locale.ROOT));
-            var where = " " + station.pos().getX() + ", " + station.pos().getY() + ", " + station.pos().getZ();
-            graphics.text(font, font.plainSubstrByWidth(name.getString() + where, REGION_W - 16), x + 8, y + 1, KNOWN_COLOR, false);
+            var name = station.station() < 0 ? Component.translatable(MODID + ".works.roster.none") : stationIcon.getHoverName();
+            var where = "  " + station.pos().getX() + ", " + station.pos().getY() + ", " + station.pos().getZ();
+            graphics.text(font, font.plainSubstrByWidth(name.getString(), REGION_W - 26), x + 21, y + 2, KNOWN_COLOR, false);
+            int nameWidth = font.width(font.plainSubstrByWidth(name.getString(), REGION_W - 26));
+            if (21 + nameWidth + font.width(where) < REGION_W - 6)
+                graphics.text(font, where, x + 21 + nameWidth, y + 2, MUTED_COLOR, false);
 
             var state = switch (station.status())
             {
                 case WorksPayloads.Station.LAYING -> Component.translatable(MODID + ".works.roster.laying", station.making());
                 case WorksPayloads.Station.WORKING -> Component.translatable(MODID + ".works.roster.working", station.making());
+                case WorksPayloads.Station.GATHERING -> Component.translatable(MODID + ".works.roster.gathering");
+                case WorksPayloads.Station.NO_FIELD -> Component.translatable(MODID + ".works.roster.no_field");
                 default -> Component.translatable(MODID + ".works.roster.idle");
             };
             int iconsWidth = Math.min(ROSTER_ICONS, station.makes().size()) * 9;
             var pose = graphics.pose();
-            pose.pushMatrix();
-            pose.translate(x + 8, y + 10);
-            pose.scale(0.75F, 0.75F);
-            graphics.text(font, font.plainSubstrByWidth(state.getString(), (int) ((REGION_W - 18 - iconsWidth) / 0.75F)), 0, 0,
-                    station.status() == WorksPayloads.Station.IDLE ? MUTED_COLOR : ACTIVE_COLOR, false);
-            pose.popMatrix();
+            int stateColor = switch (station.status())
+            {
+                case WorksPayloads.Station.IDLE -> MUTED_COLOR;
+                case WorksPayloads.Station.GATHERING -> FRONTIER_COLOR;
+                case WorksPayloads.Station.NO_FIELD -> LACK_COLOR;
+                default -> ACTIVE_COLOR;
+            };
+            graphics.text(font, font.plainSubstrByWidth(state.getString(), REGION_W - 28 - iconsWidth), x + 21, y + 11, stateColor, false);
 
             // What a forge's build makes, as small icons at the row's end
             for (int icon = 0; icon < Math.min(ROSTER_ICONS, station.makes().size()); icon++)
             {
                 int iconX = x + REGION_W - 6 - (icon + 1) * 9;
                 pose.pushMatrix();
-                pose.translate(iconX, y + 9);
+                pose.translate(iconX, y + 11);
                 pose.scale(0.5F, 0.5F);
                 graphics.item(station.makes().get(icon).toStack(), 0, 0);
                 pose.popMatrix();
-                if (mouseX >= iconX && mouseX < iconX + 8 && mouseY >= y + 9 && mouseY < y + 17)
+                if (mouseX >= iconX && mouseX < iconX + 8 && mouseY >= y + 11 && mouseY < y + 19)
                     hovered = station.makes().get(icon);
             }
         }
@@ -295,6 +381,16 @@ final class WorksView
                 graphics.outline(x + 1, y + 1, CELL - 2, CELL - 2, item.equals(hovered) ? FRONTIER_COLOR : RULE_COLOR);
                 graphics.item(item.toStack(), x + 1, y + 1);
             }
+        int rows = (items.size() + HoardScreen.COLUMNS - 1) / HoardScreen.COLUMNS;
+        if (rows > LIST_ROWS)
+        {
+            int trackX = left + REGION_X + HoardScreen.COLUMNS * CELL + 1;
+            int trackH = LIST_ROWS * CELL;
+            int barH = Math.max(6, trackH * LIST_ROWS / rows);
+            int barY = top + REGION_Y + (trackH - barH) * scroll / (rows - LIST_ROWS);
+            graphics.fill(trackX, top + REGION_Y, trackX + 2, top + REGION_Y + trackH, BAR_BACK);
+            graphics.fill(trackX, barY, trackX + 2, barY + barH, SCROLL_COLOR);
+        }
         if (hovered != null)
             graphics.setTooltipForNextFrame(font, hovered.toStack(), mouseX, mouseY);
     }
@@ -337,7 +433,11 @@ final class WorksView
             if (pip != 0)
                 graphics.fill(spot[0] + 1, spot[1] + 1, spot[0] + 3, spot[1] + 3, pip);
             graphics.item(node.item().toStack(), spot[0] + 1, spot[1] + 1);
-            HoardScreen.extractCount(graphics, font, HoardScreen.countText(node.needed()), spot[0] + CELL - 1, spot[1] + CELL - 1);
+            boolean wanting = node.lacking() > 0 || !served(node.station());
+            HoardScreen.extractCount(graphics, font, HoardScreen.countText(node.needed()), spot[0] + CELL - 1, spot[1] + CELL - 1,
+                    wanting ? LACK_COLOR : HoardScreen.COUNT_COLOR);
+            if (wanting)
+                extractWant(graphics, spot[0] + 1, spot[1] + 1);
             if (mouse[0] >= spot[0] && mouse[0] < spot[0] + CELL && mouse[1] >= spot[1] && mouse[1] < spot[1] + CELL)
                 hovered = node;
         }
@@ -351,18 +451,30 @@ final class WorksView
             var drink = graph.drinks().get(leaf);
             int color = aspectColor(drink.aspect());
             graphics.fill(spot[0] + 1, spot[1] + 1, spot[0] + CELL - 1, spot[1] + CELL - 1, LEAF_BACK);
-            graphics.outline(spot[0] + 1, spot[1] + 1, CELL - 2, CELL - 2, reserve.getOrDefault(drink.aspect(), 0L) >= drink.amount() ? KNOWN_COLOR : RULE_COLOR);
+            boolean short_ = shown == null && reserve.getOrDefault(drink.aspect(), 0L) < drink.amount();
+            graphics.outline(spot[0] + 1, spot[1] + 1, CELL - 2, CELL - 2, short_ ? LACK_COLOR : KNOWN_COLOR);
             graphics.fill(spot[0] + 5, spot[1] + 4, spot[0] + CELL - 5, spot[1] + CELL - 4, color);
             graphics.fill(spot[0] + 4, spot[1] + 5, spot[0] + CELL - 4, spot[1] + CELL - 5, color);
-            HoardScreen.extractCount(graphics, font, HoardScreen.countText(drink.amount()), spot[0] + CELL - 1, spot[1] + CELL - 1);
+            HoardScreen.extractCount(graphics, font, HoardScreen.countText(drink.amount()), spot[0] + CELL - 1, spot[1] + CELL - 1,
+                    short_ ? LACK_COLOR : HoardScreen.COUNT_COLOR);
+            if (short_)
+                extractWant(graphics, spot[0] + 1, spot[1] + 1);
             if (mouse[0] >= spot[0] && mouse[0] < spot[0] + CELL && mouse[1] >= spot[1] && mouse[1] < spot[1] + CELL)
                 hovered = drink;
         }
         pose.popMatrix();
+        // What is panned or zoomed past the torn edge goes under the stone, not over it
+        if (rimOverlay != null)
+            rimOverlay.accept(graphics);
         graphics.disableScissor();
 
         if (hovered instanceof WorksGraph.Node node)
-            graphics.setComponentTooltipForNextFrame(font, tooltip(node, shown), mouseX, mouseY);
+        {
+            var lines = tooltip(node, shown);
+            if (!served(node.station()))
+                lines.add(unservedLine(StationKind.values()[node.station()]));
+            graphics.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
+        }
         else if (hovered instanceof WorksGraph.Drink drink)
         {
             var lines = new ArrayList<Component>();
@@ -372,6 +484,17 @@ final class WorksView
                 lines.add(Component.translatable(MODID + ".works.node.reserve", reserve.get(drink.aspect())).withColor(KNOWN_COLOR));
             graphics.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
         }
+    }
+
+    /**
+     * A small rose notch in a plate's top left corner, so what is wanting reads without telling colours apart.
+     */
+    private static void extractWant(GuiGraphicsExtractor graphics, int x, int y)
+    {
+        graphics.fill(x, y, x + 4, y + 1, LACK_COLOR);
+        graphics.fill(x, y, x + 1, y + 4, LACK_COLOR);
+        graphics.fill(x + 1, y + 1, x + 3, y + 2, LACK_COLOR);
+        graphics.fill(x + 1, y + 1, x + 2, y + 3, LACK_COLOR);
     }
 
     /**
@@ -411,19 +534,18 @@ final class WorksView
     }
 
     /**
-     * @return a line for each kind the plan shown lacks, for the whisper's tooltip
+     * @return a row for each kind the plan shown lacks, its icon, how many and its name, for the whisper's tooltip
      */
-    List<Component> lackingLines()
+    List<ItemRowsTooltip.Row> lackingRows()
     {
         var graph = shownGraph();
         if (graph == null || shownJob() != null)
             return List.of();
         return graph.nodes().stream().filter(node -> node.lacking() > 0)
-                .map(node -> (Component) Component.translatable(MODID + ".works.lacking_line", node.lacking(), node.item().toStack().getHoverName()).withColor(LACK_COLOR))
-                .toList();
+                .map(node -> new ItemRowsTooltip.Row(node.item().toStack(), node.lacking(), LACK_COLOR)).toList();
     }
 
-    private static List<Component> tooltip(WorksGraph.Node node, @Nullable WorksPayloads.Job shown)
+    private static ArrayList<Component> tooltip(WorksGraph.Node node, @Nullable WorksPayloads.Job shown)
     {
         var lines = new ArrayList<Component>();
         lines.add(node.item().toStack().getHoverName());
@@ -451,59 +573,139 @@ final class WorksView
         return new float[] { x, y };
     }
 
-    /** A plate of the strip paging back, or on, rather than showing an order. */
-    private static final int PAGE_BACK = -1;
-    private static final int PAGE_ON   = -2;
-    private static final int STRIP_PLATES = (REGION_W + 2) / (JOB_PLATE_W + 2);
-
     /**
-     * @return what each plate of the order strip shows, an order's place in the list or a page plate, the same for drawing and clicking
+     * @return the left of the slab of orders
      */
-    private List<Integer> strip()
+    static int sideSlab(int left)
     {
-        int count = menu.getJobs().size();
-        jobScroll = Math.clamp(jobScroll, 0, Math.max(0, count - 1));
-        var plates = new ArrayList<Integer>();
-        if (count <= STRIP_PLATES)
-        {
-            jobScroll = 0;
-            for (int index = 0; index < count; index++)
-                plates.add(index);
-            return plates;
-        }
-        if (jobScroll > 0)
-            plates.add(PAGE_BACK);
-        int room = STRIP_PLATES - plates.size();
-        // Keep the last plate for paging on when the rest do not fit
-        int shown = count - jobScroll <= room ? count - jobScroll : room - 1;
-        for (int index = jobScroll; index < jobScroll + shown; index++)
-            plates.add(index);
-        if (jobScroll + shown < count)
-            plates.add(PAGE_ON);
-        return plates;
+        return left - SIDE_SLAB_W - SIDE_GAP;
     }
 
+    private static int sideLeft(int left)
+    {
+        return sideSlab(left) + SIDE_PAD + 2;
+    }
+
+    private static int rowTop(int top, int row)
+    {
+        return top + REGION_Y + 1 + row * JOB_ROW;
+    }
+
+    /**
+     * Each order running as a row of the panel left of the slab: an icon of what it makes, how many, a bar of the crafts done, and what it waits on.
+     */
     private void extractJobs(GuiGraphicsExtractor graphics, Font font, int left, int top, int mouseX, int mouseY)
     {
         var jobs = menu.getJobs();
-        var plates = strip();
-        for (int slot = 0; slot < plates.size(); slot++)
+        jobScroll = Math.clamp(jobScroll, 0, Math.max(0, jobs.size() - JOB_ROWS));
+        int x = sideLeft(left);
+        // Titled as the main slab is, the count of orders where the main slab has its search
+        int titleX = sideSlab(left) + SIDE_PAD + 2;
+        graphics.text(font, Component.translatable(MODID + ".works.side.title"), titleX, top + 8, KNOWN_COLOR, false);
+        if (!jobs.isEmpty())
         {
-            int plate = plates.get(slot);
-            int x = left + REGION_X + slot * (JOB_PLATE_W + 2);
-            int y = top + JOBS_Y;
-            boolean over = mouseX >= x && mouseX < x + JOB_PLATE_W && mouseY >= y && mouseY < y + 12;
-            boolean selected = plate >= 0 && job != null && job == jobs.get(plate).id();
-            graphics.fill(x, y, x + JOB_PLATE_W, y + 12, PLATE_BACK);
-            graphics.outline(x, y, JOB_PLATE_W, 12, selected ? ACTIVE_COLOR : over ? FRONTIER_COLOR : RULE_COLOR);
-            var label = plate == PAGE_BACK ? "<" : plate == PAGE_ON ? "+" + (jobs.size() - lastShown(plates) - 1) : "#" + jobs.get(plate).id();
-            graphics.text(font, label, x + (JOB_PLATE_W - font.width(label)) / 2, y + 2, selected ? ACTIVE_COLOR : MUTED_COLOR, false);
+            var count = jobs.size() > JOB_ROWS ? (jobScroll + 1) + "-" + Math.min(jobs.size(), jobScroll + JOB_ROWS) + " / " + jobs.size()
+                    : String.valueOf(jobs.size());
+            graphics.text(font, count, titleX, top + 21, MUTED_COLOR, false);
+        }
+        if (jobs.isEmpty())
+        {
+            var empty = Component.translatable(MODID + ".works.side.empty").getString();
+            graphics.text(font, empty, x + (SIDE_W - font.width(empty)) / 2, top + REGION_Y + REGION_H / 2 - 4, MUTED_COLOR, false);
+            return;
+        }
+
+        for (int row = 0; row < JOB_ROWS && jobScroll + row < jobs.size(); row++)
+        {
+            var job = jobs.get(jobScroll + row);
+            int y = rowTop(top, row);
+            boolean over = mouseX >= x && mouseX < x + SIDE_W && mouseY >= y && mouseY < y + JOB_ROW - 2;
+            boolean selected = this.job != null && this.job == job.id();
+            long total = job.graph().nodes().stream().filter(WorksGraph.Node::isMade).mapToLong(WorksGraph.Node::crafts).sum();
+            long done = Math.max(0, total - job.left());
+            boolean working = job.working().values().stream().anyMatch(count -> count > 0);
+            boolean blocked = !unserved(job.graph(), job).isEmpty() || !working && job.graph().nodes().stream().anyMatch(node -> node.lacking() > 0);
+            int stateRgb = working ? ResearchScreen.ACTIVE_RGB : ResearchScreen.FRONTIER_RGB;
+
+            // The queue as one branch: a thread from each order down to the next
+            if (row + 1 < JOB_ROWS && jobScroll + row + 1 < jobs.size())
+                graphics.fill(x + DISC / 2, y + DISC, x + DISC / 2 + 1, y + JOB_ROW, THREAD_COLOR);
+
+            // Glows as an active research does while it is made, steady when chosen, faintly when the cursor is on it
+            int glow = 0;
+            if (selected)
+                glow = 200;
+            else if (working)
+                glow = (int) (40 + 150 * (0.5F + 0.5F * (float) Math.sin(Util.getMillis() * Math.PI * 2 / GLOW_MILLIS + job.id())));
+            else if (over)
+                glow = 110;
+            if (glow > 0)
+                ResearchMapView.sprite(graphics, DISC_GLOW, x, y, net.minecraft.util.ARGB.color(glow, selected ? ResearchScreen.ACTIVE_RGB : stateRgb));
+
+            int disc = blocked ? DISC_BLOCKED : working ? DISC_RUNNING : total > 0 && done >= total ? DISC_DONE : DISC_WAITING;
+            ResearchMapView.sprite(graphics, disc, x, y, 0xFFFFFFFF);
+            if (total > 0 && done > 0 && done < total)
+            {
+                int filled = (int) Math.ceil(DISC * done / (double) total);
+                graphics.enableScissor(x, y + DISC - filled, x + DISC, y + DISC);
+                ResearchMapView.sprite(graphics, DISC_FILL, x, y, net.minecraft.util.ARGB.color(working ? 170 : 90, stateRgb));
+                graphics.disableScissor();
+            }
+            if (!job.graph().nodes().isEmpty())
+            {
+                int iconX = x + (DISC - 16) / 2;
+                int iconY = y + (DISC - 16) / 2;
+                graphics.item(job.graph().nodes().getFirst().item().toStack(), iconX, iconY);
+                // A blocked order's icon sinks into its disc, its corners rounded off to stay inside the rim
+                if (blocked)
+                {
+                    graphics.fill(iconX, iconY + 1, iconX + 16, iconY + 15, DIM_COLOR);
+                    graphics.fill(iconX + 1, iconY, iconX + 15, iconY + 1, DIM_COLOR);
+                    graphics.fill(iconX + 1, iconY + 15, iconX + 15, iconY + 16, DIM_COLOR);
+                }
+            }
+
+            // Its name, a thread lit as far as its crafts have got, and what it waits on, straight on the void as research names are
+            // Kept clear of the hole's torn edge
+            int textW = SIDE_W - TEXT_X - 5;
+            var name = job.count() + " " + job.what();
+            graphics.text(font, font.plainSubstrByWidth(name, textW), x + TEXT_X, y + 2, selected ? ACTIVE_COLOR : KNOWN_COLOR, false);
+            graphics.fill(x + TEXT_X, y + 12, x + TEXT_X + textW, y + 13, RULE_COLOR);
+            if (total > 0)
+                graphics.fill(x + TEXT_X, y + 12, x + TEXT_X + (int) (textW * done / total), y + 13, 0xFF000000 | stateRgb);
+
+            var status = jobStatus(job, working);
+            var color = status.getStyle().getColor() == null ? MUTED_COLOR : status.getStyle().getColor().getValue() | 0xFF000000;
+            var lines = font.split(status, textW);
+            for (int line = 0; line < Math.min(2, lines.size()); line++)
+                graphics.text(font, lines.get(line), x + TEXT_X, y + 16 + line * (font.lineHeight + 1), color, false);
+            // A name cut short by the hole's edge reads whole under the cursor
+            if (over)
+                graphics.setComponentTooltipForNextFrame(font, List.of(Component.literal(name), status, Component.translatable(MODID + ".works.side.crafts", done, total)
+                        .withColor(MUTED_COLOR)), mouseX, mouseY);
         }
     }
 
-    private static int lastShown(List<Integer> plates)
+    /**
+     * @return what an order is at: waiting on a station no Officiant serves, being made, waiting for ingredients, or waiting its turn
+     */
+    private Component jobStatus(WorksPayloads.Job job, boolean working)
     {
-        return plates.stream().filter(plate -> plate >= 0).mapToInt(Integer::intValue).max().orElse(-1);
+        var unserved = unserved(job.graph(), job);
+        if (!unserved.isEmpty())
+            return unservedLine(unserved.getFirst());
+        if (working)
+            return Component.translatable(MODID + ".works.job.working").withColor(ACTIVE_COLOR);
+        if (job.graph().nodes().stream().anyMatch(node -> node.lacking() > 0))
+            return Component.translatable(MODID + ".works.job.lacking").withColor(LACK_COLOR);
+        // What the Officiants serving its stations are at, when none of them is free to take it
+        var kinds = job.graph().nodes().stream().filter(node -> node.isMade() && job.left(node.recipe()) > 0).map(WorksGraph.Node::station).distinct().toList();
+        var serving = menu.getRoster().stream().filter(station -> kinds.contains(station.station())).toList();
+        if (!serving.isEmpty() && serving.stream().allMatch(station -> station.status() == WorksPayloads.Station.NO_FIELD))
+            return Component.translatable(MODID + ".works.job.no_field").withColor(LACK_COLOR);
+        if (!serving.isEmpty() && serving.stream().noneMatch(station -> station.status() == WorksPayloads.Station.IDLE))
+            return Component.translatable(MODID + ".works.job.gathering").withColor(FRONTIER_COLOR);
+        return Component.translatable(MODID + ".works.job.waiting").withColor(MUTED_COLOR);
     }
 
     /**
@@ -520,13 +722,11 @@ final class WorksView
         var graph = shownGraph();
         if (graph != null)
         {
-            var lacking = graph.nodes().stream().filter(node -> node.lacking() > 0).toList();
-            if (lacking.size() == 1)
-                return Component.translatable(MODID + ".works.whisper.lacking_one", lacking.getFirst().lacking(), lacking.getFirst().item().toStack().getHoverName())
-                        .withColor(LACK_COLOR);
-            if (!lacking.isEmpty())
-                return Component.translatable(MODID + ".works.whisper.lacking", lacking.getFirst().lacking(), lacking.getFirst().item().toStack().getHoverName(),
-                        lacking.size() - 1).withColor(LACK_COLOR);
+            var unserved = unserved(graph, null);
+            if (!unserved.isEmpty())
+                return unservedLine(unserved.getFirst());
+            if (graph.nodes().stream().anyMatch(node -> node.lacking() > 0))
+                return Component.translatable(MODID + ".works.whisper.lacking").withColor(LACK_COLOR);
             if (!graph.essence().isEmpty())
             {
                 var drink = graph.essence().entrySet().iterator().next();
@@ -581,20 +781,14 @@ final class WorksView
             return true;
         }
         var jobs = menu.getJobs();
-        var plates = strip();
-        for (int slot = 0; slot < plates.size(); slot++)
+        int x = sideLeft(left);
+        for (int row = 0; row < JOB_ROWS && jobScroll + row < jobs.size(); row++)
         {
-            int x = left + REGION_X + slot * (JOB_PLATE_W + 2);
-            int y = top + JOBS_Y;
-            if (mouseX < x || mouseX >= x + JOB_PLATE_W || mouseY < y || mouseY >= y + 12)
+            int y = rowTop(top, row);
+            if (mouseX < x || mouseX >= x + SIDE_W || mouseY < y || mouseY >= y + JOB_ROW - 2)
                 continue;
-            int plate = plates.get(slot);
-            if (plate == PAGE_BACK)
-                jobScroll = Math.max(0, jobScroll - (STRIP_PLATES - 2));
-            else if (plate == PAGE_ON)
-                jobScroll = lastShown(plates) + 1;
-            else
-                job = job != null && job == jobs.get(plate).id() ? null : jobs.get(plate).id();
+            var id = jobs.get(jobScroll + row).id();
+            job = job != null && job == id ? null : id;
             return true;
         }
         return false;
@@ -633,6 +827,28 @@ final class WorksView
         ask();
     }
 
+    void typeAmount(long typed)
+    {
+        var clamped = Math.clamp(typed, 1, 4096);
+        if (clamped == amount)
+            return;
+        amount = clamped;
+        ask();
+    }
+
+    /**
+     * @return whether the plan shown lacks something to begin: an ingredient, a station no Officiant serves, or essence the reserve can't pay
+     */
+    boolean beginWarns()
+    {
+        var graph = shownGraph();
+        if (graph == null || shownJob() != null)
+            return false;
+        var reserve = menu.getPlan() == null ? Map.<String, Long>of() : menu.getPlan().reserve();
+        return graph.nodes().stream().anyMatch(node -> node.lacking() > 0) || !unserved(graph, null).isEmpty()
+                || graph.drinks().stream().anyMatch(drink -> reserve.getOrDefault(drink.aspect(), 0L) < drink.amount());
+    }
+
     void begin()
     {
         if (chosen == null)
@@ -663,10 +879,15 @@ final class WorksView
     }
 
     /**
-     * The wheel zooms a graph about the hole's middle, and scrolls the lists.
+     * The wheel scrolls the panel of orders under it, zooms a graph about the hole's middle, and scrolls the lists.
      */
-    boolean scrolled(double scrollY)
+    boolean scrolled(int left, int top, double mouseX, double mouseY, double scrollY)
     {
+        if (mouseX >= sideLeft(left) && mouseX < sideLeft(left) + SIDE_W && mouseY >= top + REGION_Y && mouseY < rowTop(top, JOB_ROWS))
+        {
+            jobScroll = Math.max(0, jobScroll - (int) Math.signum(scrollY));
+            return true;
+        }
         if (shownGraph() != null)
         {
             var before = zoom;
@@ -699,6 +920,18 @@ final class WorksView
     }
 
     // For tests to aim at
+
+    /**
+     * @return the middle of an order's row in the panel, scrolling it into view
+     */
+    int[] jobCenter(int index, int left, int top)
+    {
+        if (index < jobScroll)
+            jobScroll = index;
+        else if (index >= jobScroll + JOB_ROWS)
+            jobScroll = index - JOB_ROWS + 1;
+        return new int[] { sideLeft(left) + SIDE_W / 2, rowTop(top, index - jobScroll) + (JOB_ROW - 2) / 2 };
+    }
 
     @Nullable
     int[] listedCenter(ItemVariant item, String query, int left, int top)

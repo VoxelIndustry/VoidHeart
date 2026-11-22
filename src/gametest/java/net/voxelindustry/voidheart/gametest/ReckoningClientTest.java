@@ -33,6 +33,7 @@ import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
 
 import java.util.List;
+import net.voxelindustry.voidheart.common.content.works.WorksGraph;
 import java.util.function.Function;
 
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
@@ -72,17 +73,42 @@ public class ReckoningClientTest implements FabricClientGameTest
             // Officiants make their stations known on their first ticks
             context.waitTicks(25);
 
+            checkTrimmedGraph();
             setLens(context, server);
             openReckoning(context, server);
             checkPlan(context, server);
             checkOrder(context, server);
             checkKeep(context, server);
             checkEssencePlan(context, server);
+            checkCraftLeftoversNotFromHoard(server);
             checkRoster(context, server);
+            checkUnservedTable(context, server);
             checkHoardTab(context, server);
             takeLensBack(context, server);
             server.runCommand("gamemode creative @a");
         }
+    }
+
+    /**
+     * A rail from iron ingots unpacked from a block shows the ingots as wanted while the hoard holds no block, and keeps the unpacking once it holds one.
+     */
+    private static void checkTrimmedGraph()
+    {
+        int table = net.voxelindustry.voidheart.common.content.works.StationKind.TABLE.ordinal();
+        java.util.function.LongFunction<WorksGraph> rail = blocksHeld -> new WorksGraph(List.of(
+                new WorksGraph.Node(ItemVariant.of(Items.RAIL), 16, 0, 1, "rail", table, 0, false),
+                new WorksGraph.Node(ItemVariant.of(Items.IRON_INGOT), 6, 0, 1, "ingots_from_block", table, 0, true),
+                new WorksGraph.Node(ItemVariant.of(Items.IRON_BLOCK), 1, blocksHeld, 0, "", -1, 1 - blocksHeld, false),
+                new WorksGraph.Node(ItemVariant.of(Items.STICK), 1, 1, 0, "", -1, 0, false)),
+                List.of(new WorksGraph.Edge(0, 1, 6), new WorksGraph.Edge(1, 2, 1), new WorksGraph.Edge(0, 3, 1)), java.util.Map.of(), List.of());
+
+        var trimmed = rail.apply(0).trimmed();
+        expect(trimmed.nodes().stream().map(node -> node.item().getItem()).toList().equals(List.of(Items.RAIL, Items.IRON_INGOT, Items.STICK)),
+                "the trimmed rail shows " + trimmed.nodes());
+        expect(!trimmed.nodes().get(1).isMade() && trimmed.nodes().get(1).lacking() == 6, "the ingots are not shown as wanted: " + trimmed.nodes().get(1));
+        expect(trimmed.edges().equals(List.of(new WorksGraph.Edge(0, 1, 6), new WorksGraph.Edge(0, 2, 1))), "the trimmed rail's arcs are " + trimmed.edges());
+        var held = rail.apply(1);
+        expect(held.trimmed() == held, "a block in the hoard was trimmed from the plan");
     }
 
     private static PocketHoard.Hoard hoard(MinecraftServer minecraft)
@@ -263,12 +289,30 @@ public class ReckoningClientTest implements FabricClientGameTest
         waitOnScreen(context, 40, "no plan came for two Void Pearls", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().count() == 2);
         var lacking = onScreen(context, screen -> screen.getMenu().getPlan().graph().nodes().stream().filter(node -> node.lacking() > 0).count());
         expect(lacking > 0, "two Void Pearls lack nothing from one ender pearl");
+        var begin = onScreen(context, screen -> screen.worksControlText("begin"));
+        expect(begin.equals("Queue anyway"), "a plan lacking ingredients offers " + begin);
         hover(context, new int[] { 2, 2 });
         shot(context, "reckoning-plan-lacking");
         // Hovered, the whisper lists everything the plan lacks
         hover(context, onScreen(context, HoardScreen::whisperCenter));
         shot(context, "reckoning-lacking-list");
         clickControl(context, "less");
+        waitOnScreen(context, 40, "the plan did not go back to one", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().count() == 1);
+        expect(onScreen(context, screen -> screen.worksControlText("begin")).equals("Begin"), "a plan lacking nothing does not offer Begin");
+
+        // An amount typed in plans that many, and Escape goes back a step rather than closing the screen
+        click(context, onScreen(context, screen -> screen.worksControl("amount")));
+        for (int i = 0; i < 4; i++)
+            context.getInput().pressKey(InputConstants.KEY_BACKSPACE);
+        context.getInput().typeChars("12");
+        waitOnScreen(context, 40, "no plan came for twelve typed Void Pearls", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().count() == 12);
+        context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+        context.waitTicks(2);
+        expect(onScreen(context, screen -> !screen.worksGraphShown()), "Escape did not go back from the plan");
+        click(context, onScreen(context, screen -> screen.makeableCenter(PEARL)));
+        waitOnScreen(context, 40, "the plan never came back", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().item().equals(PEARL));
+        for (int i = 0; i < 11; i++)
+            clickControl(context, "less");
         waitOnScreen(context, 40, "the plan did not go back to one", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().count() == 1);
     }
 
@@ -377,9 +421,34 @@ public class ReckoningClientTest implements FabricClientGameTest
         var count = onScreen(context, screen -> screen.getMenu().getPlan().count());
         expect(graph.drinks().size() == 1 && graph.drinks().getFirst().aspect().equals("voidheart:stillness") && graph.drinks().getFirst().amount() == 1_500 * count,
                 "the plan for " + count + " Folds drinks " + graph.drinks());
-        hover(context, onScreen(context, screen -> screen.nodeCenter(graph.nodes().size())));
+        // The leaf comes after the kinds the view shows, which leaves out unpacking what the hoard holds no packed form of
+        var shown = graph.trimmed();
+        expect(shown.drinks().size() == 1, "the Fold's drink was trimmed from the view: " + shown.drinks());
+        hover(context, onScreen(context, screen -> screen.nodeCenter(shown.nodes().size())));
         shot(context, "reckoning-plan-essence");
         clickControl(context, "back");
+    }
+
+    /**
+     * A Beam Focus asks for three Ravenous Gold, one per pillar. With none in the hoard, one block unpacked would give all three, but no block is held:
+     * none of the three is counted as from the hoard, and the view shows all three as lacking.
+     */
+    private static void checkCraftLeftoversNotFromHoard(TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            Knowledge.lockOf(minecraft.registryAccess(), id("altar/beam_focus")).ifPresent(knowledge(minecraft)::grant);
+            var gold = ItemVariant.of(VoidHeartItems.RAVENOUS_GOLD_INGOT);
+            hoard(minecraft).extract(gold, hoard(minecraft).count(gold));
+            var owner = player(minecraft).getUUID();
+            var plan = net.voxelindustry.voidheart.common.content.works.WorksPlan.plan(
+                    net.voxelindustry.voidheart.common.content.works.WorksCatalogues.of(minecraft, owner, hoard(minecraft)).lookup(), hoard(minecraft).view(),
+                    ItemVariant.of(net.voxelindustry.voidheart.common.setup.VoidHeartBlocks.BEAM_FOCUS), 1);
+            var node = plan.nodes().get(gold);
+            expect(node != null && node.needed() == 3 && node.fromStock() == 0, "the Beam Focus plan takes Ravenous Gold as " + node);
+            var shown = WorksGraph.of(plan).trimmed().nodes().stream().filter(candidate -> candidate.item().equals(gold)).findFirst().orElseThrow();
+            expect(shown.lacking() == 3, "the view shows " + shown.lacking() + " Ravenous Gold lacking of 3, none held");
+        });
     }
 
     /**
@@ -393,6 +462,53 @@ public class ReckoningClientTest implements FabricClientGameTest
         shot(context, "reckoning-roster");
         clickControl(context, "back");
         expect(onScreen(context, screen -> screen.makeableCenter(PEARL) != null), "going back from the roster did not list what can be made");
+    }
+
+    /**
+     * With its table taken away, a Void Pearl from an ender pearl still plans its shards at the table, and the plan says no Officiant serves one.
+     */
+    private static void checkUnservedTable(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            minecraft.overworld().removeBlock(TABLE, false);
+            hoard(minecraft).extract(SHARD, held(minecraft, VoidHeartItems.ENDER_SHARD));
+            hoard(minecraft).insert(ItemVariant.of(Items.ENDER_PEARL), 1);
+        });
+        var table = net.voxelindustry.voidheart.common.content.works.StationKind.TABLE.ordinal();
+        waitOnScreen(context, 100, "the roster still shows a table", screen -> !screen.getMenu().getRoster().isEmpty()
+                && screen.getMenu().getRoster().stream().noneMatch(station -> station.station() == table));
+        // What only the table makes leaves the list before the plates are aimed at
+        waitOnScreen(context, 100, "the ender shards are still offered without a table", screen -> !screen.getMenu().getMakeable().contains(SHARD));
+        // Lets the list settle before its plates are aimed at
+        shot(context, "reckoning-unserved-list");
+        var aim = onScreen(context, screen -> screen.makeableCenter(PEARL));
+        expect(aim != null, "the Void Pearl is not offered without a table: " + onScreen(context, screen -> screen.getMenu().getMakeable().size()));
+        click(context, aim);
+        waitOnScreen(context, 40, "no plan came for the Void Pearl", screen -> screen.getMenu().getPlan() != null && screen.getMenu().getPlan().item().equals(PEARL));
+        expect(onScreen(context, screen -> screen.getMenu().getPlan().graph().nodes().stream().anyMatch(node -> node.station() == table)),
+                "the plan made no shards at the table no Officiant serves");
+        var whisper = onScreen(context, HoardScreen::worksWhisper);
+        expect(whisper.equals("No table Officiant"), "the plan says " + whisper);
+        shot(context, "reckoning-plan-unserved");
+
+        // Queued anyway, with two more orders, the panel shows them as one branch, each waiting on the table
+        clickControl(context, "begin");
+        server.runOnServer(minecraft ->
+        {
+            net.voxelindustry.voidheart.common.content.works.WorksContent.order(minecraft, player(minecraft).getUUID(), SHARD, 8);
+            net.voxelindustry.voidheart.common.content.works.WorksContent.order(minecraft, player(minecraft).getUUID(), PEARL, 2);
+        });
+        waitOnScreen(context, 60, "the three orders never showed", screen -> screen.getMenu().getJobs().size() == 3);
+        hover(context, onScreen(context, screen -> screen.jobCenter(1)));
+        shot(context, "reckoning-side-orders");
+        server.runOnServer(minecraft ->
+        {
+            var works = WorksState.get(minecraft).edit(player(minecraft).getUUID());
+            works.jobs().forEach(job -> works.cancel(job.id()));
+        });
+        waitOnScreen(context, 60, "the orders were never cancelled", screen -> screen.getMenu().getJobs().isEmpty());
+        server.runOnServer(minecraft -> minecraft.overworld().setBlockAndUpdate(TABLE, Blocks.CRAFTING_TABLE.defaultBlockState()));
     }
 
     /**

@@ -150,7 +150,25 @@ class WorksPlanTest
         var plan = plan(Map.of("bucket", 1L, "milk", 5L), "feast", 1);
 
         assertThat(plan.isComplete()).as("lacking %s", plan.lacking()).isTrue();
-        assertThat(plan.nodes().get("bucket").fromStock()).isEqualTo(2);
+        // One bucket from the stock, the second the first cake gave back
+        assertThat(plan.nodes().get("bucket").fromStock()).isEqualTo(1);
+    }
+
+    @Test
+    void plan_givenWhatACraftMadeBeyondItsNeed_thenItIsNotCountedAsFromTheStock()
+    {
+        // Ingots unpacked nine from a block, wanted once and then twice more, with an empty stock
+        recipes.put("ingot", List.of(new WorksRecipe<>("ingot", StationKind.TABLE, List.of(new WorksRecipe.Stack<>("ingot", 9L)),
+                List.of(new WorksRecipe.Ingredient<>(List.of("block"), 1)), List.of(), Map.of())));
+        recipe("focus", 1, StationKind.TABLE, "ingot", 1, "frame", 1);
+        recipe("frame", 1, StationKind.TABLE, "ingot", 2);
+
+        var plan = plan(Map.of(), "focus", 1);
+
+        assertThat(plan.nodes().get("ingot").needed()).isEqualTo(3);
+        assertThat(plan.nodes().get("ingot").fromStock()).isZero();
+        assertThat(plan.nodes().get("ingot").crafts()).isEqualTo(1);
+        assertThat(plan.lacking()).containsExactly(java.util.Map.entry("block", 1L));
     }
 
     @Test

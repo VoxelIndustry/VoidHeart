@@ -803,7 +803,7 @@ final class ResearchMapView
         return false;
     }
 
-    private static void sprite(GuiGraphicsExtractor graphics, int cell, int x, int y, int color)
+    static void sprite(GuiGraphicsExtractor graphics, int cell, int x, int y, int color)
     {
         graphics.blit(RenderPipelines.GUI_TEXTURED, SPRITES, x, y, cell * NODE_SIZE, 0, NODE_SIZE, NODE_SIZE, ATLAS, ATLAS, color);
     }

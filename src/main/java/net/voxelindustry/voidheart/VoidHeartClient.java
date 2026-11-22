@@ -284,6 +284,8 @@ public class VoidHeartClient implements ClientModInitializer
         });
         ShieldingApparatusItem.openFromSlot = holder -> ClientPlayNetworking.send(new ShieldPayloads.Open(holder));
         ClientTooltipComponentCallback.EVENT.register(data -> data instanceof ApparatusTooltip tooltip ? new ClientApparatusTooltip(tooltip) : null);
+        ClientTooltipComponentCallback.EVENT.register(data -> data instanceof net.voxelindustry.voidheart.client.screen.ItemRowsTooltip rows
+                ? new net.voxelindustry.voidheart.client.screen.ItemRowsTooltip.Client(rows) : null);
         ModelLayerRegistry.registerModelLayer(ApparatusWornRender.LAYER, ApparatusWornRender::createLayer);
         for (var apparatus : List.of(VoidHeartItems.LESSER_SHIELDING_APPARATUS, VoidHeartItems.GREATER_SHIELDING_APPARATUS, VoidHeartItems.SUPREME_SHIELDING_APPARATUS))
             TrinketRendererRegistry.registerRenderer(apparatus, ApparatusWornRender::new);

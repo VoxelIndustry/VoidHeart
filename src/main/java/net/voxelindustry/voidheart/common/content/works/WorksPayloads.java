@@ -216,9 +216,13 @@ public final class WorksPayloads
      */
     public record Station(net.minecraft.core.BlockPos pos, int station, int status, String making, List<ItemVariant> makes)
     {
-        public static final int IDLE    = 0;
-        public static final int LAYING  = 1;
-        public static final int WORKING = 2;
+        public static final int IDLE      = 0;
+        public static final int LAYING    = 1;
+        public static final int WORKING   = 2;
+        /** Idle and still gathering void energy for a craft. */
+        public static final int GATHERING = 3;
+        /** Idle with no field reaching it, so it can't pay for a craft. */
+        public static final int NO_FIELD  = 4;
 
         static final StreamCodec<RegistryFriendlyByteBuf, Station> STREAM_CODEC = StreamCodec.composite(
                 net.minecraft.core.BlockPos.STREAM_CODEC, Station::pos,

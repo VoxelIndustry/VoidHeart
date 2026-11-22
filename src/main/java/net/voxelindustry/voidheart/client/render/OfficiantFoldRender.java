@@ -32,10 +32,13 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 /**
  * The folds an Officiant opens over its station: a small flat diamond of void, rimmed in copper like the Fold's inlay, unfolds from a point on the
  * block, lets an item rise out of it or sink into it, and folds shut. A teal glint runs once around its rim while it is open. Laid items are the
- * station's own, raised by their renderers through {@link #rise}; taken and passed ones are drawn here.
+ * station's own, raised by their renderers through {@link #rise}; taken ones and a table's craft are drawn here. A table's ingredients rise out of
+ * the fold one after another and settle flat on the cells of the table's grid; then they draw together into the middle as the result grows there,
+ * larger, and sinks back into the fold.
  * <p>
  * The body is {@link VoidHeartRenderTypes#tint}, blended so it stays dark by day; the rim and glint are {@link VoidHeartRenderTypes#radiant}, added
- * without writing depth. All lie a hair above the block's top. Per frame: at most a rite's nine folds, three quads each and an item for some.
+ * without writing depth. All lie a hair above the block's top. A table's items take the world's light, as items lying on it would. Per frame: at most
+ * a rite's nine folds, three quads each, and up to ten items for a table's craft.
  */
 public final class OfficiantFoldRender
 {
@@ -74,6 +77,24 @@ public final class OfficiantFoldRender
     private static final long JITTER_MILLIS = 50;
     private static final float TURN_JITTER  = 15 * Mth.DEG_TO_RAD;
 
+    // A table's craft: when each part starts, from the fold opening
+    private static final long CRAFT_STAGGER_MILLIS = 60;
+    private static final long CRAFT_LAY_MILLIS     = 300;
+    private static final long CRAFT_HOLD_MILLIS    = 250;
+    private static final long CRAFT_MERGE_MILLIS   = 300;
+    private static final long CRAFT_SHOW_MILLIS    = 250;
+    private static final long CRAFT_SINK_MILLIS    = 300;
+    /** The centres of the crafting table's grid cells across its top, in blocks: two-pixel cells at pixels 5, 8 and 11. */
+    private static final float[] CELLS = { 5 / 16F, 8 / 16F, 11 / 16F };
+    /** An ingredient lying on its cell, a little wider than the cell so it reads. */
+    private static final float GRID_SCALE  = 0.17F;
+    private static final float GRID_LIFT   = 0.03F;
+    /** How high an ingredient arcs over on its way from the fold to its cell. */
+    private static final float GRID_ARC    = 0.14F;
+    /** The result over the middle of the table, larger than as it lies on the ground. */
+    private static final float RESULT_SCALE = 1.7F;
+    private static final float RESULT_REST  = 0.3F;
+
     /** How far under its resting place an item starts its rise, or ends its sinking. */
     public static final float RISE_DROP   = 0.5F;
     public static final float RISE_SHRINK = 0.4F;
@@ -83,10 +104,34 @@ public final class OfficiantFoldRender
      * @param turn  how far its diamond is turned from square to the block
      * @param glint the corner its glint starts from
      */
-    private record Fold(BlockPos pos, float rest, ItemStack item, int kind, long start, float turn, int glint)
+    private record Fold(BlockPos pos, float rest, ItemStack item, int kind, long start, float turn, int glint, List<ItemStack> grid)
     {
+        boolean isCraft()
+        {
+            return kind == OfficiantFolds.PASS && grid.stream().anyMatch(stack -> !stack.isEmpty());
+        }
+
+        /** When the last ingredient has settled on its cell. */
+        long laid()
+        {
+            int count = (int) grid.stream().filter(stack -> !stack.isEmpty()).count();
+            return PASS_OPEN_MILLIS + (count - 1) * CRAFT_STAGGER_MILLIS + CRAFT_LAY_MILLIS;
+        }
+
+        long merging()
+        {
+            return laid() + CRAFT_HOLD_MILLIS;
+        }
+
+        long sinking()
+        {
+            return merging() + CRAFT_MERGE_MILLIS + CRAFT_SHOW_MILLIS;
+        }
+
         long duration()
         {
+            if (isCraft())
+                return sinking() + CRAFT_SINK_MILLIS + PASS_CLOSE_MILLIS;
             return kind == OfficiantFolds.PASS ? PASS_OPEN_MILLIS + PASS_RISE_MILLIS + PASS_SINK_MILLIS + PASS_CLOSE_MILLIS
                     : OPEN_MILLIS + MOVE_MILLIS + CLOSE_MILLIS;
         }
@@ -129,7 +174,7 @@ public final class OfficiantFoldRender
     {
         long start = Util.getMillis() + RANDOM.nextInt((int) JITTER_MILLIS + 1);
         float turn = (RANDOM.nextFloat() * 2 - 1) * TURN_JITTER;
-        FOLDS.add(new Fold(payload.pos(), payload.rest(), payload.item(), payload.kind(), start, turn, RANDOM.nextInt(4)));
+        FOLDS.add(new Fold(payload.pos(), payload.rest(), payload.item(), payload.kind(), start, turn, RANDOM.nextInt(4), payload.grid()));
     }
 
     public static void clear()
@@ -208,7 +253,9 @@ public final class OfficiantFoldRender
             if (elapsed < running)
                 glint(glint, corners, y + GLINT_LIFT, (fold.glint() + 4 * elapsed / (float) running) % 4, GLINT_ALPHA * open);
 
-            if (!fold.item().isEmpty())
+            if (fold.isCraft())
+                craft(context, level, fold, now, worldTime, camera);
+            else if (!fold.item().isEmpty())
                 item(context, level, fold, now, worldTime, camera);
         }
         var collector = context.submitNodeCollector();
@@ -302,6 +349,98 @@ public final class OfficiantFoldRender
         poseStack.rotate(new Quaternionf().rotationY(-worldTime * Mth.DEG_TO_RAD));
         state.submit(poseStack, context.submitNodeCollector(), LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
         poseStack.popPose();
+    }
+
+    /**
+     * A table's craft: each ingredient rises out of the fold and arcs over to lie flat on its cell, then they draw into the middle as the result
+     * grows over it, larger, before it sinks back into the fold.
+     */
+    private static void craft(LevelRenderContext context, net.minecraft.client.multiplayer.ClientLevel level, Fold fold, long now, float worldTime, Vec3 camera)
+    {
+        long elapsed = now - fold.start();
+        var resolver = Minecraft.getInstance().getItemModelResolver();
+        var poseStack = context.poseStack();
+        int light = LightCoordsUtil.getLightCoords(level, fold.pos().above());
+        double centerX = fold.pos().getX() + 0.5;
+        double centerZ = fold.pos().getZ() + 0.5;
+        double top = fold.pos().getY() + 1;
+        float merge = smooth((elapsed - fold.merging()) / (float) CRAFT_MERGE_MILLIS);
+
+        int order = 0;
+        for (int slot = 0; slot < Math.min(9, fold.grid().size()); slot++)
+        {
+            var stack = fold.grid().get(slot);
+            if (stack.isEmpty())
+                continue;
+            long laidAt = PASS_OPEN_MILLIS + order++ * CRAFT_STAGGER_MILLIS;
+            float lay = smooth((elapsed - laidAt) / (float) CRAFT_LAY_MILLIS);
+            if (lay <= 0 || merge >= 1)
+                continue;
+
+            var state = new ItemStackRenderState();
+            resolver.updateForTopItem(state, stack, ItemDisplayContext.FIXED, level, null, slot);
+            if (state.isEmpty())
+                continue;
+            double cellX = fold.pos().getX() + CELLS[slot % 3];
+            double cellZ = fold.pos().getZ() + CELLS[slot / 3];
+            double x = Mth.lerp(merge, Mth.lerp(lay, centerX, cellX), centerX);
+            double z = Mth.lerp(merge, Mth.lerp(lay, centerZ, cellZ), centerZ);
+            double y = top + GRID_LIFT - (1 - lay) * RISE_DROP * 0.3 + Mth.sin(lay * Mth.PI) * GRID_ARC;
+            float scale = GRID_SCALE * (1 - RISE_SHRINK * (1 - lay)) * (1 - merge);
+            poseStack.pushPose();
+            poseStack.translate(x - camera.x, y - camera.y, z - camera.z);
+            // Lying flat, face up
+            poseStack.rotate(new Quaternionf().rotationX(-Mth.HALF_PI));
+            poseStack.scale(scale, scale, scale);
+            state.submit(poseStack, context.submitNodeCollector(), light, OverlayTexture.NO_OVERLAY, 0);
+            poseStack.popPose();
+        }
+
+        // The result takes their place, larger, then sinks back into the fold
+        if (fold.item().isEmpty() || merge <= 0)
+            return;
+        float sink = smooth((elapsed - fold.sinking()) / (float) CRAFT_SINK_MILLIS);
+        float risen = merge * (1 - sink);
+        if (risen <= 0)
+            return;
+        var state = new ItemStackRenderState();
+        resolver.updateForTopItem(state, fold.item(), ItemDisplayContext.GROUND, level, null, (int) fold.pos().asLong());
+        if (state.isEmpty())
+            return;
+        poseStack.pushPose();
+        poseStack.translate(centerX - camera.x, top + RESULT_REST - camera.y, centerZ - camera.z);
+        applyRise(poseStack, risen);
+        poseStack.scale(RESULT_SCALE, RESULT_SCALE, RESULT_SCALE);
+        poseStack.rotate(new Quaternionf().rotationY(-worldTime * Mth.DEG_TO_RAD));
+        state.submit(poseStack, context.submitNodeCollector(), light, OverlayTexture.NO_OVERLAY, 0);
+        poseStack.popPose();
+    }
+
+    /**
+     * @return how many ingredients of table crafts lie on their cells now, for tests
+     */
+    public static int ingredientsLaid()
+    {
+        long now = Util.getMillis();
+        int laid = 0;
+        for (var fold : FOLDS)
+        {
+            if (!fold.isCraft())
+                continue;
+            long elapsed = now - fold.start();
+            if (elapsed >= fold.laid() && elapsed < fold.merging())
+                laid += (int) fold.grid().stream().filter(stack -> !stack.isEmpty()).count();
+        }
+        return laid;
+    }
+
+    /**
+     * @return whether a table craft's result shows over its table now, for tests
+     */
+    public static boolean resultShown()
+    {
+        long now = Util.getMillis();
+        return FOLDS.stream().anyMatch(fold -> fold.isCraft() && now - fold.start() >= fold.merging() + CRAFT_MERGE_MILLIS && now - fold.start() < fold.sinking());
     }
 
     private static final class Layer

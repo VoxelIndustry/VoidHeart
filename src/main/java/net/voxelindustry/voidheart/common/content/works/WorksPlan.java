@@ -32,7 +32,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
 
     /**
      * @param needed    how many all the crafts and the order asked for
-     * @param fromStock how many of those the stock gave
+     * @param fromStock how many of those the stock gave, leaving aside what crafts of the plan made beyond their own need
      * @param crafted   how many the crafts make, at least the rest of the need
      * @param recipe    the recipe making it, null for a kind taken from stock or lacking
      */
@@ -70,7 +70,10 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
     private static final class Planner<K>
     {
         private final Function<K, List<WorksRecipe<K>>> recipesFor;
+        /** What the stock still holds. */
         private final Map<K, Long> available;
+        /** What crafts made beyond their need, or gave back, which later needs use before the stock. */
+        private final Map<K, Long> surplus = new HashMap<>();
         private final Map<K, long[]> counts = new LinkedHashMap<>();
         private final Map<K, WorksRecipe<K>> recipes = new HashMap<>();
         private final Map<List<K>, Long> edges = new LinkedHashMap<>();
@@ -93,13 +96,17 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
             var node = counts.computeIfAbsent(item, kind -> new long[4]);
             node[NEEDED] += amount;
 
-            var taken = depth == 0 ? 0 : Math.min(available.getOrDefault(item, 0L), amount);
+            // What earlier crafts left over is used first, and only what the stock gives counts as taken from it
+            var reused = depth == 0 ? 0 : Math.min(surplus.getOrDefault(item, 0L), amount);
+            if (reused > 0)
+                surplus.merge(item, -reused, Long::sum);
+            var taken = depth == 0 ? 0 : Math.min(available.getOrDefault(item, 0L), amount - reused);
             if (taken > 0)
             {
                 available.merge(item, -taken, Long::sum);
                 node[FROM_STOCK] += taken;
             }
-            var shortfall = amount - taken;
+            var shortfall = amount - reused - taken;
             if (shortfall <= 0)
                 return;
 
@@ -124,7 +131,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
             {
                 var made = output.count() * crafts - (output.item().equals(item) ? shortfall : 0);
                 if (made > 0)
-                    available.merge(output.item(), made, Long::sum);
+                    surplus.merge(output.item(), made, Long::sum);
             }
         }
 
@@ -141,7 +148,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
             path.remove(item);
 
             for (var remainder : recipe.remainders())
-                available.merge(remainder.item(), remainder.count() * crafts, Long::sum);
+                surplus.merge(remainder.item(), remainder.count() * crafts, Long::sum);
             recipe.essence().forEach((aspect, amountPerCraft) -> essence.merge(aspect, (long) amountPerCraft * crafts, Long::sum));
             tasks.add(new Task<>(recipe, crafts));
         }
@@ -172,7 +179,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
             long bestHeld = -1;
             for (var option : ingredient.options())
             {
-                var held = available.getOrDefault(option, 0L);
+                var held = available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L);
                 if (held >= wanted)
                     return option;
                 if (held > bestHeld)

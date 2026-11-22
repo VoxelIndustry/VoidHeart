@@ -100,13 +100,78 @@ public final class WorksContent
         var count = Math.clamp(asked, 1, WorksBalance.MAX_ORDER);
         var hoard = PocketHoard.get(server).of(owner);
         var plan = WorksPlan.plan(WorksCatalogues.of(server, owner, hoard).lookup(), hoard.view(), item, count);
-        var tasks = plan.tasks().stream().map(task -> new WorksQueue.Task(task.recipe().id(), task.recipe().station(), task.crafts())).toList();
+        var tasks = tasksOf(plan);
         if (tasks.isEmpty())
             return new Ordered(plan, 0);
         var state = WorksState.get(server);
         var job = state.edit(owner).order(item.toStack().getHoverName().getString(), count, tasks);
         state.owner(owner).graphs().put(job, WorksGraph.of(plan));
         return new Ordered(plan, job);
+    }
+
+    private static List<WorksQueue.Task> tasksOf(WorksPlan<ItemVariant> plan)
+    {
+        return plan.tasks().stream().map(task -> new WorksQueue.Task(task.recipe().id(), task.recipe().station(), task.crafts())).toList();
+    }
+
+    /** The hoard and catalogue each owner's idle orders were last worked out against, so they are only worked out again once either changes. */
+    private static final java.util.Map<UUID, List<Object>> REPLANNED = new java.util.HashMap<>();
+
+    /**
+     * Every few seconds, an order none of whose crafts is being worked is worked out again against the hoard as it now stands, so what was brought
+     * since is used: a kind first planned from what the hoard lacked may now be taken as it is, or made another way. An order whose item is all made
+     * goes, with whatever was left of the crafts planned for it.
+     */
+    private static void replanIdle(MinecraftServer server)
+    {
+        var state = WorksState.get(server);
+        for (var entry : List.copyOf(state.owners().entrySet()))
+        {
+            var owner = entry.getKey();
+            var works = entry.getValue();
+            if (works.queue().jobs().isEmpty())
+                continue;
+            var hoard = PocketHoard.get(server).of(owner);
+            var catalogue = WorksCatalogues.of(server, owner, hoard);
+            var seen = List.<Object>of(hoard.version(), System.identityHashCode(catalogue), works.queue().jobs().hashCode());
+            if (seen.equals(REPLANNED.get(owner)))
+                continue;
+
+            boolean changed = false;
+            for (var job : works.queue().jobs())
+            {
+                var graph = works.graphs().get(job.id());
+                if (graph == null || graph.nodes().isEmpty() || job.tasks().stream().anyMatch(task -> task.working() > 0))
+                    continue;
+                var target = graph.nodes().getFirst();
+                var crafts = job.tasks().stream().filter(task -> task.recipe().equals(target.recipe())).mapToLong(WorksQueue.Task::remaining).sum();
+                if (crafts <= 0)
+                {
+                    // The item itself is made: what was planned for it and is still waiting is no longer needed
+                    works.queue().cancel(job.id());
+                    changed = true;
+                    continue;
+                }
+                var recipes = catalogue.byId(target.recipe());
+                var makes = recipes.isEmpty() ? 1 : Math.max(1, recipes.getFirst().makes(target.item()));
+                var plan = WorksPlan.plan(catalogue.lookup(), hoard.view(), target.item(), Math.min(crafts * makes, WorksBalance.MAX_ORDER));
+                var tasks = WorksQueue.merged(tasksOf(plan));
+                var left = job.tasks().stream().filter(task -> task.remaining() > 0).toList();
+                if (tasks.isEmpty() || tasks.equals(left))
+                    continue;
+                if (works.queue().replan(job.id(), tasks))
+                {
+                    works.graphs().put(job.id(), WorksGraph.of(plan));
+                    changed = true;
+                }
+            }
+            if (changed)
+            {
+                works.tidy();
+                state.setDirty();
+            }
+            REPLANNED.put(owner, List.<Object>of(hoard.version(), System.identityHashCode(catalogue), works.queue().jobs().hashCode()));
+        }
     }
 
     /**
@@ -116,6 +181,7 @@ public final class WorksContent
     {
         if (server.getTickCount() % KEEP_TICKS != 0)
             return;
+        replanIdle(server);
         var state = WorksState.get(server);
         for (var entry : List.copyOf(state.owners().entrySet()))
         {

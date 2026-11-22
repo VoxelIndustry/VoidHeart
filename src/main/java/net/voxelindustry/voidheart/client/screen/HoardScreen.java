@@ -60,7 +60,7 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     private static final int COUNT_Y   = GAUGE_Y + 5;
     private static final int WHISPER_Y = COUNT_Y + 11;
     private static final float COUNT_SCALE = 0.5F;
-    private static final int   COUNT_COLOR = 0xFFEDE6FF;
+    static final int   COUNT_COLOR = 0xFFEDE6FF;
     private static final int PANEL_H   = HoardMenu.INVENTORY_Y + 4 * CELL + HoardMenu.HOTBAR_GAP + PAD;
 
     private static final int CELL_BACK     = 0xB00B0810;
@@ -73,6 +73,9 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
 
     private static final Identifier PANEL       = Identifier.fromNamespaceAndPath(MODID, "dynamic/hoard_panel");
     private static final Identifier WORKS_PANEL = Identifier.fromNamespaceAndPath(MODID, "dynamic/works_panel");
+    private static final Identifier SIDE_PANEL  = Identifier.fromNamespaceAndPath(MODID, "dynamic/works_side_panel");
+    /** The works slab with its hole left clear, laid over the graph so what is panned past the torn edge goes under the stone. */
+    private static final Identifier WORKS_RIM   = Identifier.fromNamespaceAndPath(MODID, "dynamic/works_rim");
     private static final int        TAB_Y       = 5;
     private static final int        TAB_H       = 11;
     private static final int        BUTTON_H    = 12;
@@ -89,6 +92,8 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     private ResearchButton keepButton;
     private ResearchButton cancelButton;
     private ResearchButton stationsButton;
+    /** The amount to plan, typed or stepped. */
+    private EditBox amountBox;
     /** Whether the left button went down on a graph, so moving it pans the graph. */
     private boolean panning;
 
@@ -113,6 +118,11 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         if (works != null)
         {
             bakePanel(WORKS_PANEL, WorksView.REGION_X, WorksView.REGION_Y, WorksView.REGION_W, WorksView.REGION_H);
+            bakeRim(WORKS_RIM, WorksView.REGION_X, WorksView.REGION_Y, WorksView.REGION_W, WorksView.REGION_H);
+            works.rimOverlay = graphics -> graphics.blit(RenderPipelines.GUI_TEXTURED, WORKS_RIM, leftPos + WorksView.REGION_X, topPos + WorksView.REGION_Y,
+                    WorksView.REGION_X, WorksView.REGION_Y, WorksView.REGION_W, WorksView.REGION_H, PANEL_W, PANEL_H);
+            // The slab of orders, its hole level with the works hole
+            bakePanel(SIDE_PANEL, WorksView.SIDE_SLAB_W, PANEL_H, WorksView.SIDE_PAD, WorksView.REGION_Y, WorksView.SIDE_W + 4, WorksView.REGION_H);
             addWorksButtons();
         }
         search = new EditBox(font, leftPos + WELL_X + 2, topPos + SEARCH_Y + 2, WELL_W - 4, SEARCH_H - 2, Component.translatable(MODID + ".hoard.search"));
@@ -127,23 +137,62 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     {
         minecraft.getTextureManager().release(PANEL);
         if (works != null)
+        {
             minecraft.getTextureManager().release(WORKS_PANEL);
+            minecraft.getTextureManager().release(SIDE_PANEL);
+            minecraft.getTextureManager().release(WORKS_RIM);
+        }
         super.removed();
     }
 
     // The slab, baked once: voidstone with a torn hole the hoard shows in, lit from within like the research map
 
-    private void bakePanel(Identifier target, int wellX, int wellY, int wellW, int wellH)
+    /**
+     * The slab's stone around a hole, the hole itself clear but for the shadow its wall casts, as the void under it is shaded.
+     */
+    private void bakeRim(Identifier target, int wellX, int wellY, int wellW, int wellH)
     {
         var stone = ResearchVoid.readStone(minecraft);
         var image = new NativeImage(PANEL_W, PANEL_H, false);
         long seed = minecraft.player == null ? 0 : minecraft.player.getUUID().getMostSignificantBits();
-        var lights = List.of(new ResearchVoid.Light(wellX + wellW / 2D, wellY + wellH / 2D, wellW * 0.7, 0.9, ResearchVoid.LIT_RGB));
         for (int y = 0; y < PANEL_H; y++)
             for (int x = 0; x < PANEL_W; x++)
             {
                 int hole = ResearchVoid.tornHoleDepth(x, y, wellX, wellY, wellW, wellH, TEAR, seed);
                 int rim = Math.min(Math.min(x, y), Math.min(PANEL_W - 1 - x, PANEL_H - 1 - y));
+                int color;
+                if (hole >= 0)
+                {
+                    float shadow = hole < ResearchVoid.INNER_SHADOW ? (1 - hole / ResearchVoid.INNER_SHADOW) * 0.85F : 0;
+                    color = net.minecraft.util.ARGB.color((int) (shadow * 255), ResearchVoid.DEEP_COLOR);
+                }
+                else if (rim == 0)
+                    color = OUTLINE_COLOR;
+                else
+                    color = ResearchVoid.stoneAt(stone, x, y, Math.min(-hole, rim), seed);
+                image.setPixel(x, y, color);
+            }
+        if (stone != null)
+            stone.close();
+        ResearchVoid.upload(minecraft, target, image);
+    }
+
+    private void bakePanel(Identifier target, int wellX, int wellY, int wellW, int wellH)
+    {
+        bakePanel(target, PANEL_W, PANEL_H, wellX, wellY, wellW, wellH);
+    }
+
+    private void bakePanel(Identifier target, int panelW, int panelH, int wellX, int wellY, int wellW, int wellH)
+    {
+        var stone = ResearchVoid.readStone(minecraft);
+        var image = new NativeImage(panelW, panelH, false);
+        long seed = minecraft.player == null ? 0 : minecraft.player.getUUID().getMostSignificantBits();
+        var lights = List.of(new ResearchVoid.Light(wellX + wellW / 2D, wellY + wellH / 2D, wellW * 0.7, 0.9, ResearchVoid.LIT_RGB));
+        for (int y = 0; y < panelH; y++)
+            for (int x = 0; x < panelW; x++)
+            {
+                int hole = ResearchVoid.tornHoleDepth(x, y, wellX, wellY, wellW, wellH, TEAR, seed);
+                int rim = Math.min(Math.min(x, y), Math.min(panelW - 1 - x, panelH - 1 - y));
                 int color;
                 if (hole >= 0)
                     color = ResearchVoid.voidAt(x, y, hole, 0, lights, seed);
@@ -174,13 +223,30 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         worksTabButton = worksButton(PANEL_W - PAD - 40, TAB_Y, 40, TAB_H, true, "works", button -> worksTab = true);
         int y = WorksView.CONTROLS_Y;
         int x = WorksView.REGION_X;
-        backButton = worksButton(x, y, 12, BUTTON_H, true, "back", button -> works.back());
-        lessButton = worksButton(x + 16, y, 12, BUTTON_H, true, "less", button -> works.changeAmount(-1));
-        moreButton = worksButton(x + 50, y, 12, BUTTON_H, true, "more", button -> works.changeAmount(1));
-        beginButton = worksButton(x + 66, y, 48, BUTTON_H, false, "begin", button -> works.begin());
-        keepButton = worksButton(x + 118, y, 50, BUTTON_H, true, "keep", button -> works.keep());
-        cancelButton = worksButton(x + 66, y, 48, BUTTON_H, true, "cancel", button -> works.cancelShown());
-        stationsButton = worksButton(x, y, 56, BUTTON_H, true, "stations", button -> works.roster = true);
+        backButton = worksButton(x, y, 11, BUTTON_H, true, "back", button -> works.back());
+        lessButton = worksButton(x + 13, y, 11, BUTTON_H, true, "less", button -> works.changeAmount(-1));
+        moreButton = worksButton(x + 50, y, 11, BUTTON_H, true, "more", button -> works.changeAmount(1));
+        beginButton = worksButton(x + 63, y, 76, BUTTON_H, false, "begin", button -> works.begin());
+        keepButton = worksButton(x + 141, y, 27, BUTTON_H, true, "keep", button -> works.keep());
+        cancelButton = worksButton(x + 63, y, 76, BUTTON_H, true, "cancel", button -> works.cancelShown());
+        stationsButton = worksButton(x, y, 62, BUTTON_H, true, "stations", button -> works.roster = true);
+
+        // The amount, typed or stepped, between its steps
+        amountBox = new EditBox(font, leftPos + x + 28, topPos + y + 2, 20, BUTTON_H - 2, Component.translatable(MODID + ".works.amount"));
+        amountBox.setBordered(false);
+        amountBox.setMaxLength(4);
+        amountBox.setTextColor(KNOWN_COLOR);
+        amountBox.setValue(String.valueOf(works.amount));
+        amountBox.setResponder(text ->
+        {
+            // Only digits stay
+            var digits = text.replaceAll("[^0-9]", "");
+            if (!digits.equals(text))
+                amountBox.setValue(digits);
+            else if (!digits.isEmpty())
+                works.typeAmount(Long.parseLong(digits));
+        });
+        addRenderableWidget(amountBox);
         updateWorksButtons();
     }
 
@@ -193,11 +259,16 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         boolean roster = worksTab && !graph && works.roster;
         backButton.visible = graph || roster;
         stationsButton.visible = worksTab && !graph && !roster;
-        lessButton.visible = moreButton.visible = beginButton.visible = keepButton.visible = graph && !job;
+        lessButton.visible = moreButton.visible = beginButton.visible = keepButton.visible = amountBox.visible = graph && !job;
         cancelButton.visible = job;
         keepButton.setMessage(Component.translatable(MODID + ".works.button." + (works.isKept() ? "kept" : "keep")));
-        hoardTabButton.active = worksTab;
-        worksTabButton.active = !worksTab;
+        // Begin turns rose when the plan lacks something: the order still waits for it, but not silently
+        beginButton.warning = works.beginWarns();
+        beginButton.setMessage(Component.translatable(MODID + ".works.button." + (beginButton.warning ? "queue_anyway" : "begin")));
+        if (!amountBox.isFocused() && !amountBox.getValue().equals(String.valueOf(works.amount)))
+            amountBox.setValue(String.valueOf(works.amount));
+        hoardTabButton.selected = !worksTab;
+        worksTabButton.selected = worksTab;
     }
 
     @Override
@@ -231,6 +302,8 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
      */
     public int[] worksControl(String name)
     {
+        if (name.equals("amount"))
+            return new int[] { amountBox.getX() + amountBox.getWidth() / 2, amountBox.getY() + amountBox.getHeight() / 2 };
         var button = switch (name)
         {
             case "back" -> backButton;
@@ -246,9 +319,35 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         return new int[] { button.getX() + button.getWidth() / 2, button.getY() + button.getHeight() / 2 };
     }
 
+    /**
+     * @return the works tab's line under the controls, for tests
+     */
+    public String worksWhisper()
+    {
+        return works == null ? "" : works.whisper(query()).getString();
+    }
+
+    /**
+     * @return what a control of the works tab reads, for tests
+     */
+    public String worksControlText(String name)
+    {
+        return switch (name)
+        {
+            case "begin" -> beginButton.getMessage().getString();
+            case "stations" -> stationsButton.getMessage().getString();
+            default -> amountBox.getValue();
+        };
+    }
+
+    public boolean worksGraphShown()
+    {
+        return works != null && works.shownGraph() != null;
+    }
+
     public int[] whisperCenter()
     {
-        return new int[] { leftPos + PANEL_W / 2, topPos + WorksView.JOBS_Y + 15 + font.lineHeight / 2 };
+        return new int[] { leftPos + PANEL_W / 2, topPos + WorksView.WHISPER_Y + font.lineHeight / 2 };
     }
 
     public int[] worksRegionCenter()
@@ -268,7 +367,7 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
 
     public int[] jobCenter(int index)
     {
-        return new int[] { leftPos + WorksView.REGION_X + index * (WorksView.JOB_PLATE_W + 2) + WorksView.JOB_PLATE_W / 2, topPos + WorksView.JOBS_Y + 6 };
+        return works == null ? new int[2] : works.jobCenter(index, leftPos, topPos);
     }
 
     public @Nullable int[] makeableCenter(net.fabricmc.fabric.api.transfer.v1.item.ItemVariant item)
@@ -401,7 +500,7 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
     {
-        if (worksTab && scrollY != 0 && works.scrolled(scrollY))
+        if (worksTab && scrollY != 0 && works.scrolled(leftPos, topPos, mouseX, mouseY, scrollY))
             return true;
         if (overWell(mouseX, mouseY) && scrollY != 0)
         {
@@ -415,6 +514,25 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     @Override
     public boolean keyPressed(KeyEvent event)
     {
+        boolean enter = event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER;
+        if (worksTab)
+        {
+            // Enter begins the plan shown, Escape goes back a step before it closes the screen
+            if (enter && beginButton.visible)
+            {
+                amountBox.setFocused(false);
+                works.begin();
+                return true;
+            }
+            if (event.key() == InputConstants.KEY_ESCAPE && (works.shownGraph() != null || works.roster))
+            {
+                amountBox.setFocused(false);
+                works.back();
+                return true;
+            }
+            if (amountBox.isFocused() && event.key() != InputConstants.KEY_ESCAPE)
+                return amountBox.keyPressed(event) || true;
+        }
         // Typing in the search never closes the screen or drops an item
         if (search.isFocused() && event.key() != InputConstants.KEY_ESCAPE)
             return search.keyPressed(event) || true;
@@ -428,6 +546,9 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
         graphics.blit(RenderPipelines.GUI_TEXTURED, worksTab ? WORKS_PANEL : PANEL, leftPos, topPos, 0, 0, PANEL_W, PANEL_H, PANEL_W, PANEL_H);
+        if (worksTab)
+            graphics.blit(RenderPipelines.GUI_TEXTURED, SIDE_PANEL, WorksView.sideSlab(leftPos), topPos, 0, 0, WorksView.SIDE_SLAB_W, PANEL_H,
+                    WorksView.SIDE_SLAB_W, PANEL_H);
         for (var slot : worksTab ? List.<Slot>of() : menu.slots)
         {
             int x = leftPos + slot.x - 1;
@@ -436,6 +557,8 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
             graphics.outline(x, y, CELL, CELL, CELL_LINE);
         }
         ResearchScreen.tablet(graphics, new Bounds(leftPos + WELL_X, topPos + SEARCH_Y, WELL_W, SEARCH_H));
+        if (amountBox != null && amountBox.visible)
+            ResearchScreen.tablet(graphics, new Bounds(amountBox.getX() - 2, amountBox.getY() - 2, amountBox.getWidth() + 2, BUTTON_H));
     }
 
     @Override
@@ -452,21 +575,22 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         if (worksTab)
         {
             works.extract(graphics, font, leftPos, topPos, query(), mouseX, mouseY);
-            if (lessButton.visible)
-            {
-                var amount = "x" + works.amount;
-                graphics.text(font, amount, leftPos + WorksView.REGION_X + 39 - font.width(amount) / 2, topPos + WorksView.CONTROLS_Y + 2, KNOWN_COLOR, false);
-            }
             var whisper = works.whisper(query());
             var line = font.plainSubstrByWidth(whisper.getString(), PANEL_W - 2 * PAD);
             var color = whisper.getStyle().getColor() == null ? MUTED_COLOR : whisper.getStyle().getColor().getValue() | 0xFF000000;
             int lineX = leftPos + (PANEL_W - font.width(line)) / 2;
-            int lineY = topPos + WorksView.JOBS_Y + 15;
+            int lineY = topPos + WorksView.WHISPER_Y;
             graphics.text(font, line, lineX, lineY, color, false);
-            // Everything a plan lacks shows over its whisper
-            var lacking = works.lackingLines();
+            // Everything a plan lacks shows above its whisper, each with its icon, so the line stays readable
+            var lacking = works.lackingRows();
             if (!lacking.isEmpty() && mouseX >= lineX && mouseX < lineX + font.width(line) && mouseY >= lineY - 1 && mouseY < lineY + font.lineHeight)
-                graphics.setComponentTooltipForNextFrame(font, lacking, mouseX, mouseY);
+            {
+                var header = Component.translatable(MODID + ".works.whisper.lacking").withColor(ResearchScreen.LACK_COLOR);
+                net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner above = (screenWidth, screenHeight, x, y, tooltipWidth, tooltipHeight) ->
+                        new org.joml.Vector2i(Math.clamp(x - tooltipWidth / 2, 4, Math.max(4, screenWidth - tooltipWidth - 4)), Math.max(4, lineY - tooltipHeight - 8));
+                graphics.setTooltipForNextFrame(font, List.of(header.getVisualOrderText()), java.util.Optional.of(new ItemRowsTooltip(lacking)), above, mouseX, mouseY,
+                        false, null);
+            }
             return;
         }
         extractPlates(graphics, mouseX, mouseY);
@@ -511,11 +635,16 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
      */
     static void extractCount(GuiGraphicsExtractor graphics, Font font, String count, int x, int y)
     {
+        extractCount(graphics, font, count, x, y, COUNT_COLOR);
+    }
+
+    static void extractCount(GuiGraphicsExtractor graphics, Font font, String count, int x, int y, int color)
+    {
         var pose = graphics.pose();
         pose.pushMatrix();
         pose.translate(x, y);
         pose.scale(COUNT_SCALE, COUNT_SCALE);
-        graphics.text(font, count, -font.width(count), -font.lineHeight + 1, COUNT_COLOR, true);
+        graphics.text(font, count, -font.width(count), -font.lineHeight + 1, color, true);
         pose.popMatrix();
     }
 

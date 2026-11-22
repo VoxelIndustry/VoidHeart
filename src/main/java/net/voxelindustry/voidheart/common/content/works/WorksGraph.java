@@ -52,8 +52,9 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
     /**
      * @param recipe  the recipe making it, empty for a kind taken from the hoard
      * @param station the station kind's ordinal, -1 for a kind taken from the hoard
+     * @param repack  whether its recipe only packs nine of one kind into one or unpacks one into nine, like ingots from a block or nuggets
      */
-    public record Node(ItemVariant item, long needed, long fromStock, long crafts, String recipe, int station, long lacking)
+    public record Node(ItemVariant item, long needed, long fromStock, long crafts, String recipe, int station, long lacking, boolean repack)
     {
         static final Codec<Node> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 ItemVariant.CODEC.fieldOf("item").forGetter(Node::item),
@@ -62,7 +63,8 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
                 Codec.LONG.fieldOf("crafts").forGetter(Node::crafts),
                 Codec.STRING.fieldOf("recipe").forGetter(Node::recipe),
                 Codec.INT.fieldOf("station").forGetter(Node::station),
-                Codec.LONG.fieldOf("lacking").forGetter(Node::lacking)
+                Codec.LONG.fieldOf("lacking").forGetter(Node::lacking),
+                Codec.BOOL.optionalFieldOf("repack", false).forGetter(Node::repack)
         ).apply(instance, Node::new));
 
         static final StreamCodec<RegistryFriendlyByteBuf, Node> STREAM_CODEC = StreamCodec.composite(
@@ -73,6 +75,7 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
                 ByteBufCodecs.STRING_UTF8, Node::recipe,
                 ByteBufCodecs.VAR_INT, Node::station,
                 ByteBufCodecs.VAR_LONG, Node::lacking,
+                ByteBufCodecs.BOOL, Node::repack,
                 Node::new);
 
         public boolean isMade()
@@ -126,7 +129,7 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
         {
             index.put(item, nodes.size());
             nodes.add(new Node(item, node.needed(), node.fromStock(), node.crafts(), node.isMade() ? node.recipe().id() : "",
-                    node.isMade() ? node.recipe().station().ordinal() : -1, plan.lacking().getOrDefault(item, 0L)));
+                    node.isMade() ? node.recipe().station().ordinal() : -1, plan.lacking().getOrDefault(item, 0L), node.isMade() && isRepack(node.recipe())));
         });
         var edges = plan.edges().stream().map(edge -> new Edge(index.get(edge.product()), index.get(edge.ingredient()), edge.count())).toList();
         var drinks = new ArrayList<Drink>();
@@ -136,6 +139,76 @@ public record WorksGraph(List<Node> nodes, List<Edge> edges, Map<String, Long> e
                 node.recipe().essence().forEach((aspect, perCraft) -> drinks.add(new Drink(index.get(item), aspect, (long) perCraft * node.crafts())));
         });
         return new WorksGraph(nodes, edges, plan.essence(), drinks);
+    }
+
+    /** How many of one kind a packing recipe puts into one of another, or one gives back. */
+    private static final int PACKED = 9;
+
+    /**
+     * @return whether a recipe only packs nine of one kind into one, or unpacks one into nine, like ingots and their block or their nuggets
+     */
+    static boolean isRepack(WorksRecipe<ItemVariant> recipe)
+    {
+        if (recipe.station() != StationKind.TABLE || recipe.inputs().size() != 1 || recipe.outputs().size() != 1 || recipe.inputs().getFirst().options().size() != 1)
+            return false;
+        var in = recipe.inputs().getFirst().count();
+        var out = recipe.outputs().getFirst().count();
+        return in == 1 && out == PACKED || in == PACKED && out == 1;
+    }
+
+    /**
+     * The graph as the works view shows it. A kind repacked from another the hoard holds none of is shown as the kind itself, wanted from the hoard,
+     * with what lay behind it left out: players bring ingots rather than blocks or nuggets, and the packed form only shows once the hoard holds some.
+     * The plan itself is unchanged, so packed forms brought later are still used.
+     */
+    public WorksGraph trimmed()
+    {
+        var collapsed = new java.util.HashSet<Integer>();
+        for (int index = 1; index < nodes.size(); index++)
+        {
+            if (!nodes.get(index).repack())
+                continue;
+            int product = index;
+            var ingredients = edges.stream().filter(edge -> edge.product() == product).map(edge -> nodes.get(edge.ingredient())).toList();
+            if (!ingredients.isEmpty() && ingredients.stream().allMatch(ingredient -> !ingredient.isMade() && ingredient.fromStock() == 0))
+                collapsed.add(index);
+        }
+        if (collapsed.isEmpty())
+            return this;
+
+        // What is still reached from the target without passing behind a collapsed kind
+        var kept = new java.util.TreeSet<Integer>();
+        var open = new java.util.ArrayDeque<Integer>();
+        if (!nodes.isEmpty())
+        {
+            kept.add(0);
+            open.add(0);
+        }
+        while (!open.isEmpty())
+        {
+            int node = open.poll();
+            if (collapsed.contains(node))
+                continue;
+            for (var edge : edges)
+                if (edge.product() == node && kept.add(edge.ingredient()))
+                    open.add(edge.ingredient());
+        }
+
+        var index = new java.util.HashMap<Integer, Integer>();
+        var keptNodes = new ArrayList<Node>();
+        for (int node : kept)
+        {
+            index.put(node, keptNodes.size());
+            var original = nodes.get(node);
+            keptNodes.add(collapsed.contains(node)
+                    ? new Node(original.item(), original.needed(), original.fromStock(), 0, "", -1, original.needed() - original.fromStock(), false)
+                    : original);
+        }
+        var keptEdges = edges.stream().filter(edge -> kept.contains(edge.product()) && !collapsed.contains(edge.product()) && kept.contains(edge.ingredient()))
+                .map(edge -> new Edge(index.get(edge.product()), index.get(edge.ingredient()), edge.count())).toList();
+        var keptDrinks = drinks.stream().filter(drink -> kept.contains(drink.node()) && !collapsed.contains(drink.node()))
+                .map(drink -> new Drink(index.get(drink.node()), drink.aspect(), drink.amount())).toList();
+        return new WorksGraph(keptNodes, keptEdges, essence, keptDrinks);
     }
 
     /**

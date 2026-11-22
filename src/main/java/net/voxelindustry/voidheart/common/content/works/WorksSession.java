@@ -94,7 +94,13 @@ public final class WorksSession
                 var recipes = catalogue.byId(claim.recipe());
                 making = recipes.isEmpty() ? claim.recipe() : recipes.getFirst().outputs().getFirst().item().toStack().getHoverName().getString();
             }
-            int status = claim == null ? WorksPayloads.Station.IDLE : officiant.isLaying() ? WorksPayloads.Station.LAYING : WorksPayloads.Station.WORKING;
+            int status = claim != null ? officiant.isLaying() ? WorksPayloads.Station.LAYING : WorksPayloads.Station.WORKING
+                    : switch (officiant.energy())
+                    {
+                        case READY -> WorksPayloads.Station.IDLE;
+                        case GATHERING -> WorksPayloads.Station.GATHERING;
+                        case NO_FIELD -> WorksPayloads.Station.NO_FIELD;
+                    };
             var makes = kind == StationKind.FORGE ? officiant.forgeRecipes().stream()
                     .map(recipe -> ItemVariant.of(recipe.getRecipeOutputs(net.minecraft.world.item.ItemStack.class).getFirst().getRaw())).distinct().toList()
                     : List.<ItemVariant>of();

@@ -85,9 +85,16 @@ public final class WorksQueue
             tasks = new ArrayList<>(tasks);
         }
 
+        /**
+         * The ordered item is crafted last, so once its crafts are all done nothing else of the order is needed, even crafts planned for ingredients
+         * the hoard was given since.
+         */
         public boolean isDone()
         {
-            return tasks.stream().allMatch(task -> task.remaining() <= 0 && task.working() <= 0);
+            if (tasks.isEmpty())
+                return true;
+            var last = tasks.getLast();
+            return last.remaining() <= 0 && last.working() <= 0;
         }
     }
 
@@ -140,6 +147,16 @@ public final class WorksQueue
      */
     public int order(String what, long count, List<Task> tasks)
     {
+        var id = nextId++;
+        jobs.add(new Job(id, what, count, merged(tasks)));
+        return id;
+    }
+
+    /**
+     * @return the tasks with crafts of one recipe next to each other merged into one
+     */
+    static List<Task> merged(List<Task> tasks)
+    {
         var merged = new ArrayList<Task>();
         for (var task : tasks)
         {
@@ -149,9 +166,28 @@ public final class WorksQueue
             else
                 merged.add(task);
         }
-        var id = nextId++;
-        jobs.add(new Job(id, what, count, merged));
-        return id;
+        return merged;
+    }
+
+    /**
+     * Puts crafts worked out again in place of what is left of an order, so long as none of it is being worked.
+     *
+     * @return whether the order was there and idle, and so changed
+     */
+    public boolean replan(int job, List<Task> tasks)
+    {
+        for (int index = 0; index < jobs.size(); index++)
+        {
+            var existing = jobs.get(index);
+            if (existing.id() != job)
+                continue;
+            if (existing.tasks().stream().anyMatch(task -> task.working() > 0))
+                return false;
+            jobs.set(index, new Job(existing.id(), existing.what(), existing.count(), merged(tasks)));
+            jobs.removeIf(Job::isDone);
+            return true;
+        }
+        return false;
     }
 
     /**

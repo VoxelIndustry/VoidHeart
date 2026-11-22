@@ -43,9 +43,14 @@ interface OfficiantStation
     /**
      * @param placed whether the step was laid; when not, its ingredient is still the Officiant's
      * @param back   what comes back to the hoard: a table's result, or a player's item found where the step was laid
+     * @param grid   for a table, what each of its nine slots held, row by row, for the fold to show; empty otherwise
      */
-    record Laid(boolean placed, List<ItemStack> back)
+    record Laid(boolean placed, List<ItemStack> back, List<ItemStack> grid)
     {
+        Laid(boolean placed, List<ItemStack> back)
+        {
+            this(placed, back, List.of());
+        }
     }
 
     StationKind kind();

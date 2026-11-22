@@ -123,6 +123,32 @@ class WorksQueueTest
         assertThat(loaded.order("b", 1, List.of(task("b", StationKind.TABLE, 1)))).isGreaterThan(1);
     }
 
+    @Test
+    void replan_givenAnIdleOrder_thenTakesTheNewCraftsMerged()
+    {
+        var queue = new WorksQueue();
+        var job = queue.order("focus", 1, List.of(task("gold_from_block", StationKind.TABLE, 1), task("focus", StationKind.ALTAR, 1)));
+
+        assertThat(queue.replan(job, List.of(task("shard", StationKind.TABLE, 1), task("shard", StationKind.TABLE, 1), task("focus", StationKind.ALTAR, 1)))).isTrue();
+
+        assertThat(queue.jobs()).singleElement().satisfies(replanned ->
+        {
+            assertThat(replanned.id()).isEqualTo(job);
+            assertThat(replanned.tasks()).containsExactly(task("shard", StationKind.TABLE, 2), task("focus", StationKind.ALTAR, 1));
+        });
+    }
+
+    @Test
+    void replan_givenACraftBeingWorked_thenLeavesTheOrder()
+    {
+        var queue = new WorksQueue();
+        var job = queue.order("focus", 1, List.of(task("shard", StationKind.TABLE, 2), task("focus", StationKind.ALTAR, 1)));
+        queue.claim(StationKind.TABLE, any -> true);
+
+        assertThat(queue.replan(job, List.of(task("focus", StationKind.ALTAR, 1)))).isFalse();
+        assertThat(queue.jobs().getFirst().tasks()).hasSize(2);
+    }
+
     private static WorksQueue.Claim oldClaim(int job, String recipe, StationKind station)
     {
         // Claims saved before they had an era carry none

@@ -53,6 +53,7 @@ public final class WorksJade
 
             var kind = officiant.stationKind();
             tag.putString("station", kind == null ? "" : kind.name().toLowerCase(Locale.ROOT));
+            tag.putString("energy", officiant.energy().name().toLowerCase(Locale.ROOT));
             var claim = officiant.getClaim();
             if (claim == null || owner == null)
                 return;
@@ -90,7 +91,14 @@ public final class WorksJade
             var stationName = Component.translatable(MODID + ".works.station." + station);
             var making = data.getString("making");
             if (making.isEmpty())
+            {
                 tooltip.add(Component.translatable(MODID + ".jade.officiant.idle", stationName).withStyle(ChatFormatting.GRAY));
+                var energy = data.getStringOr("energy", "ready");
+                if (energy.equals("no_field"))
+                    tooltip.add(Component.translatable(MODID + ".officiant.no_field").withStyle(ChatFormatting.RED));
+                else if (energy.equals("gathering"))
+                    tooltip.add(Component.translatable(MODID + ".officiant.gathering").withStyle(ChatFormatting.AQUA));
+            }
             else if (data.contains("step"))
                 tooltip.add(Component.translatable(MODID + ".jade.officiant.laying", making.get(), data.getIntOr("step", 0), data.getIntOr("steps", 0)));
             else

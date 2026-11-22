@@ -20,15 +20,16 @@ public final class OfficiantFolds
     public static final int LAY  = 0;
     /** A result taken back sinks into the fold. */
     public static final int TAKE = 1;
-    /** A table's result rises out of the fold and sinks back in. */
+    /** A table's craft: its ingredients rise out of the fold onto the table's grid, its result takes their place and sinks back in. */
     public static final int PASS = 2;
 
     /**
      * @param pos  the block the fold lies on
      * @param rest the height above that block the item floats at
      * @param item the item it shows, empty for one the block shows itself
+     * @param grid for a table's craft, what each of its nine slots held, row by row; empty otherwise
      */
-    public record Payload(BlockPos pos, float rest, ItemStack item, int kind) implements CustomPacketPayload
+    public record Payload(BlockPos pos, float rest, ItemStack item, int kind, java.util.List<ItemStack> grid) implements CustomPacketPayload
     {
         public static final Type<Payload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "officiant_fold"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Payload> STREAM_CODEC = StreamCodec.composite(
@@ -36,6 +37,7 @@ public final class OfficiantFolds
                 ByteBufCodecs.FLOAT, Payload::rest,
                 ItemStack.OPTIONAL_STREAM_CODEC, Payload::item,
                 ByteBufCodecs.VAR_INT, Payload::kind,
+                ItemStack.OPTIONAL_STREAM_CODEC.apply(ByteBufCodecs.list(9)), Payload::grid,
                 Payload::new);
 
         @Override

@@ -24,8 +24,8 @@ final class Stations
 {
     /** How long a laid out craft may wait to start before it is taken back. */
     static final int START_TIMEOUT_TICKS = 200;
-    /** How long a crafting table rests after a craft, about as long as the fold showing it. */
-    static final int TABLE_REST_TICKS = 20;
+    /** How long a crafting table rests after a craft, as long as the fold laying its grid out and taking its result back. */
+    static final int TABLE_REST_TICKS = 44;
 
     /** Heights above their block that items float at: a pillar's, a forge source pillar's, the altar's catalyst, a table's result. */
     static final float PILLAR_REST       = 1.1F;
@@ -399,7 +399,29 @@ final class Stations
             back.add(recipe.assemble(input));
             recipe.getRemainingItems(input).stream().filter(stack -> !stack.isEmpty()).forEach(back::add);
             pool.stream().filter(stack -> !stack.isEmpty()).forEach(back::add);
-            return new Laid(true, back);
+            return new Laid(true, back, gridOf(input));
+        }
+
+        /**
+         * @return the craft's grid as the table's nine slots, row by row: a shape centred on it, or a shapeless craft's items in reading order
+         */
+        private static List<ItemStack> gridOf(net.minecraft.world.item.crafting.CraftingInput input)
+        {
+            var grid = new ArrayList<ItemStack>(java.util.Collections.nCopies(9, ItemStack.EMPTY));
+            if (input.width() <= 3 && input.height() <= 3)
+            {
+                int left = (3 - input.width()) / 2;
+                int top = (3 - input.height()) / 2;
+                for (int row = 0; row < input.height(); row++)
+                    for (int column = 0; column < input.width(); column++)
+                        grid.set((top + row) * 3 + left + column, input.getItem(column, row).copyWithCount(1));
+                return grid;
+            }
+            int slot = 0;
+            for (var stack : input.items())
+                if (!stack.isEmpty() && slot < 9)
+                    grid.set(slot++, stack.copyWithCount(1));
+            return grid;
         }
 
         @Override

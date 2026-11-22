@@ -26,9 +26,10 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * What one owner's stations can make, as the planner sees it: the altar rites and crafting-table recipes the owner has researched, while an Officiant
- * serves that kind of station, and the forge recipes the builds their Officiants serve can run. A rite changing one item it is given is offered once
- * for each such item in the hoard.
+ * What one owner's stations can make, as the planner sees it: the altar rites and crafting-table recipes the owner has researched, and the forge recipes
+ * the builds their Officiants serve can run. A rite changing one item it is given is offered once for each such item in the hoard. Rites and table
+ * recipes are known even while no Officiant serves an altar or a table, so a plan can show the station it is waiting on; they come after every recipe a
+ * served station runs, and only what served stations make is offered to choose.
  */
 public final class WorksCatalogue
 {
@@ -36,6 +37,7 @@ public final class WorksCatalogue
 
     private final Map<Item, List<WorksRecipe<ItemVariant>>> byOutput = new HashMap<>();
     private final Map<String, Object> sources = new HashMap<>();
+    private Set<StationKind> served = Set.of();
 
     private WorksCatalogue()
     {
@@ -50,27 +52,31 @@ public final class WorksCatalogue
                                     Map<ItemVariant, Long> hoard)
     {
         var catalogue = new WorksCatalogue();
-        if (stations.contains(StationKind.ALTAR))
-            catalogue.addAltar(server, owner, hoard);
+        catalogue.served = Set.copyOf(stations);
+        catalogue.addAltar(server, owner, hoard);
         if (stations.contains(StationKind.FORGE))
             forgeRecipes.forEach(catalogue::addForge);
-        if (stations.contains(StationKind.TABLE))
-            catalogue.addTable(server, owner);
+        catalogue.addTable(server, owner);
         return catalogue;
     }
 
+    /**
+     * @return the recipes making the kind, those a served station runs first
+     */
     public List<WorksRecipe<ItemVariant>> recipesFor(ItemVariant item)
     {
-        return byOutput.getOrDefault(item.getItem(), List.of()).stream().filter(recipe -> recipe.makes(item) > 0).toList();
+        return byOutput.getOrDefault(item.getItem(), List.of()).stream().filter(recipe -> recipe.makes(item) > 0)
+                .sorted(java.util.Comparator.comparing(recipe -> !served.contains(recipe.station()))).toList();
     }
 
     /**
-     * @return every kind some recipe here makes
+     * @return every kind some recipe a served station runs makes
      */
     public java.util.Set<ItemVariant> outputs()
     {
         var outputs = new java.util.LinkedHashSet<ItemVariant>();
-        byOutput.values().forEach(recipes -> recipes.forEach(recipe -> outputs.add(recipe.outputs().getFirst().item())));
+        byOutput.values().forEach(recipes -> recipes.stream().filter(recipe -> served.contains(recipe.station()))
+                .forEach(recipe -> outputs.add(recipe.outputs().getFirst().item())));
         return outputs;
     }
 

@@ -93,6 +93,8 @@ public class OfficiantClientTest implements FabricClientGameTest
             checkAltarBrokenOnResult(context, server);
             checkOfflineOwner(context, server);
             checkTransform(context, server);
+            checkResumesOnceSupplied(context, server);
+            checkOnPylonField(context, server);
         }
     }
 
@@ -180,6 +182,20 @@ public class OfficiantClientTest implements FabricClientGameTest
             expect(held(minecraft, Items.ENDER_PEARL) == 0, "the ender pearl is still in the hoard");
             hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), held(minecraft, VoidHeartItems.ENDER_SHARD));
         });
+
+        // A craft of many ingredients: the planks lie on the table's grid, then the chest takes their place, larger, and sinks into the fold
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).insert(ItemVariant.of(Items.OAK_PLANKS), 8);
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(Items.CHEST), 1);
+        });
+        aimFrom(context, server, TABLE.getX() + 0.5, FLAT_FEET + 1.3, TABLE.getZ() - 1.2, TABLE.getX() + 0.5, FLAT_FEET + 1, TABLE.getZ() + 0.5, 1);
+        context.waitFor(minecraft -> OfficiantFoldRender.ingredientsLaid() >= 8, 300);
+        shot(context, "officiant-table-grid");
+        context.waitFor(minecraft -> OfficiantFoldRender.resultShown(), 100);
+        shot(context, "officiant-table-result");
+        waitFor(context, server, 200, "the table's Officiant made no chest", minecraft -> held(minecraft, Items.CHEST) == 1);
+        server.runOnServer(minecraft -> hoard(minecraft).extract(ItemVariant.of(Items.CHEST), 1));
     }
 
     /**
@@ -522,6 +538,8 @@ public class OfficiantClientTest implements FabricClientGameTest
         server.runOnServer(minecraft -> expect(held(minecraft, VoidHeartItems.ENDER_SHARD) == 1, "the hoard took " + held(minecraft, VoidHeartItems.ENDER_SHARD) + " shards"));
         server.runOnServer(minecraft -> hoard(minecraft).extract(cobble, 10));
         waitFor(context, server, 200, "the held shards never went in once there was room", minecraft -> held(minecraft, VoidHeartItems.ENDER_SHARD) == 4);
+        // The table rests while its fold takes the result back, and the order goes after
+        waitFor(context, server, 100, "the shards' order is still queued", minecraft -> WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty());
         server.runOnServer(minecraft ->
         {
             hoard(minecraft).extract(cobble, held(minecraft, Items.COBBLESTONE));
@@ -800,6 +818,93 @@ public class OfficiantClientTest implements FabricClientGameTest
      * A transform ordered from the hoard: the lesser apparatus held is laid as the catalyst, the rite drinks its Stillness through an Aspect Fold, and
      * the greater apparatus comes back.
      */
+    /**
+     * A Beam Focus ordered with nothing in the hoard waits, and is made once its raw ingredients are brought: cobblestone, obsidian, ender pearls and
+     * Ravenous Gold ingots.
+     */
+    private static void checkResumesOnceSupplied(ClientGameTestContext context, TestServerContext server)
+    {
+        var focus = ItemVariant.of(VoidHeartBlocks.BEAM_FOCUS);
+        server.runOnServer(minecraft ->
+        {
+            Knowledge.lockOf(minecraft.registryAccess(), id("altar/beam_focus")).ifPresent(knowledge(minecraft)::grant);
+            Knowledge.lockOf(minecraft.registryAccess(), id("void_conduit")).ifPresent(knowledge(minecraft)::grant);
+            for (var entry : List.copyOf(hoard(minecraft).view().entrySet()))
+                hoard(minecraft).extract(entry.getKey(), entry.getValue());
+            var ordered = WorksContent.order(minecraft, player(minecraft).getUUID(), focus, 1);
+            expect(ordered.job() > 0, "the Beam Focus was not ordered: " + ordered.plan().tasks());
+        });
+        context.waitTicks(60);
+        server.runOnServer(minecraft ->
+        {
+            hoard(minecraft).insert(ItemVariant.of(Items.COBBLESTONE), 64);
+            hoard(minecraft).insert(ItemVariant.of(Items.OBSIDIAN), 64);
+            hoard(minecraft).insert(ItemVariant.of(Items.ENDER_PEARL), 16);
+            hoard(minecraft).insert(ItemVariant.of(VoidHeartItems.RAVENOUS_GOLD_INGOT), 64);
+        });
+        for (int waited = 0; waited < 3000 && server.computeOnServer(minecraft -> held(minecraft, VoidHeartBlocks.BEAM_FOCUS) == 0); waited += 20)
+            context.waitTicks(20);
+        server.runOnServer(minecraft ->
+        {
+            var jobs = WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs();
+            expect(held(minecraft, VoidHeartBlocks.BEAM_FOCUS) == 1, "the Beam Focus was never made once supplied; queue " + jobs + ", hoard " + hoard(minecraft).view());
+            expect(jobs.isEmpty(), "the Beam Focus order is still queued: " + jobs);
+        });
+    }
+
+    private static final BlockPos FIELD_TABLE = new BlockPos(40, FLAT_FEET, 40);
+    private static final BlockPos FIELD_PYLON = new BlockPos(52, FLAT_FEET, 40);
+    // In the pylon's field but too far from the Officiant to reach it directly, so what it draws goes through the pylon
+    private static final BlockPos FIELD_WELL  = new BlockPos(64, FLAT_FEET - 2, 40);
+
+    private static String at(BlockPos pos)
+    {
+        return pos.getX() + " " + pos.getY() + " " + pos.getZ();
+    }
+
+    /**
+     * An Officiant outside every field says it has none and lays nothing out. Under a pylon, which passes far less in a tick than a craft costs, it
+     * gathers the energy over time and makes the ender shards ordered.
+     */
+    private static void checkOnPylonField(ClientGameTestContext context, TestServerContext server)
+    {
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            // The base's table is taken away, so only the table out on the field can make shards
+            level.removeBlock(TABLE, false);
+            level.setBlockAndUpdate(FIELD_TABLE, Blocks.CRAFTING_TABLE.defaultBlockState());
+            officiant(level, FIELD_TABLE.below(), minecraft);
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), held(minecraft, VoidHeartItems.ENDER_SHARD));
+            hoard(minecraft).insert(ItemVariant.of(Items.ENDER_PEARL), 1);
+            WorksContent.order(minecraft, player(minecraft).getUUID(), ItemVariant.of(VoidHeartItems.ENDER_SHARD), 4);
+        });
+        context.waitTicks(60);
+        server.runOnServer(minecraft ->
+        {
+            var officiant = (OfficiantTile) minecraft.overworld().getBlockEntity(FIELD_TABLE.below());
+            expect(officiant.energy() == OfficiantTile.Energy.NO_FIELD, "an Officiant outside every field says " + officiant.energy());
+            expect(officiant.getClaim() == null && held(minecraft, VoidHeartItems.ENDER_SHARD) == 0, "an Officiant with no field made shards");
+        });
+
+        server.runCommand("setblock " + at(FIELD_WELL) + " voidheart:creative_void_well");
+        server.runCommand("setblock " + at(FIELD_PYLON) + " voidheart:azurium_pylon");
+        server.runCommand("setblock " + at(FIELD_PYLON.above()) + " voidheart:large_azurium_bundle[facing=up]");
+        waitFor(context, server, 600, "the Officiant under the pylon never made the shards", minecraft -> held(minecraft, VoidHeartItems.ENDER_SHARD) >= 4);
+        server.runOnServer(minecraft ->
+        {
+            var officiant = (OfficiantTile) minecraft.overworld().getBlockEntity(FIELD_TABLE.below());
+            expect(officiant.energy() != OfficiantTile.Energy.NO_FIELD, "an Officiant under a pylon says it has no field");
+            expect(officiant.getCharge() <= net.voxelindustry.voidheart.common.content.works.WorksBalance.MAX_CHARGE, "the Officiant holds " + officiant.getCharge());
+            var level = minecraft.overworld();
+            for (var pos : List.of(FIELD_PYLON.above(), FIELD_PYLON, FIELD_WELL, FIELD_TABLE, FIELD_TABLE.below()))
+                level.removeBlock(pos, false);
+            level.setBlockAndUpdate(TABLE, Blocks.CRAFTING_TABLE.defaultBlockState());
+            hoard(minecraft).extract(ItemVariant.of(VoidHeartItems.ENDER_SHARD), held(minecraft, VoidHeartItems.ENDER_SHARD));
+        });
+        server.runCommand("kill @e[type=item]");
+    }
+
     private static void checkTransform(ClientGameTestContext context, TestServerContext server)
     {
         var greater = new ItemVariant[1];

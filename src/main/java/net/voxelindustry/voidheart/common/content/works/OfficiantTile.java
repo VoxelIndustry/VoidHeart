@@ -64,6 +64,22 @@ public class OfficiantTile extends TileBase
     /** The station's own block when the craft was claimed, where its result is still found should the Officiant lose sight of the station. */
     @Nullable
     private BlockPos workedAt;
+    /** Void energy gathered from the field around it, what laying out and taking back are paid from. */
+    @Getter
+    private long charge;
+    /** Whether a field reached it when it last gathered. */
+    private boolean fielded;
+
+    /** What an Officiant with no work is at, for the roster and Jade. */
+    public enum Energy
+    {
+        /** Charged enough to lay a craft out. */
+        READY,
+        /** Gathering from a field that reaches it. */
+        GATHERING,
+        /** No field reaches it, so it can never pay for a craft. */
+        NO_FIELD
+    }
 
     public OfficiantTile(BlockPos pos, BlockState state)
     {
@@ -72,9 +88,42 @@ public class OfficiantTile extends TileBase
 
     public static void tick(Level level, BlockPos pos, BlockState state, OfficiantTile officiant)
     {
+        if (level instanceof ServerLevel serverLevel)
+            officiant.gather(serverLevel);
         var period = officiant.isLaying() ? LAY_TICKS : TICK_PERIOD;
         if (level instanceof ServerLevel serverLevel && level.getGameTime() % period == Math.floorMod(pos.asLong(), period))
             officiant.serverTick(serverLevel);
+    }
+
+    /**
+     * Draws what the field around it can give this tick, up to what it stores.
+     */
+    private void gather(ServerLevel level)
+    {
+        if (charge >= WorksBalance.MAX_CHARGE)
+        {
+            fielded = true;
+            return;
+        }
+        // With no field last time, only looks again now and then
+        if (!fielded && level.getGameTime() % TICK_PERIOD != Math.floorMod(worldPosition.asLong(), TICK_PERIOD))
+            return;
+        var drawn = VoidEnergy.draw(level, worldPosition, WorksBalance.MAX_CHARGE - charge);
+        fielded = drawn > 0 || VoidEnergy.available(level, worldPosition) > 0;
+        if (drawn <= 0)
+            return;
+        charge += drawn;
+        setChanged();
+    }
+
+    /**
+     * @return whether it holds enough to lay a craft out, is gathering towards it, or has no field to gather from
+     */
+    public Energy energy()
+    {
+        if (charge >= WorksBalance.MAX_CHARGE)
+            return Energy.READY;
+        return fielded ? Energy.GATHERING : Energy.NO_FIELD;
     }
 
     public void setOwner(UUID owner)
@@ -157,7 +206,7 @@ public class OfficiantTile extends TileBase
         if (!station.isFree())
             return;
 
-        var affordable = VoidEnergy.available(level, worldPosition) / WorksBalance.ITEM_COST;
+        var affordable = charge / WorksBalance.ITEM_COST;
         var picked = new WorksRecipe[1];
         var queue = WorksState.get(level.getServer()).of(owner);
         var claimed = queue.claim(station.kind(), task ->
@@ -183,7 +232,7 @@ public class OfficiantTile extends TileBase
         @SuppressWarnings("unchecked")
         var recipe = (WorksRecipe<ItemVariant>) picked[0];
         var ingredients = Ingredients.take(recipe, hoard);
-        VoidEnergy.draw(level, worldPosition, Ingredients.items(ingredients) * WorksBalance.ITEM_COST);
+        charge -= Ingredients.items(ingredients) * WorksBalance.ITEM_COST;
         claim = claimed;
         ticket = UUID.randomUUID();
         workedAt = station.pos().immutable();
@@ -273,7 +322,7 @@ public class OfficiantTile extends TileBase
             return;
         }
         if (station.kind() == StationKind.TABLE)
-            fold(level, fold, laid.back().isEmpty() ? ItemStack.EMPTY : laid.back().getFirst(), OfficiantFolds.PASS);
+            fold(level, fold, laid.back().isEmpty() ? ItemStack.EMPTY : laid.back().getFirst(), OfficiantFolds.PASS, laid.grid());
         else
             fold(level, fold, ItemStack.EMPTY, OfficiantFolds.LAY);
         step++;
@@ -335,7 +384,15 @@ public class OfficiantTile extends TileBase
      */
     private void fold(ServerLevel level, OfficiantStation.Fold fold, ItemStack item, int kind)
     {
-        var payload = new OfficiantFolds.Payload(fold.pos(), fold.rest(), item.copy(), kind);
+        fold(level, fold, item, kind, List.of());
+    }
+
+    /**
+     * @param grid what a table's nine slots held, for the fold to lay out before its result shows
+     */
+    private void fold(ServerLevel level, OfficiantStation.Fold fold, ItemStack item, int kind, List<ItemStack> grid)
+    {
+        var payload = new OfficiantFolds.Payload(fold.pos(), fold.rest(), item.copy(), kind, grid.stream().map(ItemStack::copy).toList());
         for (var player : net.fabricmc.fabric.api.networking.v1.PlayerLookup.tracking(level, fold.pos()))
             net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, payload);
         var sound = kind == OfficiantFolds.TAKE ? SoundEvents.BUNDLE_INSERT : SoundEvents.BUNDLE_REMOVE_ONE;
@@ -343,7 +400,7 @@ public class OfficiantTile extends TileBase
     }
 
     /**
-     * Puts what is held into the hoard, paying for each item.
+     * Puts what is held into the hoard, paying each item from its charge; what it can't pay for yet waits for more.
      *
      * @return whether everything went in
      */
@@ -353,12 +410,9 @@ public class OfficiantTile extends TileBase
         while (iterator.hasNext())
         {
             var stack = iterator.next();
-            var cost = stack.getCount() * WorksBalance.ITEM_COST;
-            if (VoidEnergy.available(level, worldPosition) < cost)
-                break;
-            var put = (int) hoard.insert(ItemVariant.of(stack), stack.getCount());
-            if (put > 0)
-                VoidEnergy.draw(level, worldPosition, put * WorksBalance.ITEM_COST);
+            var paid = (int) Math.min(stack.getCount(), charge / WorksBalance.ITEM_COST);
+            var put = paid <= 0 ? 0 : (int) hoard.insert(ItemVariant.of(stack), paid);
+            charge -= put * WorksBalance.ITEM_COST;
             stack.shrink(put);
             if (!stack.isEmpty())
                 break;
@@ -410,6 +464,7 @@ public class OfficiantTile extends TileBase
         held.clear();
         held.addAll(tag.read("held", ItemStack.OPTIONAL_CODEC.listOf()).orElse(List.of()).stream().filter(stack -> !stack.isEmpty()).toList());
         waited = tag.getIntOr("waited", 0);
+        charge = Math.clamp(tag.getLongOr("charge", 0L), 0, WorksBalance.MAX_CHARGE);
         laying.clear();
         laying.addAll(tag.read("laying", ItemStack.OPTIONAL_CODEC.listOf()).orElse(List.of()));
         step = tag.getIntOr("step", 0);
@@ -433,6 +488,7 @@ public class OfficiantTile extends TileBase
         if (!held.isEmpty())
             tag.store("held", ItemStack.OPTIONAL_CODEC.listOf(), List.copyOf(held));
         tag.putInt("waited", waited);
+        tag.putLong("charge", charge);
         if (isLaying() && layingAt != null)
         {
             tag.store("laying", ItemStack.OPTIONAL_CODEC.listOf(), List.copyOf(laying));
