@@ -67,6 +67,7 @@
       "net.voxelindustry.voidheart.gametest.StructureMonolithClientTest",
       "net.voxelindustry.voidheart.gametest.SinMetalsClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalBundleClientTest",
+      "net.voxelindustry.voidheart.gametest.PylonModelClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalCradleClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalScouringClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalFedClientTest",
