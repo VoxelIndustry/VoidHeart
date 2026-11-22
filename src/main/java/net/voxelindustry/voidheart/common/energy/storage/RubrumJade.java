@@ -21,13 +21,14 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * Jade hand-off for W2 Rubrum storage, called through EnergyJade: a construct's charge, rate, bundles and bud from its
- * core or any frame block,, a socket's cell and a socket wall's cells.
+ * core or any frame block, a socket's cell, a socket wall's cells and a large cell's charge.
  */
 public final class RubrumJade
 {
     private static final Identifier CONSTRUCT   = Identifier.fromNamespaceAndPath(MODID, "rubrum_construct");
     private static final Identifier CELL_SOCKET = Identifier.fromNamespaceAndPath(MODID, "cell_socket");
     private static final Identifier SOCKET_WALL = Identifier.fromNamespaceAndPath(MODID, "socket_wall");
+    private static final Identifier LARGE_CELL  = Identifier.fromNamespaceAndPath(MODID, "large_rubrum_cell");
 
     private RubrumJade()
     {
@@ -40,6 +41,8 @@ public final class RubrumJade
         registration.registerBlockDataProvider(construct, ConstructFrameBlock.class);
         registration.registerBlockDataProvider(new SocketData(), CellSocketTile.class);
         registration.registerBlockDataProvider(new WallData(), SocketWallTile.class);
+        // On the block, so the upper half reads the lower half's tile too
+        registration.registerBlockDataProvider(new LargeCellData(), LargeRubrumCellBlock.class);
     }
 
     public static void registerClient(IWailaClientRegistration registration)
@@ -49,6 +52,7 @@ public final class RubrumJade
         registration.registerBlockComponent(construct, ConstructFrameBlock.class);
         registration.registerBlockComponent(new SocketTooltip(), CellSocketBlock.class);
         registration.registerBlockComponent(new WallTooltip(), SocketWallBlock.class);
+        registration.registerBlockComponent(new LargeCellTooltip(), LargeRubrumCellBlock.class);
     }
 
     private static class ConstructData implements IServerDataProvider<BlockAccessor>
@@ -233,6 +237,54 @@ public final class RubrumJade
         public Identifier getUid()
         {
             return SOCKET_WALL;
+        }
+    }
+
+    private static class LargeCellData implements IServerDataProvider<BlockAccessor>
+    {
+        @Override
+        public void appendServerData(CompoundTag tag, BlockAccessor accessor)
+        {
+            var cell = LargeRubrumCellBlock.tileOf(accessor.getLevel(), accessor.getPosition(), accessor.getBlockState());
+            if (cell == null)
+                return;
+            tag.putLong("charge", cell.charge());
+            tag.putString("activity", cell.activity().name());
+        }
+
+        @Override
+        public Identifier getUid()
+        {
+            return LARGE_CELL;
+        }
+    }
+
+    private static class LargeCellTooltip implements IBlockComponentProvider
+    {
+        @Override
+        public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config)
+        {
+            var data = accessor.getServerData();
+            if (!data.contains("charge"))
+                return;
+            var charge = data.getLongOr("charge", 0L);
+            tooltip.add(Component.translatable(MODID + ".large_rubrum_cell.tooltip",
+                    String.format("%,d", charge), String.format("%,d", RubrumBalance.LARGE_CELL_CAPACITY)));
+            var activity = data.getStringOr("activity", "");
+            if (activity.equals(CellSocketTile.Activity.CHARGING.name()))
+                tooltip.add(Component.translatable(MODID + ".jade.large_rubrum_cell.charging"));
+            else if (activity.equals(CellSocketTile.Activity.DISCHARGING.name()))
+                tooltip.add(Component.translatable(MODID + ".jade.large_rubrum_cell.discharging"));
+            // Anything but charging lets the charge fade
+            if (charge > 0 && !activity.equals(CellSocketTile.Activity.CHARGING.name()))
+                tooltip.add(Component.translatable(MODID + ".jade.large_rubrum_cell.fading", RubrumBalance.LARGE_CELL_DECAY_PERCENT)
+                        .withStyle(net.minecraft.ChatFormatting.DARK_RED));
+        }
+
+        @Override
+        public Identifier getUid()
+        {
+            return LARGE_CELL;
         }
     }
 }

@@ -12,7 +12,7 @@ import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
 /**
- * /voidheart energy construct fill|bud, which skip the waits on the nearest construct for review.
+ * /voidheart energy construct fill|bud and large_cell fill|age, which skip the waits on the nearest construct or large cell for review.
  */
 final class RubrumCommands
 {
@@ -27,6 +27,57 @@ final class RubrumCommands
         energy.then(literal("construct")
                 .then(literal("fill").then(argument("percent", IntegerArgumentType.integer(0, 100)).executes(RubrumCommands::fill)))
                 .then(literal("bud").then(argument("percent", IntegerArgumentType.integer(0, 100)).executes(RubrumCommands::bud))));
+        energy.then(literal("large_cell")
+                .then(literal("fill").then(argument("percent", IntegerArgumentType.integer(0, 100)).executes(RubrumCommands::fillLargeCell)))
+                .then(literal("age").then(argument("hours", IntegerArgumentType.integer(0, 1000)).executes(RubrumCommands::ageLargeCell))));
+    }
+
+    private static @Nullable LargeRubrumCellTile nearestLargeCell(CommandSourceStack source)
+    {
+        var level = source.getLevel();
+        var center = BlockPos.containing(source.getPosition());
+        LargeRubrumCellTile best = null;
+        var bestDistance = Double.MAX_VALUE;
+        for (var pos : BlockPos.betweenClosed(center.offset(-REACH, -REACH, -REACH), center.offset(REACH, REACH, REACH)))
+        {
+            if (level.getBlockEntity(pos) instanceof LargeRubrumCellTile cell && pos.distSqr(center) < bestDistance)
+            {
+                bestDistance = pos.distSqr(center);
+                best = cell;
+            }
+        }
+        if (best == null)
+            source.sendFailure(Component.translatable("voidheart.large_rubrum_cell.command.none"));
+        return best;
+    }
+
+    private static int fillLargeCell(CommandContext<CommandSourceStack> context)
+    {
+        var cell = nearestLargeCell(context.getSource());
+        if (cell == null)
+            return 0;
+        var percent = IntegerArgumentType.getInteger(context, "percent");
+        cell.setCharge(Math.round(RubrumBalance.LARGE_CELL_CAPACITY * (percent / 100D)));
+        return reportLargeCell(context, cell);
+    }
+
+    /**
+     * Ages the nearest large cell as if it had stood that many hours without being charged.
+     */
+    private static int ageLargeCell(CommandContext<CommandSourceStack> context)
+    {
+        var cell = nearestLargeCell(context.getSource());
+        if (cell == null)
+            return 0;
+        cell.age(IntegerArgumentType.getInteger(context, "hours") * LargeCellCharge.TICKS_PER_HOUR);
+        return reportLargeCell(context, cell);
+    }
+
+    private static int reportLargeCell(CommandContext<CommandSourceStack> context, LargeRubrumCellTile cell)
+    {
+        context.getSource().sendSuccess(() -> Component.translatable("voidheart.large_rubrum_cell.tooltip",
+                String.format("%,d", cell.charge()), String.format("%,d", RubrumBalance.LARGE_CELL_CAPACITY)), false);
+        return 1;
     }
 
     private static @Nullable RubrumConstructTile nearest(CommandSourceStack source)

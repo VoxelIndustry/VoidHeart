@@ -26,7 +26,7 @@ import java.util.WeakHashMap;
  * Holds a rubrum cell and moves its energy: out into the field covering it, or in from that field while powered. The cell's habit changes how, as
  * {@link CellHabits} says, and a Wrung cell drinks the harm done to living things around it.
  */
-public class CellSocketTile extends TileBase
+public class CellSocketTile extends TileBase implements HarmDrinker
 {
     public enum Activity
     {
@@ -37,10 +37,8 @@ public class CellSocketTile extends TileBase
         BURSTING
     }
 
-    /** Sockets holding a Wrung cell on the server, which harm nearby is offered to. */
-    private static final Set<CellSocketTile> DRINKERS = Collections.newSetFromMap(new WeakHashMap<>());
-
-    private static final int WISPS_MAX = 6;
+    /** Sockets and walls holding a Wrung cell on the server, which harm nearby is offered to. */
+    private static final Set<HarmDrinker> DRINKERS = Collections.newSetFromMap(new WeakHashMap<>());
 
     private static final int    SYNC_PERIOD     = 10;
     private static final int    TARGET_RESCAN   = 100;
@@ -72,13 +70,10 @@ public class CellSocketTile extends TileBase
     {
         var next = Activity.IDLE;
         var habit = CrystalBundles.habitOf(cell);
-        if (!cell.isEmpty() && habit == CrystalHabit.WRUNG)
-            DRINKERS.add(this);
-        else
-        {
-            DRINKERS.remove(this);
+        var wrung = !cell.isEmpty() && habit == CrystalHabit.WRUNG;
+        drinking(this, wrung);
+        if (!wrung)
             wrungBank = 0;
-        }
 
         if (!cell.isEmpty())
         {
@@ -179,30 +174,37 @@ public class CellSocketTile extends TileBase
         if (!(damage > 0) || DRINKERS.isEmpty() || !(entity.level() instanceof ServerLevel level))
             return;
         var at = entity.position().add(0, entity.getBbHeight() * 0.6, 0);
-        for (var socket : List.copyOf(DRINKERS))
-        {
-            if (socket.isRemoved() || socket.level != level || Vec3.atCenterOf(socket.worldPosition).distanceToSqr(at) > RubrumBalance.WRUNG_RANGE * RubrumBalance.WRUNG_RANGE)
-                continue;
-            socket.drinkHarm(level, at, damage, entity.getBbWidth());
-        }
+        for (var drinker : List.copyOf(DRINKERS))
+            if (drinker.reaches(level, at))
+                drinker.drinkHarm(level, at, damage, entity.getBbWidth());
     }
 
-    private void drinkHarm(ServerLevel level, Vec3 from, float damage, float width)
+    /**
+     * Adds or removes a holder of Wrung cells from those harm is offered to.
+     */
+    public static void drinking(HarmDrinker drinker, boolean drinks)
+    {
+        if (drinks)
+            DRINKERS.add(drinker);
+        else
+            DRINKERS.remove(drinker);
+    }
+
+    @Override
+    public boolean reaches(ServerLevel level, Vec3 at)
+    {
+        return HarmDrinker.reaches(isRemoved(), this.level, worldPosition, level, at);
+    }
+
+    @Override
+    public void drinkHarm(ServerLevel level, Vec3 from, float damage, float width)
     {
         var banked = CellHabits.bank(wrungBank, damage);
         if (banked == wrungBank)
             return;
         wrungBank = banked;
         setChanged();
-        var cellTop = Vec3.atBottomCenterOf(worldPosition).add(0, CellSocketGeometry.CELL_TOP, 0);
-        var random = level.getRandom();
-        int wisps = Mth.clamp(Mth.ceil(damage * 0.8F), 2, WISPS_MAX);
-        for (int i = 0; i < wisps; i++)
-        {
-            double x = from.x + (random.nextDouble() - 0.5) * width, y = from.y + (random.nextDouble() - 0.5) * 0.4, z = from.z + (random.nextDouble() - 0.5) * width;
-            // A count of 0 hands the target to the mote as its motion, unscaled
-            level.sendParticles(RubrumContent.WRUNG_MOTE, false, true, x, y, z, 0, cellTop.x, cellTop.y, cellTop.z, 1);
-        }
+        HarmDrinker.sendWisps(level, from, damage, width, Vec3.atBottomCenterOf(worldPosition).add(0, CellSocketGeometry.CELL_TOP, 0));
     }
 
     /**
