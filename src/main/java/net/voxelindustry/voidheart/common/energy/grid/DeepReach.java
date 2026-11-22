@@ -138,7 +138,7 @@ public final class DeepReach
     }
 
     /**
-     * Names what a draw at pos takes through the Deep fields reaching it: what a draw at each near core takes from at home.
+     * Names what a draw at pos takes through the Deep fields reaching it: each near core it is taken at, and what a draw there takes from at home.
      */
     public static java.util.Set<Object> drawsFrom(ServerLevel level, BlockPos pos)
     {
@@ -147,6 +147,7 @@ public final class DeepReach
         {
             if (!reach.covers(pos))
                 continue;
+            names.add(java.util.Map.entry(reach.nearLevel(), reach.nearCore()));
             var near = level.getServer().getLevel(reach.nearLevel());
             if (near != null)
                 names.addAll(VoidEnergy.drawsFromHere(near, reach.nearCore()));

@@ -297,4 +297,17 @@ class VoidGridLedgerTest
 
         assertThat(ledger.poolsOf(near(0))).isEqualTo(ledger.poolsOf(near(1)));
     }
+
+    @Test
+    void poolsOf_givenTheSourceJoiningTwoGroupsDrained_thenADrawNamedBeforeStillMeetsBoth()
+    {
+        var ledger = ledger(apart(2), Map.of());
+        ledger.startTick(1);
+        ledger.offer(BETWEEN, 30);
+        var before = ledger.poolsOf(near(0));
+
+        assertThat(ledger.draw(near(1), 30)).isEqualTo(30);
+
+        assertThat(before).containsAnyElementsOf(ledger.poolsOf(near(0))).containsAnyElementsOf(ledger.poolsOf(near(1)));
+    }
 }

@@ -196,15 +196,16 @@ public final class VoidGridLedger
     }
 
     /**
-     * One group of pylons energy can pass between: joined by arcs, or by a source or store standing in fields of both.
+     * A pylon of a group energy can pass between: joined by arcs, or by a source or store standing in fields of both.
      */
-    private record Pool(VoidGridLedger ledger, int root)
+    private record Pool(VoidGridLedger ledger, int pylon)
     {
     }
 
     /**
-     * The groups of pylons a draw at pos is routed from. Draws whose groups don't meet never take from each other, past what waits at their own
-     * position.
+     * Every pylon of the groups a draw at pos is routed from. Draws whose pylons don't meet never take from each other, past what waits at their own
+     * position. Naming each pylon rather than the group keeps two draws on one group meeting even when a source joining it to another is drained or
+     * offers between them.
      */
     public java.util.Set<Object> poolsOf(BlockPos pos)
     {
@@ -227,9 +228,13 @@ public final class VoidGridLedger
                 join(roots, pylons[0], pylon);
         }
 
-        var pools = new java.util.HashSet<Object>();
+        var groups = new java.util.HashSet<Integer>();
         for (int pylon : covering)
-            pools.add(new Pool(this, rootOf(roots, pylon)));
+            groups.add(rootOf(roots, pylon));
+        var pools = new java.util.HashSet<Object>();
+        for (int pylon = 0; pylon < roots.length; pylon++)
+            if (groups.contains(rootOf(roots, pylon)))
+                pools.add(new Pool(this, pylon));
         return pools;
     }
 
