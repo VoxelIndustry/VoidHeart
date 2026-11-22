@@ -30,7 +30,7 @@ final class AltarDraughts
         stillness(1_000, "apparatus_ember_ward", "apparatus_arrow_ward", "apparatus_blast_ward", "apparatus_arcane_ward", "apparatus_grudge_ward",
                 "armor_night_vision");
         stillness(1_500, "apparatus_pulse_core", "apparatus_blink_core", "apparatus_stasis_core", "apparatus_mending_core", "hoard_coffer", "fold", "aspect_fold");
-        stillness(3_000, "shoulder_eye", "azurium_spike", "fouled_azurium_spike");
+        stillness(3_000, "shoulder_eye", "azurium_spike", "fouled_azurium_spike", "armor_levitation");
         stillness(4_000, "deep_siphon");
 
         suffering(4_000, "void_marrow", "heart_cradle");

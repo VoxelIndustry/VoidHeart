@@ -418,7 +418,7 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
     }
 
     /**
-     * Fills the cells of a piece as one slab, ruling only its outer edges, with its item on the cell nearest its middle. Cells off the grid are left out,
+     * Fills the cells of a piece as one slab, ruling only its outer edges, with its item in its middle ({@link PieceIcon}). Cells off the grid are left out,
      * so a ghost hanging over the edge shows only where it would land.
      */
     private void extractPiece(GuiGraphicsExtractor graphics, ArmorGridKind kind, ComponentShape shape, int originX, int originY, int fill, int edge, ItemStack icon)
@@ -449,8 +449,8 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
         }
         extractOutline(graphics, kind, shape, originX, originY, edge);
 
-        var middle = ApparatusScreen.middle(shape);
-        graphics.item(icon, gridX + (originX + middle.x()) * CELL + (CELL - 16) / 2, gridY + (originY + middle.y()) * CELL + (CELL - 16) / 2);
+        var at = PieceIcon.offset(shape, CELL, 16);
+        graphics.item(icon, gridX + originX * CELL + at[0], gridY + originY * CELL + at[1]);
     }
 
     private void extractOutline(GuiGraphicsExtractor graphics, ArmorGridKind kind, ComponentShape shape, int originX, int originY, int color)
@@ -511,12 +511,18 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
     private void extractStats(GuiGraphicsExtractor graphics, ArmorStats stats)
     {
         var tablet = tablet();
-        int y = tablet.y() + 7;
+        // Six rows fit at the usual spacing; a frame with wings has a seventh, so its rows sit closer
+        boolean seven = stats.levitation();
+        line = seven ? TIGHT_LINE : LINE;
+        int y = tablet.y() + (seven ? TIGHT_TOP : 7);
         y = row(graphics, tablet, y, "sortie", Component.translatable(MODID + ".void_armor_screen.minutes", number(stats.sortieMinutes())).getString(), VALUE_COLOR);
         y = row(graphics, tablet, y, "speed", "+" + Math.round(stats.speedBonus() * 100) + "%", VALUE_COLOR);
         y = row(graphics, tablet, y, "jump", Component.translatable(MODID + ".void_armor_screen.blocks", number(stats.jumpBlocks())).getString(), VALUE_COLOR);
         y = row(graphics, tablet, y, "reach", "+" + number(ArmorBalance.ENTITY_REACH), VALUE_COLOR);
         y = row(graphics, tablet, y, "hit", stats.hitBonus() > 0 ? "+" + number(stats.hitBonus()) : "-", stats.hitBonus() > 0 ? VALUE_COLOR : MUTED_COLOR);
+        if (stats.levitation())
+            y = row(graphics, tablet, y, "flight", Component.translatable(MODID + ".void_armor_screen.minutes", number(stats.flightMinutes())).getString(),
+                    0xFF000000 | ArmorModule.LEVITATION.rgb());
         String sight = stats.spectralLens() ? "spectral" : stats.nightVision() ? "night" : "none";
         row(graphics, tablet, y, "sight", Component.translatable(MODID + ".void_armor_screen.sight." + sight).getString(),
                 0xFF000000 | (stats.spectralLens() ? ArmorModule.SPECTRAL_LENS.rgb() : stats.nightVision() ? ArmorModule.NIGHT_VISION.rgb() : 0xA899BC));
@@ -527,13 +533,18 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
         return value == Math.round(value) ? String.valueOf(Math.round(value)) : String.format(Locale.ROOT, "%.1f", value);
     }
 
+    /** Row spacing and top margin on the stats tablet when it holds seven rows, which don't fit at the usual spacing. */
+    private static final int TIGHT_LINE = 9;
+    private static final int TIGHT_TOP  = 6;
+    private int line = LINE;
+
     private int row(GuiGraphicsExtractor graphics, Bounds tablet, int y, String name, String value, int color)
     {
-        if (y + LINE > tablet.y() + tablet.height())
+        if (y + line > tablet.y() + tablet.height())
             return y;
         graphics.text(font, Component.translatable(MODID + ".void_armor_screen.stat." + name), tablet.x() + 7, y, MUTED_COLOR, false);
         graphics.text(font, value, tablet.x() + tablet.width() - 7 - font.width(value), y, color, false);
-        return y + LINE;
+        return y + line;
     }
 
     private void extractWhisper(GuiGraphicsExtractor graphics, ArmorGrids grids, int mouseX, int mouseY)

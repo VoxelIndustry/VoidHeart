@@ -205,6 +205,15 @@ public final class ArmorWear
         return ArmorLoad.of(stats, worn.on(), LoadShedding.stage(charge(player), stats.capacity()));
     }
 
+    /**
+     * Whether the worn frame has working wings that can lift its wearer: fitted, not cut, and the frame fully closed.
+     */
+    public static boolean wings(Player player)
+    {
+        var worn = worn(player);
+        return worn != null && worn.phase() == WornArmor.Phase.WORN && load(player).levitation();
+    }
+
     public static boolean limp(Player player)
     {
         return wearing(player) && load(player).limp();
@@ -428,7 +437,8 @@ public final class ArmorWear
             {
                 spend(player);
                 var wearer = wearer(player);
-                wearer.sneak = player.isShiftKeyDown() ? wearer.sneak + 1 : 0;
+                // Only held standing on something: in the air sneak sinks a flying wearer, and a fading lift is no place to open the frame
+                wearer.sneak = player.isShiftKeyDown() && player.onGround() && !player.getAbilities().flying ? wearer.sneak + 1 : 0;
                 if (wearer.sneak >= ArmorBalance.STEP_OUT_HOLD_TICKS)
                 {
                     wearer.sneak = 0;
@@ -540,7 +550,8 @@ public final class ArmorWear
     public static void onMoved(ServerPlayer player, double dx, double dz)
     {
         var worn = worn(player);
-        if (worn == null || worn.phase() != WornArmor.Phase.WORN || player.isPassenger())
+        // In the air the wings carry the frame and pay for it, and there are no heavy steps to vent
+        if (worn == null || worn.phase() != WornArmor.Phase.WORN || player.isPassenger() || player.getAbilities().flying)
             return;
         double blocks = Math.sqrt(dx * dx + dz * dz);
         if (blocks > MOST_STEP)

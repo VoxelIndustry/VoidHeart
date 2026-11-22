@@ -8,6 +8,7 @@ import net.voxelindustry.voidheart.client.TunnelVision;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.entity.player.Player;
 import net.voxelindustry.voidheart.client.armor.ArmorSight;
+import net.voxelindustry.voidheart.client.armor.ArmorWings;
 import net.voxelindustry.voidheart.client.armor.VoidArmorLook;
 import net.voxelindustry.voidheart.client.render.KleinStarRender;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,6 +35,10 @@ public class MixinLivingEntityRendererMemory
         state.setData(ArmorSight.SPECTRAL, ArmorSight.silhouette(entity, partialTicks));
         // The Void Armor a player has on, if any, drawn in place of their body
         if (state instanceof AvatarRenderState)
+        {
             state.setData(VoidArmorLook.KEY, entity instanceof Player player ? VoidArmorLook.of(player, partialTicks) : VoidArmorLook.NONE);
+            // And the wings it spreads in flight
+            state.setData(ArmorWings.KEY, entity instanceof Player player ? ArmorWings.of(player, partialTicks) : ArmorWings.Wings.NONE);
+        }
     }
 }

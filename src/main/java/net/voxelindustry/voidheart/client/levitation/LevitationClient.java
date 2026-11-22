@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.voxelindustry.voidheart.common.content.armor.ArmorWear;
 import net.voxelindustry.voidheart.common.content.levitation.BeltLift;
 import net.voxelindustry.voidheart.common.content.levitation.LevitationBelts;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -47,7 +48,8 @@ public final class LevitationClient
         long now = level.getGameTime();
         for (var player : level.players())
         {
-            if (player.isInvisible() || player.position().distanceTo(camera) > VISIBLE_RANGE)
+            // A frame flies on its wings, which draw themselves
+            if (player.isInvisible() || player.position().distanceTo(camera) > VISIBLE_RANGE || ArmorWear.wearing(player))
                 continue;
             float chance = MOTE_CHANCE * lift(player, now);
             if (chance <= 0 || random.nextFloat() >= chance)

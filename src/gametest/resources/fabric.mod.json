@@ -65,6 +65,7 @@
       "net.voxelindustry.voidheart.gametest.VoidArmorResearchClientTest",
       "net.voxelindustry.voidheart.gametest.VoidArmorTripsClientTest",
       "net.voxelindustry.voidheart.gametest.VoidArmorWearClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidArmorWingsClientTest",
       "net.voxelindustry.voidheart.gametest.InsightClientTest",
       "net.voxelindustry.voidheart.gametest.SaltClientTest",
       "net.voxelindustry.voidheart.gametest.RefinementClientTest",

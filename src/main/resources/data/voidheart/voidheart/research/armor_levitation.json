@@ -1,0 +1,18 @@
+{
+  "tier": 3,
+  "constellation": "artifices",
+  "icon": "voidheart:armor_levitation",
+  "insight_cost": 9,
+  "knowledge_cost": 3000,
+  "knowledge_per_second": 2,
+  "requires": [
+    "voidheart:void_armor",
+    "voidheart:levitation_belt"
+  ],
+  "unlocks": [
+    "voidheart:armor_levitation"
+  ],
+  "recipes": [
+    "voidheart:altar/armor_levitation"
+  ]
+}

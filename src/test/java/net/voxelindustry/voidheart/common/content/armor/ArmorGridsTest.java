@@ -57,6 +57,19 @@ class ArmorGridsTest
     }
 
     @Test
+    void wingsSitAboveTheSocketAndCostTwoBatteries()
+    {
+        assertThat(ArmorGrids.EMPTY.refusal(LIMBS, LEVITATION, 0, 0, 0)).isEqualTo(Refusal.WRONG_GRID);
+        var grids = set(ArmorGrids.EMPTY, CORE, LEVITATION, 1, 0, 0);
+        assertThat(grids.stats().levitation()).isTrue();
+        assertThat(grids.refusal(CORE, LEVITATION, 1, 3, 2)).isEqualTo(Refusal.SECOND);
+        assertThat(grids.refusal(CORE, BATTERY_CELL, 0, 0, 0)).isEqualTo(Refusal.OVERLAPS);
+        grids = set(grids, CORE, BATTERY_CELL, 0, 3, 0);
+        grids = set(grids, CORE, BATTERY_CELL, 3, 3, 0);
+        assertThat(grids.stats().batteries()).isEqualTo(2);
+    }
+
+    @Test
     void piecesNeitherOverlapNorLeaveTheirGrid()
     {
         var grids = set(ArmorGrids.EMPTY, LIMBS, BATTERY_CELL, 0, 0, 0);

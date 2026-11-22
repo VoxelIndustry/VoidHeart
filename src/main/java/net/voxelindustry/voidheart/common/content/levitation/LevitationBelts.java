@@ -13,6 +13,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.voxelindustry.voidheart.common.content.armor.ArmorBalance;
 import net.voxelindustry.voidheart.common.content.armor.ArmorWear;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 
@@ -24,6 +25,8 @@ import static net.voxelindustry.voidheart.common.content.levitation.LevitationBa
 /**
  * Gives a belt wearer flight inside the field of an azurium pylon, paid from that field every tick they fly, and lets the lift fade when the field is lost
  * in flight. The jumps and the softer falls come from the belt's own attribute modifiers, worn or not near a pylon.
+ * <p>
+ * A Void Armor frame with wings fitted flies the same way anywhere, paying from its own charge, and its lift fades the same way when the frame cuts them.
  * <p>
  * The server decides when flight is given and taken; both sides bend the wearer's fall while the lift fades, since the client moves its own player and the
  * server counts its falls.
@@ -95,10 +98,14 @@ public final class LevitationBelts
         if (state.fading() && (held(player) || !BeltLift.fading(now - fadeSince)))
             fadeSince = -1;
 
+        boolean wings = player.isAlive() && ArmorWear.wings(player);
         boolean belt = player.isAlive() && wearing(player);
         boolean flying = state.granted() && abilities.flying;
         boolean powered;
-        if (!belt)
+        // A frame's wings pay from its own charge, anywhere; the frame cuts them when it runs low
+        if (wings)
+            powered = !flying || ArmorWear.draw(player, ArmorBalance.LEVITATION_DRAIN) >= ArmorBalance.LEVITATION_DRAIN;
+        else if (!belt)
             powered = false;
         else if (flying)
             powered = drawFlight(player) >= FLIGHT_COST;
