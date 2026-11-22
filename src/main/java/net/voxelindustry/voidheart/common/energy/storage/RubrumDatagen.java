@@ -157,6 +157,16 @@ public final class RubrumDatagen
                 continue;
             var json = new JsonObject();
             json.addProperty("texture", "#" + texture.apply(face));
+            // The UV vanilla would give the box before it was raised, so the item's upper half samples inside its texture
+            json.add("uv", switch (face)
+            {
+                case DOWN -> vector(x0, 16 - z1, x1, 16 - z0);
+                case UP -> vector(x0, z0, x1, z1);
+                case NORTH -> vector(16 - x1, 16 - y1, 16 - x0, 16 - y0);
+                case SOUTH -> vector(x0, 16 - y1, x1, 16 - y0);
+                case WEST -> vector(z0, 16 - y1, z1, 16 - y0);
+                case EAST -> vector(16 - z1, 16 - y1, 16 - z0, 16 - y0);
+            });
             // Only the plinth's bottom and the cap's top lie on the block's outside
             if (offset == 0 && (face == Direction.DOWN && y0 == 0 || face == Direction.UP && y1 == 16))
                 json.addProperty("cullface", face.getSerializedName());

@@ -17,7 +17,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * The charge of a Large Rubrum Cell, held by its lower half. Each tick it charges from the field while powered, or
  * discharges into it otherwise, and every tick it isn't charging loses a little, as {@link LargeCellCharge#decay} says.
- * Ticks passed while its chunk was unloaded count as not charging, so a forgotten cell drains away.
+ * Ticks passed while its chunk was unloaded count as not charging, so a forgotten cell drains away. A full cell on a
+ * signal draws just what it would lose, so a field holds it full.
  */
 public class LargeRubrumCellTile extends TileBase
 {
@@ -54,18 +55,21 @@ public class LargeRubrumCellTile extends TileBase
     private void serverTick(ServerLevel level)
     {
         var now = level.getGameTime();
-        // Ticks missed while unloaded: the cell wasn't charging through them
-        var idle = lastTick == NEVER ? 0 : Math.max(0, now - lastTick - 1);
+        var capacity = RubrumBalance.LARGE_CELL_CAPACITY;
+        // Ticks missed while unloaded fade first: the cell wasn't charging through them, and what it draws now isn't lost to them
+        if (lastTick != NEVER && now - lastTick > 1)
+            fade(now - lastTick - 1, capacity);
         lastTick = now;
 
-        var capacity = RubrumBalance.LARGE_CELL_CAPACITY;
         var next = Activity.IDLE;
         if (level.hasNeighborSignal(worldPosition) || level.hasNeighborSignal(worldPosition.above()))
         {
-            var drawn = VoidEnergy.draw(level, worldPosition, Math.min(RubrumBalance.LARGE_CELL_RATE, capacity - charge));
+            // A full cell draws only what this tick would fade, which holds it full while the field can feed it
+            var room = charge >= capacity ? LargeCellCharge.decay(decayCarry, 1, capacity).loss() : capacity - charge;
+            var drawn = room > 0 ? VoidEnergy.draw(level, worldPosition, Math.min(RubrumBalance.LARGE_CELL_RATE, room)) : 0;
             if (drawn > 0)
             {
-                charge += drawn;
+                charge = Math.min(capacity, charge + drawn);
                 next = Activity.CHARGING;
             }
         }
@@ -79,11 +83,7 @@ public class LargeRubrumCellTile extends TileBase
             }
         }
         if (next != Activity.CHARGING)
-            idle++;
-
-        var decay = LargeCellCharge.decay(decayCarry, idle, capacity);
-        decayCarry = decay.carry();
-        charge = Math.clamp(charge - decay.loss(), 0, capacity);
+            fade(1, capacity);
         setChanged();
 
         showCharge(level);
@@ -93,6 +93,13 @@ public class LargeRubrumCellTile extends TileBase
             syncedCharge = charge;
             sync();
         }
+    }
+
+    private void fade(long ticks, long capacity)
+    {
+        var decay = LargeCellCharge.decay(decayCarry, ticks, capacity);
+        decayCarry = decay.carry();
+        charge = Math.clamp(charge - decay.loss(), 0, capacity);
     }
 
     /**

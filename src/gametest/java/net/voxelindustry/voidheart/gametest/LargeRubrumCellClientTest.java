@@ -50,36 +50,45 @@ public class LargeRubrumCellClientTest implements FabricClientGameTest
     {
         EnergyTestKit.expectRegistered("large_rubrum_cell");
 
-        TestWorldSave save;
-        long kept;
-        try (var world = context.worldBuilder().create())
+        // All tests share one client, so the camera goes back as it was
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        try
         {
-            save = world.getWorldSave();
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            freezeTime(server, "noon");
-            server.runCommand("gamerule spawn_mobs false");
-            server.runCommand("gamemode creative @a");
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
-            context.waitTicks(10);
+            TestWorldSave save;
+            long kept;
+            try (var world = context.worldBuilder().create())
+            {
+                save = world.getWorldSave();
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                freezeTime(server, "noon");
+                server.runCommand("gamerule spawn_mobs false");
+                server.runCommand("gamemode creative @a");
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                context.waitTicks(10);
 
-            place(context, server);
-            flow(context, server);
-            decay(context, server);
-            looks(context, server);
-            piston(context, server);
-            kept = server.computeOnServer(minecraft -> cell(minecraft, LONE).charge());
-            breaking(context, server);
+                place(context, server);
+                flow(context, server);
+                decay(context, server);
+                looks(context, server);
+                piston(context, server);
+                kept = server.computeOnServer(minecraft -> cell(minecraft, LONE).charge());
+                breaking(context, server);
+            }
+
+            try (var world = save.open())
+            {
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                context.waitTicks(5);
+                var after = server.computeOnServer(minecraft -> cell(minecraft, LONE).charge());
+                // The reload itself passes a few ticks, each losing about four
+                expect(after <= kept && after >= kept - 1_000, "A large cell should keep its charge through a reload, had " + kept + " and holds " + after);
+            }
         }
-
-        try (var world = save.open())
+        finally
         {
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            context.waitTicks(5);
-            var after = server.computeOnServer(minecraft -> cell(minecraft, LONE).charge());
-            // The reload itself passes a few ticks, each losing about four
-            expect(after <= kept && after >= kept - 1_000, "A large cell should keep its charge through a reload, had " + kept + " and holds " + after);
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
         }
     }
 
@@ -147,11 +156,26 @@ public class LargeRubrumCellClientTest implements FabricClientGameTest
                 "A powered large cell should charge from the field at " + RATE + " a tick: gained " + gained + " over " + ticks + " ticks");
         expect(read(server, CELL, LargeRubrumCellTile::activity) == CellSocketTile.Activity.CHARGING, "It should show itself charging");
 
-        // Kept on charge, a full cell stays full
+        // Kept on charge, a full cell stays full on every tick, drawing just what it would fade
         server.runOnServer(minecraft -> cell(minecraft, CELL).setCharge(CAPACITY));
-        context.waitTicks(60);
-        expect(read(server, CELL, LargeRubrumCellTile::charge) == CAPACITY, "A full cell on charge should stay full, holds "
-                + read(server, CELL, LargeRubrumCellTile::charge));
+        for (var tick = 0; tick < 20; tick++)
+        {
+            context.waitTick();
+            var held = server.computeOnServer(minecraft -> new long[]{cell(minecraft, CELL).charge(), cell(minecraft, CELL).comparatorSignal()});
+            expect(held[0] == CAPACITY && held[1] == 15, "A full cell on charge should stay full each tick, holds " + held[0] + " and reads " + held[1]);
+        }
+        expect(read(server, CELL, LargeRubrumCellTile::activity) == CellSocketTile.Activity.CHARGING, "A full cell held full should show itself charging");
+
+        // An hour spent unloaded fades before it charges again, so what it draws on its first tick back is kept
+        server.runOnServer(minecraft ->
+        {
+            cell(minecraft, CELL).setCharge(0);
+            minecraft.getCommands().performPrefixedCommand(minecraft.createCommandSourceStack(), "data merge block " + CELL.getX() + " " + CELL.getY() + " "
+                    + CELL.getZ() + " {lastTick:" + (minecraft.overworld().getGameTime() - LargeCellCharge.TICKS_PER_HOUR) + "L}");
+        });
+        context.waitTick();
+        var resumed = read(server, CELL, LargeRubrumCellTile::charge);
+        expect(resumed >= RATE, "A cell back from an hour unloaded should keep what it draws, holds " + resumed);
 
         context.getInput().pressKey(InputConstants.KEY_F1);
         aimFrom(context, server, CELL.getX() + 2.5, FLAT_FEET, CELL.getZ() - 3.5, CELL.getX() + 0.5, FLAT_FEET + 1, CELL.getZ() + 0.5, 5);
@@ -243,6 +267,10 @@ public class LargeRubrumCellClientTest implements FabricClientGameTest
         context.runOnClient(minecraft -> minecraft.player.getInventory().setSelectedSlot(0));
         aimFrom(context, server, LONE.getX() + 6.5, FLAT_FEET, LONE.getZ() - 3.5, LONE.getX() + 10, FLAT_FEET, LONE.getZ() + 5, 10);
         context.takeScreenshot("large-rubrum-cell-in-hand");
+        context.setScreen(() -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(net.minecraft.client.Minecraft.getInstance().player));
+        context.waitTicks(5);
+        context.takeScreenshot("large-rubrum-cell-inventory");
+        context.setScreen(() -> null);
         server.runOnServer(minecraft -> player(minecraft).getInventory().clearContent());
     }
 
