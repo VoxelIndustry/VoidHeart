@@ -160,7 +160,7 @@ class LeyAnchorNetworkTest
     }
 
     @Test
-    void nearLineMeasuresFromTheClosestLine()
+    void nearLineMeasuresFromTheClosestLineToTheBlockCenter()
     {
         var lattice = lattice(new LeyHeights((x, z) -> 64));
         var network = new LeyAnchorNetwork(SEED, lattice);
@@ -170,7 +170,9 @@ class LeyAnchorNetworkTest
         {
             for (int z = -REGION_SIZE; z < REGION_SIZE; z += 7)
             {
-                double distanceSq = lattice.nearestEdge(x, z).orElseThrow().distanceSq(x + 0.5, z + 0.5);
+                double centerX = x + 0.5, centerZ = z + 0.5;
+                double distanceSq = lattice.regionsAround(x, z, REGION_SIZE / 2, true).stream().flatMap(region -> region.edges().stream())
+                        .mapToDouble(edge -> edge.distanceSq(centerX, centerZ)).min().orElseThrow();
                 boolean expected = distanceSq <= WroughtAnchorBalance.LINE_REACH * WroughtAnchorBalance.LINE_REACH;
                 assertThat(network.nearLine(x, z, WroughtAnchorBalance.LINE_REACH)).isEqualTo(expected);
                 if (expected)

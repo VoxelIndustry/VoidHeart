@@ -171,11 +171,14 @@ public class LeyAnchorNetwork
     }
 
     /**
-     * Whether x, z lies within reach blocks of a ley line, measured flat.
+     * Whether the block at x, z has a ley line within reach blocks of its center, measured flat.
      */
     public boolean nearLine(int x, int z, int reach)
     {
-        return lattice.nearestEdge(x, z).filter(edge -> edge.distanceSq(x + 0.5, z + 0.5) <= (double) reach * reach).isPresent();
+        double reachSq = (double) reach * reach;
+        return lattice.regionsAround(x, z, REGION_SIZE / 2, true).stream()
+                .flatMap(region -> region.edges().stream())
+                .anyMatch(edge -> edge.distanceSq(x + 0.5, z + 0.5) <= reachSq);
     }
 
     private static double alongLine(LeyEdge line, double x, double z)

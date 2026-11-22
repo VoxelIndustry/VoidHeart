@@ -4,6 +4,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
+import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.voxelindustry.voidheart.gametest.GameTestKit.ClientSettings;
 import net.minecraft.client.CameraType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -32,6 +34,7 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.expectClient;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.freezeTime;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.overlay;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.player;
+import static net.voxelindustry.voidheart.gametest.GameTestKit.restoreClient;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.rightClick;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.useOn;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.waitFor;
@@ -52,35 +55,48 @@ public class WroughtAnchorClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        var saved = context.computeOnClient(minecraft -> new ClientSettings(minecraft.options.getCameraType(), minecraft.gui.hud.isHidden()));
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
-            waitForChunks = () -> world.getConnection().waitForChunksRender();
-            world.getConnection().waitForChunksRender();
-            freezeTime(server, "noon");
-            server.runCommand("gamemode creative @a");
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
-
-            var spots = server.computeOnServer(WroughtAnchorClientTest::findSpots);
-            expect(spots != null, "Expected two lines far apart and a spot away from every line near the origin");
-            for (var spot : new BlockPos[] { spots.home(), spots.far(), spots.moved(), spots.off() })
-                server.runCommand("forceload add " + (spot.getX() - 16) + " " + (spot.getZ() - 16) + " " + (spot.getX() + 16) + " " + (spot.getZ() + 16));
-
-            server.runOnServer(minecraft -> player(minecraft).setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(VoidHeartBlocks.WROUGHT_ANCHOR, 4)));
-
-            refusedAwayFromLine(context, server, spots.off());
-            long home = builtByClick(context, server, spots.home());
-            long far = builtNamed(context, server, spots.far(), "Far Haven");
-            looks(context, server, spots.home());
-
-            // An endless creative well beside home, none at the far anchor
-            server.runCommand("setblock " + (spots.home().getX() + 3) + " " + FLAT_FEET + " " + spots.home().getZ() + " voidheart:creative_void_well");
-
-            renameOnMap(context, server, spots.home(), home);
-            travelOnMap(context, server, spots.home(), spots.far(), far);
-            refusedWithoutVoid(context, server, spots.far(), home);
-            movedKeepsName(context, server, spots.far(), spots.moved(), far);
+            try
+            {
+                runScene(context, world, server);
+            }
+            finally
+            {
+                restoreClient(context, server, saved);
+            }
         }
+    }
+
+    private static void runScene(ClientGameTestContext context, TestSingleplayerContext world, TestServerContext server)
+    {
+        waitForChunks = () -> world.getConnection().waitForChunksRender();
+        world.getConnection().waitForChunksRender();
+        freezeTime(server, "noon");
+        server.runCommand("gamemode creative @a");
+        context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+
+        var spots = server.computeOnServer(WroughtAnchorClientTest::findSpots);
+        expect(spots != null, "Expected two lines far apart and a spot away from every line near the origin");
+        for (var spot : new BlockPos[] { spots.home(), spots.far(), spots.moved(), spots.off() })
+            server.runCommand("forceload add " + (spot.getX() - 16) + " " + (spot.getZ() - 16) + " " + (spot.getX() + 16) + " " + (spot.getZ() + 16));
+
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(VoidHeartBlocks.WROUGHT_ANCHOR, 4)));
+
+        refusedAwayFromLine(context, server, spots.off());
+        long home = builtByClick(context, server, spots.home());
+        long far = builtNamed(context, server, spots.far(), "Far Haven");
+        looks(context, server, spots.home());
+
+        // An endless creative well beside home, none at the far anchor
+        server.runCommand("setblock " + (spots.home().getX() + 3) + " " + FLAT_FEET + " " + spots.home().getZ() + " voidheart:creative_void_well");
+
+        renameOnMap(context, server, spots.home(), home);
+        travelOnMap(context, server, spots.home(), spots.far(), far);
+        refusedWithoutVoid(context, server, spots.far(), home);
+        movedKeepsName(context, server, spots.far(), spots.moved(), far);
     }
 
     private record Spots(BlockPos home, BlockPos far, BlockPos moved, BlockPos off)
@@ -141,6 +157,7 @@ public class WroughtAnchorClientTest implements FabricClientGameTest
     private static void aimAtGround(ClientGameTestContext context, TestServerContext server, BlockPos pos)
     {
         aimFrom(context, server, pos.getX() + 3.5, FLAT_FEET + 1, pos.getZ() + 0.5, pos.getX() + 0.5, FLAT_GROUND + 0.98, pos.getZ() + 0.5, 6);
+        waitForChunks.run();
     }
 
     private static void refusedAwayFromLine(ClientGameTestContext context, TestServerContext server, BlockPos off)

@@ -237,7 +237,7 @@ public class TravelMapScreen extends Screen
             return null;
         int row = (int) ((mouseY - top - LIST_HEADER) / ROW_HEIGHT);
         int index = listScroll + row;
-        return row < visibleRows() && index < map.far().size() ? map.far().get(index) : null;
+        return row < visibleRows() && index >= 0 && index < map.far().size() ? map.far().get(index) : null;
     }
 
     private int distanceTo(AnchorView anchor)
@@ -557,7 +557,7 @@ public class TravelMapScreen extends Screen
     {
         if (!map.far().isEmpty() && mouseX >= listLeft)
         {
-            listScroll -= (int) Math.signum(scrollY);
+            listScroll = Math.clamp(listScroll - (int) Math.signum(scrollY), 0, Math.max(0, map.far().size() - visibleRows()));
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
