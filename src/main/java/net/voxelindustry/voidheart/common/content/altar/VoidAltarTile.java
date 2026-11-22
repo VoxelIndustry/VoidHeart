@@ -101,6 +101,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
      * should the altar be broken first, it goes to its owner's pocket reserve if that has room.
      */
     private final Map<EssenceType, Integer> refund = new HashMap<>();
+    /** Whose rite the refund was drunk for, kept apart from the altar's owner, which taking the catalyst off clears. */
+    private UUID refundOwner;
     /**
      * Whether every ingredient is eaten and the rite waits on its essence, the only time relays may feed the altar.
      */
@@ -200,6 +202,7 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         drunk.putAll(tag.read("drunk", ASPECTS_CODEC).orElse(Map.of()));
         refund.clear();
         refund.putAll(tag.read("refund", ASPECTS_CODEC).orElse(Map.of()));
+        refundOwner = tag.read("refund_owner", UUIDUtil.CODEC).orElse(null);
         clientDraught = tag.read("draught", ASPECTS_CODEC).orElse(Map.of());
 
         if (isServer())
@@ -258,6 +261,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
             tag.store("drunk", ASPECTS_CODEC, Map.copyOf(drunk));
         if (!refund.isEmpty())
             tag.store("refund", ASPECTS_CODEC, Map.copyOf(refund));
+        if (!refund.isEmpty() && refundOwner != null)
+            tag.store("refund_owner", UUIDUtil.CODEC, refundOwner);
         if (isServer() && currentRecipe != null && !currentRecipe.getAspects().isEmpty())
             tag.store("draught", ASPECTS_CODEC, currentRecipe.getAspects());
 
@@ -533,6 +538,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private void giveBackDrink()
     {
         drinking = false;
+        if (!drunk.isEmpty() && owner != null)
+            refundOwner = owner;
         drunk.forEach((aspect, amount) -> refund.merge(aspect, amount, Integer::sum));
         drunk.clear();
         returnRefund();
@@ -566,16 +573,19 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     }
 
     /**
-     * The altar is going: what is still owed goes to its owner's pocket reserve, as far as that has room.
+     * The altar is going: what is still owed goes to the pocket reserve of whoever's rite drank it, all of it.
      */
     private void refundToReserve()
     {
-        if (!refund.isEmpty() && owner != null && getLevel() instanceof ServerLevel server)
+        var to = refundOwner != null ? refundOwner : owner;
+        if (!refund.isEmpty() && to != null && getLevel() instanceof ServerLevel server)
         {
-            var hoard = net.voxelindustry.voidheart.common.content.hoard.PocketHoard.get(server.getServer()).of(owner);
-            refund.forEach((aspect, amount) -> hoard.insertEssence(aspect, amount));
+            // All of it, past the reserve's room if need be: the reserve keeps it and only refuses more until there is room
+            var hoard = net.voxelindustry.voidheart.common.content.hoard.PocketHoard.get(server.getServer()).of(to);
+            refund.forEach((aspect, amount) -> hoard.restoreEssence(aspect, amount));
         }
         refund.clear();
+        refundOwner = null;
     }
 
     /**

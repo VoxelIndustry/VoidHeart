@@ -107,6 +107,15 @@ public final class PocketReserve<K>
     }
 
     /**
+     * Puts essence back whatever the room, for what must not be lost: the pool keeps it and refuses more until there is room again.
+     */
+    public void restore(K aspect, long amount)
+    {
+        if (amount > 0)
+            amounts.merge(aspect, amount, Long::sum);
+    }
+
+    /**
      * @return how much was taken out, up to how much is held
      */
     public long extract(K aspect, long amount)

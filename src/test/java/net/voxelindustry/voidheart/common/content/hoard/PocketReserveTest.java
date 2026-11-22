@@ -88,6 +88,18 @@ class PocketReserveTest
     }
 
     @Test
+    void restore_givenNoRoom_thenKeepsItAllAndRefusesMore()
+    {
+        var reserve = new PocketReserve<String>();
+        reserve.addSlot(FIRST, "fiery", 1_000, 1_000);
+
+        reserve.restore("fiery", 500);
+
+        assertThat(reserve.amountOf("fiery")).isEqualTo(1_500);
+        assertThat(reserve.insert("fiery", 10)).isZero();
+    }
+
+    @Test
     void extract_givenMoreThanHeld_thenTakesWhatThereIs()
     {
         var reserve = new PocketReserve<String>();

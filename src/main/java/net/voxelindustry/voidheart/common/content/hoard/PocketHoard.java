@@ -244,6 +244,15 @@ public class PocketHoard extends SavedData
             return taken;
         }
 
+        /**
+         * Puts essence in whatever the room, so what a broken altar owed is never lost.
+         */
+        public void restoreEssence(EssenceType aspect, long amount)
+        {
+            reserve.restore(aspect, amount);
+            changed();
+        }
+
         public long extractEssence(EssenceType aspect, long amount)
         {
             var taken = reserve.extract(aspect, amount);
