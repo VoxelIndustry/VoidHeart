@@ -418,7 +418,7 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
     }
 
     /**
-     * Fills the cells of a piece as one slab, ruling only its outer edges, with its item on the cell nearest its middle. Cells off the grid are left out,
+     * Fills the cells of a piece as one slab, ruling only its outer edges, with its item in its middle ({@link PieceIcon}). Cells off the grid are left out,
      * so a ghost hanging over the edge shows only where it would land.
      */
     private void extractPiece(GuiGraphicsExtractor graphics, ArmorGridKind kind, ComponentShape shape, int originX, int originY, int fill, int edge, ItemStack icon)
@@ -449,8 +449,8 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
         }
         extractOutline(graphics, kind, shape, originX, originY, edge);
 
-        var middle = ApparatusScreen.middle(shape);
-        graphics.item(icon, gridX + (originX + middle.x()) * CELL + (CELL - 16) / 2, gridY + (originY + middle.y()) * CELL + (CELL - 16) / 2);
+        var at = PieceIcon.offset(shape, CELL, 16);
+        graphics.item(icon, gridX + originX * CELL + at[0], gridY + originY * CELL + at[1]);
     }
 
     private void extractOutline(GuiGraphicsExtractor graphics, ArmorGridKind kind, ComponentShape shape, int originX, int originY, int color)
