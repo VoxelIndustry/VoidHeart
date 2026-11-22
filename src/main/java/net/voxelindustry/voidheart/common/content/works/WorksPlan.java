@@ -110,7 +110,7 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
             if (shortfall <= 0)
                 return;
 
-            var recipe = depth < MAX_DEPTH && !path.contains(item) ? choose(item) : null;
+            var recipe = depth < MAX_DEPTH && !path.contains(item) ? choose(item, shortfall) : null;
             if (recipe == null)
             {
                 lacking.merge(item, shortfall, Long::sum);
@@ -154,20 +154,39 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
         }
 
         /**
-         * The first recipe whose ingredients don't loop back to a kind being made further up.
+         * Among the recipes whose ingredients don't loop back to a kind being made further up, in the order preferred: the first the stock feeds
+         * whole, else the first the stock holds some of every ingredient for, else the first. An item many recipes make, such as an ingot smelted
+         * from any of its ores, is so made from what the hoard holds rather than from an ore it lacks.
          */
-        private @Nullable WorksRecipe<K> choose(K item)
+        private @Nullable WorksRecipe<K> choose(K item, long shortfall)
         {
+            WorksRecipe<K> first = null;
+            WorksRecipe<K> partly = null;
             for (var recipe : recipesFor.apply(item))
             {
                 if (recipe.makes(item) <= 0)
                     continue;
                 var loops = recipe.inputs().stream()
                         .anyMatch(ingredient -> ingredient.options().stream().allMatch(option -> option.equals(item) || path.contains(option)));
-                if (!loops)
+                if (loops)
+                    continue;
+                var crafts = (shortfall + recipe.makes(item) - 1) / recipe.makes(item);
+                if (recipe.inputs().stream().allMatch(ingredient -> heldBest(ingredient) >= ingredient.count() * crafts))
                     return recipe;
+                if (first == null)
+                    first = recipe;
+                if (partly == null && recipe.inputs().stream().allMatch(ingredient -> heldBest(ingredient) > 0))
+                    partly = recipe;
             }
-            return null;
+            return partly != null ? partly : first;
+        }
+
+        /**
+         * @return the most the stock and what crafts left over hold of any one of an ingredient's options
+         */
+        private long heldBest(WorksRecipe.Ingredient<K> ingredient)
+        {
+            return ingredient.options().stream().mapToLong(option -> available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L)).max().orElse(0);
         }
 
         /**

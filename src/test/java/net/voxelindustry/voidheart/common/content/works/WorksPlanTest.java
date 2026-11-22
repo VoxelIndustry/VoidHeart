@@ -47,6 +47,41 @@ class WorksPlanTest
     }
 
     @Test
+    void plan_givenManyRecipes_thenTakesTheOneTheStockFeeds()
+    {
+        recipe("ingot", 1, StationKind.FURNACE, "deepslate_ore", 1);
+        var fed = recipe("ingot", 1, StationKind.FURNACE, "raw_iron", 1);
+
+        var plan = plan(Map.of("raw_iron", 20L), "ingot", 20);
+
+        assertThat(plan.isComplete()).isTrue();
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(fed);
+    }
+
+    @Test
+    void plan_givenNoRecipeTheStockFeedsWhole_thenTakesOneItFeedsInPart()
+    {
+        recipe("ingot", 1, StationKind.FURNACE, "deepslate_ore", 1);
+        var partly = recipe("ingot", 1, StationKind.FURNACE, "raw_iron", 1);
+
+        var plan = plan(Map.of("raw_iron", 5L), "ingot", 20);
+
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(partly);
+        assertThat(plan.lacking()).containsExactly(Map.entry("raw_iron", 15L));
+    }
+
+    @Test
+    void plan_givenNothingInStock_thenKeepsThePreferredRecipe()
+    {
+        var preferred = recipe("ingot", 1, StationKind.TABLE, "nugget", 9);
+        recipe("ingot", 1, StationKind.FURNACE, "raw_iron", 1);
+
+        var plan = plan(Map.of(), "ingot", 1);
+
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(preferred);
+    }
+
+    @Test
     void plan_givenTheTargetInStock_thenStillCraftsTheWholeCount()
     {
         recipe("pearl", 1, StationKind.ALTAR, "shard", 8);

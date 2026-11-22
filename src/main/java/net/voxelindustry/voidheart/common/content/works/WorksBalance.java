@@ -14,6 +14,9 @@ public final class WorksBalance
      */
     public static final long MAX_CHARGE = 9 * ITEM_COST;
 
+    /** The most crafts an Officiant lays in a Void Furnace at once, all of one item. */
+    public static final int MAX_BATCH = 8;
+
     /** The most of an item one order or keep level asks for, so a plan stays quick to work out. */
     public static final long MAX_ORDER = 4096;
 

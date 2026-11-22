@@ -47,6 +47,7 @@
       "net.voxelindustry.voidheart.gametest.AltarEssenceClientTest",
       "net.voxelindustry.voidheart.gametest.HoardClientTest",
       "net.voxelindustry.voidheart.gametest.OfficiantClientTest",
+      "net.voxelindustry.voidheart.gametest.VoidFurnaceClientTest",
       "net.voxelindustry.voidheart.gametest.ReckoningClientTest",
       "net.voxelindustry.voidheart.gametest.AspectPassageClientTest",
       "net.voxelindustry.voidheart.gametest.BeamFocusClientTest",

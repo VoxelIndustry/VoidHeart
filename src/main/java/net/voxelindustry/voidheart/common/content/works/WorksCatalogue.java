@@ -10,6 +10,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.recipe.AltarRecipe;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
@@ -26,10 +28,10 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * What one owner's stations can make, as the planner sees it: the altar rites and crafting-table recipes the owner has researched, and the forge recipes
- * the builds their Officiants serve can run. A rite changing one item it is given is offered once for each such item in the hoard. Rites and table
- * recipes are known even while no Officiant serves an altar or a table, so a plan can show the station it is waiting on; they come after every recipe a
- * served station runs, and only what served stations make is offered to choose.
+ * What one owner's stations can make, as the planner sees it: the altar rites and crafting-table recipes the owner has researched, the smelting recipes
+ * of a Void Furnace, and the forge recipes the builds their Officiants serve can run. A rite changing one item it is given is offered once for each such
+ * item in the hoard. Rites, table and smelting recipes are known even while no Officiant serves their station, so a plan can show the station it is
+ * waiting on; they come after every recipe a served station runs, and only what served stations make is offered to choose.
  */
 public final class WorksCatalogue
 {
@@ -57,6 +59,7 @@ public final class WorksCatalogue
         if (stations.contains(StationKind.FORGE))
             forgeRecipes.forEach(catalogue::addForge);
         catalogue.addTable(server, owner);
+        catalogue.addFurnace(server, owner);
         return catalogue;
     }
 
@@ -94,7 +97,7 @@ public final class WorksCatalogue
     }
 
     /**
-     * @return the station's own recipe behind an id: an {@link AltarRecipe}, a {@link ShatterForgeRecipe} or a crafting {@link RecipeHolder}
+     * @return the station's own recipe behind an id: an {@link AltarRecipe}, a {@link ShatterForgeRecipe}, or a crafting or smelting {@link RecipeHolder}
      */
     public @Nullable Object source(String id)
     {
@@ -194,6 +197,30 @@ public final class WorksCatalogue
 
             add(new WorksRecipe<>(id.toString(), StationKind.TABLE, List.of(new WorksRecipe.Stack<>(ItemVariant.of(result), result.getCount())), ingredients,
                     remainders, Map.of()), holder);
+        }
+    }
+
+    /**
+     * Every smelting recipe, one input item for one result, as a Void Furnace runs them.
+     */
+    private void addFurnace(MinecraftServer server, UUID owner)
+    {
+        for (var holder : server.getRecipeManager().getRecipes())
+        {
+            if (!(holder.value() instanceof SmeltingRecipe smelting))
+                continue;
+            var id = holder.id().identifier();
+            if (!Knowledge.canUse(server, owner, id))
+                continue;
+
+            var options = smelting.input().items().map(item -> ItemVariant.of(item.value())).distinct().toList();
+            if (options.isEmpty())
+                continue;
+            var result = smelting.assemble(new SingleRecipeInput(options.getFirst().toStack()));
+            if (result.isEmpty())
+                continue;
+            add(new WorksRecipe<>(id.toString(), StationKind.FURNACE, List.of(new WorksRecipe.Stack<>(ItemVariant.of(result), result.getCount())),
+                    List.of(new WorksRecipe.Ingredient<>(options, 1)), List.of(), Map.of()), holder);
         }
     }
 

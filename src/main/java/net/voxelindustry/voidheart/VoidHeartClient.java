@@ -259,6 +259,8 @@ public class VoidHeartClient implements ClientModInitializer
         MenuScreens.register(VoidHeartMenus.APPARATUS, ApparatusScreen::new);
         MenuScreens.register(VoidArmorContent.VOID_ARMOR_MENU, VoidArmorScreen::new);
         MenuScreens.register(HoardContent.HOARD_MENU, HoardScreen::new);
+        MenuScreens.register(net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceContent.VOID_FURNACE_MENU,
+                net.voxelindustry.voidheart.client.screen.VoidFurnaceScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(HoardPayloads.Page.TYPE, (payload, context) ->
         {
             if (context.player().containerMenu instanceof HoardMenu menu && menu.containerId == payload.containerId())

@@ -45,6 +45,45 @@ final class Ingredients
         return picks;
     }
 
+    /**
+     * For a recipe of one ingredient, such as a smelting recipe: the option the hoard holds most of, and how many crafts of it can start together in one
+     * stack, up to most.
+     *
+     * @return null when the hoard holds too little of every option, or most is below one
+     */
+    static @Nullable WorksRecipe.Stack<ItemVariant> batch(WorksRecipe<ItemVariant> recipe, PocketHoard.Hoard hoard, long most)
+    {
+        if (most < 1 || recipe.inputs().size() != 1)
+            return null;
+        var ingredient = recipe.inputs().getFirst();
+        var each = Math.max(1, ingredient.count());
+        WorksRecipe.Stack<ItemVariant> best = null;
+        for (var option : ingredient.options())
+        {
+            var crafts = hoard.count(option) / each;
+            if (crafts > 0 && (best == null || crafts > best.count()))
+                best = new WorksRecipe.Stack<>(option, crafts);
+        }
+        if (best == null)
+            return null;
+        var perStack = Math.max(1, best.item().toStack().getMaxStackSize() / each);
+        return new WorksRecipe.Stack<>(best.item(), Math.min(Math.min(best.count(), most), perStack));
+    }
+
+    /**
+     * Takes the crafts {@link #batch} finds out of the hoard, as one stack.
+     */
+    static List<ItemStack> takeBatch(WorksRecipe<ItemVariant> recipe, PocketHoard.Hoard hoard, int crafts)
+    {
+        var stacks = new ArrayList<ItemStack>();
+        var pick = batch(recipe, hoard, crafts);
+        if (pick == null)
+            return stacks;
+        var taken = hoard.extract(pick.item(), pick.count() * Math.max(1, recipe.inputs().getFirst().count()));
+        stacks.add(pick.item().toStack((int) taken));
+        return stacks;
+    }
+
     static long count(List<WorksRecipe.Stack<ItemVariant>> picks)
     {
         return picks.stream().mapToLong(WorksRecipe.Stack::count).sum();

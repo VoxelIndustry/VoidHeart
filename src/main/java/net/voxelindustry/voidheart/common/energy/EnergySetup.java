@@ -38,6 +38,7 @@ public final class EnergySetup
         ContravoidReactorContent.register();
         DeepSiphonContent.register();
         GnawerContent.register();
+        net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceContent.register();
         PearlContent.register();
 
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> CreativeSources.clear());

@@ -48,6 +48,7 @@ public final class EnergyRei
         ContravoidReactorRei.registerCategories(registry);
         DeepSiphonRei.registerCategories(registry);
         GnawerRei.registerCategories(registry);
+        net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceRei.registerCategories(registry);
         PearlRei.registerCategories(registry);
     }
 
@@ -63,6 +64,7 @@ public final class EnergyRei
         DeepSiphonRei.registerDisplays(registry);
         TwinVentricleRei.registerDisplays();
         GnawerRei.registerDisplays(registry);
+        net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceRei.registerDisplays(registry);
         PearlRei.registerDisplays(registry);
         CrystalRei.registerDisplays();
 

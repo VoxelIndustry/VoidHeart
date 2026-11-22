@@ -149,6 +149,74 @@ class WorksQueueTest
         assertThat(queue.jobs().getFirst().tasks()).hasSize(2);
     }
 
+    @Test
+    void claimBatch_givenMoreCraftsThanCanStart_thenClaimsWhatCanStart()
+    {
+        var queue = new WorksQueue();
+        queue.order("ingots", 20, List.of(task("ingot", StationKind.FURNACE, 20)));
+
+        var claim = queue.claimBatch(StationKind.FURNACE, any -> 8);
+
+        assertThat(claim.count()).isEqualTo(8);
+        assertThat(queue.jobs().getFirst().tasks().getFirst()).isEqualTo(new WorksQueue.Task("ingot", StationKind.FURNACE, 12, 8));
+    }
+
+    @Test
+    void claimBatch_givenFewerCraftsLeftThanCanStart_thenClaimsOnlyThose()
+    {
+        var queue = new WorksQueue();
+        queue.order("ingots", 3, List.of(task("ingot", StationKind.FURNACE, 3)));
+
+        assertThat(queue.claimBatch(StationKind.FURNACE, any -> 8).count()).isEqualTo(3);
+        assertThat(queue.claimBatch(StationKind.FURNACE, any -> 8)).isNull();
+    }
+
+    @Test
+    void finish_givenPartOfABatchDone_thenTheRestCountsAgain()
+    {
+        var queue = new WorksQueue();
+        queue.order("ingots", 8, List.of(task("ingot", StationKind.FURNACE, 8)));
+        var claim = queue.claimBatch(StationKind.FURNACE, any -> 8);
+
+        queue.finish(claim, 5);
+
+        assertThat(queue.jobs().getFirst().tasks().getFirst()).isEqualTo(task("ingot", StationKind.FURNACE, 3));
+    }
+
+    @Test
+    void giveBack_givenABatch_thenEveryCraftCountsAgain()
+    {
+        var queue = new WorksQueue();
+        queue.order("ingots", 10, List.of(task("ingot", StationKind.FURNACE, 10)));
+        var claim = queue.claimBatch(StationKind.FURNACE, any -> 8);
+
+        queue.giveBack(claim);
+
+        assertThat(queue.jobs().getFirst().tasks().getFirst()).isEqualTo(task("ingot", StationKind.FURNACE, 10));
+    }
+
+    @Test
+    void finish_givenAWholeBatch_thenTheOrderGoes()
+    {
+        var queue = new WorksQueue();
+        queue.order("ingots", 8, List.of(task("ingot", StationKind.FURNACE, 8)));
+        var claim = queue.claimBatch(StationKind.FURNACE, any -> 8);
+
+        queue.finish(claim);
+
+        assertThat(queue.jobs()).isEmpty();
+    }
+
+    @Test
+    void codec_givenAClaimSavedBeforeBatches_thenCountsOne()
+    {
+        var saved = WorksQueue.Claim.CODEC.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, new WorksQueue.Claim(1, "pearl", StationKind.ALTAR))
+                .getOrThrow().getAsJsonObject();
+        saved.remove("count");
+
+        assertThat(WorksQueue.Claim.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, saved).getOrThrow().count()).isEqualTo(1);
+    }
+
     private static WorksQueue.Claim oldClaim(int job, String recipe, StationKind station)
     {
         // Claims saved before they had an era carry none

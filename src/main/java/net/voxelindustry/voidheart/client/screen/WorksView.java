@@ -88,6 +88,7 @@ final class WorksView
     private static final int ALTAR_PIP  = 0xFF8E6BE8;
     private static final int FORGE_PIP  = 0xFFE08A5E;
     private static final int TABLE_PIP  = 0xFF36C5B0;
+    private static final int FURNACE_PIP = 0xFFC46AD8;
 
     private final HoardMenu menu;
     /** Lays the slab's torn edge over what was drawn in the hole, set by the screen that baked it. */
@@ -211,6 +212,7 @@ final class WorksView
             case ALTAR -> new net.minecraft.world.item.ItemStack(net.voxelindustry.voidheart.common.setup.VoidHeartBlocks.VOID_ALTAR);
             case FORGE -> new net.minecraft.world.item.ItemStack(net.voxelindustry.voidheart.common.setup.VoidHeartBlocks.SHATTER_FORGE);
             case TABLE -> new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CRAFTING_TABLE);
+            case FURNACE -> new net.minecraft.world.item.ItemStack(net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceContent.VOID_FURNACE);
         };
     }
 
@@ -295,6 +297,7 @@ final class WorksView
             case ALTAR -> ALTAR_PIP;
             case FORGE -> FORGE_PIP;
             case TABLE -> TABLE_PIP;
+            case FURNACE -> FURNACE_PIP;
         };
     }
 

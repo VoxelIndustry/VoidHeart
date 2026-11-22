@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.ToLongFunction;
 
 /**
  * One owner's orders, each a list of crafts in the order the plan made them. An Officiant claims one craft at a time from the first task it can serve
@@ -99,22 +100,34 @@ public final class WorksQueue
     }
 
     /**
-     * A craft an Officiant took.
+     * Crafts an Officiant took: one, or a batch of one recipe that a furnace works through at once.
      *
-     * @param era {@link #ERA} for a claim made now, 0 for one saved before claims had an era
+     * @param era   {@link #ERA} for a claim made now, 0 for one saved before claims had an era
+     * @param count how many crafts of the recipe it took, 1 for a claim saved before batches
      */
-    public record Claim(int job, String recipe, StationKind station, int era)
+    public record Claim(int job, String recipe, StationKind station, int era, int count)
     {
         public static final Codec<Claim> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.INT.fieldOf("job").forGetter(Claim::job),
                 Codec.STRING.fieldOf("recipe").forGetter(Claim::recipe),
                 Codec.STRING.xmap(StationKind::valueOf, StationKind::name).fieldOf("station").forGetter(Claim::station),
-                Codec.INT.optionalFieldOf("era", 0).forGetter(Claim::era)
+                Codec.INT.optionalFieldOf("era", 0).forGetter(Claim::era),
+                Codec.INT.optionalFieldOf("count", 1).forGetter(Claim::count)
         ).apply(instance, Claim::new));
+
+        public Claim
+        {
+            count = Math.max(1, count);
+        }
+
+        public Claim(int job, String recipe, StationKind station, int era)
+        {
+            this(job, recipe, station, era, 1);
+        }
 
         public Claim(int job, String recipe, StationKind station)
         {
-            this(job, recipe, station, ERA);
+            this(job, recipe, station, ERA, 1);
         }
     }
 
@@ -197,30 +210,44 @@ public final class WorksQueue
      */
     public @Nullable Claim claim(StationKind station, Predicate<Task> canStart)
     {
+        return claimBatch(station, task -> canStart.test(task) ? 1 : 0);
+    }
+
+    /**
+     * Claims as many crafts as can start together of the first task, oldest order first, that the station runs and that can start at all, never more
+     * than the task has left.
+     *
+     * @param canStart how many crafts of a task's recipe can start now, 0 when none can
+     */
+    public @Nullable Claim claimBatch(StationKind station, ToLongFunction<Task> canStart)
+    {
         for (var job : jobs)
         {
             for (int index = 0; index < job.tasks().size(); index++)
             {
                 var task = job.tasks().get(index);
-                if (task.station() != station || task.remaining() <= 0 || !canStart.test(task))
+                if (task.station() != station || task.remaining() <= 0)
                     continue;
-                job.tasks().set(index, task.plus(1));
-                return new Claim(job.id(), task.recipe(), station);
+                var count = (int) Math.min(Math.min(task.remaining(), canStart.applyAsLong(task)), Integer.MAX_VALUE);
+                if (count <= 0)
+                    continue;
+                job.tasks().set(index, task.plus(count));
+                return new Claim(job.id(), task.recipe(), station, ERA, count);
             }
         }
         return null;
     }
 
     /**
-     * Counts a claimed craft again, if its order is still there.
+     * Counts claimed crafts again, if their order is still there.
      */
     public void giveBack(Claim claim)
     {
-        settle(claim, -1);
+        settle(claim, claim.count());
     }
 
     /**
-     * Counts a claimed craft as done: its order goes once nothing of it is left or being worked.
+     * Counts claimed crafts as done: their order goes once nothing of it is left or being worked.
      */
     public void finish(Claim claim)
     {
@@ -228,7 +255,15 @@ public final class WorksQueue
     }
 
     /**
-     * @param back how many of the claim's crafts to count again, -1 to give it back or 0 when it is done
+     * Counts some of a batch done and the rest again, such as a furnace broken halfway through.
+     */
+    public void finish(Claim claim, int done)
+    {
+        settle(claim, Math.clamp(claim.count() - done, 0, claim.count()));
+    }
+
+    /**
+     * @param back how many of the claim's crafts to count again, none when it is done
      */
     private void settle(Claim claim, int back)
     {
@@ -242,7 +277,8 @@ public final class WorksQueue
                 var task = job.tasks().get(index);
                 if (task.recipe().equals(claim.recipe()) && task.working() > 0)
                 {
-                    job.tasks().set(index, new Task(task.recipe(), task.station(), task.remaining() - back, task.working() - 1));
+                    var settled = Math.min(claim.count(), task.working());
+                    job.tasks().set(index, new Task(task.recipe(), task.station(), task.remaining() + Math.min(back, settled), task.working() - settled));
                     break;
                 }
             }
