@@ -515,6 +515,7 @@
   "voidheart.officiant.idle.forge": "Serves the forge whose pillar stands above, waiting for work",
   "voidheart.officiant.idle.table": "Serves the crafting table above, waiting for work",
   "voidheart.officiant.working": "Working %s",
+  "voidheart.altar.officiant_result": "The Officiant below is taking this back to its hoard",
   "voidheart.jade.officiant.owner": "Works for %s",
   "voidheart.jade.officiant.idle": "Idle at its %s",
   "voidheart.jade.officiant.laying": "Laying out %s, %s of %s",

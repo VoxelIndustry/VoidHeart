@@ -85,6 +85,7 @@ public class OfficiantClientTest implements FabricClientGameTest
             checkItemOnPillarMidLaying(context, server);
             checkRiteStartedMidLaying(context, server);
             checkAltarReplaced(context, server);
+            checkResultKeptForOfficiant(context, server);
             checkOfflineOwner(context, server);
             checkTransform(context, server);
         }
@@ -398,6 +399,38 @@ public class OfficiantClientTest implements FabricClientGameTest
             for (int index = 0; index < 8; index++)
                 pillar(minecraft, index).setStack(ItemStack.EMPTY);
         });
+    }
+
+    /**
+     * A player can't take the finished result of an Officiant's craft off the altar before the Officiant takes it back: the pearl reaches the hoard,
+     * and the craft is not counted again.
+     */
+    private static void checkResultKeptForOfficiant(ClientGameTestContext context, TestServerContext server)
+    {
+        orderPearlFromShards(server);
+        var tried = false;
+        for (int tick = 0; tick < 2000 && !tried; tick++)
+        {
+            // Checked and tried within one server step, so the Officiant can't take the pearl in between
+            tried = server.computeOnServer(minecraft ->
+            {
+                var altar = altar(minecraft);
+                if (altar.isCrafting() || !altar.getStack().is(VoidHeartItems.VOID_PEARL))
+                    return false;
+                var player = player(minecraft);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                useOn(player, ALTAR);
+                expect(altar.getStack().is(VoidHeartItems.VOID_PEARL), "the player took the Officiant's pearl off the altar");
+                expect(player.getInventory().countItem(VoidHeartItems.VOID_PEARL) == 0, "the player got the Officiant's pearl");
+                return true;
+            });
+            if (!tried)
+                context.waitTick();
+        }
+        expect(tried, "the pearl was never seen finished on the altar");
+        waitFor(context, server, 100, "the Officiant never took its pearl back", minecraft -> held(minecraft, VoidHeartItems.VOID_PEARL) == 1);
+        server.runOnServer(minecraft -> expect(WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs().isEmpty(),
+                "the pearl's order is still queued: " + WorksState.get(minecraft).of(player(minecraft).getUUID()).jobs()));
     }
 
     /**
