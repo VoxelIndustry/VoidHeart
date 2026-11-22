@@ -166,7 +166,7 @@ public final class DeepReach
     {
     }
 
-    /** Past this many cores, those drawing on nothing in common are picked greedily rather than every way. */
+    /** Past this many cores sharing energy with each other, those drawing on nothing in common are picked greedily rather than every way. */
     private static final int MOST_APART_EXACT = 12;
 
     /**
@@ -185,23 +185,51 @@ public final class DeepReach
             own = saturated(own, exclusive);
             shared[i] = Math.max(0, core.total() - exclusive);
         }
-        return saturated(own, mostApart(cores, shared));
-    }
 
-    /**
-     * @return the most the shared parts of a set of cores whose names never meet give together
-     */
-    private static long mostApart(List<CoreSupply> cores, long[] shared)
-    {
         int count = cores.size();
         var meets = new boolean[count][count];
         for (int a = 0; a < count; a++)
             for (int b = a + 1; b < count; b++)
                 meets[a][b] = meets[b][a] = !java.util.Collections.disjoint(cores.get(a).names(), cores.get(b).names());
 
+        // Cores linked by shared names are weighed together; separate links never compete, so each adds what it gives
+        var seen = new boolean[count];
+        long routed = 0;
+        for (int first = 0; first < count; first++)
+        {
+            if (seen[first])
+                continue;
+            var linked = new ArrayList<Integer>();
+            var open = new java.util.ArrayDeque<Integer>();
+            open.add(first);
+            seen[first] = true;
+            while (!open.isEmpty())
+            {
+                int core = open.poll();
+                linked.add(core);
+                for (int other = 0; other < count; other++)
+                {
+                    if (!seen[other] && meets[core][other])
+                    {
+                        seen[other] = true;
+                        open.add(other);
+                    }
+                }
+            }
+            routed = saturated(routed, mostApart(linked, meets, shared));
+        }
+        return saturated(own, routed);
+    }
+
+    /**
+     * @return the most the shared parts of a set of linked cores whose names never meet give together
+     */
+    private static long mostApart(List<Integer> linked, boolean[][] meets, long[] shared)
+    {
+        int count = linked.size();
         if (count > MOST_APART_EXACT)
         {
-            var order = java.util.stream.IntStream.range(0, count).boxed().sorted((a, b) -> Long.compare(shared[b], shared[a])).toList();
+            var order = linked.stream().sorted((a, b) -> Long.compare(shared[b], shared[a])).toList();
             var picked = new ArrayList<Integer>();
             long total = 0;
             for (int core : order)
@@ -225,8 +253,8 @@ public final class DeepReach
                 if ((set & 1 << a) == 0)
                     continue;
                 for (int b = a + 1; b < count && apart; b++)
-                    apart = (set & 1 << b) == 0 || !meets[a][b];
-                total = saturated(total, shared[a]);
+                    apart = (set & 1 << b) == 0 || !meets[linked.get(a)][linked.get(b)];
+                total = saturated(total, shared[linked.get(a)]);
             }
             if (apart)
                 best = Math.max(best, total);

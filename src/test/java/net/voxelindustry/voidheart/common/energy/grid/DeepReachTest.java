@@ -51,6 +51,20 @@ class DeepReachTest
     }
 
     @Test
+    void combine_givenManyCoresAndAFewSharing_thenWeighsTheSharingOnesApartFromTheRest()
+    {
+        // Thirteen cores, past what is weighed every way at once, but only three of them share anything
+        var cores = new java.util.ArrayList<DeepReach.CoreSupply>();
+        cores.add(core(Set.of("a"), 0, 2));
+        cores.add(core(Set.of("b"), 0, 3));
+        for (int i = 0; i < 10; i++)
+            cores.add(core(Set.of("alone " + i), 0, 1));
+        cores.add(core(Set.of("a", "b"), 0, 4));
+
+        assertThat(DeepReach.combine(cores)).isEqualTo(15);
+    }
+
+    @Test
     void combine_givenAnEndlessCore_thenStaysBounded()
     {
         assertThat(DeepReach.combine(List.of(core(Set.of(), 0, Long.MAX_VALUE), core(Set.of("a"), 0, 5)))).isEqualTo(Long.MAX_VALUE / 2);
