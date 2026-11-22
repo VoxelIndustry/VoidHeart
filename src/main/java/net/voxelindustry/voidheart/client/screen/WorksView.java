@@ -104,6 +104,8 @@ final class WorksView
     private int rosterScroll;
     /** The first order shown in the panel of orders. */
     private int jobScroll;
+    /** The order each row of the panel showed when last drawn, so a click picks what was seen even if the list changed since. */
+    private final List<Integer> drawnRows = new ArrayList<>();
     // The graph shown as trimmed for display, kept while the graph it came from is the same
     @Nullable
     private WorksGraph trimmedFrom;
@@ -182,6 +184,14 @@ final class WorksView
     {
         return graph.nodes().stream().filter(node -> node.isMade() && !served(node.station()) && (shown == null || shown.left(node.recipe()) > 0))
                 .map(node -> StationKind.values()[node.station()]).distinct().toList();
+    }
+
+    /**
+     * @return whether a kind still waits on a station no Officiant serves: in a plan, or with crafts left in an order
+     */
+    private boolean waitsOnStation(WorksGraph.Node node, @Nullable WorksPayloads.Job shown)
+    {
+        return node.isMade() && !served(node.station()) && (shown == null || shown.left(node.recipe()) > 0);
     }
 
     private static Component unservedLine(StationKind kind)
@@ -265,7 +275,7 @@ final class WorksView
 
     private int stateColor(WorksGraph.Node node, @Nullable WorksPayloads.Job shown)
     {
-        if (node.lacking() > 0 || !served(node.station()))
+        if (node.lacking() > 0 || waitsOnStation(node, shown))
             return LACK_COLOR;
         if (!node.isMade())
             return KNOWN_COLOR;
@@ -433,7 +443,7 @@ final class WorksView
             if (pip != 0)
                 graphics.fill(spot[0] + 1, spot[1] + 1, spot[0] + 3, spot[1] + 3, pip);
             graphics.item(node.item().toStack(), spot[0] + 1, spot[1] + 1);
-            boolean wanting = node.lacking() > 0 || !served(node.station());
+            boolean wanting = node.lacking() > 0 || waitsOnStation(node, shown);
             HoardScreen.extractCount(graphics, font, HoardScreen.countText(node.needed()), spot[0] + CELL - 1, spot[1] + CELL - 1,
                     wanting ? LACK_COLOR : HoardScreen.COUNT_COLOR);
             if (wanting)
@@ -451,7 +461,7 @@ final class WorksView
             var drink = graph.drinks().get(leaf);
             int color = aspectColor(drink.aspect());
             graphics.fill(spot[0] + 1, spot[1] + 1, spot[0] + CELL - 1, spot[1] + CELL - 1, LEAF_BACK);
-            boolean short_ = shown == null && reserve.getOrDefault(drink.aspect(), 0L) < drink.amount();
+            boolean short_ = shown == null && reserveShort(graph, reserve, drink.aspect());
             graphics.outline(spot[0] + 1, spot[1] + 1, CELL - 2, CELL - 2, short_ ? LACK_COLOR : KNOWN_COLOR);
             graphics.fill(spot[0] + 5, spot[1] + 4, spot[0] + CELL - 5, spot[1] + CELL - 4, color);
             graphics.fill(spot[0] + 4, spot[1] + 5, spot[0] + CELL - 4, spot[1] + CELL - 5, color);
@@ -471,7 +481,7 @@ final class WorksView
         if (hovered instanceof WorksGraph.Node node)
         {
             var lines = tooltip(node, shown);
-            if (!served(node.station()))
+            if (waitsOnStation(node, shown))
                 lines.add(unservedLine(StationKind.values()[node.station()]));
             graphics.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
         }
@@ -615,9 +625,11 @@ final class WorksView
             return;
         }
 
+        drawnRows.clear();
         for (int row = 0; row < JOB_ROWS && jobScroll + row < jobs.size(); row++)
         {
             var job = jobs.get(jobScroll + row);
+            drawnRows.add(job.id());
             int y = rowTop(top, row);
             boolean over = mouseX >= x && mouseX < x + SIDE_W && mouseY >= y && mouseY < y + JOB_ROW - 2;
             boolean selected = this.job != null && this.job == job.id();
@@ -703,7 +715,10 @@ final class WorksView
         var serving = menu.getRoster().stream().filter(station -> kinds.contains(station.station())).toList();
         if (!serving.isEmpty() && serving.stream().allMatch(station -> station.status() == WorksPayloads.Station.NO_FIELD))
             return Component.translatable(MODID + ".works.job.no_field").withColor(LACK_COLOR);
-        if (!serving.isEmpty() && serving.stream().noneMatch(station -> station.status() == WorksPayloads.Station.IDLE))
+        // A station working another order is busy; only Officiants still gathering energy say so
+        boolean busy = serving.stream().anyMatch(station -> station.status() == WorksPayloads.Station.WORKING || station.status() == WorksPayloads.Station.LAYING);
+        boolean idle = serving.stream().anyMatch(station -> station.status() == WorksPayloads.Station.IDLE);
+        if (!busy && !idle && serving.stream().anyMatch(station -> station.status() == WorksPayloads.Station.GATHERING))
             return Component.translatable(MODID + ".works.job.gathering").withColor(FRONTIER_COLOR);
         return Component.translatable(MODID + ".works.job.waiting").withColor(MUTED_COLOR);
     }
@@ -780,14 +795,13 @@ final class WorksView
             choose(item);
             return true;
         }
-        var jobs = menu.getJobs();
         int x = sideLeft(left);
-        for (int row = 0; row < JOB_ROWS && jobScroll + row < jobs.size(); row++)
+        for (int row = 0; row < drawnRows.size(); row++)
         {
             int y = rowTop(top, row);
             if (mouseX < x || mouseX >= x + SIDE_W || mouseY < y || mouseY >= y + JOB_ROW - 2)
                 continue;
-            var id = jobs.get(jobScroll + row).id();
+            int id = drawnRows.get(row);
             job = job != null && job == id ? null : id;
             return true;
         }
@@ -846,12 +860,29 @@ final class WorksView
             return false;
         var reserve = menu.getPlan() == null ? Map.<String, Long>of() : menu.getPlan().reserve();
         return graph.nodes().stream().anyMatch(node -> node.lacking() > 0) || !unserved(graph, null).isEmpty()
-                || graph.drinks().stream().anyMatch(drink -> reserve.getOrDefault(drink.aspect(), 0L) < drink.amount());
+                || graph.essence().keySet().stream().anyMatch(aspect -> reserveShort(graph, reserve, aspect));
+    }
+
+    /**
+     * @return whether the reserve holds less of an aspect than all the plan's crafts drink of it together
+     */
+    private static boolean reserveShort(WorksGraph graph, Map<String, Long> reserve, String aspect)
+    {
+        return reserve.getOrDefault(aspect, 0L) < graph.essence().getOrDefault(aspect, 0L);
+    }
+
+    /**
+     * @return whether the plan shown is the one for the item and amount chosen, so beginning or keeping it asks for what is shown
+     */
+    boolean planCurrent()
+    {
+        var plan = menu.getPlan();
+        return chosen != null && plan != null && plan.item().equals(chosen) && plan.count() == amount;
     }
 
     void begin()
     {
-        if (chosen == null)
+        if (!planCurrent())
             return;
         ClientPlayNetworking.send(new WorksPayloads.Begin(menu.containerId, chosen, amount));
         chosen = null;
@@ -860,7 +891,7 @@ final class WorksView
 
     void keep()
     {
-        if (chosen == null)
+        if (!planCurrent())
             return;
         var kept = menu.getKeeps().stream().anyMatch(keep -> keep.item().equals(chosen) && keep.level() == amount);
         ClientPlayNetworking.send(new WorksPayloads.Keep(menu.containerId, chosen, kept ? 0 : amount));

@@ -456,6 +456,9 @@ public class ReckoningClientTest implements FabricClientGameTest
      */
     private static void checkRoster(ClientGameTestContext context, TestServerContext server)
     {
+        // The test window is narrow enough that a centred Reckoning would push the slab of orders off its left edge
+        var sideLeft = onScreen(context, HoardScreen::worksSideLeft);
+        expect(sideLeft >= 0, "the slab of orders starts at " + sideLeft + ", off the screen");
         clickControl(context, "stations");
         waitOnScreen(context, 60, "the roster never listed both Officiants", screen -> screen.getMenu().getRoster().size() == 2);
         hover(context, new int[] { 2, 2 });
@@ -493,7 +496,12 @@ public class ReckoningClientTest implements FabricClientGameTest
         shot(context, "reckoning-plan-unserved");
 
         // Queued anyway, with two more orders, the panel shows them as one branch, each waiting on the table
+        var asked = onScreen(context, screen -> screen.getMenu().getPlan().count());
         clickControl(context, "begin");
+        waitOnScreen(context, 60, "the order begun never showed", screen -> screen.getMenu().getJobs().size() == 1);
+        var begun = onScreen(context, screen -> screen.getMenu().getJobs().getFirst());
+        expect(begun.what().equals(PEARL.toStack().getHoverName().getString()) && begun.count() == asked,
+                "Begin queued " + begun.count() + " " + begun.what() + ", expected " + asked + " Void Pearl");
         server.runOnServer(minecraft ->
         {
             net.voxelindustry.voidheart.common.content.works.WorksContent.order(minecraft, player(minecraft).getUUID(), SHARD, 8);

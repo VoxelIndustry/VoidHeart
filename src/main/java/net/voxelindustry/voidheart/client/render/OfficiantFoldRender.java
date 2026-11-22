@@ -381,8 +381,9 @@ public final class OfficiantFoldRender
             resolver.updateForTopItem(state, stack, ItemDisplayContext.FIXED, level, null, slot);
             if (state.isEmpty())
                 continue;
-            double cellX = fold.pos().getX() + CELLS[slot % 3];
-            double cellZ = fold.pos().getZ() + CELLS[slot / 3];
+            // Added in double, so the cells stay apart however far from the origin
+            double cellX = (double) fold.pos().getX() + CELLS[slot % 3];
+            double cellZ = (double) fold.pos().getZ() + CELLS[slot / 3];
             double x = Mth.lerp(merge, Mth.lerp(lay, centerX, cellX), centerX);
             double z = Mth.lerp(merge, Mth.lerp(lay, centerZ, cellZ), centerZ);
             double y = top + GRID_LIFT - (1 - lay) * RISE_DROP * 0.3 + Mth.sin(lay * Mth.PI) * GRID_ARC;

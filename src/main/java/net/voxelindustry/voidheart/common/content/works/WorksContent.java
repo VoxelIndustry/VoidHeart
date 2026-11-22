@@ -157,13 +157,17 @@ public final class WorksContent
                 var plan = WorksPlan.plan(catalogue.lookup(), hoard.view(), target.item(), Math.min(crafts * makes, WorksBalance.MAX_ORDER));
                 var tasks = WorksQueue.merged(tasksOf(plan));
                 var left = job.tasks().stream().filter(task -> task.remaining() > 0).toList();
-                if (tasks.isEmpty() || tasks.equals(left))
+                if (tasks.isEmpty())
                     continue;
-                if (works.queue().replan(job.id(), tasks))
+                // The same crafts may now find what they lacked in the hoard: the graph shows that even when the crafts stay as they are
+                boolean replaced = !tasks.equals(left) && works.queue().replan(job.id(), tasks);
+                var graphNow = WorksGraph.of(plan);
+                if ((replaced || tasks.equals(left)) && !graphNow.equals(graph))
                 {
-                    works.graphs().put(job.id(), WorksGraph.of(plan));
+                    works.graphs().put(job.id(), graphNow);
                     changed = true;
                 }
+                changed |= replaced;
             }
             if (changed)
             {

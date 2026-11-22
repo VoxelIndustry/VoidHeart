@@ -114,6 +114,13 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
     protected void init()
     {
         super.init();
+        // On a narrow screen the Reckoning moves right, so the slab of orders left of it stays on screen
+        if (menu.isWorks())
+        {
+            int room = WorksView.SIDE_SLAB_W + WorksView.SIDE_GAP + 2;
+            if (leftPos < room)
+                leftPos = Math.max(0, Math.min(room, width - PANEL_W - 2));
+        }
         bakePanel(PANEL, WELL_X, WELL_Y, WELL_W, WELL_H);
         if (works != null)
         {
@@ -239,12 +246,21 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         amountBox.setValue(String.valueOf(works.amount));
         amountBox.setResponder(text ->
         {
-            // Only digits stay
+            // Only digits stay, and an amount past what can be ordered shows as the most that can
             var digits = text.replaceAll("[^0-9]", "");
             if (!digits.equals(text))
+            {
                 amountBox.setValue(digits);
-            else if (!digits.isEmpty())
-                works.typeAmount(Long.parseLong(digits));
+                return;
+            }
+            if (digits.isEmpty())
+                return;
+            var typed = digits.length() > 9 ? Long.MAX_VALUE : Long.parseLong(digits);
+            var clamped = Math.clamp(typed, 1, net.voxelindustry.voidheart.common.content.works.WorksBalance.MAX_ORDER);
+            if (clamped != typed)
+                amountBox.setValue(String.valueOf(clamped));
+            else
+                works.typeAmount(clamped);
         });
         addRenderableWidget(amountBox);
         updateWorksButtons();
@@ -262,8 +278,10 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         lessButton.visible = moreButton.visible = beginButton.visible = keepButton.visible = amountBox.visible = graph && !job;
         cancelButton.visible = job;
         keepButton.setMessage(Component.translatable(MODID + ".works.button." + (works.isKept() ? "kept" : "keep")));
-        // Begin turns rose when the plan lacks something: the order still waits for it, but not silently
+        // Begin turns rose when the plan lacks something: the order still waits for it, but not silently. Neither it nor Keep acts while the
+        // amount is blank or the plan for it is still on its way
         beginButton.warning = works.beginWarns();
+        beginButton.active = keepButton.active = !amountBox.getValue().isEmpty() && works.planCurrent();
         beginButton.setMessage(Component.translatable(MODID + ".works.button." + (beginButton.warning ? "queue_anyway" : "begin")));
         if (!amountBox.isFocused() && !amountBox.getValue().equals(String.valueOf(works.amount)))
             amountBox.setValue(String.valueOf(works.amount));
@@ -338,6 +356,14 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
             case "stations" -> stationsButton.getMessage().getString();
             default -> amountBox.getValue();
         };
+    }
+
+    /**
+     * @return the left of the slab of orders, for tests
+     */
+    public int worksSideLeft()
+    {
+        return WorksView.sideSlab(leftPos);
     }
 
     public boolean worksGraphShown()
@@ -518,7 +544,7 @@ public class HoardScreen extends AbstractContainerScreen<HoardMenu>
         if (worksTab)
         {
             // Enter begins the plan shown, Escape goes back a step before it closes the screen
-            if (enter && beginButton.visible)
+            if (enter && beginButton.visible && beginButton.active)
             {
                 amountBox.setFocused(false);
                 works.begin();
