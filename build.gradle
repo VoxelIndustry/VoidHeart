@@ -120,6 +120,12 @@ test {
 
 loom {
     accessWidenerPath.set(file("src/main/resources/voidheart.accesswidener"))
+
+    runs {
+        client {
+            programArgs "--username", "DevPlayer"
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
