@@ -437,8 +437,8 @@ public final class ArmorWear
             {
                 spend(player);
                 var wearer = wearer(player);
-                // Sneak held in the air only sinks a flying wearer, so they don't step out in mid-air
-                wearer.sneak = player.isShiftKeyDown() && !player.getAbilities().flying ? wearer.sneak + 1 : 0;
+                // Only held standing on something: in the air sneak sinks a flying wearer, and a fading lift is no place to open the frame
+                wearer.sneak = player.isShiftKeyDown() && player.onGround() && !player.getAbilities().flying ? wearer.sneak + 1 : 0;
                 if (wearer.sneak >= ArmorBalance.STEP_OUT_HOLD_TICKS)
                 {
                     wearer.sneak = 0;

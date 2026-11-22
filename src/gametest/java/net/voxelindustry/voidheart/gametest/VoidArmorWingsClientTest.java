@@ -46,6 +46,8 @@ public class VoidArmorWingsClientTest implements FabricClientGameTest
     public void runTest(ClientGameTestContext context)
     {
         var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        // All tests share one client, so the HUD goes back to however it was found
+        boolean hudHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
         try
         {
             try (var world = context.worldBuilder().create())
@@ -59,7 +61,9 @@ public class VoidArmorWingsClientTest implements FabricClientGameTest
                 server.runCommand("clear @a");
                 server.runCommand("tp @a " + X + " " + Y + " " + Z + " 180 10");
                 context.waitTicks(10);
-                context.getInput().pressKey(InputConstants.KEY_F1);
+                // The captures want the HUD hidden
+                if (!context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()))
+                    context.getInput().pressKey(InputConstants.KEY_F1);
 
                 server.runOnServer(minecraft -> ArmorWear.stepIn(player(minecraft), frame(), player(minecraft).position()));
                 waitFor(context, server, 60, "The frame should close around its wearer",
@@ -71,14 +75,13 @@ public class VoidArmorWingsClientTest implements FabricClientGameTest
                 trails(context, server);
                 sneaks(context, server);
                 frays(context, server);
-
-                context.getInput().pressKey(InputConstants.KEY_F1);
+                tablet(context, server);
             }
         }
         finally
         {
             context.runOnClient(minecraft -> minecraft.options.setCameraType(camera));
-            if (context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()))
+            if (context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()) != hudHidden)
                 context.getInput().pressKey(InputConstants.KEY_F1);
         }
     }
@@ -264,6 +267,56 @@ public class VoidArmorWingsClientTest implements FabricClientGameTest
         context.waitTicks(15);
         expectClient(context, "Landed, the wings should be gone", minecraft -> !ArmorWings.of(minecraft.player, 1).shown());
         server.runCommand("execute as @a run voidheart armor charge 1");
+    }
+
+    /**
+     * A frame with wings and both sights docked on its base: its screen's stats tablet holds a seventh row for flight, and every row shows.
+     */
+    private static void tablet(ClientGameTestContext context, TestServerContext server)
+    {
+        var base = new net.minecraft.core.BlockPos(6, Y, 6);
+        server.runCommand("execute as @a run voidheart armor leave");
+        context.waitTicks(5);
+        server.runCommand("kill @e[type=!player]");
+        server.runCommand("tp @a 6.5 " + Y + " 3.5 0 20");
+        context.waitTicks(3);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            net.voxelindustry.voidheart.common.content.armor.VoidArmorBaseBlock.build(level, base, net.minecraft.core.Direction.NORTH);
+            var frame = frame();
+            var grids = frame.get(VoidArmorContent.ARMOR_GRIDS)
+                    .with(net.voxelindustry.voidheart.common.content.armor.ArmorGridKind.HELM,
+                            new Placement(net.voxelindustry.voidheart.common.content.armor.ArmorModule.NIGHT_VISION, 0, 0, 0))
+                    .with(net.voxelindustry.voidheart.common.content.armor.ArmorGridKind.HELM,
+                            new Placement(net.voxelindustry.voidheart.common.content.armor.ArmorModule.SPECTRAL_LENS, 0, 1, 0));
+            frame.set(VoidArmorContent.ARMOR_GRIDS, grids);
+            var tile = (net.voxelindustry.voidheart.common.content.armor.VoidArmorBaseTile) level.getBlockEntity(base);
+            tile.dock(frame);
+            tile.sync();
+        });
+        // The screen reads the frame from the client's copy of the base
+        context.waitFor(minecraft -> minecraft.level.getBlockEntity(base) instanceof net.voxelindustry.voidheart.common.content.armor.VoidArmorBaseTile tile
+                                     && net.voxelindustry.voidheart.common.content.armor.VoidArmorItem.stats(tile.frame()).levitation(), 40);
+        server.runOnServer(minecraft ->
+        {
+            var level = minecraft.overworld();
+            var state = level.getBlockState(base);
+            var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(base), net.minecraft.core.Direction.NORTH, base, false);
+            state.useWithoutItem(level, player(minecraft), hit);
+        });
+        context.waitFor(minecraft -> minecraft.gui.screen() instanceof net.voxelindustry.voidheart.client.screen.VoidArmorScreen, 40);
+        server.runOnServer(minecraft ->
+        {
+            var stats = net.voxelindustry.voidheart.common.content.armor.VoidArmorItem.stats(
+                    ((net.voxelindustry.voidheart.common.content.armor.VoidArmorBaseTile) minecraft.overworld().getBlockEntity(base)).frame());
+            expect(stats.levitation() && stats.nightVision() && stats.spectralLens(), "Expected the docked frame to have wings and both sights, got " + stats);
+        });
+        context.getInput().setCursorPos(10, 10);
+        context.waitTicks(3);
+        context.takeScreenshot("armor-wings-tablet");
+        context.runOnClient(minecraft -> minecraft.player.closeContainer());
+        context.waitTicks(3);
     }
 
     /**

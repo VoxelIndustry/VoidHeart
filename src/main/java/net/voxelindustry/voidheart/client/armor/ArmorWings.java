@@ -177,6 +177,9 @@ public final class ArmorWings
             anim.trail = Mth.clamp(anim.trail + (forwardSpeed(player) / FULL_TRAIL - anim.trail) * TRAIL_EASE, 0, 1);
             float climb = Mth.clamp((float) player.getDeltaMovement().y / FULL_CLIMB, 0, 1);
             anim.depth += (Mth.lerp(climb, DEPTH_HOVER, DEPTH_CLIMB) - anim.depth) * TRAIL_EASE;
+            // A frozen world holds the wings still, as it does other effects; how far open they are still follows the flight
+            if (!level.tickRateManager().runsNormally())
+                continue;
             anim.cycle += Mth.lerp(climb, BEAT_HOVER, BEAT_CLIMB);
             simulate(player, anim);
         }

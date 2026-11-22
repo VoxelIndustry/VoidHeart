@@ -511,7 +511,10 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
     private void extractStats(GuiGraphicsExtractor graphics, ArmorStats stats)
     {
         var tablet = tablet();
-        int y = tablet.y() + 7;
+        // Six rows fit at the usual spacing; a frame with wings has a seventh, so its rows sit closer
+        boolean seven = stats.levitation();
+        line = seven ? TIGHT_LINE : LINE;
+        int y = tablet.y() + (seven ? TIGHT_TOP : 7);
         y = row(graphics, tablet, y, "sortie", Component.translatable(MODID + ".void_armor_screen.minutes", number(stats.sortieMinutes())).getString(), VALUE_COLOR);
         y = row(graphics, tablet, y, "speed", "+" + Math.round(stats.speedBonus() * 100) + "%", VALUE_COLOR);
         y = row(graphics, tablet, y, "jump", Component.translatable(MODID + ".void_armor_screen.blocks", number(stats.jumpBlocks())).getString(), VALUE_COLOR);
@@ -530,13 +533,18 @@ public class VoidArmorScreen extends AbstractContainerScreen<VoidArmorMenu>
         return value == Math.round(value) ? String.valueOf(Math.round(value)) : String.format(Locale.ROOT, "%.1f", value);
     }
 
+    /** Row spacing and top margin on the stats tablet when it holds seven rows, which don't fit at the usual spacing. */
+    private static final int TIGHT_LINE = 9;
+    private static final int TIGHT_TOP  = 6;
+    private int line = LINE;
+
     private int row(GuiGraphicsExtractor graphics, Bounds tablet, int y, String name, String value, int color)
     {
-        if (y + LINE > tablet.y() + tablet.height())
+        if (y + line > tablet.y() + tablet.height())
             return y;
         graphics.text(font, Component.translatable(MODID + ".void_armor_screen.stat." + name), tablet.x() + 7, y, MUTED_COLOR, false);
         graphics.text(font, value, tablet.x() + tablet.width() - 7 - font.width(value), y, color, false);
-        return y + LINE;
+        return y + line;
     }
 
     private void extractWhisper(GuiGraphicsExtractor graphics, ArmorGrids grids, int mouseX, int mouseY)

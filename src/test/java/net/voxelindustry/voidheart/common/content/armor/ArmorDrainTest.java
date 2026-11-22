@@ -99,6 +99,12 @@ class ArmorDrainTest
         assertThat(bare.flightMinutes()).isEqualTo((float) Math.floor(minutes * 2) / 2);
         assertThat(new ArmorStats(1, false, false, 0, true).flightMinutes()).isGreaterThan(bare.flightMinutes());
         assertThat(new ArmorStats(1, false, false, 0, false).flightMinutes()).isZero();
+
+        // Counted with the fitted sights on, so a frame with both shows no more than it flies with them
+        var sighted = new ArmorStats(0, true, true, 0, true);
+        long withSights = drain + ArmorBalance.NIGHT_VISION_DRAIN + ArmorBalance.SPECTRAL_DRAIN;
+        float sightedMinutes = ArmorBalance.FRAME_CAPACITY * (1 - (float) ArmorBalance.SHED_LEVITATION) / withSights / 1200F;
+        assertThat(sighted.flightMinutes()).isEqualTo((float) Math.floor(sightedMinutes * 2) / 2).isLessThan(bare.flightMinutes());
     }
 
     @Test

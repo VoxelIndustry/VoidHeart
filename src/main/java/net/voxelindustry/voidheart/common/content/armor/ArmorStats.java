@@ -39,13 +39,18 @@ public record ArmorStats(int batteries, boolean nightVision, boolean spectralLen
     }
 
     /**
-     * How many minutes a full charge keeps the wearer in the air before the frame cuts its wings, rounded down to the half minute. Zero without wings.
+     * How many minutes a full charge keeps the wearer in the air before the frame cuts its wings, rounded down to the half minute. Counted with every
+     * fitted sight on, so it never promises more than the frame gives. Zero without wings.
      */
     public float flightMinutes()
     {
         if (!levitation)
             return 0;
         long drain = ArmorBalance.STANDING_DRAIN + exoskeletons * ArmorBalance.EXOSKELETON_DRAIN + ArmorBalance.LEVITATION_DRAIN;
+        if (nightVision)
+            drain += ArmorBalance.NIGHT_VISION_DRAIN;
+        if (spectralLens)
+            drain += ArmorBalance.SPECTRAL_DRAIN;
         float minutes = capacity() * (1 - (float) ArmorBalance.SHED_LEVITATION) / drain / 1200F;
         return (float) Math.floor(minutes * 2) / 2;
     }
