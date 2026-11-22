@@ -182,29 +182,36 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
         }
 
         /**
-         * @return whether the stock and what crafts left over hold every ingredient of that many crafts at once, an item two ingredients could both
-         * take counted once
+         * Whether the stock and what crafts left over hold every ingredient of that many crafts, running them as {@link #need} would: in one go, or one
+         * at a time for a recipe giving something back, each ingredient taking the option {@link #pick} takes from what is left, and what a craft gives
+         * back serving the next.
          */
         private boolean feeds(WorksRecipe<K> recipe, long crafts)
         {
             var taken = new HashMap<K, Long>();
-            for (var ingredient : recipe.inputs())
+            var batch = recipe.remainders().isEmpty() ? crafts : 1;
+            for (var done = 0L; done < crafts; done += batch)
             {
-                var wanted = ingredient.count() * crafts;
-                K found = null;
-                for (var option : ingredient.options())
+                for (var ingredient : recipe.inputs())
                 {
-                    if (available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L) - taken.getOrDefault(option, 0L) >= wanted)
-                    {
-                        found = option;
-                        break;
-                    }
+                    var wanted = ingredient.count() * batch;
+                    var option = pick(ingredient, wanted, taken);
+                    if (held(option, taken) < wanted)
+                        return false;
+                    taken.merge(option, wanted, Long::sum);
                 }
-                if (found == null)
-                    return false;
-                taken.merge(found, wanted, Long::sum);
+                for (var remainder : recipe.remainders())
+                    taken.merge(remainder.item(), -remainder.count() * batch, Long::sum);
             }
             return true;
+        }
+
+        /**
+         * @return what the stock and what crafts left over hold of a kind, less what a check has set aside
+         */
+        private long held(K option, Map<K, Long> taken)
+        {
+            return available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L) - taken.getOrDefault(option, 0L);
         }
 
         /**
@@ -220,11 +227,19 @@ public record WorksPlan<K>(K target, long count, Map<K, Node<K>> nodes, List<Edg
          */
         private K pick(WorksRecipe.Ingredient<K> ingredient, long wanted)
         {
+            return pick(ingredient, wanted, Map.of());
+        }
+
+        /**
+         * @param taken what a check has set aside, as though already used
+         */
+        private K pick(WorksRecipe.Ingredient<K> ingredient, long wanted, Map<K, Long> taken)
+        {
             K best = null;
             long bestHeld = -1;
             for (var option : ingredient.options())
             {
-                var held = available.getOrDefault(option, 0L) + surplus.getOrDefault(option, 0L);
+                var held = held(option, taken);
                 if (held >= wanted)
                     return option;
                 if (held > bestHeld)

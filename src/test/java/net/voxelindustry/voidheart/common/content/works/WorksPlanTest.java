@@ -71,6 +71,22 @@ class WorksPlanTest
     }
 
     @Test
+    void plan_givenARecipeOnlyAnotherAssignmentWouldFeed_thenTakesOneItsCraftsAreFedBy()
+    {
+        // Crafts run one at a time since a bucket comes back, and the flexible input takes A while A covers it, leaving the A input short
+        var bucket = new WorksRecipe<>("ink", StationKind.TABLE, List.of(new WorksRecipe.Stack<>("ink", 1L)),
+                List.of(new WorksRecipe.Ingredient<>(List.of("A", "B"), 2), new WorksRecipe.Ingredient<>(List.of("A"), 1)),
+                List.of(new WorksRecipe.Stack<>("bucket", 1L)), Map.of());
+        recipes.computeIfAbsent("ink", item -> new ArrayList<>()).add(bucket);
+        var fed = recipe("ink", 1, StationKind.TABLE, "C", 1);
+
+        var plan = plan(Map.of("A", 2L, "B", 4L, "C", 2L), "ink", 2);
+
+        assertThat(plan.isComplete()).isTrue();
+        assertThat(plan.tasks()).singleElement().extracting(WorksPlan.Task::recipe).isSameAs(fed);
+    }
+
+    @Test
     void plan_givenNoRecipeTheStockFeedsWhole_thenTakesOneItFeedsInPart()
     {
         recipe("ingot", 1, StationKind.FURNACE, "deepslate_ore", 1);

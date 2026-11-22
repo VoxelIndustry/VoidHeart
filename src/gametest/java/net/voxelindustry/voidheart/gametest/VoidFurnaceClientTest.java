@@ -74,7 +74,13 @@ public class VoidFurnaceClientTest implements FabricClientGameTest
                 freezeTime(server, "noon");
                 server.runCommand("gamemode creative @a");
                 context.waitTicks(20);
-                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                // The HUD shows, so each shot's F1 hides it
+                context.runOnClient(minecraft ->
+                {
+                    minecraft.options.setCameraType(CameraType.FIRST_PERSON);
+                    if (minecraft.gui.hud.isHidden())
+                        minecraft.gui.hud.toggle();
+                });
 
                 server.runOnServer(VoidFurnaceClientTest::buildScene);
                 context.waitTicks(5);
