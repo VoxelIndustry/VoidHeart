@@ -28,6 +28,10 @@ public class HymnClientTest implements FabricClientGameTest
 {
     private static final int GROUND = -61;
 
+    private int windowWidth;
+    private int windowHeight;
+    private int guiScale;
+
     @Override
     public void runTest(ClientGameTestContext context)
     {
@@ -39,11 +43,29 @@ public class HymnClientTest implements FabricClientGameTest
             server.runCommand("weather clear");
             server.runCommand("gamemode survival @a");
             server.runCommand("tp @a 0.5 " + (GROUND + 1) + " 0.5 0 10");
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
-            context.waitTicks(20);
 
-            testPlaysOut(context, server);
-            testStop(context, server);
+            // All tests share one client, so whatever this one changes goes back as it was, whether it passes or not
+            var saved = context.computeOnClient(minecraft -> new ClientSettings(minecraft.options.getCameraType(), minecraft.gui.hud.isHidden()));
+            windowWidth = context.computeOnClient(minecraft -> minecraft.getWindow().getWidth());
+            windowHeight = context.computeOnClient(minecraft -> minecraft.getWindow().getHeight());
+            guiScale = context.computeOnClient(minecraft -> minecraft.options.guiScale().get());
+            try
+            {
+                context.runOnClient(minecraft ->
+                {
+                    minecraft.options.setCameraType(CameraType.FIRST_PERSON);
+                    if (minecraft.gui.hud.isHidden())
+                        minecraft.gui.hud.toggle();
+                });
+                context.waitTicks(20);
+
+                testPlaysOut(context, server);
+                testStop(context, server);
+            } finally
+            {
+                resize(context, windowWidth, windowHeight, guiScale);
+                restoreClient(context, server, saved);
+            }
         }
     }
 
@@ -71,10 +93,9 @@ public class HymnClientTest implements FabricClientGameTest
         context.waitTicks(3);
         context.takeScreenshot("hymn-02-held-b");
         // The flesh is laid out again for a screen of another shape
-        int scale = context.computeOnClient(minecraft -> minecraft.options.guiScale().get());
         resize(context, 1280, 720, 3);
         context.takeScreenshot(TestScreenshotOptions.of("hymn-02-held-720").withSize(1280, 720));
-        resize(context, 854, 480, scale);
+        resize(context, windowWidth, windowHeight, guiScale);
         waitForAge(context, 85);
         context.takeScreenshot("hymn-03-late");
         waitForAge(context, HymnTimeline.RETRACT_FROM + 2);
