@@ -91,7 +91,9 @@ public class AnchorTerrain
         CompletableFuture.supplyAsync(() -> sample(source, centerX - CELLS_X * step / 2, centerZ - sizeZ * step / 2, step, CELLS_X, sizeZ), Util.backgroundExecutor())
                 .whenComplete((terrain, error) -> server.execute(() ->
                 {
-                    waiting.remove(source, players);
+                    // By identity: a sample started after forget() may wait with an equal set of the same players
+                    if (waiting.get(source) == players)
+                        waiting.remove(source);
                     if (error != null)
                     {
                         VoidHeart.LOGGER.log(Level.WARNING, "Could not sample the terrain of a travel map", error);

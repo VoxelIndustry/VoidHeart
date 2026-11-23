@@ -204,15 +204,27 @@ public class WroughtAnchorClientTest implements FabricClientGameTest
 
     private static void looks(ClientGameTestContext context, TestServerContext server, BlockPos home)
     {
-        context.getInput().pressKey(InputConstants.KEY_F1);
+        setHudHidden(context, true);
         aimFrom(context, server, home.getX() + 2.5, FLAT_FEET + 0.4, home.getZ() + 2.5, home.getX() + 0.5, FLAT_FEET + 0.7, home.getZ() + 0.5, 10);
         waitForChunks.run();
         context.takeScreenshot("wrought-anchor-placed");
         aimFrom(context, server, home.getX() - 1.5, FLAT_FEET + 1.2, home.getZ() - 1.5, home.getX() + 0.5, FLAT_FEET + 0.9, home.getZ() + 0.5, 10);
         context.takeScreenshot("wrought-anchor-placed-close");
-        context.getInput().pressKey(InputConstants.KEY_F1);
+        setHudHidden(context, false);
         aimFrom(context, server, home.getX() + 5.5, FLAT_FEET + 1, home.getZ() + 0.5, home.getX() + 12.5, FLAT_FEET + 1, home.getZ() + 0.5, 6);
         context.takeScreenshot("wrought-anchor-in-hand");
+    }
+
+    /**
+     * Sets the HUD to a known state rather than toggling it, since an earlier test may have left it either way.
+     */
+    private static void setHudHidden(ClientGameTestContext context, boolean hidden)
+    {
+        context.runOnClient(minecraft ->
+        {
+            if (minecraft.gui.hud.isHidden() != hidden)
+                minecraft.gui.hud.toggle();
+        });
     }
 
     private static void openMap(ClientGameTestContext context, TestServerContext server, BlockPos anchor)
