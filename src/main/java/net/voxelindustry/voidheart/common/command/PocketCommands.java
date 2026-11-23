@@ -42,6 +42,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -289,6 +290,8 @@ final class PocketCommands
 
         var blueprint = new PocketBlueprint(variant, level.getSeed() * 31 + heart.asLong());
         int newRise = variant.profile().heartRise();
+        // The bounds move with the heart rise, so those inside the old pocket are gathered before it changes
+        var occupants = new LinkedHashSet<>(level.getPlayers(player -> heartData.contains(player.blockPosition())));
         clear(level, heart, Math.max(heartData.heartRise(), newRise));
 
         heartData.heartRise(newRise);
@@ -296,7 +299,8 @@ final class PocketCommands
         VoidPocketState.placeHeart(level, heart, owner.id());
         PocketBuilder.build(level, heart, blueprint);
 
-        for (var player : level.getPlayers(player -> heartData.contains(player.blockPosition())))
+        occupants.addAll(level.getPlayers(player -> heartData.contains(player.blockPosition())));
+        for (var player : occupants)
             TeleportUtil.teleport(player, level, arrival(heartData), player.getYHeadRot(), player.getViewXRot(0));
 
         var name = variant.getSerializedName();
@@ -365,7 +369,7 @@ final class PocketCommands
             var dimension = key.worldKey().identifier();
             var line = Component.literal(dimension + " ")
                     .append(clickable("[" + pos.toShortString() + "]", "/execute in " + dimension + " run tp @s " + pos.getX() + " " + (pos.getY() + 1) + " " + pos.getZ()))
-                    .append(Component.literal(" " + (isLive(source, key) ? "§2linked" : "§cstale")));
+                    .append(Component.literal(" " + (isLive(source, key, owner.id()) ? "§2linked" : "§cstale")));
             source.sendSuccess(() -> line, false);
         }
         return heartData.portalsCount();
@@ -377,18 +381,19 @@ final class PocketCommands
         var source = context.getSource();
         var owner = owner(context);
         var heartData = heartData(source, owner);
-        var stale = heartData.portalKeySet().stream().filter(key -> !isLive(source, key)).toList();
+        var stale = heartData.portalKeySet().stream().filter(key -> !isLive(source, key, owner.id())).toList();
         stale.forEach(heartData::removePortal);
         state(source).setDirty();
         source.sendSuccess(() -> Component.literal("Forgot " + stale.size() + " stale portal(s) of " + owner.name()), true);
         return stale.size();
     }
 
-    /** Loads the core's chunk if it must. */
-    private static boolean isLive(CommandSourceStack source, PortalKey key)
+    /** Loads the core's chunk if it must. A linked core someone else placed since is stale for this owner. */
+    private static boolean isLive(CommandSourceStack source, PortalKey key, UUID owner)
     {
         var level = source.getServer().getLevel(key.worldKey());
-        return level != null && level.getBlockEntity(key.corePos()) instanceof PortalFrameCoreTile core && core.isLinked();
+        return level != null && level.getBlockEntity(key.corePos()) instanceof PortalFrameCoreTile core
+                && core.isLinked() && owner.equals(core.getOwnerPlayerUUID());
     }
 
     /**
@@ -427,6 +432,9 @@ final class PocketCommands
                     if (x == 0 && y == 0 && z == 0)
                         continue;
                     cursor.set(heart.getX() + x, heart.getY() + y, heart.getZ() + z);
+                    // The clear skips block entity side effects so containers spill nothing, but a core must still cut its partner's link
+                    if (level.getBlockEntity(cursor) instanceof PortalFrameCoreTile core)
+                        core.breakTile(null);
                     if (!level.getBlockState(cursor).isAir())
                         level.setBlock(cursor, air, CLEAR_FLAGS);
                 }

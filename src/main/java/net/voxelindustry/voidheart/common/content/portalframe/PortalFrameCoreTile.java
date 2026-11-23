@@ -500,6 +500,12 @@ public class PortalFrameCoreTile extends PortalFrameTile
         return link != null;
     }
 
+    @Nullable
+    public UUID getOwnerPlayerUUID()
+    {
+        return ownerPlayerUUID;
+    }
+
     /**
      * Formed, unbroken and with a clear interior: the portal can receive a link
      */

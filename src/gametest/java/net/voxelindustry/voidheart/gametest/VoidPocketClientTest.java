@@ -131,6 +131,16 @@ public class VoidPocketClientTest implements FabricClientGameTest
             stand.snapTo(heart.getX() + 3.5, heart.getY() + 2, heart.getZ() + 3.5, 0, 0);
             voidWorld(minecraft).addFreshEntity(stand);
         });
+        // High in the jungle pocket the caller is inside it, but outside the frozen lake's bounds, which sit lower
+        var oldHeart = server.computeOnServer(minecraft -> heartData(minecraft).pocketPos());
+        server.runCommand("execute in voidheart:void run tp @a " + (oldHeart.getX() + 0.5) + " " + (oldHeart.getY() + 12) + " " + (oldHeart.getZ() + 0.5));
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            var player = minecraft.getPlayerList().getPlayers().getFirst();
+            if (!heartData(minecraft).contains(player.blockPosition()) || PocketVariant.FROZEN_LAKE.profile().heartRise() <= heartData(minecraft).heartRise())
+                throw new AssertionError("The scene should start with the caller high in a pocket whose heart rises less than a frozen lake's, got " + player.position() + " and rise " + heartData(minecraft).heartRise());
+        });
         server.runCommand("execute as @a run voidheart pocket rebuild @a " + PocketVariant.FROZEN_LAKE.getSerializedName());
         context.waitTicks(5);
         server.runOnServer(minecraft ->
