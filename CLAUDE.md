@@ -17,6 +17,7 @@ A Fabric mod for Minecraft 26.3 on Java 25, using Mojang mappings. It depends on
 ## Layout
 
 - `src/main/java/net/voxelindustry/voidheart/`: `common/` for shared code and `common/setup/` for registration, `client/` for rendering and screens, `compat/` for Jade, REI, Iris and Mod Menu, `data/` for datagen providers.
+- `src/main/java/.../common/world/pocket/` and `VoidPocketState`: players' pockets, each built from a variant around its heart. `/voidheart pocket list|info [player]|tp|leave|create <player> [variant]|rebuild <player> [variant]|delete <player> [confirm]|heart|flexion <player> <max>|portals <player> [prune]|preview <variant> [seed]` reviews and repairs them. Pockets made before the variant was saved fall back to the variant their biome suggests.
 - `src/main/generated/`: datagen output, committed. Change the providers and rerun `runDatagen` rather than editing these files.
 - `src/test/`: unit tests for pure logic.
 - `src/main/java/.../common/world/dungeon/`: void dungeons. `DungeonPlan` is pure and unit tested; `DUNGEON_PREVIEW=true ./gradlew test --tests '*DungeonPlanPreview*'` draws cuts through them into `build/dungeon-preview` without starting a game.

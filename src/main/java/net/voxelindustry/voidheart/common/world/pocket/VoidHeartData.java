@@ -4,13 +4,16 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalKey;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 public final class VoidHeartData
@@ -21,13 +24,15 @@ public final class VoidHeartData
                     Codec.INT.fieldOf("maxFlexion").forGetter(VoidHeartData::maxFlexion),
                     Codec.INT.fieldOf("flexionCountWithoutPortals").orElse(0).forGetter(VoidHeartData::flexionCountWithoutPortals),
                     Codec.list(PortalKey.CODEC).fieldOf("portalsKeyList").orElse(Collections.emptyList()).forGetter(heartData -> List.copyOf(heartData.portalKeySet())),
-                    Codec.INT.fieldOf("heartRise").orElse(0).forGetter(VoidHeartData::heartRise)
-            ).apply(instance, (pocketPos, maxFlexion, flexionCountWithoutPortals, portalKeys, heartRise) ->
+                    Codec.INT.fieldOf("heartRise").orElse(0).forGetter(VoidHeartData::heartRise),
+                    StringRepresentable.fromEnum(PocketVariant::values).optionalFieldOf("variant").forGetter(VoidHeartData::variant)
+            ).apply(instance, (pocketPos, maxFlexion, flexionCountWithoutPortals, portalKeys, heartRise, variant) ->
             {
                 var heartData = new VoidHeartData(pocketPos, maxFlexion);
                 heartData.flexionCountWithoutPortals = flexionCountWithoutPortals;
                 heartData.portalKeyList.addAll(portalKeys);
                 heartData.heartRise = heartRise;
+                heartData.variant = variant.orElse(null);
                 return heartData;
             }));
 
@@ -35,12 +40,15 @@ public final class VoidHeartData
     private static final int CENTER_ABOVE_HEART = 6;
 
     private final BlockPos pocketPos;
-    private final int maxFlexion;
+    private int maxFlexion;
 
     private int flexionCountWithoutPortals;
     private final Set<PortalKey> portalKeyList = new HashSet<>();
 
     private int heartRise;
+    /** Null for pockets made before the variant was saved. */
+    @Nullable
+    private PocketVariant variant;
 
     private boolean isDirty;
 
@@ -88,6 +96,29 @@ public final class VoidHeartData
     public void heartRise(int heartRise)
     {
         this.heartRise = heartRise;
+        markDirty();
+    }
+
+    public Optional<PocketVariant> variant()
+    {
+        return Optional.ofNullable(variant);
+    }
+
+    public void variant(PocketVariant variant)
+    {
+        this.variant = variant;
+        markDirty();
+    }
+
+    public void maxFlexion(int maxFlexion)
+    {
+        this.maxFlexion = maxFlexion;
+        markDirty();
+    }
+
+    public void removePortal(PortalKey key)
+    {
+        portalKeyList.remove(key);
         markDirty();
     }
 
@@ -160,6 +191,7 @@ public final class VoidHeartData
     public Component debugPrint()
     {
         var root = Component.literal("§6PocketPos: §3" + pocketPos.toShortString() + "\n");
+        root.append(Component.literal("§6Variant: §3" + variant().map(PocketVariant::getSerializedName).orElse("unknown") + "\n"));
         root.append(Component.literal("§6Max Flexion: §3" + maxFlexion + "\n"));
         root.append(Component.literal("§6Flexion Count (without portals): §3" + flexionCountWithoutPortals + "\n"));
         root.append(Component.literal("§6Portals Count: §3" + portalsCount() + "\n"));

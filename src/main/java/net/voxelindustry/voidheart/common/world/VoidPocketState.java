@@ -15,8 +15,11 @@ import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.pocket.PocketBlueprint;
 import net.voxelindustry.voidheart.common.world.pocket.PocketBuilder;
+import net.voxelindustry.voidheart.common.world.pocket.PocketVariant;
 import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
+import org.jspecify.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -119,17 +122,48 @@ public class VoidPocketState extends SavedData
 
     public void createPocket(ServerLevel voidWorld, UUID player)
     {
+        createPocket(voidWorld, player, null);
+    }
+
+    /**
+     * @param variant the variant to build, or null for the next one in the world's order
+     */
+    public void createPocket(ServerLevel voidWorld, UUID player, @Nullable PocketVariant variant)
+    {
         BlockPos pos = getPosForPlayer(player);
         setDirty();
 
-        voidWorld.setBlockAndUpdate(pos, VoidHeartBlocks.VOID_HEART.defaultBlockState());
-        VoidHeartTile voidHeart = (VoidHeartTile) voidWorld.getBlockEntity(pos);
-        voidHeart.setPlayerID(player);
-        voidHeart.setChanged();
+        placeHeart(voidWorld, pos, player);
 
         var blueprint = PocketBlueprint.forPocket(voidWorld.getSeed(), heartDataByUUID.size() - 1, pos);
-        heartDataByUUID.get(player).heartRise(blueprint.variant().profile().heartRise());
+        if (variant != null)
+            blueprint = new PocketBlueprint(variant, blueprint.seed());
+        var heartData = heartDataByUUID.get(player);
+        heartData.heartRise(blueprint.variant().profile().heartRise());
+        heartData.variant(blueprint.variant());
         PocketBuilder.build(voidWorld, pos, blueprint);
+    }
+
+    public static void placeHeart(ServerLevel voidWorld, BlockPos pos, UUID owner)
+    {
+        voidWorld.setBlockAndUpdate(pos, VoidHeartBlocks.VOID_HEART.defaultBlockState());
+        VoidHeartTile voidHeart = (VoidHeartTile) voidWorld.getBlockEntity(pos);
+        voidHeart.setPlayerID(owner);
+        voidHeart.setChanged();
+    }
+
+    /**
+     * Forgets a pocket, freeing its place for the next one. Its blocks are left as they are.
+     */
+    public void removePocket(UUID player)
+    {
+        if (heartDataByUUID.remove(player) != null)
+            setDirty();
+    }
+
+    public Map<UUID, VoidHeartData> pockets()
+    {
+        return Collections.unmodifiableMap(heartDataByUUID);
     }
 
     public boolean hasPocket(UUID player)

@@ -10,6 +10,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFormer;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
@@ -18,6 +19,7 @@ import net.voxelindustry.voidheart.common.world.pocket.PocketBuilder;
 import net.voxelindustry.voidheart.common.world.pocket.PocketGrid;
 import net.voxelindustry.voidheart.common.world.pocket.PocketPlan;
 import net.voxelindustry.voidheart.common.world.pocket.PocketVariant;
+import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
 
 import java.util.UUID;
 
@@ -55,6 +57,7 @@ public class VoidPocketClientTest implements FabricClientGameTest
 
             checkRealPocket(server);
             checkPocketCommand(context, server);
+            checkAdminCommands(context, server);
 
             for (var variant : PocketVariant.values())
             {
@@ -97,6 +100,131 @@ public class VoidPocketClientTest implements FabricClientGameTest
             var heart = VoidPocketState.getVoidPocketState(voidWorld(minecraft)).getHeartData(player.getUUID()).pocketPos();
             if (player.level() != voidWorld(minecraft) || player.blockPosition().distManhattan(heart) > 2)
                 throw new AssertionError("The command should send its caller to an existing pocket, got " + player.position() + " for a heart at " + heart);
+        });
+    }
+
+    private static VoidHeartData heartData(MinecraftServer minecraft)
+    {
+        var player = minecraft.getPlayerList().getPlayers().getFirst();
+        return VoidPocketState.getVoidPocketState(voidWorld(minecraft)).getHeartData(player.getUUID());
+    }
+
+    private static void assertHeart(MinecraftServer minecraft, String when)
+    {
+        var player = minecraft.getPlayerList().getPlayers().getFirst();
+        var heart = heartData(minecraft).pocketPos();
+        if (!(voidWorld(minecraft).getBlockEntity(heart) instanceof VoidHeartTile tile) || !player.getUUID().equals(tile.getPlayerID()))
+            throw new AssertionError(when + ", the heart should stand owned by its player, got " + voidWorld(minecraft).getBlockState(heart));
+    }
+
+    /**
+     * The caller already has a pocket from {@link #checkPocketCommand} and stands in it.
+     */
+    private static void checkAdminCommands(ClientGameTestContext context, TestServerContext server)
+    {
+        // Something left in the arrival space and a mob roaming the pocket, which a rebuild should both clear
+        server.runOnServer(minecraft ->
+        {
+            var heart = heartData(minecraft).pocketPos();
+            voidWorld(minecraft).setBlockAndUpdate(heart.above(2), Blocks.GOLD_BLOCK.defaultBlockState());
+            var stand = net.minecraft.world.entity.EntityTypes.ARMOR_STAND.create(voidWorld(minecraft), net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+            stand.snapTo(heart.getX() + 3.5, heart.getY() + 2, heart.getZ() + 3.5, 0, 0);
+            voidWorld(minecraft).addFreshEntity(stand);
+        });
+        // High in the jungle pocket the caller is inside it, but outside the frozen lake's bounds, which sit lower
+        var oldHeart = server.computeOnServer(minecraft -> heartData(minecraft).pocketPos());
+        server.runCommand("execute in voidheart:void run tp @a " + (oldHeart.getX() + 0.5) + " " + (oldHeart.getY() + 12) + " " + (oldHeart.getZ() + 0.5));
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            var player = minecraft.getPlayerList().getPlayers().getFirst();
+            if (!heartData(minecraft).contains(player.blockPosition()) || PocketVariant.FROZEN_LAKE.profile().heartRise() <= heartData(minecraft).heartRise())
+                throw new AssertionError("The scene should start with the caller high in a pocket whose heart rises less than a frozen lake's, got " + player.position() + " and rise " + heartData(minecraft).heartRise());
+        });
+        server.runCommand("execute as @a run voidheart pocket rebuild @a " + PocketVariant.FROZEN_LAKE.getSerializedName());
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var heartData = heartData(minecraft);
+            var heart = heartData.pocketPos();
+            var level = voidWorld(minecraft);
+            if (heartData.variant().orElse(null) != PocketVariant.FROZEN_LAKE)
+                throw new AssertionError("A rebuild should save its variant, got " + heartData.variant());
+            if (heartData.heartRise() != PocketVariant.FROZEN_LAKE.profile().heartRise())
+                throw new AssertionError("A rebuild should take its variant's heart rise, got " + heartData.heartRise());
+            assertHeart(minecraft, "After a rebuild");
+            if (!level.getBlockState(heart.above(2)).isAir())
+                throw new AssertionError("A rebuild should wipe what stood in the pocket, got " + level.getBlockState(heart.above(2)));
+            if (level.getBlockState(heart.below()).isAir())
+                throw new AssertionError("A rebuild should give the heart ground");
+            var box = new net.minecraft.world.phys.AABB(heart).inflate(PocketGrid.WALL_REACH);
+            if (!level.getEntitiesOfClass(net.minecraft.world.entity.decoration.ArmorStand.class, box).isEmpty())
+                throw new AssertionError("A rebuild should remove what roamed the pocket");
+            var player = minecraft.getPlayerList().getPlayers().getFirst();
+            if (!heartData.contains(player.blockPosition()))
+                throw new AssertionError("A rebuild should keep its caller inside, got " + player.position());
+        });
+
+        var rebuiltHeart = server.computeOnServer(minecraft -> heartData(minecraft).pocketPos());
+        look(server, rebuiltHeart, 0.5, 1.2, 0.5, 8.5, 0.5, 6.5);
+        context.waitTicks(10);
+        context.takeScreenshot("pocket-command-rebuilt-frozen-lake");
+
+        // Their reports go to the server log, as execute keeps the server as the output
+        server.runCommand("execute as @a run voidheart pocket info");
+        server.runCommand("voidheart pocket list");
+
+        server.runCommand("voidheart pocket flexion @a 5");
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            if (heartData(minecraft).maxFlexion() != 5)
+                throw new AssertionError("Flexion should be set to 5, got " + heartData(minecraft).maxFlexion());
+            heartData(minecraft).addPortal(minecraft.overworld(), new BlockPos(0, -60, 0));
+        });
+        server.runCommand("voidheart pocket portals @a prune");
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            if (heartData(minecraft).portalsCount() != 0)
+                throw new AssertionError("Pruning should forget a portal with no core, got " + heartData(minecraft).portalKeySet());
+            voidWorld(minecraft).setBlockAndUpdate(heartData(minecraft).pocketPos(), Blocks.AIR.defaultBlockState());
+        });
+        server.runCommand("voidheart pocket heart @a");
+        context.waitTicks(2);
+        server.runOnServer(minecraft -> assertHeart(minecraft, "After the heart command"));
+
+        server.runCommand("voidheart pocket delete @a");
+        context.waitTicks(2);
+        server.runOnServer(minecraft ->
+        {
+            if (heartData(minecraft) == null)
+                throw new AssertionError("Delete without confirm should keep the pocket");
+        });
+        var deletedHeart = new BlockPos[] { server.computeOnServer(minecraft -> heartData(minecraft).pocketPos()) };
+        server.runCommand("voidheart pocket delete @a confirm");
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var player = minecraft.getPlayerList().getPlayers().getFirst();
+            if (heartData(minecraft) != null)
+                throw new AssertionError("Delete with confirm should forget the pocket");
+            if (!voidWorld(minecraft).getBlockState(deletedHeart[0]).isAir() || !voidWorld(minecraft).getBlockState(deletedHeart[0].below()).isAir())
+                throw new AssertionError("Delete should wipe the pocket's blocks");
+            if (player.level() == voidWorld(minecraft))
+                throw new AssertionError("Delete should send those inside away");
+        });
+
+        server.runCommand("voidheart pocket create @a " + PocketVariant.LAGOON.getSerializedName());
+        context.waitTicks(5);
+        server.runOnServer(minecraft ->
+        {
+            var heartData = heartData(minecraft);
+            if (heartData == null || heartData.variant().orElse(null) != PocketVariant.LAGOON)
+                throw new AssertionError("Create should make a pocket of the given variant, got " + (heartData == null ? null : heartData.variant()));
+            if (!heartData.pocketPos().equals(deletedHeart[0]))
+                throw new AssertionError("A deleted pocket's place should be free again, got " + heartData.pocketPos() + " instead of " + deletedHeart[0]);
+            assertHeart(minecraft, "After create");
         });
     }
 
