@@ -48,7 +48,7 @@ public class LeyDiviningRodItem extends Item
         {
             var sight = LeySight.collect(serverLevel, player.position());
             ServerPlayNetworking.send(serverPlayer, sight);
-            boolean found = !sight.lines().isEmpty() || !sight.nodes().isEmpty();
+            boolean found = !sight.lines().isEmpty() || !sight.nodes().isEmpty() || !sight.spurs().isEmpty();
             level.playSound(null, player.blockPosition(), found ? SoundEvents.AMETHYST_BLOCK_RESONATE : SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.PLAYERS,
                     found ? 0.8F : 0.5F, found ? 0.6F : 1.4F);
             if (!found)

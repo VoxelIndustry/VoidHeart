@@ -10,10 +10,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
 import net.voxelindustry.voidheart.client.render.energy.ley.LeyLook;
@@ -21,6 +24,7 @@ import net.voxelindustry.voidheart.common.content.divining.LeySight;
 import net.voxelindustry.voidheart.common.content.divining.LeySightPayload;
 import net.voxelindustry.voidheart.common.ley.LeyHeights;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +34,14 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
 /**
  * What a Ley Divining Rod reveals, drawn in the world as a current: each line a textured strand in a soft halo, both as thick and bright as the line's
  * flow, with chevrons and tailed motes running downstream and the whole line fading toward where it flows. Nodes rise as slow vortices of light from the
- * ground, colored by kind. Taint dims and greys both. Behind terrain only the strands and node columns show, faintly.
+ * ground, colored by kind. Standing stones' spurs show the same way, thinner, from where they leave their line to each stone. Taint dims and greys all of
+ * it. Behind terrain only the strands and node columns show, faintly. While the reveal spreads, a faint violet shell grows out with its front, strongest at
+ * the horizon, so the search itself shows; terrain nearer than the shell hides it, so it reads as a wall of light sweeping out over the land.
  * <p>
  * All layers are {@link VoidHeartRenderTypes#radiant}: textured, added to what is behind and never writing depth, so they overlap in any order without
  * flicker. Paths are worked out once when a reveal arrives; a frame only places camera-facing quads on them. At the worst realistic size, a dozen lines
- * of 130 points and a few nodes, that is around 6000 quads a frame for the few seconds a reveal lasts.
+ * of 130 points and a few nodes, that is around 6000 quads a frame for the few seconds a reveal lasts, with spurs adding a few hundred and the shell about
+ * {@value #SHELL_QUADS} for its first second.
  */
 public final class LeyDiviningRender
 {
@@ -135,7 +142,78 @@ public final class LeyDiviningRender
      */
     private static final float NODE_FULL_FLOW     = LeyLook.FULL_FLOW * 3;
 
-    private record ShownLine(LeySightPlan.Path path, float level, float fromTaint, float toTaint, long seed)
+    // Spurs: a line's look at this share of its widths, fading less toward the stone since they are short
+    private static final float SPUR_WIDTH           = 0.5F;
+    private static final float SPUR_DOWNSTREAM_FADE = 0.25F;
+
+    // The searching shell around the rod while the reveal spreads
+    private static final int   SHELL_RGB          = 0x8A5CFF;
+    private static final float SHELL_ALPHA        = 0.5F;
+    /**
+     * A faint violet blended under the shell's glow. Much more reads as grey fog over grass, whatever the hue.
+     */
+    private static final int   SHELL_TINT_RGB     = 0x6A3CE8;
+    private static final float SHELL_TINT_ALPHA   = 0.18F;
+    /**
+     * How tightly the shell's light gathers at its horizon: the higher, the narrower the band and the clearer the sky above.
+     */
+    private static final float SHELL_BAND_POWER   = 1.5F;
+    private static final int   SHELL_SEGMENTS     = 48;
+    private static final int   SHELL_RINGS        = 24;
+    private static final int   SHELL_QUADS        = SHELL_SEGMENTS * SHELL_RINGS * 2;
+    /**
+     * Height of the shell's center above the rod bearer's feet, near their eyes, so it grows evenly all around the view.
+     */
+    private static final float SHELL_CENTER_Y     = 1.5F;
+    /**
+     * Where the shell samples the 16 pixel halo texture: the center of a pixel in its bright middle, never the edge between two.
+     */
+    private static final float SHELL_TEXEL        = 7.5F / 16;
+
+    // The shell's border where it meets the terrain: a strand like a line's, widening as the shell grows so it still reads far off
+    private static final int   BORDER_DIRECTIONS  = 160;
+    private static final float BORDER_LIFT        = 0.15F;
+    /**
+     * Height in blocks between neighbouring border points past which the border breaks, over a cliff or a wall, instead of stretching up it.
+     */
+    private static final float BORDER_BREAK       = 2.5F;
+    private static final float BORDER_CORE_HALF   = 0.05F;
+    private static final float BORDER_CORE_GROW   = 0.003F;
+    private static final float BORDER_HALO_HALF   = 0.3F;
+    private static final float BORDER_HALO_GROW   = 0.012F;
+    private static final float BORDER_CORE_ALPHA  = 0.95F;
+    private static final float BORDER_HALO_ALPHA  = 0.5F;
+    /**
+     * Blocks the rod may be under the surface before the border is left out, since the surface would then be far from the cave around its bearer.
+     */
+    private static final int   BORDER_UNDERGROUND = 6;
+
+    // Motes drifting slowly over the shell, gathered near its horizon
+    private static final int   SHELL_MOTES        = 90;
+    private static final int   SHELL_MOTE_RGB     = 0xC4A4FF;
+    /**
+     * Turn of a mote around the shell in radians a tick, a little more or less for each.
+     */
+    private static final float SHELL_MOTE_DRIFT   = 0.0035F;
+    private static final float SHELL_MOTE_LOWEST  = -0.1F;
+    private static final float SHELL_MOTE_HIGHEST = 0.35F;
+    private static final float SHELL_MOTE_BOB     = 0.02F;
+    private static final float SHELL_MOTE_BOB_SPEED = 0.04F;
+    private static final float SHELL_MOTE_HALF    = 0.06F;
+    private static final float SHELL_MOTE_GROW    = 0.0035F;
+    private static final float SHELL_MOTE_TAIL    = 0.4F;
+    private static final float SHELL_MOTE_TAIL_GROW = 0.008F;
+    private static final float SHELL_MOTE_ALPHA   = 0.6F;
+    /**
+     * Shell radius below which motes fade, so they do not crowd the bearer's face as it starts.
+     */
+    private static final float SHELL_MOTE_FROM    = 8;
+
+    /**
+     * @param width share of a line's widths it is drawn at
+     * @param fade  share of brightness lost from its from end to its to end
+     */
+    private record ShownLine(LeySightPlan.Path path, float level, float fromTaint, float toTaint, long seed, float width, float fade)
     {
     }
 
@@ -146,8 +224,16 @@ public final class LeyDiviningRender
     /**
      * @param level the world it was raised in: a reveal never follows its bearer into another dimension
      */
-    private record Sight(ClientLevel level, long startTick, List<ShownLine> lines, List<ShownNode> nodes)
+    /**
+     * @param terrain terrain tops sampled a block apart outward from the rod in each border direction, or null when the rod was raised underground
+     */
+    private record Sight(ClientLevel level, long startTick, double originX, double originY, double originZ, List<ShownLine> lines, List<ShownNode> nodes,
+                         int spurs, float @Nullable [][] terrain, long seed)
     {
+        boolean revealsAnything()
+        {
+            return !lines.isEmpty() || !nodes.isEmpty();
+        }
     }
 
     private static volatile Sight sight;
@@ -172,7 +258,19 @@ public final class LeyDiviningRender
             long seed = seed(line.fromX(), line.fromZ(), line.toX(), line.toZ());
             var path = LeySightPlan.line(line.fromX(), line.fromZ(), line.toX(), line.toZ(), heights, payload.originX(), payload.originZ(), radius, seed);
             if (!path.isEmpty())
-                lines.add(new ShownLine(path, LeyLook.flowLevel(line.flow()), line.fromTaint(), line.toTaint(), seed));
+                lines.add(new ShownLine(path, LeyLook.flowLevel(line.flow()), line.fromTaint(), line.toTaint(), seed, 1, DOWNSTREAM_FADE));
+        }
+
+        int spurs = 0;
+        for (var spur : payload.spurs())
+        {
+            long seed = seed(Mth.floor(spur.fromX()), Mth.floor(spur.fromZ()), Mth.floor(spur.toX()), Mth.floor(spur.toZ())) ^ SPUR_SEED_SALT;
+            var path = LeySightPlan.spur(spur.fromX(), spur.fromY(), spur.fromZ(), spur.toX(), spur.toY(), spur.toZ(), payload.originX(), payload.originZ(),
+                    radius, seed);
+            if (path.isEmpty())
+                continue;
+            lines.add(new ShownLine(path, LeyLook.flowLevel(spur.flow()), spur.taint(), spur.taint(), seed, SPUR_WIDTH, SPUR_DOWNSTREAM_FADE));
+            spurs++;
         }
 
         var nodes = new ArrayList<ShownNode>();
@@ -184,26 +282,64 @@ public final class LeyDiviningRender
             nodes.add(new ShownNode(x, node.y() + 0.5, z, distance, NODE_RGB[node.kind().ordinal()], level01, node.taint(), seed(node.x(), node.z(), 0, 0)));
         }
 
-        sight = lines.isEmpty() && nodes.isEmpty() ? null : new Sight(level, level.getGameTime(), lines, nodes);
+        // Kept even when nothing was found, so the searching shell still grows out
+        sight = new Sight(level, level.getGameTime(), payload.originX(), payload.originY(), payload.originZ(), lines, nodes, spurs,
+                terrain(level, payload.originX(), payload.originY(), payload.originZ()),
+                seed(Mth.floor(payload.originX()), Mth.floor(payload.originY()), Mth.floor(payload.originZ()), (int) level.getGameTime()));
     }
+
+    /**
+     * The terrain the shell's border runs over, sampled once: in each direction, the top of the ground every block out to past the radius, looking under
+     * leaves so the border runs on the ground beneath trees.
+     */
+    private static float @Nullable [][] terrain(ClientLevel level, double originX, double originY, double originZ)
+    {
+        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING, Mth.floor(originX), Mth.floor(originZ));
+        if (surface - originY > BORDER_UNDERGROUND)
+            return null;
+
+        int samples = LeySight.RADIUS + 3;
+        var terrain = new float[BORDER_DIRECTIONS][samples];
+        var pos = new BlockPos.MutableBlockPos();
+        for (int direction = 0; direction < BORDER_DIRECTIONS; direction++)
+        {
+            float angle = 2 * Mth.PI * direction / BORDER_DIRECTIONS;
+            float dx = Mth.cos(angle), dz = Mth.sin(angle);
+            for (int i = 0; i < samples; i++)
+            {
+                int x = Mth.floor(originX + dx * i), z = Mth.floor(originZ + dz * i);
+                int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+                while (top > level.getMinY() && level.getBlockState(pos.set(x, top - 1, z)).is(BlockTags.LEAVES))
+                    top--;
+                terrain[direction][i] = top;
+            }
+        }
+        return terrain;
+    }
+
+    private static final long SPUR_SEED_SALT = 0x2545F4914F6CDD1DL;
 
     public static void clear()
     {
         sight = null;
     }
 
+    /**
+     * Whether lines, spurs or nodes are showing, not counting the shell of a search that found nothing.
+     */
     public static boolean isShowing()
     {
-        return sight != null;
+        var current = sight;
+        return current != null && current.revealsAnything();
     }
 
     /**
-     * Lines and nodes shown by the current reveal, for tests.
+     * Lines, nodes and spurs shown by the current reveal, for tests. Spurs are not counted among the lines.
      */
     public static int[] shownCounts()
     {
         var current = sight;
-        return current == null ? new int[2] : new int[] { current.lines().size(), current.nodes().size() };
+        return current == null ? new int[3] : new int[] { current.lines().size() - current.spurs(), current.nodes().size(), current.spurs() };
     }
 
     public static void collectSubmits(LevelRenderContext context)
@@ -219,7 +355,7 @@ public final class LeyDiviningRender
 
         var levelState = context.levelState();
         float age = (levelState.gameTime - current.startTick()) + levelState.worldPartialTicks;
-        if (age >= LeySightPlan.LIFE_TICKS || age < -1)
+        if (age >= LeySightPlan.LIFE_TICKS || age < -1 || !current.revealsAnything() && age >= LeySightPlan.SHELL_TICKS)
         {
             sight = null;
             return;
@@ -228,6 +364,7 @@ public final class LeyDiviningRender
         var camera = levelState.cameraRenderState.pos;
 
         var frame = new Frame();
+        drawShell(frame, current, camera, age, time);
         for (var line : current.lines())
             drawLine(frame, line, camera, age, time);
         for (var node : current.nodes())
@@ -263,7 +400,7 @@ public final class LeyDiviningRender
             float along = path.along()[i];
             float taint = Mth.lerp(along, line.fromTaint(), line.toTaint());
             float shown = LeySightPlan.reveal(age, path.distance()[i], radius) + LeySightPlan.frontFlash(age, path.distance()[i], radius);
-            bright[i] = shown * (1 - DOWNSTREAM_FADE * along) * (1 - TAINT_DIM * taint);
+            bright[i] = shown * (1 - line.fade() * along) * (1 - TAINT_DIM * taint);
             coreColor[i] = lerp(CORE_RGB, TAINT_RGB, taint);
             haloColor[i] = lerp(HALO_RGB, TAINT_RGB, taint);
             sheathColor[i] = lerp(SHEATH_RGB, SHEATH_TAINT_RGB, taint);
@@ -275,8 +412,8 @@ public final class LeyDiviningRender
             sides[i] = facingSide(points[Math.max(0, i - 1)], points[Math.min(n - 1, i + 1)], points[i]);
 
         float level = WEAK_FLOOR + (1 - WEAK_FLOOR) * line.level();
-        float coreHalf = CORE_HALF + CORE_HALF_FLOW * line.level();
-        float haloHalf = HALO_HALF + HALO_HALF_FLOW * line.level();
+        float coreHalf = (CORE_HALF + CORE_HALF_FLOW * line.level()) * line.width();
+        float haloHalf = (HALO_HALF + HALO_HALF_FLOW * line.level()) * line.width();
         int firstStep = Math.round(path.start() / LeySightPlan.STEP);
 
         for (int i = 0; i < n - 1; i++)
@@ -317,8 +454,9 @@ public final class LeyDiviningRender
         {
             float phase = LeySightPlan.hashUnit(line.seed(), k * 13 + 5) * (float) (2 * Math.PI);
             float jittered = head + LeySightPlan.hashUnit(line.seed(), k * 13 + 6) * moteSpacing * 0.5F;
-            drawRun(frame.motes, along, jittered - MOTE_TAIL, jittered, 2, MOTE_HALF, STREAK_RGB, MOTE_ALPHA * level,
-                    s -> new float[] { (float) Math.sin(phase + s * 0.35F) * MOTE_SWAY, (float) Math.cos(phase * 1.3F + s * 0.27F) * MOTE_SWAY * 0.7F });
+            float sway = MOTE_SWAY * line.width();
+            drawRun(frame.motes, along, jittered - MOTE_TAIL, jittered, 2, MOTE_HALF * line.width(), STREAK_RGB, MOTE_ALPHA * level,
+                    s -> new float[] { (float) Math.sin(phase + s * 0.35F) * sway, (float) Math.cos(phase * 1.3F + s * 0.27F) * sway * 0.7F });
         });
     }
 
@@ -464,6 +602,145 @@ public final class LeyDiviningRender
     }
 
     /**
+     * The searching shell: a sphere around the rod growing with the reveal's front, its light gathered at the horizon and thinning toward the poles, over a
+     * faint blended violet. Its texture is sampled at one pixel of the halo's bright middle, so the color comes from the vertices; spreading the texture
+     * over it showed as stripes.
+     */
+    private static void drawShell(Frame frame, Sight current, Vec3 camera, float age, float time)
+    {
+        float fade = LeySightPlan.shellFade(age);
+        if (fade <= 0.004F)
+            return;
+        float radius = LeySightPlan.shellRadius(age, LeySight.RADIUS);
+        if (radius < 0.5F)
+            return;
+
+        float cx = (float) (current.originX() - camera.x);
+        float cy = (float) (current.originY() + SHELL_CENTER_Y - camera.y);
+        float cz = (float) (current.originZ() - camera.z);
+        var rows = new Vector3f[SHELL_RINGS + 1][SHELL_SEGMENTS + 1];
+        var band = new float[SHELL_RINGS + 1];
+        for (int ring = 0; ring <= SHELL_RINGS; ring++)
+        {
+            float latitude = Mth.PI * ((float) ring / SHELL_RINGS - 0.5F);
+            float y = Mth.sin(latitude), across = Mth.cos(latitude);
+            band[ring] = (float) Math.pow(Math.max(0, across), SHELL_BAND_POWER);
+            for (int segment = 0; segment <= SHELL_SEGMENTS; segment++)
+            {
+                float longitude = 2 * Mth.PI * segment / SHELL_SEGMENTS;
+                rows[ring][segment] = new Vector3f(cx + Mth.cos(longitude) * across * radius, cy + y * radius, cz + Mth.sin(longitude) * across * radius);
+            }
+        }
+
+        for (int ring = 0; ring < SHELL_RINGS; ring++)
+        {
+            // The body thins faster than its border and motes, which carry the shell while it lingers
+            float a0 = fade * fade * band[ring], a1 = fade * fade * band[ring + 1];
+            if (a0 <= 0.004F && a1 <= 0.004F)
+                continue;
+            int glow0 = color(SHELL_RGB, SHELL_ALPHA * a0), glow1 = color(SHELL_RGB, SHELL_ALPHA * a1);
+            int dark0 = color(SHELL_TINT_RGB, SHELL_TINT_ALPHA * a0), dark1 = color(SHELL_TINT_RGB, SHELL_TINT_ALPHA * a1);
+            for (int segment = 0; segment < SHELL_SEGMENTS; segment++)
+            {
+                var p00 = rows[ring][segment];
+                var p01 = rows[ring][segment + 1];
+                var p11 = rows[ring + 1][segment + 1];
+                var p10 = rows[ring + 1][segment];
+                frame.sheath.quad(p00, p01, p11, p10, SHELL_TEXEL, SHELL_TEXEL, dark0, dark0, dark1, dark1);
+                frame.halo.quad(p00, p01, p11, p10, SHELL_TEXEL, SHELL_TEXEL, glow0, glow0, glow1, glow1);
+            }
+        }
+
+        if (current.terrain() != null)
+            drawBorder(frame, current, camera, radius, fade);
+        drawShellMotes(frame, current, cx, cy, cz, radius, fade, age, time);
+    }
+
+    /**
+     * A strand along where the shell meets the terrain, found each frame from the terrain sampled when the reveal arrived. It breaks where neighbouring
+     * points differ too much in height rather than stretching up a cliff. About {@value #BORDER_DIRECTIONS} points, three quads each.
+     */
+    private static void drawBorder(Frame frame, Sight current, Vec3 camera, float radius, float fade)
+    {
+        var terrain = current.terrain();
+        float centerY = (float) current.originY() + SHELL_CENTER_Y;
+        var points = new Vector3f[BORDER_DIRECTIONS];
+        var heights = new float[BORDER_DIRECTIONS];
+        for (int direction = 0; direction < BORDER_DIRECTIONS; direction++)
+        {
+            var contact = LeySightPlan.shellContact(terrain[direction], 1, centerY, radius);
+            if (contact == null)
+                continue;
+            float angle = 2 * Mth.PI * direction / BORDER_DIRECTIONS;
+            heights[direction] = contact[1];
+            points[direction] = new Vector3f((float) (current.originX() + Mth.cos(angle) * contact[0] - camera.x),
+                    (float) (contact[1] + BORDER_LIFT - camera.y),
+                    (float) (current.originZ() + Mth.sin(angle) * contact[0] - camera.z));
+        }
+
+        var sides = new Vector3f[BORDER_DIRECTIONS];
+        for (int direction = 0; direction < BORDER_DIRECTIONS; direction++)
+        {
+            if (points[direction] == null)
+                continue;
+            var before = points[Math.floorMod(direction - 1, BORDER_DIRECTIONS)];
+            var after = points[(direction + 1) % BORDER_DIRECTIONS];
+            sides[direction] = facingSide(before == null ? points[direction] : before, after == null ? points[direction] : after, points[direction]);
+        }
+
+        float coreHalf = BORDER_CORE_HALF + BORDER_CORE_GROW * radius;
+        float haloHalf = BORDER_HALO_HALF + BORDER_HALO_GROW * radius;
+        int core = color(CORE_RGB, BORDER_CORE_ALPHA * fade);
+        int halo = color(HALO_RGB, BORDER_HALO_ALPHA * fade);
+        int sheath = color(SHEATH_RGB, SHEATH_ALPHA * fade);
+        for (int direction = 0; direction < BORDER_DIRECTIONS; direction++)
+        {
+            int next = (direction + 1) % BORDER_DIRECTIONS;
+            if (points[direction] == null || points[next] == null || Math.abs(heights[direction] - heights[next]) > BORDER_BREAK)
+                continue;
+            var from = points[direction];
+            var to = points[next];
+            frame.sheath.ribbon(from, to, sides[direction], sides[next], haloHalf * SHEATH_WIDTH, haloHalf * SHEATH_WIDTH, 0, 1, sheath, sheath);
+            frame.halo.ribbon(from, to, sides[direction], sides[next], haloHalf, haloHalf, 0, 1, halo, halo);
+            float u0 = (float) Math.floorMod(direction, CORE_TILE_STEPS) / CORE_TILE_STEPS;
+            frame.core.ribbon(from, to, sides[direction], sides[next], coreHalf, coreHalf, u0, u0 + 1F / CORE_TILE_STEPS, core, core);
+        }
+    }
+
+    /**
+     * Motes drifting slowly around the shell, each its own way and pace, bobbing a little. Each is a short tailed run along the shell, placed from the
+     * reveal's seed and its age alone. Terrain in front hides them like the shell.
+     */
+    private static void drawShellMotes(Frame frame, Sight current, float cx, float cy, float cz, float radius, float fade, float age, float time)
+    {
+        float alpha = SHELL_MOTE_ALPHA * fade * Math.min(1, radius / SHELL_MOTE_FROM);
+        if (alpha <= 0.004F)
+            return;
+        float half = SHELL_MOTE_HALF + SHELL_MOTE_GROW * radius;
+        float tail = SHELL_MOTE_TAIL + SHELL_MOTE_TAIL_GROW * radius;
+        int rgb = color(SHELL_MOTE_RGB, alpha);
+        for (int mote = 0; mote < SHELL_MOTES; mote++)
+        {
+            long seed = current.seed();
+            float start = LeySightPlan.hashUnit(seed, mote * 5L) * 2 * Mth.PI;
+            float pace = 0.5F + LeySightPlan.hashUnit(seed, mote * 5L + 1);
+            float way = LeySightPlan.hashUnit(seed, mote * 5L + 2) < 0.5F ? -1 : 1;
+            // Squared so more of them gather near the horizon
+            float rise = LeySightPlan.hashUnit(seed, mote * 5L + 3);
+            float latitude = Mth.lerp(rise * rise, SHELL_MOTE_LOWEST, SHELL_MOTE_HIGHEST)
+                    + Mth.sin(LeySightPlan.hashUnit(seed, mote * 5L + 4) * 2 * Mth.PI + time * SHELL_MOTE_BOB_SPEED) * SHELL_MOTE_BOB;
+            float turned = start + way * pace * SHELL_MOTE_DRIFT * age;
+            float across = Math.max(0.05F, Mth.cos(latitude)) * radius;
+            float behind = turned - way * tail / across;
+
+            var head = new Vector3f(cx + Mth.cos(turned) * across, cy + Mth.sin(latitude) * radius, cz + Mth.sin(turned) * across);
+            var back = new Vector3f(cx + Mth.cos(behind) * across, head.y, cz + Mth.sin(behind) * across);
+            var side = facingSide(back, head, head);
+            frame.motes.ribbon(back, head, side, side, half, half, 0, 1, rgb, rgb);
+        }
+    }
+
+    /**
      * Fades a node's column in from the ground and out at its top.
      */
     private static float columnFade(float h)
@@ -524,6 +801,19 @@ public final class LeyDiviningRender
             vertex(start.x + startSide.x * startHalf, start.y + startSide.y * startHalf, start.z + startSide.z * startHalf, u0, 1, startColor);
             vertex(end.x + endSide.x * endHalf, end.y + endSide.y * endHalf, end.z + endSide.z * endHalf, u1, 1, endColor);
             vertex(end.x - endSide.x * endHalf, end.y - endSide.y * endHalf, end.z - endSide.z * endHalf, u1, 0, endColor);
+        }
+
+        /**
+         * A quad of four corners in order, its texture sampled at one point only, so its color comes from its vertices alone.
+         */
+        void quad(Vector3f a, Vector3f b, Vector3f c, Vector3f d, float u, float v, int colorA, int colorB, int colorC, int colorD)
+        {
+            if (ARGB.alpha(colorA) == 0 && ARGB.alpha(colorB) == 0 && ARGB.alpha(colorC) == 0 && ARGB.alpha(colorD) == 0)
+                return;
+            vertex(a.x, a.y, a.z, u, v, colorA);
+            vertex(b.x, b.y, b.z, u, v, colorB);
+            vertex(c.x, c.y, c.z, u, v, colorC);
+            vertex(d.x, d.y, d.z, u, v, colorD);
         }
 
         private void vertex(float x, float y, float z, float u, float v, int color)

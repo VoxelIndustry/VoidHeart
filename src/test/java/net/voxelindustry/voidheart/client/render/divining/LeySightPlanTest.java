@@ -105,4 +105,82 @@ class LeySightPlanTest
         assertThat(LeySightPlan.frontFlash(age, front - 20, RADIUS)).isLessThan(0.01F);
         assertThat(LeySightPlan.frontFlash(LeySightPlan.SPREAD_TICKS + 5, 10, RADIUS)).isZero();
     }
+
+    @Test
+    void spurRunsStraightFromItsTapToItsStone()
+    {
+        var path = LeySightPlan.spur(10.25, 71.5, 4.75, 30.5, 65, 4.5, 20, 4, RADIUS, 11);
+        int last = path.size() - 1;
+
+        assertThat(path.x()[0]).isCloseTo(10.25, within(1.0E-6));
+        assertThat(path.y()[0]).isCloseTo(71.5, within(1.0E-6));
+        assertThat(path.z()[0]).isCloseTo(4.75, within(1.0E-6));
+        assertThat(path.x()[last]).isCloseTo(30.5, within(1.0E-6));
+        assertThat(path.y()[last]).isCloseTo(65, within(1.0E-6));
+        assertThat(path.z()[last]).isCloseTo(4.5, within(1.0E-6));
+        for (int i = 0; i < path.size(); i++)
+            assertThat(path.y()[i]).isBetween(65D, 71.5D);
+    }
+
+    @Test
+    void spurSwaysLessThanALine()
+    {
+        var spur = LeySightPlan.spur(0.5, 70, 0.5, 200.5, 70, 0.5, 100, 0, 200, 7);
+        var line = LeySightPlan.line(0, 0, 200, 0, new float[] { 70, 70 }, 100, 0, 200, 7);
+
+        double spurWidest = 0, lineWidest = 0;
+        for (int i = 0; i < spur.size(); i++)
+        {
+            spurWidest = Math.max(spurWidest, Math.abs(spur.z()[i] - 0.5));
+            lineWidest = Math.max(lineWidest, Math.abs(line.z()[i] - 0.5));
+        }
+        assertThat(spurWidest).isCloseTo(lineWidest * LeySightPlan.SPUR_SWAY_SHARE, within(1.0E-6));
+    }
+
+    @Test
+    void shellMeetsFlatGroundWhereItsSphereDoes()
+    {
+        var flat = new float[70];
+        java.util.Arrays.fill(flat, 64);
+        // Center 1.5 above the ground, radius 20: the ground is reached at sqrt(20^2 - 1.5^2)
+        var contact = LeySightPlan.shellContact(flat, 1, 65.5F, 20);
+
+        assertThat(contact).isNotNull();
+        assertThat(contact[0]).isCloseTo((float) Math.sqrt(400 - 2.25), within(0.05F));
+        assertThat(contact[1]).isEqualTo(64);
+    }
+
+    @Test
+    void shellMeetsAHillBeforeTheGroundBehindIt()
+    {
+        var heights = new float[70];
+        java.util.Arrays.fill(heights, 64);
+        for (int i = 10; i < 14; i++)
+            heights[i] = 85;
+        var contact = LeySightPlan.shellContact(heights, 1, 65.5F, 20);
+
+        assertThat(contact).isNotNull();
+        assertThat(contact[0]).isBetween(9F, 10F);
+        assertThat(contact[1]).isGreaterThan(64);
+    }
+
+    @Test
+    void shellBeyondTheSampledTerrainMeetsNothing()
+    {
+        var flat = new float[10];
+        java.util.Arrays.fill(flat, 64);
+
+        assertThat(LeySightPlan.shellContact(flat, 1, 65.5F, 30)).isNull();
+    }
+
+    @Test
+    void shellGrowsWithTheFrontAndIsGoneSoonAfter()
+    {
+        assertThat(LeySightPlan.shellRadius(0, RADIUS)).isZero();
+        assertThat(LeySightPlan.shellRadius(LeySightPlan.SPREAD_TICKS, RADIUS)).isEqualTo(RADIUS);
+        assertThat(LeySightPlan.shellFade(0)).isZero();
+        assertThat(LeySightPlan.shellFade(LeySightPlan.SHELL_FADE_IN)).isGreaterThan(0.5F);
+        assertThat(LeySightPlan.shellFade(LeySightPlan.SPREAD_TICKS)).isLessThan(LeySightPlan.shellFade(LeySightPlan.SPREAD_TICKS / 2F));
+        assertThat(LeySightPlan.shellFade(LeySightPlan.SHELL_TICKS)).isZero();
+    }
 }

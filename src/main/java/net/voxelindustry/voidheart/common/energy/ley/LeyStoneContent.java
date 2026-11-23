@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
+import net.voxelindustry.voidheart.common.item.LoreBlockItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartTiles;
 
@@ -47,9 +48,12 @@ public final class LeyStoneContent
 
     public static void register()
     {
-        LEY_STONE = VoidHeartBlocks.registerBlock("ley_stone", LeyStoneBlock::new, stone(2F).noOcclusion().pushReaction(PushReaction.IMMOVEABLE), true);
-        LEY_WARD = VoidHeartBlocks.registerBlock("ley_ward", LeyWardBlock::new, stone(1.5F).noOcclusion(), true);
-        LEY_GROWER = VoidHeartBlocks.registerBlock("ley_grower", LeyGrowerBlock::new, stone(1.5F).noOcclusion(), true);
+        LEY_STONE = VoidHeartBlocks.registerBlock("ley_stone", LeyStoneBlock::new, stone(2F).noOcclusion().pushReaction(PushReaction.IMMOVEABLE),
+                (block, properties) -> new LoreBlockItem(block, properties, MODID + ".ley_stone.lore"));
+        LEY_WARD = VoidHeartBlocks.registerBlock("ley_ward", LeyWardBlock::new, stone(1.5F).noOcclusion(),
+                (block, properties) -> new LoreBlockItem(block, properties, MODID + ".ley_ward.lore"));
+        LEY_GROWER = VoidHeartBlocks.registerBlock("ley_grower", LeyGrowerBlock::new, stone(1.5F).noOcclusion(),
+                (block, properties) -> new LoreBlockItem(block, properties, MODID + ".ley_grower.lore"));
 
         VoidHeartTiles.registerTile(LEY_STONE_TILE = FabricBlockEntityTypeBuilder.create(LeyStoneTile::new, LEY_STONE).build(), "ley_stone");
         VoidHeartTiles.registerTile(LEY_WARD_TILE = FabricBlockEntityTypeBuilder.create(LeyWardTile::new, LEY_WARD).build(), "ley_ward");
