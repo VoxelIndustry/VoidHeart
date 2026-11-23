@@ -612,7 +612,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private void refundToReserve()
     {
         var to = refundOwner != null ? refundOwner : owner;
-        if (!refund.isEmpty() && to != null && getLevel() instanceof ServerLevel server)
+        if (!refund.isEmpty() && to != null && getLevel() instanceof ServerLevel server
+                && !net.voxelindustry.voidheart.common.content.hoard.HoardReach.forbidden(server))
         {
             // All of it, past the reserve's room if need be: the reserve keeps it and only refuses more until there is room
             var hoard = net.voxelindustry.voidheart.common.content.hoard.PocketHoard.get(server.getServer()).of(to);

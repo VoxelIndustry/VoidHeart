@@ -602,6 +602,7 @@
   "config.jade.plugin_voidheart.aspect_fold": "Aspect Fold",
   "voidheart.hoard": "Hoard",
   "voidheart.hoard.no_pocket": "This Fold opens onto no pocket",
+  "voidheart.hoard.forbidden": "No hoard reaches this far",
   "voidheart.hoard.search": "Search",
   "voidheart.hoard.held": "%s of %s",
   "voidheart.hoard.whisper.over": "Over its room: it takes nothing more",

@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.hoard.HoardReach;
 import net.voxelindustry.voidheart.common.content.hoard.PocketHoard;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
@@ -159,7 +160,7 @@ public class OfficiantTile extends TileBase
     private void serverTick(ServerLevel level)
     {
         LOADED.add(this);
-        if (owner == null || !VoidPocketState.getVoidPocketState(level).hasPocket(owner))
+        if (owner == null || HoardReach.forbidden(level) || !VoidPocketState.getVoidPocketState(level).hasPocket(owner))
             return;
         var hoard = PocketHoard.get(level.getServer()).of(owner);
 

@@ -62,11 +62,11 @@ public class FoldTile extends TileBase
     }
 
     /**
-     * @return the hoard of the owner's pocket, or null on the client, without an owner or without a pocket
+     * @return the hoard of the owner's pocket, or null on the client, without an owner, without a pocket or where hoards can't be reached
      */
     public PocketHoard.@Nullable Hoard hoard()
     {
-        if (owner == null || !(level instanceof ServerLevel serverLevel))
+        if (owner == null || !(level instanceof ServerLevel serverLevel) || HoardReach.forbidden(serverLevel))
             return null;
         if (!VoidPocketState.getVoidPocketState(serverLevel).hasPocket(owner))
             return null;
