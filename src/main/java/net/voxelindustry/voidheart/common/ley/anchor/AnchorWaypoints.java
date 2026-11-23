@@ -27,7 +27,8 @@ public class AnchorWaypoints
         {
             var anchors = OldAnchors.get(player.level());
             var near = anchors.flatMap(service -> service.anchorNear(player.position()));
-            Long nearId = near.map(OldAnchor::nodeId).orElse(null);
+            var nearWrought = near.isPresent() ? Optional.<WroughtAnchor>empty() : anchors.flatMap(service -> service.wrought().near(player.position()));
+            Long nearId = near.map(OldAnchor::nodeId).orElse(nearWrought.map(WroughtAnchor::id).orElse(null));
 
             if (Objects.equals(nearId, anchorByPlayer.get(player.getUUID())))
                 continue;
@@ -37,6 +38,12 @@ public class AnchorWaypoints
                 anchorByPlayer.put(player.getUUID(), nearId);
                 var service = anchors.get();
                 ServerPlayNetworking.send(player, new AnchorPayloads.Waypoints(Optional.of(service.view(near.get())), service.linkedViews(near.get())));
+            }
+            else if (nearWrought.isPresent())
+            {
+                anchorByPlayer.put(player.getUUID(), nearId);
+                var source = nearWrought.get();
+                ServerPlayNetworking.send(player, new AnchorPayloads.Waypoints(Optional.of(source.view()), anchors.get().wrought().waypoints(source)));
             }
             else
             {

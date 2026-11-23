@@ -103,6 +103,89 @@ class LeyAnchorNetworkTest
     }
 
     @Test
+    void aPointBesideAnAnchorReachesIt()
+    {
+        var lattice = lattice(new LeyHeights((x, z) -> 64));
+        var network = new LeyAnchorNetwork(SEED, lattice);
+
+        int checked = 0, sameAsAnchor = 0;
+        for (var anchor : anchorsAround(network))
+        {
+            for (var line : lattice.edgesOf(anchor.nodeId()))
+            {
+                // Two blocks out along the line from the anchor's node
+                double towardX = line.other(anchor.nodeId()) == line.to() ? line.toX() - line.fromX() : line.fromX() - line.toX();
+                double towardZ = line.other(anchor.nodeId()) == line.to() ? line.toZ() - line.fromZ() : line.fromZ() - line.toZ();
+                double length = Math.hypot(towardX, towardZ);
+                int x = (int) Math.round(anchor.x() + towardX / length * 2);
+                int z = (int) Math.round(anchor.z() + towardZ / length * 2);
+                if (lattice.nearestEdge(x, z).filter(nearest -> nearest.touches(anchor.nodeId())).isEmpty())
+                    continue;
+
+                var reached = network.linkedAt(x, z);
+                assertThat(reached).as("beside %s", anchor.name()).contains(anchor);
+                // Mostly the anchor's own neighbors: the point only wins nodes a little closer to it than to their owner
+                var neighbors = new ArrayList<>(network.linked(anchor));
+                neighbors.add(anchor);
+                if (neighbors.containsAll(reached))
+                    sameAsAnchor++;
+                checked++;
+            }
+        }
+        assertThat(checked).isGreaterThan(10);
+        System.out.println("points beside an anchor reaching only its neighbors: " + sameAsAnchor + " of " + checked);
+        assertThat(sameAsAnchor).isGreaterThan(checked * 3 / 4);
+    }
+
+    @Test
+    void aPointOnAnAnchorsNodeLeavesItTheNode()
+    {
+        var network = new LeyAnchorNetwork(SEED, lattice(new LeyHeights((x, z) -> 64)));
+
+        for (var anchor : anchorsAround(network))
+            assertThat(network.linkedAt(anchor.x(), anchor.z())).as(anchor.name()).contains(anchor);
+    }
+
+    @Test
+    void pointsNeverChangeTheLinksBetweenOldAnchors()
+    {
+        var lattice = lattice(new LeyHeights((x, z) -> 64));
+        var fresh = new LeyAnchorNetwork(SEED, lattice);
+        var touched = new LeyAnchorNetwork(SEED, lattice);
+
+        for (var anchor : anchorsAround(touched))
+            touched.linkedAt(anchor.x() + 3, anchor.z() - 2);
+        for (var anchor : anchorsAround(touched))
+            assertThat(touched.linked(anchor)).isEqualTo(fresh.linked(anchor));
+    }
+
+    @Test
+    void nearLineMeasuresFromTheClosestLineToTheBlockCenter()
+    {
+        var lattice = lattice(new LeyHeights((x, z) -> 64));
+        var network = new LeyAnchorNetwork(SEED, lattice);
+
+        int near = 0, far = 0;
+        for (int x = -REGION_SIZE; x < REGION_SIZE; x += 7)
+        {
+            for (int z = -REGION_SIZE; z < REGION_SIZE; z += 7)
+            {
+                double centerX = x + 0.5, centerZ = z + 0.5;
+                double distanceSq = lattice.regionsAround(x, z, REGION_SIZE / 2, true).stream().flatMap(region -> region.edges().stream())
+                        .mapToDouble(edge -> edge.distanceSq(centerX, centerZ)).min().orElseThrow();
+                boolean expected = distanceSq <= WroughtAnchorBalance.LINE_REACH * WroughtAnchorBalance.LINE_REACH;
+                assertThat(network.nearLine(x, z, WroughtAnchorBalance.LINE_REACH)).isEqualTo(expected);
+                if (expected)
+                    near++;
+                else
+                    far++;
+            }
+        }
+        assertThat(near).isPositive();
+        assertThat(far).isPositive();
+    }
+
+    @Test
     void namesAreStablePerNode()
     {
         var names = new ArrayList<String>();

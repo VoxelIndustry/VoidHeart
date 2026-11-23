@@ -270,6 +270,7 @@ public class VoidHeart implements ModInitializer
 
         AnchorPayloads.register();
         ServerPlayNetworking.registerGlobalReceiver(AnchorPayloads.TravelRequest.TYPE, AnchorTravel::handle);
+        ServerPlayNetworking.registerGlobalReceiver(AnchorPayloads.RenameRequest.TYPE, AnchorTravel::handleRename);
         ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) -> OldAnchors.get(level).ifPresent(anchors -> anchors.onChunkLoad(chunk)));
         ServerTickEvents.END_SERVER_TICK.register(AnchorWaypoints::tickServer);
         ServerTickEvents.END_LEVEL_TICK.register(UnderwaySecurity::tickLevel);

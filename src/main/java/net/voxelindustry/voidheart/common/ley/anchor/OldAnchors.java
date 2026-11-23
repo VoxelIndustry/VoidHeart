@@ -34,7 +34,7 @@ import static net.voxelindustry.voidheart.common.ley.LeyLatticeGenerator.REGION_
 public class OldAnchors
 {
     public static final int NEAR_RADIUS = 6;
-    private static final int NEAR_HEIGHT = 4;
+    public static final int NEAR_HEIGHT = 4;
     private static final int MAP_MARGIN = 256;
 
     private static final Map<ServerLevel, OldAnchors> BY_LEVEL = new WeakHashMap<>();
@@ -44,6 +44,7 @@ public class OldAnchors
     private final LeyAnchorNetwork network;
     private final LeyAnchorState state;
     private final AnchorTerrain terrain;
+    private final WroughtAnchors wrought;
 
     private OldAnchors(ServerLevel level, LeyLattice lattice)
     {
@@ -53,6 +54,7 @@ public class OldAnchors
         network = new LeyAnchorNetwork(level.getSeed(), lattice, config.leyLineTravelAnchorGenerate, config.leyLineTravelAnchorInactiveRate);
         state = LeyAnchorState.get(level);
         terrain = new AnchorTerrain(level);
+        wrought = new WroughtAnchors(this, WroughtAnchorState.get(level));
     }
 
     public static Optional<OldAnchors> get(ServerLevel level)
@@ -70,6 +72,24 @@ public class OldAnchors
         return network;
     }
 
+    public WroughtAnchors wrought()
+    {
+        return wrought;
+    }
+
+    AnchorTerrain terrain()
+    {
+        return terrain;
+    }
+
+    /**
+     * Drops the sampled terrain of every map, since a wrought anchor built or taken down changes how maps are framed.
+     */
+    void forgetTerrain()
+    {
+        terrain.forget();
+    }
+
     public boolean isActive(OldAnchor anchor)
     {
         return anchor.initiallyActive() || state.isAwakened(anchor.nodeId());
@@ -85,12 +105,18 @@ public class OldAnchors
 
     public AnchorView view(OldAnchor anchor)
     {
-        return new AnchorView(anchor.nodeId(), anchor.name(), anchor.x(), lowerY(anchor), anchor.z(), isActive(anchor));
+        return new AnchorView(anchor.nodeId(), anchor.name(), anchor.x(), lowerY(anchor), anchor.z(), isActive(anchor), false);
     }
 
+    /**
+     * The Old Anchors linked to this one, then the wrought anchors that reach it.
+     */
     public List<AnchorView> linkedViews(OldAnchor anchor)
     {
-        return network.linked(anchor).stream().map(this::view).toList();
+        var views = new ArrayList<AnchorView>();
+        network.linked(anchor).forEach(linked -> views.add(view(linked)));
+        wrought.linkedTo(anchor).forEach(linked -> views.add(linked.view()));
+        return views;
     }
 
     public void onChunkLoad(LevelChunk chunk)
@@ -137,7 +163,7 @@ public class OldAnchors
             return;
         }
 
-        var map = travelMap(anchor.get());
+        var map = travelMap(view(anchor.get()), linkedViews(anchor.get()), List.of());
         ServerPlayNetworking.send(player, map);
         terrain.send(player, map);
     }
@@ -158,10 +184,11 @@ public class OldAnchors
         AnchorWaypoints.invalidate();
     }
 
-    public AnchorPayloads.TravelMap travelMap(OldAnchor source)
+    /**
+     * A map framed on the source and the anchors linked to it, with the lines running under them. Far anchors are only listed.
+     */
+    public AnchorPayloads.TravelMap travelMap(AnchorView source, List<AnchorView> linked, List<AnchorView> far)
     {
-        var linked = linkedViews(source);
-
         int minX = source.x(), maxX = source.x(), minZ = source.z(), maxZ = source.z();
         for (var anchor : linked)
         {
@@ -190,7 +217,7 @@ public class OldAnchors
                 }
             }
         }
-        return new AnchorPayloads.TravelMap(view(source), linked, lines);
+        return new AnchorPayloads.TravelMap(source, linked, far, lines);
     }
 
     /**

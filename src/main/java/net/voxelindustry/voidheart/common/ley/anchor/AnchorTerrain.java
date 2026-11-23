@@ -36,10 +36,23 @@ public class AnchorTerrain
     private final ServerLevel level;
     private final Map<Long, AnchorPayloads.Terrain> cache = new HashMap<>();
     private final Map<Long, Set<UUID>> waiting = new HashMap<>();
+    // Bumped when maps are reframed, so a sample started before that never lands in the cache
+    private int generation;
 
     public AnchorTerrain(ServerLevel level)
     {
         this.level = level;
+    }
+
+    /**
+     * Drops every sampled terrain. Samples still running finish for the players who asked with the old map, whose frame they match, but are not
+     * kept, and later requests start a fresh sample.
+     */
+    public void forget()
+    {
+        cache.clear();
+        waiting.clear();
+        generation++;
     }
 
     public void send(ServerPlayer player, AnchorPayloads.TravelMap map)
@@ -53,9 +66,11 @@ public class AnchorTerrain
         }
 
         boolean alreadySampling = waiting.containsKey(source);
-        waiting.computeIfAbsent(source, key -> new HashSet<>()).add(player.getUUID());
+        var players = waiting.computeIfAbsent(source, key -> new HashSet<>());
+        players.add(player.getUUID());
         if (alreadySampling)
             return;
+        int startedIn = generation;
 
         int minX = map.source().x(), maxX = minX, minZ = map.source().z(), maxZ = minZ;
         for (var anchor : map.linked())
@@ -76,14 +91,17 @@ public class AnchorTerrain
         CompletableFuture.supplyAsync(() -> sample(source, centerX - CELLS_X * step / 2, centerZ - sizeZ * step / 2, step, CELLS_X, sizeZ), Util.backgroundExecutor())
                 .whenComplete((terrain, error) -> server.execute(() ->
                 {
-                    var players = waiting.remove(source);
+                    // By identity: a sample started after forget() may wait with an equal set of the same players
+                    if (waiting.get(source) == players)
+                        waiting.remove(source);
                     if (error != null)
                     {
                         VoidHeart.LOGGER.log(Level.WARNING, "Could not sample the terrain of a travel map", error);
                         return;
                     }
 
-                    cache.put(source, terrain);
+                    if (startedIn == generation)
+                        cache.put(source, terrain);
                     for (var uuid : players)
                     {
                         var waitingPlayer = server.getPlayerList().getPlayer(uuid);

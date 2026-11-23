@@ -27,6 +27,7 @@ import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.common.content.oil.Brew;
 import net.voxelindustry.voidheart.common.content.oil.Elixirs;
 import net.voxelindustry.voidheart.common.content.levitation.LevitationBalance;
+import net.voxelindustry.voidheart.common.ley.anchor.WroughtAnchorBalance;
 import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.voxelindustry.voidheart.common.content.oil.OilType;
 import net.voxelindustry.voidheart.common.content.oil.SinVessel;
@@ -566,6 +567,9 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "arrows_per_flask" -> wholeNumber(OilCoating.ARROWS_PER_FLASK);
             case "belt_flight_cost" -> wholeNumber(LevitationBalance.FLIGHT_COST);
             case "wing_flight_cost" -> wholeNumber(net.voxelindustry.voidheart.common.content.armor.ArmorBalance.LEVITATION_DRAIN);
+            case "anchor_line_reach" -> wholeNumber(WroughtAnchorBalance.LINE_REACH);
+            case "anchor_trip_base" -> wholeNumber(WroughtAnchorBalance.TRAVEL_BASE);
+            case "anchor_trip_per_block" -> wholeNumber(WroughtAnchorBalance.TRAVEL_PER_BLOCK);
             case "belt_fall_percent" -> wholeNumber(Math.round((1 - LevitationBalance.FALL_DAMAGE_KEPT) * 100));
             case "rubrum_percent" -> wholeNumber(Math.round((Brew.PROLONGED_SCALE - 1) * 100));
             case "memory_seconds" -> wholeNumber(InsightMemory.MEMORY_MILLIS / 1000D);

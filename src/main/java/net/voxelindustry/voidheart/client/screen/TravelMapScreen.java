@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.util.Util;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -16,15 +18,18 @@ import net.minecraft.util.ARGB;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorPayloads;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorTerrain;
 import net.voxelindustry.voidheart.common.ley.anchor.AnchorView;
+import net.voxelindustry.voidheart.common.ley.anchor.WroughtAnchorBalance;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * Top-down map of the ley lines around an anchor, north up. Clicking an awakened linked anchor travels to it.
+ * Top-down map of the ley lines around an anchor, north up. Clicking an awakened linked anchor travels to it. At a wrought anchor the name above
+ * the map can be edited, and every other wrought anchor of the level is listed beside it, each trip costing void energy.
  */
 public class TravelMapScreen extends Screen
 {
@@ -49,6 +54,13 @@ public class TravelMapScreen extends Screen
     private static final int ACTIVE_COLOR = 0xFF36C5B0;
     private static final int DORMANT_COLOR = 0xFF6E5478;
     private static final int HOVER_COLOR = 0xFF73D1DF;
+    private static final int WROUGHT_COLOR = 0xFFC9A6F2;
+    private static final int MUTED_COLOR = 0xFF8A7A99;
+
+    private static final int LIST_WIDTH = 150;
+    private static final int LIST_GAP = 8;
+    private static final int LIST_HEADER = 16;
+    private static final int ROW_HEIGHT = 22;
 
     private static final float TERRAIN_OPACITY = 0.28F;
     private static final float HILL_SHADING = 1.6F;
@@ -65,6 +77,10 @@ public class TravelMapScreen extends Screen
     private int left, top, right, bottom;
     private double centerX, centerZ, scale;
 
+    private EditBox nameBox;
+    private String sentName;
+    private int listLeft, listScroll;
+
     public TravelMapScreen(AnchorPayloads.TravelMap map)
     {
         super(Component.translatable("voidheart.travel_map.title", map.source().name()));
@@ -75,9 +91,22 @@ public class TravelMapScreen extends Screen
     protected void init()
     {
         left = MARGIN;
-        right = width - MARGIN;
+        right = width - MARGIN - (map.far().isEmpty() ? 0 : LIST_WIDTH + LIST_GAP);
+        listLeft = right + LIST_GAP;
         top = MARGIN + 6;
         bottom = height - MARGIN;
+
+        if (map.source().wrought())
+        {
+            if (sentName == null)
+                sentName = map.source().name();
+            var previous = nameBox == null ? sentName : nameBox.getValue();
+            nameBox = new EditBox(font, width / 2 - 90, top - 18, 180, 14, Component.translatable("voidheart.travel_map.rename"));
+            nameBox.setMaxLength(WroughtAnchorBalance.NAME_MAX_LENGTH);
+            nameBox.setCentered(true);
+            nameBox.setValue(previous);
+            addRenderableWidget(nameBox);
+        }
 
         int minX = map.source().x(), maxX = minX, minZ = map.source().z(), maxZ = minZ;
         for (var anchor : map.linked())
@@ -112,7 +141,8 @@ public class TravelMapScreen extends Screen
 
         graphics.fill(left, top, right, bottom, PANEL_COLOR);
         graphics.outline(left - 1, top - 1, right - left + 2, bottom - top + 2, BORDER_COLOR);
-        graphics.centeredText(font, title, width / 2, top - 12, 0xFFFFFFFF);
+        if (nameBox == null)
+            graphics.centeredText(font, title, width / 2, top - 12, 0xFFFFFFFF);
 
         graphics.enableScissor(left, top, right, bottom);
         if (terrain != null)
@@ -122,16 +152,20 @@ public class TravelMapScreen extends Screen
         drawLeyLines(graphics);
 
         var hovered = hovered(mouseX, mouseY);
-        for (var anchor : map.linked())
+        if (hovered == null)
+            hovered = hoveredRow(mouseX, mouseY);
+        for (var anchor : onMap().toList())
         {
-            int color = anchor == hovered ? HOVER_COLOR : anchor.active() ? ACTIVE_COLOR : DORMANT_COLOR;
+            int color = anchor == hovered ? HOVER_COLOR : anchor.wrought() ? WROUGHT_COLOR : anchor.active() ? ACTIVE_COLOR : DORMANT_COLOR;
             marker(graphics, anchor, anchor.active() ? 5 : 4, color, !anchor.active());
         }
         marker(graphics, map.source(), 6, SOURCE_COLOR, false);
         graphics.disableScissor();
 
-        if (map.linked().isEmpty())
-            graphics.centeredText(font, Component.translatable("voidheart.travel_map.empty"), width / 2, bottom - 20, 0xFFB8A9D9);
+        if (map.linked().isEmpty() && map.far().isEmpty())
+            graphics.centeredText(font, Component.translatable("voidheart.travel_map.empty"), (left + right) / 2, bottom - 20, 0xFFB8A9D9);
+        if (!map.far().isEmpty())
+            drawList(graphics, hovered);
 
         if (hovered != null)
             graphics.setComponentTooltipForNextFrame(font, tooltip(hovered), mouseX, mouseY);
@@ -144,6 +178,76 @@ public class TravelMapScreen extends Screen
     public long sourceId()
     {
         return map.source().id();
+    }
+
+    /**
+     * Linked anchors, then far ones that happen to fall inside the map.
+     */
+    private Stream<AnchorView> onMap()
+    {
+        return Stream.concat(map.linked().stream(), map.far().stream().filter(anchor ->
+        {
+            float x = screenX(anchor.x());
+            float y = screenY(anchor.z());
+            return x >= left && x <= right && y >= top && y <= bottom;
+        }));
+    }
+
+    private int visibleRows()
+    {
+        return Math.max(1, (bottom - top - LIST_HEADER) / ROW_HEIGHT);
+    }
+
+    /**
+     * Every other wrought anchor, closest first, with how far it is and what the trip draws.
+     */
+    private void drawList(GuiGraphicsExtractor graphics, AnchorView hovered)
+    {
+        int listRight = listLeft + LIST_WIDTH;
+        graphics.fill(listLeft, top, listRight, bottom, PANEL_COLOR);
+        graphics.outline(listLeft - 1, top - 1, LIST_WIDTH + 2, bottom - top + 2, BORDER_COLOR);
+        graphics.text(font, Component.translatable("voidheart.travel_map.wrought"), listLeft + 6, top + 4, WROUGHT_COLOR);
+
+        int rows = visibleRows();
+        listScroll = Math.clamp(listScroll, 0, Math.max(0, map.far().size() - rows));
+        for (int row = 0; row < rows && listScroll + row < map.far().size(); row++)
+        {
+            var anchor = map.far().get(listScroll + row);
+            int y = top + LIST_HEADER + row * ROW_HEIGHT;
+            if (anchor == hovered)
+                graphics.fill(listLeft + 1, y, listRight - 1, y + ROW_HEIGHT - 1, 0x30C9A6F2);
+
+            var name = font.plainSubstrByWidth(anchor.name(), LIST_WIDTH - 12);
+            graphics.text(font, name, listLeft + 6, y + 2, anchor == hovered ? HOVER_COLOR : 0xFFE8E0F0);
+            graphics.text(font, Component.translatable("voidheart.travel_map.row", distanceTo(anchor), cost(anchor)), listLeft + 6, y + 12, MUTED_COLOR);
+        }
+
+        if (map.far().size() > rows)
+        {
+            int trackHeight = bottom - top - LIST_HEADER;
+            int thumbHeight = Math.max(8, trackHeight * rows / map.far().size());
+            int thumbTop = top + LIST_HEADER + (trackHeight - thumbHeight) * listScroll / (map.far().size() - rows);
+            graphics.fill(listRight - 3, thumbTop, listRight - 1, thumbTop + thumbHeight, BORDER_COLOR);
+        }
+    }
+
+    private AnchorView hoveredRow(double mouseX, double mouseY)
+    {
+        if (map.far().isEmpty() || mouseX < listLeft || mouseX >= listLeft + LIST_WIDTH || mouseY < top + LIST_HEADER)
+            return null;
+        int row = (int) ((mouseY - top - LIST_HEADER) / ROW_HEIGHT);
+        int index = listScroll + row;
+        return row < visibleRows() && index >= 0 && index < map.far().size() ? map.far().get(index) : null;
+    }
+
+    private int distanceTo(AnchorView anchor)
+    {
+        return (int) Math.hypot(anchor.x() - map.source().x(), anchor.z() - map.source().z());
+    }
+
+    private long cost(AnchorView anchor)
+    {
+        return WroughtAnchorBalance.travelCost(Math.hypot(anchor.x() - map.source().x(), anchor.z() - map.source().z()));
     }
 
     /**
@@ -216,6 +320,7 @@ public class TravelMapScreen extends Screen
     @Override
     public void removed()
     {
+        sendName();
         if (terrain != null)
             minecraft.getTextureManager().release(TERRAIN_TEXTURE);
         super.removed();
@@ -351,6 +456,9 @@ public class TravelMapScreen extends Screen
         pose.popMatrix();
     }
 
+    /**
+     * Old Anchors are diamonds, wrought ones squares.
+     */
     private void marker(GuiGraphicsExtractor graphics, AnchorView anchor, int size, int color, boolean hollow)
     {
         float x = screenX(anchor.x());
@@ -359,13 +467,18 @@ public class TravelMapScreen extends Screen
         var pose = graphics.pose();
         pose.pushMatrix();
         pose.translate(x, y);
-        pose.rotate((float) (Math.PI / 4));
+        if (anchor.wrought())
+            size -= 1;
+        else
+            pose.rotate((float) (Math.PI / 4));
         graphics.fill(-size, -size, size, size, color);
         if (hollow)
             graphics.fill(-size + 2, -size + 2, size - 2, size - 2, PANEL_COLOR | 0xFF000000);
         pose.popMatrix();
 
-        graphics.centeredText(font, anchor.name(), (int) x, (int) y + size + 5, color);
+        // The source follows the name being typed above the map
+        var name = anchor == map.source() && nameBox != null ? nameBox.getValue() : anchor.name();
+        graphics.centeredText(font, name, (int) x, (int) y + size + 5, color);
     }
 
     /**
@@ -391,9 +504,13 @@ public class TravelMapScreen extends Screen
         var lines = new ArrayList<Component>();
         lines.add(Component.literal(anchor.name()).withStyle(anchor.active() ? ChatFormatting.AQUA : ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
 
-        int distance = (int) Math.hypot(anchor.x() - map.source().x(), anchor.z() - map.source().z());
-        lines.add(Component.translatable("voidheart.travel_map.distance", Component.literal(Integer.toString(distance)).withStyle(ChatFormatting.WHITE))
+        lines.add(Component.translatable("voidheart.travel_map.distance", Component.literal(Integer.toString(distanceTo(anchor))).withStyle(ChatFormatting.WHITE))
                 .withStyle(ChatFormatting.GRAY));
+        if (anchor.wrought())
+            lines.add(Component.translatable("voidheart.travel_map.wrought_tag").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC));
+        if (map.source().wrought())
+            lines.add(Component.translatable("voidheart.travel_map.cost", Component.literal(Long.toString(cost(anchor))).withStyle(ChatFormatting.WHITE))
+                    .withStyle(ChatFormatting.GRAY));
 
         if (anchor.active())
             lines.add(Component.translatable("voidheart.travel_map.travel").withStyle(ChatFormatting.GREEN));
@@ -406,7 +523,9 @@ public class TravelMapScreen extends Screen
     {
         AnchorView closest = null;
         double closestDistance = HOVER_RADIUS;
-        for (var anchor : map.linked())
+        if (mouseX < left || mouseX > right || mouseY < top || mouseY > bottom)
+            return null;
+        for (var anchor : onMap().toList())
         {
             double distance = Math.hypot(mouseX - screenX(anchor.x()), mouseY - screenY(anchor.z()));
             if (distance <= closestDistance)
@@ -422,6 +541,8 @@ public class TravelMapScreen extends Screen
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
         var target = hovered(event.x(), event.y());
+        if (target == null)
+            target = hoveredRow(event.x(), event.y());
         if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && target != null && target.active())
         {
             ClientPlayNetworking.send(new AnchorPayloads.TravelRequest(map.source().id(), target.id()));
@@ -429,6 +550,50 @@ public class TravelMapScreen extends Screen
             return true;
         }
         return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
+    {
+        if (!map.far().isEmpty() && mouseX >= listLeft)
+        {
+            listScroll = Math.clamp(listScroll - (int) Math.signum(scrollY), 0, Math.max(0, map.far().size() - visibleRows()));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event)
+    {
+        if (nameBox != null && nameBox.isFocused())
+        {
+            if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER)
+            {
+                sendName();
+                nameBox.setFocused(false);
+                setFocused(null);
+                return true;
+            }
+            // Typing a name never closes the screen through the inventory key
+            if (event.key() != InputConstants.KEY_ESCAPE)
+                return nameBox.keyPressed(event) || true;
+        }
+        return super.keyPressed(event);
+    }
+
+    /**
+     * Sends the edited name once it differs from the last one sent. The server cleans and checks it.
+     */
+    private void sendName()
+    {
+        if (nameBox == null)
+            return;
+        var name = WroughtAnchorBalance.cleanName(nameBox.getValue());
+        if (name.isEmpty() || name.equals(sentName))
+            return;
+        sentName = name;
+        ClientPlayNetworking.send(new AnchorPayloads.RenameRequest(map.source().id(), name));
     }
 
     @Override
