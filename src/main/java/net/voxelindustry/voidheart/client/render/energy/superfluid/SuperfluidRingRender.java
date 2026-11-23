@@ -110,7 +110,7 @@ public final class SuperfluidRingRender
         // Drawn off, the stream runs from the head of the outermost ring left to the hand holding the tesseract
         if (input.drawTo() != null && input.draw() >= 0 && input.draw() < 1)
         {
-            var head = SuperfluidRingShape.head(input.seed(), Math.max(1, input.units()), input.time(), input.tremor(), input.center());
+            var head = SuperfluidRingShape.tail(input.seed(), Math.max(1, input.units()), input.time(), input.tremor(), input.center());
             var strength = 1 - SuperfluidQuads.smooth((input.draw() - 0.6F) / 0.4F);
             SuperfluidStreamRender.drawOff(head.point(), new Vector3f(head.tangent()).negate(), input.drawTo(), input.camera(), input.time(), strength,
                     ribbon, halo, sheath, beads);

@@ -107,9 +107,22 @@ public final class SuperfluidRingShape
      */
     public static Head head(long seed, double units, double time, float tremor, Vector3f center)
     {
+        return end(seed, units, time, tremor, center, true);
+    }
+
+    /**
+     * The end of the last ring begun, even when it has just closed: where a draw-off unwinds from.
+     */
+    public static Head tail(long seed, double units, double time, float tremor, Vector3f center)
+    {
+        return end(seed, units, time, tremor, center, false);
+    }
+
+    private static Head end(long seed, double units, double time, float tremor, Vector3f center, boolean advance)
+    {
         var ring = Math.max(0, SuperfluidRings.begun(units) - 1);
         var closed = SuperfluidRings.closed(units, ring);
-        if (closed >= 1 && ring < SuperfluidBalance.RINGS - 1)
+        if (advance && closed >= 1 && ring < SuperfluidBalance.RINGS - 1)
         {
             ring++;
             closed = 0;

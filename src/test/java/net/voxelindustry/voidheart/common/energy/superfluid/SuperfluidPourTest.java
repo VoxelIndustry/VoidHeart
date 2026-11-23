@@ -16,7 +16,8 @@ class SuperfluidPourTest
         var worth = 4;
         var poured = 0;
         var ticks = 0;
-        while (worth > 0)
+        var expected = 4 * 5 * 60 * 20;
+        while (worth > 0 && ticks <= expected + 100)
         {
             var step = SuperfluidPour.tick(credit, worth, PEARL_CAPACITY - poured);
             poured += step.poured();
@@ -25,8 +26,9 @@ class SuperfluidPourTest
             ticks++;
         }
 
+        assertThat(worth).isZero();
         assertThat(poured).isEqualTo(4 * SHARD_UNITS);
-        assertThat(ticks).isEqualTo(4 * 5 * 60 * 20);
+        assertThat(ticks).isEqualTo(expected);
         assertThat(credit).isZero();
     }
 

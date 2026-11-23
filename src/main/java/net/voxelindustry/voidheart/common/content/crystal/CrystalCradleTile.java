@@ -190,6 +190,8 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
     {
         if (Math.floorMod(now + pos.hashCode(), SuperfluidBalance.SCAN_PERIOD) == 0)
             pourTarget = pours(server) ? SuperfluidPearls.nearestWithRoom(server, pos) : null;
+        if (pourTarget != null && !pours(server))
+            pourTarget = null;
         if (pourTarget == null)
             return false;
         return pourUnits(server, SuperfluidBalance.POUR_PER_TICK) > 0;

@@ -171,13 +171,24 @@ public class TesseractItemRender implements SpecialModelRenderer<Float>
     private static void face(SuperfluidQuads quads, Vector3f bottomLeft, Vector3f bottomRight, Vector3f topRight, Vector3f topLeft, Vector3f normal,
                              int width, int height, int u, int v, int band)
     {
-        // Keep the face inside the texture and its band
-        u = Mth.clamp(u, 0, 16 - width);
-        v = band + Math.floorMod(v, 8 - height + 1);
-        var u0 = u / 16F;
-        var u1 = (u + width) / 16F;
-        var v0 = v / 16F;
-        var v1 = (v + height) / 16F;
+        // A face taller than its eight-pixel band lies on its side in the texture, its length along u, so it never crosses into the other band
+        var sideways = height > width;
+        var across = sideways ? height : width;
+        var down = sideways ? width : height;
+        var start = Mth.clamp(sideways ? v : u, 0, 16 - across);
+        var row = band + Math.floorMod(sideways ? u : v, 8 - down + 1);
+        var u0 = start / 16F;
+        var u1 = (start + across) / 16F;
+        var v0 = row / 16F;
+        var v1 = (row + down) / 16F;
+        if (sideways)
+        {
+            quads.vertex(bottomLeft, u0, v1, normal, FRAME_COLOR);
+            quads.vertex(bottomRight, u0, v0, normal, FRAME_COLOR);
+            quads.vertex(topRight, u1, v0, normal, FRAME_COLOR);
+            quads.vertex(topLeft, u1, v1, normal, FRAME_COLOR);
+            return;
+        }
         quads.vertex(bottomLeft, u0, v1, normal, FRAME_COLOR);
         quads.vertex(bottomRight, u1, v1, normal, FRAME_COLOR);
         quads.vertex(topRight, u1, v0, normal, FRAME_COLOR);
