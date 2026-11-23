@@ -16,6 +16,7 @@ public enum CurseKind
 {
     ECHO("echo", 20, false),
     OMEN("omen", 40, true),
+    HYMN("hymn", 50, false),
     VIGIL("vigil", 60, false),
     RAPTURE("rapture", 80, true);
 

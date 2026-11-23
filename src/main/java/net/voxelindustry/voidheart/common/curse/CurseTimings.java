@@ -8,6 +8,7 @@ public final class CurseTimings
     public static final int ECHO_TICKS  = 90;
     public static final int OMEN_TICKS  = 300;
     public static final int VIGIL_TICKS = 212;
+    public static final int HYMN_TICKS  = 100;
 
     private CurseTimings()
     {
@@ -20,6 +21,7 @@ public final class CurseTimings
             case ECHO -> ECHO_TICKS;
             case OMEN -> OMEN_TICKS;
             case VIGIL -> VIGIL_TICKS;
+            case HYMN -> HYMN_TICKS;
             case RAPTURE -> RaptureLift.totalTicks(seed);
         };
     }

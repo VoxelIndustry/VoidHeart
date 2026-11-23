@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.client.curse;
 import com.mojang.renderpearl.api.commands.RenderPass;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.util.RandomSource;
@@ -61,6 +62,13 @@ public abstract class ClientCurse
      * Draws into the world, as {@code LevelRenderEvents.COLLECT_SUBMITS} would.
      */
     public void collectSubmits(LevelRenderContext context)
+    {
+    }
+
+    /**
+     * Draws onto the player's HUD, over the hotbar and below the chat.
+     */
+    public void extractHud(GuiGraphicsExtractor graphics, float partialTicks)
     {
     }
 

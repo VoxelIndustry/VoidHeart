@@ -56,15 +56,15 @@ public final class MawFlesh
 
     private static final int[] FLESH = { 0xFF5E2A33, 0xFF6B3038, 0xFF54242D, 0xFF72363F };
     private static final int[] FLESH_LIT = { 0xFF7A3E46, 0xFF844650, 0xFF6E3840, 0xFF8C4C55 };
-    static final int  FLESH_DARK    = 0xFF2A1218;
-    static final int  FLESH_SPECK   = 0xFF3E1C24;
-    static final int  FLESH_SHINE   = 0xFF9A5A62;
-    static final int  LIP_WET       = 0xFFA4626A;
-    private static final int GULLET_RIM  = 0xFF3A161E;
-    private static final int GULLET_MID  = 0xFF1E0A10;
-    private static final int GULLET_DEEP = 0xFF0A0408;
-    static final int  BONE          = 0xFFA49A88;
-    static final int  BONE_SHADE    = 0xFF7E766A;
+    public static final int FLESH_DARK    = 0xFF2A1218;
+    public static final int FLESH_SPECK   = 0xFF3E1C24;
+    public static final int FLESH_SHINE   = 0xFF9A5A62;
+    public static final int LIP_WET       = 0xFFA4626A;
+    public static final int GULLET_RIM  = 0xFF3A161E;
+    public static final int GULLET_MID  = 0xFF1E0A10;
+    public static final int GULLET_DEEP = 0xFF0A0408;
+    public static final int BONE          = 0xFFA49A88;
+    public static final int BONE_SHADE    = 0xFF7E766A;
     static final int  CRACK_EDGE    = 0xFF4A0C14;
     static final int  CRACK_CORE    = 0xFFB02838;
 
@@ -331,12 +331,12 @@ public final class MawFlesh
         return cells;
     }
 
-    static final int EYE_RIM       = 0xFF2A0A08;
-    static final int EYE_WHITE     = 0xFFD8CC8A;
-    static final int EYE_VEIN      = 0xFF9A1C1C;
-    static final int EYE_IRIS      = 0xFFC8D040;
-    static final int EYE_IRIS_DARK = 0xFF8A9420;
-    static final int EYE_PUPIL     = 0xFF0A0A04;
+    public static final int EYE_RIM       = 0xFF2A0A08;
+    public static final int EYE_WHITE     = 0xFFD8CC8A;
+    public static final int EYE_VEIN      = 0xFF9A1C1C;
+    public static final int EYE_IRIS      = 0xFFC8D040;
+    public static final int EYE_IRIS_DARK = 0xFF8A9420;
+    public static final int EYE_PUPIL     = 0xFF0A0A04;
 
     /**
      * A tendril out of the lips: a chain of flesh blocks thinning to its tip, swaying side to side.
@@ -369,12 +369,24 @@ public final class MawFlesh
         return cells;
     }
 
-    static int flesh(int index)
+    public static int flesh(int index)
     {
         return FLESH[Math.floorMod(index, FLESH.length)];
     }
 
-    static float hash(int x, int y, long seed)
+    /** The lit tone of the same lump of flesh as {@link #flesh}. */
+    public static int fleshLit(int index)
+    {
+        return FLESH_LIT[Math.floorMod(index, FLESH_LIT.length)];
+    }
+
+    /** The stepped dither the flesh and the dark behind the map are shaded with, from 0 to 1. */
+    public static float bayer(int x, int y)
+    {
+        return ResearchVoid.BAYER[Math.floorMod(y, 4)][Math.floorMod(x, 4)];
+    }
+
+    public static float hash(int x, int y, long seed)
     {
         return ResearchVoid.hash(x, y, seed);
     }
