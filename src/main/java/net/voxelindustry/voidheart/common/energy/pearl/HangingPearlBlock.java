@@ -2,10 +2,12 @@ package net.voxelindustry.voidheart.common.energy.pearl;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -31,15 +33,20 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidContent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 import static net.minecraft.world.level.block.BaseEntityBlock.createTickerHelper;
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * A kindled seed hung under an upright chain, growing into a Collapsing Rubrum Pearl. It falls with its chain. Taken down unfinished it gives back
  * its seed, carrying the growth it had, so moving a pearl never wastes hours. A mature pearl is picked with an empty hand, or by breaking it.
+ * <p>
+ * A mature pearl wound with superfluid gives its rings to a tesseract used on it. It won't be picked by hand while it holds any, since its rings
+ * would unravel; broken, it loses them.
  * <p>
  * The block draws nothing itself: the whole pearl is its block entity renderer, and the model only gives the particles of its breaking.
  */
@@ -102,10 +109,31 @@ public class HangingPearlBlock extends Block implements EntityBlock
     }
 
     @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+    {
+        if (!stack.is(SuperfluidContent.TESSERACT) || !(level.getBlockEntity(pos) instanceof HangingPearlTile pearl) || !pearl.growth().isMature())
+            return super.useItemOn(stack, state, level, pos, player, hand, hit);
+        if (level instanceof ServerLevel serverLevel)
+        {
+            if (pearl.drawInto(stack, player) > 0)
+                serverLevel.playSound(null, pos, SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS, 0.6F, 1.6F);
+            else
+                player.sendOverlayMessage(Component.translatable(MODID + (pearl.superfluid() <= 0 ? ".hanging_rubrum_pearl.no_rings" : ".tesseract.full")));
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit)
     {
         if (!(level.getBlockEntity(pos) instanceof HangingPearlTile pearl) || !pearl.growth().isMature())
             return InteractionResult.PASS;
+        if (pearl.superfluid() > 0)
+        {
+            if (!level.isClientSide())
+                player.sendOverlayMessage(Component.translatable(MODID + ".hanging_rubrum_pearl.ringed"));
+            return InteractionResult.SUCCESS;
+        }
         if (level instanceof ServerLevel serverLevel)
         {
             var picked = new ItemStack(PearlContent.COLLAPSING_RUBRUM_PEARL);

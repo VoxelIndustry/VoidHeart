@@ -174,6 +174,23 @@ public final class CradleGrowth
     }
 
     /**
+     * Takes whole shards out without harvesting them, as a cradle pouring into a pearl does: the shards not yet grown go first, so a grown bundle only
+     * shrinks once the bed is empty. What has grown stays credited to the feeds that grew it, so the rest keeps its habit.
+     */
+    public void drain(int shards)
+    {
+        if (kind == null || shards <= 0)
+            return;
+        worth -= Math.min(shards, worth);
+        if (worth == 0)
+        {
+            clear();
+            return;
+        }
+        grown = Math.min(grown, worth);
+    }
+
+    /**
      * Empties the cradle. Growth toward the next size is lost, but never the shards it would have used.
      */
     public Harvest harvest(Predicate<CrystalHabit> settles)
@@ -243,8 +260,9 @@ public final class CradleGrowth
         kind = saved.kind();
         worth = Math.min(saved.worth(), MAX_WORTH);
         seed = asSeed(saved.seed());
+        // A drained bundle may have grown past the size its worth now makes, never past its worth
         var target = target();
-        grown = target == null || !Double.isFinite(saved.grown()) ? 0 : Math.clamp(saved.grown(), 0, target.worth());
+        grown = target == null || !Double.isFinite(saved.grown()) ? 0 : Math.clamp(saved.grown(), 0, worth);
         saved.fed().forEach((feed, amount) ->
         {
             if (feed != CrystalHabit.NONE && Double.isFinite(amount) && amount > 0)

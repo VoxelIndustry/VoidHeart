@@ -43,6 +43,7 @@ import net.voxelindustry.voidheart.common.content.apparatus.ApparatusComponent;
 import net.voxelindustry.voidheart.common.content.armor.ArmorModule;
 import net.voxelindustry.voidheart.common.content.armor.VoidArmorContent;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
+import net.voxelindustry.voidheart.common.energy.superfluid.TesseractItem;
 import net.voxelindustry.voidheart.common.content.crystal.BundleSize;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalBundles;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalHabit;
@@ -587,15 +588,27 @@ public class RecipesProvider extends FabricRecipeProvider
             armorModule(ArmorModule.EXOSKELETON_POWER, Items.PISTON,
                     VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,
                     Items.REDSTONE, Items.REDSTONE, VoidHeartItems.RUBRUM_SHARD);
-            // The belt's membrane, unpicked into the frame's lacing so the frame can carry itself
-            armorModule(ArmorModule.LEVITATION, VoidHeartItems.LEVITATION_BELT,
-                    Items.PHANTOM_MEMBRANE, Items.PHANTOM_MEMBRANE, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+            // The belt's membrane, unpicked into the frame's lacing so the frame can carry itself, around superfluid azurium that weighs nothing
+            armorModuleAround(ArmorModule.LEVITATION, TesseractItem.full(),
+                    VoidHeartItems.LEVITATION_BELT, Items.PHANTOM_MEMBRANE, Items.PHANTOM_MEMBRANE,
                     VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.SEETHING_STEEL_INGOT, VoidHeartItems.RUBRUM_SHARD, VoidHeartItems.VOID_PEARL);
         }
 
         private void armorModule(ArmorModule module, ItemLike catalyst, ItemLike... ingredients)
         {
             offerAltarRecipe(module.itemName(), VoidArmorContent.MODULES.get(module), catalyst, ingredients);
+        }
+
+        /**
+         * A module made around one exact catalyst, components and all, such as a brimming tesseract, which the module takes the place of.
+         */
+        private void armorModuleAround(ArmorModule module, ItemStack catalyst, ItemLike... ingredients)
+        {
+            var ingredientList = new ItemStackRecipeIngredient[ingredients.length];
+            for (var i = 0; i < ingredients.length; i++)
+                ingredientList[i] = ingredient(ingredients[i]);
+            saveAltarRecipe(new AltarRecipe(altarRecipeId(module.itemName()), new ItemStackRecipeIngredient(new ItemStack(VoidArmorContent.MODULES.get(module)), false),
+                    new ItemStackRecipeIngredient(catalyst, true), ALTAR_TIME, ingredientList), catalyst.getItem());
         }
 
         private void component(ApparatusComponent component, ItemLike catalyst, ItemLike... ingredients)

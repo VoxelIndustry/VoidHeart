@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_levitation_belt": {
+    "has_tesseract": {
       "conditions": {
         "items": [
           {
-            "items": "voidheart:levitation_belt"
+            "items": "voidheart:tesseract"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_levitation_belt"
+      "has_tesseract"
     ]
   ],
   "rewards": {

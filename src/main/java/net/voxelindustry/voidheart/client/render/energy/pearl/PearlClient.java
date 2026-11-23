@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.special.SpecialModelRenderers;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.voxelindustry.voidheart.client.render.energy.superfluid.TesseractItemRender;
 import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlTile;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlTremor;
@@ -28,6 +29,7 @@ public final class PearlClient
     {
         BlockEntityRenderers.register(PearlContent.HANGING_PEARL_TILE, HangingPearlRender::new);
         SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(MODID, "rubrum_pearl"), PearlItemRender.Unbaked.MAP_CODEC);
+        SpecialModelRenderers.ID_MAPPER.put(Identifier.fromNamespaceAndPath(MODID, "tesseract"), TesseractItemRender.Unbaked.MAP_CODEC);
         HangingPearlTile.clientTick = PearlClient::chime;
     }
 

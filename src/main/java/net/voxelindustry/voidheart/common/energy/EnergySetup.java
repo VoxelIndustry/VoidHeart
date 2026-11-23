@@ -6,6 +6,7 @@ import net.voxelindustry.voidheart.common.energy.creative.CreativeSources;
 import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineContent;
 import net.voxelindustry.voidheart.common.energy.gnawer.GnawerContent;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlContent;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidContent;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridContent;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneContent;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorContent;
@@ -40,6 +41,7 @@ public final class EnergySetup
         GnawerContent.register();
         net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceContent.register();
         PearlContent.register();
+        SuperfluidContent.register();
 
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> CreativeSources.clear());
     }

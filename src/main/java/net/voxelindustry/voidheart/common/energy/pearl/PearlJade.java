@@ -1,9 +1,12 @@
 package net.voxelindustry.voidheart.common.energy.pearl;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidBalance;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidRings;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
@@ -56,6 +59,7 @@ public final class PearlJade
             tag.putBoolean("fed", pearl.isFed());
             tag.putBoolean("thirsty", pearl.isFieryShort());
             tag.putInt("power", pearl.power().ordinal());
+            tag.putInt("superfluid", pearl.superfluid());
         }
 
         @Override
@@ -75,9 +79,19 @@ public final class PearlJade
                 return;
 
             var stage = PearlGrowth.Stage.byOrdinal(data.getIntOr("stage", 0));
-            tooltip.add(line("stage." + stage.name().toLowerCase(Locale.ROOT)));
             if (stage == PearlGrowth.Stage.MATURE)
+            {
+                var fill = SuperfluidRings.fill(data.getIntOr("superfluid", 0), SuperfluidBalance.PEARL_CAPACITY);
+                if (fill == SuperfluidRings.Fill.EMPTY)
+                    tooltip.add(line("stage.mature"));
+                else
+                {
+                    tooltip.add(line("rings." + fill.getSerializedName()).copy().withStyle(ChatFormatting.AQUA));
+                    tooltip.add(line("ringed"));
+                }
                 return;
+            }
+            tooltip.add(line("stage." + stage.name().toLowerCase(Locale.ROOT)));
 
             var choir = data.getIntOr("choir", 0);
             if (choir <= 0)

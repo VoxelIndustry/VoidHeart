@@ -15,12 +15,17 @@ import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
 import net.voxelindustry.voidheart.common.content.essence.EssenceType;
 import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
+import net.voxelindustry.voidheart.common.content.research.Knowledge;
 import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.energy.LeyPower;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.energy.VoidSeep;
 import net.voxelindustry.voidheart.common.energy.ley.LeySpurs;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidBalance;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidContent;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidPearls;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidPour;
 import net.voxelindustry.voidheart.common.ley.Ley;
 import net.voxelindustry.voidheart.common.ley.TaintStage;
 import net.voxelindustry.voidheart.common.ley.flow.LeyFlowBalance;
@@ -38,6 +43,9 @@ import java.util.WeakHashMap;
  * Regrows the crystal fed into it on ley from a nearby standing stone. A clean line grows azurium Clear, a tainted one grows it plain. It asks for ley
  * only while something is growing, and pauses when none comes. Essence a relay feeds it teaches the crystal its own habit instead, and is only taken
  * while that habit can settle.
+ * <p>
+ * Azurium in a cradle near a mature pearl hung on its chain is pulled out of it instead, once its owner knows how, and winds about the pearl as
+ * superfluid. A pouring cradle grows nothing, and gives back only the shards not yet started once emptied.
  */
 public class CrystalCradleTile extends TileBase implements IEssenceReceiver
 {
@@ -57,7 +65,7 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
      */
     public enum Source implements StringRepresentable
     {
-        IDLE, LEY, FED, SEEP, SCOURING, BREACHED, VOID;
+        IDLE, LEY, FED, SEEP, SCOURING, BREACHED, VOID, POURING;
 
         public static final Codec<Source> CODEC = StringRepresentable.fromEnum(Source::values);
 
@@ -84,6 +92,15 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
 
     private @Nullable BundleSize syncedSize;
     private           long       lastSync;
+
+    /** The pearl this cradle pours into, and the units of its next shard already poured. Both synced, for the stream and the shrinking crystal. */
+    private @Nullable BlockPos pourTarget;
+    private           int      pourCredit;
+
+    // Client only: how far the stream has formed, and where it went while it fades
+    private           float    pourShown;
+    private           float    previousPourShown;
+    private @Nullable BlockPos shownPourTarget;
 
     private float  pool;
     private float  previousPool;
@@ -135,7 +152,15 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
             cradle.seep = VoidSeep.strengthAt(server, pos);
 
         boolean wasGrowing = cradle.growth.isGrowing();
-        if (wasGrowing)
+        var wasTarget = cradle.pourTarget;
+        if (cradle.pour(server, pos, now))
+        {
+            cradle.supply = 0;
+            cradle.source = Source.POURING;
+            cradle.scourStone = null;
+            cradle.flushTaint(server);
+        }
+        else if (wasGrowing)
         {
             cradle.feed(server, pos, now);
             if (!cradle.growth.isGrowing())
@@ -150,9 +175,72 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         }
 
         boolean stepped = cradle.growth.grownSize() != cradle.syncedSize;
-        boolean changed = wasSource != cradle.source || wasFeed != cradle.feed || !java.util.Objects.equals(wasStone, cradle.scourStone);
-        if (stepped || changed || (cradle.supply > 0 && now - cradle.lastSync >= CradleBalance.SYNC_TICKS))
+        boolean changed = wasSource != cradle.source || wasFeed != cradle.feed || !java.util.Objects.equals(wasStone, cradle.scourStone)
+                || !java.util.Objects.equals(wasTarget, cradle.pourTarget);
+        boolean active = cradle.supply > 0 || cradle.source == Source.POURING;
+        if (stepped || changed || (active && now - cradle.lastSync >= CradleBalance.SYNC_TICKS))
             cradle.publish();
+    }
+
+    /**
+     * Pours a tick of azurium into the pearl it found, and says whether any went. The pearl is looked for every {@link SuperfluidBalance#SCAN_PERIOD}
+     * ticks and dropped as soon as it has no room left, so a cradle near several moves on to the next once the first is wound full.
+     */
+    private boolean pour(ServerLevel server, BlockPos pos, long now)
+    {
+        if (Math.floorMod(now + pos.hashCode(), SuperfluidBalance.SCAN_PERIOD) == 0)
+            pourTarget = pours(server) ? SuperfluidPearls.nearestWithRoom(server, pos) : null;
+        if (pourTarget == null)
+            return false;
+        return pourUnits(server, SuperfluidBalance.POUR_PER_TICK) > 0;
+    }
+
+    /**
+     * Pours that many units into the pearl it pours into, at once, and says how many went.
+     */
+    private int pourUnits(ServerLevel server, int units)
+    {
+        var pearl = pourTarget == null ? null : SuperfluidPearls.at(server, pourTarget);
+        var step = pearl == null ? null : SuperfluidPour.pour(pourCredit, growth.worth(), pearl.superfluidRoom(), units);
+        if (step == null || step.poured() <= 0)
+        {
+            pourTarget = null;
+            return 0;
+        }
+        pearl.receiveSuperfluid(step.poured());
+        pourCredit = step.credit();
+        setChanged();
+        if (step.drained() > 0)
+        {
+            growth.drain(step.drained());
+            publish();
+        }
+        return step.poured();
+    }
+
+    /**
+     * Pours that many shards' worth into the nearest pearl with room at once, for review, and says how many units went.
+     */
+    public int pourNow(int shards)
+    {
+        if (!(level instanceof ServerLevel server) || !pours(server))
+            return 0;
+        pourTarget = SuperfluidPearls.nearestWithRoom(server, worldPosition);
+        var poured = pourUnits(server, shards * SuperfluidBalance.SHARD_UNITS);
+        publish();
+        return poured;
+    }
+
+    /**
+     * Whether what it holds can pour at all: azurium of any habit but Fouled, since foulness only ever leaves a crystal by being scoured, in a cradle
+     * whose owner knows superfluid azurium.
+     */
+    private boolean pours(ServerLevel server)
+    {
+        if (growth.kind() != CrystalKind.AZURIUM || growth.worth() <= 0 || owner == null || growth.seedHabit() == CrystalHabit.FOULED)
+            return false;
+        var settles = CradleResearch.settles(server.getServer(), owner);
+        return growth.habit(settles) != CrystalHabit.FOULED && Knowledge.hasCompleted(server.getServer(), owner, SuperfluidContent.RESEARCH);
     }
 
     /**
@@ -365,6 +453,19 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
 
     public static void clientTick(Level level, BlockPos pos, BlockState state, CrystalCradleTile cradle)
     {
+        cradle.previousPourShown = cradle.pourShown;
+        if (cradle.pourTarget != null)
+        {
+            if (!cradle.pourTarget.equals(cradle.shownPourTarget))
+            {
+                cradle.shownPourTarget = cradle.pourTarget;
+                cradle.pourShown = 0;
+                cradle.previousPourShown = 0;
+            }
+            cradle.pourShown = Math.min(1, cradle.pourShown + 1F / POUR_FORM_TICKS);
+        }
+        else
+            cradle.pourShown = Math.max(0, cradle.pourShown - 1F / POUR_FORM_TICKS);
         cradle.previousPool = cradle.pool;
         cradle.pool += (cradle.supply - cradle.pool) * EASE;
         double target = cradle.growth.grown();
@@ -427,6 +528,11 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         if (!(level instanceof ServerLevel server))
             return List.of();
         flushTaint(server);
+        // The shard already pouring is partly in the pearl, so it never comes back
+        if (pourCredit > 0)
+            growth.drain(growth.worth() - SuperfluidPour.kept(growth.worth(), pourCredit));
+        pourCredit = 0;
+        pourTarget = null;
         var harvest = growth.harvest(CradleResearch.settles(server.getServer(), owner));
         var recorded = recording;
         recording = null;
@@ -507,6 +613,9 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         output.store("essence", CradleEssence.Saved.CODEC, essence.save());
         if (recording != null)
             output.store("recording", CrystalRecordings.Ref.CODEC, recording);
+        if (pourTarget != null)
+            output.store("pourTarget", BlockPos.CODEC, pourTarget);
+        output.putInt("pourCredit", pourCredit);
     }
 
     @Override
@@ -528,11 +637,47 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
         taintPushed = Double.isFinite(pushed) ? Math.max(0, pushed) : 0;
         essence.load(input.read("essence", CradleEssence.Saved.CODEC).orElse(new CradleEssence.Saved(java.util.List.of(), java.util.List.of())));
         recording = input.read("recording", CrystalRecordings.Ref.CODEC).orElse(null);
+        pourTarget = input.read("pourTarget", BlockPos.CODEC).orElse(null);
+        pourCredit = growth.worth() > 0 ? Math.clamp(input.getIntOr("pourCredit", 0), 0, SuperfluidBalance.SHARD_UNITS - 1) : 0;
     }
 
     public Source source()
     {
         return source;
+    }
+
+    /** Ticks the stream takes to reach the pearl, and to fade once the pour stops. */
+    public static final int POUR_FORM_TICKS = 20;
+
+    public @Nullable BlockPos pourTarget()
+    {
+        return pourTarget;
+    }
+
+    public int pourCredit()
+    {
+        return pourCredit;
+    }
+
+    /**
+     * Shards' worth still in the cradle, counting what is left of the one pouring.
+     */
+    public double held()
+    {
+        return SuperfluidPour.held(growth.worth(), pourCredit);
+    }
+
+    /**
+     * How far the stream to its pearl has formed, from 0 to 1, and the pearl it goes to, kept while it fades.
+     */
+    public float pourShown(float partialTicks)
+    {
+        return previousPourShown + (pourShown - previousPourShown) * partialTicks;
+    }
+
+    public @Nullable BlockPos shownPourTarget()
+    {
+        return shownPourTarget;
     }
 
     /**
