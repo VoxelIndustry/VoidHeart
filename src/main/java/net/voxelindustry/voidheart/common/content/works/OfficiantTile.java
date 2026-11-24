@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.tile.TileBase;
+import net.voxelindustry.voidheart.common.content.hoard.HoardReach;
 import net.voxelindustry.voidheart.common.content.hoard.PocketHoard;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.recipe.ShatterForgeRecipe;
@@ -142,9 +143,12 @@ public class OfficiantTile extends TileBase
         return station == null ? null : station.kind();
     }
 
+    /**
+     * @return the owner's loaded Officiants, leaving out those where hoards can't be reached, since they never work
+     */
     static List<OfficiantTile> loadedOf(UUID owner)
     {
-        return LOADED.stream().filter(officiant -> !officiant.isRemoved() && owner.equals(officiant.owner)).toList();
+        return LOADED.stream().filter(officiant -> !officiant.isRemoved() && owner.equals(officiant.owner) && !HoardReach.forbidden(officiant.level)).toList();
     }
 
     /**
@@ -159,7 +163,7 @@ public class OfficiantTile extends TileBase
     private void serverTick(ServerLevel level)
     {
         LOADED.add(this);
-        if (owner == null || !VoidPocketState.getVoidPocketState(level).hasPocket(owner))
+        if (owner == null || HoardReach.forbidden(level) || !VoidPocketState.getVoidPocketState(level).hasPocket(owner))
             return;
         var hoard = PocketHoard.get(level.getServer()).of(owner);
 
@@ -450,7 +454,7 @@ public class OfficiantTile extends TileBase
         LOADED.remove(this);
         if (level instanceof ServerLevel serverLevel && owner != null)
         {
-            var hoard = PocketHoard.get(serverLevel.getServer()).of(owner);
+            var hoard = HoardReach.forbidden(serverLevel) ? null : PocketHoard.get(serverLevel.getServer()).of(owner);
             // What was still to be laid out goes back too, and its craft counts again
             if (isLaying() && layingAt != null)
             {
@@ -462,7 +466,8 @@ public class OfficiantTile extends TileBase
             }
             for (var stack : held)
             {
-                stack.shrink((int) hoard.insert(ItemVariant.of(stack), stack.getCount()));
+                if (hoard != null)
+                    stack.shrink((int) hoard.insert(ItemVariant.of(stack), stack.getCount()));
                 if (!stack.isEmpty())
                     Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
             }
@@ -474,7 +479,8 @@ public class OfficiantTile extends TileBase
                 var left = Stations.leftAt(level, workedAt, ticket);
                 for (var stack : left.items())
                 {
-                    stack.shrink((int) hoard.insert(ItemVariant.of(stack), stack.getCount()));
+                    if (hoard != null)
+                        stack.shrink((int) hoard.insert(ItemVariant.of(stack), stack.getCount()));
                     if (!stack.isEmpty())
                         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, stack);
                 }

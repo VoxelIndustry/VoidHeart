@@ -569,8 +569,10 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
         drinking = false;
         if (!drunk.isEmpty() && owner != null)
         {
-            // Another player's pending refund is settled to their reserve first, so each gets back what their own rite drank
-            if (!refund.isEmpty() && refundOwner != null && !refundOwner.equals(owner))
+            // Another player's pending refund is settled to their reserve first, so each gets back what their own rite drank. Where no reserve
+            // can be reached it stays in the refund, which only ever goes back to the stores around the altar there
+            if (!refund.isEmpty() && refundOwner != null && !refundOwner.equals(owner)
+                    && !net.voxelindustry.voidheart.common.content.hoard.HoardReach.forbidden(getLevel()))
                 refundToReserve();
             refundOwner = owner;
         }
@@ -612,7 +614,8 @@ public class VoidAltarTile extends TileBase implements PartialSyncedTile, Pillar
     private void refundToReserve()
     {
         var to = refundOwner != null ? refundOwner : owner;
-        if (!refund.isEmpty() && to != null && getLevel() instanceof ServerLevel server)
+        if (!refund.isEmpty() && to != null && getLevel() instanceof ServerLevel server
+                && !net.voxelindustry.voidheart.common.content.hoard.HoardReach.forbidden(server))
         {
             // All of it, past the reserve's room if need be: the reserve keeps it and only refuses more until there is room
             var hoard = net.voxelindustry.voidheart.common.content.hoard.PocketHoard.get(server.getServer()).of(to);

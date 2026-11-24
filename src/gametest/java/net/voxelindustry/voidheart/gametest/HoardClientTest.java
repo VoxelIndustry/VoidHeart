@@ -32,9 +32,12 @@ import net.voxelindustry.voidheart.common.content.hoard.HoardBalance;
 import net.voxelindustry.voidheart.common.content.hoard.HoardCofferTile;
 import net.voxelindustry.voidheart.common.content.hoard.HoardContent;
 import net.voxelindustry.voidheart.common.content.hoard.HoardMenu;
+import net.voxelindustry.voidheart.common.content.hoard.HoardReach;
 import net.voxelindustry.voidheart.common.content.hoard.PocketHoard;
 import net.voxelindustry.voidheart.common.energy.creative.CreativeEnergyContent;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
+import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
+import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
 
 import java.util.List;
 import java.util.Set;
@@ -44,7 +47,7 @@ import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 /**
  * Items kept in the pocket's hoard: a coffer gives room only inside the pocket, hoppers fill the hoard through a Fold in the overworld and an attuned
  * Fold gives its item back, an unpowered Fold refuses, a hoard over its room after a coffer breaks keeps everything, the hoard view lists it and gives
- * a stack, and the hoard outlives a save.
+ * a stack, no Fold or view reaches it from the dungeons or the Daedalus, and the hoard outlives a save.
  */
 public class HoardClientTest implements FabricClientGameTest
 {
@@ -80,6 +83,7 @@ public class HoardClientTest implements FabricClientGameTest
             checkUnpoweredFoldRefuses(context, server);
             checkFoldsShareOnlyTheirField(context, server);
             checkInserterThroughFold(context, server);
+            checkForbiddenDimensions(context, server);
             context.getInput().pressKey(InputConstants.KEY_F1);
             aimFrom(context, server, FOLD.getX() + 3.5, FLAT_FEET + 1, FOLD.getZ() - 3.5, FOLD.getX() - 0.5, FLAT_FEET + 0.8, FOLD.getZ() + 0.5, 5);
             context.takeScreenshot("hoard-fold-and-coffer");
@@ -243,6 +247,47 @@ public class HoardClientTest implements FabricClientGameTest
             expect(left == 16, "the hopper above an unpowered Fold holds " + left + " cobblestone, expected 16");
             removeHopper(level, HOPPER_IN);
         });
+    }
+
+    /**
+     * In the dungeons and the Daedalus a powered Fold reaches no hoard, takes nothing from a hopper's side, and the hoard view won't open there.
+     */
+    private static void checkForbiddenDimensions(ClientGameTestContext context, TestServerContext server)
+    {
+        var at = new BlockPos(0, 100, 0);
+        for (var key : List.of(VoidDungeons.WORLD_KEY, VoidDaedalus.WORLD_KEY))
+        {
+            server.runOnServer(minecraft ->
+            {
+                var level = minecraft.getLevel(key);
+                expect(HoardReach.forbidden(level), key.identifier() + " isn't in the hoard_forbidden tag");
+                level.setBlockAndUpdate(at.east(), CreativeEnergyContent.CREATIVE_VOID_WELL.defaultBlockState());
+                level.setBlockAndUpdate(at, HoardContent.FOLD.defaultBlockState());
+                var fold = (FoldTile) level.getBlockEntity(at);
+                fold.setOwner(player(minecraft).getUUID());
+                expect(fold.hoard() == null, "a Fold in " + key.identifier() + " reaches the hoard");
+                var storage = ItemStorage.SIDED.find(level, at, Direction.UP);
+                try (var transaction = Transaction.openOuter())
+                {
+                    var taken = storage == null ? 0 : storage.insert(COBBLE, 8, transaction);
+                    expect(taken == 0, "a Fold in " + key.identifier() + " took " + taken + " cobblestone");
+                }
+            });
+            server.runCommand("execute in " + key.identifier() + " run tp @a 0.5 101 2.5");
+            context.waitTicks(20);
+            server.runOnServer(minecraft ->
+            {
+                var player = player(minecraft);
+                HoardMenu.open(player, player.getUUID(), at);
+                expect(!(player.containerMenu instanceof HoardMenu), "the hoard view opened in " + key.identifier());
+                var level = minecraft.getLevel(key);
+                level.removeBlock(at, false);
+                level.removeBlock(at.east(), false);
+            });
+        }
+        expect(server.computeOnServer(minecraft -> !HoardReach.forbidden(minecraft.overworld())), "the overworld is in the hoard_forbidden tag");
+        server.runCommand("execute in minecraft:overworld run tp @a " + (FOLD.getX() + 0.5) + " " + FLAT_FEET + " " + (FOLD.getZ() - 2.5));
+        context.waitTicks(20);
     }
 
     /**

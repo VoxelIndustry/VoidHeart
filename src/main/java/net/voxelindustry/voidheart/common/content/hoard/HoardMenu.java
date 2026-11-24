@@ -128,6 +128,11 @@ public class HoardMenu extends AbstractContainerMenu
             player.sendOverlayMessage(Component.translatable(MODID + ".hoard.no_pocket"));
             return;
         }
+        if (HoardReach.forbidden(player.level()))
+        {
+            player.sendOverlayMessage(Component.translatable(MODID + ".hoard.forbidden"));
+            return;
+        }
         var opening = new Opening(source, works);
         player.openMenu(new ExtendedMenuProvider<Opening>()
         {
@@ -153,7 +158,7 @@ public class HoardMenu extends AbstractContainerMenu
 
     private PocketHoard.@Nullable Hoard hoard()
     {
-        if (owner == null || !(player instanceof ServerPlayer serverPlayer))
+        if (owner == null || !(player instanceof ServerPlayer serverPlayer) || HoardReach.forbidden(serverPlayer.level()))
             return null;
         return PocketHoard.get(serverPlayer.level().getServer()).of(owner);
     }
@@ -302,6 +307,6 @@ public class HoardMenu extends AbstractContainerMenu
     @Override
     public boolean stillValid(Player player)
     {
-        return player.isAlive() && player.distanceToSqr(Vec3.atCenterOf(source)) <= REACH_SQR;
+        return player.isAlive() && !HoardReach.forbidden(player.level()) && player.distanceToSqr(Vec3.atCenterOf(source)) <= REACH_SQR;
     }
 }
