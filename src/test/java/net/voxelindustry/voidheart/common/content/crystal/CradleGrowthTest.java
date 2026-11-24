@@ -231,6 +231,21 @@ class CradleGrowthTest
     }
 
     @Test
+    void drain_takesItsShareOfTheFeedsAway()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, NONE);
+        growth.grow(CLEAR, 4);
+        growth.drain(3);
+        growth.seed(AZURIUM, 3, NONE);
+        growth.grow(CLEAR, 1);
+        growth.grow(PLAIN, 2);
+
+        // Two of the four shards' growth were Clear, short of the share that settles it
+        assertThat(growth.habit(ALL)).isEqualTo(PLAIN);
+    }
+
+    @Test
     void save_roundTrips()
     {
         var growth = new CradleGrowth();

@@ -40,7 +40,8 @@ public final class SuperfluidContent
     {
         SUPERFLUID = Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, Identifier.fromNamespaceAndPath(MODID, "superfluid"),
                 DataComponentType.<Integer>builder()
-                        .persistent(Codec.intRange(0, SuperfluidBalance.TESSERACT_CAPACITY))
+                        // Not bound by the capacity, so tuning it down never fails to load a saved tesseract; TesseractItem.held clamps instead
+                        .persistent(Codec.intRange(0, Integer.MAX_VALUE))
                         .networkSynchronized(ByteBufCodecs.VAR_INT)
                         .build());
 

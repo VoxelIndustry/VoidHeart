@@ -187,7 +187,14 @@ public final class CradleGrowth
             clear();
             return;
         }
-        grown = Math.min(grown, worth);
+        var left = Math.min(grown, worth);
+        // The growth that left takes its share of every feed with it, so later feeds settle the habit by what is really there
+        if (left < grown && grown > EPSILON)
+        {
+            var kept = left / grown;
+            fed.replaceAll((feed, amount) -> amount * kept);
+        }
+        grown = left;
     }
 
     /**

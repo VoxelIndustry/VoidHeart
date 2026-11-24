@@ -365,7 +365,7 @@ public class CrystalCradleTile extends TileBase implements IEssenceReceiver
     private boolean takesEssence(ServerLevel server, CrystalHabit habit)
     {
         var kind = growth.kind();
-        return kind != null && growth.isGrowing() && growth.seedHabit() != CrystalHabit.FOULED && seep < CradleBalance.FOUL_SEEP
+        return kind != null && growth.isGrowing() && pourTarget == null && growth.seedHabit() != CrystalHabit.FOULED && seep < CradleBalance.FOUL_SEEP
                && habit.takenBy(kind) && CradleResearch.settles(server.getServer(), owner).test(habit);
     }
 

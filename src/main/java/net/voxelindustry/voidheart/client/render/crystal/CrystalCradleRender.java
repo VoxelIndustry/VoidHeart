@@ -125,8 +125,9 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         state.kind = growth.kind();
         // A cradle that has started pouring shrinks smoothly through every size, so it measures against the largest
         double held = cradle.held();
-        boolean draining = cradle.pourTarget() != null || cradle.pourCredit() > 0;
-        state.target = draining ? BundleSize.LARGE : growth.target();
+        var target = growth.target();
+        boolean draining = cradle.pourTarget() != null || cradle.pourCredit() > 0 || target != null && growth.grown() > target.worth() + 1E-6;
+        state.target = draining ? BundleSize.LARGE : target;
         state.shown = Math.min(cradle.shown(partialTicks), held);
         state.habit = cradle.preview();
         state.seed = growth.seedHabit();
