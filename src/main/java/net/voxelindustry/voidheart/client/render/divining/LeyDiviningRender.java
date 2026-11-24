@@ -709,7 +709,8 @@ public final class LeyDiviningRender
         for (int direction = 0; direction < BORDER_DIRECTIONS; direction++)
         {
             var contact = LeySightPlan.shellContact(terrain[direction], 1, centerY, radius);
-            if (contact == null)
+            // A contact at the rod's own column, while the shell is still smaller than its height off the ground, has no ring to draw
+            if (contact == null || contact[0] <= 0)
                 continue;
             float angle = 2 * Mth.PI * direction / BORDER_DIRECTIONS;
             heights[direction] = contact[1];
