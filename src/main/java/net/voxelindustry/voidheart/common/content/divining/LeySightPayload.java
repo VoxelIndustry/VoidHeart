@@ -12,10 +12,11 @@ import java.util.List;
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
- * What a Ley Divining Rod reveals around where it was raised: the lines near it with the flow they carry, and the nodes among them. Empty where no
- * lattice runs, outside the overworld.
+ * What a Ley Divining Rod reveals around where it was raised: the lines near it with the flow they carry, the nodes among them, and the spurs standing
+ * stones bend off them. Empty where no lattice runs, outside the overworld.
  */
-public record LeySightPayload(double originX, double originY, double originZ, List<Line> lines, List<Node> nodes) implements CustomPacketPayload
+public record LeySightPayload(double originX, double originY, double originZ, List<Line> lines, List<Node> nodes, List<Spur> spurs)
+        implements CustomPacketPayload
 {
     public static final Type<LeySightPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MODID, "ley_sight"));
 
@@ -25,6 +26,7 @@ public record LeySightPayload(double originX, double originY, double originZ, Li
             ByteBufCodecs.DOUBLE, LeySightPayload::originZ,
             Line.CODEC.apply(ByteBufCodecs.list()), LeySightPayload::lines,
             Node.CODEC.apply(ByteBufCodecs.list()), LeySightPayload::nodes,
+            Spur.CODEC.apply(ByteBufCodecs.list()), LeySightPayload::spurs,
             LeySightPayload::new);
 
     @Override
@@ -60,5 +62,25 @@ public record LeySightPayload(double originX, double originY, double originZ, Li
                 ByteBufCodecs.FLOAT, Node::flow,
                 ByteBufCodecs.FLOAT, Node::taint,
                 Node::new);
+    }
+
+    /**
+     * One reach of a spur, flowing from where it leaves its line, or from the stone before, to a stone. The flow and taint are those of the line it taps.
+     *
+     * @param fromLine whether it starts on its line rather than at the stone before
+     */
+    public record Spur(float fromX, float fromY, float fromZ, float toX, float toY, float toZ, float flow, float taint, boolean fromLine)
+    {
+        public static final StreamCodec<RegistryFriendlyByteBuf, Spur> CODEC = StreamCodec.composite(
+                ByteBufCodecs.FLOAT, Spur::fromX,
+                ByteBufCodecs.FLOAT, Spur::fromY,
+                ByteBufCodecs.FLOAT, Spur::fromZ,
+                ByteBufCodecs.FLOAT, Spur::toX,
+                ByteBufCodecs.FLOAT, Spur::toY,
+                ByteBufCodecs.FLOAT, Spur::toZ,
+                ByteBufCodecs.FLOAT, Spur::flow,
+                ByteBufCodecs.FLOAT, Spur::taint,
+                ByteBufCodecs.BOOL, Spur::fromLine,
+                Spur::new);
     }
 }

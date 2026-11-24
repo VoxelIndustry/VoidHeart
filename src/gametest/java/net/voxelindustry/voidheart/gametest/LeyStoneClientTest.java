@@ -17,6 +17,8 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.voxelindustry.voidheart.client.render.divining.LeyDiviningRender;
+import net.voxelindustry.voidheart.client.render.divining.LeySightPlan;
 import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.energy.ley.LeyGrowerTile;
 import net.voxelindustry.voidheart.common.energy.ley.LeySpurs;
@@ -29,6 +31,7 @@ import net.voxelindustry.voidheart.common.energy.ley.SpurTap;
 import net.voxelindustry.voidheart.common.energy.ley.WardStrength;
 import net.voxelindustry.voidheart.common.ley.Ley;
 import net.voxelindustry.voidheart.common.ley.LeyLattice;
+import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +70,7 @@ public class LeyStoneClientTest implements FabricClientGameTest
     public void runTest(ClientGameTestContext context)
     {
         EnergyTestKit.expectRegistered("ley_stone", "ley_ward", "ley_grower");
+        checkLore(context);
 
         TestWorldSave save;
         Scene scene;
@@ -91,6 +95,7 @@ public class LeyStoneClientTest implements FabricClientGameTest
             checkSpur(server, scene);
             checkWard(context, server, scene);
             screenshots(context, server, scene);
+            checkRodShowsSpurs(context, server, scene);
             checkGrower(context, server, scene);
             checkBreaking(context, server, scene);
         }
@@ -248,6 +253,51 @@ public class LeyStoneClientTest implements FabricClientGameTest
             Corruption.set(player, 0);
             return risen;
         });
+    }
+
+    /**
+     * Each of the three blocks says in one line what it does.
+     */
+    private static void checkLore(ClientGameTestContext context)
+    {
+        var tooltips = context.computeOnClient(minecraft -> List.of(LeyStoneContent.LEY_STONE, LeyStoneContent.LEY_WARD, LeyStoneContent.LEY_GROWER).stream()
+                .map(block -> String.join("|", new ItemStack(block).getTooltipLines(net.minecraft.world.item.Item.TooltipContext.EMPTY, null,
+                        net.minecraft.world.item.TooltipFlag.NORMAL).stream().map(line -> line.getString()).toList()))
+                .toList());
+        expect(tooltips.get(0).contains("Bend ley off a nearby line"), "The standing stone should say what it does, got " + tooltips.get(0));
+        expect(tooltips.get(1).contains("Slow the corruption"), "The ley ward should say what it does, got " + tooltips.get(1));
+        expect(tooltips.get(2).contains("Quicken the crops"), "The ley grower should say what it does, got " + tooltips.get(2));
+    }
+
+    /**
+     * A Ley Divining Rod raised over the spur shows both its reaches, the tap's and the chained stone's, as thinner lines, and a searching shell grows
+     * out first.
+     */
+    private static void checkRodShowsSpurs(ClientGameTestContext context, TestServerContext server, Scene scene)
+    {
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(VoidHeartItems.LEY_DIVINING_ROD)));
+        var view = scene.at(scene.chained(), -12, 14);
+        var target = scene.at(scene.tap(), 0, 12);
+        aimFrom(context, server, view.getX() + 0.5, FLAT_FEET + 14, view.getZ() + 0.5, target.getX() + 0.5, FLAT_FEET, target.getZ() + 0.5, 20);
+
+        context.getInput().pressKey(options -> options.keyUse);
+        context.waitTicks(4);
+        context.takeScreenshot("ley-rod-shell-early");
+        context.waitTicks(6);
+        context.takeScreenshot("ley-rod-shell-late");
+        var counts = context.computeOnClient(minecraft -> LeyDiviningRender.shownCounts());
+        expect(counts[2] >= 2, "The rod should show the spur's reach from the line and the chained stone's, showed " + counts[2]);
+
+        context.waitTicks(LeySightPlan.SPREAD_TICKS + 10);
+        server.runCommand("tick freeze");
+        context.takeScreenshot("ley-rod-spurs");
+        var low = scene.at(scene.chained(), 4, 6);
+        aimFrom(context, server, low.getX() + 0.5, FLAT_FEET + 1, low.getZ() + 0.5, scene.tap().getX() + 0.5, FLAT_FEET + 1, scene.tap().getZ() + 0.5, 5);
+        context.takeScreenshot("ley-rod-spurs-low");
+        server.runCommand("tick unfreeze");
+
+        server.runOnServer(minecraft -> player(minecraft).setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
+        context.waitTicks(LeySightPlan.LIFE_TICKS);
     }
 
     private static void screenshots(ClientGameTestContext context, TestServerContext server, Scene scene)
