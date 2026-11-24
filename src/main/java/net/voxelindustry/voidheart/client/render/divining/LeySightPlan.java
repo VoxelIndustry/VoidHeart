@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.render.divining;
 
+import net.voxelindustry.voidheart.common.ley.LeyHeights;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -168,22 +169,11 @@ public final class LeySightPlan
     }
 
     /**
-     * Height at a share of the line, Catmull-Rom between samples so the line bends smoothly instead of kinking every few blocks.
+     * Height at a share of the line, as {@link LeyHeights#at} smooths it, so spurs leaving the line meet it.
      */
     static float height(float[] heights, float t)
     {
-        if (heights.length == 1)
-            return heights[0];
-
-        float position = t * (heights.length - 1);
-        int index = Math.min((int) position, heights.length - 2);
-        float f = position - index;
-
-        float p0 = heights[Math.max(0, index - 1)];
-        float p1 = heights[index];
-        float p2 = heights[index + 1];
-        float p3 = heights[Math.min(heights.length - 1, index + 2)];
-        return 0.5F * (2 * p1 + (-p0 + p2) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (-p0 + 3 * p1 - 3 * p2 + p3) * f * f * f);
+        return LeyHeights.at(heights, t);
     }
 
     /**

@@ -11,6 +11,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.ARGB;
@@ -27,6 +28,7 @@ import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -222,9 +224,7 @@ public final class LeyDiviningRender
     }
 
     /**
-     * @param level the world it was raised in: a reveal never follows its bearer into another dimension
-     */
-    /**
+     * @param level   the world it was raised in: a reveal never follows its bearer into another dimension
      * @param terrain terrain tops sampled a block apart outward from the rod in each border direction, or null when the rod was raised underground
      */
     private record Sight(ClientLevel level, long startTick, double originX, double originY, double originZ, List<ShownLine> lines, List<ShownNode> nodes,
@@ -290,31 +290,49 @@ public final class LeyDiviningRender
 
     /**
      * The terrain the shell's border runs over, sampled once: in each direction, the top of the ground every block out to past the radius, looking under
-     * leaves so the border runs on the ground beneath trees.
+     * leaves so the border runs on the ground beneath trees. A direction's samples stop at the first chunk not loaded, whose height would read as the
+     * bottom of the world.
      */
     private static float @Nullable [][] terrain(ClientLevel level, double originX, double originY, double originZ)
     {
-        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING, Mth.floor(originX), Mth.floor(originZ));
-        if (surface - originY > BORDER_UNDERGROUND)
+        var pos = new BlockPos.MutableBlockPos();
+        if (ground(level, Mth.floor(originX), Mth.floor(originZ), pos) - originY > BORDER_UNDERGROUND)
             return null;
 
         int samples = LeySight.RADIUS + 3;
-        var terrain = new float[BORDER_DIRECTIONS][samples];
-        var pos = new BlockPos.MutableBlockPos();
+        var terrain = new float[BORDER_DIRECTIONS][];
         for (int direction = 0; direction < BORDER_DIRECTIONS; direction++)
         {
             float angle = 2 * Mth.PI * direction / BORDER_DIRECTIONS;
             float dx = Mth.cos(angle), dz = Mth.sin(angle);
-            for (int i = 0; i < samples; i++)
+            var tops = new float[samples];
+            int loaded = 0;
+            while (loaded < samples)
             {
-                int x = Mth.floor(originX + dx * i), z = Mth.floor(originZ + dz * i);
-                int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-                while (top > level.getMinY() && level.getBlockState(pos.set(x, top - 1, z)).is(BlockTags.LEAVES))
-                    top--;
-                terrain[direction][i] = top;
+                int x = Mth.floor(originX + dx * loaded), z = Mth.floor(originZ + dz * loaded);
+                if (!level.hasChunk(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(z)))
+                    break;
+                tops[loaded++] = ground(level, x, z, pos);
             }
+            terrain[direction] = Arrays.copyOf(tops, loaded);
         }
         return terrain;
+    }
+
+    /**
+     * Top of the ground at a column, beneath any leaves and the open air under them, so a canopy over open ground is looked through.
+     */
+    private static int ground(ClientLevel level, int x, int z, BlockPos.MutableBlockPos pos)
+    {
+        int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+        while (top > level.getMinY())
+        {
+            var below = level.getBlockState(pos.set(x, top - 1, z));
+            if (!below.is(BlockTags.LEAVES) && (!below.getCollisionShape(level, pos).isEmpty() || !below.getFluidState().isEmpty()))
+                break;
+            top--;
+        }
+        return top;
     }
 
     private static final long SPUR_SEED_SALT = 0x2545F4914F6CDD1DL;

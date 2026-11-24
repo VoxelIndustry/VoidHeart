@@ -69,6 +69,26 @@ public class LeyHeights
         return floor.applyAsInt(x, z) < surface.applyAsInt(x, z);
     }
 
+    /**
+     * Height at a share of a profile, Catmull-Rom between samples so a line bends smoothly instead of kinking at each one. Whatever is drawn on a line or
+     * leaves it reads its height here, so they meet.
+     */
+    public static float at(float[] heights, float t)
+    {
+        if (heights.length == 1)
+            return heights[0];
+
+        float position = t * (heights.length - 1);
+        int index = Math.min((int) position, heights.length - 2);
+        float f = position - index;
+
+        float p0 = heights[Math.max(0, index - 1)];
+        float p1 = heights[index];
+        float p2 = heights[index + 1];
+        float p3 = heights[Math.min(heights.length - 1, index + 2)];
+        return 0.5F * (2 * p1 + (-p0 + p2) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (-p0 + 3 * p1 - 3 * p2 + p3) * f * f * f);
+    }
+
     public static int sampleCount(LeyEdge edge)
     {
         return Math.max(1, (int) Math.ceil(edge.length() / SAMPLE_SPACING)) + 1;

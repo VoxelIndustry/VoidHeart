@@ -134,18 +134,11 @@ public final class LeySight
     {
         var edge = edgesNear.get(new EdgeKey(tap.fromNode(), tap.toNode()));
         if (edge == null)
-            return new float[] { (float) tap.x(), fallbackY, (float) tap.z() };
+            return new float[] { (float) (tap.x() + 0.5), fallbackY, (float) (tap.z() + 0.5) };
         double dx = edge.toX() - edge.fromX(), dz = edge.toZ() - edge.fromZ();
         double lengthSq = dx * dx + dz * dz;
         double t = lengthSq == 0 ? 0 : Math.clamp(((tap.x() - edge.fromX()) * dx + (tap.z() - edge.fromZ()) * dz) / lengthSq, 0, 1);
-        var profile = heights.profile(edge);
-        float y = profile[0];
-        if (profile.length > 1)
-        {
-            double position = t * (profile.length - 1);
-            int index = Math.min((int) position, profile.length - 2);
-            y = (float) (profile[index] + (profile[index + 1] - profile[index]) * (position - index));
-        }
+        float y = LeyHeights.at(heights.profile(edge), (float) t);
         return new float[] { (float) (edge.fromX() + 0.5 + dx * t), y + 0.5F, (float) (edge.fromZ() + 0.5 + dz * t) };
     }
 
