@@ -69,7 +69,7 @@ public class UnderwayKeyRender extends EntityRenderer<UnderwayKeyEntity, Underwa
     private static final float SLANT = (float) Math.hypot(PANE_BASE - ROOF_HALF, ROOF_HEIGHT - PANE_FOOT);
     private static final int PANE_COLOR = 0xFFD890;
     private static final int FLARE_COLOR = 0xFFF6DC;
-    private static final int PANE_ALPHA = 105;
+    private static final int PANE_ALPHA = 55;
     private static final int FLARE_ALPHA = 255;
     // The panes breathe a little, each out of step with the others
     private static final float PANE_PULSE = 0.18F;

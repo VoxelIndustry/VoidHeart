@@ -28,7 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * A beetle of the wraith family that never walks. It phases from face to face in short hops about half a second apart, floor, wall and ceiling in turn,
+ * A beetle of the wraith family that never walks. It phases from face to face in short hops about a second apart, floor, wall and ceiling in turn,
  * leaving a fading image of itself where it was, and bites whoever it lands beside. Salt wards it like any wraith: no hop starts, passes or ends near salt.
  * <p>
  * Each hop is told to clients as an entity event before the move, so they snap it to the new spot rather than gliding it there, and keep the old spot as
@@ -38,7 +38,7 @@ public class WraithScarab extends CrawlerMonster
 {
     public static final byte HOP_EVENT = 90;
     public static final int AFTERIMAGE_TICKS = 12;
-    public static final int HOP_TICKS = 10;
+    public static final int HOP_TICKS = 20;
 
     private static final int EXPERIENCE = 6;
     private static final double REACH = 1.1;
@@ -359,7 +359,7 @@ public class WraithScarab extends CrawlerMonster
     }
 
     /**
-     * Hops toward its target every half second, and bites it whenever it lands within reach.
+     * Hops toward its target every second, and bites it whenever it lands within reach.
      */
     private final class HuntGoal extends Goal
     {

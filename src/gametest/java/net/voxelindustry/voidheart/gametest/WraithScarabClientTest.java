@@ -28,7 +28,7 @@ import java.util.EnumSet;
 import static net.voxelindustry.voidheart.gametest.GameTestKit.*;
 
 /**
- * The Wraith Scarab in a glass-roofed corridor: it never walks, only hops, about half a second apart, onto the floor, walls and ceiling by turns, and clients
+ * The Wraith Scarab in a glass-roofed corridor: it never walks, only hops, about a second apart, onto the floor, walls and ceiling by turns, and clients
  * see it jump from spot to spot with an afterimage left behind rather than glide. It bites what it lands beside, a line of salt stops it, and salt under it
  * holds it in place.
  */
@@ -39,7 +39,7 @@ public class WraithScarabClientTest implements FabricClientGameTest
     private static final int FEET = FLAT_FEET;
     private static final int CEILING = FEET + 3;
     private static final int LENGTH = 12;
-    private static final int WATCH_TICKS = 160;
+    private static final int WATCH_TICKS = 200;
     private static final double STILL = 0.05;
     private static final int SALT_X = X0 + 6;
     // Enough that a 25% drop coming up never, or in half the rolls or more, is far less likely than one in a trillion
