@@ -116,7 +116,7 @@ public final class LeySight
             if (segmentDistanceSq(origin.x, origin.z, fromX, fromZ, toX, toZ) > (double) RADIUS * RADIUS)
                 continue;
             float taint = Math.clamp(LeyTaint.taint(level, tap.fromNode()) / LeyFlowBalance.MAX_TAINT, 0, 1);
-            shown.add(new LeySightPayload.Spur(fromX, fromY, fromZ, toX, toY, toZ, spurs.flow(link.root()), taint));
+            shown.add(new LeySightPayload.Spur(fromX, fromY, fromZ, toX, toY, toZ, spurs.flow(link.root()), taint, link.parent() == null));
         }
         return shown;
     }

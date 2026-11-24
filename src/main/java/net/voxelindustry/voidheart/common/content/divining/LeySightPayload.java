@@ -66,8 +66,10 @@ public record LeySightPayload(double originX, double originY, double originZ, Li
 
     /**
      * One reach of a spur, flowing from where it leaves its line, or from the stone before, to a stone. The flow and taint are those of the line it taps.
+     *
+     * @param fromLine whether it starts on its line rather than at the stone before
      */
-    public record Spur(float fromX, float fromY, float fromZ, float toX, float toY, float toZ, float flow, float taint)
+    public record Spur(float fromX, float fromY, float fromZ, float toX, float toY, float toZ, float flow, float taint, boolean fromLine)
     {
         public static final StreamCodec<RegistryFriendlyByteBuf, Spur> CODEC = StreamCodec.composite(
                 ByteBufCodecs.FLOAT, Spur::fromX,
@@ -78,6 +80,7 @@ public record LeySightPayload(double originX, double originY, double originZ, Li
                 ByteBufCodecs.FLOAT, Spur::toZ,
                 ByteBufCodecs.FLOAT, Spur::flow,
                 ByteBufCodecs.FLOAT, Spur::taint,
+                ByteBufCodecs.BOOL, Spur::fromLine,
                 Spur::new);
     }
 }

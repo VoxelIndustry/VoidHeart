@@ -104,6 +104,29 @@ public final class LeySightPlan
         return path(fromX, fromZ, toX, toZ, t -> fromY + (toY - fromY) * t, originX, originZ, radius, seed, SPUR_SWAY_SHARE);
     }
 
+    /**
+     * The point of a path nearest a spot on the ground, between its points, as x, y, z and the squared ground distance to it, or null for an empty path.
+     * A spur leaving a line starts here, so it meets the swaying strand and not the straight edge under it.
+     */
+    public static double @Nullable [] nearest(Path path, double x, double z)
+    {
+        if (path.isEmpty())
+            return null;
+        double[] best = null;
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            double ax = path.x()[i], az = path.z()[i];
+            double dx = path.x()[i + 1] - ax, dz = path.z()[i + 1] - az;
+            double lengthSq = dx * dx + dz * dz;
+            double t = lengthSq == 0 ? 0 : Math.clamp(((x - ax) * dx + (z - az) * dz) / lengthSq, 0, 1);
+            double px = ax + dx * t, pz = az + dz * t;
+            double distanceSq = (px - x) * (px - x) + (pz - z) * (pz - z);
+            if (best == null || distanceSq < best[3])
+                best = new double[] { px, path.y()[i] + (path.y()[i + 1] - path.y()[i]) * t, pz, distanceSq };
+        }
+        return best;
+    }
+
     private static Path path(double fromX, double fromZ, double toX, double toZ, HeightAt heights, double originX, double originZ, float radius, long seed,
                              float swayShare)
     {
@@ -216,25 +239,28 @@ public final class LeySightPlan
 
     /**
      * Where the searching shell meets the terrain in one direction from its center, as distance on the ground from the center and height, or null if the
-     * terrain sampled never reaches it. The first sample whose top lies at or beyond the shell is taken, so the nearest crossing wins.
+     * terrain sampled never reaches it. The first sample whose top lies at or beyond the shell is taken, so the nearest crossing wins, and the point is
+     * where the terrain between it and the sample before crosses the sphere, so it lies on the shell however steep the ground.
      *
      * @param heights terrain tops sampled every {@code step} blocks outward from the center, the first under the center itself
      */
     public static float @Nullable [] shellContact(float[] heights, float step, float centerY, float radius)
     {
-        float previous = Float.NaN;
         for (int i = 0; i < heights.length; i++)
         {
-            float distance = i * step;
-            float beyond = (float) Math.hypot(distance, heights[i] - centerY) - radius;
-            if (beyond >= 0)
-            {
-                if (i == 0)
-                    return new float[] { 0, heights[0] };
-                float t = previous / (previous - beyond);
-                return new float[] { (i - 1 + t) * step, heights[i - 1] + (heights[i] - heights[i - 1]) * t };
-            }
-            previous = beyond;
+            if (Math.hypot(i * step, heights[i] - centerY) < radius)
+                continue;
+            if (i == 0)
+                return new float[] { 0, heights[0] };
+
+            // The segment from the sample before, inside the sphere, to this one, outside: solve |start + t * along| = radius for t in [0, 1]
+            double startD = (i - 1) * step, startH = heights[i - 1] - centerY;
+            double alongH = heights[i] - heights[i - 1];
+            double a = step * step + alongH * alongH;
+            double b = 2 * (startD * step + startH * alongH);
+            double c = startD * startD + startH * startH - (double) radius * radius;
+            double t = Math.clamp((-b + Math.sqrt(Math.max(0, b * b - 4 * a * c))) / (2 * a), 0, 1);
+            return new float[] { (float) (startD + step * t), (float) (heights[i - 1] + alongH * t) };
         }
         return null;
     }

@@ -147,6 +147,10 @@ public final class LeyDiviningRender
     // Spurs: a line's look at this share of its widths, fading less toward the stone since they are short
     private static final float SPUR_WIDTH           = 0.5F;
     private static final float SPUR_DOWNSTREAM_FADE = 0.25F;
+    /**
+     * Blocks a spur's start may move to meet the drawn line, a little more than the line's sway.
+     */
+    private static final float SPUR_SNAP            = 0.6F;
 
     // The searching shell around the rod while the reveal spreads
     private static final int   SHELL_RGB          = 0x8A5CFF;
@@ -261,12 +265,30 @@ public final class LeyDiviningRender
                 lines.add(new ShownLine(path, LeyLook.flowLevel(line.flow()), line.fromTaint(), line.toTaint(), seed, 1, DOWNSTREAM_FADE));
         }
 
+        int shownLines = lines.size();
         int spurs = 0;
         for (var spur : payload.spurs())
         {
             long seed = seed(Mth.floor(spur.fromX()), Mth.floor(spur.fromZ()), Mth.floor(spur.toX()), Mth.floor(spur.toZ())) ^ SPUR_SEED_SALT;
-            var path = LeySightPlan.spur(spur.fromX(), spur.fromY(), spur.fromZ(), spur.toX(), spur.toY(), spur.toZ(), payload.originX(), payload.originZ(),
-                    radius, seed);
+            double fromX = spur.fromX(), fromY = spur.fromY(), fromZ = spur.fromZ();
+            if (spur.fromLine())
+            {
+                // Start on the swaying strand as drawn, not the straight edge under it
+                double[] snapped = null;
+                for (int i = 0; i < shownLines; i++)
+                {
+                    var point = LeySightPlan.nearest(lines.get(i).path(), fromX, fromZ);
+                    if (point != null && point[3] <= SPUR_SNAP * SPUR_SNAP && (snapped == null || point[3] < snapped[3]))
+                        snapped = point;
+                }
+                if (snapped != null)
+                {
+                    fromX = snapped[0];
+                    fromY = snapped[1];
+                    fromZ = snapped[2];
+                }
+            }
+            var path = LeySightPlan.spur(fromX, fromY, fromZ, spur.toX(), spur.toY(), spur.toZ(), payload.originX(), payload.originZ(), radius, seed);
             if (path.isEmpty())
                 continue;
             lines.add(new ShownLine(path, LeyLook.flowLevel(spur.flow()), spur.taint(), spur.taint(), seed, SPUR_WIDTH, SPUR_DOWNSTREAM_FADE));

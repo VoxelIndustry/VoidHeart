@@ -138,6 +138,18 @@ class LeySightPlanTest
     }
 
     @Test
+    void spurStartsOnTheSwayingStrand()
+    {
+        var line = LeySightPlan.line(0, 0, 200, 0, new float[] { 70, 70 }, 100, 0, 200, 7);
+        int i = 50;
+        var point = LeySightPlan.nearest(line, line.x()[i], 0.5);
+
+        assertThat(point).isNotNull();
+        assertThat(point[2]).isCloseTo(line.z()[i], within(0.05));
+        assertThat(Math.sqrt(point[3])).isLessThanOrEqualTo(LeySightPlan.SWAY_AMPLITUDE + 1.0E-6);
+    }
+
+    @Test
     void shellMeetsFlatGroundWhereItsSphereDoes()
     {
         var flat = new float[70];
@@ -162,6 +174,19 @@ class LeySightPlanTest
         assertThat(contact).isNotNull();
         assertThat(contact[0]).isBetween(9F, 10F);
         assertThat(contact[1]).isGreaterThan(64);
+    }
+
+    @Test
+    void shellMeetsASteepWallOnItsSphere()
+    {
+        var heights = new float[70];
+        java.util.Arrays.fill(heights, 64);
+        heights[10] = 200;
+        var contact = LeySightPlan.shellContact(heights, 1, 65.5F, 20);
+
+        assertThat(contact).isNotNull();
+        assertThat(contact[0]).isBetween(9F, 10F);
+        assertThat((float) Math.hypot(contact[0], contact[1] - 65.5F)).isCloseTo(20, within(1.0E-3F));
     }
 
     @Test
