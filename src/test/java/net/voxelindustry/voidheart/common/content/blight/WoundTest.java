@@ -103,6 +103,6 @@ class WoundTest
     @Test
     void unseamingDamage_addsAShareOfMaximumHealth()
     {
-        assertThat(BlightBalance.unseamingDamage(100)).isCloseTo(BlightBalance.UNSEAMING_DAMAGE + 12, org.assertj.core.api.Assertions.within(1E-4F));
+        assertThat(BlightBalance.unseamingDamage(100)).isCloseTo(BlightBalance.UNSEAMING_DAMAGE + 100 * BlightBalance.UNSEAMING_HEALTH_SHARE, org.assertj.core.api.Assertions.within(1E-4F));
     }
 }
