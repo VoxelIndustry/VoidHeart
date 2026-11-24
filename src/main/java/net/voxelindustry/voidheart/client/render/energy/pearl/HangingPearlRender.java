@@ -19,6 +19,10 @@ import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.client.render.VoidHeartRenderTypes;
+import net.voxelindustry.voidheart.client.render.energy.superfluid.SuperfluidRingRender;
+import net.voxelindustry.voidheart.client.render.energy.superfluid.SuperfluidRingShape;
+import net.voxelindustry.voidheart.client.render.energy.superfluid.SuperfluidStreamRender;
+import net.voxelindustry.voidheart.common.content.crystal.CrystalCradleTile;
 import net.voxelindustry.voidheart.common.energy.pearl.HangingPearlTile;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlTremor;
 import org.joml.Quaternionf;
@@ -114,6 +118,10 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     /** Jolts at the height of a burst, in blocks: the body and core, the first buds, the second buds. */
     private static final float[] JOLT = {0.7F / 16, 0.4F / 16, 0.25F / 16};
 
+    // Rings
+    /** Ticks the rings take to settle true after a burst. */
+    private static final int RING_SETTLE = 10;
+
     // After-images
     /** Ticks back the pearl leaves a copy of itself while it chatters. */
     private static final int   AFTERIMAGES      = 3;
@@ -173,6 +181,23 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         public final float[] afterTremors = new float[AFTERIMAGES];
         public final List<Vector3f> threads = new ArrayList<>();
         public final List<Float>    threadStrengths = new ArrayList<>();
+        /** Superfluid wound about it, eased, and what its rings need to be drawn; none for the items. */
+        public double  superfluid;
+        public float   ringTremor;
+        public float   draw = -1;
+        public @Nullable Vector3f drawTo;
+        /** Cradles pouring into it: where each stands from it, and how far its stream has formed or faded. */
+        public final List<Pour> pours = new ArrayList<>();
+    }
+
+    /**
+     * A cradle's stream into this pearl's forming ring.
+     *
+     * @param offset  the cradle from the pearl, in blocks
+     * @param forming true while it pours, false while its stream fades
+     */
+    public record Pour(Vector3f offset, float shown, boolean forming)
+    {
     }
 
     public HangingPearlRender(BlockEntityRendererProvider.Context context)
@@ -205,6 +230,44 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
         for (int age = 1; age <= AFTERIMAGES; age++)
             state.afterTremors[age - 1] = PearlTremor.at(pearl.seed(), pearl.choirSeed(), pearl.sync(partialTicks), state.time - age).intensity();
 
+        // The rings ripple with each burst and settle over a few ticks after it
+        state.superfluid = pearl.shownSuperfluid(partialTicks);
+        state.draw = pearl.drawProgress(partialTicks);
+        state.ringTremor = 0;
+        state.drawTo = null;
+        if (state.superfluid > 0 || state.draw >= 0)
+        {
+            for (int age = 0; age < RING_SETTLE; age++)
+            {
+                var past = age == 0 ? moment.intensity() : PearlTremor.at(pearl.seed(), pearl.choirSeed(), pearl.sync(partialTicks), state.time - age).intensity();
+                state.ringTremor = Math.max(state.ringTremor, past * (1 - (float) age / RING_SETTLE));
+            }
+            var drawer = state.draw >= 0 && level != null ? level.getEntity(pearl.drawer()) : null;
+            if (drawer != null)
+            {
+                var at = drawer.getPosition(partialTicks);
+                var right = drawer.getViewVector(partialTicks).cross(new Vec3(0, 1, 0));
+                right = right.lengthSqr() < 1e-6 ? Vec3.ZERO : right.normalize().scale(DRAW_HAND_OUT);
+                state.drawTo = new Vector3f((float) (at.x + right.x - pos.getX()), (float) (at.y + drawer.getBbHeight() * DRAW_HAND_UP - pos.getY()),
+                        (float) (at.z + right.z - pos.getZ()));
+            }
+        }
+
+        // The cradles pouring in, drawn from here since the pearl is drawn off screen and their streams reach well past their own block
+        state.pours.clear();
+        for (var cradle : CrystalCradleTile.CLIENT_LOADED)
+        {
+            if (cradle.isRemoved() || !pos.equals(cradle.shownPourTarget()))
+                continue;
+            var shown = cradle.pourShown(partialTicks);
+            if (shown <= 0.01F)
+                continue;
+            var at = cradle.getBlockPos();
+            state.pours.add(new Pour(new Vector3f(at.getX() - pos.getX(), at.getY() - pos.getY(), at.getZ() - pos.getZ()), shown, cradle.pourTarget() != null));
+        }
+        if (!state.pours.isEmpty() && state.superfluid <= 0 && state.ringTremor <= 0)
+            state.ringTremor = moment.intensity();
+
         // A thread to each pearl of the choir shuddering with this one, drawn by the lower of the two so it is drawn once
         state.threads.clear();
         state.threadStrengths.clear();
@@ -230,7 +293,26 @@ public class HangingPearlRender implements BlockEntityRenderer<HangingPearlTile,
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera)
     {
         submitPearl(state, poseStack, collector);
+        if (state.superfluid > 1E-3 || state.draw >= 0)
+            SuperfluidRingRender.submit(new SuperfluidRingRender.Input(state.seed, state.time, center(1), state.camera, state.superfluid, state.ringTremor,
+                    state.drawTo, state.draw), poseStack, collector);
+        if (state.pours.isEmpty())
+            return;
+        var head = SuperfluidRingShape.head(state.seed, state.superfluid, state.time, state.ringTremor, center(1));
+        for (var pour : state.pours)
+        {
+            poseStack.pushPose();
+            poseStack.translate(pour.offset().x, pour.offset().y, pour.offset().z);
+            var fromCradle = new Vector3f(head.point()).sub(pour.offset());
+            var eye = new Vector3f(state.camera).sub(pour.offset());
+            SuperfluidStreamRender.submitFromCradle(fromCradle, head.tangent(), eye, state.time, pour.shown(), pour.forming(), poseStack, collector);
+            poseStack.popPose();
+        }
     }
+
+    /** Where the hand holding a tesseract is, out to the right of its holder and up its height. */
+    private static final double DRAW_HAND_OUT = 0.35;
+    private static final double DRAW_HAND_UP  = 0.55;
 
     /**
      * Draws a pearl in block space from its state, for the hung block and for the item, which builds a state of its own.

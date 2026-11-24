@@ -3,6 +3,9 @@ package net.voxelindustry.voidheart.common.energy.pearl;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
 
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidBalance;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidContent;
+
 import static net.voxelindustry.voidheart.compat.rei.EnergyRei.amount;
 import static net.voxelindustry.voidheart.compat.rei.EnergyRei.line;
 import static net.voxelindustry.voidheart.compat.rei.EnergyRei.page;
@@ -13,7 +16,8 @@ import static net.voxelindustry.voidheart.compat.rei.EnergyRei.page;
  */
 public final class PearlRei
 {
-    private static final String RESEARCH = "rubrum_pearls";
+    private static final String RESEARCH            = "rubrum_pearls";
+    private static final String SUPERFLUID_RESEARCH = "superfluid_azurium";
 
     private PearlRei()
     {
@@ -35,5 +39,9 @@ public final class PearlRei
                 line("kindled_fractal_seed.take"));
         page(PearlContent.COLLAPSING_RUBRUM_PEARL, RESEARCH,
                 line("collapsing_rubrum_pearl.use"));
+        page(SuperfluidContent.TESSERACT, SUPERFLUID_RESEARCH,
+                line("tesseract.pour", (int) SuperfluidBalance.REACH, SuperfluidBalance.SHARD_UNITS / SuperfluidBalance.POUR_PER_TICK / 1200),
+                line("tesseract.rings", SuperfluidBalance.RING_SHARDS, SuperfluidBalance.RINGS),
+                line("tesseract.draw", SuperfluidBalance.TESSERACT_CAPACITY / SuperfluidBalance.SHARD_UNITS));
     }
 }

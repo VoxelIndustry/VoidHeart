@@ -6,6 +6,14 @@
   "inputs": {
     "minecraft:itemstack": [
       {
+        "components": {
+          "voidheart:superfluid": 96000
+        },
+        "identifier": "steamlayer:itemstack_ingredient",
+        "item": "voidheart:tesseract",
+        "strictTagComparing": true
+      },
+      {
         "identifier": "steamlayer:itemstack_ingredient",
         "item": "voidheart:levitation_belt"
       },
@@ -16,14 +24,6 @@
       {
         "identifier": "steamlayer:itemstack_ingredient",
         "item": "minecraft:phantom_membrane"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:azurium_shard"
-      },
-      {
-        "identifier": "steamlayer:itemstack_ingredient",
-        "item": "voidheart:azurium_shard"
       },
       {
         "identifier": "steamlayer:itemstack_ingredient",

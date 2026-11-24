@@ -131,6 +131,11 @@ public final class CrystalJade
             tooltip.add(Component.translatable(MODID + ".jade.cradle.habit",
                     habit.isHabit() ? HabitEffects.name(habit) : Component.translatable(MODID + ".jade.cradle.plain")));
 
+            if ("pouring".equals(data.getStringOr("source", "idle")))
+            {
+                tooltip.add(Component.translatable(MODID + ".jade.cradle.pouring").withStyle(ChatFormatting.AQUA));
+                return;
+            }
             if (!growing)
                 return;
             switch (data.getStringOr("source", "idle"))

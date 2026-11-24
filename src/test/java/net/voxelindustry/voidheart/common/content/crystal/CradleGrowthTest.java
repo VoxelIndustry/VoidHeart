@@ -171,6 +171,81 @@ class CradleGrowthTest
     }
 
     @Test
+    void drain_takesTheBedFirst_thenShrinksTheBundle()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, CLEAR);
+        growth.grow(PLAIN, 2);
+
+        growth.drain(1);
+        assertThat(growth.worth()).isEqualTo(3);
+        assertThat(growth.grown()).isEqualTo(2);
+
+        growth.drain(2);
+        assertThat(growth.worth()).isOne();
+        assertThat(growth.grown()).isOne();
+        assertThat(growth.isGrowing()).isFalse();
+    }
+
+    @Test
+    void drain_ofAGrownBundle_harvestsWhatIsLeftWhole()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, NONE);
+        growth.grow(PLAIN, 4);
+        growth.drain(1);
+
+        assertThat(growth.grown()).isEqualTo(3);
+        var copy = new CradleGrowth();
+        copy.load(growth.save());
+        assertThat(copy.grown()).isEqualTo(3);
+
+        var harvest = growth.harvest(ALL);
+        int out = harvest.shards() + (harvest.bundle() == null ? 0 : harvest.bundle().worth());
+        assertThat(out).isEqualTo(3);
+        assertThat(harvest.bundle()).isEqualTo(BundleSize.MEDIUM);
+    }
+
+    @Test
+    void drain_ofEverything_emptiesTheCradle()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 2, DEEP);
+        growth.grow(PLAIN, 2);
+        growth.drain(5);
+
+        assertThat(growth.kind()).isNull();
+        assertThat(growth.worth()).isZero();
+        assertThat(growth.grown()).isZero();
+    }
+
+    @Test
+    void drain_keepsTheHabitOfWhatIsLeft()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, NONE);
+        growth.grow(CLEAR, 4);
+        growth.drain(2);
+
+        assertThat(growth.habit(ALL)).isEqualTo(CLEAR);
+    }
+
+    @Test
+    void drain_takesItsShareOfTheFeedsAway()
+    {
+        var growth = new CradleGrowth();
+        growth.seed(AZURIUM, 4, NONE);
+        growth.grow(CLEAR, 4);
+        growth.drain(3);
+        growth.seed(AZURIUM, 3, NONE);
+        growth.grow(CLEAR, 1);
+        growth.grow(PLAIN, 2);
+
+        // Two of the four shards' growth were Clear, short of the share that settles it
+        assertThat(growth.habit(ALL)).isEqualTo(PLAIN);
+    }
+
+    @Test
     void save_roundTrips()
     {
         var growth = new CradleGrowth();

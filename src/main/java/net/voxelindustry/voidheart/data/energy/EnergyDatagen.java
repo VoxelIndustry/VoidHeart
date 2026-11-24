@@ -21,6 +21,7 @@ import net.voxelindustry.voidheart.common.energy.engine.RavenousEngineDatagen;
 import net.voxelindustry.voidheart.common.energy.gnawer.GnawerDatagen;
 import net.voxelindustry.voidheart.common.energy.furnace.VoidFurnaceDatagen;
 import net.voxelindustry.voidheart.common.energy.pearl.PearlDatagen;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidDatagen;
 import net.voxelindustry.voidheart.common.energy.grid.VoidGridDatagen;
 import net.voxelindustry.voidheart.common.energy.ley.LeyStoneDatagen;
 import net.voxelindustry.voidheart.common.energy.reactor.ContravoidReactorDatagen;
@@ -80,6 +81,7 @@ public final class EnergyDatagen
         GnawerDatagen.itemModels(generators);
         VoidFurnaceDatagen.itemModels(generators);
         PearlDatagen.itemModels(generators);
+        SuperfluidDatagen.itemModels(generators);
     }
 
     public static void recipes(EnergyRecipes recipes)
@@ -96,6 +98,7 @@ public final class EnergyDatagen
         GnawerDatagen.recipes(recipes);
         VoidFurnaceDatagen.recipes(recipes);
         PearlDatagen.recipes(recipes);
+        SuperfluidDatagen.recipes(recipes);
         CrystalDatagen.recipes(recipes);
         HoardDatagen.recipes(recipes);
         WorksDatagen.recipes(recipes);

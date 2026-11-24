@@ -5,6 +5,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -18,6 +19,8 @@ import net.voxelindustry.voidheart.common.content.essence.IEssenceReceiver;
 import net.voxelindustry.voidheart.common.energy.VoidEnergy;
 import net.voxelindustry.voidheart.common.energy.machine.MachinePower;
 import net.voxelindustry.voidheart.common.energy.machine.PowerMeter;
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidBalance;
+import net.voxelindustry.voidheart.common.energy.superfluid.TesseractItem;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -31,6 +34,9 @@ import java.util.function.Consumer;
  * and leaves its choir, but keeps shuddering.
  * <p>
  * Clients get its growth, whether it is being fed, why not, and the positions of its choir, which its look and its tremor are worked out from.
+ * <p>
+ * Once mature it pulls on the azurium of cradles standing near, which winds about it as rings of superfluid, see
+ * {@link net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidContent}. A tesseract draws them off; taken down, it loses them.
  */
 public class HangingPearlTile extends TileBase implements IEssenceReceiver
 {
@@ -73,9 +79,23 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
     private MachinePower   power = MachinePower.IDLE;
     private int            shownStep;
 
+    // Superfluid wound about a mature pearl, in units, synced
+    private int     superfluid;
+    private boolean superfluidChanged;
+    private long    superfluidSyncedAt = Long.MIN_VALUE / 2;
+    /** Who last drew its rings off, for the look of the rings unspooling into their tesseract. */
+    private int     drawer = -1;
+
     // Client only
     private float sync;
     private float previousSync;
+    private double  shownSuperfluid;
+    private double  previousShownSuperfluid;
+    private boolean superfluidSeen;
+    /** Units the rings held when the client saw them drawn off, and the client tick it saw it, so the unspooling starts when it arrives. */
+    private double  drawnFrom;
+    private int     drawAge = -1;
+    private double  previousDrawAge = -1;
 
     public HangingPearlTile(BlockPos pos, BlockState state)
     {
@@ -95,6 +115,12 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
     {
         if (growth.isMature())
         {
+            if (superfluidChanged && level.getGameTime() - superfluidSyncedAt >= SuperfluidBalance.SYNC_TICKS)
+            {
+                superfluidChanged = false;
+                superfluidSyncedAt = level.getGameTime();
+                sync();
+            }
             if (fed || !choir.isEmpty() || power != MachinePower.IDLE || fieryShort)
             {
                 fed = false;
@@ -260,12 +286,139 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
 
     private void animate()
     {
+        animateSuperfluid();
         previousSync = sync;
         if (!choir.isEmpty())
             sync = Math.min(1, sync + 1F / PearlTremor.SYNC_TICKS);
         else
             sync = Math.max(0, sync - 4F / PearlTremor.SYNC_TICKS);
         clientTick.accept(this);
+    }
+
+    /**
+     * Rings ease toward what the server holds as cradles pour in, and unspool outermost first over {@link #DRAW_TICKS} when drawn off. A pearl
+     * first seen already ringed shows its rings at once.
+     */
+    private void animateSuperfluid()
+    {
+        previousShownSuperfluid = shownSuperfluid;
+        previousDrawAge = drawAge;
+        if (!superfluidSeen)
+        {
+            superfluidSeen = true;
+            shownSuperfluid = superfluid;
+            previousShownSuperfluid = superfluid;
+            return;
+        }
+        if (superfluid < shownSuperfluid - 1E-3 && drawAge < 0)
+        {
+            drawnFrom = shownSuperfluid;
+            drawAge = 0;
+            previousDrawAge = 0;
+        }
+        if (drawAge >= 0)
+        {
+            drawAge++;
+            var t = Math.min(1, drawAge / (double) DRAW_TICKS);
+            shownSuperfluid = Math.max(superfluid, drawnFrom + (superfluid - drawnFrom) * t);
+            if (drawAge >= DRAW_TICKS)
+                drawAge = -1;
+            return;
+        }
+        shownSuperfluid += (superfluid - shownSuperfluid) * SUPERFLUID_EASE;
+        // Easing never quite arrives, and a ring a hair short of closed would still show its head
+        if (Math.abs(superfluid - shownSuperfluid) < 1)
+            shownSuperfluid = superfluid;
+    }
+
+    //
+    // Superfluid
+    //
+
+    /** Ticks the rings take to unspool into a tesseract. */
+    public static final int    DRAW_TICKS      = 20;
+    private static final double SUPERFLUID_EASE = 0.1;
+
+    public int superfluid()
+    {
+        return superfluid;
+    }
+
+    /**
+     * Units it can still take: none until it is mature.
+     */
+    public int superfluidRoom()
+    {
+        return growth.isMature() ? SuperfluidBalance.PEARL_CAPACITY - superfluid : 0;
+    }
+
+    /**
+     * Winds poured azurium about it, as much as there is room for, and says how much it took.
+     */
+    public int receiveSuperfluid(int units)
+    {
+        var taken = Math.clamp(units, 0, superfluidRoom());
+        if (taken > 0)
+        {
+            superfluid += taken;
+            superfluidChanged = true;
+            setChanged();
+        }
+        return taken;
+    }
+
+    /**
+     * Draws its rings off into a tesseract, as much as it has room for, and says how much moved.
+     */
+    public int drawInto(ItemStack tesseract, Player player)
+    {
+        var moved = Math.min(superfluid, TesseractItem.room(tesseract));
+        if (moved <= 0)
+            return 0;
+        TesseractItem.setHeld(tesseract, TesseractItem.held(tesseract) + moved);
+        superfluid -= moved;
+        drawer = player.getId();
+        superfluidChanged = false;
+        if (level != null)
+            superfluidSyncedAt = level.getGameTime();
+        setChanged();
+        sync();
+        return moved;
+    }
+
+    /**
+     * Sets its rings, for review.
+     */
+    public void setSuperfluid(int units)
+    {
+        superfluid = growth.isMature() ? Math.clamp(units, 0, SuperfluidBalance.PEARL_CAPACITY) : 0;
+        superfluidChanged = false;
+        setChanged();
+        sync();
+    }
+
+    /**
+     * The rings drawn, eased, in units.
+     */
+    public double shownSuperfluid(float partialTicks)
+    {
+        return previousShownSuperfluid + (shownSuperfluid - previousShownSuperfluid) * partialTicks;
+    }
+
+    /**
+     * How far the rings have unspooled into a tesseract, from 0 to 1, or a negative number when they aren't.
+     */
+    public float drawProgress(float partialTicks)
+    {
+        if (drawAge < 0)
+            return -1;
+        var age = previousDrawAge < 0 ? drawAge : previousDrawAge + (drawAge - previousDrawAge) * partialTicks;
+        return (float) Math.clamp(age / DRAW_TICKS, 0, 1);
+    }
+
+    public int drawer()
+    {
+        return drawer;
     }
 
     //
@@ -428,6 +581,8 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         power = MachinePower.byOrdinal(nbt.getIntOr("power", 0));
         meter.restore(power);
         shownStep = (int) (growth.share() * SHOWN_STEPS);
+        superfluid = growth.isMature() ? Math.clamp(nbt.getIntOr("superfluid", 0), 0, SuperfluidBalance.PEARL_CAPACITY) : 0;
+        drawer = nbt.getIntOr("drawer", -1);
     }
 
     @Override
@@ -443,5 +598,7 @@ public class HangingPearlTile extends TileBase implements IEssenceReceiver
         nbt.putBoolean("fed", fed);
         nbt.putBoolean("fieryShort", fieryShort);
         nbt.putInt("power", power.ordinal());
+        nbt.putInt("superfluid", superfluid);
+        nbt.putInt("drawer", drawer);
     }
 }

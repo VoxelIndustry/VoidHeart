@@ -34,7 +34,8 @@ import org.joml.Vector3f;
 /**
  * A bundle rising out of the cradle's bed. The shards fed in lie dim on the basin floor and go as they are used, the bundle's own model grows up from among
  * them, and ley pools faintly at its foot while it is fed. Fed essence through a relay, the pool takes the essence's colour and motes of it rise along the
- * bundle. Once grown it rests and nothing moves.
+ * bundle. Once grown it rests and nothing moves. Pouring into a pearl, the crystal sinks back into the basin as it leaves, bed first; the pearl,
+ * which is drawn off screen, draws the stream.
  * <p>
  * Crystal draws as cutout block quads, or translucent for a habit drawn see-through. The pool is one additive fan just above the floor, so it can't
  * fight it. At most one bundle and four shards, about 21 cached quads, per cradle, plus 40 for the motes of a fed one.
@@ -122,8 +123,12 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         BlockEntityRenderer.super.extractRenderState(cradle, state, partialTicks, cameraPosition, breakProgress);
         var growth = cradle.growth();
         state.kind = growth.kind();
-        state.target = growth.target();
-        state.shown = cradle.shown(partialTicks);
+        // A cradle that has started pouring shrinks smoothly through every size, so it measures against the largest
+        double held = cradle.held();
+        var target = growth.target();
+        boolean draining = cradle.pourTarget() != null || cradle.pourCredit() > 0 || target != null && growth.grown() > target.worth() + 1E-6;
+        state.target = draining ? BundleSize.LARGE : target;
+        state.shown = Math.min(cradle.shown(partialTicks), held);
         state.habit = cradle.preview();
         state.seed = growth.seedHabit();
         state.pool = cradle.pool(partialTicks);
@@ -138,7 +143,7 @@ public class CrystalCradleRender implements BlockEntityRenderer<CrystalCradleTil
         state.camera.set((float) (cameraPosition.x - pos.getX()), (float) (cameraPosition.y - pos.getY()), (float) (cameraPosition.z - pos.getZ()));
 
         // The shards not yet grown into the bundle, the one in use shrinking as it goes
-        double left = Math.max(0, growth.worth() - state.shown);
+        double left = Math.max(0, held - state.shown);
         state.waiting = Math.min(BED_SPOTS.length, (int) Math.ceil(left - 1E-3));
         double part = left - Math.floor(left);
         state.lastShard = part < 1E-3 ? 1 : (float) part;

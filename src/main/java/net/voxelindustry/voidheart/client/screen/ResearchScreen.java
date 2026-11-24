@@ -1,5 +1,6 @@
 package net.voxelindustry.voidheart.client.screen;
 
+import net.voxelindustry.voidheart.common.energy.superfluid.SuperfluidBalance;
 import net.voxelindustry.voidheart.common.content.salt.SaltPatch;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -568,6 +569,11 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "belt_flight_cost" -> wholeNumber(LevitationBalance.FLIGHT_COST);
             case "wing_flight_cost" -> wholeNumber(net.voxelindustry.voidheart.common.content.armor.ArmorBalance.LEVITATION_DRAIN);
             case "anchor_line_reach" -> wholeNumber(WroughtAnchorBalance.LINE_REACH);
+            case "pour_reach" -> wholeNumber(SuperfluidBalance.REACH);
+            case "pour_minutes" -> wholeNumber(SuperfluidBalance.SHARD_UNITS / (double) SuperfluidBalance.POUR_PER_TICK / 1200D);
+            case "ring_shards" -> wholeNumber(SuperfluidBalance.RING_SHARDS);
+            case "pearl_rings" -> wholeNumber(SuperfluidBalance.RINGS);
+            case "tesseract_shards" -> wholeNumber(SuperfluidBalance.TESSERACT_CAPACITY / (double) SuperfluidBalance.SHARD_UNITS);
             case "anchor_trip_base" -> wholeNumber(WroughtAnchorBalance.TRAVEL_BASE);
             case "anchor_trip_per_block" -> wholeNumber(WroughtAnchorBalance.TRAVEL_PER_BLOCK);
             case "belt_fall_percent" -> wholeNumber(Math.round((1 - LevitationBalance.FALL_DAMAGE_KEPT) * 100));
