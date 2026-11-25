@@ -38,6 +38,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.voxelindustry.voidheart.common.VoidHeartTicker;
+import net.voxelindustry.voidheart.common.content.door.RiftKeys;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorTeleporter;
 import net.voxelindustry.voidheart.common.curse.Corruption;
 import net.voxelindustry.voidheart.common.energy.EnergySetup;
@@ -203,6 +204,7 @@ public class VoidHeart implements ModInitializer
 
         ServerTickEvents.START_SERVER_TICK.register(VoidHeartTicker::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDoorTeleporter::tickServer);
+        ServerTickEvents.END_SERVER_TICK.register(RiftKeys::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShoulderEyes::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(ShieldingApparatus::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(LevitationBelts::tickServer);

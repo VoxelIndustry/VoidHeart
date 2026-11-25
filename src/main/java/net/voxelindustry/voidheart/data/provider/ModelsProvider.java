@@ -137,6 +137,8 @@ public class ModelsProvider extends FabricModelProvider
                         plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.MENDING_ALTAR, "_lit")),
                         plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.MENDING_ALTAR)))));
         generator.createDoor(VoidHeartBlocks.VOID_DOOR);
+        // The void door's look in see-through violet, its chunk layer is translucent from its textures
+        generator.createDoor(VoidHeartBlocks.RIFT_ENTRY);
     }
 
     private void registerDaedalusDecor()
@@ -329,6 +331,7 @@ public class ModelsProvider extends FabricModelProvider
         generator.generateFlatItem(VoidHeartItems.LISTLESS_LEAD_INGOT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRIGGLING_BRAIN, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.HEARTWOOD_KNOT, ModelTemplates.FLAT_ITEM);
+        generator.generateFlatItem(VoidHeartItems.RIFT_KEY, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.SALT, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.QUICKSILVER, ModelTemplates.FLAT_ITEM);
         generator.generateFlatItem(VoidHeartItems.WRAITH_INK, ModelTemplates.FLAT_ITEM);

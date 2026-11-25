@@ -38,17 +38,18 @@ public class VoidDoorTeleporter
             return;
 
         var links = VoidDoorLinks.get(server);
-        if (links.isEmpty())
+        var rifts = RiftPairs.get(server);
+        if (links.isEmpty() && rifts.isEmpty())
             return;
 
         for (var player : List.copyOf(server.getPlayerList().getPlayers()))
         {
             if (!lastTeleportTick.containsKey(player.getUUID()))
-                tickPlayer(server, links, voidLevel, player);
+                tickPlayer(server, links, rifts, voidLevel, player);
         }
     }
 
-    private static void tickPlayer(MinecraftServer server, VoidDoorLinks links, ServerLevel voidLevel, ServerPlayer player)
+    private static void tickPlayer(MinecraftServer server, VoidDoorLinks links, RiftPairs rifts, ServerLevel voidLevel, ServerPlayer player)
     {
         if (player.isSpectator() || player.isPassenger() || player.isVehicle() || player.isSleeping())
             return;
@@ -65,6 +66,18 @@ public class VoidDoorTeleporter
             if (!(doorState.getBlock() instanceof VoidDoorBlock))
                 return;
 
+            // An open rift takes the door's way out over its link
+            var riftEntry = rifts.entryOf(doorPos);
+            if (riftEntry.isPresent())
+            {
+                var entryLevel = server.getLevel(riftEntry.get().dimension());
+                if (entryLevel == null || !RiftKeys.isEntry(entryLevel, riftEntry.get().pos()))
+                    RiftKeys.close(server, doorPos, true);
+                else
+                    travel(server, player, doorState, entryLevel, riftEntry.get().pos(), entryLevel.getBlockState(riftEntry.get().pos()));
+                return;
+            }
+
             links.getSource(doorPos).ifPresent(source ->
             {
                 var sourceLevel = server.getLevel(source.dimension());
@@ -74,6 +87,19 @@ public class VoidDoorTeleporter
                     links.unlinkVoidDoor(doorPos);
                 else
                     travel(server, player, doorState, sourceLevel, source.pos(), sourceState);
+            });
+        }
+        else if (doorState.getBlock() instanceof RiftEntryBlock)
+        {
+            rifts.doorOf(GlobalPos.of(level.dimension(), doorPos)).ifPresent(voidDoor ->
+            {
+                var voidDoorState = voidLevel.getBlockState(voidDoor);
+
+                // A shut pocket door closes its rift, even before the next check notices
+                if (!(voidDoorState.getBlock() instanceof VoidDoorBlock) || !voidDoorState.getValue(DoorBlock.OPEN))
+                    RiftKeys.close(server, voidDoor, false);
+                else
+                    travel(server, player, doorState, voidLevel, voidDoor, voidDoorState);
             });
         }
         else

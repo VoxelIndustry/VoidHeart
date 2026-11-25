@@ -1,0 +1,19 @@
+{
+  "tier": 3,
+  "constellation": "travel",
+  "icon": "voidheart:void_door",
+  "insight_cost": 9,
+  "knowledge_cost": 900,
+  "knowledge_per_second": 1.25,
+  "requires": [
+    "voidheart:portal_flexion"
+  ],
+  "unlocks": [
+    "voidheart:void_door",
+    "voidheart:void_key"
+  ],
+  "recipes": [
+    "voidheart:altar/void_door",
+    "voidheart:altar/void_key"
+  ]
+}

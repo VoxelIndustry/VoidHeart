@@ -28,6 +28,7 @@ import net.voxelindustry.voidheart.client.InsightMemory;
 import net.voxelindustry.voidheart.common.content.oil.Brew;
 import net.voxelindustry.voidheart.common.content.oil.Elixirs;
 import net.voxelindustry.voidheart.common.content.levitation.LevitationBalance;
+import net.voxelindustry.voidheart.common.content.door.RiftKeys;
 import net.voxelindustry.voidheart.common.ley.anchor.WroughtAnchorBalance;
 import net.voxelindustry.voidheart.common.content.oil.OilCoating;
 import net.voxelindustry.voidheart.common.content.oil.OilType;
@@ -569,6 +570,7 @@ public class ResearchScreen extends AbstractContainerScreen<KnowledgeRepositoryM
             case "belt_flight_cost" -> wholeNumber(LevitationBalance.FLIGHT_COST);
             case "wing_flight_cost" -> wholeNumber(net.voxelindustry.voidheart.common.content.armor.ArmorBalance.LEVITATION_DRAIN);
             case "anchor_line_reach" -> wholeNumber(WroughtAnchorBalance.LINE_REACH);
+            case "rift_key_cooldown" -> wholeNumber(RiftKeys.COOLDOWN_TICKS / 20D);
             case "pour_reach" -> wholeNumber(SuperfluidBalance.REACH);
             case "pour_minutes" -> wholeNumber(SuperfluidBalance.SHARD_UNITS / (double) SuperfluidBalance.POUR_PER_TICK / 1200D);
             case "ring_shards" -> wholeNumber(SuperfluidBalance.RING_SHARDS);

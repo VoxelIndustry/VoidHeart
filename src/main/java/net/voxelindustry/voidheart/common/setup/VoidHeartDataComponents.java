@@ -68,9 +68,23 @@ public class VoidHeartDataComponents
         ).apply(instance, DoorLink::new));
     }
 
+    /**
+     * Void door of its owner's pocket a Rift Key opens onto, holding one of that owner's flexions.
+     */
+    public record RiftKeyLink(BlockPos doorPos, UUID doorId, UUID owner, String ownerName)
+    {
+        public static final Codec<RiftKeyLink> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                BlockPos.CODEC.fieldOf("door_pos").forGetter(RiftKeyLink::doorPos),
+                UUIDUtil.CODEC.fieldOf("door_id").forGetter(RiftKeyLink::doorId),
+                UUIDUtil.CODEC.fieldOf("owner").forGetter(RiftKeyLink::owner),
+                Codec.STRING.fieldOf("owner_name").forGetter(RiftKeyLink::ownerName)
+        ).apply(instance, RiftKeyLink::new));
+    }
+
     public static DataComponentType<PortalLinkStart> PORTAL_LINK;
     public static DataComponentType<HeartOwner>      HEART_OWNER;
     public static DataComponentType<DoorLink>        DOOR_LINK;
+    public static DataComponentType<RiftKeyLink>     RIFT_KEY_LINK;
     public static DataComponentType<Integer>         CORRUPTION;
     public static DataComponentType<Integer>         EXPERIENCE;
     public static DataComponentType<EssenceStorage>  ESSENCE_STORAGE;
@@ -106,6 +120,7 @@ public class VoidHeartDataComponents
         PORTAL_LINK = register("portal_link", PortalLinkStart.CODEC);
         HEART_OWNER = register("heart_owner", HeartOwner.CODEC);
         DOOR_LINK = register("door_link", DoorLink.CODEC);
+        RIFT_KEY_LINK = register("rift_key_link", RiftKeyLink.CODEC);
         CORRUPTION = register("corruption", Codec.INT);
         EXPERIENCE = register("experience", Codec.INT);
         ESSENCE_STORAGE = register("essence_storage", EssenceStorage.CODEC);

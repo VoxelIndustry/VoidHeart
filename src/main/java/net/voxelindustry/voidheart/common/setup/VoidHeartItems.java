@@ -27,6 +27,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item.Properties;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.door.RiftKeyItem;
 import net.voxelindustry.voidheart.common.content.door.VoidKeyItem;
 import net.voxelindustry.voidheart.common.content.permeablebarrier.PermeableBarrierItem;
 import net.voxelindustry.voidheart.common.content.research.KnowledgeTabletItem;
@@ -63,6 +64,7 @@ public class VoidHeartItems
     public static PortalCoreItem PORTAL_CORE;
 
     public static VoidKeyItem VOID_KEY;
+    public static RiftKeyItem RIFT_KEY;
     public static PermeableBarrierItem PERMEABLE_BARRIER;
     public static ShoulderEyeItem SHOULDER_EYE;
     public static WraithVeilItem WRAITH_VEIL;
@@ -139,6 +141,7 @@ public class VoidHeartItems
         PORTAL_CORE = registerItem("portal_core", PortalCoreItem::new);
 
         VOID_KEY = registerItem("void_key", VoidKeyItem::new);
+        RIFT_KEY = registerItem("rift_key", RiftKeyItem::new);
         PERMEABLE_BARRIER = registerItem("permeable_barrier_item", PermeableBarrierItem::new);
         SHOULDER_EYE = registerItem("shoulder_eye", ShoulderEyeItem::new);
         WRAITH_VEIL = registerItem("wraith_veil", WraithVeilItem::new);

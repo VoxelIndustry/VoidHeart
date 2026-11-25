@@ -25,14 +25,16 @@ public final class VoidHeartData
                     Codec.INT.fieldOf("flexionCountWithoutPortals").orElse(0).forGetter(VoidHeartData::flexionCountWithoutPortals),
                     Codec.list(PortalKey.CODEC).fieldOf("portalsKeyList").orElse(Collections.emptyList()).forGetter(heartData -> List.copyOf(heartData.portalKeySet())),
                     Codec.INT.fieldOf("heartRise").orElse(0).forGetter(VoidHeartData::heartRise),
-                    StringRepresentable.fromEnum(PocketVariant::values).optionalFieldOf("variant").forGetter(VoidHeartData::variant)
-            ).apply(instance, (pocketPos, maxFlexion, flexionCountWithoutPortals, portalKeys, heartRise, variant) ->
+                    StringRepresentable.fromEnum(PocketVariant::values).optionalFieldOf("variant").forGetter(VoidHeartData::variant),
+                    Codec.list(BlockPos.CODEC).fieldOf("riftDoors").orElse(Collections.emptyList()).forGetter(heartData -> List.copyOf(heartData.riftDoors))
+            ).apply(instance, (pocketPos, maxFlexion, flexionCountWithoutPortals, portalKeys, heartRise, variant, riftDoors) ->
             {
                 var heartData = new VoidHeartData(pocketPos, maxFlexion);
                 heartData.flexionCountWithoutPortals = flexionCountWithoutPortals;
                 heartData.portalKeyList.addAll(portalKeys);
                 heartData.heartRise = heartRise;
                 heartData.variant = variant.orElse(null);
+                heartData.riftDoors.addAll(riftDoors);
                 return heartData;
             }));
 
@@ -44,6 +46,9 @@ public final class VoidHeartData
 
     private int flexionCountWithoutPortals;
     private final Set<PortalKey> portalKeyList = new HashSet<>();
+
+    /** Void doors of the pocket that Rift Keys open onto, each holding one flexion. */
+    private final Set<BlockPos> riftDoors = new HashSet<>();
 
     private int heartRise;
     /** Null for pockets made before the variant was saved. */
@@ -60,7 +65,7 @@ public final class VoidHeartData
 
     public boolean noFlexionLeft()
     {
-        return maxFlexion <= flexionCountWithoutPortals + portalsCount() / 2;
+        return maxFlexion <= currentFlexionCount();
     }
 
     public void addPortal(Level fromWorld, BlockPos corePos)
@@ -131,7 +136,31 @@ public final class VoidHeartData
 
     public int currentFlexionCount()
     {
-        return flexionCountWithoutPortals + portalsCount() / 2;
+        return flexionCountWithoutPortals + portalsCount() / 2 + riftDoors.size();
+    }
+
+    public boolean holdsRiftDoor(BlockPos door)
+    {
+        return riftDoors.contains(door);
+    }
+
+    public void addRiftDoor(BlockPos door)
+    {
+        if (riftDoors.add(door.immutable()))
+            markDirty();
+    }
+
+    public boolean removeRiftDoor(BlockPos door)
+    {
+        if (!riftDoors.remove(door))
+            return false;
+        markDirty();
+        return true;
+    }
+
+    public Set<BlockPos> riftDoors()
+    {
+        return Collections.unmodifiableSet(riftDoors);
     }
 
     private void flexionCountWithoutPortals(int currentFlexionCount)
@@ -195,6 +224,7 @@ public final class VoidHeartData
         root.append(Component.literal("§6Max Flexion: §3" + maxFlexion + "\n"));
         root.append(Component.literal("§6Flexion Count (without portals): §3" + flexionCountWithoutPortals + "\n"));
         root.append(Component.literal("§6Portals Count: §3" + portalsCount() + "\n"));
+        root.append(Component.literal("§6Rift Doors: §3" + riftDoors.size() + "\n"));
 
         for (var key : portalKeyList)
             root.append(Component.literal(" -> §3"+key.toString() + "\n"));
