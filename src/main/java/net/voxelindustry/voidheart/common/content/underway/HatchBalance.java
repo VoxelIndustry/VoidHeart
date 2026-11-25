@@ -10,7 +10,7 @@ public final class HatchBalance
     public static final int LEAF_STAGE_TICKS = 14;
 
     /** Hits the bare key takes before it breaks. The shield takes one per pane, see {@link KeyDefence#PANES}. */
-    public static final int KEY_HITS = 3;
+    public static final int KEY_HITS = 10;
     /** Ticks without a hit before the shield comes back whole. */
     public static final int SHIELD_LULL_TICKS = 12 * 20;
     /** The least ticks between two hits that count, so one swing or a crowd striking together never empties the shield at once. */
