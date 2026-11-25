@@ -88,13 +88,17 @@ public final class RiftKeys
 
         var heartData = VoidPocketState.getVoidPocketState(voidLevel).getHeartData(link.owner());
         var door = link.doorPos();
-        if (heartData == null || !heartData.holdsRiftDoor(door)
-                || !(voidLevel.getBlockEntity(door) instanceof VoidDoorTile tile) || !tile.getId().equals(link.doorId()))
+        var tile = voidLevel.getBlockEntity(door) instanceof VoidDoorTile doorTile ? doorTile : null;
+        if (tile == null)
         {
-            // The door was broken or replaced without its tile noticing, its flexion is free again
+            // The door went without its tile noticing, its flexion is free again
             if (heartData != null)
                 heartData.removeRiftDoor(door);
             close(server, door, false);
+        }
+        // A door placed since in the same spot is another door: a stale key leaves its flexion and rift alone
+        if (tile == null || heartData == null || !heartData.holdsRiftDoor(door) || !tile.getId().equals(link.doorId()))
+        {
             player.sendOverlayMessage(Component.translatable(MODID + ".rift_key.door_missing"));
             return false;
         }

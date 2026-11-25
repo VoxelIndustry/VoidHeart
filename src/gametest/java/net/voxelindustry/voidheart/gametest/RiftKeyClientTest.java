@@ -20,6 +20,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.door.RiftEntryBlock;
+import net.voxelindustry.voidheart.common.content.door.RiftKeys;
 import net.voxelindustry.voidheart.common.content.door.RiftPairs;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
@@ -41,6 +42,26 @@ public class RiftKeyClientTest implements FabricClientGameTest
 
     @Override
     public void runTest(ClientGameTestContext context)
+    {
+        // All tests share one client, so the camera and HUD go back as they were, even when a check fails
+        var camera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        var hudHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
+        try
+        {
+            run(context);
+        }
+        finally
+        {
+            context.runOnClient(minecraft ->
+            {
+                minecraft.options.setCameraType(camera);
+                if (minecraft.gui.hud.isHidden() != hudHidden)
+                    minecraft.gui.hud.toggle();
+            });
+        }
+    }
+
+    private void run(ClientGameTestContext context)
     {
         try (var world = context.worldBuilder().create())
         {
@@ -399,7 +420,28 @@ public class RiftKeyClientTest implements FabricClientGameTest
         {
             if (!minecraft.overworld().getBlockState(entryAt(feet)).isAir())
                 throw new AssertionError("A key whose door is gone should raise nothing");
+
+            // A new door in the same spot, bound to a fresh key that opens a rift: the stale key must leave both alone
+            var level = voidLevel(minecraft);
+            var lower = VoidHeartBlocks.VOID_DOOR.defaultBlockState().setValue(DoorBlock.FACING, Direction.EAST).setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER);
+            level.setBlockAndUpdate(door, lower);
+            level.setBlockAndUpdate(door.above(), lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+            var player = player(minecraft);
+            var fresh = new ItemStack(VoidHeartItems.RIFT_KEY);
+            RiftKeys.bind(player, fresh, level, door);
+            if (!RiftKeys.open(player, fresh, fresh.get(VoidHeartDataComponents.RIFT_KEY_LINK)))
+                throw new AssertionError("A fresh key on the replacement door should open a rift");
+            player.getCooldowns().removeCooldown(player.getCooldowns().getCooldownGroup(player.getMainHandItem()));
         });
+        context.waitTicks(2);
+        use(context);
+        server.runOnServer(minecraft ->
+        {
+            if (!heartData(minecraft).holdsRiftDoor(door) || RiftPairs.get(minecraft).entryOf(door).isEmpty())
+                throw new AssertionError("A stale key should leave the replacement door's flexion and rift alone");
+            voidLevel(minecraft).destroyBlock(door, false);
+        });
+        context.waitTicks(5);
     }
 
     /**

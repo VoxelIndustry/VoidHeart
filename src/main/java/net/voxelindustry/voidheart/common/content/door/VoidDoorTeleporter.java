@@ -95,7 +95,8 @@ public class VoidDoorTeleporter
             {
                 var voidDoorState = voidLevel.getBlockState(voidDoor);
 
-                if (!(voidDoorState.getBlock() instanceof VoidDoorBlock))
+                // A shut pocket door closes its rift, even before the next check notices
+                if (!(voidDoorState.getBlock() instanceof VoidDoorBlock) || !voidDoorState.getValue(DoorBlock.OPEN))
                     RiftKeys.close(server, voidDoor, false);
                 else
                     travel(server, player, doorState, voidLevel, voidDoor, voidDoorState);
