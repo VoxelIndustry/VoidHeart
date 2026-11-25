@@ -28,11 +28,11 @@ final class AltarDraughts
         stillness(2_000, "sin_cleansing", "greater_shielding_apparatus", "armor_spectral_lens", "officiant", "memoriam_lens");
         stillness(6_000, "supreme_shielding_apparatus");
         stillness(1_000, "apparatus_ember_ward", "apparatus_arrow_ward", "apparatus_blast_ward", "apparatus_arcane_ward", "apparatus_grudge_ward",
-                "armor_night_vision");
-        stillness(1_500, "apparatus_pulse_core", "apparatus_blink_core", "apparatus_stasis_core", "apparatus_mending_core", "hoard_coffer", "fold", "aspect_fold");
+                "armor_night_vision", "void_key");
+        stillness(1_500, "apparatus_pulse_core", "apparatus_blink_core", "apparatus_stasis_core", "apparatus_mending_core", "hoard_coffer", "fold", "aspect_fold", "void_door");
         stillness(3_000, "shoulder_eye", "azurium_spike", "fouled_azurium_spike", "armor_levitation",
                 "wrought_anchor");
-        stillness(4_000, "deep_siphon");
+        stillness(4_000, "deep_siphon", "rift_key");
 
         suffering(4_000, "void_marrow", "heart_cradle");
         suffering(3_000, "meat_proxy", "fissure_seed");

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "voidheart:altar/rift_key"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_void_key": {
+      "conditions": {
+        "items": [
+          {
+            "items": "voidheart:void_key"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_void_key"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "voidheart:altar/rift_key"
+    ]
+  }
+}

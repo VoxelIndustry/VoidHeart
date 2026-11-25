@@ -258,6 +258,20 @@ public class RecipesProvider extends FabricRecipeProvider
                     VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
                     VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+            // A door for the pockets, and the key that links a door of the world to it
+            offerAltarRecipe("void_door", VoidHeartBlocks.VOID_DOOR, Items.IRON_DOOR,
+                    VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED, VoidHeartBlocks.VOIDSTONE_POLISHED,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL);
+            offerAltarRecipe("void_key", VoidHeartItems.VOID_KEY, Items.TRIPWIRE_HOOK,
+                    VoidHeartItems.ENDER_SHARD, VoidHeartItems.ENDER_SHARD,
+                    VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT);
+            // A void key taught to open a door where there is none: wraith ink to pass through, azurium to carry the fold, and it holds a flexion
+            offerAltarRecipe("rift_key", VoidHeartItems.RIFT_KEY, VoidHeartItems.VOID_KEY,
+                    VoidHeartItems.WRAITH_INK, VoidHeartItems.WRAITH_INK,
+                    VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD, VoidHeartItems.AZURIUM_SHARD,
+                    VoidHeartItems.VOID_PEARL, VoidHeartItems.VOID_PEARL,
+                    VoidHeartItems.ENDER_SHARD);
             offerAltarRecipe("cogitant", VoidHeartBlocks.COGITANT, VoidHeartItems.WRIGGLING_BRAIN,
                     VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE, VoidHeartBlocks.VOIDSTONE,
                     VoidHeartItems.RAVENOUS_GOLD_INGOT, VoidHeartItems.RAVENOUS_GOLD_INGOT,

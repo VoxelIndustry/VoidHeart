@@ -72,6 +72,8 @@ public final class ResearchScenes
         script("ley_sense", LandScenes::stones, "ley_stone", "ley_ward", "ley_grower");
         script("portal_flexion", LandScenes::portal, "portal_core");
         script("permeable_barrier", LandScenes::barrier, "permeable_barrier_item");
+        script("void_door", DoorScenes::voidDoor, "void_door", "void_key");
+        script("rift_key", DoorScenes::riftKey, "rift_key");
         script("second_heart", SecondHeartScenes::ventricle, "heart_cradle", "ventricle_basin", "rubrum_veined_voidstone", "azurium_veined_voidstone",
                 "ravenous_gold_valve");
     }

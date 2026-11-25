@@ -63,6 +63,7 @@ import net.voxelindustry.voidheart.common.content.depths.AttachedGrowthBlock;
 import net.voxelindustry.voidheart.common.content.depths.SmokerVentBlock;
 import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
 import net.voxelindustry.voidheart.common.content.depths.TubeWormsBlock;
+import net.voxelindustry.voidheart.common.content.door.RiftEntryBlock;
 import net.voxelindustry.voidheart.common.content.door.VoidDoorBlock;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.voidheart.common.content.essence.EssenceRegistry;
@@ -209,6 +210,7 @@ public class VoidHeartBlocks
     public static Block VOID_MONOLITH_CAP;
 
     public static Block VOID_DOOR;
+    public static Block RIFT_ENTRY;
     public static Block OLD_ANCHOR;
     public static Block WROUGHT_ANCHOR;
     public static Block PERMEABLE_BARRIER;
@@ -510,6 +512,15 @@ public class VoidHeartBlocks
         VOID_LAMP = registerBlock("void_lamp", VoidLampBlock::new, BlockBehaviour.Properties.of(), true);
 
         VOID_DOOR = registerBlock("void_door", VoidDoorBlock::new, BlockBehaviour.Properties.of(), true);
+        // Raised and collapsed by its Rift Key alone
+        RIFT_ENTRY = registerBlock("rift_entry", RiftEntryBlock::new, BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_PURPLE)
+                .strength(-1F, 3600000F)
+                .noLootTable()
+                .noOcclusion()
+                .lightLevel(state -> 5)
+                .pushReaction(PushReaction.IMMOVEABLE)
+                .sound(SoundType.AMETHYST_CLUSTER), false);
 
         OLD_ANCHOR = registerBlock("old_anchor", OldAnchorBlock::new, BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)

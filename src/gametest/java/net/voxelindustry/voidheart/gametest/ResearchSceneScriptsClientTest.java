@@ -62,10 +62,12 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
     private static final Identifier PORTAL  = id("portal_flexion");
     private static final Identifier BARRIER = id("permeable_barrier");
     private static final Identifier HEART   = id("second_heart");
+    private static final Identifier DOORS   = id("void_door");
+    private static final Identifier RIFT    = id("rift_key");
 
     private static final Map<Identifier, String> NAMES = Map.of(GRID, "grid", REACTOR, "reactor", SPIKE, "spike", FISSURE, "fissure",
-            STONES, "stones", PORTAL, "portal", BARRIER, "barrier", HEART, "heart");
-    private static final List<Identifier> ORDER = List.of(GRID, REACTOR, SPIKE, FISSURE, STONES, PORTAL, BARRIER, HEART);
+            STONES, "stones", PORTAL, "portal", BARRIER, "barrier", HEART, "heart", DOORS, "doors", RIFT, "rift");
+    private static final List<Identifier> ORDER = List.of(GRID, REACTOR, SPIKE, FISSURE, STONES, PORTAL, BARRIER, HEART, DOORS, RIFT);
 
     @Override
     public void runTest(ClientGameTestContext context)
@@ -140,6 +142,11 @@ public class ResearchSceneScriptsClientTest implements FabricClientGameTest
                     captureMoment(context, "fissure-tearing", 1, 132);
                 if (research.equals(REACTOR))
                     captureMoment(context, "reactor-igniting", 4, 75);
+                if (research.equals(RIFT))
+                {
+                    captureMoment(context, "rift-rising", 1, 40);
+                    captureMoment(context, "rift-collapsing", 4, 32);
+                }
                 if (research.equals(BARRIER))
                     captureMoment(context, "barrier-first-corner", 1, 34);
                 if (research.equals(HEART))
