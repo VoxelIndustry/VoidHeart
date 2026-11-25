@@ -53,6 +53,8 @@ public class VoidBlightClientTest implements FabricClientGameTest
     private static final String RAPIER    = "voidheart:void_blight_rapier";
     private static final double TARGET_Z  = 2.8;
     private static final float  STURDY    = 200;
+    /** Rooted mobs outlast every crush of a hole, so the spear test can count them. */
+    private static final float  ROOTED    = 120;
     private static final int    CHARGED   = 13;
     private static final int    SCYTHE_CHARGED = 24;
     private static final List<Identifier> BLIGHTS = List.of(id("void_blight_rapier"), id("void_blight_scythe"), id("void_blight_spear"), id("void_blight_crossbow"));
@@ -475,7 +477,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
 
         // It draws the husks in and crushes what it holds, but the boss and the player stand where they were
         waitFor(context, server, BlightBalance.HOLE_TICKS, "Expected the hole to crush the husk beside it",
-                minecraft -> husk(minecraft, near).getHealth() < 60);
+                minecraft -> husk(minecraft, near).getHealth() < ROOTED);
         context.takeScreenshot("void-blight-spear-crushing");
         server.runOnServer(minecraft ->
         {
@@ -508,7 +510,7 @@ public class VoidBlightClientTest implements FabricClientGameTest
                 minecraft -> spears(minecraft).isEmpty() && player(minecraft).getInventory().contains(stack -> stack.is(VoidHeartItems.VOID_BLIGHT_SPEAR)));
         expect(server.computeOnServer(minecraft -> player(minecraft).position().distanceTo(playerFrom) < 0.2), "Expected the player never drawn in, to the hole's end");
         context.getInput().pressKey(InputConstants.KEY_F1);
-        server.runOnServer(minecraft -> expect(husk(minecraft, near).getHealth() <= 60 - 2 * BlightBalance.HOLE_CRUSH_DAMAGE,
+        server.runOnServer(minecraft -> expect(husk(minecraft, near).getHealth() <= ROOTED - 2 * BlightBalance.HOLE_CRUSH_DAMAGE,
                 "Expected the held husk crushed more than once, at " + husk(minecraft, near).getHealth()));
 
         // In the inventory it is the flat sprite
@@ -746,8 +748,8 @@ public class VoidBlightClientTest implements FabricClientGameTest
     private static UUID rootedMob(MinecraftServer minecraft, EntityType<? extends Mob> type, double x, double z)
     {
         var mob = spawn(minecraft, type, x, FLAT_FEET, z);
-        mob.getAttribute(Attributes.MAX_HEALTH).setBaseValue(60);
-        mob.setHealth(60);
+        mob.getAttribute(Attributes.MAX_HEALTH).setBaseValue(ROOTED);
+        mob.setHealth(ROOTED);
         mob.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0);
         mob.setPersistenceRequired();
         return mob.getUUID();
