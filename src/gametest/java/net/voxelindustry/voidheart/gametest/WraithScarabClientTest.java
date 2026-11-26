@@ -209,9 +209,17 @@ public class WraithScarabClientTest implements FabricClientGameTest
         server.runOnServer(minecraft ->
         {
             heal(minecraft);
-            spawnScarab(minecraft, X0 + 4.5);
+            // Set on the player from the start: left to find them, an idle hop can phase it out through the wall first, and then it never sees them
+            spawnScarab(minecraft, X0 + 4.5).setTarget(player(minecraft));
         });
-        waitFor(context, server, 200, "The scarab should bite the player", minecraft -> player(minecraft).getHealth() < player(minecraft).getMaxHealth());
+        waitFor(context, server, 200, () -> server.computeOnServer(minecraft ->
+        {
+            var scarab = first(minecraft, VoidHeartEntities.WRAITH_SCARAB);
+            var player = player(minecraft);
+            return "The scarab should bite the player, but holds " + scarab.spot() + " at " + scarab.getBoundingBox().getCenter() + " toward " + scarab.getTarget()
+                    + ", " + ScarabHops.distance(scarab.spot().center(), player.getBoundingBox()) + " from the player's box " + player.getBoundingBox()
+                    + ", sight " + scarab.getSensing().hasLineOfSight(player) + ", player hp " + player.getHealth() + " " + player.gameMode() + " invulnerable " + player.isInvulnerable();
+        }), minecraft -> player(minecraft).getHealth() < player(minecraft).getMaxHealth());
         clearScene(server);
         server.runOnServer(GameTestKit::heal);
         server.runCommand("effect clear @a");
