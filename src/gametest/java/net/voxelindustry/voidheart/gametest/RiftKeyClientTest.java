@@ -22,6 +22,7 @@ import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.door.RiftEntryBlock;
 import net.voxelindustry.voidheart.common.content.door.RiftKeys;
 import net.voxelindustry.voidheart.common.content.door.RiftPairs;
+import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
@@ -79,7 +80,8 @@ public class RiftKeyClientTest implements FabricClientGameTest
                 var player = player(minecraft);
                 player.getAbilities().invulnerable = true;
                 VoidPocketState.getVoidPocketState(voidLevel(minecraft)).createPocket(voidLevel(minecraft), player.getUUID());
-                heartData(minecraft).maxFlexion(1);
+                // One flexion, whatever the rites allow
+                heartData(minecraft).bonusFlexion(1 - VoidHeartData.ritesFlexion(VoidGrafts.attunementOf(player)));
                 buildPlatform(minecraft.overworld());
                 player.getInventory().setItem(0, new ItemStack(VoidHeartItems.RIFT_KEY));
                 player.getInventory().setItem(1, new ItemStack(VoidHeartItems.RIFT_KEY));
