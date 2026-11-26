@@ -2,7 +2,9 @@ package net.voxelindustry.voidheart.common.content.portalframe;
 
 import net.voxelindustry.voidheart.common.item.PortalCoreItem;
 import net.voxelindustry.voidheart.common.setup.VoidHeartItems;
+import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
+import net.minecraft.server.level.ServerPlayer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
@@ -40,7 +42,7 @@ public class VoidStoneBricksBlock extends Block
                 player.sendOverlayMessage(Component.translatable(MODID + ".no_pocket_for_player"));
                 return InteractionResult.PASS;
             }
-            if (voidPocketState.getHeartData(player.getUUID()).noFlexionLeft())
+            if (voidPocketState.getHeartData(player.getUUID()).noFlexionLeft(VoidGrafts.attunementOf((ServerPlayer) player)))
             {
                 player.sendOverlayMessage(Component.translatable(MODID + ".no_flexion_left"));
                 return InteractionResult.PASS;

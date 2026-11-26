@@ -74,6 +74,8 @@ If nothing in the table fits, copy the closest vanilla pipeline as `VoidHeartRen
 | A mob darkened by its model tint flashes bright red when hurt | The hurt overlay is mixed in after the tint, so it isn't darkened with the rest | Clear `hasRedOverlay` on the render state while it is dark (`MixinLivingEntityRendererSwallow`) | |
 | Half the shapes of a hand-built GUI element are missing, on some screen edges or sides only | The GUI pipelines cull back faces, so quads mirrored into place (bottom or left edge, flipped frames) wind the wrong way | Emit every quad counter-clockwise on screen, or check its signed area and reverse it (`HymnMesh.rect`) | |
 | A worn model or mob reads as plastic | Flat colour fills on its skin, lit evenly by the entity shader | Speckle every face a shade up or down, light its top edge and darken its bottom one, as `automaton.png` does (see `aseprite-texture`) | |
+| A rounded mass of overlapping boxes shows its glow layer twice and fights at shared planes | Every box's faces are drawn, coplanar or buried ones included, and the glow layer draws on all of them | Fill whole pixels and draw only the faces where filled meets empty, merged into rectangles (`HeartShape`, checked in `HeartShapeTest`) | |
+| Pale speckles on a glowing part turn grey where it is dimmed or shaded | Darkening a light, low-saturation texel through vertex colour or face shading greys it | Keep the solid texture saturated at a fixed shade, and lay the brightening over it as an `eyes` layer on the same faces whose alpha carries the glow (`VoidHeartRender` veins) | |
 
 Run `git show <commit>` when you need the full change. If a fix teaches something new, add a row here in the same change, so the next renderer benefits from it.
 

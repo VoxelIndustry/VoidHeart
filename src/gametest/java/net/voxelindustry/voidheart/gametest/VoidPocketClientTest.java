@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.content.heart.VoidHeartTile;
+import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.content.portalframe.PortalFormer;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.world.VoidPocketState;
@@ -178,8 +179,9 @@ public class VoidPocketClientTest implements FabricClientGameTest
         context.waitTicks(2);
         server.runOnServer(minecraft ->
         {
-            if (heartData(minecraft).maxFlexion() != 5)
-                throw new AssertionError("Flexion should be set to 5, got " + heartData(minecraft).maxFlexion());
+            int attunement = VoidGrafts.attunementOf(minecraft, minecraft.getPlayerList().getPlayers().getFirst().getUUID());
+            if (heartData(minecraft).maxFlexion(attunement) != 5)
+                throw new AssertionError("Flexion should be set to 5, got " + heartData(minecraft).maxFlexion(attunement));
             heartData(minecraft).addPortal(minecraft.overworld(), new BlockPos(0, -60, 0));
         });
         server.runCommand("voidheart pocket portals @a prune");

@@ -37,6 +37,7 @@ import net.voxelindustry.voidheart.common.world.pocket.PocketBuilder;
 import net.voxelindustry.voidheart.common.world.pocket.PocketGrid;
 import net.voxelindustry.voidheart.common.world.pocket.PocketPalette;
 import net.voxelindustry.voidheart.common.world.pocket.PocketVariant;
+import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.world.pocket.VoidHeartData;
 import org.jspecify.annotations.Nullable;
 
@@ -182,7 +183,7 @@ final class PocketCommands
             var line = Component.literal(name + " ")
                     .append(clickable("[" + heartData.pocketPos().toShortString() + "]", "/voidheart pocket tp " + name))
                     .append(Component.literal(" " + heartData.variant().map(PocketVariant::getSerializedName).orElse("unknown variant")
-                            + ", flexion " + heartData.currentFlexionCount() + "/" + heartData.maxFlexion()
+                            + ", flexion " + heartData.currentFlexionCount() + "/" + heartData.maxFlexion(VoidGrafts.attunementOf(source.getServer(), entry.getKey()))
                             + ", " + heartData.portalsCount() + " portal(s)"));
             source.sendSuccess(() -> line, false);
         }
@@ -218,6 +219,7 @@ final class PocketCommands
         var text = Component.literal("§7====== §3Pocket of " + nameOf(source, ownerID) + " §7======\n");
         text.append(Component.literal("§6Owner: §7" + ownerID + "\n"));
         text.append(heartData.debugPrint());
+        text.append(Component.literal("§6Flexion: §3" + heartData.currentFlexionCount() + "/" + heartData.maxFlexion(VoidGrafts.attunementOf(source.getServer(), ownerID)) + "\n"));
         if (heartData.variant().isEmpty())
             text.append(Component.literal("§6Biome suggests: §3" + guessVariant(level, heartPos).map(PocketVariant::getSerializedName).orElse("none") + "\n"));
         text.append(Component.literal("§6Heart rise: §3" + heartData.heartRise() + "\n"));
@@ -351,7 +353,8 @@ final class PocketCommands
         var owner = owner(context);
         var heartData = heartData(source, owner);
         int max = IntegerArgumentType.getInteger(context, "max");
-        heartData.maxFlexion(max);
+        // Kept as a bonus over what the owner's rites allow now, so later rites still add theirs
+        heartData.bonusFlexion(max - VoidHeartData.ritesFlexion(VoidGrafts.attunementOf(source.getServer(), owner.id())));
         state(source).setDirty();
         source.sendSuccess(() -> Component.literal("Max flexion of " + owner.name() + " is now " + max + ", " + heartData.currentFlexionCount() + " used"), true);
         return max;

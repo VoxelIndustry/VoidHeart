@@ -34,14 +34,16 @@ class RiftKeyStateTest
     @Test
     void riftDoorHoldsOneFlexionUntilRemoved()
     {
-        var heart = new VoidHeartData(BlockPos.ZERO, 2);
+        // Two flexions: the base with one taken back by command
+        var heart = new VoidHeartData(BlockPos.ZERO);
+        heart.bonusFlexion(2 - VoidHeartData.BASE_FLEXION);
         heart.addRiftDoor(DOOR);
         heart.addRiftDoor(DOOR);
         assertThat(heart.currentFlexionCount()).isEqualTo(1);
-        assertThat(heart.noFlexionLeft()).isFalse();
+        assertThat(heart.noFlexionLeft(1)).isFalse();
 
         heart.addRiftDoor(OTHER_DOOR);
-        assertThat(heart.noFlexionLeft()).isTrue();
+        assertThat(heart.noFlexionLeft(1)).isTrue();
 
         assertThat(heart.removeRiftDoor(DOOR)).isTrue();
         assertThat(heart.removeRiftDoor(DOOR)).isFalse();
@@ -51,7 +53,7 @@ class RiftKeyStateTest
     @Test
     void riftDoorsSurviveSaving()
     {
-        var heart = new VoidHeartData(BlockPos.ZERO, 3);
+        var heart = new VoidHeartData(BlockPos.ZERO);
         heart.addRiftDoor(DOOR);
 
         var json = VoidHeartData.CODEC.encodeStart(JsonOps.INSTANCE, heart).getOrThrow();
