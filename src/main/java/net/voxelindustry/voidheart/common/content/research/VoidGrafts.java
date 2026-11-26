@@ -1,11 +1,14 @@
 package net.voxelindustry.voidheart.common.content.research;
 
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.voxelindustry.voidheart.VoidHeart;
 import net.voxelindustry.voidheart.common.world.daedalus.VoidDaedalus;
 import net.voxelindustry.voidheart.common.world.dungeon.VoidDungeons;
+
+import java.util.UUID;
 
 /**
  * What each graft eaten does to the body: a flaw away from the void, and a gift inside it. The Vein is the second step of attunement, the Marrow the third.
@@ -51,6 +54,12 @@ public final class VoidGrafts
     /** Read without settling, since this is asked many times a second. */
     public static int attunementOf(ServerPlayer player)
     {
-        return KnowledgeState.get(player.level().getServer()).of(player.getUUID()).getAttunement();
+        return attunementOf(player.level().getServer(), player.getUUID());
+    }
+
+    /** As {@link #attunementOf(ServerPlayer)}, also for players who are away. */
+    public static int attunementOf(MinecraftServer server, UUID player)
+    {
+        return KnowledgeState.get(server).of(player).getAttunement();
     }
 }

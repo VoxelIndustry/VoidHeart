@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.voxelindustry.voidheart.VoidHeart;
+import net.voxelindustry.voidheart.common.content.research.VoidGrafts;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents;
 import net.voxelindustry.voidheart.common.setup.VoidHeartDataComponents.RiftKeyLink;
@@ -54,7 +55,7 @@ public final class RiftKeys
         var heartData = pocketState.getHeartData(player.getUUID());
         if (!heartData.holdsRiftDoor(door))
         {
-            if (heartData.noFlexionLeft())
+            if (heartData.noFlexionLeft(VoidGrafts.attunementOf(player)))
             {
                 player.sendOverlayMessage(Component.translatable(MODID + ".no_flexion_left"));
                 return;

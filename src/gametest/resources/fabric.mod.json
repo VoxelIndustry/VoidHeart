@@ -82,6 +82,7 @@
       "net.voxelindustry.voidheart.gametest.CrystalFedClientTest",
       "net.voxelindustry.voidheart.gametest.CrystalDeepClientTest",
       "net.voxelindustry.voidheart.gametest.VoidPocketClientTest",
+      "net.voxelindustry.voidheart.gametest.HeartRitesClientTest",
       "net.voxelindustry.voidheart.gametest.VoidDungeonClientTest",
       "net.voxelindustry.voidheart.gametest.VoidMobBehaviourClientTest",
       "net.voxelindustry.voidheart.gametest.VoidMobLooksClientTest",
