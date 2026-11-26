@@ -23,10 +23,12 @@ public final class HeartBeat
     {
     }
 
-    /** The number of the latest beat started by this time. */
+    /** The number of the latest beat started by this time. Jitter can start a beat up to a few ticks either side of its period's boundary. */
     public static int latest(float time, int seed, float period)
     {
         int index = (int) Math.floor(time / period);
+        if (time >= start(index + 1, seed, period))
+            return index + 1;
         return time < start(index, seed, period) ? index - 1 : index;
     }
 

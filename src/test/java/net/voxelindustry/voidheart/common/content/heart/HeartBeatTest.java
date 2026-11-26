@@ -26,6 +26,26 @@ class HeartBeatTest
         }
     }
 
+    /** The latest beat is the last one started, even one jittered early into the period before its own. */
+    @Test
+    void theLatestBeatIsTheLastStarted()
+    {
+        // This seed starts beat 1 at tick 27, early in the period of beat 0
+        assertThat(HeartBeat.start(1, -1640531535, HeartBeat.ROOTED_PERIOD)).isLessThan(HeartBeat.ROOTED_PERIOD);
+        assertThat(HeartBeat.latest(28, -1640531535, HeartBeat.ROOTED_PERIOD)).isEqualTo(1);
+
+        for (int seed = 0; seed < 200; seed++)
+        {
+            int owner = seed * 0x9E3779B9;
+            for (float time = 0; time < HeartBeat.ROOTED_PERIOD * 20; time += 0.5F)
+            {
+                int latest = HeartBeat.latest(time, owner, HeartBeat.ROOTED_PERIOD);
+                assertThat(HeartBeat.start(latest, owner, HeartBeat.ROOTED_PERIOD)).isLessThanOrEqualTo(time);
+                assertThat(HeartBeat.start(latest + 1, owner, HeartBeat.ROOTED_PERIOD)).isGreaterThan(time);
+            }
+        }
+    }
+
     @Test
     void aRootedHeartBeatsTwiceAndTheSecondIsWeaker()
     {

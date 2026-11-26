@@ -1,6 +1,5 @@
 package net.voxelindustry.voidheart.gametest;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -36,6 +35,31 @@ public class HeartRitesClientTest implements FabricClientGameTest
     @Override
     public void runTest(ClientGameTestContext context)
     {
+        // All tests share one client, so the camera and HUD are left as this one found them
+        var previousCamera = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
+        boolean previousHudHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
+        try
+        {
+            run(context);
+        }
+        finally
+        {
+            context.runOnClient(minecraft -> minecraft.options.setCameraType(previousCamera));
+            setHudHidden(context, previousHudHidden);
+        }
+    }
+
+    private static void setHudHidden(ClientGameTestContext context, boolean hidden)
+    {
+        context.runOnClient(minecraft ->
+        {
+            if (minecraft.gui.hud.isHidden() != hidden)
+                minecraft.gui.hud.toggle();
+        });
+    }
+
+    private static void run(ClientGameTestContext context)
+    {
         try (var world = context.worldBuilder().create())
         {
             var server = world.getServer();
@@ -45,7 +69,7 @@ public class HeartRitesClientTest implements FabricClientGameTest
             var heart = server.computeOnServer(minecraft -> heartData(minecraft).pocketPos());
 
             context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
-            context.getInput().pressKey(InputConstants.KEY_F1);
+            setHudHidden(context, true);
             look(context, server, heart, 1.6, 0.25, 0.9);
             world.getConnection().waitForChunksRender();
 
@@ -59,8 +83,6 @@ public class HeartRitesClientTest implements FabricClientGameTest
             server.runOnServer(minecraft -> SecondHeart.grant(player(minecraft), true));
             checkRite(context, server, heart, VoidGrafts.SECOND_HEART);
             captureTwin(context, server, heart);
-
-            context.getInput().pressKey(InputConstants.KEY_F1);
         }
     }
 
