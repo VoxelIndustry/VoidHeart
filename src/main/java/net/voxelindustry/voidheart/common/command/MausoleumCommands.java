@@ -34,6 +34,7 @@ final class MausoleumCommands
     private static final SimpleCommandExceptionType NOT_IN_MAUSOLEUM = new SimpleCommandExceptionType(Component.literal("Not in a mausoleum"));
     private static final SimpleCommandExceptionType NO_MAUSOLEUM = new SimpleCommandExceptionType(Component.literal("No mausoleum has that number"));
     private static final SimpleCommandExceptionType NO_RIDER = new SimpleCommandExceptionType(Component.literal("No Dullahan rides here"));
+    private static final SimpleCommandExceptionType NO_ROOM = new SimpleCommandExceptionType(Component.literal("Every mausoleum is taken"));
 
     private MausoleumCommands()
     {
@@ -57,6 +58,8 @@ final class MausoleumCommands
     {
         var player = context.getSource().getPlayerOrException();
         int index = Mausoleums.state(player.level().getServer()).open(GlobalPos.of(player.level().dimension(), player.blockPosition()), player.getYRot());
+        if (index < 0)
+            throw NO_ROOM.create();
         Mausoleums.arrive(player, index);
         context.getSource().sendSuccess(() -> Component.literal("Entered mausoleum " + index), false);
         return index;

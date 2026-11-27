@@ -834,6 +834,7 @@
   "voidheart.jade.beam_focus.emits": "Emits: %s",
   "voidheart.jade.shroud_altar.offered": "Offered: %s",
   "voidheart.shroud_altar.requires_ink": "It requires %s",
+  "voidheart.mausoleum.unreachable": "The void leads nowhere",
   "entity.voidheart.dullahan": "Dullahan",
   "entity.voidheart.maleficent_wisp": "Maleficent Wisp",
   "block.voidheart.funerary_orb": "Funerary Orb",

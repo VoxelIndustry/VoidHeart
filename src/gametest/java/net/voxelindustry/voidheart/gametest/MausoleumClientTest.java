@@ -54,21 +54,21 @@ public class MausoleumClientTest implements FabricClientGameTest
     public void runTest(ClientGameTestContext context)
     {
         var cameraBefore = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
-        TestWorldSave save;
-        ShroudGate gate;
-        int index;
-        boolean hudWasHidden;
-        try (var world = context.worldBuilder().create())
+        boolean hudWasHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
+        // Every test shares this client, so its camera and HUD are put back however this one ends, opening the second world included
+        try
         {
-            save = world.getWorldSave();
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            hudWasHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
-            if (!hudWasHidden)
-                context.getInput().pressKey(InputConstants.KEY_F1);
-            try
+            TestWorldSave save;
+            ShroudGate gate;
+            int index;
+            try (var world = context.worldBuilder().create())
             {
+                save = world.getWorldSave();
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                if (!context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()))
+                    context.getInput().pressKey(InputConstants.KEY_F1);
                 server.runCommand("difficulty normal");
                 server.runCommand("gamemode creative @a");
                 server.runCommand("gamerule advance_time false");
@@ -78,29 +78,27 @@ public class MausoleumClientTest implements FabricClientGameTest
                 tour(context, server, index);
                 fightFirstFlame(context, server, index);
                 secondFlame(context, server, index);
-            } catch (RuntimeException | Error e)
-            {
-                restore(context, cameraBefore, hudWasHidden);
-                throw e;
             }
-        }
 
-        // Saved with a wisp burning, the rider comes back with its crown as it was and still out of reach
-        try (var world = save.open())
-        {
-            var server = world.getServer();
-            try
+            // Saved with a wisp burning, the rider comes back with its crown as it was and still out of reach
+            try (var world = save.open())
             {
-                world.getConnection().waitForChunksRender(false, CHUNK_TIMEOUT_TICKS);
-                checkAfterReload(context, server, index);
-                lastFlames(context, server, index);
-                slay(context, server, index);
-                leave(context, world, gate, index);
-            } finally
-            {
-                server.runCommand("gamemode creative @a");
-                restore(context, cameraBefore, hudWasHidden);
+                var server = world.getServer();
+                try
+                {
+                    world.getConnection().waitForChunksRender(false, CHUNK_TIMEOUT_TICKS);
+                    checkAfterReload(context, server, index);
+                    lastFlames(context, server, index);
+                    slay(context, server, index);
+                    leave(context, world, gate, index);
+                } finally
+                {
+                    server.runCommand("gamemode creative @a");
+                }
             }
+        } finally
+        {
+            restore(context, cameraBefore, hudWasHidden);
         }
     }
 
@@ -445,15 +443,16 @@ public class MausoleumClientTest implements FabricClientGameTest
 
     private static void look(ClientGameTestContext context, TestServerContext server, int index, double x, double y, double z, double tx, double ty, double tz)
     {
+        var feet = at(index, x, y, z);
+        var target = at(index, tx, ty, tz);
+        server.runCommand("execute in voidheart:dungeons run tp @a " + aimedPose(feet.x, feet.y, feet.z, target.x, target.y, target.z));
+        // After the teleport, since landing before it would end creative flight
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
             player.getAbilities().flying = true;
             player.onUpdateAbilities();
         });
-        var feet = at(index, x, y, z);
-        var target = at(index, tx, ty, tz);
-        server.runCommand("execute in voidheart:dungeons run tp @a " + aimedPose(feet.x, feet.y, feet.z, target.x, target.y, target.z));
         context.waitTicks(10);
     }
 

@@ -3,6 +3,7 @@ package net.voxelindustry.voidheart.common.content.mausoleum;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,6 +20,8 @@ import net.voxelindustry.voidheart.common.world.mausoleum.MausoleumPlan;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import static net.voxelindustry.voidheart.VoidHeart.MODID;
 
 /**
  * The way into a shroud gate's mausoleum and back out. Whoever walks into an open gate's void comes out in the antechamber of the mausoleum that
@@ -84,6 +87,13 @@ public final class Mausoleums
         var server = player.level().getServer();
         var home = new BlockPos(gate.worldX(0, HOME_DEPTH), gate.y(), gate.worldZ(0, HOME_DEPTH));
         int index = state(server).indexFor(BlockPos.asLong(gate.x(), gate.y(), gate.z()), GlobalPos.of(player.level().dimension(), home), Compass.yaw(gate.facing()));
+        if (index < 0)
+        {
+            // Every mausoleum the dimension holds is taken: the void stays a void
+            passed(player);
+            player.sendOverlayMessage(Component.translatable(MODID + ".mausoleum.unreachable"));
+            return;
+        }
         arrive(player, index);
     }
 

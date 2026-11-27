@@ -42,47 +42,45 @@ public class ShroudGateClientTest implements FabricClientGameTest
     public void runTest(ClientGameTestContext context)
     {
         var cameraBefore = context.computeOnClient(minecraft -> minecraft.options.getCameraType());
-        TestWorldSave save;
-        ShroudGate gate;
-        boolean hudWasHidden;
-        try (var world = context.worldBuilder().create())
+        boolean hudWasHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
+        // Every test shares this client, so its camera and HUD are put back however this one ends, opening the second world included
+        try
         {
-            save = world.getWorldSave();
-            var server = world.getServer();
-            world.getConnection().waitForChunksRender();
-            hudWasHidden = context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden());
-            context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
-            if (!hudWasHidden)
-                context.getInput().pressKey(InputConstants.KEY_F1);
-            try
+            TestWorldSave save;
+            ShroudGate gate;
+            try (var world = context.worldBuilder().create())
             {
+                save = world.getWorldSave();
+                var server = world.getServer();
+                world.getConnection().waitForChunksRender();
+                context.runOnClient(minecraft -> minecraft.options.setCameraType(CameraType.FIRST_PERSON));
+                if (!context.computeOnClient(minecraft -> minecraft.gui.hud.isHidden()))
+                    context.getInput().pressKey(InputConstants.KEY_F1);
                 server.runCommand("difficulty peaceful");
                 server.runCommand("gamemode creative @a");
                 gate = visit(context, world);
                 checkBuilt(server, gate);
                 offerAndWatch(context, server, gate);
-            } catch (RuntimeException | Error e)
-            {
-                restore(context, cameraBefore, hudWasHidden);
-                throw e;
             }
-        }
 
-        // Saved with the ink on the altar, the gate comes back open without lifting again
-        try (var world = save.open())
-        {
-            var server = world.getServer();
-            try
+            // Saved with the ink on the altar, the gate comes back open without lifting again
+            try (var world = save.open())
             {
-                world.getConnection().waitForChunksRender(false, CHUNK_TIMEOUT_TICKS);
-                checkAfterReload(context, server, gate);
-                takeBackAndWatch(context, server, gate);
-            } finally
-            {
-                server.runCommand("tick unfreeze");
-                server.runCommand("gamemode creative @a");
-                restore(context, cameraBefore, hudWasHidden);
+                var server = world.getServer();
+                try
+                {
+                    world.getConnection().waitForChunksRender(false, CHUNK_TIMEOUT_TICKS);
+                    checkAfterReload(context, server, gate);
+                    takeBackAndWatch(context, server, gate);
+                } finally
+                {
+                    server.runCommand("tick unfreeze");
+                    server.runCommand("gamemode creative @a");
+                }
             }
+        } finally
+        {
+            restore(context, cameraBefore, hudWasHidden);
         }
     }
 
@@ -266,15 +264,16 @@ public class ShroudGateClientTest implements FabricClientGameTest
 
     private static void closeOnAltar(ClientGameTestContext context, TestServerContext server, ShroudGate gate)
     {
+        var eye = point(gate, 0, ShroudGate.ALTAR_DEPTH + 1.2, 1.2);
+        var top = point(gate, 0, ShroudGate.ALTAR_DEPTH, 1);
+        server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(eye.x, eye.y, eye.z, top.x, top.y, top.z));
+        // After the teleport, since landing before it would end creative flight
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
             player.getAbilities().flying = true;
             player.onUpdateAbilities();
         });
-        var eye = point(gate, 0, ShroudGate.ALTAR_DEPTH + 1.2, 1.2);
-        var top = point(gate, 0, ShroudGate.ALTAR_DEPTH, 1);
-        server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(eye.x, eye.y, eye.z, top.x, top.y, top.z));
         context.waitTicks(6);
     }
 
@@ -286,15 +285,16 @@ public class ShroudGateClientTest implements FabricClientGameTest
 
     private static void look(ClientGameTestContext context, TestServerContext server, ShroudGate gate, double across, double depth, double feetUp, double lookUp)
     {
+        var feet = point(gate, across, depth, feetUp);
+        var at = point(gate, 0, 0.5, lookUp);
+        server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(feet.x, feet.y, feet.z, at.x, at.y, at.z));
+        // After the teleport, since landing before it would end creative flight
         server.runOnServer(minecraft ->
         {
             var player = player(minecraft);
             player.getAbilities().flying = true;
             player.onUpdateAbilities();
         });
-        var feet = point(gate, across, depth, feetUp);
-        var at = point(gate, 0, 0.5, lookUp);
-        server.runCommand("execute in voidheart:daedalus run tp @a " + aimedPose(feet.x, feet.y, feet.z, at.x, at.y, at.z));
         context.waitTicks(6);
     }
 

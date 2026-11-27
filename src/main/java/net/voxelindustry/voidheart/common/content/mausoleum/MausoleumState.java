@@ -6,6 +6,7 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
+import net.voxelindustry.voidheart.common.world.mausoleum.MausoleumAddress;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -57,7 +58,10 @@ public final class MausoleumState extends SavedData
         this.mausoleums = new ArrayList<>(mausoleums);
     }
 
-    /** @return the index of a gate's mausoleum, giving it one the first time someone passes through */
+    /**
+     * @return the index of a gate's mausoleum, giving it one the first time someone passes through, or -1 for a new gate once every place in the
+     * dimension's row is taken
+     */
     public int indexFor(long gate, GlobalPos home, float homeYaw)
     {
         for (int i = 0; i < mausoleums.size(); i++)
@@ -65,15 +69,20 @@ public final class MausoleumState extends SavedData
             if (mausoleums.get(i).gate() == gate && gate != 0)
                 return i;
         }
-        mausoleums.add(new Mausoleum(gate, Optional.of(home), homeYaw, false, false));
-        setDirty();
-        return mausoleums.size() - 1;
+        return add(new Mausoleum(gate, Optional.of(home), homeYaw, false, false));
     }
 
-    /** A mausoleum of no gate, for review: its gate leads back to wherever it was opened from. */
+    /** A mausoleum of no gate, for review: its gate leads back to wherever it was opened from. -1 once every place is taken. */
     public int open(GlobalPos home, float homeYaw)
     {
-        mausoleums.add(new Mausoleum(0, Optional.of(home), homeYaw, false, false));
+        return add(new Mausoleum(0, Optional.of(home), homeYaw, false, false));
+    }
+
+    private int add(Mausoleum mausoleum)
+    {
+        if (mausoleums.size() > MausoleumAddress.MAX_INDEX)
+            return -1;
+        mausoleums.add(mausoleum);
         setDirty();
         return mausoleums.size() - 1;
     }
