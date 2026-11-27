@@ -113,6 +113,8 @@ public class BlockLootsProvider extends FabricBlockLootSubProvider
         this.dropSelf(VoidHeartBlocks.IRON_INLAID_VOIDSTONE);
         this.dropSelf(VoidHeartBlocks.VOIDSTONE_ENGRAVED_GEAR);
         this.dropSelf(VoidHeartBlocks.VOIDSTONE_ENGRAVED_EYE);
+        this.dropSelf(VoidHeartBlocks.VOIDSTONE_GLYPHS);
+        this.dropSelf(VoidHeartBlocks.VOIDSTONE_STARRED);
         this.dropSelf(VoidHeartBlocks.CAGED_LAMP_AMBER);
         this.dropSelf(VoidHeartBlocks.CAGED_LAMP_TEAL);
         this.dropSelf(VoidHeartBlocks.CAGED_LAMP_PALE);

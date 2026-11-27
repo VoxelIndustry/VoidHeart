@@ -154,6 +154,121 @@ class DaedalusDistrictTest
     }
 
     /**
+     * About one district in three hides a shroud gate in a tall room of its own. The gate stands whole on the room's far wall, the room's only door is
+     * across from it, and the altar can be walked up to from a bridge.
+     */
+    @Test
+    void shroudGatesStandWholeInAboutOneDistrictInThree()
+    {
+        int districts = 0;
+        int gates = 0;
+        int lost = 0;
+        for (long seed : SEEDS)
+        {
+            for (var theme : DaedalusTheme.values())
+            {
+                for (var pos : districtsOf(theme, PER_THEME))
+                {
+                    var plan = DistrictPlanner.generate(seed, pos);
+                    String where = theme + " " + pos + " seed " + seed;
+                    var rooms = java.util.Arrays.stream(plan.rooms()).filter(room -> room.shape() == RoomShape.SHROUD).toList();
+                    var gate = plan.shroudGate();
+                    districts++;
+                    assertTrue(rooms.size() <= 1, "Several shroud rooms in " + where);
+                    assertEquals(rooms.isEmpty(), gate == null, where);
+                    if (rooms.isEmpty())
+                    {
+                        lost += DistrictPlanner.hasShroud(seed, pos) ? 1 : 0;
+                        continue;
+                    }
+                    gates++;
+                    assertTrue(DistrictPlanner.hasShroud(seed, pos), "A shroud room where none was drawn in " + where);
+                    var room = rooms.getFirst();
+                    assertEquals(DistrictPlanner.SHROUD_CELLS, room.cellsWide(), where);
+                    assertEquals(DistrictPlanner.SHROUD_CELLS, room.cellsDeep(), where);
+                    assertEquals(DistrictPlanner.SHROUD_TIERS, room.maxK() - room.minK() + 1, where);
+                    assertSingleDoorFacingTheGate(plan, room, gate, where);
+
+                    var canvas = painted(plan);
+                    var expected = new HashSet<Long>();
+                    gate.forEach((x, y, z, part) -> expected.add(packed(x, y, z)));
+                    for (long at : expected)
+                        assertEquals(DaedalusMaterial.SHROUD, canvas.get(unpackX(at), unpackY(at), unpackZ(at)), "The gate is not whole in " + where);
+                    int shrouds = 0;
+                    for (int z = plan.pos.originZ(); z < plan.pos.originZ() + DistrictPos.SIZE; z++)
+                    {
+                        for (int x = plan.pos.originX(); x < plan.pos.originX() + DistrictPos.SIZE; x++)
+                        {
+                            for (int y = 0; y < DistrictPos.HEIGHT; y++)
+                                shrouds += canvas.get(x, y, z) == DaedalusMaterial.SHROUD ? 1 : 0;
+                        }
+                    }
+                    assertEquals(expected.size(), shrouds, "Gate blocks elsewhere in " + where);
+
+                    var walker = new DaedalusWalker(canvas);
+                    int[] start = landingPosition(plan, plan.landings().getFirst());
+                    walker.walkFrom(start[0], start[1], start[2]);
+                    int frontX = gate.worldX(0, ShroudGate.ALTAR_DEPTH + 1);
+                    int frontZ = gate.worldZ(0, ShroudGate.ALTAR_DEPTH + 1);
+                    assertTrue(walker.hasReached(frontX, gate.y(), frontZ), "Nobody can walk up to the altar in " + where);
+                    for (int depth = 1; depth < ShroudGate.ALTAR_DEPTH; depth++)
+                    {
+                        for (int up = ShroudGate.SEAL_BOTTOM; up < ShroudGate.LINTEL; up++)
+                            assertEquals(DaedalusMaterial.AIR, canvas.get(gate.worldX(0, depth), gate.y() + up, gate.worldZ(0, depth)), "The way to the seal is blocked in " + where);
+                    }
+                }
+            }
+        }
+        float share = gates / (float) districts;
+        assertTrue(share > 0.22F && share < 0.42F, "Shroud gates in " + gates + " of " + districts + " districts");
+        assertTrue(lost <= gates / 10, lost + " districts lost their gate, against " + gates + " kept");
+    }
+
+    private static void assertSingleDoorFacingTheGate(DistrictPlan plan, Room room, ShroudGate gate, String where)
+    {
+        int doors = 0;
+        for (int k = room.minK(); k <= room.maxK(); k++)
+        {
+            for (int j = room.minJ(); j <= room.maxJ(); j++)
+            {
+                for (int i = room.minI(); i <= room.maxI(); i++)
+                {
+                    for (int side = 0; side < Compass.COUNT; side++)
+                    {
+                        if (!plan.isOpen(i, k, j, side) || plan.room(i + Compass.dx(side), k, j + Compass.dz(side)) == room)
+                            continue;
+                        doors++;
+                        assertEquals(gate.facing(), side, "A door off the gate's side in " + where);
+                    }
+                    for (int side = 0; side < Compass.COUNT; side++)
+                        assertFalse(plan.hasWindow(i, k, j, side), "A window in the shroud room in " + where);
+                }
+            }
+        }
+        assertEquals(1, doors, "Not a single door in " + where);
+    }
+
+    private static long packed(int x, int y, int z)
+    {
+        return ((long) (x + (1 << 25)) << 34) | ((long) y << 26) | (z + (1 << 25));
+    }
+
+    private static int unpackX(long packed)
+    {
+        return (int) (packed >>> 34) - (1 << 25);
+    }
+
+    private static int unpackY(long packed)
+    {
+        return (int) (packed >>> 26) & 0xFF;
+    }
+
+    private static int unpackZ(long packed)
+    {
+        return (int) (packed & ((1L << 26) - 1)) - (1 << 25);
+    }
+
+    /**
      * The rail round every upper walkway of a tiered room is whole: the flights climbing to it keep inside it, and nothing else takes its place.
      */
     @Test

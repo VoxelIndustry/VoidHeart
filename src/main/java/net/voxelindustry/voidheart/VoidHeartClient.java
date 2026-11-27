@@ -97,12 +97,18 @@ import net.voxelindustry.voidheart.client.render.AvengingReachRender;
 import net.voxelindustry.voidheart.client.render.KleinStarRender;
 import net.voxelindustry.voidheart.client.render.WallPassageRender;
 import net.voxelindustry.voidheart.client.model.VoidHeartModelLoadingPlugin;
+import net.voxelindustry.voidheart.client.particle.ShroudMoteParticle;
+import net.voxelindustry.voidheart.client.particle.ShroudSmokeParticle;
+import net.voxelindustry.voidheart.client.render.shroud.ShroudAltarRender;
 import net.voxelindustry.voidheart.client.particle.DepthsShoals;
 import net.voxelindustry.voidheart.client.particle.MarineSnowParticle;
 import net.voxelindustry.voidheart.client.particle.ShoalSpeckParticle;
 import net.voxelindustry.voidheart.client.particle.SmokerGlowParticle;
 import net.voxelindustry.voidheart.client.particle.SmokerPlumeParticle;
 import net.voxelindustry.voidheart.client.particle.VoidFireParticle;
+import net.voxelindustry.voidheart.client.particle.FuneraryFlameParticle;
+import net.voxelindustry.voidheart.client.render.mausoleum.FuneraryOrbRender;
+import net.voxelindustry.voidheart.client.render.mausoleum.SarcophagusRender;
 import net.voxelindustry.voidheart.client.particle.AltarExperienceParticle;
 import net.voxelindustry.voidheart.client.particle.AltarItemParticle;
 import net.voxelindustry.voidheart.client.particle.AltarVoidFillingParticle;
@@ -192,6 +198,9 @@ public class VoidHeartClient implements ClientModInitializer
         BlockEntityRenderers.register(VoidHeartTiles.VOID_PILLAR, ctx -> new FloatingItemRender<VoidPillarTile>(ctx, VoidPillarTile::getStack,
                 pillar -> pillar.isForgeSource() ? 1.2 : 1.1));
         BlockEntityRenderers.register(VoidHeartTiles.BLESSED_CRADLE, ctx -> new FloatingItemRender<BlessedCradleTile>(ctx, BlessedCradleTile::getContents, 0.85));
+        BlockEntityRenderers.register(VoidHeartTiles.SHROUD_ALTAR, ShroudAltarRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.FUNERARY_ORB, FuneraryOrbRender::new);
+        BlockEntityRenderers.register(VoidHeartTiles.SARCOPHAGUS, SarcophagusRender::new);
         BlockEntityRenderers.register(VoidHeartTiles.VOID_ALTAR, VoidAltarRender::new);
         BlockEntityRenderers.register(net.voxelindustry.voidheart.common.content.hoard.HoardContent.HOARD_COFFER_TILE,
                 net.voxelindustry.voidheart.client.render.HoardCofferRender::new);
@@ -467,6 +476,12 @@ public class VoidHeartClient implements ClientModInitializer
                 HeartMoteParticle.lifting(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
         particles.register(VoidHeart.SECOND_HEART_INFALL_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
                 HeartMoteParticle.infalling(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+        particles.register(SHROUD_SMOKE_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                new ShroudSmokeParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+        particles.register(SHROUD_MOTE_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                new ShroudMoteParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
+        particles.register(VoidHeart.FUNERARY_FLAME_PARTICLE, spriteSet -> (options, level, x, y, z, xAux, yAux, zAux, random) ->
+                new FuneraryFlameParticle(level, x, y, z, xAux, yAux, zAux, spriteSet.get(random)));
 
         particles.register(
                 SHATTER_FORGE_EXPERIENCE_PARTICLE,

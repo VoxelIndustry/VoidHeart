@@ -1792,5 +1792,182 @@
         "volume": 0.5
       }
     ]
+  },
+  "entity.dullahan.ambient": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton_horse.ambient",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:particle.soul_escape",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.dullahan.hurt": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.wither_skeleton.hurt",
+        "type": "event",
+        "pitch": 0.55
+      }
+    ]
+  },
+  "entity.dullahan.death": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.skeleton_horse.death",
+        "type": "event",
+        "pitch": 0.45
+      },
+      {
+        "name": "minecraft:entity.wither.death",
+        "type": "event",
+        "pitch": 1.6,
+        "volume": 0.4
+      }
+    ]
+  },
+  "entity.dullahan.step": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.horse.step",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 0.8
+      }
+    ]
+  },
+  "entity.dullahan.windup": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.windup",
+    "sounds": [
+      {
+        "name": "minecraft:item.trident.return",
+        "type": "event",
+        "pitch": 0.5
+      }
+    ]
+  },
+  "entity.dullahan.sweep": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.sweep",
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.attack.sweep",
+        "type": "event",
+        "pitch": 0.55
+      }
+    ]
+  },
+  "entity.dullahan.release": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.release",
+    "sounds": [
+      {
+        "name": "minecraft:entity.blaze.shoot",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:item.firecharge.use",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 0.8
+      }
+    ]
+  },
+  "entity.dullahan.glance": {
+    "subtitle": "subtitles.voidheart.entity.dullahan.glance",
+    "sounds": [
+      {
+        "name": "minecraft:item.shield.block",
+        "type": "event",
+        "pitch": 0.6
+      }
+    ]
+  },
+  "entity.maleficent_wisp.ambient": {
+    "subtitle": "subtitles.voidheart.entity.maleficent_wisp.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.ambient",
+        "type": "event",
+        "pitch": 1.4
+      }
+    ]
+  },
+  "entity.maleficent_wisp.hurt": {
+    "subtitle": "subtitles.voidheart.entity.maleficent_wisp.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.blaze.hurt",
+        "type": "event",
+        "pitch": 1.5,
+        "volume": 0.8
+      }
+    ]
+  },
+  "entity.maleficent_wisp.death": {
+    "subtitle": "subtitles.voidheart.entity.maleficent_wisp.death",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
+  "entity.maleficent_wisp.step": {
+    "subtitle": "subtitles.voidheart.entity.maleficent_wisp.step",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.ambient",
+        "type": "event",
+        "pitch": 1.6,
+        "volume": 0.3
+      }
+    ]
+  },
+  "entity.maleficent_wisp.windup": {
+    "subtitle": "subtitles.voidheart.entity.maleficent_wisp.windup",
+    "sounds": [
+      {
+        "name": "minecraft:entity.blaze.ambient",
+        "type": "event",
+        "pitch": 1.5,
+        "volume": 0.8
+      }
+    ]
+  },
+  "entity.maleficent_wisp.charge": {
+    "subtitle": "subtitles.voidheart.entity.maleficent_wisp.charge",
+    "sounds": [
+      {
+        "name": "minecraft:item.firecharge.use",
+        "type": "event",
+        "pitch": 1.3
+      }
+    ]
+  },
+  "block.sarcophagus.crack": {
+    "subtitle": "subtitles.voidheart.block.sarcophagus.crack",
+    "sounds": [
+      {
+        "name": "minecraft:block.deepslate_bricks.break",
+        "type": "event",
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:block.vault.open_shutter",
+        "type": "event",
+        "pitch": 0.6,
+        "volume": 0.9
+      }
+    ]
   }
 }

@@ -6,6 +6,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleTile;
+import net.voxelindustry.voidheart.common.content.shroud.ShroudAltarTile;
+import net.voxelindustry.voidheart.common.content.mausoleum.FuneraryOrbTile;
+import net.voxelindustry.voidheart.common.content.mausoleum.SarcophagusTile;
 import net.voxelindustry.voidheart.common.content.altar.VoidAltarTile;
 import net.voxelindustry.voidheart.common.content.athanor.AspectIntakeTile;
 import net.voxelindustry.voidheart.common.content.athanor.AthanorTile;
@@ -61,6 +64,9 @@ public class VoidHeartTiles
     public static BlockEntityType<ArmillaryTile> ARMILLARY;
     public static BlockEntityType<ArmillaryRiftTile> ARMILLARY_RIFT;
     public static BlockEntityType<BlessedCradleTile> BLESSED_CRADLE;
+    public static BlockEntityType<ShroudAltarTile> SHROUD_ALTAR;
+    public static BlockEntityType<FuneraryOrbTile> FUNERARY_ORB;
+    public static BlockEntityType<SarcophagusTile> SARCOPHAGUS;
     public static BlockEntityType<VoidDoorTile> VOID_DOOR;
 
     public static BlockEntityType<PermeableBarrierTile> PERMEABLE_BARRIER;
@@ -122,6 +128,15 @@ public class VoidHeartTiles
         registerTile(BLESSED_CRADLE =
                         FabricBlockEntityTypeBuilder.create(BlessedCradleTile::new, VoidHeartBlocks.BLESSED_CRADLE).build(),
                 "blessed_cradle");
+        registerTile(SHROUD_ALTAR =
+                        FabricBlockEntityTypeBuilder.create(ShroudAltarTile::new, VoidHeartBlocks.SHROUD_ALTAR).build(),
+                "shroud_altar");
+        registerTile(FUNERARY_ORB =
+                        FabricBlockEntityTypeBuilder.create(FuneraryOrbTile::new, VoidHeartBlocks.FUNERARY_ORB).build(),
+                "funerary_orb");
+        registerTile(SARCOPHAGUS =
+                        FabricBlockEntityTypeBuilder.create(SarcophagusTile::new, VoidHeartBlocks.SARCOPHAGUS).build(),
+                "sarcophagus");
 
         registerTile(VOID_ALTAR =
                         FabricBlockEntityTypeBuilder.create(VoidAltarTile::new, VoidHeartBlocks.VOID_ALTAR).build(),

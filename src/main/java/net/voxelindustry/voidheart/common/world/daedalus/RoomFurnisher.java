@@ -147,7 +147,7 @@ final class RoomFurnisher
                 detailWalls(room, roomTopAir(room));
                 detailCeiling(room);
             }
-            case STACKS -> detailFloor(room, room.minK(), false);
+            case STACKS, SHROUD -> detailFloor(room, room.minK(), false);
             case CHAMBER -> mottleFloor(room);
             default ->
             {
@@ -471,6 +471,7 @@ final class RoomFurnisher
             case FLOOD -> furnishFlood(room);
             case VAULT -> furnishVault(room);
             case ATRIUM -> hangFromTop(centreX(room), centreZ(room), topAir(room.maxK()), (room.maxK() - room.minK()) * CELL / 2);
+            case SHROUD -> raiseShroudGate();
             default ->
             {
                 // Other shapes carry their character in their walls.
@@ -484,6 +485,12 @@ final class RoomFurnisher
                 // No floor of their own to keep anything on.
             }
         }
+    }
+
+    /** The gate, its seal and its altar, which the chunk writer tells apart by where they stand. */
+    private void raiseShroudGate()
+    {
+        plan.shroudGate().forEach((x, y, z, part) -> canvas.set(x, y, z, DaedalusMaterial.SHROUD));
     }
 
     /**

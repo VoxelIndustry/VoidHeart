@@ -5,6 +5,8 @@ import net.voxelindustry.voidheart.common.content.sanctum.BilePool;
 import net.voxelindustry.voidheart.common.content.sanctum.BileGlob;
 import net.voxelindustry.voidheart.common.content.sanctum.FleshTentacle;
 import net.voxelindustry.voidheart.common.content.sanctum.VileFleshMass;
+import net.voxelindustry.voidheart.common.content.mausoleum.Dullahan;
+import net.voxelindustry.voidheart.common.content.mausoleum.MaleficentWisp;
 import net.voxelindustry.voidheart.common.content.sanctum.LesserShoggoth;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.voxelindustry.voidheart.common.content.blight.HarvestWraith;
@@ -85,6 +87,8 @@ public class VoidHeartEntities
     public static EntityType<ArcaneBolt> ARCANE_BOLT;
     public static EntityType<LesserShoggoth> LESSER_SHOGGOTH;
     public static EntityType<VileFleshMass> VILE_FLESH_MASS;
+    public static EntityType<Dullahan> DULLAHAN;
+    public static EntityType<MaleficentWisp> MALEFICENT_WISP;
     public static EntityType<FleshTentacle> FLESH_TENTACLE;
     public static EntityType<BileGlob> BILE_GLOB;
     public static EntityType<BilePool> BILE_POOL;
@@ -279,6 +283,22 @@ public class VoidHeartEntities
                 .updateInterval(1)
                 .fireImmune());
         FabricDefaultAttributeRegistry.register(VILE_FLESH_MASS, VileFleshMass.createAttributes());
+
+        DULLAHAN = register("dullahan", EntityType.Builder.of(Dullahan::new, MobCategory.MONSTER)
+                .sized(Dullahan.WIDTH, Dullahan.HEIGHT)
+                .eyeHeight(Dullahan.EYE_HEIGHT)
+                .clientTrackingRange(10)
+                .updateInterval(1)
+                .fireImmune());
+        FabricDefaultAttributeRegistry.register(DULLAHAN, Dullahan.createAttributes());
+
+        MALEFICENT_WISP = register("maleficent_wisp", EntityType.Builder.of(MaleficentWisp::new, MobCategory.MONSTER)
+                .sized(MaleficentWisp.SIZE, MaleficentWisp.SIZE)
+                .eyeHeight(MaleficentWisp.SIZE / 2)
+                .clientTrackingRange(10)
+                .updateInterval(1)
+                .fireImmune());
+        FabricDefaultAttributeRegistry.register(MALEFICENT_WISP, MaleficentWisp.createAttributes());
 
         FLESH_TENTACLE = register("flesh_tentacle", EntityType.Builder.<FleshTentacle>of(FleshTentacle::new, MobCategory.MISC)
                 .sized(0.9F, 0.9F)

@@ -31,6 +31,7 @@ public final class DistrictPlan
     private final Room[] voids;
     private final List<Landing> landings;
     private volatile DaedalusMobPlan mobs;
+    private final ShroudGate shroudGate;
 
     DistrictPlan(long worldSeed, DistrictPos pos, DaedalusTheme theme, byte[] kinds, byte[] faces, byte[] windows, short[] rooms, Room[] roomList, Room[] voids, List<Landing> landings)
     {
@@ -44,6 +45,7 @@ public final class DistrictPlan
         this.roomList = roomList;
         this.voids = voids;
         this.landings = landings;
+        shroudGate = gateIn(roomList);
     }
 
     static int index(int i, int k, int j)
@@ -143,6 +145,36 @@ public final class DistrictPlan
                 mobs = DaedalusMobPlan.of(this);
             return mobs;
         }
+    }
+
+    /** @return the district's shroud gate, or null for the districts without one */
+    public ShroudGate shroudGate()
+    {
+        return shroudGate;
+    }
+
+    /**
+     * The gate stands in the middle of the shroud room's far wall, facing its door.
+     */
+    private ShroudGate gateIn(Room[] rooms)
+    {
+        for (var room : rooms)
+        {
+            if (room.shape() != RoomShape.SHROUD)
+                continue;
+            int facing = RoomShape.shroudDoor(room);
+            int back = Compass.opposite(facing);
+            int minX = pos.originX() + room.minI() * DistrictPos.CELL;
+            int minZ = pos.originZ() + room.minJ() * DistrictPos.CELL;
+            int maxX = pos.originX() + (room.maxI() + 1) * DistrictPos.CELL - 1;
+            int maxZ = pos.originZ() + (room.maxJ() + 1) * DistrictPos.CELL - 1;
+            int middleX = (minX + maxX + 1) / 2;
+            int middleZ = (minZ + maxZ + 1) / 2;
+            int x = back == Compass.EAST ? maxX : back == Compass.WEST ? minX : middleX;
+            int z = back == Compass.SOUTH ? maxZ : back == Compass.NORTH ? minZ : middleZ;
+            return new ShroudGate(x, DistrictPos.floorY(room.minK()) + 1, z, facing);
+        }
+        return null;
     }
 
     long cellHash(int i, int k, int j)

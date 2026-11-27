@@ -1,0 +1,72 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "voidheart:block/voidstone_polished",
+    "side": "voidheart:block/sarcophagus_side",
+    "end": "voidheart:block/sarcophagus_end",
+    "top": "voidheart:block/sarcophagus_top",
+    "bottom": "voidheart:block/voidstone_polished"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        11,
+        16
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            1,
+            4,
+            15,
+            12
+          ],
+          "texture": "#top"
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            16
+          ],
+          "texture": "#bottom",
+          "cullface": "down"
+        },
+        "east": {
+          "uv": [
+            0,
+            5,
+            15,
+            16
+          ],
+          "texture": "#side"
+        },
+        "west": {
+          "uv": [
+            1,
+            5,
+            16,
+            16
+          ],
+          "texture": "#side"
+        },
+        "north": {
+          "uv": [
+            1,
+            5,
+            15,
+            16
+          ],
+          "texture": "#end"
+        }
+      }
+    }
+  ]
+}

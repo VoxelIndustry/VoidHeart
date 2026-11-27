@@ -70,6 +70,7 @@ class MobModelGeometryTest
             new Model("wraith", WraithModel::createBodyLayer, "wraith"),
             new Model("wraith_scarab", WraithScarabModel::createBodyLayer, "wraith_scarab"),
             new Model("wraith_beast", WraithBeastModel::createBodyLayer, "wraith_beast"),
+            new Model("dullahan", DullahanModel::createBodyLayer, "dullahan"),
             new Model("lesser_shoggoth", LesserShoggothModel::createBodyLayer, "lesser_shoggoth"),
             new Model("vile_flesh_mass", VileFleshMassModel::createBodyLayer, "vile_flesh_mass"),
             new Model("void_armor", VoidArmorModel::createLayer, "void_armor"),

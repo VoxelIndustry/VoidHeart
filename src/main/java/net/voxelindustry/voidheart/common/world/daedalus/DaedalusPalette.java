@@ -168,6 +168,7 @@ public final class DaedalusPalette
         set(FILL, VOIDSTONE);
         set(BOUND, POCKET_WALL);
         set(HATCH, UNDERWAY_HATCH);
+        set(SHROUD, SHROUD_FRAME);
         set(WATER, Blocks.WATER);
         set(CHAIN, Blocks.IRON_CHAIN);
         set(COLUMN, VOIDSTONE_PILLAR);

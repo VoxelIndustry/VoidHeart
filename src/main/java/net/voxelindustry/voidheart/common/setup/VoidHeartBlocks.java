@@ -4,6 +4,9 @@ import net.fabricmc.fabric.api.registry.LandPathTypeRegistry;
 import net.voxelindustry.voidheart.common.content.crystal.CrystalBundleBlock;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.voxelindustry.voidheart.common.content.sanctum.BlessedCradleBlock;
+import net.voxelindustry.voidheart.common.content.shroud.ShroudAltarBlock;
+import net.voxelindustry.voidheart.common.content.mausoleum.FuneraryOrbBlock;
+import net.voxelindustry.voidheart.common.content.mausoleum.SarcophagusBlock;
 import net.voxelindustry.voidheart.common.content.salt.SaltWardBlock;
 import net.voxelindustry.voidheart.common.content.mob.VoidSkeletonHeadBlock;
 import net.voxelindustry.voidheart.common.content.athanor.AlembicBlock;
@@ -174,6 +177,13 @@ public class VoidHeartBlocks
     public static Block VILE_FLESH;
     public static Block VILE_FLESH_BRUISED;
     public static Block BLESSED_CRADLE;
+    public static Block SHROUD_FRAME;
+    public static Block SHROUD_SEAL;
+    public static Block SHROUD_ALTAR;
+    public static Block FUNERARY_ORB;
+    public static Block SARCOPHAGUS;
+    public static Block VOIDSTONE_GLYPHS;
+    public static Block VOIDSTONE_STARRED;
     public static Block VOIDSTONE_WRITHING_BLOSSOM;
     public static Block VOIDSTONE_WRITHING_MAW;
     public static Block VOIDSTONE_PILLAR;
@@ -458,6 +468,15 @@ public class VoidHeartBlocks
                         .strength(-1.0F, 3600000.0F)
                         .noLootTable()
                         .noOcclusion(), true);
+        // A shroud gate in the Daedalus, whose walls can be mined without end, is kept whole: nothing of it can be broken
+        SHROUD_FRAME = registerBlock("shroud_frame", RotatedPillarBlock::new, shroudStone(), true);
+        SHROUD_SEAL = registerBlock("shroud_seal", Block::new, shroudStone(), true);
+        SHROUD_ALTAR = registerBlock("shroud_altar", ShroudAltarBlock::new, shroudStone().noOcclusion(), true);
+        FUNERARY_ORB = registerBlock("funerary_orb", FuneraryOrbBlock::new, shroudStone().noOcclusion().noCollision().lightLevel(state -> 13)
+                .sound(SoundType.AMETHYST), true);
+        SARCOPHAGUS = registerBlock("sarcophagus", SarcophagusBlock::new, shroudStone().noOcclusion(), false);
+        VOIDSTONE_GLYPHS = registerBlock("voidstone_glyphs", Block::new, voidstoneProperties(), true);
+        VOIDSTONE_STARRED = registerBlock("voidstone_starred", Block::new, voidstoneProperties(), true);
         VILE_FLESH = registerBlock("vile_flesh", Block::new, BlockBehaviour.Properties.of()
                         .mapColor(MapColor.CRIMSON_NYLIUM)
                         .sound(SoundType.SCULK)
@@ -897,6 +916,17 @@ public class VoidHeartBlocks
                     .pushReaction(PushReaction.POPPED);
             DAEDALUS_PROPS.put(prop, registerBlock(prop.id(), blockProperties -> new DaedalusPropBlock(blockProperties, prop, shape), properties, true));
         }
+    }
+
+    private static BlockBehaviour.Properties shroudStone()
+    {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .strength(-1.0F, 3600000.0F)
+                .noLootTable()
+                .sound(SoundType.DEEPSLATE_TILES)
+                .isValidSpawn((state, world, pos, type) -> false);
     }
 
     /** The Underway's shell cannot be broken, so that its gates and doors really bar the way. */

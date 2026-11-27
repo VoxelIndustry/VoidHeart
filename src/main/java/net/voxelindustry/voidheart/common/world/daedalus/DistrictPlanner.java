@@ -18,6 +18,16 @@ final class DistrictPlanner
     private static final long PLAN_SALT = 0x706C616EL;
     private static final long HATCH_SALT = 0x6861746368L;
     private static final int HATCH_ROOM = 3;
+    private static final long SHROUD_SALT = 0x7368726F7564L;
+    private static final long SHROUD_ODDS_SALT = 0x6F646473L;
+    /** About one district in this many hides a shroud gate. */
+    static final int SHROUD_ODDS = 3;
+    static final int SHROUD_CELLS = 2;
+    static final int SHROUD_TIERS = 2;
+    private static final int SHROUD_ATTEMPTS = 24;
+    /** How many cells across and tiers up a shroud room keeps from every landing, unless it is well above or below it. */
+    private static final int SHROUD_LANDING_CELLS = 4;
+    private static final int SHROUD_LANDING_TIERS = 4;
     private static final int TIER_SCALE = DistrictPos.TIERS / 8;
     private static final int STEP_COST = 4;
     private static final int MIN_CATWALK_SPAN = 2;
@@ -65,6 +75,8 @@ final class DistrictPlanner
     private final List<Room> voids = new ArrayList<>();
     private final List<Landing> landings = new ArrayList<>();
     private int carved;
+    /** The cell of the shroud room its one door opens from, once it has it. */
+    private int shroudDoorCell = -1;
 
     private final int[] costs = new int[STATES];
     private final int[] previous = new int[STATES];
@@ -97,6 +109,7 @@ final class DistrictPlanner
         var planner = new DistrictPlanner(worldSeed, pos);
         planner.placeLandings();
         planner.placeHatch();
+        planner.placeShroud();
         planner.placeVoids();
         planner.placeTheme();
         planner.placeCatwalks();
@@ -189,6 +202,17 @@ final class DistrictPlanner
     private void open(int cell, int direction)
     {
         faces[cell] |= (byte) (1 << direction);
+        if (shroudDoorCell < 0 && isShroudRoom(cell))
+        {
+            int outside = neighbor(cell, direction);
+            if (outside < 0 || roomIds[outside] != roomIds[cell])
+                shroudDoorCell = cell;
+        }
+    }
+
+    private boolean isShroudRoom(int cell)
+    {
+        return kinds[cell] == ROOM && rooms.get(roomIds[cell] - 1).shape() == RoomShape.SHROUD;
     }
 
     private void link(int from, int direction, int to)
@@ -229,6 +253,45 @@ final class DistrictPlanner
         int reach = HATCH_ROOM / 2;
         if (!placeRoom(RoomShape.HATCH, fort.hatchI() - reach, 0, fort.hatchJ() - reach, HATCH_ROOM, 1, HATCH_ROOM, (int) DaedalusHash.mix(worldSeed, pos.x(), pos.z(), HATCH_SALT)))
             throw new IllegalStateException("No room for the hatch of " + pos);
+    }
+
+    /** Whether the district hides a shroud gate, from the seed and its place alone. */
+    static boolean hasShroud(long worldSeed, DistrictPos pos)
+    {
+        return DaedalusHash.pick(DaedalusHash.mix(worldSeed, pos.x(), pos.z(), SHROUD_ODDS_SALT), SHROUD_ODDS) == 0;
+    }
+
+    /**
+     * The tall room of a shroud gate, placed before the voids and rooms of the theme so it nearly always finds a place, well away from the bridges.
+     * Its door faces the gate across the room. Unlike the hatch it is not kept at any cost: a district that cannot join it to the rest goes without.
+     */
+    private void placeShroud()
+    {
+        if (!hasShroud(worldSeed, pos))
+            return;
+        var shroudRandom = new SplittableRandom(DaedalusHash.mix(worldSeed, pos.x(), pos.z(), SHROUD_SALT));
+        int door = shroudRandom.nextInt(Compass.COUNT);
+        for (int attempt = 0; attempt < SHROUD_ATTEMPTS; attempt++)
+        {
+            int minI = 1 + shroudRandom.nextInt(DistrictPos.CELLS - 2 - SHROUD_CELLS + 1);
+            int minJ = 1 + shroudRandom.nextInt(DistrictPos.CELLS - 2 - SHROUD_CELLS + 1);
+            int minK = shroudRandom.nextInt(DistrictPos.TIERS - SHROUD_TIERS + 1);
+            if (!isNearLanding(minI, minK, minJ, minI + SHROUD_CELLS - 1, minK + SHROUD_TIERS - 1, minJ + SHROUD_CELLS - 1)
+                && placeRoom(RoomShape.SHROUD, minI, minK, minJ, SHROUD_CELLS, SHROUD_TIERS, SHROUD_CELLS, door))
+                return;
+        }
+    }
+
+    private boolean isNearLanding(int minI, int minK, int minJ, int maxI, int maxK, int maxJ)
+    {
+        for (var landing : landings)
+        {
+            int across = Math.max(Math.max(minI - landing.i(), landing.i() - maxI), Math.max(minJ - landing.j(), landing.j() - maxJ));
+            int up = Math.max(minK - landing.k(), landing.k() - maxK);
+            if (across < SHROUD_LANDING_CELLS && up < SHROUD_LANDING_TIERS)
+                return true;
+        }
+        return false;
     }
 
     private int between(int min, int max)
@@ -558,7 +621,9 @@ final class DistrictPlanner
         if (outside < 0 || roomIds[outside] == roomIds[cell])
             return false;
         var room = rooms.get(roomIds[cell] - 1);
-        return room.shape().hasDoorsAt(tierOf(cell), room);
+        if (room.shape() == RoomShape.SHROUD && shroudDoorCell >= 0 && shroudDoorCell != cell)
+            return false;
+        return room.shape().hasDoorsAt(tierOf(cell), room) && room.shape().opensOn(direction, room);
     }
 
     private void connectEverything()
@@ -1166,6 +1231,9 @@ final class DistrictPlanner
                 continue;
             var room = kinds[cell] == ROOM ? rooms.get(roomIds[cell] - 1) : null;
             if (room != null && room.shape() == RoomShape.FLOOD && tierOf(cell) < room.maxK())
+                continue;
+            // A shroud room shows nothing of itself to the voids beside it, and its far wall stays whole for the gate
+            if (room != null && room.shape() == RoomShape.SHROUD)
                 continue;
             for (int direction = 0; direction < Compass.COUNT; direction++)
             {

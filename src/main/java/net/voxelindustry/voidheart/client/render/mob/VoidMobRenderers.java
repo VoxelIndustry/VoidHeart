@@ -39,6 +39,7 @@ import net.voxelindustry.voidheart.client.model.mob.VoidSkeletonModel;
 import net.voxelindustry.voidheart.client.model.mob.WraithModel;
 import net.voxelindustry.voidheart.client.model.mob.WraithScarabModel;
 import net.voxelindustry.voidheart.client.model.mob.WraithBeastModel;
+import net.voxelindustry.voidheart.client.model.mob.DullahanModel;
 import net.voxelindustry.voidheart.common.content.mob.CorruptedCrab;
 import net.voxelindustry.voidheart.common.setup.VoidHeartEntities;
 
@@ -58,6 +59,7 @@ public final class VoidMobRenderers
         ModelLayerRegistry.registerModelLayer(WraithModel.LAYER, WraithModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(WraithScarabModel.LAYER, WraithScarabModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(WraithBeastModel.LAYER, WraithBeastModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(DullahanModel.LAYER, DullahanModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(CorruptedCrabModel.LAYER, CorruptedCrabModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(CorruptedBarnacleModel.LAYER, CorruptedBarnacleModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(BarnacleGrowthModel.LAYER, BarnacleGrowthModel::createBodyLayer);
@@ -108,6 +110,8 @@ public final class VoidMobRenderers
         EntityRenderers.register(VoidHeartEntities.STALKING_WRAITH, StalkingWraithRender::new);
         EntityRenderers.register(VoidHeartEntities.LESSER_SHOGGOTH, LesserShoggothRender::new);
         EntityRenderers.register(VoidHeartEntities.VILE_FLESH_MASS, VileFleshMassRender::new);
+        EntityRenderers.register(VoidHeartEntities.DULLAHAN, DullahanRender::new);
+        EntityRenderers.register(VoidHeartEntities.MALEFICENT_WISP, MaleficentWispRender::new);
         EntityRenderers.register(VoidHeartEntities.FLESH_TENTACLE, FleshTentacleRender::new);
         EntityRenderers.register(VoidHeartEntities.BILE_GLOB, context -> new GlowQuadRender<>(context, texture("bile_glob"), 0.3F));
         EntityRenderers.register(VoidHeartEntities.BILE_POOL, BilePoolRender::new);

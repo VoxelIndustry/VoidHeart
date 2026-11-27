@@ -34,6 +34,7 @@ import net.minecraft.world.level.block.Block;
 import com.geckolib.renderer.internal.GeckolibItemSpecialRenderer;
 import net.voxelindustry.voidheart.common.content.depths.StrandPlantBlock;
 import net.voxelindustry.voidheart.common.content.armillary.ArmillaryCoreBlock;
+import net.voxelindustry.voidheart.common.content.mausoleum.SarcophagusBlock;
 import net.voxelindustry.voidheart.common.setup.VoidHeartBlocks;
 import net.voxelindustry.voidheart.client.render.tormenter.MalignantTormenterItemRender;
 import net.voxelindustry.voidheart.client.render.blight.BlightEdgeRender;
@@ -58,7 +59,7 @@ public class ModelsProvider extends FabricModelProvider
      * Items whose model is hand-written in assets/voidheart/models/item.
      */
     private static final List<String> HAND_WRITTEN_ITEM_MODELS = List.of(
-            "barnacle_nest", "void_skeleton_head", "eldritch_voidstone", "ender_shard", "experience_skull", "eye_bottle", "inventory_inserter",
+            "barnacle_nest", "funerary_orb", "void_skeleton_head", "eldritch_voidstone", "ender_shard", "experience_skull", "eye_bottle", "inventory_inserter",
             "obsidian_shard", "pocket_wall", "portal_core", "portal_frame", "portal_frame_core", "portal_interior",
             "shatter_forge", "void_altar", "void_amalgam", "void_conduit", "void_heart", "void_heart_block",
             "void_monolith", "void_monolith_cap", "void_pearl", "void_pillar", "voidstone_writhing",
@@ -108,6 +109,8 @@ public class ModelsProvider extends FabricModelProvider
         registerPillarStairs(VoidHeartBlocks.VOIDSTONE_PILLAR, VoidHeartBlocks.VOIDSTONE_PILLAR_STAIRS);
 
         registerPillar(VoidHeartBlocks.VOIDSTONE_WEATHERED_PILLAR);
+        registerShroudGate();
+        registerMausoleum();
 
         CrystalDatagen.bundleModels(generator);
 
@@ -431,6 +434,48 @@ public class ModelsProvider extends FabricModelProvider
     private static Identifier itemModel(String name)
     {
         return Identifier.fromNamespaceAndPath(MODID, "item/" + name);
+    }
+
+    /**
+     * A shroud gate's frame shows its grain along its axis and its ends as a recessed square, its seal is plain, and its altar's shape is hand-written
+     * and turns to face the gate.
+     */
+    private void registerShroudGate()
+    {
+        var frame = TextureMapping.column(TextureMapping.getBlockTexture(VoidHeartBlocks.SHROUD_FRAME), TextureMapping.getBlockTexture(VoidHeartBlocks.SHROUD_FRAME, "_end"));
+        generator.blockStateOutput.accept(BlockModelGenerators.createAxisAlignedPillarBlock(VoidHeartBlocks.SHROUD_FRAME,
+                plainVariant(ModelTemplates.CUBE_COLUMN.create(VoidHeartBlocks.SHROUD_FRAME, frame, generator.modelOutput))));
+        generator.createTrivialCube(VoidHeartBlocks.SHROUD_SEAL);
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidHeartBlocks.SHROUD_ALTAR,
+                        plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.SHROUD_ALTAR)))
+                .with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+    }
+
+    private void registerMausoleum()
+    {
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(VoidHeartBlocks.FUNERARY_ORB,
+                plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.FUNERARY_ORB))));
+        // Each part of the sarcophagus has its own hand-written model, drawn with its head to the north
+        generator.blockStateOutput.accept(MultiVariantGenerator.dispatch(VoidHeartBlocks.SARCOPHAGUS)
+                .with(PropertyDispatch.initial(SarcophagusBlock.PART).generate(part ->
+                        plainVariant(ModelLocationUtils.getModelLocation(VoidHeartBlocks.SARCOPHAGUS, "_" + part.getSerializedName()))))
+                .with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+        generator.registerSimpleItemModel(VoidHeartBlocks.SARCOPHAGUS, ModelLocationUtils.getModelLocation(VoidHeartBlocks.SARCOPHAGUS, "_body"));
+
+        // Three panels of glyphs picked at random, drawn to meet one another on every side
+        var glyphs = new ArrayList<Variant>();
+        Identifier first = null;
+        for (var suffix : new String[] { "", "_2", "_3" })
+        {
+            var textures = TextureMapping.cube(TextureMapping.getBlockTexture(VoidHeartBlocks.VOIDSTONE_GLYPHS, suffix));
+            var model = ModelTemplates.CUBE_ALL.createWithSuffix(VoidHeartBlocks.VOIDSTONE_GLYPHS, suffix, textures, generator.modelOutput);
+            if (first == null)
+                first = model;
+            glyphs.add(BlockModelGenerators.plainModel(model));
+        }
+        generator.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(VoidHeartBlocks.VOIDSTONE_GLYPHS, BlockModelGenerators.variants(glyphs.toArray(Variant[]::new))));
+        generator.registerSimpleItemModel(VoidHeartBlocks.VOIDSTONE_GLYPHS, first);
+        generator.createTrivialCube(VoidHeartBlocks.VOIDSTONE_STARRED);
     }
 
     private void registerPillar(Block block)

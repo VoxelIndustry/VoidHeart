@@ -124,6 +124,8 @@ public class RecipesProvider extends FabricRecipeProvider
 
             offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_ENGRAVED_GEAR, VoidHeartBlocks.VOIDSTONE_POLISHED);
             offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_ENGRAVED_EYE, VoidHeartBlocks.VOIDSTONE_POLISHED);
+            offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_GLYPHS, VoidHeartBlocks.VOIDSTONE_POLISHED);
+            offerReversibleStoneCuttingRecipe(VoidHeartBlocks.VOIDSTONE_STARRED, VoidHeartBlocks.VOIDSTONE_POLISHED);
 
             cagedLamp(VoidHeartBlocks.CAGED_LAMP_AMBER, Items.GLOWSTONE);
             cagedLamp(VoidHeartBlocks.CAGED_LAMP_TEAL, Items.SEA_LANTERN);

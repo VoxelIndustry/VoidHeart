@@ -13,6 +13,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.storage.loot.LootTable;
+import net.voxelindustry.voidheart.common.world.mausoleum.MausoleumPlacer;
 import net.voxelindustry.voidheart.common.world.sanctum.SanctumPlacer;
 
 import static net.voxelindustry.voidheart.VoidHeart.MODID;
@@ -31,6 +32,8 @@ final class DungeonPlacer
     static void place(WorldGenLevel level, ChunkAccess chunk)
     {
         if (SanctumPlacer.place(level, chunk))
+            return;
+        if (MausoleumPlacer.place(level, chunk))
             return;
         int minX = chunk.getPos().getMinBlockX();
         int minZ = chunk.getPos().getMinBlockZ();

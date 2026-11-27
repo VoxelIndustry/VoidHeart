@@ -58,6 +58,8 @@ import net.voxelindustry.voidheart.common.content.kleinstar.KleinStarSettings;
 import net.voxelindustry.voidheart.common.content.kleinstar.RadiantCover;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassagePayloads;
 import net.voxelindustry.voidheart.common.content.sanctum.Sanctums;
+import net.voxelindustry.voidheart.common.content.mausoleum.FuneraryFire;
+import net.voxelindustry.voidheart.common.content.mausoleum.Mausoleums;
 import net.voxelindustry.voidheart.common.content.wraithveil.WallPassages;
 import net.voxelindustry.voidheart.common.curse.Curses;
 import net.voxelindustry.voidheart.common.command.VoidHeartCommands;
@@ -141,6 +143,9 @@ public class VoidHeart implements ModInitializer
     public static SimpleParticleType SHOAL_SPECK_PARTICLE;
     public static SimpleParticleType SMALL_SOUL_FLAME_PARTICLE;
     public static SimpleParticleType SECOND_HEART_MOTE_PARTICLE;
+    public static SimpleParticleType SHROUD_SMOKE_PARTICLE;
+    public static SimpleParticleType SHROUD_MOTE_PARTICLE;
+    public static SimpleParticleType FUNERARY_FLAME_PARTICLE;
     public static SimpleParticleType SECOND_HEART_INFALL_PARTICLE;
 
     public static PortalLinkCriterion PORTAL_LINK_CRITERION;
@@ -161,6 +166,7 @@ public class VoidHeart implements ModInitializer
         ShoulderEyes.register();
         AvengingReach.register();
         ShieldingApparatus.register();
+        FuneraryFire.register();
         LevitationBelts.register();
         ShieldPayloads.register();
         BlueprintPayloads.register();
@@ -241,6 +247,7 @@ public class VoidHeart implements ModInitializer
         ServerTickEvents.END_SERVER_TICK.register(RadiantCover::tickServer);
         WallPassages.register();
         Sanctums.register();
+        Mausoleums.register();
         ServerTickEvents.END_SERVER_TICK.register(Curses::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDungeons::tickServer);
         ServerTickEvents.END_SERVER_TICK.register(VoidDaedalus::tickServer);
@@ -342,6 +349,9 @@ public class VoidHeart implements ModInitializer
         SHOAL_SPECK_PARTICLE = registerSimpleParticle("shoal_speck", true);
         SMALL_SOUL_FLAME_PARTICLE = registerSimpleParticle("small_soul_flame", false);
         SECOND_HEART_MOTE_PARTICLE = registerSimpleParticle("second_heart_mote", true);
+        SHROUD_SMOKE_PARTICLE = registerSimpleParticle("shroud_smoke", true);
+        SHROUD_MOTE_PARTICLE = registerSimpleParticle("shroud_mote", true);
+        FUNERARY_FLAME_PARTICLE = registerSimpleParticle("funerary_flame", true);
         SECOND_HEART_INFALL_PARTICLE = registerSimpleParticle("second_heart_infall", true);
 
         EssenceRegistry.bootstrap();

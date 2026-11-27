@@ -55,6 +55,8 @@ public enum DaedalusMaterial
     CACHE,
     /** The armoured hatch of the Underway, lying in a floor. */
     HATCH,
+    /** A part of a shroud gate, its frame, seal or altar, which the plan's gate tells apart by place. */
+    SHROUD,
     PROP;
 
     private static final DaedalusMaterial[] VALUES = values();
