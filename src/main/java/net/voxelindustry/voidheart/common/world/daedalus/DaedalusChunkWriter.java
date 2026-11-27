@@ -35,6 +35,7 @@ import static net.voxelindustry.voidheart.VoidHeart.MODID;
  * Writes a chunk straight into its sections at the terrain step, like noise generation does. Nothing generated needs its neighbours, so a chunk costs no feature step, shape update or light beyond its few lamps.
  * The few altars and pillars get their block entities here too, as a feature would have given them, and barnacle nests are grown here since the spawn step may not set blocks.
  * The Underway takes the sections under the districts' floor, written by its own writer first. Its hatch lies in a district's floor and goes through the layer under it, down to its shaft.
+ * A shroud gate's parts are one material on the canvas, told apart here by where they stand in the district's gate.
  * Rails are joined to what stands beside them here, as placing them would, reading across the chunk's edge from a strip painted only when a rail reaches it.
  */
 final class DaedalusChunkWriter
@@ -44,6 +45,7 @@ final class DaedalusChunkWriter
     private static final byte BOUND = (byte) DaedalusMaterial.BOUND.ordinal();
     private static final int HATCH = DaedalusMaterial.HATCH.ordinal();
     private static final int  CACHE = DaedalusMaterial.CACHE.ordinal();
+    private static final int SHROUD = DaedalusMaterial.SHROUD.ordinal();
     private static final ResourceKey<LootTable> CACHE_LOOT = ResourceKey.create(Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath(MODID, "chests/daedalus_cache"));
     private static final ThreadLocal<DaedalusCanvas> CANVAS = ThreadLocal.withInitial(() -> new DaedalusCanvas(SECTION, SECTION));
     private static final ThreadLocal<DaedalusCanvas[]> BORDERS = ThreadLocal.withInitial(() -> new DaedalusCanvas[] {
@@ -70,6 +72,7 @@ final class DaedalusChunkWriter
                       : DaedalusPalette.chasm();
         var neighbours = new Neighbours(worldSeed, canvas);
         byte[] cells = canvas.cells();
+        ShroudGate gate = null;
         UnderwayChunkWriter.write(chunk, worldSeed);
         var sections = chunk.getSections();
         int index = 0;
@@ -92,7 +95,10 @@ final class DaedalusChunkWriter
                                 material = HATCH;
                             if (material == AIR)
                                 continue;
-                            var state = DaedalusPalette.isRail(material)
+                            if (material == SHROUD && gate == null)
+                                gate = DistrictPlans.get(worldSeed, DistrictPos.at(minX, minZ)).shroudGate();
+                            var state = material == SHROUD ? ShroudBlocks.state(gate, minX + x, baseY + y, minZ + z)
+                                        : DaedalusPalette.isRail(material)
                                         ? rail(palette, neighbours.railSides(minX + x, baseY + y, minZ + z, palette), canvas, material, minX + x, baseY + y, minZ + z)
                                         : palette.state(material, below >= 0 ? cells[below] & 0xFF : AIR, minX + x, baseY + y, minZ + z);
                             section.setBlockState(x, y, z, state, false);

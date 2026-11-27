@@ -29,6 +29,9 @@ public final class VoidDaedalus
 
     private static final int ENTRY_RANGE_DISTRICTS = 512;
     private static final int THEME_SEARCH_RADIUS = 32;
+    private static final int SHROUD_SEARCH_RADIUS = 8;
+    /** How far behind its altar, from the gate, the player is stood. */
+    private static final int SHROUD_STAND_BACK = 2;
     private static final int MIDDLE_OF_SPAN = DistrictPos.CHASM / 2;
     private static final int LANE_CENTRE = 3;
     private static final int ANNOUNCE_INTERVAL_TICKS = 10;
@@ -84,6 +87,37 @@ public final class VoidDaedalus
             }
         }
         throw new IllegalStateException("No " + theme + " district within " + THEME_SEARCH_RADIUS + " districts of the middle");
+    }
+
+    /**
+     * Stands the player behind the altar of the nearest shroud gate, facing it, searching out from the district they are in or from the middle.
+     *
+     * @return the gate reached
+     */
+    public static ShroudGate visitShroud(ServerPlayer player)
+    {
+        var level = level(player.level().getServer());
+        long seed = level.getSeed();
+        var from = player.level() == level ? DistrictPos.at(player.getBlockX(), player.getBlockZ()) : new DistrictPos(0, 0);
+        for (int radius = 0; radius <= SHROUD_SEARCH_RADIUS; radius++)
+        {
+            for (int z = -radius; z <= radius; z++)
+            {
+                for (int x = -radius; x <= radius; x++)
+                {
+                    if (Math.max(Math.abs(x), Math.abs(z)) != radius)
+                        continue;
+                    var gate = DistrictPlans.get(seed, new DistrictPos(from.x() + x, from.z() + z)).shroudGate();
+                    if (gate == null)
+                        continue;
+                    double standX = gate.worldX(0, ShroudGate.ALTAR_DEPTH + SHROUD_STAND_BACK) + 0.5;
+                    double standZ = gate.worldZ(0, ShroudGate.ALTAR_DEPTH + SHROUD_STAND_BACK) + 0.5;
+                    TeleportUtil.teleport(player, level, new Vec3(standX, gate.y(), standZ), Compass.yaw(gate.altarFacing()), 0);
+                    return gate;
+                }
+            }
+        }
+        throw new IllegalStateException("No shroud gate within " + SHROUD_SEARCH_RADIUS + " districts");
     }
 
     public static void arriveOn(ServerPlayer player, DaedalusBridge bridge)

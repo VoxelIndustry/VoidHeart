@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=east,part=body": {
+      "model": "voidheart:block/sarcophagus_body",
+      "y": 90
+    },
+    "facing=east,part=foot": {
+      "model": "voidheart:block/sarcophagus_foot",
+      "y": 90
+    },
+    "facing=east,part=head": {
+      "model": "voidheart:block/sarcophagus_head",
+      "y": 90
+    },
+    "facing=north,part=body": {
+      "model": "voidheart:block/sarcophagus_body"
+    },
+    "facing=north,part=foot": {
+      "model": "voidheart:block/sarcophagus_foot"
+    },
+    "facing=north,part=head": {
+      "model": "voidheart:block/sarcophagus_head"
+    },
+    "facing=south,part=body": {
+      "model": "voidheart:block/sarcophagus_body",
+      "y": 180
+    },
+    "facing=south,part=foot": {
+      "model": "voidheart:block/sarcophagus_foot",
+      "y": 180
+    },
+    "facing=south,part=head": {
+      "model": "voidheart:block/sarcophagus_head",
+      "y": 180
+    },
+    "facing=west,part=body": {
+      "model": "voidheart:block/sarcophagus_body",
+      "y": 270
+    },
+    "facing=west,part=foot": {
+      "model": "voidheart:block/sarcophagus_foot",
+      "y": 270
+    },
+    "facing=west,part=head": {
+      "model": "voidheart:block/sarcophagus_head",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "voidheart:block/shroud_frame_end",
+    "side": "voidheart:block/shroud_frame"
+  }
+}

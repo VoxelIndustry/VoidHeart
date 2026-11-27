@@ -85,6 +85,12 @@ public class WraithBeastModel extends EntityModel<WraithBeastRenderState>
 
     public static LayerDefinition createBodyLayer()
     {
+        return LayerDefinition.create(createMesh(), 128, 64);
+    }
+
+    /** The beast's parts, which a rider's model builds on. */
+    public static MeshDefinition createMesh()
+    {
         var mesh = new MeshDefinition();
         var root = mesh.getRoot();
 
@@ -132,7 +138,7 @@ public class WraithBeastModel extends EntityModel<WraithBeastRenderState>
                         PartPose.offset(shroudX, -1, SHROUD_Z[i]));
             }
         }
-        return LayerDefinition.create(mesh, 128, 64);
+        return mesh;
     }
 
     /**

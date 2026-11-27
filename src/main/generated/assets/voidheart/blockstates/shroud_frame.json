@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "voidheart:block/shroud_frame",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "voidheart:block/shroud_frame"
+    },
+    "axis=z": {
+      "model": "voidheart:block/shroud_frame",
+      "x": 90
+    }
+  }
+}

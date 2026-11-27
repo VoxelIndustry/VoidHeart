@@ -1,0 +1,45 @@
+{
+	"parent": "block/block",
+	"textures": {
+		"top": "voidheart:block/shroud_altar_top",
+		"side": "voidheart:block/shroud_altar_side",
+		"bottom": "voidheart:block/shroud_seal",
+		"particle": "voidheart:block/shroud_altar_side"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [16, 3, 16],
+			"faces": {
+				"north": {"uv": [0, 13, 16, 16], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [0, 13, 16, 16], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 13, 16, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [0, 13, 16, 16], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#bottom"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#bottom", "cullface": "down"}
+			}
+		},
+		{
+			"from": [2, 3, 2],
+			"to": [14, 12, 14],
+			"faces": {
+				"north": {"uv": [2, 4, 14, 13], "texture": "#side"},
+				"east": {"uv": [2, 4, 14, 13], "texture": "#side"},
+				"south": {"uv": [2, 4, 14, 13], "texture": "#side"},
+				"west": {"uv": [2, 4, 14, 13], "texture": "#side"}
+			}
+		},
+		{
+			"from": [0, 12, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 4], "texture": "#side", "cullface": "north"},
+				"east": {"uv": [0, 0, 16, 4], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 4], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [0, 0, 16, 4], "texture": "#side", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#top", "cullface": "up"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#bottom"}
+			}
+		}
+	]
+}

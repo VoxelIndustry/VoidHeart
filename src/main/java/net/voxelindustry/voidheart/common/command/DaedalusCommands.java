@@ -33,6 +33,7 @@ final class DaedalusCommands
                 .then(literal("enter").executes(DaedalusCommands::enter))
                 .then(literal("leave").executes(DaedalusCommands::leave))
                 .then(literal("where").executes(DaedalusCommands::where))
+                .then(literal("shroud").executes(DaedalusCommands::shroud))
                 .then(literal("visit")
                         .then(argument("theme", StringArgumentType.word())
                                 .suggests((context, suggestions) -> SharedSuggestionProvider.suggest(Arrays.stream(DaedalusTheme.values()).map(DaedalusTheme::getSerializedName), suggestions))
@@ -73,6 +74,15 @@ final class DaedalusCommands
         DaedalusConnections.forget(player);
         var seed = VoidDaedalus.level(context.getSource().getServer()).getSeed();
         context.getSource().sendSuccess(() -> Component.literal("On a bridge of district " + pos.x() + " " + pos.z() + ", ").append(VoidDaedalus.nameOf(seed, pos)), false);
+        return 1;
+    }
+
+    private static int shroud(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        var player = context.getSource().getPlayerOrException();
+        var gate = VoidDaedalus.visitShroud(player);
+        DaedalusConnections.forget(player);
+        context.getSource().sendSuccess(() -> Component.literal("Before the shroud gate at " + gate.x() + " " + gate.y() + " " + gate.z()), false);
         return 1;
     }
 

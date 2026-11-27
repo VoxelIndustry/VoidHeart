@@ -34,6 +34,15 @@ public final class VoidHeartSounds
     public static final MobSounds CENTURION         = mob("centurion");
     public static final MobSounds LESSER_SHOGGOTH   = mob("lesser_shoggoth");
     public static final MobSounds VILE_FLESH_MASS   = mob("vile_flesh_mass");
+    public static final MobSounds DULLAHAN          = mob("dullahan");
+    public static final MobSounds MALEFICENT_WISP   = mob("maleficent_wisp");
+    public static final SoundEvent DULLAHAN_WINDUP  = register("entity.dullahan.windup");
+    public static final SoundEvent DULLAHAN_SWEEP   = register("entity.dullahan.sweep");
+    public static final SoundEvent DULLAHAN_RELEASE = register("entity.dullahan.release");
+    public static final SoundEvent DULLAHAN_GLANCE  = register("entity.dullahan.glance");
+    public static final SoundEvent WISP_WINDUP      = register("entity.maleficent_wisp.windup");
+    public static final SoundEvent WISP_CHARGE      = register("entity.maleficent_wisp.charge");
+    public static final SoundEvent SARCOPHAGUS_CRACK = register("block.sarcophagus.crack");
     public static final MobSounds KERNACIAN_DRAGOON = mob("kernacian_dragoon");
     public static final MobSounds TREANT            = mob("treant");
     public static final MobSounds WRAITH_SCARAB     = mob("wraith_scarab");

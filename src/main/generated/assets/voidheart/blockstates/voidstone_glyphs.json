@@ -1,0 +1,15 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "voidheart:block/voidstone_glyphs"
+      },
+      {
+        "model": "voidheart:block/voidstone_glyphs_2"
+      },
+      {
+        "model": "voidheart:block/voidstone_glyphs_3"
+      }
+    ]
+  }
+}
